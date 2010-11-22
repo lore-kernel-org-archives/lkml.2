@@ -1,93 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab0KVP7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 10:59:32 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:34025 "EHLO
+	id S1756629Ab0KVP7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 10:59:45 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55899 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755834Ab0KVP72 (ORCPT
+	by vger.kernel.org with ESMTP id S1756535Ab0KVP7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 10:59:28 -0500
-X-Sasl-enc: hsgmR2uw8FSl6Yqqp/5mPjghwZpHc85QP0DtEmEcujiG 1290441568
+	Mon, 22 Nov 2010 10:59:42 -0500
+X-Sasl-enc: uC5rpdtJ9l4NSkENGlgtnBLzZ9xS9RwfrAHyQNVgZuMp 1290441582
 To: Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC][PATCH 0/4] security label of the file descriptor structure
+Subject: [RFC][PATCH 1/4] fs: passing task credentials to get_empty_filp()
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
+Date: Mon, 22 Nov 2010 16:57:04 +0100
 Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
         Eric Paris <eparis@parisplace.org>,
         Casey Schaufler <casey@schaufler-ca.com>,
         Paul Moore <paul.moore@hp.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         selinux@tycho.nsa.gov
-Date: Mon, 22 Nov 2010 16:56:48 +0100
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart3713982.2neoPmcgV7";
+  boundary="nextPart8844457.JRd23XpQLt";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011221656.51718.roberto.sassu@polito.it>
+Message-Id: <201011221657.04800.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3713982.2neoPmcgV7
+--nextPart8844457.JRd23XpQLt
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-The function dentry_open() requires to pass the credentials of the acting
-process as parameter.
-These credentials are actually used for example in SELinux to verify if the
-process is allowed to access the inode bound to the dentry by calling the
-function inode_has_perm().
-Despite the fact the verification is done using the passed credentials,
-the 'file' object created by calling dentry_open() is labeled with the
-credentials of the 'current' process which may differ from the former.
-An example of such behavior comes from the ecryptfs filesystem which calls
-dentry_open() in order to obtain an unique file descriptor of the inode in
-the lower filesystem to serve concurrent requests made on the related
-ecryptfs inode.
-Recently, i made a patch, not yet merged in the mainline, in order to
-provide to the dentry_open() function the credentials of the kernel kthread
-service instead of those related to the current process.
-This allows to assign to the ecryptfs filesystem a privileged role in that
-it can perform all privileged operations with its own assigned label,
-letting the access control to operate only on objects exposed by ecryptfs.
-This patch set is a proposal to modify the labeling behavior of the file
-descriptor structure by, first, passing the supplied credentials to the
-get_empty_filp() function, then initializing the 'f_cred' field with the
-former, and finally, telling LSM security modules which implement the
-security_file_alloc() hook (SELinux and SMACK) to use such information to
-append the correct label to the file descriptor.
-Last note, it seems that Apparmor does not need to be modified because in
-the mentioned hook it only allocates its specific structure without
-assignments.
-The patch set applies to the latest released kernel v2.6.37-rc3.
+The definition of the function get_empty_filp() has been modified in order
+to pass to it the credentials of the subject creating a new file
+descriptor.
+This function is called by dentry_open() in fs/open.c, do_filp_open() in
+fs/namei.c and alloc_file() in fs/file_table.c.
+The credentials passed by these functions are not NULL only in the first
+case because dentry_open() is the only which explicitly receives them as
+parameter.
+The 'cred' variable in the function get_empty_filp() is initialized with
+the supplied credentials if they are not NULL, the credentials of the
+'current' process in the other case.
 
-Reference of the released ecryptfs patch:
-http://git.kernel.org/?p=3Dlinux/kernel/git/ecryptfs/ecryptfs-2.6.git;a=3D
-commit;h=3D0903acc555955ff7bbe1b8324028fe44e5c16a91
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+=2D--
+ fs/file_table.c |    6 +++---
+ fs/internal.h   |    2 +-
+ fs/namei.c      |    2 +-
+ fs/open.c       |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-Roberto Sassu (4):
-  fs: passing task credentials to get_empty_filp()
-  fs: move file->f_cred initialization before security_file_alloc()
-  selinux: use file->f_cred to determine task's SID
-  smack: modified file->f_security assignment in
-    smack_file_alloc_security()
-
- fs/file_table.c            |    8 ++++----
- fs/internal.h              |    2 +-
- fs/namei.c                 |    2 +-
- fs/open.c                  |    2 +-
- security/selinux/hooks.c   |    2 +-
- security/smack/smack_lsm.c |    2 +-
- 6 files changed, 9 insertions(+), 9 deletions(-)
-
+diff --git a/fs/file_table.c b/fs/file_table.c
+index c3dee38..fd446e3 100644
+=2D-- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -102,9 +102,9 @@ int proc_nr_files(ctl_table *table, int write,
+  * done, you will imbalance int the mount's writer count
+  * and a warning at __fput() time.
+  */
+=2Dstruct file *get_empty_filp(void)
++struct file *get_empty_filp(const struct cred *task_cred)
+ {
+=2D	const struct cred *cred =3D current_cred();
++	const struct cred *cred =3D task_cred ? task_cred : current_cred();
+ 	static long old_max;
+ 	struct file * f;
+=20
+@@ -171,7 +171,7 @@ struct file *alloc_file(struct path *path, fmode_t mode,
+ {
+ 	struct file *file;
+=20
+=2D	file =3D get_empty_filp();
++	file =3D get_empty_filp(NULL);
+ 	if (!file)
+ 		return NULL;
+=20
+diff --git a/fs/internal.h b/fs/internal.h
+index e43b9a4..c165615 100644
+=2D-- a/fs/internal.h
++++ b/fs/internal.h
+@@ -86,7 +86,7 @@ extern void chroot_fs_refs(struct path *, struct path *);
+ extern void file_sb_list_add(struct file *f, struct super_block *sb);
+ extern void file_sb_list_del(struct file *f);
+ extern void mark_files_ro(struct super_block *);
+=2Dextern struct file *get_empty_filp(void);
++extern struct file *get_empty_filp(const struct cred *task_cred);
+=20
+ /*
+  * super.c
+diff --git a/fs/namei.c b/fs/namei.c
+index 5362af9..c78e1ef 100644
+=2D-- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1791,7 +1791,7 @@ reval:
+ 	 */
+=20
+ 	error =3D -ENFILE;
+=2D	filp =3D get_empty_filp();
++	filp =3D get_empty_filp(NULL);
+ 	if (filp =3D=3D NULL)
+ 		goto exit_parent;
+ 	nd.intent.open.file =3D filp;
+diff --git a/fs/open.c b/fs/open.c
+index 4197b9e..02adb56 100644
+=2D-- a/fs/open.c
++++ b/fs/open.c
+@@ -819,7 +819,7 @@ struct file *dentry_open(struct dentry *dentry, struct =
+vfsmount *mnt, int flags,
+ 	}
+=20
+ 	error =3D -ENFILE;
+=2D	f =3D get_empty_filp();
++	f =3D get_empty_filp(cred);
+ 	if (f =3D=3D NULL) {
+ 		dput(dentry);
+ 		mntput(mnt);
 =2D-=20
 1.7.2.3
 
 
---nextPart3713982.2neoPmcgV7
+--nextPart8844457.JRd23XpQLt
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -168,12 +205,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMjIxNTU2NDhaMCMGCSqGSIb3DQEJBDEWBBRNw8DaklACIYRC05QukdinlmpGezAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBr
-s8tnZrQFaHQIzL1Em5Z70wcbyaNVTtKlLX+k1/KUQgJOQ2RX9kVW0Ka4AQUXG4FEmiy1QL9AILON
-RkBgypcEMerlPIBkBhOxdVT4V4SYI8jVVYDDUlz/UPjTeVV8PcipXOQ3QlQc3ql2Ov6JKzdUK7/q
-itwJ9hmwkm62lUAUgFV3rJ6RlpOQnqAfOaHAx4ytBsKyYSO5ccoBPjOvbFHxEHPnY7VGn2vGjDhq
-e+jNm7zfm1Vj/iJBA+LM7gedNsYuIjbH9EHctk+uCI6CeKd3wOmaHQx2eAIV6Ncd4YUKdRBkGDRk
-Ks6jJUEqbBrhkoW5sSqkEh4XDfJpFsNZu16FAAAAAAAA
+Fw0xMDExMjIxNTU3MDRaMCMGCSqGSIb3DQEJBDEWBBS8cTIGydCcX4x87tTgTsnCSr3eiDAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQB4
+02rrJbb4+BCGzm+GMn71bBjdJuJJWM9MuB0uHub6gUrVYaUr9SXNN6V49IwOa51+P1cflY8WZRn0
+UeWBiJGz8gfEw7bRaHvz0aE0geVOtt/uSDwLmgAJ2FHdrm6TVL/RtCVU7JfUwGTeU0kjqP9dG53G
+nkDm20B3MYDcvMb8ar9DbrX44OJRgEFUgziFzafxzBwlooYRnVZzofWCygj78W9To21uHv3wYe3e
+/laHHP/EZMEc4rujsu2oHvczj9SwixE3cnRMfscYO7vx48Lvm3LTASV1ZSa/bEPIFt8FIHOXX+J/
+j9FF1IW5nhS0fqSrptHpH9H+yMOo2MT23OI5AAAAAAAA
 
---nextPart3713982.2neoPmcgV7--
+--nextPart8844457.JRd23XpQLt--
