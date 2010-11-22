@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab0KVEdf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 23:33:35 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34234 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756575Ab0KVEde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 23:33:34 -0500
+	id S1756745Ab0KVEe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 23:34:28 -0500
+Received: from kroah.org ([198.145.64.141]:41419 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756580Ab0KVEe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 23:34:28 -0500
+Date: Sun, 21 Nov 2010 20:35:20 -0800
+From: Greg KH <greg@kroah.com>
+To: werner <w.landgraf@ru.ru>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.37-rc3 problems
+Message-ID: <20101122043520.GA10958@kroah.com>
+References: <web-407197955@zbackend1.aha.ru>
 MIME-Version: 1.0
-In-Reply-To: <20101121181655.4996cdde.randy.dunlap@oracle.com>
-References: <AANLkTi=Di4UQMYyJ_wpZ6N=NZt1+3EeXL7FUsBX004YL@mail.gmail.com> <20101121181655.4996cdde.randy.dunlap@oracle.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 21 Nov 2010 20:33:07 -0800
-Message-ID: <AANLkTi=4scuTeRyr1WuGbzk2jKdU_Ugu61ABoXPuXnVK@mail.gmail.com>
-Subject: Re: Linux 2.6.37-rc3 (fixmap build error)
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <web-407197955@zbackend1.aha.ru>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 6:16 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Sun, Nov 21, 2010 at 11:20:40PM -0400, werner wrote:
+> 2.6.37-rc3 problems
 >
-> I thought that I saw a patch for this one, but I can't find it now.
+> easycap_main.c lines 4251,4 : implicit declaration lock-kernel   ,  
+> unlock_kernel
 >
-> on i386:
-> arch/x86/built-in.o: In function `fix_to_virt':
-> /usr/builds/linux-2.6.37-rc3/arch/x86/include/asm/fixmap.h:207: undefined reference to `__this_fixmap_does_not_exist'
+> (compilation error)
 
-Hmm. Does it help to mark __set_fixmap_offset() as "__always_inline"
-rather than just "inline"?
+Either disable this driver from your .config, or enable the BKL in your
+.config.  I have a pending patch to get to Linus to fix this Kconfig
+issue for this driver.
 
-Every single "fix_to_virt()" user _should_ use a constant index and
-that thing should be inlined and the __this_fixmap_does_not_exist case
-should be trivially optimized away.
+Are you really using this driver?
 
-But if __set_fixmap_offset() doesn't get inlined...
+thanks,
 
-                Linus
+greg k-h
