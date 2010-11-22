@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab0KVJMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 04:12:38 -0500
-Received: from mail.pharmanord.com ([194.192.93.42]:51519 "EHLO pharmanord.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751133Ab0KVJMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 04:12:36 -0500
-Message-ID: <4CEA3401.8070804@datanordisk.dk>
-Date: Mon, 22 Nov 2010 10:12:33 +0100
-From: Glenn Sommer <gsommer@datanordisk.dk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100628 Mandriva/3.0.5-1mdv2010.1 (2010.1) Lightning/1.0b1 Thunderbird/3.0.5
+	id S1752993Ab0KVJUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 04:20:10 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:54397 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab0KVJUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 04:20:08 -0500
+Date: Mon, 22 Nov 2010 10:20:03 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Lin Ming <ming.m.lin@intel.com>, Matthieu Castet <castet.matthieu@free.fr>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX
+ protection for kernel data)
+Message-ID: <20101122092003.GA21836@basil.fritz.box>
+References: <1290410581.2405.24.camel@minggr.sh.intel.com>
+ <20101122080710.GA1510@elte.hu>
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        linux-input@vger.kernel.org
-Subject: Patch for LG Flatron T1710B Touchscreen
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101122080710.GA1510@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've recently got my hands on a LG Flatron T1710B touchscreen.
-As other LG products, this seems to use the ITM panel.
+On Mon, Nov 22, 2010 at 09:07:10AM +0100, Ingo Molnar wrote:
+> > ---[ High Kernel Mapping ]---
+> > ....
+> > 0xffffffff81a00000-0xffffffff81c00000           2M     ro         PSE GLB NX pmd
+> > 0xffffffff81c00000-0xffffffff81d91000        1604K     ro             GLB NX pte
+> > 0xffffffff81d91000-0xffffffff81e00000         444K     ro             GLB NX pte
+> > 0xffffffff81e00000-0xffffffff82000000           2M     RW         PSE GLB NX pmd
+> > 0xffffffff82000000-0xffffffff8200c000          48K     RW             GLB NX pte
+> > 0xffffffff8200c000-0xffffffff82100000         976K     RW             GLB NX pte
+> > 0xffffffff82100000-0xffffffff82200000           1M     RW             GLB NX pte
+> > .....
+> > 
+> > The only difference is 0xffffffff81e00000(end) to 0xffffffff82200000(kernel_end) is set to NX.
+> > 
+> > I guess this range code is used by resume wakeup code. So setting it to NX causes problem.
+> > 
+> > Any idea?
+> 
+> Yeah, the resume area is a trampoline, it needs to be executable.
 
-I've patches my kernel to use the ITM driver with this device, and it seems to work great.
+Also it looks like most of the kernel linker supplied data is now not 
+2MB mapped anymore? That will surely cost TLB entries.
 
---- drivers/input/touchscreen/usbtouchscreen.c.orig	2010-11-18 16:33:40.806381557 +0100
-+++ drivers/input/touchscreen/usbtouchscreen.c	2010-11-19 09:40:13.909222383 +0100
-@@ -173,6 +173,7 @@ static struct usb_device_id usbtouch_dev
-
-  #ifdef CONFIG_TOUCHSCREEN_USB_ITM
-  	{USB_DEVICE(0x0403, 0xf9e9), .driver_info = DEVTYPE_ITM},
-+	{USB_DEVICE(0x16e3, 0xf9e9), .driver_info = DEVTYPE_ITM},
-  #endif
-
-  #ifdef CONFIG_TOUCHSCREEN_USB_ETURBO
-
-Signed-off-by: Glenn Sommer <gsommer@datanordisk.dk>
-
+-Andi
 
 -- 
-Med venlig hilsen / Best regards
-Data Nordisk
-
-Glenn Sommer
+ak@linux.intel.com -- Speaking for myself only.
