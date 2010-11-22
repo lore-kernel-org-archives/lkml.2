@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0KVJbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 04:31:20 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:60240 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab0KVJbT (ORCPT
+	id S1753254Ab0KVJlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 04:41:31 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:53093 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab0KVJl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 04:31:19 -0500
-Message-ID: <4CEA32F1.2030208@atmel.com>
-Date: Mon, 22 Nov 2010 10:08:01 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [35/45] USB: atmel_usba_udc: force vbus_pin at -EINVAL when gpio_request
- failled
-References: <20101119214412.310478722@clark.site>
-In-Reply-To: <20101119214412.310478722@clark.site>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Nov 2010 04:41:29 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: tony.luck@intel.com
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 1/1] IA64: irq_ia64, use set_irq_chip
+Date: Mon, 22 Nov 2010 10:41:19 +0100
+Message-Id: <1290418879-4079-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 19/11/2010 22:43, Greg KH :
-> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Don't access desc->chip directly, because them chip member will
+disappear some time later.
 
-Hi Greg,
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/ia64/kernel/irq_ia64.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Please also add this typo one (or merge it): 
-
-http://git.kernel.org/?p=linux/kernel/git/gregkh/usb-2.6.git;a=commit;h=b48809518631880207796b4aab0fc39c2f036754
-
-Thanks a lot for monitoring this issue and adding to -stable...
-
-Best regards,
- 
-> ------------------
-> 
-> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> 
-> commit 969affff54702785330de553b790372e261e93f9 upstream.
-> 
-> to ensure gpio_is_valid return false
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  drivers/usb/gadget/atmel_usba_udc.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- a/drivers/usb/gadget/atmel_usba_udc.c
-> +++ b/drivers/usb/gadget/atmel_usba_udc.c
-> @@ -2013,6 +2013,9 @@ static int __init usba_udc_probe(struct
->  			} else {
->  				disable_irq(gpio_to_irq(udc->vbus_pin));
->  			}
-> +		} else {
-> +			/* gpio_request fail so use -EINVAL for gpio_is_valid */
-> +			ubc->vbus_pin = -EINVAL;
->  		}
->  	}
->  
-> 
-> 
-> 
-
-
+diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
+index 9a26015..38c07b8 100644
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -633,7 +633,7 @@ ia64_native_register_percpu_irq (ia64_vector vec, struct irqaction *action)
+ 	BUG_ON(bind_irq_vector(irq, vec, CPU_MASK_ALL));
+ 	desc = irq_desc + irq;
+ 	desc->status |= IRQ_PER_CPU;
+-	desc->chip = &irq_type_ia64_lsapic;
++	set_irq_chip(irq, &irq_type_ia64_lsapic);
+ 	if (action)
+ 		setup_irq(irq, action);
+ 	set_irq_handler(irq, handle_percpu_irq);
 -- 
-Nicolas Ferre
+1.7.3.1
+
 
