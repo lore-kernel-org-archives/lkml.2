@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab0KVLty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 06:49:54 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42278 "EHLO comal.ext.ti.com"
+	id S1754525Ab0KVMAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:00:19 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34383 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244Ab0KVLtw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 06:49:52 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Date: Mon, 22 Nov 2010 17:19:29 +0530
-Subject: RE: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-Thread-Topic: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-Thread-Index: AcuH/8lXJGAfCyexQ7WArG4yAkYvcgCOXsww
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB59302477EB2BE@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EA939@dbde02.ent.ti.com>
- <AANLkTi=HS7ym8n6=hF8vAg2WR33Md5=YRZL2NS7a+F2y@mail.gmail.com>
-In-Reply-To: <AANLkTi=HS7ym8n6=hF8vAg2WR33Md5=YRZL2NS7a+F2y@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1753434Ab0KVMAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 07:00:18 -0500
+Date: Mon, 22 Nov 2010 12:00:02 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] scripts: Fix gfp-translate for recent changes to gfp.h
+Message-ID: <20101122120002.GB1890@csn.ul.ie>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+The recent changes to gfp.h to satisfy sparse broke
+scripts/gfp-translate. This patch fixes it up to work with old and new
+versions of gfp.h .
 
-On Fri, Nov 19, 2010 at 21:08:10, Ben Gardiner wrote:
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ scripts/gfp-translate |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-> On Fri, Nov 19, 2010 at 4:58 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> > [...]
-> > On Wed, Nov 17, 2010 at 01:09:35, Ben Gardiner wrote:
-> >> [...]
-> >> Changes since v1:
-> >>  * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
-> >>    unconditionally
-> >
-> > I didn't see the v1 posting (wonder why), but why is this
-> > required? Why cant we depend on this being selected from
-> > Device Drivers->Input device support in menuconfig?
->
-> I'm sorry about that. I checked gmane and the v1 never made it to the
-> davinci-linux list. I think it was because of my (mis)use of git
-> send-email. Version 2 made it to the list so I've now found the magic
-> incantation.
->
-> The reason we should at least select INPUT_POLLDEV as a default option
-> is: when it is not set the gpio-keys instances registered by the
-> da850-evm board setup routine will fail probe() of the gpio-keys
-> driver since it will not have polled-input support enabled.
->
-> By setting INPUT_POLLDEV default for the da850-evm users will get
-> functioning pushbuttons and switches with the default config but they
-> will be able to disable INPUT_POLLDEV or gpio-keys drivers in their
-> defconfig at their convenience.
-
-I guess we could also just modify the defconfig to switch on
-INPUT_POLLDEV? Since only gpio-keys functionality is affected
-by not enabling the correct options in kernel, it should be OK.
-
-Thanks,
-Sekhar
-
+diff --git a/scripts/gfp-translate b/scripts/gfp-translate
+index d81b968..128937e 100644
+--- a/scripts/gfp-translate
++++ b/scripts/gfp-translate
+@@ -63,7 +63,12 @@ fi
+ 
+ # Extract GFP flags from the kernel source
+ TMPFILE=`mktemp -t gfptranslate-XXXXXX` || exit 1
+-grep "^#define __GFP" $SOURCE/include/linux/gfp.h | sed -e 's/(__force gfp_t)//' | sed -e 's/u)/)/' | grep -v GFP_BITS | sed -e 's/)\//) \//' > $TMPFILE
++grep ___GFP $SOURCE/include/linux/gfp.h > /dev/null
++if [ $? -eq 0 ]; then
++	grep "^#define ___GFP" $SOURCE/include/linux/gfp.h | sed -e 's/u$//' | grep -v GFP_BITS > $TMPFILE
++else
++	grep "^#define __GFP" $SOURCE/include/linux/gfp.h | sed -e 's/(__force gfp_t)//' | sed -e 's/u)/)/' | grep -v GFP_BITS | sed -e 's/)\//) \//' > $TMPFILE
++fi
+ 
+ # Parse the flags
+ IFS="
