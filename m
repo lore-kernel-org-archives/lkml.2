@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab0KVTEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 14:04:55 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38191
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750793Ab0KVTEy (ORCPT
+	id S1756020Ab0KVTOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 14:14:09 -0500
+Received: from yop.chewa.net ([91.121.105.214]:40024 "EHLO yop.chewa.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab0KVTOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 14:04:54 -0500
-Date: Mon, 22 Nov 2010 11:05:19 -0800 (PST)
-Message-Id: <20101122.110519.39205345.davem@davemloft.net>
-To: alban.crequy@collabora.co.uk
-Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, gorcunov@openvz.org,
-        adobriyan@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
-        ian.molton@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] AF_UNIX: find the recipients for multicast messages
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
-References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
-	<1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Nov 2010 14:14:07 -0500
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Nov 2010 14:14:07 EST
+From: "=?iso-8859-15?q?R=E9mi?= Denis-Courmont" <remi@remlab.net>
+Organization: Remlab.net
+To: Alban Crequy <alban.crequy@collabora.co.uk>, netdev@vger.kernel.org
+Subject: Re: [PATCH 7/9] AF_UNIX: Documentation on multicast Unix Sockets
+Date: Mon, 22 Nov 2010 21:07:40 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.8; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk> <1290450982-17480-7-git-send-email-alban.crequy@collabora.co.uk>
+In-Reply-To: <1290450982-17480-7-git-send-email-alban.crequy@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011222107.41548.remi@remlab.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-Date: Mon, 22 Nov 2010 18:36:17 +0000
+Le lundi 22 novembre 2010 20:36:20 Alban Crequy, vous avez écrit :
+> +Multicast Unix sockets
+> +======================
+> +
+> +Multicast group memberships are stored in struct unix_mcast nodes. An Unix
+> +socket can join several multicast groups. Struct unix_mcast nodes are
+> doubly +linked:
+> +- In (struct unix_sock)->mcast_subscriptions
+> +- In (struct unix_sock)->mcast_members
 
-> unix_find_multicast_recipients() builds an array of recipients. It can either
-> find the peers of a specific multicast address, or find all the peers of all
-> multicast group the sender is part of.
-> 
-> Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+I may be stupid, but I found this whole documentation very confusing, and so 
+the API it tries to describe. Traditionally:
+- Senders may or not may be part of the group and are not kept track of.
+- Receivers join to the group then receive message sent to it.
+- Loopback defines whether a sender receives its own echo if it sends to a
+group that it has joined.
+- If connected to a multicast group, messages from the socket are routed to 
+the group (in absence of a contradictoy socket address). This has no effect on 
+membership to the multicast group under any circumstance.
 
-You really should use RCU to lock this stuff, this way sends run
-lockless and have less worries wrt. the memory allocation.  You'll
-also only take a spinlock in the write paths which change the
-multicast groups, which ought to be rare.
+You cannot 'listen' or 'accept' on a multicast group.
 
-Although to be honest you should optimize the case of small numbers of
-recipients, in the same way we optimize small numbers of iovecs on
-sends.  Have an on-stack array that holds a small number of entries
-and use that if the set fits, otherwise dynamic allocation.
+So I am not entirely clear what semantics your patchset is following. But it 
+does not seem like "multicast" to me and therefore seems not very well 
+documented :-(
+
+-- 
+Rémi Denis-Courmont
+http://www.remlab.net/
+http://fi.linkedin.com/in/remidenis
