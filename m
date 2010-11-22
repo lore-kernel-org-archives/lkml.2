@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab0KVHw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 02:52:28 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60265 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab0KVHw0 (ORCPT
+	id S1752690Ab0KVH4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 02:56:04 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62767 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab0KVH4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 02:52:26 -0500
+	Mon, 22 Nov 2010 02:56:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Q7X7idbHY0IELn9rn9QwkrSBCj5GAw+RbXBOrVNnY/6m1yymY4t84iL7zp3v/Qyc9b
-         t/GtCSM//THX8AiBh9dG0C2Wjo5cNHN1svC0ejhQUvAGBTbod4v0j4jnyOhreJhznk0K
-         5B1VNNB4Hh7v355KIFixXksQa4R0xPxqNgcLM=
-Subject: Re: [PATCH v3] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945
- IP phones
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <f0955e6c2110044fa058d0f3ecf945ca@localhost>
-References: <f0955e6c2110044fa058d0f3ecf945ca@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 08:52:14 +0100
-Message-ID: <1290412334.2756.141.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=S7sd1VzEJya4jO9ic2KbERbNDLxzGJouRTy2g3iVs+J8E0bE4j6CUuehnhjAIDEB0k
+         ImRGB9sqUzCzhVpiRgrK32YxS+st69ZGiFQEFtb1pRooKi2fMeLJqFmuRtFf5aVdqA9u
+         tVukGMvdjOzcI0vzW6+GbrCWXPU5nW9Z37LhU=
+Date: Sun, 21 Nov 2010 23:55:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz,
+        Ping Cheng <pingc@wacom.com>
+Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
+Message-ID: <20101122075554.GA27300@core.coreip.homeip.net>
+References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 21 novembre 2010 à 18:40 -0800, Kevin Cernekee a écrit :
-> [v3:
->   Only activate the new forced_dport logic if the IP matches, but the
->   port does not. ]
-> 
-> Most SIP devices use a source port of 5060/udp on SIP requests, so the
-> response automatically comes back to port 5060:
-> 
-> phone_ip:5060 -> proxy_ip:5060   REGISTER
-> proxy_ip:5060 -> phone_ip:5060   100 Trying
-> 
-> The newer Cisco IP phones, however, use a randomly chosen high source
-> port for the SIP request but expect the response on port 5060:
-> 
-> phone_ip:49173 -> proxy_ip:5060  REGISTER
-> proxy_ip:5060 -> phone_ip:5060   100 Trying
-> 
-> Standard Linux NAT, with or without nf_nat_sip, will send the reply back
-> to port 49173, not 5060:
-> 
-> phone_ip:49173 -> proxy_ip:5060  REGISTER
-> proxy_ip:5060 -> phone_ip:49173  100 Trying
-> 
-> But the phone is not listening on 49173, so it will never see the reply.
-> 
-> This patch modifies nf_*_sip to work around this quirk by extracting
-> the SIP response port from the Via: header, iff the source IP in the
-> packet header matches the source IP in the SIP request.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> ---
+Hi Ping,
 
-Thanks for doing this work Keven !
+On Thu, Nov 18, 2010 at 04:25:35PM -0800, Ping Cheng wrote:
+> We "borrowed" BTN_TOOL_FINGER from input/mouse to pass tablet
+> buttons to the user land. This has not been an issue since
+> tablet was not considered as a mouse replacement. With the
+> introduction of hybrid digitizer and touch devices, the tool
+> type is causing confusion. A new tool type is due for the
+> well-being of future input device drivers.
+> 
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+I am sorry but I do not understand the reasoning behind
+BTN_TOOL_BUTTONS.
 
+The BTN_TOOL_* were introduced to indicate to the userspace tool that is
+currently touching the surface of the device. Buttons are expected to be
+always present and can change their state regardless of what tool is
+being used at the moment. I.e. The full hardware state (between
+EV_SYN/SYN_REPORT) could be, for example,
 
+Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
+BTN_2) or
 
+Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
+
+As you can see BTN_* events can accompany either BTN_TOOL_LENS or
+BTN_TOOL_PEN or any other BTN_TOOL_*.
+
+Thanks.
+
+-- 
+Dmitry
