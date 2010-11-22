@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab0KVGoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 01:44:06 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58008 "EHLO mx1.suse.de"
+	id S1752262Ab0KVGoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 01:44:23 -0500
+Received: from cantor.suse.de ([195.135.220.2]:58016 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342Ab0KVGoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 01:44:05 -0500
-Date: Mon, 22 Nov 2010 07:44:04 +0100
-Message-ID: <s5h62vpsvrf.wl%tiwai@suse.de>
+	id S1751554Ab0KVGoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 01:44:22 -0500
+Date: Mon, 22 Nov 2010 07:44:21 +0100
+Message-ID: <s5h4ob9svqy.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Joe Perches <joe@perches.com>
 Cc: Jiri Kosina <trivial@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/14] sound/ppc: Use printf extension %pR for struct resource
-In-Reply-To: <434a77317cc09300e79b7768170eec7ae04adb92.1289597644.git.joe@perches.com>
-References: <cover.1289597644.git.joe@perches.com>
-	<434a77317cc09300e79b7768170eec7ae04adb92.1289597644.git.joe@perches.com>
+Subject: Re: [PATCH 43/44] sound/core/pcm_lib.c: Remove unnecessary semicolons
+In-Reply-To: <9fa8e193ce125ef4fd19a952792629c5ee84953f.1289789605.git.joe@perches.com>
+References: <cover.1289789604.git.joe@perches.com>
+	<9fa8e193ce125ef4fd19a952792629c5ee84953f.1289789605.git.joe@perches.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,10 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 12 Nov 2010 13:38:04 -0800,
+At Sun, 14 Nov 2010 19:05:02 -0800,
 Joe Perches wrote:
-> 
-> Using %pR standardizes the struct resource output.
 > 
 > Signed-off-by: Joe Perches <joe@perches.com>
 
@@ -39,39 +37,22 @@ Takashi
 
 
 > ---
->  sound/ppc/pmac.c |   12 ++++--------
->  1 files changed, 4 insertions(+), 8 deletions(-)
+>  sound/core/pcm_lib.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/sound/ppc/pmac.c b/sound/ppc/pmac.c
-> index 8508117..b47cfd4 100644
-> --- a/sound/ppc/pmac.c
-> +++ b/sound/ppc/pmac.c
-> @@ -1228,10 +1228,8 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
->  					       chip->rsrc[i].start + 1,
->  					       rnames[i]) == NULL) {
->  				printk(KERN_ERR "snd: can't request rsrc "
-> -				       " %d (%s: 0x%016llx:%016llx)\n",
-> -				       i, rnames[i],
-> -				       (unsigned long long)chip->rsrc[i].start,
-> -				       (unsigned long long)chip->rsrc[i].end);
-> +				       " %d (%s: %pR)\n",
-> +				       i, rnames[i], &chip->rsrc[i]);
->  				err = -ENODEV;
->  				goto __error;
->  			}
-> @@ -1256,10 +1254,8 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
->  					       chip->rsrc[i].start + 1,
->  					       rnames[i]) == NULL) {
->  				printk(KERN_ERR "snd: can't request rsrc "
-> -				       " %d (%s: 0x%016llx:%016llx)\n",
-> -				       i, rnames[i],
-> -				       (unsigned long long)chip->rsrc[i].start,
-> -				       (unsigned long long)chip->rsrc[i].end);
-> +				       " %d (%s: %pR)\n",
-> +				       i, rnames[i], &chip->rsrc[i]);
->  				err = -ENODEV;
->  				goto __error;
->  			}
+> diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+> index a1707cc..b75db8e 100644
+> --- a/sound/core/pcm_lib.c
+> +++ b/sound/core/pcm_lib.c
+> @@ -223,7 +223,7 @@ static void xrun_log(struct snd_pcm_substream *substream,
+>  	entry->jiffies = jiffies;
+>  	entry->pos = pos;
+>  	entry->period_size = runtime->period_size;
+> -	entry->buffer_size = runtime->buffer_size;;
+> +	entry->buffer_size = runtime->buffer_size;
+>  	entry->old_hw_ptr = runtime->status->hw_ptr;
+>  	entry->hw_ptr_base = runtime->hw_ptr_base;
+>  	log->idx = (log->idx + 1) % XRUN_LOG_CNT;
 > -- 
 > 1.7.3.1.g432b3.dirty
 > 
