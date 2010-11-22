@@ -1,148 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0KVMsB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:48:01 -0500
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:53790 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755732Ab0KVMr7 (ORCPT
+	id S1756247Ab0KVMsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:48:07 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:24179 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab0KVMsE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:47:59 -0500
-Subject: Re: [patch 0/4] taskstats: Improve cumulative time accounting
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-In-Reply-To: <1290423780.1974.1.camel@holzheu-laptop>
-References: <20101119201108.269346583@linux.vnet.ibm.com>
-	 <1290197955.2109.1617.camel@laptop>
-	 <1290423780.1974.1.camel@holzheu-laptop>
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Mon, 22 Nov 2010 13:47:55 +0100
-Message-ID: <1290430075.5655.3.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Nov 2010 07:48:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eSGfQMNbL6fsAOo0KmC0I6i3OOQiv6sk77GGhxJt/PbvHmb2AEQccAMbDYS9SlFiFT
+         iR2bsoa9brvh21YSut3Q==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinFxc5R-CgWv3XnoDrBcwQv_zwz1_4oCwTOOqGh@mail.gmail.com>
+References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
+	<1290077254-12165-4-git-send-email-andi@firstfloor.org>
+	<AANLkTinFxc5R-CgWv3XnoDrBcwQv_zwz1_4oCwTOOqGh@mail.gmail.com>
+Date: Mon, 22 Nov 2010 13:47:59 +0100
+Message-ID: <AANLkTin3K_ffY8SeCo6JK570eDx_zHXzQ6ANA_ixy3tP@mail.gmail.com>
+Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
+ registers v3
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <lin@ming.vg>
+Cc: Andi Kleen <andi@firstfloor.org>, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-22 at 12:03 +0100, Michael Holzheu wrote:
-> Or maybe we could add a sysctl that allows to switch between the two
-> semantics.
+On Mon, Nov 22, 2010 at 1:23 PM, Lin Ming <lin@ming.vg> wrote:
+> On Thu, Nov 18, 2010 at 6:47 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> From: Andi Kleen <ak@linux.intel.com>
+>>
+>> Intel Nehalem/Westmere have a special OFFCORE_RESPONSE event
+>> that can be used to monitor any offcore accesses from a core.
+>> This is a very useful event for various tunings, and it's
+>> also needed to implement the generic LLC-* events correctly.
+>>
+>> Unfortunately this event requires programming a mask in a separate
+>> register. And worse this separate register is per core, not per
+>> CPU thread.
+>
+> This "separate register" is MSR_OFFCORE_RSP_0, right?
+> But from the SDM,  MSR_OFFCORE_RSP_0 is "thread" scope,
+> see SDM 3b, Appendix B.4 MSRS IN THE INTEL® MICROARCHITECTURE CODENAME NEHALEM
+>
+> Or am I missing some obvious thing?
+>
+The manual is wrong on this.
 
-Then patch 03/04 would be something like the following:
----
-Subject: taskstats: Introduce complete cumulative accounting
-
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-
-Currently the cumulative time accounting in Linux is not complete.
-Due to POSIX POSIX.1-2001, the CPU time of processes is not accounted
-to the cumulative time of the parents, if the parents ignore SIGCHLD
-or have set SA_NOCLDWAIT. This behaviour has the major drawback that
-it is not possible to calculate all consumed CPU time of a system by
-looking at the current tasks. CPU time can be lost.
-
-This patch adds a new sysctl "kernel.full_cdata" that allows to switch
-between the POSIX behavior and complete cumulative accounting.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- include/linux/sched.h |    1 +
- kernel/exit.c         |   12 ++++++++----
- kernel/sysctl.c       |    7 +++++++
- 3 files changed, 16 insertions(+), 4 deletions(-)
-
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1907,6 +1907,7 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
- 
-+extern unsigned int full_cdata_enabled;
- #ifdef CONFIG_SCHED_DEBUG
- extern unsigned int sysctl_sched_migration_cost;
- extern unsigned int sysctl_sched_nr_migrate;
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -57,6 +57,8 @@
- #include <asm/pgtable.h>
- #include <asm/mmu_context.h>
- 
-+unsigned int full_cdata_enabled = 1;
-+
- static void exit_mm(struct task_struct * tsk);
- 
- static void __unhash_process(struct task_struct *p, bool group_dead)
-@@ -77,7 +79,7 @@ static void __unhash_process(struct task
- static void __account_cdata(struct task_struct *p)
- {
- 	struct cdata *cd, *pcd, *tcd;
--	unsigned long maxrss;
-+	unsigned long maxrss, flags;
- 	cputime_t tgutime, tgstime;
- 
- 	/*
-@@ -100,7 +102,7 @@ static void __account_cdata(struct task_
- 	 * group including the group leader.
- 	 */
- 	thread_group_times(p, &tgutime, &tgstime);
--	spin_lock_irq(&p->real_parent->sighand->siglock);
-+	spin_lock_irqsave(&p->real_parent->sighand->siglock, flags);
- 	pcd = &p->real_parent->signal->cdata_wait;
- 	tcd = &p->signal->cdata_threads;
- 	cd = &p->signal->cdata_wait;
-@@ -137,7 +139,7 @@ static void __account_cdata(struct task_
- 		pcd->maxrss = maxrss;
- 	task_io_accounting_add(&p->real_parent->signal->ioac, &p->ioac);
- 	task_io_accounting_add(&p->real_parent->signal->ioac, &p->signal->ioac);
--	spin_unlock_irq(&p->real_parent->sighand->siglock);
-+	spin_unlock_irqrestore(&p->real_parent->sighand->siglock, flags);
- }
- 
- /*
-@@ -157,6 +159,8 @@ static void __exit_signal(struct task_st
- 
- 	posix_cpu_timers_exit(tsk);
- 	if (group_dead) {
-+		if (full_cdata_enabled)
-+			__account_cdata(tsk);
- 		posix_cpu_timers_exit_group(tsk);
- 		tty = sig->tty;
- 		sig->tty = NULL;
-@@ -1292,7 +1296,7 @@ static int wait_task_zombie(struct wait_
- 	 * It can be ptraced but not reparented, check
- 	 * !task_detached() to filter out sub-threads.
- 	 */
--	if (likely(!traced) && likely(!task_detached(p)))
-+	if (likely(!traced) && likely(!task_detached(p)) && !full_cdata_enabled)
- 		__account_cdata(p);
- 
- 	/*
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -963,6 +963,13 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+	{
-+		.procname	= "full_cdata",
-+		.data		= &full_cdata_enabled,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- /*
-  * NOTE: do not add new entries to this table unless you have read
-  * Documentation/sysctl/ctl_unnumbered.txt
-
-
+> Thanks,
+> Lin Ming
+>
