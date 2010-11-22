@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab0KVP7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 10:59:45 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55899 "EHLO
+	id S1756677Ab0KVQAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:00:01 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41750 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756535Ab0KVP7m (ORCPT
+	by vger.kernel.org with ESMTP id S1751393Ab0KVP77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 10:59:42 -0500
-X-Sasl-enc: uC5rpdtJ9l4NSkENGlgtnBLzZ9xS9RwfrAHyQNVgZuMp 1290441582
+	Mon, 22 Nov 2010 10:59:59 -0500
+X-Sasl-enc: VzcIamP+8569HkwnBQMBB4Y4GGsdyDPOMGFRzzVWjZiy 1290441598
 To: Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC][PATCH 1/4] fs: passing task credentials to get_empty_filp()
+Subject: [RFC][PATCH 2/4] fs: move file->f_cred initialization before security_file_alloc()
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Mon, 22 Nov 2010 16:57:04 +0100
+Date: Mon, 22 Nov 2010 16:57:21 +0100
 Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
         Eric Paris <eparis@parisplace.org>,
         Casey Schaufler <casey@schaufler-ca.com>,
@@ -21,110 +21,54 @@ Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
         selinux@tycho.nsa.gov
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart8844457.JRd23XpQLt";
+  boundary="nextPart6362672.EAEOHeV1jh";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011221657.04800.roberto.sassu@polito.it>
+Message-Id: <201011221657.21504.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart8844457.JRd23XpQLt
+--nextPart6362672.EAEOHeV1jh
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-The definition of the function get_empty_filp() has been modified in order
-to pass to it the credentials of the subject creating a new file
-descriptor.
-This function is called by dentry_open() in fs/open.c, do_filp_open() in
-fs/namei.c and alloc_file() in fs/file_table.c.
-The credentials passed by these functions are not NULL only in the first
-case because dentry_open() is the only which explicitly receives them as
-parameter.
-The 'cred' variable in the function get_empty_filp() is initialized with
-the supplied credentials if they are not NULL, the credentials of the
-'current' process in the other case.
+The initialization of the 'f_cred' field of the file descriptor structure
+has been moved before calling the function security_file_alloc() in order
+to allow LSM security modules to use such information.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- fs/file_table.c |    6 +++---
- fs/internal.h   |    2 +-
- fs/namei.c      |    2 +-
- fs/open.c       |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ fs/file_table.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/fs/file_table.c b/fs/file_table.c
-index c3dee38..fd446e3 100644
+index fd446e3..78b9174 100644
 =2D-- a/fs/file_table.c
 +++ b/fs/file_table.c
-@@ -102,9 +102,9 @@ int proc_nr_files(ctl_table *table, int write,
-  * done, you will imbalance int the mount's writer count
-  * and a warning at __fput() time.
-  */
-=2Dstruct file *get_empty_filp(void)
-+struct file *get_empty_filp(const struct cred *task_cred)
- {
-=2D	const struct cred *cred =3D current_cred();
-+	const struct cred *cred =3D task_cred ? task_cred : current_cred();
- 	static long old_max;
- 	struct file * f;
+@@ -125,13 +125,13 @@ struct file *get_empty_filp(const struct cred *task_c=
+red)
+ 		goto fail;
 =20
-@@ -171,7 +171,7 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- {
- 	struct file *file;
+ 	percpu_counter_inc(&nr_files);
++	f->f_cred =3D get_cred(cred);
+ 	if (security_file_alloc(f))
+ 		goto fail_sec;
 =20
-=2D	file =3D get_empty_filp();
-+	file =3D get_empty_filp(NULL);
- 	if (!file)
- 		return NULL;
-=20
-diff --git a/fs/internal.h b/fs/internal.h
-index e43b9a4..c165615 100644
-=2D-- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -86,7 +86,7 @@ extern void chroot_fs_refs(struct path *, struct path *);
- extern void file_sb_list_add(struct file *f, struct super_block *sb);
- extern void file_sb_list_del(struct file *f);
- extern void mark_files_ro(struct super_block *);
-=2Dextern struct file *get_empty_filp(void);
-+extern struct file *get_empty_filp(const struct cred *task_cred);
-=20
- /*
-  * super.c
-diff --git a/fs/namei.c b/fs/namei.c
-index 5362af9..c78e1ef 100644
-=2D-- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1791,7 +1791,7 @@ reval:
- 	 */
-=20
- 	error =3D -ENFILE;
-=2D	filp =3D get_empty_filp();
-+	filp =3D get_empty_filp(NULL);
- 	if (filp =3D=3D NULL)
- 		goto exit_parent;
- 	nd.intent.open.file =3D filp;
-diff --git a/fs/open.c b/fs/open.c
-index 4197b9e..02adb56 100644
-=2D-- a/fs/open.c
-+++ b/fs/open.c
-@@ -819,7 +819,7 @@ struct file *dentry_open(struct dentry *dentry, struct =
-vfsmount *mnt, int flags,
- 	}
-=20
- 	error =3D -ENFILE;
-=2D	f =3D get_empty_filp();
-+	f =3D get_empty_filp(cred);
- 	if (f =3D=3D NULL) {
- 		dput(dentry);
- 		mntput(mnt);
+ 	INIT_LIST_HEAD(&f->f_u.fu_list);
+ 	atomic_long_set(&f->f_count, 1);
+ 	rwlock_init(&f->f_owner.lock);
+=2D	f->f_cred =3D get_cred(cred);
+ 	spin_lock_init(&f->f_lock);
+ 	eventpoll_init_file(f);
+ 	/* f->f_version: 0 */
 =2D-=20
 1.7.2.3
 
 
---nextPart8844457.JRd23XpQLt
+--nextPart6362672.EAEOHeV1jh
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -205,12 +149,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMjIxNTU3MDRaMCMGCSqGSIb3DQEJBDEWBBS8cTIGydCcX4x87tTgTsnCSr3eiDAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQB4
-02rrJbb4+BCGzm+GMn71bBjdJuJJWM9MuB0uHub6gUrVYaUr9SXNN6V49IwOa51+P1cflY8WZRn0
-UeWBiJGz8gfEw7bRaHvz0aE0geVOtt/uSDwLmgAJ2FHdrm6TVL/RtCVU7JfUwGTeU0kjqP9dG53G
-nkDm20B3MYDcvMb8ar9DbrX44OJRgEFUgziFzafxzBwlooYRnVZzofWCygj78W9To21uHv3wYe3e
-/laHHP/EZMEc4rujsu2oHvczj9SwixE3cnRMfscYO7vx48Lvm3LTASV1ZSa/bEPIFt8FIHOXX+J/
-j9FF1IW5nhS0fqSrptHpH9H+yMOo2MT23OI5AAAAAAAA
+Fw0xMDExMjIxNTU3MjFaMCMGCSqGSIb3DQEJBDEWBBTPN+OfMvKh6wSa2mJnpaQpYGzjEzAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQDB
+tFgvRVo/5S0v0boZz3E3PwzhvXPdOoN24RQEuNPPMatYHwO+4cWIUe+sQX28zi/LgNfkPJvIEcg0
+x56SKiRuGa0o6tTNCcH7/YwgGLUZY9xoegriBI0Vop5qpxStkEnnfmtkRY5dRTtJjiSjl9PqUNyw
+YITO1rDUQLbeEsUzxYrxLS2YVgZozPNI51scLhwUWnBIspMCbO7rqEXRCvtIZhKomXeFLu9a1FmM
+mMBTvViZqbZ/ZWED+o7N3DZaWedeeByzYCmmvI1Jez79CNnFKZ57IK5ipfdBbjlP8sJOzPExc5fO
+p9Ny3AP7b+1PN5SVx6uySn3NGpW6hkhUqztfAAAAAAAA
 
---nextPart8844457.JRd23XpQLt--
+--nextPart6362672.EAEOHeV1jh--
