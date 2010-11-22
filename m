@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab0KVKUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 05:20:54 -0500
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:65019 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab0KVKUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 05:20:53 -0500
-Subject: Re: [PATCH 1/5] Backlight: Add backlight type
-From: Richard Purdie <rpurdie@linux.intel.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-In-Reply-To: <20101119202558.GA10898@srcf.ucam.org>
-References: <1290182036-30484-1-git-send-email-mjg@redhat.com>
-	 <20101119120523.15bc341c.akpm@linux-foundation.org>
-	 <20101119202558.GA10898@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 10:17:00 +0000
-Message-ID: <1290421020.1272.16707.camel@rex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754117Ab0KVK3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 05:29:36 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49466 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab0KVK3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 05:29:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=gdiSXx9+ZlHSvnYGGnlPc964YfJ03tZOudeZ2agTOzjBsNuRYx16qQ+Wtu1mpi+jEf
+         iPFd/BaVGBnMDbSbks8+BhfN2KNLbnk8QXDUbVj12pX0vPYmDDX3w/6FDPAKupqibz07
+         U3q3dPmLdsQdfeEnHumtuoDsSRn11ierP3xbg=
+From: tomoki.sekiyama@gmail.com
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: gregkh@suse.de, arnd@arndb.de, Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+Subject: [PATCH] USB: yurex: add .llseek fop to file_operations
+Date: Mon, 22 Nov 2010 19:29:23 +0900
+Message-Id: <1290421763-44562-1-git-send-email-tomoki.sekiyama@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 20:25 +0000, Matthew Garrett wrote:
-> On Fri, Nov 19, 2010 at 12:05:23PM -0800, Andrew Morton wrote:
-> > On Fri, 19 Nov 2010 10:53:52 -0500
-> > Matthew Garrett <mjg@redhat.com> wrote:
-> > 
-> > > There may be multiple ways of controlling the backlight on a given machine.
-> > > Allow drivers to expose the type of interface they are providing, making
-> > > it possible for userspace to make appropriate policy decisions.
-> > > 
-> > > ...
-> > >
-> > >  60 files changed, 102 insertions(+), 0 deletions(-)
-> > 
-> > This patch has a pretty short half-life.
-> 
-> Well, ideally it would have landed in the backlight tree when I sent it 
-> months ago. Then we'd have the opportunity to ensure that everything was 
-> fixed up before it went in in the merge window.
-> 
-> > > @@ -62,6 +68,8 @@ struct backlight_properties {
-> > >  	/* FB Blanking active? (values as for power) */
-> > >  	/* Due to be removed, please use (state & BL_CORE_FBBLANK) */
-> > >  	int fb_blank;
-> > > +	/* Backlight type */
-> > > +	enum backlight_type type;
-> > >  	/* Flags used to signal drivers of state changes */
-> > >  	/* Upper 4 bits are reserved for driver internal use */
-> > >  	unsigned int state;
-> > 
-> > And if/when the half-life expires, we'll have drivers in-tree which
-> > forget to set backlight_properties.type.  I haven't checked, but if
-> > we're lucky they will default to "0".
-> 
-> Depends entirely on whether they kzalloc the structure or not before
-> calling backlight_device_register(). 
-> 
-> > What will be the runtime effects upon such unconverted drivers? 
-> > Ideally we'd like them to continue to work OK, and to emit a runtime
-> > warning.  In which case you'll need BACKLIGHT_RAW=1 so the unconverted
-> > driver can be detected, warned about and fixed up by the core code.
-> 
-> The worst case I can think of is that we walk off the array - I guess 
-> there's an argument for sanity checking that in backlight_show_type().
+From: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
 
-I think adding a BACKLIGHT_TYPEUNKNOWN as the first item in the enum,
-sanity checking the array bounds and printing a warning if type is not
-one of the defined values would be good.
+Default llseek operation behavior was changed by the patch named
+"vfs: make no_llseek the default" after the yurex driver had been merged,
+so the llseek to yurex is now ignored.
 
-I also want to make sure you think this patch is going to scale with
-multiple GPU output machines? Thats the main reason I've held off any
-patch like this as it doesn't help solve that problem as far as I can
-tell. Yes, we have the device parent information and I see later in the
-patch series you ensure the backlight is registered against the
-connector which is good. If you have an ACPI "firmware" control that you
-say should always be preferred, how do we know which connector device
-that corresponds to in the multiple output case? From that point of view
-this model falls apart?
+This patch add llseek fop with default_llseek to yurex driver
+to catch up to the change.
 
-What I really want to avoid is a new interface which just papers over
-cracks, only to have everything crumble anyway.
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
 
-Cheers,
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Richard
-
-
+diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
+index 719c618..ac5bfd6 100644
+--- a/drivers/usb/misc/yurex.c
++++ b/drivers/usb/misc/yurex.c
+@@ -536,6 +536,7 @@ static const struct file_operations yurex_fops = {
+ 	.open =		yurex_open,
+ 	.release =	yurex_release,
+ 	.fasync	=	yurex_fasync,
++	.llseek =	default_llseek,
+ };
+ 
+ 
+-- 
+1.7.0
 
