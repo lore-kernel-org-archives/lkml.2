@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750967Ab0KVG4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 01:56:43 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58270 "EHLO mx1.suse.de"
+	id S1751330Ab0KVG77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 01:59:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52060 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab0KVG4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 01:56:42 -0500
-Date: Mon, 22 Nov 2010 07:56:41 +0100
-Message-ID: <s5htyj9rgly.wl%tiwai@suse.de>
+	id S1750779Ab0KVG76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 01:59:58 -0500
+Date: Mon, 22 Nov 2010 07:59:56 +0100
+Message-ID: <s5hpqtxrggj.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: snd-atmel-abdac: test wrong variable
-In-Reply-To: <1290361209-15121-1-git-send-email-segoon@openwall.com>
-References: <1290361209-15121-1-git-send-email-segoon@openwall.com>
+Subject: Re: [PATCH 48/49] sound/oss/dev_table.c: Use vzalloc
+In-Reply-To: <a81978ec2765c2f5d90b736f3f691935e2afa17c.1288925425.git.joe@perches.com>
+References: <alpine.DEB.2.00.1011031108260.11625@router.home>
+	<a81978ec2765c2f5d90b736f3f691935e2afa17c.1288925425.git.joe@perches.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,38 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 21 Nov 2010 20:40:07 +0300,
-Vasiliy Kulikov wrote:
+At Thu,  4 Nov 2010 20:08:12 -0700,
+Joe Perches wrote:
 > 
-> After clk_get() pclk is checked second time instead of sample_clk check.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied now.  Thanks.
+Thanks, applied.
+[Sorry to be late, this has been already applied in my tree but this
+ reply mail wasn't triggered to be sent out until now...]
 
 
 Takashi
 
-
 > ---
->  Compile tested only.
+>  sound/oss/dev_table.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
 > 
->  sound/atmel/abdac.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/atmel/abdac.c b/sound/atmel/abdac.c
-> index f2f41c8..4e47baa 100644
-> --- a/sound/atmel/abdac.c
-> +++ b/sound/atmel/abdac.c
-> @@ -420,7 +420,7 @@ static int __devinit atmel_abdac_probe(struct platform_device *pdev)
->  		return PTR_ERR(pclk);
+> diff --git a/sound/oss/dev_table.c b/sound/oss/dev_table.c
+> index 727bdb9..d8cf3e5 100644
+> --- a/sound/oss/dev_table.c
+> +++ b/sound/oss/dev_table.c
+> @@ -71,7 +71,7 @@ int sound_install_audiodrv(int vers, char *name, struct audio_driver *driver,
+>  	if (sound_nblocks >= MAX_MEM_BLOCKS)
+>  		sound_nblocks = MAX_MEM_BLOCKS - 1;
+>  
+> -	op = (struct audio_operations *) (sound_mem_blocks[sound_nblocks] = vmalloc(sizeof(struct audio_operations)));
+> +	op = (struct audio_operations *) (sound_mem_blocks[sound_nblocks] = vzalloc(sizeof(struct audio_operations)));
+>  	sound_nblocks++;
+>  	if (sound_nblocks >= MAX_MEM_BLOCKS)
+>  		sound_nblocks = MAX_MEM_BLOCKS - 1;
+> @@ -81,7 +81,6 @@ int sound_install_audiodrv(int vers, char *name, struct audio_driver *driver,
+>  		sound_unload_audiodev(num);
+>  		return -(ENOMEM);
 >  	}
->  	sample_clk = clk_get(&pdev->dev, "sample_clk");
-> -	if (IS_ERR(pclk)) {
-> +	if (IS_ERR(sample_clk)) {
->  		dev_dbg(&pdev->dev, "no sample clock\n");
->  		retval = PTR_ERR(pclk);
->  		goto out_put_pclk;
+> -	memset((char *) op, 0, sizeof(struct audio_operations));
+>  	init_waitqueue_head(&op->in_sleeper);
+>  	init_waitqueue_head(&op->out_sleeper);	
+>  	init_waitqueue_head(&op->poll_sleeper);
+> @@ -128,7 +127,7 @@ int sound_install_mixer(int vers, char *name, struct mixer_operations *driver,
+>  	/* FIXME: This leaks a mixer_operations struct every time its called
+>  	   until you unload sound! */
+>  	   
+> -	op = (struct mixer_operations *) (sound_mem_blocks[sound_nblocks] = vmalloc(sizeof(struct mixer_operations)));
+> +	op = (struct mixer_operations *) (sound_mem_blocks[sound_nblocks] = vzalloc(sizeof(struct mixer_operations)));
+>  	sound_nblocks++;
+>  	if (sound_nblocks >= MAX_MEM_BLOCKS)
+>  		sound_nblocks = MAX_MEM_BLOCKS - 1;
+> @@ -137,7 +136,6 @@ int sound_install_mixer(int vers, char *name, struct mixer_operations *driver,
+>  		printk(KERN_ERR "Sound: Can't allocate mixer driver for (%s)\n", name);
+>  		return -ENOMEM;
+>  	}
+> -	memset((char *) op, 0, sizeof(struct mixer_operations));
+>  	memcpy((char *) op, (char *) driver, driver_size);
+>  
+>  	strlcpy(op->name, name, sizeof(op->name));
 > -- 
-> 1.7.0.4
+> 1.7.3.1.g432b3.dirty
 > 
