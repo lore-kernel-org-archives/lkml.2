@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab0KVRzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 12:55:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47305 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752176Ab0KVRzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 12:55:42 -0500
-Date: Mon, 22 Nov 2010 18:55:41 +0100
-From: Jan Kara <jack@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ext3: Add journal error check into
- ext3_delete_entry()
-Message-ID: <20101122175541.GD5012@quack.suse.cz>
-References: <1290151716-4041-1-git-send-email-namhyung@gmail.com>
+	id S1756611Ab0KVR43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 12:56:29 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:62792 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab0KVR40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 12:56:26 -0500
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: srinath@mistralsolutions.com
+Cc: linux-omap@vger.kernel.org, jdk@ti.com, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, nm@ti.com,
+        nagendra@mistralsolutions.com, umeshk@mistralsolutions.com,
+        sshtylyov@mvista.com
+Subject: Re: [Patch v2] AM35xx: Craneboard: Add USB EHCI support
+Organization: Deep Root Systems, LLC
+References: <1290414736-21973-1-git-send-email-srinath@mistralsolutions.com>
+Date: Mon, 22 Nov 2010 09:56:21 -0800
+In-Reply-To: <1290414736-21973-1-git-send-email-srinath@mistralsolutions.com>
+	(srinath@mistralsolutions.com's message of "Mon, 22 Nov 2010 14:02:16
+	+0530")
+Message-ID: <87oc9hutru.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290151716-4041-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-11-10 16:28:35, Namhyung Kim wrote:
-> Check return value of ext3_journal_get_write_access() and
-> ext3_journal_dirty_metadata().
-  Thanks, merged.
+srinath@mistralsolutions.com writes:
 
-								Honza
-
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> From: Srinath <srinath@mistralsolutions.com>
+>
+> AM3517/05 Craneboard has one EHCI interface on board using port1.
+>
+> GPIO35 is used as power enable.
+> GPIO38 is used as port1 PHY reset.
+>
+> Signed-off-by: Srinath <srinath@mistralsolutions.com>
 > ---
->  fs/ext3/namei.c |   14 ++++++++++++--
->  1 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-> index 03fccc5..672cea1 100644
-> --- a/fs/ext3/namei.c
-> +++ b/fs/ext3/namei.c
-> @@ -1644,8 +1644,13 @@ static int ext3_delete_entry (handle_t *handle,
->  		if (!ext3_check_dir_entry("ext3_delete_entry", dir, de, bh, i))
->  			return -EIO;
->  		if (de == de_del)  {
-> +			int err;
+>  arch/arm/mach-omap2/board-am3517crane.c |   20 ++++++++++++++++++++
+>  1 files changed, 20 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+> index 13ead33..91791bc 100644
+> --- a/arch/arm/mach-omap2/board-am3517crane.c
+> +++ b/arch/arm/mach-omap2/board-am3517crane.c
+> @@ -28,8 +28,10 @@
+>  
+>  #include <plat/board.h>
+>  #include <plat/common.h>
+> +#include <plat/usb.h>
+>  
+>  #include "mux.h"
+> +#include "control.h"
+>  
+>  /* Board initialization */
+>  static struct omap_board_config_kernel am3517_crane_config[] __initdata = {
+> @@ -53,10 +55,28 @@ static void __init am3517_crane_init_irq(void)
+>  	omap_gpio_init();
+>  }
+>>  
+> +static struct ehci_hcd_omap_platform_data ehci_pdata __initdata = {
+> +	.port_mode[0] = EHCI_HCD_OMAP_MODE_PHY,
+> +	.port_mode[1] = EHCI_HCD_OMAP_MODE_UNKNOWN,
+> +	.port_mode[2] = EHCI_HCD_OMAP_MODE_UNKNOWN,
 > +
->  			BUFFER_TRACE(bh, "get_write_access");
-> -			ext3_journal_get_write_access(handle, bh);
-> +			err = ext3_journal_get_write_access(handle, bh);
-> +			if (err)
-> +				goto journal_error;
+> +	.phy_reset  = true,
+> +	.reset_gpio_port[0]  = 38,
+> +	.reset_gpio_port[1]  = -EINVAL,
+> +	.reset_gpio_port[2]  = -EINVAL
+> +};
 > +
->  			if (pde)
->  				pde->rec_len = ext3_rec_len_to_disk(
->  					ext3_rec_len_from_disk(pde->rec_len) +
-> @@ -1654,7 +1659,12 @@ static int ext3_delete_entry (handle_t *handle,
->  				de->inode = 0;
->  			dir->i_version++;
->  			BUFFER_TRACE(bh, "call ext3_journal_dirty_metadata");
-> -			ext3_journal_dirty_metadata(handle, bh);
-> +			err = ext3_journal_dirty_metadata(handle, bh);
-> +			if (err) {
-> +journal_error:
-> +				ext3_std_error(dir->i_sb, err);
-> +				return err;
-> +			}
->  			return 0;
->  		}
->  		i += ext3_rec_len_from_disk(de->rec_len);
-> -- 
-> 1.7.0.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>  static void __init am3517_crane_init(void)
+>  {
+>  	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+>  	omap_serial_init();
+> +
+> +	/* Configure GPIO for EHCI port */
+> +	omap_mux_init_gpio(35, OMAP_PIN_OUTPUT);
+
+Please define a symbolic constant for these GPIO numbers instead of using
+hard-coded constants.
+
+> +	gpio_request(35, "usb_ehci_enable");
+
+GPIO APIs can fail.  Please check return value and act accordingly.
+
+> +	gpio_direction_output(35, 1);
+> +	omap_mux_init_gpio(38, OMAP_PIN_OUTPUT);
+> +	usb_ehci_init(&ehci_pdata);
+>  }
+>  
+>  MACHINE_START(CRANEBOARD, "AM3517/05 CRANEBOARD")
+
+Kevin
