@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab0KVBMc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 20:12:32 -0500
-Received: from kroah.org ([198.145.64.141]:56560 "EHLO coco.kroah.org"
+	id S1757037Ab0KVBMw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 20:12:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46102 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756353Ab0KVBMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 20:12:30 -0500
-Date: Sun, 21 Nov 2010 17:00:38 -0800
-From: Greg KH <greg@kroah.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: G??bor Stefanik <netrolller.3d@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
-        Charles Marker <Charles.Marker@atheros.com>,
-        Jouni Malinen <Jouni.Malinen@atheros.com>,
-        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
-        Don Breslin <Don.Breslin@atheros.com>,
-        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
-Subject: Re: Challenges with doing hardware bring up with Linux first
-Message-ID: <20101122010038.GA7688@kroah.com>
-References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com> <F46C52ED-8DB8-4347-957D-B9D84406D53F@mit.edu> <AANLkTinyafwe9MyXhSSe5vxEKnTUeLV0AZDWY_uXsu8f@mail.gmail.com> <20101121130236.GE23423@thunk.org> <20101121172906.GD3703@kroah.com> <AANLkTik6MQjYTCQ4wtyRpOGb94uyUTA+juvX-8UsP95J@mail.gmail.com> <20101121203124.1ba8212e@lxorguk.ukuu.org.uk> <20101121214407.GH23423@thunk.org> <AANLkTinEm1mLAtPZdEp2sHRfKPeV6qYP8f9Dbbr92_JD@mail.gmail.com> <AANLkTikVdm5bnXhGeg9rYsacWJsf_2s6A+b3iKJQeisD@mail.gmail.com>
+	id S1756545Ab0KVBMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 20:12:31 -0500
+Date: Sun, 21 Nov 2010 16:56:58 -0800
+From: Greg KH <gregkh@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>, Andi Kleen <ak@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org
+Subject: Re: [patch 2/2 v2] mm: add node hotplug emulation
+Message-ID: <20101122005658.GA6710@suse.de>
+References: <20101118062715.GD17539@linux-sh.org> <20101118052750.GD2408@shaohui> <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com> <20101119003225.GB3327@shaohui> <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com> <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com> <alpine.DEB.2.00.1011201827540.12889@chino.kir.corp.google.com> <20101121173438.GA3922@suse.de> <alpine.DEB.2.00.1011211346160.26304@chino.kir.corp.google.com> <alpine.DEB.2.00.1011211505440.30377@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikVdm5bnXhGeg9rYsacWJsf_2s6A+b3iKJQeisD@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1011211505440.30377@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 01:50:30PM -0800, Luis R. Rodriguez wrote:
-> > By forcing the driver to be GPL, you automatically exclude Windows
-> > from the list of platforms supported by such a cross-OS driver, as the
-> > Windows NDIS headers are AFAIK under a GPL-incompatible license, so no
-> > GPL driver can be written for Windows.
+On Sun, Nov 21, 2010 at 03:08:17PM -0800, David Rientjes wrote:
+> Add an interface to allow new nodes to be added when performing memory
+> hot-add.  This provides a convenient interface to test memory hotplug
+> notifier callbacks and surrounding hotplug code when new nodes are
+> onlined without actually having a machine with such hotpluggable SRAT
+> entries.
 > 
-> I've actually have been told GPL drivers for windows are possible with
-> some hard work. I have yet to investigate further on what that "hard
-> work" means. But yes, that is a good example.
+> This adds a new debugfs interface at /sys/kernel/debug/hotplug/add_node
 
-The "hard work" means you can not use the Windows DDK at all.  People
-have worked to reimplement the header files needed for this into mingw,
-but it really restricts you and forces you to write "native" drivers for
-Windows, not being able to take advantage of their driver model code at
-all.
+The rule for debugfs is "there are no rules", but perhaps you might want
+to name "hotplug" a bit more specific for what you are doing?  "hotplug"
+means pretty much anything these days, so how about s/hotplug/node/
+instead as that is what you are controlling.
 
-Oracle did a bunch of work for this in the past to port some of their
-Linux kernel work to Windows, ask Andy Grover if you have questions
-about it.
-
-hope this helps,
+Just a suggestion...
 
 greg k-h
