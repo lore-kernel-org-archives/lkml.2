@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab0KVF5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 00:57:38 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:59387 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab0KVF5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 00:57:37 -0500
-Date: Mon, 22 Nov 2010 07:57:05 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-Message-ID: <20101122055704.GA28660@jasper.tkos.co.il>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
- <4CE373BC.30805@wytron.com.tw>
+	id S1751400Ab0KVF6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 00:58:45 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:20981 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751083Ab0KVF6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 00:58:44 -0500
+Message-ID: <4CEA068D.3070900@dsn.okisemi.com>
+Date: Mon, 22 Nov 2010 14:58:37 +0900
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE373BC.30805@wytron.com.tw>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Dr. David Alan Gilbert" <linux@treblig.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        John Linn <john.linn@xilinx.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Maxime Bizon <mbizon@freebox.fr>, Greg Rose <gregory.v.rose@intel.com>,
+        ML netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Subject: [PATCH 1/2] pch_gbe dreiver: chang author
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+This driver's AUTHOR was changed to "Toshiharu Okada" from "Masayuki Ohtake".
+I update the Kconfig, renamed "Topcliff" to "EG20T".
 
-On Wed, Nov 17, 2010 at 02:18:36PM +0800, Thomas Chou wrote:
-> On 11/15/2010 04:23 PM, Baruch Siach wrote:
-> >From: Alex Gershgorin<agersh@rambler.ru>
-> >
-> >The active serial protocol can be used to program Altera serial configuration
-> >devices. This driver uses the kernel gpio interface to implement the active
-> >serial protocol.
-> >
-> >This patch also introduces the include/platform_drivers/ directory, which is
-> >the new home for platform data headers. This is per Greg's suggestion.
-> 
-> Altera EPCS is normal SPI serial flash, which is exactly the same as
-> STmicro part. Please consider existing drivers/mtd/devices/m25p80.c
-> and drivers/spi/spi_gpio.c.
+Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+---
+ drivers/net/Kconfig                |    6 +++---
+ drivers/net/pch_gbe/pch_gbe_main.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-For the record, I tested your suggestion and it works perfectly. Thanks.
-
-Thank you everyone for your helpful suggestion regarding the, now abandoned, 
-Altera active serial implementation driver.
-
-baruch
-
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index f6668cd..a445a04 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -2543,10 +2543,10 @@ config PCH_GBE
+ 	depends on PCI
+ 	select MII
+ 	---help---
+-	  This is a gigabit ethernet driver for Topcliff PCH.
+-	  Topcliff PCH is the platform controller hub that is used in Intel's
++	  This is a gigabit ethernet driver for EG20T PCH.
++	  EG20T PCH is the platform controller hub that is used in Intel's
+ 	  general embedded platform.
+-	  Topcliff PCH has Gigabit Ethernet interface.
++	  EG20T PCH has Gigabit Ethernet interface.
+ 	  Using this interface, it is able to access system devices connected
+ 	  to Gigabit Ethernet.
+ 	  This driver enables Gigabit Ethernet function.
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 472056b..03a1d28 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (C) 1999 - 2010 Intel Corporation.
+- * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
++ * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
+  *
+  * This code was derived from the Intel e1000e Linux driver.
+  *
+@@ -2464,8 +2464,8 @@ static void __exit pch_gbe_exit_module(void)
+ module_init(pch_gbe_init_module);
+ module_exit(pch_gbe_exit_module);
+ 
+-MODULE_DESCRIPTION("OKI semiconductor PCH Gigabit ethernet Driver");
+-MODULE_AUTHOR("OKI semiconductor, <masa-korg@dsn.okisemi.com>");
++MODULE_DESCRIPTION("EG20T PCH Gigabit ethernet Driver");
++MODULE_AUTHOR("OKI SEMICONDUCTOR, <toshiharu-linux@dsn.okisemi.com>");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_VERSION);
+ MODULE_DEVICE_TABLE(pci, pch_gbe_pcidev_id);
 -- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+1.6.2.5
