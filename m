@@ -1,43 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829Ab0KVXVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 18:21:16 -0500
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:7402 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757798Ab0KVXVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 18:21:15 -0500
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.59,239,1288569600"; 
-   d="scan'208";a="290719278"
-Date: Mon, 22 Nov 2010 15:21:24 -0800
-From: Tom Lyon <pugs@cisco.com>
-To: linux-pci@vger.kernel.org, mbranton@gmail.com, alexey.zaytsev@gmail.com,
-        jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
-        joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
-        chrisw@sous-sol.org, alex.williamson@redhat.com, mst@redhat.com
-Subject: [ANNOUNCE] VFIO V6 & public VFIO repositories
-Message-ID: <4ceafaf4.pffTeLx1ndqdBH3c%pugs@cisco.com>
-User-Agent: Heirloom mailx 12.2 01/07/07
+	id S1757878Ab0KVXWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 18:22:11 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:50802 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757843Ab0KVXWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 18:22:09 -0500
+Date: Mon, 22 Nov 2010 15:22:08 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] md: Call blk_queue_flush() to establish flush/fua support
+Message-ID: <20101122232208.GU14383@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO "driver" development has moved to a publicly accessible respository
-on github:
+Before 2.6.37, the md layer had a mechanism for catching I/Os with the barrier
+flag set, and translating the barrier into barriers for all the underlying
+devices.  With 2.6.37, I/O barriers have become plain old flushes, and the md
+code was updated to reflect this.  However, one piece was left out -- the md
+layer does not tell the block layer that it supports flushes or FUA access at
+all, which results in md silently dropping flush requests.
 
-	git://github.com/pugs/vfio-linux-2.6.git
+Since the support already seems there, just add this one piece of bookkeeping
+to restore the ability to flush writes through md.
 
-This is a clone of the Linux-2.6 tree with all VFIO changes on the vfio 
-branch (which is the default). There is a tag 'vfio-v6' marking the latest
-"release" of VFIO.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-In addition, I am open-sourcing my user level code which uses VFIO.
-It is a simple UDP/IP/Ethernet stack supporting 3 different VFIO based
-hardware drivers. This code is available at:
+ drivers/md/md.c |   25 ++++++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 1 deletions(-)
 
-	git://github.com/pugs/vfio-user-level-drivers.git
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 324a366..a52d7be 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -356,6 +356,21 @@ EXPORT_SYMBOL(mddev_congested);
+ /*
+  * Generic flush handling for md
+  */
++static void evaluate_flush_capability(mddev_t *mddev)
++{
++	mdk_rdev_t *rdev;
++	unsigned int flush = REQ_FLUSH | REQ_FUA;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(rdev, &mddev->disks, same_set) {
++		if (rdev->raid_disk < 0)
++			continue;
++		flush &= rdev->bdev->bd_disk->queue->flush_flags;
++	}
++	rcu_read_unlock();
++
++	blk_queue_flush(mddev->queue, flush);
++}
+ 
+ static void md_end_flush(struct bio *bio, int err)
+ {
+@@ -1885,6 +1900,8 @@ static int bind_rdev_to_array(mdk_rdev_t * rdev, mddev_t * mddev)
+ 	/* May as well allow recovery to be retried once */
+ 	mddev->recovery_disabled = 0;
+ 
++	evaluate_flush_capability(mddev);
++
+ 	return 0;
+ 
+  fail:
+@@ -1903,17 +1920,23 @@ static void md_delayed_delete(struct work_struct *ws)
+ static void unbind_rdev_from_array(mdk_rdev_t * rdev)
+ {
+ 	char b[BDEVNAME_SIZE];
++	mddev_t *mddev;
++
+ 	if (!rdev->mddev) {
+ 		MD_BUG();
+ 		return;
+ 	}
+-	bd_release_from_disk(rdev->bdev, rdev->mddev->gendisk);
++	mddev = rdev->mddev;
++	bd_release_from_disk(rdev->bdev, mddev->gendisk);
+ 	list_del_rcu(&rdev->same_set);
+ 	printk(KERN_INFO "md: unbind<%s>\n", bdevname(rdev->bdev,b));
+ 	rdev->mddev = NULL;
+ 	sysfs_remove_link(&rdev->kobj, "block");
+ 	sysfs_put(rdev->sysfs_state);
+ 	rdev->sysfs_state = NULL;
++
++	evaluate_flush_capability(mddev);
++
+ 	/* We need to delay this, otherwise we can deadlock when
+ 	 * writing to 'remove' to "dev/state".  We also need
+ 	 * to delay it due to rcu usage.
