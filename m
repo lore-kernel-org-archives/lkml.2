@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab0KVTdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 14:33:11 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43257 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757181Ab0KVTdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 14:33:10 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=l99i6YEJd6sA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Q9JxrfbZ-xq8baXpc-oA:9 a=bIv5PR5R9onhHzjjxCyMT58jQOYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] ftrace/ARM: add ARM support for C version of
- recordmcount
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jreiser@BitWagon.com
-In-Reply-To: <1290449586-1512-1-git-send-email-rabin@rab.in>
-References: <1290449586-1512-1-git-send-email-rabin@rab.in>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 22 Nov 2010 14:33:07 -0500
-Message-ID: <1290454387.30543.304.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757142Ab0KVTes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 14:34:48 -0500
+Received: from unix.wroclaw.pl ([94.23.28.62]:41767 "EHLO unix.wroclaw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755181Ab0KVTeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 14:34:46 -0500
+From: Mariusz Kozlowski <mk@lab.zgora.pl>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mariusz Kozlowski <mk@lab.zgora.pl>
+Subject: [PATCH] ide: fix use after free in ide-acpi
+Date: Mon, 22 Nov 2010 20:34:38 +0100
+Message-Id: <1290454478-5443-1-git-send-email-mk@lab.zgora.pl>
+X-Mailer: git-send-email 1.7.0.4
+X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on
+	Spam=No score=-1.4 bayes=0.5
+	Spam Tests:
+	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-22 at 23:43 +0530, Rabin Vincent wrote:
-> Depending on the compiler version, ARM GCC calls the mcount function
-> either __gnu_mcount_nc or mcount.
-> 
-> Also, arch/arm/kernel/ftrace.c references mcount like
-> kernel/tracing/ftrace.c, so change the exclusion filter to match any
-> ftrace.c
-> 
+out_obj points to kfreed memory and we dereference that pointer in
+DEBPRINT/printk.
 
-Could you separate that out into two patches. I think this is too much
-of a "side effect" for a "add arch" patch.
+Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
+---
+ drivers/ide/ide-acpi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-
--- Steve
-
+diff --git a/drivers/ide/ide-acpi.c b/drivers/ide/ide-acpi.c
+index c26c119..2af8cb4 100644
+--- a/drivers/ide/ide-acpi.c
++++ b/drivers/ide/ide-acpi.c
+@@ -416,21 +416,21 @@ void ide_acpi_get_timing(ide_hwif_t *hwif)
+ 
+ 	out_obj = output.pointer;
+ 	if (out_obj->type != ACPI_TYPE_BUFFER) {
+-		kfree(output.pointer);
+ 		DEBPRINT("Run _GTM: error: "
+ 		       "expected object type of ACPI_TYPE_BUFFER, "
+ 		       "got 0x%x\n", out_obj->type);
++		kfree(output.pointer);
+ 		return;
+ 	}
+ 
+ 	if (!out_obj->buffer.length || !out_obj->buffer.pointer ||
+ 	    out_obj->buffer.length != sizeof(struct GTM_buffer)) {
+-		kfree(output.pointer);
+ 		printk(KERN_ERR
+ 			"%s: unexpected _GTM length (0x%x)[should be 0x%zx] or "
+ 			"addr (0x%p)\n",
+ 			__func__, out_obj->buffer.length,
+ 			sizeof(struct GTM_buffer), out_obj->buffer.pointer);
++		kfree(output.pointer);
+ 		return;
+ 	}
+ 
+-- 
+1.7.0.4
 
