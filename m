@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab0KVBJr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 20:09:47 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35395 "EHLO
+	id S1756869Ab0KVBIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 20:08:13 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42017 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397Ab0KVBDz (ORCPT
+	with ESMTP id S1756308Ab0KVBEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 20:03:55 -0500
+	Sun, 21 Nov 2010 20:04:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=L19qU3x1KeMIEN+M9Ep5QAKl+U+qGNnVBmHLR5vo42Fl1IWPA70Him6qdUq9NJhFRe
-         wL2x4bLvGFdUSrgK01M0tLcEOhsLHuM3FohayPKEGuI/jLBXxC484p3cT7ub1OGwZDiL
-         6QCGS0UgJe4xtRVimHtahZ1LbsqBXca5AYV+Y=
+        b=snPshpXOxsE94awalPfQz9d0EH42iIVwfEaoxE+6QgUSoaM5hSDUEGAO2OLtftcU2d
+         CFhoCfNuG7kAt9ri2yK3EjbR7tEmmNjqnugoNRWMdXkIrBRzBqYoLfFvlN3Y3SGjL/Zw
+         oJv6mp6TsQpnAk84wJDSyW2MQkxZPlHj9Xqz0=
 From: Tracey Dent <tdent48227@gmail.com>
 To: davem@davemloft.net
 Cc: marcel@holtmann.org, padovan@profusion.mobi,
@@ -24,9 +24,9 @@ Cc: marcel@holtmann.org, padovan@profusion.mobi,
         linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
         netfilter@vger.kernel.org, samuel@sortiz.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 02/17] Net: caif: Makefile: Remove deprecated items
-Date: Sun, 21 Nov 2010 20:03:13 -0500
-Message-Id: <1290387808-2239-3-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 11/17] Net: irda: irnet: Makefile: Remove deprecated kbuild goal definitions
+Date: Sun, 21 Nov 2010 20:03:22 -0500
+Message-Id: <1290387808-2239-12-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276
 In-Reply-To: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
 References: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
@@ -38,37 +38,21 @@ Changed Makefile to use <modules>-y instead of <modules>-objs
 because -objs is deprecated and not mentioned in
 Documentation/kbuild/makefiles.txt.
 
-Also, use the ccflags-$ flag instead of EXTRA_CFLAGS because EXTRA_CFLAGS is
-deprecated and should now be switched.
-
-Last but not least, took out if-conditionals.
-
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- net/caif/Makefile |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ net/irda/irnet/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/caif/Makefile b/net/caif/Makefile
-index f87481f..9d38e40 100644
---- a/net/caif/Makefile
-+++ b/net/caif/Makefile
-@@ -1,8 +1,6 @@
--ifeq ($(CONFIG_CAIF_DEBUG),y)
--EXTRA_CFLAGS += -DDEBUG
--endif
-+ccflags-$(CONFIG_CAIF_DEBUG)     :=      -DDEBUG
+diff --git a/net/irda/irnet/Makefile b/net/irda/irnet/Makefile
+index b3ee01e..61c365c 100644
+--- a/net/irda/irnet/Makefile
++++ b/net/irda/irnet/Makefile
+@@ -4,4 +4,4 @@
  
--caif-objs := caif_dev.o \
-+caif-y := caif_dev.o \
- 	cfcnfg.o cfmuxl.o cfctrl.o  \
- 	cffrml.o cfveil.o cfdbgl.o\
- 	cfserl.o cfdgml.o  \
-@@ -13,4 +11,4 @@ obj-$(CONFIG_CAIF) += caif.o
- obj-$(CONFIG_CAIF_NETDEV) += chnl_net.o
- obj-$(CONFIG_CAIF) += caif_socket.o
+ obj-$(CONFIG_IRNET) += irnet.o
  
--export-objs := caif.o
-+export-y := caif.o
+-irnet-objs := irnet_ppp.o irnet_irda.o
++irnet-y := irnet_ppp.o irnet_irda.o
 -- 
 1.7.3.2.245.g03276
 
