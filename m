@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab0KVIHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 03:07:22 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37577 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab0KVIHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 03:07:21 -0500
-Date: Mon, 22 Nov 2010 09:07:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Matthieu Castet <castet.matthieu@free.fr>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX protection
- for kernel data)
-Message-ID: <20101122080710.GA1510@elte.hu>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
+	id S1751612Ab0KVI2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 03:28:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56310 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab0KVI2G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 03:28:06 -0500
+Message-ID: <4CEA2986.4080607@pengutronix.de>
+Date: Mon, 22 Nov 2010 09:27:50 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290410581.2405.24.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: andrew.chih.howe.khor@intel.com, socketcan-core@lists.berlios.de,
+        Samuel Ortiz <sameo@linux.intel.com>, margie.foster@intel.com,
+        netdev@vger.kernel.org, Christian Pellegrin <chripell@fsfe.org>,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
+        joel.clark@intel.com, "David S. Miller" <davem@davemloft.net>,
+        Wolfgang Grandegger <wg@grandegger.com>, qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow
+ control,
+References: <4CE2434B.5050701@dsn.okisemi.com>	<4CE27796.2000206@pengutronix.de>	<007401cb87b1$a773b3d0$66f8800a@maildom.okisemi.com>	<4CE64167.2030405@pengutronix.de> <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com>
+In-Reply-To: <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig6AB79154414CF0941E795E6A"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig6AB79154414CF0941E795E6A
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-* Lin Ming <ming.m.lin@intel.com> wrote:
+On 11/22/2010 06:05 AM, Tomoya MORINAGA wrote:
+> On Friday, November 19, 2010 6:20 PM,  Marc Kleine-Budde wrote :
+>=20
+>>>>> - spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+>>>>> + pch_can_rw_msg_obj(&priv->regs->ifregs[1].creq, tx_obj_no);
+>>>> Still we have the busy waiting in the TX path. Maybe you can move th=
+e
+>>>> waiting before accessing the if[1] and remove the busy waiting here.=
 
-> Hi, all
-> 
-> Current -tip tree(92c883a) fail to resume after suspend to mem.
-> Bisect to commit 5bd5a45(x86: Add NX protection for kernel data).
-> 
-> commit 5bd5a452662bc37c54fb6828db1a3faf87e6511c
-> Author: Matthieu Castet <castet.matthieu@free.fr>
-> Date:   Tue Nov 16 22:31:26 2010 +0100
-> 
->     x86: Add NX protection for kernel data
-> 
-> 
-> I did some debug and found the regression is caused by below line.
-> 
-> -       set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
-> +       set_memory_nx(rodata_start, (kernel_end - rodata_start) >> PAGE_SHIFT);
-> 
-> In my machine,
-> rodata_start=0xffffffff81a00000, end=0xffffffff81e00000, kernel_end=0xffffffff82200000
-> 
-> Without this commit, kernel page table dumps
-> 
-> ---[ High Kernel Mapping ]---
-> ....
-> 0xffffffff81a00000-0xffffffff81c00000           2M     ro         PSE GLB NX pmd
-> 0xffffffff81c00000-0xffffffff81d91000        1604K     ro             GLB NX pte
-> 0xffffffff81d91000-0xffffffff81e00000         444K     ro             GLB NX pte
-> 0xffffffff81e00000-0xffffffff82000000           2M     RW         PSE GLB x  pmd
-> 0xffffffff82000000-0xffffffff8200c000          48K     RW             GLB x  pte
-> 0xffffffff8200c000-0xffffffff82100000         976K     RW             GLB x  pte
-> 0xffffffff82100000-0xffffffff82200000           1M     RW             GLB x  pte
-> .....
-> 
-> With this commit, kernel page table dumps
-> 
-> ---[ High Kernel Mapping ]---
-> ....
-> 0xffffffff81a00000-0xffffffff81c00000           2M     ro         PSE GLB NX pmd
-> 0xffffffff81c00000-0xffffffff81d91000        1604K     ro             GLB NX pte
-> 0xffffffff81d91000-0xffffffff81e00000         444K     ro             GLB NX pte
-> 0xffffffff81e00000-0xffffffff82000000           2M     RW         PSE GLB NX pmd
-> 0xffffffff82000000-0xffffffff8200c000          48K     RW             GLB NX pte
-> 0xffffffff8200c000-0xffffffff82100000         976K     RW             GLB NX pte
-> 0xffffffff82100000-0xffffffff82200000           1M     RW             GLB NX pte
-> .....
-> 
-> The only difference is 0xffffffff81e00000(end) to 0xffffffff82200000(kernel_end) is set to NX.
-> 
-> I guess this range code is used by resume wakeup code. So setting it to NX causes problem.
-> 
-> Any idea?
+>>> I can't understand your saying.
+>>> For transmitting data, calling pch_can_rw_msg_obj is mandatory.
+>> Yes, but the busy wait is not needed. It should be enough to do the
+>> busy-waiting _before_ accessing the if[1].
+>=20
+> Do you mean we should create other pch_can_rw_msg_obj which doesn't hav=
+e busy wait ?
 
-Yeah, the resume area is a trampoline, it needs to be executable.
+ACK, and this non busy waiting is use in the TX path. But you add a busy
+wait only function before accessing the if[1] in the TX path.
 
-Thanks,
+cheers, Marc
 
-	Ingo
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig6AB79154414CF0941E795E6A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzqKYoACgkQjTAFq1RaXHOeXQCfT7VKvE6KPYvx51UzDh+mMJzd
+hD8An2psKQO3bRnvocjSPOu3zAqs8Blw
+=4RUa
+-----END PGP SIGNATURE-----
+
+--------------enig6AB79154414CF0941E795E6A--
