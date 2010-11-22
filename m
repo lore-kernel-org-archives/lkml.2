@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab0KVRep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 12:34:45 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59336 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab0KVRel (ORCPT
+	id S1754782Ab0KVRf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 12:35:29 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:46885 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab0KVRf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 12:34:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uSeOd2xiVfLIA/vrwA9gBzNJDWEgXylVbVGc3jOgRXgjZICu/vAl2toMgnx/7igTyO
-         ZcWeUk8PH24ey80tzzxn0m2TAvl4IetoHbEn2BHt8WULnhdM+VHY6YTSV6fRSnQVNehZ
-         OCD7HihLuNzfx+zjiaBIuAPxca8b+Eg7cqbEs=
-MIME-Version: 1.0
-In-Reply-To: <093B58FD-0DA7-4E94-A70E-C926EC6D02F6@mit.edu>
-References: <1290161589-5370-1-git-send-email-namhyung@gmail.com>
-	<60024FF1-3903-49AD-9A68-B04C6D678A8E@mit.edu>
-	<093B58FD-0DA7-4E94-A70E-C926EC6D02F6@mit.edu>
-Date: Mon, 22 Nov 2010 09:34:40 -0800
-Message-ID: <AANLkTimDZ26GPdTQaqF98=67qhOpRLuy+8Wpt=eXcV82@mail.gmail.com>
-Subject: Re: [PATCH] ext3: Coding style fix in namei.c
-From: Harvey Harrison <harvey.harrison@gmail.com>
-To: Theodore Tso <tytso@mit.edu>
-Cc: Namhyung Kim <namhyung@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Nov 2010 12:35:28 -0500
+X-Auth-Info: M3G7QgcNloB3tyqdgKzzcwVS/LdCYPGNDogZni5Z5CU=
+From: Anatolij Gustschin <agust@denx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH] dmaengine: imx-sdma: fix bug in buffer descriptor initialization
+Date: Mon, 22 Nov 2010 18:35:18 +0100
+Message-Id: <1290447318-29333-1-git-send-email-agust@denx.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 5:05 AM, Theodore Tso <tytso@mit.edu> wrote:
-> Oooh, I forgot another downside which just came to mind:
->
-> * Call of this code churn to fix whitespace all for the sake of keep some damned checkpatch.pl script happy also breaks "git blame" reports.
->
-> -- Ted
+Currently while submitting scatterlists with more than one SG
+entry the DMA buffer address from the first SG entry is inserted
+into all initialized DMA buffer descriptors. This is due to the
+typo in the for_each_sg() loop where the scatterlist pointer is
+used for obtaining the DMA buffer address and _not_ the SG list
+iterator.
 
-Isn't that what git blame -w  (ignore whitespace) is for?
+As a result all received data will be written only into the first
+DMA buffer while reading. While writing the data from the first
+DMA buffer is send to the device multiple times. This caused
+the filesystem destruction on the MMC card when using DMA in
+mxcmmc driver.
 
-Harvey
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/dma/imx-sdma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 0834323..13d6447 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -951,7 +951,7 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+ 		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
+ 		int param;
+ 
+-		bd->buffer_addr = sgl->dma_address;
++		bd->buffer_addr = sg->dma_address;
+ 
+ 		count = sg->length;
+ 
+-- 
+1.7.1
+
