@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab0KVSgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 13:36:44 -0500
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:38580 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757066Ab0KVSgm (ORCPT
+	id S1757177Ab0KVSgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 13:36:51 -0500
+Received: from vms173019pub.verizon.net ([206.46.173.19]:44059 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757145Ab0KVSgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 13:36:42 -0500
-Date: Mon, 22 Nov 2010 18:34:47 +0000
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-To: Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/9] RFC v2: Multicast and filtering features on AF_UNIX
-Message-ID: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
-Organization: Collabora
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Nov 2010 13:36:49 -0500
+Date: Mon, 22 Nov 2010 13:36:31 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: stable@kernel.org
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [git pull 2.6.36.stable] intel_idle patches for
+ 2.6.36.stable
+In-reply-to: <alpine.LFD.2.00.1011170331150.24426@x980>
+Message-id: <alpine.LFD.2.00.1011221318230.19247@x980>
+References: <alpine.LFD.2.00.1011151227190.2939@x980>
+ <alpine.LFD.2.00.1011170322270.24426@x980>
+ <alpine.LFD.2.00.1011170331150.24426@x980>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Greg,
 
-This is a new serie of patches, following my first request for comments
-here: http://marc.info/?l=linux-netdev&m=128534977610124
+I retract my intel_idle pull requests for .stable
 
-It implements a new multicast features on AF_UNIX datagram and
-seqpacket sockets.
+The idle-release branches in...
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/
+	linux-idle-2.6.32.git
+	linux-idle-2.6.35.git
+	linux-idle-2.6.36.git
 
-My motivation is to use it for D-Bus. The kernel code here does not
-contain anything specific to D-Bus, so it could be used for other IPC
-mechanisms too.
+are for distros and others that want to run the latest intel_idle
+driver on the specified release.  The backports in these trees
+contain every upstream patch that touch the driver, including new
+platform support and any dependent cosmetic patches.
 
-The patches apply on linux-next-20101122 and can be pulled from:
+So they are optimized for the maintenance task of comparing
+the backport versus the upstream driver to verify the release
+includes everything that is upstream.
+However, as it does not exclude cosmetic or trivial patches,
+the backports do not qualify for inclusion in .stable.
 
-  git://git.collabora.co.uk/git/user/alban/linux-2.6.35.y/.git unix-multicast5
+Sorry to bother you.
 
-Comments & questions welcome! I would appreciate a review on the design
-and know if it goes in the right direction.
-
-Regards,
-Alban Crequy
+thanks,
+Len Brown, Intel Open Source Technology Center
