@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab0KVFl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 00:41:29 -0500
-Received: from webmail.exar.com ([204.154.183.83]:33192 "EHLO smtp1.exar.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751051Ab0KVFl2 convert rfc822-to-8bit (ORCPT
+	id S1751154Ab0KVFsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 00:48:54 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35136 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750768Ab0KVFsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 00:41:28 -0500
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Nov 2010 00:41:28 EST
-Date: Sun, 21 Nov 2010 23:36:22 -0600
-From: Jon Mason <jon.mason@exar.com>
-To: Joe Perches <joe@perches.com>
-CC: Ramkrishna Vepa <Ramkrishna.Vepa@exar.com>,
-        Sivakumar Subramani <Sivakumar.Subramani@exar.com>,
-        Sreenivasa Honnur <Sreenivasa.Honnur@exar.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 38/62] s2io: Use static const
-Message-ID: <20101122053621.GA5754@exar.com>
-References: <cover.1290305773.git.joe@perches.com>
- <c28022265d00c4220fc5ce4c74798ec5e8b3ea53.1290305776.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <c28022265d00c4220fc5ce4c74798ec5e8b3ea53.1290305776.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Nov 2010 00:48:53 -0500
+Date: Sun, 21 Nov 2010 21:44:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.37-rc3 (fixmap build error)
+Message-Id: <20101121214450.62fac5a4.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=4scuTeRyr1WuGbzk2jKdU_Ugu61ABoXPuXnVK@mail.gmail.com>
+References: <AANLkTi=Di4UQMYyJ_wpZ6N=NZt1+3EeXL7FUsBX004YL@mail.gmail.com>
+	<20101121181655.4996cdde.randy.dunlap@oracle.com>
+	<AANLkTi=4scuTeRyr1WuGbzk2jKdU_Ugu61ABoXPuXnVK@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 06:38:39PM -0800, Joe Perches wrote:
-> Using static const generally increases object text and decreases data size.
-> It also generally decreases overall object size.
->
->    text          data     bss     dec     hex filename
->  109387           389   24432  134208   20c40 drivers/net/s2io.o.old
->  109358           389   24432  134179   20c23 drivers/net/s2io.o.new
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Sun, 21 Nov 2010 20:33:07 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Looks fine to me.  Due to Dave's objections, I'll queue it in our tree
-for the next s2io driver patch series.
+> On Sun, Nov 21, 2010 at 6:16 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >
+> > I thought that I saw a patch for this one, but I can't find it now.
+> >
+> > on i386:
+> > arch/x86/built-in.o: In function `fix_to_virt':
+> > /usr/builds/linux-2.6.37-rc3/arch/x86/include/asm/fixmap.h:207: undefined reference to `__this_fixmap_does_not_exist'
+> 
+> Hmm. Does it help to mark __set_fixmap_offset() as "__always_inline"
+> rather than just "inline"?
 
-Thanks,
-Jon
+yup.
 
-> ---
->  drivers/net/s2io.c |   20 ++++++++++++--------
->  1 files changed, 12 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/net/s2io.c b/drivers/net/s2io.c
-> index 0f4219c..22fea37 100644
-> --- a/drivers/net/s2io.c
-> +++ b/drivers/net/s2io.c
-> @@ -3598,10 +3598,12 @@ static int s2io_set_swapper(struct s2io_nic *sp)
->       val64 = readq(&bar0->pif_rd_swapper_fb);
->       if (val64 != 0x0123456789ABCDEFULL) {
->               int i = 0;
-> -             u64 value[] = { 0xC30000C3C30000C3ULL,   /* FE=1, SE=1 */
-> -                             0x8100008181000081ULL,  /* FE=1, SE=0 */
-> -                             0x4200004242000042ULL,  /* FE=0, SE=1 */
-> -                             0};                     /* FE=0, SE=0 */
-> +             static const u64 value[] = {
-> +                     0xC30000C3C30000C3ULL,  /* FE=1, SE=1 */
-> +                     0x8100008181000081ULL,  /* FE=1, SE=0 */
-> +                     0x4200004242000042ULL,  /* FE=0, SE=1 */
-> +                     0                       /* FE=0, SE=0 */
-> +             };
->
->               while (i < 4) {
->                       writeq(value[i], &bar0->swapper_ctrl);
-> @@ -3627,10 +3629,12 @@ static int s2io_set_swapper(struct s2io_nic *sp)
->
->       if (val64 != valt) {
->               int i = 0;
-> -             u64 value[] = { 0x00C3C30000C3C300ULL,  /* FE=1, SE=1 */
-> -                             0x0081810000818100ULL,  /* FE=1, SE=0 */
-> -                             0x0042420000424200ULL,  /* FE=0, SE=1 */
-> -                             0};                     /* FE=0, SE=0 */
-> +             static const u64 value[] = {
-> +                     0x00C3C30000C3C300ULL,  /* FE=1, SE=1 */
-> +                     0x0081810000818100ULL,  /* FE=1, SE=0 */
-> +                     0x0042420000424200ULL,  /* FE=0, SE=1 */
-> +                     0                       /* FE=0, SE=0 */
-> +             };
->
->               while (i < 4) {
->                       writeq((value[i] | valr), &bar0->swapper_ctrl);
-> --
-> 1.7.3.2.245.g03276.dirty
->
+Subject: arch/x86/include/asm/fixmap.h: mark __set_fixmap_offset as __always_inline
+From: Andrew Morton <akpm@linux-foundation.org>
 
-The information and any attached documents contained in this message
-may be confidential and/or legally privileged.  The message is
-intended solely for the addressee(s).  If you are not the intended
-recipient, you are hereby notified that any use, dissemination, or
-reproduction is strictly prohibited and may be unlawful.  If you are
-not the intended recipient, please contact the sender immediately by
-return e-mail and destroy all copies of the original message.
+When compiling arch/x86/kernel/early_printk_mrst.c with i386 allmodconfig,
+gcc-4.1.0 generates an out-of-line copy of __set_fixmap_offset() which
+contains a reference to __this_fixmap_does_not_exist which the compiler cannot
+elide.
+
+Marking __set_fixmap_offset() as __always_inline prevents this.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ arch/x86/include/asm/fixmap.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff -puN arch/x86/kernel/early_printk_mrst.c~arch-x86-include-asm-fixmaph-mark-__set_fixmap_offset-as-__always_inline arch/x86/kernel/early_printk_mrst.c
+diff -puN arch/x86/include/asm/fixmap.h~arch-x86-include-asm-fixmaph-mark-__set_fixmap_offset-as-__always_inline arch/x86/include/asm/fixmap.h
+--- a/arch/x86/include/asm/fixmap.h~arch-x86-include-asm-fixmaph-mark-__set_fixmap_offset-as-__always_inline
++++ a/arch/x86/include/asm/fixmap.h
+@@ -220,8 +220,8 @@ static inline unsigned long virt_to_fix(
+ }
+ 
+ /* Return an pointer with offset calculated */
+-static inline unsigned long __set_fixmap_offset(enum fixed_addresses idx,
+-				phys_addr_t phys, pgprot_t flags)
++static __always_inline unsigned long
++__set_fixmap_offset(enum fixed_addresses idx, phys_addr_t phys, pgprot_t flags)
+ {
+ 	__set_fixmap(idx, phys, flags);
+ 	return fix_to_virt(idx) + (phys & (PAGE_SIZE - 1));
+_
+
