@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342Ab0KVGQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 01:16:24 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:51157 "EHLO e5.ny.us.ibm.com"
+	id S1751700Ab0KVGQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 01:16:32 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:47973 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab0KVGQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 01:16:23 -0500
-Date: Sun, 21 Nov 2010 22:16:19 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org, linux-ext4@vger.kernel.org,
-        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>
-Subject: Re: [BUG?] [Ext4] INFO: suspicious rcu_dereference_check() usage
-Message-ID: <20101122061619.GA2764@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101121112611.GB4267@deepthought.bhanu.net>
- <20101121133024.GF23423@thunk.org>
- <20101121133024.GF23423@thunk.org>
- <20101121153949.GD20947@barrios-desktop>
- <20101121173726.GG23423@thunk.org>
- <AANLkTimeSWWo-TAJPPH81OO_h1zFzWAT1Gg=XSLyFftH@mail.gmail.com>
- <rcu-radix-tree@mdm.bga.com>
+	id S1751367Ab0KVGQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 01:16:29 -0500
+Date: Mon, 22 Nov 2010 11:46:20 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101122061620.GD12043@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101115125716.GA22422@redhat.com>
+ <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com>
+ <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <rcu-radix-tree@mdm.bga.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 09:31:14PM -0600, Milton Miller wrote:
-> On 2010-11-22 at around 0:38:49, Minchan Kim wrote:
-> > On Mon, Nov 22, 2010 at 2:37 AM, Ted Ts'o <tytso@mit.edu> wrote:
-> > > On Mon, Nov 22, 2010 at 12:39:49AM +0900, Minchan Kim wrote:
-> > > >
-> > > > I think it's no problem.
-> > > >
-> > > > That's because migration always holds lock_page on the file page.
-> > > > So the page couldn't remove from radix.
-> > >
-> > > It may be "ok" in that it won't cause a race, but it still leaves an
-> > > unsightly warning if LOCKDEP is enabled, and LOCKDEP warnings will
-> > > cause /proc_lock_stat to be disabled.  So I think it still needs to be
-> > > fixed by adding rcu_read_lock()/rcu_read_unlock() to
-> > > migrate_page_move_mapping().
-> > >
-> > >                                                     - Ted
-> > >
-> > 
-> > Yes. if it is really "ok" about race, we will add rcu_read_lock with
-> > below comment to prevent false positive.
-> > "suppress RCU lockdep false positives".
-> > But I am not sure it's good although rcu_read_lock is little cost.
-> > Whenever we find false positive, should we add rcu_read_lock to
-> > suppress although it's no problem in real product?
-> > Couldn't we provide following function? (or we might have already it
-> > but I missed it. )
-> > 
-> > /*
-> >  * Suppress RCU lockdep false positive.
-> >  */
-> > #ifdef CONFIG_PROVE_RCU
-> > #define rcu_read_lock_suppress rcu_read_lock
-> > #else
-> > #define rcu_read_lock_suppress
-> > #endif
-> 
-> No, you don't need anything like this, as rcu_dereference_check already
-> takes a test for alternate locking.
-> 
-> However, looking more closely at the code, it appears this is the
-> "the tree is write locked" case as described in radix-tree.h
-> 
-> Looking at rcupdate.h, perhaps we need a version of radix_tree_deref_slot
-> that uses rcu_dereference_protected?
-> 
-> Copying Paul McKenney for rcu ...
+* Linus Torvalds <torvalds@linux-foundation.org> [2010-11-16 10:49:22]:
 
-This approach could work.  One way of doing it would be to add a second
-argument:
+> That's the point. We can push out the kernel change, and everything
+> will "just work". We can make that feature we already have in the
+> kernel actually be _useful_.
+>
 
-static inline void *radix_tree_deref_slot_check(void **pslot, int ldc)
-{
-	void *ret = rcu_dereference_check(*pslot, ldc);
-	if (unlikely(radix_tree_is_indirect_ptr(ret)))
-		ret = RADIX_TREE_RETRY;
-	return ret;
-}
+This is absolutely fine, as long as everyone wants the feature, "just
+works" for us as kernel developers might not be the same as "just
+works" for all end users. How does one find and disable this feature
+if one is not happy? I don't think it is very hard, it could be a
+simple tool that the distro provides or documentation, but hidden
+works both ways, IMHO. In summary, we need tooling with good defaults. 
 
-static inline void *radix_tree_deref_slot(void **pslot)
-{
-	return radix_tree_deref_slot_check(pslot, rcu_read_lock_held());
-}
-
-Another alternative would have radix_tree_deref_slot() pass "1" into
-the "ldc" argument, which reduces splats but at the expense of failing
-to detect problems.  ;-)
-
-							Thanx, Paul
+-- 
+	Three Cheers,
+	Balbir
