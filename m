@@ -1,56 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab0KVOUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 09:20:20 -0500
-Received: from mail.bspu.unibel.by ([195.50.2.21]:42400 "EHLO mail.bspu.local"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752302Ab0KVOUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 09:20:17 -0500
-Message-ID: <4CEA7D13.9070602@bspu.unibel.by>
-Date: Mon, 22 Nov 2010 16:24:19 +0200
-From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
-Reply-To: mahatma@eu.by
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b7pre) Gecko/20101111 Firefox/4.0b7pre SeaMonkey/2.1b1
+	id S1756521Ab0KVOUw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 09:20:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756416Ab0KVOUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 09:20:50 -0500
+Date: Mon, 22 Nov 2010 12:19:25 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/6] KVM: MMU: delay flush all tlbs on sync_page path
+Message-ID: <20101122141925.GA30902@amt.cnet>
+References: <4CE63CF4.80502@cn.fujitsu.com>
+ <4CE63DE2.9050408@cn.fujitsu.com>
+ <20101119161118.GB20279@amt.cnet>
+ <4CE9E74E.7070908@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, mahatma@eu.by,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] viafb: I2C/DDC LCD detection for VIA framebuffer
-References: <4CEA62BB.9040403@bspu.unibel.by> <20101122135939.GA8882@bicker>
-In-Reply-To: <20101122135939.GA8882@bicker>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE9E74E.7070908@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for mistake. I sure to remove "const" but revert to older code later. I
-repost fixed patch ("v2") to avoid formal problems. Sorry.
+On Mon, Nov 22, 2010 at 11:45:18AM +0800, Xiao Guangrong wrote:
+> On 11/20/2010 12:11 AM, Marcelo Tosatti wrote:
+> 
+> >>  void kvm_flush_remote_tlbs(struct kvm *kvm)
+> >>  {
+> >> +	int dirty_count = atomic_read(&kvm->tlbs_dirty);
+> >> +
+> >> +	smp_mb();
+> >>  	if (make_all_cpus_request(kvm, KVM_REQ_TLB_FLUSH))
+> >>  		++kvm->stat.remote_tlb_flush;
+> >> +	atomic_sub(dirty_count, &kvm->tlbs_dirty);
+> >>  }
+> > 
+> > This is racy because kvm_flush_remote_tlbs might be called without
+> > mmu_lock protection.
+> 
+> Sorry for my carelessness, it should be 'cmpxchg' here.
+> 
+> > You could decrease the counter on
+> > invalidate_page/invalidate_range_start only, 
+> 
+> I want to avoid a unnecessary tlbs flush, if tlbs have been flushed
+> after sync_page, then we don't need flush tlbs on invalidate_page/
+> invalidate_range_start path.
+> 
+> > these are not fast paths
+> > anyway.
+> > 
+> 
+> How about below patch? it just needs one atomic operation.
+> 
+> ---
+>  arch/x86/kvm/paging_tmpl.h |    4 ++--
+>  include/linux/kvm_host.h   |    2 ++
+>  virt/kvm/kvm_main.c        |    7 ++++++-
+>  3 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index dfb906f..e64192f 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -781,14 +781,14 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+>  		gfn = gpte_to_gfn(gpte);
+>  
+>  		if (FNAME(map_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte)) {
+> -			kvm_flush_remote_tlbs(vcpu->kvm);
+> +			vcpu->kvm->tlbs_dirty++;
+>  			continue;
+>  		}
+>  
+>  		if (gfn != sp->gfns[i]) {
+>  			drop_spte(vcpu->kvm, &sp->spt[i],
+>  				      shadow_trap_nonpresent_pte);
+> -			kvm_flush_remote_tlbs(vcpu->kvm);
+> +			vcpu->kvm->tlbs_dirty++;
+>  			continue;
+>  		}
+>  
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 4bd663d..dafd90e 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -249,6 +249,7 @@ struct kvm {
+>  	struct mmu_notifier mmu_notifier;
+>  	unsigned long mmu_notifier_seq;
+>  	long mmu_notifier_count;
+> +	long tlbs_dirty;
+>  #endif
+>  };
+>  
+> @@ -377,6 +378,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
+>  void kvm_resched(struct kvm_vcpu *vcpu);
+>  void kvm_load_guest_fpu(struct kvm_vcpu *vcpu);
+>  void kvm_put_guest_fpu(struct kvm_vcpu *vcpu);
+> +
+>  void kvm_flush_remote_tlbs(struct kvm *kvm);
+>  void kvm_reload_remote_mmus(struct kvm *kvm);
+>  
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index fb93ff9..fe0a1a7 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -168,8 +168,12 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
+>  
+>  void kvm_flush_remote_tlbs(struct kvm *kvm)
+>  {
+> +	long dirty_count = kvm->tlbs_dirty;
+> +
+> +	smp_mb();
+>  	if (make_all_cpus_request(kvm, KVM_REQ_TLB_FLUSH))
+>  		++kvm->stat.remote_tlb_flush;
 
-Dan Carpenter wrote:
-> On Mon, Nov 22, 2010 at 02:31:55PM +0200, Dzianis Kahanovich wrote:
->> +static void via_i2c_detect(void)
->> +{
->> +	const u8 *edid;
->         ^^^^^
-> 
->> +free_edid:
->> +		kfree(edid);
->                 ^^^^^^^^^^^
-> 
-> That probably shouldn't be const.
-> 
->> +		if (n > 1)
->> +			break;
->> +	}
->> +}
->> +
->>
-> 
-> regards,
-> dan carpenter
-> 
-> 
+<---
+
+> +	cmpxchg(&kvm->tlbs_dirty, dirty_count, 0);
+>  }
 
 
--- 
-WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
+Still problematic, if tlbs_dirty is set in the point indicated above.
+
+Invalidate page should be quite rare, so checking for tlb_dirty only
+there is OK.
+
