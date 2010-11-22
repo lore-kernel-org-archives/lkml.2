@@ -1,39 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab0KVLmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 06:42:50 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51484 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab0KVLmt (ORCPT
+	id S1755251Ab0KVLoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 06:44:07 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38683 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab0KVLoF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 06:42:49 -0500
-Date: Mon, 22 Nov 2010 11:42:47 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-Cc: alsa-devel@alsa-project.org, Philipp Zabel <philipp.zabel@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Harald Welte <laforge@gnumonks.org>, lrg@slimlogic.co.uk
-Subject: Re: [PATCH 2/3] ASoC: add iPAQ hx4700 machine driver
-Message-ID: <20101122114247.GB15156@sirena.org.uk>
-References: <1290257964-17435-1-git-send-email-mad_soft@inbox.ru> <1290257964-17435-3-git-send-email-mad_soft@inbox.ru>
+	Mon, 22 Nov 2010 06:44:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=njUANsNM3/5dA8+sL7bTP6UJ57evwfP3RiZQNcApNmnPGY85XdzSNBM9i4dd3kP5Fi
+         TW1p1YZJ3JyLuguBtEUYkC7KfiMI4rKGCiJn9H0Ilcffyvpkp74vrd7ERfwFYODYhxZf
+         R0m1aaxZYlHmQOFj+RpoFVQeaQsMTwnHLUfAU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290257964-17435-3-git-send-email-mad_soft@inbox.ru>
-X-Cookie: knowledge, n.:
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20101119171528.32674ef4.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101119171528.32674ef4.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 22 Nov 2010 20:44:03 +0900
+Message-ID: <AANLkTi=E=b7X1Un7Bp_eSAFrFjOPsYpBO-Ba1aeTrrjr@mail.gmail.com>
+Subject: Re: [PATCH 3/4] alloc_contig_pages() allocate big chunk memory using migration
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bob Liu <lliubbo@gmail.com>, fujita.tomonori@lab.ntt.co.jp,
+        m.nazarewicz@samsung.com, pawel@osciak.com, andi.kleen@intel.com,
+        felipe.contreras@gmail.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 03:59:23PM +0300, Dmitry Artamonow wrote:
-> AK4641 connected via I2S and I2C, jack detection via GPIO.
-> 
-> Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+On Fri, Nov 19, 2010 at 5:15 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> Add an function to allocate contiguous memory larger than MAX_ORDER.
+> The main difference between usual page allocator is that this uses
+> memory offline technique (Isolate pages and migrate remaining pages.).
+>
+> I think this is not 100% solution because we can't avoid fragmentation,
+> but we have kernelcore= boot option and can create MOVABLE zone. That
+> helps us to allow allocate a contiguous range on demand.
 
-This looks OK but depends on the CODEC driver.
+And later we can use compaction and reclaim, too.
+So I think this approach is the way we have to go.
+
+>
+> The new function is
+>
+>  alloc_contig_pages(base, end, nr_pages, alignment)
+>
+> This function will allocate contiguous pages of nr_pages from the range
+> [base, end). If [base, end) is bigger than nr_pages, some pfn which
+> meats alignment will be allocated. If alignment is smaller than MAX_ORDER,
+
+type meet
+
+> it will be raised to be MAX_ORDER.
+>
+> __alloc_contig_pages() has much more arguments.
+>
+>
+> Some drivers allocates contig pages by bootmem or hiding some memory
+> from the kernel at boot. But if contig pages are necessary only in some
+> situation, kernelcore= boot option and using page migration is a choice.
+>
+> Changelog: 2010-11-19
+>  - removed no_search
+>  - removed some drain_ functions because they are heavy.
+>  - check -ENOMEM case
+>
+> Changelog: 2010-10-26
+>  - support gfp_t
+>  - support zonelist/nodemask
+>  - support [base, end)
+>  - support alignment
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/page-isolation.h |   15 ++
+>  mm/page_alloc.c                |   29 ++++
+>  mm/page_isolation.c            |  242 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 286 insertions(+)
+>
+> Index: mmotm-1117/mm/page_isolation.c
+> ===================================================================
+> --- mmotm-1117.orig/mm/page_isolation.c
+> +++ mmotm-1117/mm/page_isolation.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/page-isolation.h>
+>  #include <linux/pageblock-flags.h>
+> +#include <linux/swap.h>
+>  #include <linux/memcontrol.h>
+>  #include <linux/migrate.h>
+>  #include <linux/memory_hotplug.h>
+> @@ -396,3 +397,244 @@ retry:
+>        }
+>        return 0;
+>  }
+> +
+> +/*
+> + * Comparing caller specified [user_start, user_end) with physical memory layout
+> + * [phys_start, phys_end). If no intersection is longer than nr_pages, return 1.
+> + * If there is an intersection, return 0 and fill range in [*start, *end)
+
+I understand the goal of function.
+But comment is rather awkward.
+
+> + */
+> +static int
+> +__calc_search_range(unsigned long user_start, unsigned long user_end,
+
+Personally, I don't like the function name.
+How about "__adjust_search_range"?
+But I am not against this name strongly. :)
+
+> +               unsigned long nr_pages,
+> +               unsigned long phys_start, unsigned long phys_end,
+> +               unsigned long *start, unsigned long *end)
+> +{
+> +       if ((user_start >= phys_end) || (user_end <= phys_start))
+> +               return 1;
+> +       if (user_start <= phys_start) {
+> +               *start = phys_start;
+> +               *end = min(user_end, phys_end);
+> +       } else {
+> +               *start = user_start;
+> +               *end = min(user_end, phys_end);
+> +       }
+> +       if (*end - *start < nr_pages)
+> +               return 1;
+> +       return 0;
+> +}
+> +
+> +
+> +/**
+> + * __alloc_contig_pages - allocate a contiguous physical pages
+> + * @base: the lowest pfn which caller wants.
+> + * @end:  the highest pfn which caller wants.
+> + * @nr_pages: the length of a chunk of pages to be allocated.
+
+the number of pages to be allocated.
+
+> + * @align_order: alignment of start address of returned chunk in order.
+> + *   Returned' page's order will be aligned to (1 << align_order).If smaller
+> + *   than MAX_ORDER, it's raised to MAX_ORDER.
+> + * @node: allocate near memory to the node, If -1, current node is used.
+> + * @gfpflag: used to specify what zone the memory should be from.
+> + * @nodemask: allocate memory within the nodemask.
+> + *
+> + * Search a memory range [base, end) and allocates physically contiguous
+> + * pages. If end - base is larger than nr_pages, a chunk in [base, end) will
+> + * be allocated
+> + *
+> + * This returns a page of the beginning of contiguous block. At failure, NULL
+> + * is returned.
+> + *
+> + * Limitation: at allocation, nr_pages may be increased to be aligned to
+> + * MAX_ORDER before searching a range. So, even if there is a enough chunk
+> + * for nr_pages, it may not be able to be allocated. Extra tail pages of
+> + * allocated chunk is returned to buddy allocator before returning the caller.
+> + */
+> +
+> +#define MIGRATION_RETRY        (5)
+> +struct page *__alloc_contig_pages(unsigned long base, unsigned long end,
+> +                       unsigned long nr_pages, int align_order,
+> +                       int node, gfp_t gfpflag, nodemask_t *mask)
+> +{
+> +       unsigned long found, aligned_pages, start;
+> +       struct page *ret = NULL;
+> +       int migration_failed;
+> +       unsigned long align_mask;
+> +       struct zoneref *z;
+> +       struct zone *zone;
+> +       struct zonelist *zonelist;
+> +       enum zone_type highzone_idx = gfp_zone(gfpflag);
+> +       unsigned long zone_start, zone_end, rs, re, pos;
+> +
+> +       if (node == -1)
+> +               node = numa_node_id();
+> +
+> +       /* check unsupported flags */
+> +       if (gfpflag & __GFP_NORETRY)
+> +               return NULL;
+> +       if ((gfpflag & (__GFP_WAIT | __GFP_IO | __GFP_FS)) !=
+> +               (__GFP_WAIT | __GFP_IO | __GFP_FS))
+> +               return NULL;
+
+Why do we have to care about __GFP_IO|__GFP_FS?
+If you consider compaction/reclaim later, I am OK.
+
+> +
+> +       if (gfpflag & __GFP_THISNODE)
+> +               zonelist = &NODE_DATA(node)->node_zonelists[1];
+> +       else
+> +               zonelist = &NODE_DATA(node)->node_zonelists[0];
+> +       /*
+> +        * Base/nr_page/end should be aligned to MAX_ORDER
+> +        */
+> +       found = 0;
+> +
+> +       if (align_order < MAX_ORDER)
+> +               align_order = MAX_ORDER;
+> +
+> +       align_mask = (1 << align_order) - 1;
+> +       /*
+> +        * We allocates MAX_ORDER aligned pages and cut tail pages later.
+> +        */
+> +       aligned_pages = ALIGN(nr_pages, (1 << MAX_ORDER));
+> +       /*
+> +        * If end - base == nr_pages, we can't search range. base must be
+> +        * aligned.
+> +        */
+> +       if ((end - base == nr_pages) && (base & align_mask))
+> +               return NULL;
+> +
+> +       base = ALIGN(base, (1 << align_order));
+> +       if ((end <= base) || (end - base < aligned_pages))
+> +               return NULL;
+> +
+> +       /*
+> +        * searching contig memory range within [pos, end).
+> +        * pos is updated at migration failure to find next chunk in zone.
+> +        * pos is reset to the base at searching next zone.
+> +        * (see for_each_zone_zonelist_nodemask in mmzone.h)
+> +        *
+> +        * Note: we cannot assume zones/nodes are in linear memory layout.
+> +        */
+> +       z = first_zones_zonelist(zonelist, highzone_idx, mask, &zone);
+> +       pos = base;
+> +retry:
+> +       if (!zone)
+> +               return NULL;
+> +
+> +       zone_start = ALIGN(zone->zone_start_pfn, 1 << align_order);
+> +       zone_end = zone->zone_start_pfn + zone->spanned_pages;
+> +
+> +       /* check [pos, end) is in this zone. */
+> +       if ((pos >= end) ||
+> +            (__calc_search_range(pos, end, aligned_pages,
+> +                       zone_start, zone_end, &rs, &re))) {
+> +next_zone:
+> +               /* go to the next zone */
+> +               z = next_zones_zonelist(++z, highzone_idx, mask, &zone);
+> +               /* reset the pos */
+> +               pos = base;
+> +               goto retry;
+> +       }
+> +       /* [pos, end) is trimmed to [rs, re) in this zone. */
+> +       pos = rs;
+
+The 'pos' doesn't used any more at below.
+
+> +
+> +       found = find_contig_block(rs, re, aligned_pages, align_order, zone);
+> +       if (!found)
+> +               goto next_zone;
+> +
+> +       /*
+> +        * Because we isolated the range, free pages in the range will never
+> +        * be (re)allocated. scan_lru_pages() finds the next PG_lru page in
+> +        * the range and returns 0 if it reaches the end.
+> +        */
+> +       migration_failed = 0;
+> +       rs = found;
+> +       re = found + aligned_pages;
+> +       for (rs = scan_lru_pages(rs, re);
+> +            rs && rs < re;
+> +            rs = scan_lru_pages(rs, re)) {
+> +               int rc = do_migrate_range(rs, re);
+> +               if (!rc)
+> +                       migration_failed = 0;
+> +               else {
+> +                       /* it's better to try another block ? */
+> +                       if (++migration_failed >= MIGRATION_RETRY)
+> +                               break;
+> +                       if (rc == -EBUSY) {
+> +                               /* There are unstable pages.on pagevec. */
+> +                               lru_add_drain_all();
+> +                               /*
+> +                                * there may be pages on pcplist before
+> +                                * we mark the range as ISOLATED.
+> +                                */
+> +                               drain_all_pages();
+> +                       } else if (rc == -ENOMEM)
+> +                               goto nomem;
+> +               }
+> +               cond_resched();
+> +       }
+> +       if (!migration_failed) {
+> +               /* drop all pages in pagevec and pcp list */
+> +               lru_add_drain_all();
+> +               drain_all_pages();
+> +       }
+> +       /* Check all pages are isolated */
+> +       if (test_pages_isolated(found, found + aligned_pages)) {
+> +               undo_isolate_page_range(found, aligned_pages);
+> +               /*
+> +                * We failed at [found...found+aligned_pages) migration.
+> +                * "rs" is the last pfn scan_lru_pages() found that the page
+> +                * is LRU page. Update pos and try next chunk.
+> +                */
+> +               pos = ALIGN(rs + 1, (1 << align_order));
+> +               goto retry; /* goto next chunk */
+> +       }
+> +       /*
+> +        * OK, here, [found...found+pages) memory are isolated.
+> +        * All pages in the range will be moved into the list with
+> +        * page_count(page)=1.
+> +        */
+> +       ret = pfn_to_page(found);
+> +       alloc_contig_freed_pages(found, found + aligned_pages, gfpflag);
+> +       /* unset ISOLATE */
+> +       undo_isolate_page_range(found, aligned_pages);
+> +       /* Free unnecessary pages in tail */
+> +       for (start = found + nr_pages; start < found + aligned_pages; start++)
+> +               __free_page(pfn_to_page(start));
+> +       return ret;
+> +nomem:
+> +       undo_isolate_page_range(found, aligned_pages);
+> +       return NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(__alloc_contig_pages);
+> +
+> +void free_contig_pages(struct page *page, int nr_pages)
+> +{
+> +       int i;
+> +       for (i = 0; i < nr_pages; i++)
+> +               __free_page(page + i);
+> +}
+> +EXPORT_SYMBOL_GPL(free_contig_pages);
+> +
+> +/*
+> + * Allocated pages will not be MOVABLE but MOVABLE zone is a suitable
+> + * for allocating big chunk. So, using ZONE_MOVABLE is a default.
+> + */
+> +
+> +struct page *alloc_contig_pages(unsigned long base, unsigned long end,
+> +                       unsigned long nr_pages, int align_order)
+> +{
+> +       return __alloc_contig_pages(base, end, nr_pages, align_order, -1,
+> +                               GFP_KERNEL | __GFP_MOVABLE, NULL);
+> +}
+> +EXPORT_SYMBOL_GPL(alloc_contig_pages);
+> +
+> +struct page *alloc_contig_pages_host(unsigned long nr_pages, int align_order)
+> +{
+> +       return __alloc_contig_pages(0, max_pfn, nr_pages, align_order, -1,
+> +                               GFP_KERNEL | __GFP_MOVABLE, NULL);
+> +}
+> +EXPORT_SYMBOL_GPL(alloc_contig_pages_host);
+> +
+> +struct page *alloc_contig_pages_node(int nid, unsigned long nr_pages,
+> +                               int align_order)
+> +{
+> +       return __alloc_contig_pages(0, max_pfn, nr_pages, align_order, nid,
+> +                       GFP_KERNEL | __GFP_THISNODE | __GFP_MOVABLE, NULL);
+> +}
+> +EXPORT_SYMBOL_GPL(alloc_contig_pages_node);
+> Index: mmotm-1117/include/linux/page-isolation.h
+> ===================================================================
+> --- mmotm-1117.orig/include/linux/page-isolation.h
+> +++ mmotm-1117/include/linux/page-isolation.h
+> @@ -32,6 +32,8 @@ test_pages_isolated(unsigned long start_
+>  */
+>  extern int set_migratetype_isolate(struct page *page);
+>  extern void unset_migratetype_isolate(struct page *page);
+> +extern void alloc_contig_freed_pages(unsigned long pfn,
+> +               unsigned long pages, gfp_t flag);
+>
+>  /*
+>  * For migration.
+> @@ -41,4 +43,17 @@ int test_pages_in_a_zone(unsigned long s
+>  unsigned long scan_lru_pages(unsigned long start, unsigned long end);
+>  int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
+>
+> +/*
+> + * For large alloc.
+> + */
+> +struct page *__alloc_contig_pages(unsigned long base, unsigned long end,
+> +                               unsigned long nr_pages, int align_order,
+> +                               int node, gfp_t flag, nodemask_t *mask);
+> +struct page *alloc_contig_pages(unsigned long base, unsigned long end,
+> +                               unsigned long nr_pages, int align_order);
+> +struct page *alloc_contig_pages_host(unsigned long nr_pages, int align_order);
+> +struct page *alloc_contig_pages_node(int nid, unsigned long nr_pages,
+> +               int align_order);
+> +void free_contig_pages(struct page *page, int nr_pages);
+> +
+>  #endif
+> Index: mmotm-1117/mm/page_alloc.c
+> ===================================================================
+> --- mmotm-1117.orig/mm/page_alloc.c
+> +++ mmotm-1117/mm/page_alloc.c
+> @@ -5447,6 +5447,35 @@ out:
+>        spin_unlock_irqrestore(&zone->lock, flags);
+>  }
+>
+> +
+> +void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end, gfp_t flag)
+> +{
+> +       struct page *page;
+> +       struct zone *zone;
+> +       int order;
+> +       unsigned long start = pfn;
+> +
+> +       zone = page_zone(pfn_to_page(pfn));
+> +       spin_lock_irq(&zone->lock);
+> +       while (pfn < end) {
+> +               VM_BUG_ON(!pfn_valid(pfn));
+> +               page = pfn_to_page(pfn);
+> +               VM_BUG_ON(page_count(page));
+> +               VM_BUG_ON(!PageBuddy(page));
+> +               list_del(&page->lru);
+> +               order = page_order(page);
+> +               zone->free_area[order].nr_free--;
+> +               rmv_page_order(page);
+> +               __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+> +               pfn += 1 << order;
+> +       }
+> +       spin_unlock_irq(&zone->lock);
+> +
+> +       /*After this, pages in the range can be freed one be one */
+> +       for (pfn = start; pfn < end; pfn++)
+> +               prep_new_page(pfn_to_page(pfn), 0, flag);
+> +}
+> +
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+>  /*
+>  * All pages in the range must be isolated before calling this.
+>
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
