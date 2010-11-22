@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab0KVPRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 10:17:47 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:60614 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752277Ab0KVPRp (ORCPT
+	id S1751867Ab0KVPgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 10:36:23 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52408
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751199Ab0KVPgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 10:17:45 -0500
-Date: Mon, 22 Nov 2010 10:17:23 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Boaz Harrosh <openosd@gmail.com>, Jan Kara <jack@suse.cz>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Nathan Laredo <laredo@gnu.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Alessio Igor Bogani <alessioigorbogani@gmail.com>
-Subject: Re: [PATCH 0/7] BKL removal follow-up
-Message-ID: <20101122151723.GA8732@elliptictech.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Boaz Harrosh <openosd@gmail.com>, Jan Kara <jack@suse.cz>,
-	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-	Nathan Laredo <laredo@gnu.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-	Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	"J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-	Alessio Igor Bogani <alessioigorbogani@gmail.com>
-References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
- <20101118233439.GB5004@quack.suse.cz>
- <AANLkTin0Gm8Xqm-ARGmd4T+fCM4mMA0=PbDA6eSsYUOG@mail.gmail.com>
- <4CE928DD.2010309@gmail.com>
- <AANLkTi=qvOHwgsbaCO6_Eu2Uik7MP5=C64+WW8R-RR8B@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=qvOHwgsbaCO6_Eu2Uik7MP5=C64+WW8R-RR8B@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 22 Nov 2010 10:36:21 -0500
+Date: Mon, 22 Nov 2010 07:36:46 -0800 (PST)
+Message-Id: <20101122.073646.193727189.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: mhocko@suse.cz, linux-wireless@vger.kernel.org, reinette.chatre@intel.com,
+        wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: iwl3945: regression - unregister_netdevice: waiting for wlan0
+ to become free. Usage count = 1
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1290424776.2811.32.camel@edumazet-laptop>
+References: <20101122104341.GA3897@tiehlicka.suse.cz>
+	<1290424776.2811.32.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-21 09:45 -0800, Linus Torvalds wrote:
-> Yes, I'd be ok with UDF doing a "select BKL" along with a "default n"
-> for BKL itself.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 22 Nov 2010 12:19:36 +0100
+
+> Oh well, it seems David put the fix in net-next-2.6 instead of net-2.6
 > 
-> I think UDF currently is the only sane reason to have BKL enabled any
-> more, and yes, it would probably make it easier to configure things.
+> Please try :
+> 
+> http://git.kernel.org/?p=linux/kernel/git/davem/net-next-2.6.git;a=commitdiff;h=9d82ca98f71fd686ef2f3017c5e3e6a4871b6e46
 
-UFS (which I use) also relies on BKL.
+My bad, I'll toss this into net-2.6
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Thanks for catching this Eric.
