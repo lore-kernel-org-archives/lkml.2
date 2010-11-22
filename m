@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab0KVGoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 01:44:23 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58016 "EHLO mx1.suse.de"
+	id S1752254Ab0KVGon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 01:44:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51781 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab0KVGoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 01:44:22 -0500
-Date: Mon, 22 Nov 2010 07:44:21 +0100
-Message-ID: <s5h4ob9svqy.wl%tiwai@suse.de>
+	id S1751342Ab0KVGom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 01:44:42 -0500
+Date: Mon, 22 Nov 2010 07:44:40 +0100
+Message-ID: <s5h39qtsvqf.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Joe Perches <joe@perches.com>
 Cc: Jiri Kosina <trivial@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 43/44] sound/core/pcm_lib.c: Remove unnecessary semicolons
-In-Reply-To: <9fa8e193ce125ef4fd19a952792629c5ee84953f.1289789605.git.joe@perches.com>
-References: <cover.1289789604.git.joe@perches.com>
-	<9fa8e193ce125ef4fd19a952792629c5ee84953f.1289789605.git.joe@perches.com>
+Subject: Re: [PATCH 11/11] sound/pci/asihpi/hpioctl.c: Remove unnecessary casts of pci_get_drvdata
+In-Reply-To: <1741bc5f7050b5ebb7014b8d93fdb70490ec7f06.1289851770.git.joe@perches.com>
+References: <cover.1289851770.git.joe@perches.com>
+	<1741bc5f7050b5ebb7014b8d93fdb70490ec7f06.1289851770.git.joe@perches.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,34 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 14 Nov 2010 19:05:02 -0800,
+At Mon, 15 Nov 2010 12:14:02 -0800,
 Joe Perches wrote:
 > 
 > Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied now.  Thanks.
+Applied this one, too.  Thanks.
 
 
 Takashi
 
 
 > ---
->  sound/core/pcm_lib.c |    2 +-
+>  sound/pci/asihpi/hpioctl.c |    2 +-
 >  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-> index a1707cc..b75db8e 100644
-> --- a/sound/core/pcm_lib.c
-> +++ b/sound/core/pcm_lib.c
-> @@ -223,7 +223,7 @@ static void xrun_log(struct snd_pcm_substream *substream,
->  	entry->jiffies = jiffies;
->  	entry->pos = pos;
->  	entry->period_size = runtime->period_size;
-> -	entry->buffer_size = runtime->buffer_size;;
-> +	entry->buffer_size = runtime->buffer_size;
->  	entry->old_hw_ptr = runtime->status->hw_ptr;
->  	entry->hw_ptr_base = runtime->hw_ptr_base;
->  	log->idx = (log->idx + 1) % XRUN_LOG_CNT;
+> diff --git a/sound/pci/asihpi/hpioctl.c b/sound/pci/asihpi/hpioctl.c
+> index 62895a7..22dbd91 100644
+> --- a/sound/pci/asihpi/hpioctl.c
+> +++ b/sound/pci/asihpi/hpioctl.c
+> @@ -435,7 +435,7 @@ void __devexit asihpi_adapter_remove(struct pci_dev *pci_dev)
+>  	struct hpi_message hm;
+>  	struct hpi_response hr;
+>  	struct hpi_adapter *pa;
+> -	pa = (struct hpi_adapter *)pci_get_drvdata(pci_dev);
+> +	pa = pci_get_drvdata(pci_dev);
+>  
+>  	hpi_init_message_response(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+>  		HPI_SUBSYS_DELETE_ADAPTER);
 > -- 
 > 1.7.3.1.g432b3.dirty
 > 
