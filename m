@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab0KVMAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:00:42 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43068 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241Ab0KVMAl convert rfc822-to-8bit (ORCPT
+	id S1755322Ab0KVMB5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:01:57 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54641 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434Ab0KVMBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:00:41 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Date: Mon, 22 Nov 2010 17:30:09 +0530
-Subject: RE: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
- switches and LEDs
-Thread-Topic: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
- switches and LEDs
-Thread-Index: AcuIADiWe80zCTUaQiqwSyDccpMpiACO5LmA
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB59302477EB2D8@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
- <AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
-In-Reply-To: <AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 22 Nov 2010 07:01:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=V0xdf7C7qitLq/4249XJrNyu0xKerdUeN+vwwMsLH9gaXGYA5nKpFS8d+DKkMGaq+y
+         OB93XEBpkZT3rbl5gqI6AoUXQwEysUTthFLi4I+EOcsrYCyWogE5MkwMMUVj84DEWuj7
+         QRspLzpv7MsSP0QlpFMW7Shk/RpfYACiJEgls=
 MIME-Version: 1.0
+In-Reply-To: <20101119171653.3c476064.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101119171653.3c476064.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 22 Nov 2010 21:01:54 +0900
+Message-ID: <AANLkTikWeMH67nOSA-s3+OZqovyNRNoTw8wTr5_ecpOv@mail.gmail.com>
+Subject: Re: [PATCH 4/4] alloc_contig_pages() use better allocation function
+ for migration
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bob Liu <lliubbo@gmail.com>, fujita.tomonori@lab.ntt.co.jp,
+        m.nazarewicz@samsung.com, pawel@osciak.com, andi.kleen@intel.com,
+        felipe.contreras@gmail.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-On Fri, Nov 19, 2010 at 21:10:50, Ben Gardiner wrote:
-
-> >> [...]
-> >
-> > How does gpio_request prevent sysfs control?
+On Fri, Nov 19, 2010 at 5:16 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
 >
-> To obtain access to a gpio through the sysfs interface the user must
-> first write the gpio number to 'export'. When the gpio has been
-> gpio_request()'d the result of writing to 'export' is nothing; whereas
-> writing to export would normally result in the appearance of a named
-> gpio line alongside 'export'.
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >
->  I hope the following commands and their output illustrate my point:
+> Old story.
+> Because we cannot assume which memory section will be offlined next,
+> hotremove_migrate_alloc() just uses alloc_page(). i.e. make no decision
+> where the page should be migrate into. Considering memory hotplug's
+> nature, the next memory section near to a section which is being removed
+> will be removed in the next. So, migrate pages to the same node of original
+> page doesn't make sense in many case, it just increases load.
+> Migration destination page is allocated from the node where offlining script
+> runs.
 >
-> $ cd /sys/class/gpio/
-> $ ls
-> export       gpiochip128  gpiochip160  gpiochip64   unexport
-> gpiochip0    gpiochip144  gpiochip32   gpiochip96
-> $ echo 160 > export
-> $ ls
-> export       gpiochip128  gpiochip160  gpiochip64   unexport
-> gpiochip0    gpiochip144  gpiochip32   gpiochip96
-> $ echo 163 > export
-> $ ls
-> export       gpiochip128  gpiochip160  gpiochip64   tp_22
-> gpiochip0    gpiochip144  gpiochip32   gpiochip96   unexport
+> Now, contiguous-alloc uses do_migrate_range(). In this case, migration
+> destination node should be the same node of migration source page.
+>
+> This patch modifies hotremove_migrate_alloc() and pass "nid" to it.
+> Memory hotremove will pass -1. So, if the page will be moved to
+> the node where offlining script runs....no behavior changes.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Thanks for the explanation. I should have probably asked
-earlier, why do we need to prevent sysfs access of
-deep sleep enable and sw reset pins? We don't seem to be
-using them in the kernel either.
 
-Thanks,
-Sekhar
-
+-- 
+Kind regards,
+Minchan Kim
