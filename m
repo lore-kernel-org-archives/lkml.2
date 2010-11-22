@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab0KVC5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 21:57:25 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:55572 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756289Ab0KVC5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 21:57:23 -0500
-Date: Mon, 22 Nov 2010 13:57:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, randy.dunlap@oracle.com,
-        catalin.marinas@arm.com, linux-kbuild@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xiyou.wangcong@gmail.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] Revert
- "kconfig: Temporarily disable dependency warnings"
-Message-Id: <20101122135715.121b5eb7.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>
-References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
-	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
-	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
-	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>
-	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1756580Ab0KVDGo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 22:06:44 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57268 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756284Ab0KVDGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 22:06:43 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 22 Nov 2010 12:01:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [BUGFIX][PATCH] pagemap: set pagemap walk limit to PMD boundary
+Message-Id: <20101122120102.e0e76373.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1290157665-17215-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1290157665-17215-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__22_Nov_2010_13_57_15_+1100_/G4+qX/M1Q8iy.b5"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__22_Nov_2010_13_57_15_+1100_/G4+qX/M1Q8iy.b5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 19 Nov 2010 18:07:45 +0900
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-Hi,
+> Currently one pagemap_read() call walks in PAGEMAP_WALK_SIZE bytes
+> (== 512 pages.)  But there is a corner case where walk_pmd_range()
+> accidentally runs over a VMA associated with a hugetlbfs file.
+> 
+> For example, when a process has mappings to VMAs as shown below:
+> 
+>   # cat /proc/<pid>/maps
+>   ...
+>   3a58f6d000-3a58f72000 rw-p 00000000 00:00 0
+>   7fbd51853000-7fbd51855000 rw-p 00000000 00:00 0
+>   7fbd5186c000-7fbd5186e000 rw-p 00000000 00:00 0
+>   7fbd51a00000-7fbd51c00000 rw-s 00000000 00:12 8614   /hugepages/test
+> 
+> then pagemap_read() goes into walk_pmd_range() path and walks in the range
+> 0x7fbd51853000-0x7fbd51a53000, but the hugetlbfs VMA should be handled
+> by walk_hugetlb_range(). Otherwise PMD for the hugepage is considered bad
+> and cleared, which causes undesirable results.
+> 
+> This patch fixes it by separating pagemap walk range into one PMD.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Matt Mackall <mpm@selenic.com>
+> ---
+>  fs/proc/task_mmu.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index da6b01d..c126c83 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -706,6 +706,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+>   * skip over unmapped regions.
+>   */
+>  #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+> +#define PAGEMAP_WALK_MASK	(PMD_MASK)
+>  static ssize_t pagemap_read(struct file *file, char __user *buf,
+>  			    size_t count, loff_t *ppos)
+>  {
+> @@ -776,7 +777,7 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+>  		unsigned long end;
+>  
+>  		pm.pos = 0;
+> -		end = start_vaddr + PAGEMAP_WALK_SIZE;
+> +		end = (start_vaddr + PAGEMAP_WALK_SIZE) & PAGEMAP_WALK_MASK;
+>  		/* overflow ? */
+>  		if (end < start_vaddr || end > end_vaddr)
+>  			end = end_vaddr;
 
-On Sun, 21 Nov 2010 20:58:54 -0500 Arnaud Lacombe <lacombar@gmail.com> wrot=
-e:
->
-> There is 2 patches which fixes that by adding to the kconfig language
-> a "visible" property to menus, 1 revert of "another" solution (which
-> works but does not scale) and 2 patch which makes usage of the new
-> property. Ack-ed and complemented by Mauro, but still waiting
-> review/blessing by Michal.
->=20
-> The core change is available here: https://patchwork.kernel.org/patch/306=
-412/
->=20
-> Alternatively, if you don't care about the menu structure, Randy
-> proposed a one-liner.
+Ack. 
 
-OK, good to know it is being worked on.  Thanks.
+But ALIGN() can't be used ?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
+-Kame
 
---Signature=_Mon__22_Nov_2010_13_57_15_+1100_/G4+qX/M1Q8iy.b5
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJM6dwLAAoJEDMEi1NhKgbsP7kIAJbu9b59fW0cFsf9A2aK0yB0
-UJsgLp530WOzDYjnvFfOJrIMlniTD/UYpbSAoTn33BF/Oh4xdOFvIt7XBJgEvLz7
-IERHY/tNxlwD2h2u1U+EZso7AfkKWezoS9Tj6PJSJVMwOipuPrLO8Px9//zh1Ii4
-jM6f9R/43DtM3C+2P5dPbgvLyBBSIqM78wAKj5Yu6vqqkW0v6ig/k8371mgEjsJg
-SxhQbvcPYssMTrB6XPr+xp7XLrozhMqLmYzZhiOsrdZTp4LP0AeW2EtBlaBVEk4T
-hjipJR2qxjn90oqzLOz8pf1LVw/ojJUGlx5Ero3dv6QsQJF/LMgEq4mCXh9D34A=
-=AyOM
------END PGP SIGNATURE-----
-
---Signature=_Mon__22_Nov_2010_13_57_15_+1100_/G4+qX/M1Q8iy.b5--
