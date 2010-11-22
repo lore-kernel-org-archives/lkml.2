@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab0KVNia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 08:38:30 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:60358 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754782Ab0KVNi3 convert rfc822-to-8bit (ORCPT
+	id S1755964Ab0KVNkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 08:40:14 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:39089 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab0KVNkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 08:38:29 -0500
-Subject: Re: [PATCH v2 11/20] ARM: LPAE: Add fault handling support
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101122133216.GI31227@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	 <1289584840-18097-12-git-send-email-catalin.marinas@arm.com>
-	 <20101122131546.GG31227@n2100.arm.linux.org.uk>
-	 <1290431967.29754.11.camel@e102109-lin.cambridge.arm.com>
-	 <20101122133216.GI31227@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Mon, 22 Nov 2010 13:38:23 +0000
-Message-ID: <1290433103.29754.21.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 22 Nov 2010 13:38:24.0497 (UTC) FILETIME=[893E5E10:01CB8A4A]
-X-MC-Unique: 110112213382604801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Nov 2010 08:40:13 -0500
+Date: Mon, 22 Nov 2010 13:40:04 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Richard Purdie <rpurdie@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org, linux-acpi@vger.kernel.org,
+        lenb@kernel.org
+Subject: Re: [PATCH 1/5] Backlight: Add backlight type
+Message-ID: <20101122134004.GA6870@srcf.ucam.org>
+References: <1290182036-30484-1-git-send-email-mjg@redhat.com> <20101119120523.15bc341c.akpm@linux-foundation.org> <20101119202558.GA10898@srcf.ucam.org> <1290421020.1272.16707.camel@rex> <20101122123050.GA5385@srcf.ucam.org> <1290432949.1272.16768.camel@rex>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290432949.1272.16768.camel@rex>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-22 at 13:32 +0000, Russell King - ARM Linux wrote:
-> On Mon, Nov 22, 2010 at 01:19:27PM +0000, Catalin Marinas wrote:
-> > On Mon, 2010-11-22 at 13:15 +0000, Russell King - ARM Linux wrote:
-> > > On Fri, Nov 12, 2010 at 06:00:31PM +0000, Catalin Marinas wrote:
-> > > > @@ -108,7 +113,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
-> > > >
-> > > >               pte = pte_offset_map(pmd, addr);
-> > > >               printk(", *pte=%08lx", pte_val(*pte));
-> > > > +#ifndef CONFIG_ARM_LPAE
-> > > >               printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
-> > > > +#endif
-> > >
-> > > This is an unrelated change - should it be in a different patch?
-> >
-> > It was intended to be in this patch as I couldn't find a better place.
-> > This patch sorts out the fault handling (and error reporting) for LPAE
-> > and we don't need the additional printk here.
-> 
-> It doesn't sort the fault error reporting actually.  With pte_val()
-> returning u64 constants on LPAE, all the above printk's using %08lx will
-> issue warnings.
-> 
-> Also, as one of your previous patches changed the non-LPAE stuff to use
-> u32, which is 'unsigned int', %08lx is wrong for them too, and will cause
-> the compiler to spit out warnings.
+On Mon, Nov 22, 2010 at 01:35:48PM +0000, Richard Purdie wrote:
 
-This has been fixed in a subsequent version of the series with the
-conversion to %08llx and long long.
+> Its the reverse situation I worry about. Are there situations where
+> there are multiple connectors on the PCI device and the ACPI interface
+> just controls one of them but controls for the other connectors may
+> exist?
 
-> I can only assume this patch hasn't been build-tested, or maybe it has
-> but the warnings ignored?
-
-Probably the latter. I run the resulting kernels both on VE (with A9)
-and a model supporting A15.
+Yes, that's certainly possible and it'd be desirable to fix this up, but 
+the same problem also applies to platform interfaces and it's typically 
+unfixable there. My userspace implementation looks at the connector type 
+to determine the best approach - if it's not LVDS or eDP it ignores the 
+firmware and platform interfaces, so you'll fall back to the raw 
+interface if it can provide support for your connector (presumably via 
+ddcci, although we don't have this implemented yet)
 
 -- 
-Catalin
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
