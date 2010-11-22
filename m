@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab0KVRCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 12:02:52 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57855 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab0KVRCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 12:02:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Pt5zZ0qV/TVgIYN3Y5JK8fFxSHLsFPrkYwbVtIMJMDkisxB9AmfKxojIeFddHLglFO
-         YMe+d9IZ8aQCRfFOTvoA11qJVECa5bJyeH8KTN+/2Azr4zakp1d6v62ro2pNGQnOMgXD
-         AxJVsSknSmqG2Or0hhRiKikvfo1pmTrUvNkjI=
-Date: Mon, 22 Nov 2010 20:02:42 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: "Dan J. Rosenberg" <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re:
-Message-ID: <20101122170242.GA11289@albatros>
-References: <3E0D78C2-CEAF-42C3-9840-20B01AA4EFC7@vsecurity.com>
- <9A449BDC-E014-406A-84BD-D0C1F2DFD928@vsecurity.com>
+	id S1754912Ab0KVRDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 12:03:09 -0500
+Received: from cantor.suse.de ([195.135.220.2]:51300 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754377Ab0KVRDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 12:03:06 -0500
+Date: Mon, 22 Nov 2010 18:03:03 +0100
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Theodore Tso <tytso@MIT.EDU>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext3: Coding style fix in namei.c
+Message-ID: <20101122170303.GA5012@quack.suse.cz>
+References: <1290161589-5370-1-git-send-email-namhyung@gmail.com>
+ <60024FF1-3903-49AD-9A68-B04C6D678A8E@mit.edu>
+ <1290177928.1678.51.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <9A449BDC-E014-406A-84BD-D0C1F2DFD928@vsecurity.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290177928.1678.51.camel@leonhard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 13:33 -0500, Dan J. Rosenberg wrote:
-> In this case, count can never be -1, since it's limited by various checks in vfs_write() and rw_verify_area(), etc.
+On Fri 19-11-10 23:45:28, Namhyung Kim wrote:
+> 2010-11-19 (금), 07:57 -0500, Theodore Tso:
+> > On Nov 19, 2010, at 5:13 AM, Namhyung Kim wrote:
+> > 
+> > > * break long lines (using temp variables if needed)
+> > > * merge short lines
+> > > * put open brace on the same line
+> > > * use C89-style comments
+> > > * remove a space between function name and parenthesis
+> > > * remove a space between '*' and pointer name
+> > > * add a space after ','
+> > > * other random whitespace fixes
+> > > 
+> > > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> > 
+> > What's the benefit of such massive cleanup patches, really?   Does it
+> >  really enhance readability _that_ much?
+> > 
+> > I believe in cleaning up code as I make substantive, useful change, but
+> >  code churn for code churn's sake has a number of downsides:
+> > 
+> > *) It breaks other people's patches that might be pending (probably not
+> >  as much of an issue for ext3)
+> > *) It makes it really easy to introduce
+> >  security holes in code (although it looks like --- I haven't checked
+> >  to make sure --- this shouldn't change the compiled code any so we can
+> >  at least audit this by applying the patch, and then checking to make
+> >  sure the .o hasn't changed.   What really makes my skin crawl is a
+> >  massive change like that which doesn't have zero impact on the
+> >  compiled object code.  If I get a patch like that, I reject it out of
+> >  hand for ext4.)
+> > 
+> > Bottom line is I really don't think cleanup code helps a lot.  It
+> >  wastes your time --- why not find some way of improving the kernel
+> >  that has more impact --- and it wastes the time of the responsible
+> >  maintainer (who has to go through the code with a fined-toothed comb
+> >  to make sure there's nothing bad hidden in a massive patch like this).
+> > 
+> > Best regards,
+> > 
+> > -- Ted
+> > 
+> 
+> I wrote this patch because checkpatch complains about the code when I
+> tried to write another. Since I saw many codes in namei.c doesn't
+> conform the kernel coding style so I decided to write this coding style
+> patch first and others on top of it. But if you think it is totally
+> useless, I'm fine with dropping it.
+  I'm not a big fan of such big coding-style cleanups either. When you are
+changing some code for some other reason, it's fine (even desirable) to fix
+the coding style (and as a result checkpatch does not complain on your
+patch). But doing just coding style fixes makes sense only if the code is
+really hard to read which does not seem to be this case...
 
-Correct, I was dummied by similar checks in similar drivers - they do
-check such overflows.
-
-
+								Honza
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
