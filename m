@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab0KVUPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:15:12 -0500
-Received: from claw.goop.org ([74.207.240.146]:44258 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932167Ab0KVUPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:15:07 -0500
-Message-ID: <4CEACF49.8040701@goop.org>
-Date: Mon, 22 Nov 2010 12:15:05 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S932162Ab0KVUO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:14:56 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:55447 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab0KVUOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 15:14:55 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: Alban Crequy <alban.crequy@collabora.co.uk>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] AF_UNIX: find the recipients for multicast messages
+References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
+	<1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
+Date: Mon, 22 Nov 2010 21:14:52 +0100
+In-Reply-To: <1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
+	(Alban Crequy's message of "Mon, 22 Nov 2010 18:36:17 +0000")
+Message-ID: <87hbf9uncz.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
-References: <20101115112352.6cbf5604.sfr@canb.auug.org.au> <4CE1A07B.5010202@goop.org> <4CE1A124.3010108@kernel.dk>
-In-Reply-To: <4CE1A124.3010108@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 01:07 PM, Jens Axboe wrote:
-> On 2010-11-15 22:04, Jeremy Fitzhardinge wrote:
->> On 11/14/2010 04:23 PM, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Today's linux-next merge of the xen tree got a conflict in
->>> drivers/block/xen-blkfront.c between commit
->>> 02e031cbc843b010e72fcc05c76113c688b2860f ("block: remove
->>> REQ_HARDBARRIER") from Linus' tree and commits
->>> c64e38ea17a81721da0393584fd807f8434050fa ("xen/blkfront: map REQ_FLUSH
->>> into a full barrier") and be2f8373c188ed1f5d36003c9928e4d695213080
->>> ("xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER") from the xen
->>> tree.
->>>
->>> I used the xen tree version.
->> I'll drop that because you should be seeing those changes come via Jens.
-> Yep, since Linus pulled the last batch, for-linus now has the next bits
-> (which include the xen barrier set).
+Alban Crequy <alban.crequy@collabora.co.uk> writes:
 
-These don't seem to be in -rc3.  Did they get dropped on the ground
-somewhere?
+>+static DEFINE_SPINLOCK(unix_multicast_lock);
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
+For DBUS it's probably ok, but I suspect for other usages
+the global lock in the multipath fast path is going to hurt
+sooner or later.
 
-Jeremy Fitzhardinge (4):
-      xen/blkfront: map REQ_FLUSH into a full barrier
-      xen/blkfront: change blk_shadow.request to proper pointer
-      xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
-      xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
+> +
+> +        /* Allocate for the set and hope the number of recipients does not
+> +	 * change while the lock is released. If it changes, we have to try
+> +	 * again... We allocate a bit more than needed, so if a _few_ members
+> +	 * are added in a multicast group meanwhile, we don't always need to
+> +	 * try again. */
+> +	recipient_cnt += 5;
+> +
+> +	set = kmalloc(sizeof(struct sock_set)
+> +		      + sizeof(struct sock_item) * recipient_cnt,
+> +	    GFP_KERNEL);
 
- drivers/block/xen-blkfront.c |   55 ++++++++++++++++++++++++-----------------
- 1 files changed, 32 insertions(+), 23 deletions(-)
-
-Thanks,
-	J
+FWIW for a large number of sockets this will likely run into
+memory fragmentation issues. There are various workarounds like
+fallback to vmalloc or use something like flex_arrays.
 
 
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
