@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab0KVAbL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 19:31:11 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33109 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab0KVAbK (ORCPT
+	id S1756104Ab0KVAbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 19:31:35 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50626 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450Ab0KVAbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 19:31:10 -0500
+	Sun, 21 Nov 2010 19:31:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=UUFypwtc+EwBbjjqIz6bQBIiKZDxYOCeQN1H6oM2LdOoy5a4SZBSsW+xdYfJ9kojuN
-         9qVhTouhbf5vgpNBbzR/oUcG11C7uA/x8kyI8OmuydFCADwZR8USRuj3ZqWgjXZ+4iZO
-         WoPsS821d/+CJgaGo8RU+2mJxTU0ra/NhFu2Y=
+        h=subject:to:from:cc:date:message-id:in-reply-to:references
+         :user-agent:mime-version:content-type:content-transfer-encoding;
+        b=jgwPM429gMvSKmP9DxlsMzubyJwiLDzVY+VqrMCoqYUO+Zwyv28nT8aO/T7Lz0vyRo
+         AEjKuPeuOWcdmx07PjU6fN9vC6lAY/PAatagVHadSVSz5sP9mI2cVJ1XSQWwJDVdwbbT
+         jxcOzSStEi1eox3SRJStGR0niJu71N4zvecps=
+Subject: [PATCH 1/4] fanotify: Shrink struct fanotify_event_metadata by 32
+ bits
+To: Eric Paris <eparis@redhat.com>
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Cc: Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
+        agruen@linbit.com, linux-kernel@vger.kernel.org, stefan@buettcher.org,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Date: Mon, 22 Nov 2010 00:33:03 +0000
+Message-ID: <20101122003157.13674.42596.stgit@zaytsev.su>
+In-Reply-To: <20101122002747.13674.69384.stgit@zaytsev.su>
+References: <20101122002747.13674.69384.stgit@zaytsev.su>
+User-Agent: StGit/0.15-97-g9680
 MIME-Version: 1.0
-In-Reply-To: <87tyjavdn2.fsf@gmail.com>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<5d205f8a4df078b0da3681063bbf37382b02dd23.1290349672.git.minchan.kim@gmail.com>
-	<87tyjavdn2.fsf@gmail.com>
-Date: Mon, 22 Nov 2010 09:31:09 +0900
-Message-ID: <AANLkTikWz6kmgwebUsO--hohSFG__Uwpxp=JZ70Vwr=t@mail.gmail.com>
-Subject: Re: [RFC 2/2] Prevent promotion of page in madvise_dontneed
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Ben Gamari <bgamari@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 1:34 AM, Ben Gamari <bgamari@gmail.com> wrote:
-> On Sun, 21 Nov 2010 23:30:24 +0900, Minchan Kim <minchan.kim@gmail.com> wrote:
->> Now zap_pte_range alwayas promotes pages which are pte_young &&
->> !VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
->> it's unnecessary since the page wouldn't use any more.
->>
-> Is this not against master? If it is, I think you might have forgotten
-> to update the zap_page_range() reference on mm/memory.c:1226 (in
-> zap_vma_ptes()). Should promote be true or false in this case? Cheers,
+And this saves additional 32 bits in the future
 
-Thanks. I missed that. Whatever, It's okay. :)
-That's because it is used by only VM_PFNMAP.
-It means the VMA doesn't have struct page descriptor of pages.
-So zap_pte_range never promote the page.
+Signed-off-by: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+---
+ include/linux/fanotify.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-Anyway, by semantic, it should be "zero".
-Will fix.
-Thanks, Ben.
+diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
+index 0f01214..9a7986f 100644
+--- a/include/linux/fanotify.h
++++ b/include/linux/fanotify.h
+@@ -86,10 +86,11 @@
+ #define FANOTIFY_METADATA_VERSION	2
+ 
+ struct fanotify_event_metadata {
+-	__u32 event_len;
+-	__u32 vers;
+-	__aligned_u64 mask;
++	__u16 event_len;
++	__u8 vers;
++	__u8 reserved;
+ 	__s32 fd;
++	__aligned_u64 mask;
+ 	__s32 pid;
+ };
+ 
 
->
-> - Ben
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
