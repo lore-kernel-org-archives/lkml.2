@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab0KVXn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 18:43:57 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:41663 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757813Ab0KVXn4 (ORCPT
+	id S1757929Ab0KVXoY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 18:44:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51146 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757815Ab0KVXoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 18:43:56 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAIeP6kxLd/sX/2dsb2JhbAAHg0PMdZElgSKDNnMEhFo
-X-IronPort-AV: E=Sophos;i="4.59,239,1288584000"; 
-   d="scan'208";a="83275997"
-Message-ID: <4CEB0037.3000303@teksavvy.com>
-Date: Mon, 22 Nov 2010 18:43:51 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: huang ying <huang.ying.caritas@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>	<AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>	<AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>	<AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>	<AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>	<AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>	<AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com>	<AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>	<AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com> <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
-In-Reply-To: <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 22 Nov 2010 18:44:23 -0500
+Date: Mon, 22 Nov 2010 15:44:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Free memory never fully used, swapping
+Message-Id: <20101122154419.ee0e09d2.akpm@linux-foundation.org>
+In-Reply-To: <20101115195246.GB17387@hostway.ca>
+References: <20101115195246.GB17387@hostway.ca>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-20 08:06 PM, huang ying wrote:
->
-> I have no objection to report hardware errors in system logs too. So
-> these people can get the information too. I just want to add another
-> tool oriented interface too. So that some other users (like cluster
-> administrator) can get their work done better too.
 
-So, use the standard interface for the tool:  syslog.
+(cc linux-mm, where all the suckiness ends up)
 
-Have this obscure new tool simply parse the log messages,
-and the send/save the data whatever way you like.
+On Mon, 15 Nov 2010 11:52:46 -0800
+Simon Kirby <sim@hostway.ca> wrote:
 
-No new specialized kernel API required.
+> Hi!
+> 
+> We're seeing cases on a number of servers where cache never fully grows
+> to use all available memory.  Sometimes we see servers with 4 GB of
+> memory that never seem to have less than 1.5 GB free, even with a
+> constantly-active VM.  In some cases, these servers also swap out while
+> this happens, even though they are constantly reading the working set
+> into memory.  We have been seeing this happening for a long time;
+> I don't think it's anything recent, and it still happens on 2.6.36.
+> 
+> I noticed that CONFIG_NUMA seems to enable some more complicated
+> reclaiming bits and figured it might help since most stock kernels seem
+> to ship with it now.  This seems to have helped, but it may just be
+> wishful thinking.  We still see this happening, though maybe to a lesser
+> degree.  (The following observations are with CONFIG_NUMA enabled.)
+> 
+> I was eyeballing "vmstat 1" and "watch -n.2 -d cat /proc/vmstat" at the
+> same time, and I can see distinctly that the page cache is growing nicely
+> until a sudden event where 400 MB is freed within 1 second, leaving
+> this particular box with 700 MB free again.  kswapd numbers increase in
+> /proc/vmstat, which leads me to believe that __alloc_pages_slowpath() has
+> been called, since it seems to be the thing that wakes up kswapd.
+> 
+> Previous patterns and watching of "vmstat 1" show that the swapping out
+> also seems to occur during the times that memory is quickly freed.
+> 
+> These are all x86_64, and so there is no highmem garbage going on. 
+> The only zones would be for DMA, right?  Is the combination of memory
+> fragmentation and large-order allocations the only thing that would be
+> causing this reclaim here?  Is there some easy bake knob for finding what
+> is causing the free memory jumps each time this happens?
+> 
+> Kernel config and munin graph of free memory here:
+> 
+> http://0x.ca/sim/ref/2.6.36/
+> 
+> I notice CONFIG_COMPACTION is still "EXPERIMENTAL".  Would it be worth
+> trying here?  It seems to enable defrag before reclaim, but that sounds
+> kind of ...complicated...
+> 
+> Cheers,
+> 
+> Simon-
+> 
+> procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+>  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+>  1  0  11496 401684  40364 2531844    0    0  4540   773 7890 16291 13  9 77  1
+>  3  0  11492 400180  40372 2534204    0    0  5572   699 8544 14856 25  9 66  1
+>  0  0  11492 394344  40372 2540796    0    0  5256   345 8239 16723 17  7 73  2
+>  0  0  11492 388524  40372 2546236    0    0  5216   393 8687 17289 14  9 76  1
+>  4  1  11684 716296  40244 2218612    0  220  6868  1837 11124 27368 28 20 51  0
+>  1  0  11732 753992  40248 2181468    0  120  5240   647 9542 15609 38 11 50  1
+>  1  0  11712 736864  40260 2197788    0    0  5872  9147 9838 16373 41 11 47  1
+>  0  0  11712 738096  40260 2196984    0    0  4628   493 7980 15536 22 10 67  1
+>  2  0  11712 733508  40260 2201756    0    0  4404   418 7265 16867 10  9 80  2
