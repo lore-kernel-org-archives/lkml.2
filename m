@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab0KVMsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:48:07 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:24179 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab0KVMsE convert rfc822-to-8bit (ORCPT
+	id S1756127Ab0KVMvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:51:13 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:63158 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755793Ab0KVMvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:48:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eSGfQMNbL6fsAOo0KmC0I6i3OOQiv6sk77GGhxJt/PbvHmb2AEQccAMbDYS9SlFiFT
-         iR2bsoa9brvh21YSut3Q==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinFxc5R-CgWv3XnoDrBcwQv_zwz1_4oCwTOOqGh@mail.gmail.com>
-References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
-	<1290077254-12165-4-git-send-email-andi@firstfloor.org>
-	<AANLkTinFxc5R-CgWv3XnoDrBcwQv_zwz1_4oCwTOOqGh@mail.gmail.com>
-Date: Mon, 22 Nov 2010 13:47:59 +0100
-Message-ID: <AANLkTin3K_ffY8SeCo6JK570eDx_zHXzQ6ANA_ixy3tP@mail.gmail.com>
-Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
- registers v3
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <lin@ming.vg>
-Cc: Andi Kleen <andi@firstfloor.org>, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 22 Nov 2010 07:51:10 -0500
+Subject: Re: What should poll() return when a device is unregistered ? (was
+ "media: Media device node support")
+From: Andy Walls <awalls@md.metrocast.net>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Jonathan Corbet <corbet@lwn.net>, linux-media@vger.kernel.org,
+        sakari.ailus@maxwell.research.nokia.com, linux-kernel@vger.kernel.org
+In-Reply-To: <201011221236.40194.hverkuil@xs4all.nl>
+References: <1285241696-16826-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	 <201011221008.06852.hverkuil@xs4all.nl>
+	 <201011221141.27945.laurent.pinchart@ideasonboard.com>
+	 <201011221236.40194.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Nov 2010 07:51:37 -0500
+Message-ID: <1290430297.2092.16.camel@morgan.silverblock.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-11-22_06:2010-11-22,2010-11-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1011220058
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 1:23 PM, Lin Ming <lin@ming.vg> wrote:
-> On Thu, Nov 18, 2010 at 6:47 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> From: Andi Kleen <ak@linux.intel.com>
->>
->> Intel Nehalem/Westmere have a special OFFCORE_RESPONSE event
->> that can be used to monitor any offcore accesses from a core.
->> This is a very useful event for various tunings, and it's
->> also needed to implement the generic LLC-* events correctly.
->>
->> Unfortunately this event requires programming a mask in a separate
->> register. And worse this separate register is per core, not per
->> CPU thread.
->
-> This "separate register" is MSR_OFFCORE_RSP_0, right?
-> But from the SDM,  MSR_OFFCORE_RSP_0 is "thread" scope,
-> see SDM 3b, Appendix B.4 MSRS IN THE INTEL® MICROARCHITECTURE CODENAME NEHALEM
->
-> Or am I missing some obvious thing?
->
-The manual is wrong on this.
+On Mon, 2010-11-22 at 12:36 +0100, Hans Verkuil wrote:
+> On Monday, November 22, 2010 11:41:27 Laurent Pinchart wrote:
+> > Hi Hans,
+> > 
+> > On Monday 22 November 2010 10:08:06 Hans Verkuil wrote:
+> > > On Monday, November 22, 2010 00:35:54 Laurent Pinchart wrote:
+> > > > Hi Jonathan,
 
-> Thanks,
-> Lin Ming
->
+> > > This doesn't really seem to be standardized :-(
+> > 
+> > CC'ing LKML with the question.
+> > 
+> > POLLERR | POLLHUP and POLLERR won't make a difference to select(), but we 
+> > should still standardize on a poll() return code when devices are unregistered 
+> > and/or - for hot-pluggable devices - disconnected (for V4L devices 
+> > unregistered usually means disconnected) ?
+> 
+> Drivers return POLLERR, POLLERR|POLLHUP or POLLHUP in case of a disconnect.
+> I'm leaning towards POLLHUP as the most appropriate poll return value for a
+> USB disconnect.
+
++1 POLLHUP
+
+http://www.opengroup.org/onlinepubs/009695399/functions/poll.html
+
+"POLLHUP
+        The device has been disconnected. [...]"
+
+
+My $0.02 below:
+The communication link with the device is closed due to circumstances
+that the OS considers normal operation.  The OS has, at some level, shut
+down its side of the communication link gracefully as well.
+
+Just because the application or the OS cannot always predict when a USB
+disconnect may happen, doesn't mean it is an error.
+
+
+Regards,
+Andy
+
+
