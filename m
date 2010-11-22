@@ -1,40 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab0KVUVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:21:19 -0500
-Received: from claw.goop.org ([74.207.240.146]:43901 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932102Ab0KVUVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:21:18 -0500
-Message-ID: <4CEAD0BC.9020407@goop.org>
-Date: Mon, 22 Nov 2010 12:21:16 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S932204Ab0KVUZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:25:39 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:42297 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab0KVUZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 15:25:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=L9Z+XPIQtNBbmT+aSXlqVOFD7YCL5etkE22SLzB0ZfaZoikWmOLrITBVJNfQ/I6jvs
+         JMyI1ZuqNh2gODuDv75w==
+Date: Mon, 22 Nov 2010 12:25:25 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+cc: Jesper Juhl <jj@chaosbits.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: general protection fault: 0000 [#1] SMP
+In-Reply-To: <4CEABDFD.9080908@gmail.com>
+Message-ID: <alpine.LSU.2.00.1011221218350.15953@sister.anvils>
+References: <AANLkTik=d4nOUAd_DZCsJL44NB5OvYmux+b58mqs1PGH@mail.gmail.com> <alpine.LNX.2.00.1011202322050.24071@swampdragon.chaosbits.net> <alpine.LNX.2.00.1011202331090.24071@swampdragon.chaosbits.net> <4CEABDFD.9080908@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
-References: <20101115112352.6cbf5604.sfr@canb.auug.org.au> <4CE1A07B.5010202@goop.org> <4CE1A124.3010108@kernel.dk> <4CEACF49.8040701@goop.org> <4CEACFBC.8050402@kernel.dk>
-In-Reply-To: <4CEACFBC.8050402@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2010 12:17 PM, Jens Axboe wrote:
-> I'll drop that because you should be seeing those changes come via Jens.
->>> Yep, since Linus pulled the last batch, for-linus now has the next bits
->>> (which include the xen barrier set).
->> These don't seem to be in -rc3.  Did they get dropped on the ground
->> somewhere?
-> No, they are in for-linus as written above. Just not shipped off yet,
-> will be soon.
+On Mon, 22 Nov 2010, Justin P. Mattock wrote:
 
-No problem, I was just following up on everything outstanding for upstream.
+> <---- cut -------->
+> 
+> cleaned the thread up.. Anyways after doing some debugging with gdb and with
+> valgrind for an application that keeps segfaulting I noticed this in dmesg:
+> 
+> [ 3028.571941] FIREWALL:INPUT IN=wlan0 OUT=
+> MAC=ff:ff:ff:ff:ff:ff:00:23:12:65:cb:02:08:00 SRC=0.0.0.0
+> DST=255.255.255.255 LEN=328 TOS=0x00 PREC=0x00 TTL=255 ID=57984 PROTO=UDP
+> SPT=68 DPT=67 LEN=308
+> [ 3061.177655] BUG: Bad page state in process make  pfn:2134c
+> [ 3061.177661] page:ffffea00007438a0 count:0 mapcount:0 mapping:   (null)
+> index:0x507
+> [ 3061.177663] page flags: 0x4000000000000008(uptodate)
+> [ 3061.177669] Pid: 5691, comm: make Not tainted 2.6.37-rc2-00039-g0211924
+> #7
+> [ 3061.177671] Call Trace:
+> [ 3061.177680]  [<ffffffff810c5900>] ? dump_page+0xc0/0xc5
+> [ 3061.177684]  [<ffffffff810c5f18>] bad_page+0xd8/0xea
+> [ 3061.177688]  [<ffffffff810c7aeb>] get_page_from_freelist+0x344/0x4a0
+> [ 3061.177693]  [<ffffffff811bf123>] ? inode_has_perm+0x68/0x6a
+> [ 3061.177697]  [<ffffffff810c7d6b>] __alloc_pages_nodemask+0x124/0x645
+> [ 3061.177701]  [<ffffffff810f7cf2>] ? __dentry_open+0x194/0x2a1
+> [ 3061.177705]  [<ffffffff810dc155>] handle_mm_fault+0x2a8/0x82f
+> [ 3061.177710]  [<ffffffff811056ec>] ? do_filp_open+0x1f3/0x646
+> [ 3061.177714]  [<ffffffff810f4226>] ? check_object+0x13b/0x1eb
+> [ 3061.177719]  [<ffffffff81447d8e>] do_page_fault+0x3ec/0x411
+> [ 3061.177722]  [<ffffffff810f4b95>] ? free_debug_processing+0x1c5/0x208
+> [ 3061.177726]  [<ffffffff81103958>] ? getname+0x2c/0x1be
+> [ 3061.177728]  [<ffffffff810f4d08>] ? __slab_free+0x130/0x145
+> [ 3061.177732]  [<ffffffff81444e25>] page_fault+0x25/0x30
+> [ 3061.177734] Disabling lock debugging due to kernel taint
+> [ 3126.418774] type=1400 audit(1290451825.417:178): avc:  denied
+> 
+> from what I remember using valgirnd with the app took a while to load but am
+> unsure if is the reason for the above message.
 
-Thanks,
-    J
+This particular error is almost certainly fixed by rc3's patch below.
+Whether your earlier errors are a side-effect of the same Uptodate bug
+I cannot say: it's conceivable, but I don't see it as likely.  Maybe
+you should just move up to rc3 and see what happens with that.
 
+Hugh
+
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+Date: Thu, 18 Nov 2010 02:46:06 +0000 (-0500)
+Subject: ext4: fix setting random pages PageUptodate
+X-Git-Tag: v2.6.37-rc3~1^2~5
+X-Git-Url: http://127.0.0.1:1234/?p=.git;a=commitdiff_plain;h=08da1193d2c8c7a25d0cef7f85d0b9f1ad7c583a
+
+ext4: fix setting random pages PageUptodate
+
+ext4_end_bio calls put_page and kmem_cache_free before calling
+SetPageUpdate(). This can result in setting the PageUptodate bit on
+random pages and causes the following BUG:
+
+ BUG: Bad page state in process rm  pfn:52e54
+ page:ffffea0001222260 count:0 mapcount:0 mapping:          (null) index:0x0
+ arch kernel: page flags: 0x4000000000000008(uptodate)
+
+Fix the problem by moving put_io_page() after the SetPageUpdate() call.
+
+Thanks to Hugh Dickins for analyzing this problem.
+
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+---
+
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index 7f5451c..beacce1 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -237,8 +237,6 @@ static void ext4_end_bio(struct bio *bio, int error)
+ 			} while (bh != head);
+ 		}
+ 
+-		put_io_page(io_end->pages[i]);
+-
+ 		/*
+ 		 * If this is a partial write which happened to make
+ 		 * all buffers uptodate then we can optimize away a
+@@ -248,6 +246,8 @@ static void ext4_end_bio(struct bio *bio, int error)
+ 		 */
+ 		if (!partial_write)
+ 			SetPageUptodate(page);
++
++		put_io_page(io_end->pages[i]);
+ 	}
+ 	io_end->num_io_pages = 0;
+ 	inode = io_end->inode;
