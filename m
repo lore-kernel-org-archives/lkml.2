@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab0KVS2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 13:28:07 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53792 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756567Ab0KVS2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 13:28:02 -0500
-Date: Mon, 22 Nov 2010 19:27:59 +0100
-From: Jan Kara <jack@suse.cz>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] ext3: Return error code from generic_check_addressable
-Message-ID: <20101122182759.GA6141@quack.suse.cz>
-References: <20101115214831.GA18195@tux1.beaverton.ibm.com>
- <4CE1AC38.9040201@redhat.com>
- <20101115230346.GB18195@tux1.beaverton.ibm.com>
- <alpine.LFD.2.00.1011161351230.5515@dhcp-lab-213.englab.brq.redhat.com>
- <20101116225744.GD18195@tux1.beaverton.ibm.com>
- <alpine.LFD.2.00.1011180946020.3125@dhcp-lab-213.englab.brq.redhat.com>
+	id S1757090Ab0KVSdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 13:33:08 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33362 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756567Ab0KVSdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 13:33:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=S3x8VP00iDsir3i74NmMJPzyeFFUYysu8P0PWNWI9NpFA2TMP9GkUEmzLL0vIMeQ57
+         Ea+i9e4C0rJoi/urVJhxS0U9uUuiH0EajrJKH2lpcn0FpOhkrsI2HTH5lHCP5yFwHQY+
+         KNnBAkSnNqdo7xxDO2awzrNZbCDE1zc5aka/g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011180946020.3125@dhcp-lab-213.englab.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimqn+qS5RxETz1DznsMDS4gZBGxkLkdCgTQ7qG-@mail.gmail.com>
+References: <4ce85e437577ae827@agluck-desktop.sc.intel.com>
+	<1290391175.2903.132.camel@yhuang-dev>
+	<AANLkTi=fNH4-VjLh1zzk-UdEQevR16_K8igdLeodw6yL@mail.gmail.com>
+	<AANLkTimqn+qS5RxETz1DznsMDS4gZBGxkLkdCgTQ7qG-@mail.gmail.com>
+Date: Mon, 22 Nov 2010 10:33:05 -0800
+Message-ID: <AANLkTi=YTro_ZgsZCpznXR9aT+rV=Ukg6q1n0m9X724f@mail.gmail.com>
+Subject: Re: [RFC] persistent store
+From: Tony Luck <tony.luck@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-11-10 09:52:51, Lukas Czerner wrote:
-> On Tue, 16 Nov 2010, Darrick J. Wong wrote:
-> 
-> > ext3: Return error code from generic_check_accessible
-> > 
-> > ext3_fill_super should return the error code that generic_check_accessible
-> > returns when an error condition occurs.
-> > 
-> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> > ---
-> > 
-> >  fs/ext3/super.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > index 2fedaf8..960629b 100644
-> > --- a/fs/ext3/super.c
-> > +++ b/fs/ext3/super.c
-> > @@ -1842,13 +1842,15 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
-> >  		goto failed_mount;
-> >  	}
-> >  
-> > -	if (generic_check_addressable(sb->s_blocksize_bits,
-> > -				      le32_to_cpu(es->s_blocks_count))) {
-> > +	err = generic_check_addressable(sb->s_blocksize_bits,
-> > +					le32_to_cpu(es->s_blocks_count));
-> > +	if (err) {
-> >  		ext3_msg(sb, KERN_ERR,
-> >  			"error: filesystem is too large to mount safely");
-> >  		if (sizeof(sector_t) < 8)
-> >  			ext3_msg(sb, KERN_ERR,
-> >  				"error: CONFIG_LBDAF not enabled");
-> > +		ret = err;
-> >  		goto failed_mount;
-> >  	}
-> >  
-> > 
-> 
-> Add Jan Kara to cc list.
-  Thanks for forwarding. Merged.
+On Mon, Nov 22, 2010 at 10:24 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Any tangents with "pramfs: persistent and protected RAM filesystem"
+> on linux-embedded?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+That looks nice for building on top on a sane h/w design (a
+block of non-volatile RAM).  My pstore code works with
+uglier things. The ACPI/ERST interface provides ways to
+read/write/clear "records" from what might be some NVRAM,
+but might also be a channel to a service processor ... and
+ERST is what I'd like to see made usable (without subjecting
+users to the implementation details).
+
+-Tony
