@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0KVQ7B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:59:01 -0500
-Received: from slowhand.arndnet.de ([88.198.19.76]:53222 "EHLO mail.unitix.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752167Ab0KVQ67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:58:59 -0500
-Message-ID: <4CEAA151.7050404@arndnet.de>
-Date: Mon, 22 Nov 2010 17:58:57 +0100
-From: Arnd Hannemann <arnd@arndnet.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	id S1753696Ab0KVRCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 12:02:52 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57855 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab0KVRCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 12:02:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Pt5zZ0qV/TVgIYN3Y5JK8fFxSHLsFPrkYwbVtIMJMDkisxB9AmfKxojIeFddHLglFO
+         YMe+d9IZ8aQCRfFOTvoA11qJVECa5bJyeH8KTN+/2Azr4zakp1d6v62ro2pNGQnOMgXD
+         AxJVsSknSmqG2Or0hhRiKikvfo1pmTrUvNkjI=
+Date: Mon, 22 Nov 2010 20:02:42 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: "Dan J. Rosenberg" <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re:
+Message-ID: <20101122170242.GA11289@albatros>
+References: <3E0D78C2-CEAF-42C3-9840-20B01AA4EFC7@vsecurity.com>
+ <9A449BDC-E014-406A-84BD-D0C1F2DFD928@vsecurity.com>
 MIME-Version: 1.0
-To: "Berg, Johannes" <johannes.berg@intel.com>
-CC: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
-References: <20101116142027.GC19247@tiehlicka.suse.cz> <C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com> <20101118082454.GC15928@tiehlicka.suse.cz> <C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
-In-Reply-To: <C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9A449BDC-E014-406A-84BD-D0C1F2DFD928@vsecurity.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.11.2010 17:52, schrieb Berg, Johannes:
->>>> it seems that your patch (5ada28bf76752e33dce3d807bf0dfbe6d1b943ad)
->>>> causes the following compilatation error:
->>>>   LD      .tmp_vmlinux1
->>>> drivers/built-in.o: In function `led_trigger_set':
->>>> drivers/leds/led-triggers.c:116: undefined reference to
->>>> `led_brightness_set'
->>>> make[1]: *** [.tmp_vmlinux1] Error 1
->>>>
->>>> AFAICS, led_brightness_set is defined in drivers/leds/led-class.c
->> which
->>>> is compiled only if CONFIG_LEDS_CLASS is configured which is not my
->>>> case (after make oldconfig with all default values from 37-rc1).
->>>>
->>>> I am not sure what is the right solution whether
->> CONFIG_LEDS_TRIGGERS
->>>> should depend on CONFIG_LEDS_CLASS or the patch should be reverted.
->>>>
->>>> My config is attached, if somebody need it.
->>>
->>> Hmm, we did find that, and I made a patch to fix up the Kconfig, that
->> apparently hasn't made it in? Bit confused now.
->>
->> Does this mean that I should enable CONFIG_LEDS_CLASS to work around
->> the issue for this moment?
-> 
-> I think that'd be easiest, yes.
+On Sun, Nov 21, 2010 at 13:33 -0500, Dan J. Rosenberg wrote:
+> In this case, count can never be -1, since it's limited by various checks in vfs_write() and rw_verify_area(), etc.
 
-I also ran into this today.
-Any updates or pointer to the patch?
+Correct, I was dummied by similar checks in similar drivers - they do
+check such overflows.
 
-Regards,
-Arnd
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
