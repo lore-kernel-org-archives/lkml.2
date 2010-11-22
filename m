@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab0KVMqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:46:14 -0500
-Received: from cantor.suse.de ([195.135.220.2]:41434 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755427Ab0KVMqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:46:13 -0500
-Date: Mon, 22 Nov 2010 13:46:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        Reinette Chatre <reinette.chatre@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: iwl3945: regression - unregister_netdevice: waiting for wlan0
- to become free. Usage count = 1
-Message-ID: <20101122124610.GA3944@tiehlicka.suse.cz>
-References: <20101122104341.GA3897@tiehlicka.suse.cz>
- <1290424776.2811.32.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290424776.2811.32.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756142Ab0KVMqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:46:30 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:42317 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab0KVMq2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 07:46:28 -0500
+Subject: Re: [PATCH] generic-ipi: add lock context annotations
+From: Peter Zijlstra <peterz@infradead.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1290411232-11439-1-git-send-email-namhyung@gmail.com>
+References: <1290411232-11439-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 22 Nov 2010 13:46:43 +0100
+Message-ID: <1290430003.2072.101.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-11-10 12:19:36, Eric Dumazet wrote:
-> Le lundi 22 novembre 2010 ?? 11:43 +0100, Michal Hocko a ??crit :
-> > Hi,
-> > I am experiencing iwl3945 driver reference counting problem with the current
-> > 2.6.37-rc2 kernel release. 
-> > 
-> > The problem can be easily reproduced by associating to an AP (I have
-> > tried only wep and wpa based auth) and then rmmod iw3945 which gets
-> > stuck in unregister_netdevice (in the endless loop as there is no way -
-> > I guess - to decrease the reference count to 0) spitting the following
-> > message:
-> > 
-> > unregister_netdevice: waiting for wlan0 to become free. Usage count = 1
-> > 
-[...]
-> 
-> 
-> Oh well, it seems David put the fix in net-next-2.6 instead of net-2.6
-> 
-> Please try :
-> 
-> http://git.kernel.org/?p=linux/kernel/git/davem/net-next-2.6.git;a=commitdiff;h=9d82ca98f71fd686ef2f3017c5e3e6a4871b6e46
+On Mon, 2010-11-22 at 16:33 +0900, Namhyung Kim wrote:
+> The ipi_call_[un]lock[_irq] functions grab/release a spin lock
+> but were missing proper annotations. Add it.
 
-Yes, the patch really fixes the issue. Thanks a lot!
-Btw. I have checked -rc3 which doesn't conttain the fix as well.
+I really have to ask why bother? Why not add some smarts to whatever
+uses these annotations?
 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  kernel/smp.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> Thanks
-> 
-> 
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 12ed8b0..5a62f1f 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -511,21 +511,25 @@ int smp_call_function(smp_call_func_t func, void *info, int wait)
+>  EXPORT_SYMBOL(smp_call_function);
+>  
+>  void ipi_call_lock(void)
+> +	__acquires(call_function.lock)
+>  {
+>  	raw_spin_lock(&call_function.lock);
+>  }
+>  
+>  void ipi_call_unlock(void)
+> +	__releases(call_function.lock)
+>  {
+>  	raw_spin_unlock(&call_function.lock);
+>  }
+>  
+>  void ipi_call_lock_irq(void)
+> +	__acquires(call_function.lock)
+>  {
+>  	raw_spin_lock_irq(&call_function.lock);
+>  }
+>  
+>  void ipi_call_unlock_irq(void)
+> +	__releases(call_function.lock)
+>  {
+>  	raw_spin_unlock_irq(&call_function.lock);
+>  }
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
