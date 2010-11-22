@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab0KVAcA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 19:32:00 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48720 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848Ab0KVAb6 (ORCPT
+	id S1756169Ab0KVAcW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 19:32:22 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47735 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab0KVAcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 19:31:58 -0500
+	Sun, 21 Nov 2010 19:32:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:to:from:cc:date:message-id:in-reply-to:references
          :user-agent:mime-version:content-type:content-transfer-encoding;
-        b=e3x0ZymBylY0+lfvrrB+cL5TMNcPZKN/shEQWB3giJTawQI1eSHW4Et2DdsFRR/RMC
-         JG+cyp5iYkKj+NacAbaGXOMCBbL/VyvTnrfROg3s/55bPmV9gr+KLrR3qPXrtQyrJlnG
-         I5sVQ3sKq9Uz7oCqw8VUGKGC34jx18xKEe/A4=
-Subject: [PATCH 2/4] VFS: Tell fsnotify what part of the file might have
- changed
+        b=CNUAvT70BKsLHWqE24GIrnMETP4Gel+DXsF7iYpwYIQ+CObuQZau9tc8psip4ZGiom
+         6+ml8hSCPK2oGweqgY8x20w/mVvWGsQ5gr9+2LyD9c2LTCePuFx6LQKVKE+BKyaYAsdy
+         WT3ToSX1MaxIFg3SsxTLzqG8I9uGXTG2rD2mU=
+Subject: [PATCH 3/4] fsnotify: Handle the file change ranges
 To: Eric Paris <eparis@redhat.com>
 From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
 Cc: Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
         agruen@linbit.com, linux-kernel@vger.kernel.org, stefan@buettcher.org,
         Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Date: Mon, 22 Nov 2010 00:33:27 +0000
-Message-ID: <20101122003311.13674.50418.stgit@zaytsev.su>
+Date: Mon, 22 Nov 2010 00:33:49 +0000
+Message-ID: <20101122003334.13674.14424.stgit@zaytsev.su>
 In-Reply-To: <20101122002747.13674.69384.stgit@zaytsev.su>
 References: <20101122002747.13674.69384.stgit@zaytsev.su>
 User-Agent: StGit/0.15-97-g9680
@@ -36,304 +35,245 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Zaytsev <alexey.zaytsev@gmail.com>
 ---
- fs/compat.c              |    2 +
- fs/nfsd/vfs.c            |    2 +
- fs/open.c                |    4 +++
- fs/read_write.c          |    4 +--
- include/linux/fs.h       |   14 +++++++++
- include/linux/fsnotify.h |   68 ++++++++++++++++++++++++++++------------------
- 6 files changed, 64 insertions(+), 30 deletions(-)
+ fs/notify/fsnotify.c             |   24 ++++++++++++++----------
+ fs/notify/inode_mark.c           |    2 +-
+ fs/notify/inotify/inotify_user.c |    2 +-
+ fs/notify/notification.c         |   18 ++++++++++++++++--
+ include/linux/fsnotify_backend.h |   31 ++++++++++++++++++++++++++-----
+ 5 files changed, 58 insertions(+), 19 deletions(-)
 
-diff --git a/fs/compat.c b/fs/compat.c
-index c580c32..66eb689 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1171,7 +1171,7 @@ out:
- 		if (type == READ)
- 			fsnotify_access(file);
- 		else
--			fsnotify_modify(file);
-+			fsnotify_modify(file, pos - ret, ret);
- 	}
- 	return ret;
- }
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 184938f..d781014 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -1035,7 +1035,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
- 		goto out_nfserr;
- 	*cnt = host_err;
- 	nfsdstats.io_write += host_err;
--	fsnotify_modify(file);
-+	fsnotify_modify(file, offset - host_err, host_err);
- 
- 	/* clear setuid/setgid flag after write */
- 	if (inode->i_mode & (S_ISUID | S_ISGID))
-diff --git a/fs/open.c b/fs/open.c
-index 4197b9e..17b0d79 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -675,6 +675,10 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
- 	f->f_path.mnt = mnt;
- 	f->f_pos = 0;
- 	f->f_op = fops_get(inode->i_fop);
-+#ifdef CONFIG_FSNOTIFY
-+	f->f_whatchanged.start = -1;
-+	f->f_whatchanged.end = 0;
-+#endif
- 	file_sb_list_add(f, inode->i_sb);
- 
- 	error = security_dentry_open(f, cred);
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 5d431ba..86c60c2 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -383,7 +383,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
- 		else
- 			ret = do_sync_write(file, buf, count, pos);
- 		if (ret > 0) {
--			fsnotify_modify(file);
-+			fsnotify_modify(file, (*pos) - ret, ret);
- 			add_wchar(current, ret);
- 		}
- 		inc_syscw(current);
-@@ -699,7 +699,7 @@ out:
- 		if (type == READ)
- 			fsnotify_access(file);
- 		else
--			fsnotify_modify(file);
-+			fsnotify_modify(file, (*pos) - ret, ret);
- 	}
- 	return ret;
- }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index eedc00b..3337975 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -922,6 +922,16 @@ static inline int ra_has_index(struct file_ra_state *ra, pgoff_t index)
- 		index <  ra->start + ra->size);
- }
- 
-+/* 
-+ * fsnotify wants to know, what might have changed during the file's lifetime.
-+ * We maintain a single range, so it might include non-modified gaps, but this
-+ * should work good enough for the majoroty of use cases, and the rest
-+ * shold listen to individual 'modify' events. */
-+struct fsnotify_range {
-+	loff_t start; /* The beginning of the possibly modified area.*/
-+	loff_t end; /* The first byte after the area. */
-+};
-+
- #define FILE_MNT_WRITE_TAKEN	1
- #define FILE_MNT_WRITE_RELEASED	2
- 
-@@ -965,6 +975,10 @@ struct file {
- #ifdef CONFIG_DEBUG_WRITECOUNT
- 	unsigned long f_mnt_write_state;
- #endif
-+
-+#ifdef CONFIG_FSNOTIFY
-+	struct fsnotify_range f_whatchanged;
-+#endif
- };
- 
- #define get_file(x)	atomic_long_inc(&(x)->f_count)
-diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
-index 5c185fa..49e7788 100644
---- a/include/linux/fsnotify.h
-+++ b/include/linux/fsnotify.h
-@@ -26,12 +26,13 @@ static inline void fsnotify_d_instantiate(struct dentry *dentry,
+diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+index 20dc218..7cabc1d 100644
+--- a/fs/notify/fsnotify.c
++++ b/fs/notify/fsnotify.c
+@@ -84,7 +84,8 @@ void __fsnotify_update_child_dentry_flags(struct inode *inode)
  }
  
  /* Notify this dentry's parent about a child's events. */
--static inline int fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
-+static inline int fsnotify_parent(struct path *path, struct dentry *dentry,
+-int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
++int __fsnotify_parent(struct path *path, struct dentry *dentry,
 +		__u32 mask, struct fsnotify_range *range)
  {
- 	if (!dentry)
- 		dentry = path->dentry;
+ 	struct dentry *parent;
+ 	struct inode *p_inode;
+@@ -108,10 +109,10 @@ int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
  
--	return __fsnotify_parent(path, dentry, mask);
-+	return __fsnotify_parent(path, dentry, mask, range);
- }
- 
- /* simple call site for access decisions */
-@@ -53,11 +54,12 @@ static inline int fsnotify_perm(struct file *file, int mask)
- 	else
- 		BUG();
- 
--	ret = fsnotify_parent(path, NULL, fsnotify_mask);
-+	ret = fsnotify_parent(path, NULL, fsnotify_mask, NULL);
- 	if (ret)
- 		return ret;
- 
--	return fsnotify(inode, fsnotify_mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
-+	return fsnotify(inode, fsnotify_mask, path, FSNOTIFY_EVENT_PATH,
-+			NULL, 0, NULL);
- }
- 
- /*
-@@ -78,7 +80,7 @@ static inline void fsnotify_d_move(struct dentry *dentry)
-  */
- static inline void fsnotify_link_count(struct inode *inode)
- {
--	fsnotify(inode, FS_ATTRIB, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
-+	fsnotify(inode, FS_ATTRIB, inode, FSNOTIFY_EVENT_INODE, NULL, 0, NULL);
- }
- 
- /*
-@@ -102,14 +104,17 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
- 		new_dir_mask |= FS_ISDIR;
+ 		if (path)
+ 			ret = fsnotify(p_inode, mask, path, FSNOTIFY_EVENT_PATH,
+-				       dentry->d_name.name, 0);
++				       dentry->d_name.name, 0, range);
+ 		else
+ 			ret = fsnotify(p_inode, mask, dentry->d_inode, FSNOTIFY_EVENT_INODE,
+-				       dentry->d_name.name, 0);
++				       dentry->d_name.name, 0, range);
  	}
  
--	fsnotify(old_dir, old_dir_mask, old_dir, FSNOTIFY_EVENT_INODE, old_name, fs_cookie);
--	fsnotify(new_dir, new_dir_mask, new_dir, FSNOTIFY_EVENT_INODE, new_name, fs_cookie);
-+	fsnotify(old_dir, old_dir_mask, old_dir, FSNOTIFY_EVENT_INODE,
-+			old_name, fs_cookie, NULL);
-+	fsnotify(new_dir, new_dir_mask, new_dir, FSNOTIFY_EVENT_INODE,
-+			new_name, fs_cookie, NULL);
- 
- 	if (target)
- 		fsnotify_link_count(target);
- 
- 	if (source)
--		fsnotify(source, FS_MOVE_SELF, moved->d_inode, FSNOTIFY_EVENT_INODE, NULL, 0);
-+		fsnotify(source, FS_MOVE_SELF, moved->d_inode, FSNOTIFY_EVENT_INODE,
-+				NULL, 0, NULL);
- 	audit_inode_child(moved, new_dir);
- }
- 
-@@ -139,7 +144,7 @@ static inline void fsnotify_nameremove(struct dentry *dentry, int isdir)
- 	if (isdir)
- 		mask |= FS_ISDIR;
- 
--	fsnotify_parent(NULL, dentry, mask);
-+	fsnotify_parent(NULL, dentry, mask, NULL);
- }
- 
- /*
-@@ -147,7 +152,7 @@ static inline void fsnotify_nameremove(struct dentry *dentry, int isdir)
-  */
- static inline void fsnotify_inoderemove(struct inode *inode)
+ 	dput(parent);
+@@ -126,6 +127,7 @@ static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
+ 			 __u32 mask, void *data,
+ 			 int data_is, u32 cookie,
+ 			 const unsigned char *file_name,
++			 struct fsnotify_range *range,
+ 			 struct fsnotify_event **event)
  {
--	fsnotify(inode, FS_DELETE_SELF, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
-+	fsnotify(inode, FS_DELETE_SELF, inode, FSNOTIFY_EVENT_INODE, NULL, 0, NULL);
- 	__fsnotify_inode_delete(inode);
- }
+ 	struct fsnotify_group *group = NULL;
+@@ -167,10 +169,11 @@ static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
  
-@@ -158,7 +163,8 @@ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
- {
- 	audit_inode_child(dentry, inode);
+ 	pr_debug("%s: group=%p to_tell=%p mnt=%p mask=%x inode_mark=%p"
+ 		 " inode_test_mask=%x vfsmount_mark=%p vfsmount_test_mask=%x"
+-		 " data=%p data_is=%d cookie=%d event=%p\n",
++		 " data=%p data_is=%d cookie=%d range = {%lld, %lld}, event=%p\n",
+ 		 __func__, group, to_tell, mnt, mask, inode_mark,
+ 		 inode_test_mask, vfsmount_mark, vfsmount_test_mask, data,
+-		 data_is, cookie, *event);
++		 data_is, cookie, range ? range->start : -1,
++		 range ? range->end : -1, *event);
  
--	fsnotify(inode, FS_CREATE, dentry->d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
-+	fsnotify(inode, FS_CREATE, dentry->d_inode, FSNOTIFY_EVENT_INODE,
-+			dentry->d_name.name, 0, NULL);
- }
- 
- /*
-@@ -171,7 +177,8 @@ static inline void fsnotify_link(struct inode *dir, struct inode *inode, struct
- 	fsnotify_link_count(inode);
- 	audit_inode_child(new_dentry, dir);
- 
--	fsnotify(dir, FS_CREATE, inode, FSNOTIFY_EVENT_INODE, new_dentry->d_name.name, 0);
-+	fsnotify(dir, FS_CREATE, inode, FSNOTIFY_EVENT_INODE,
-+			new_dentry->d_name.name, 0, NULL);
- }
- 
- /*
-@@ -184,7 +191,8 @@ static inline void fsnotify_mkdir(struct inode *inode, struct dentry *dentry)
- 
- 	audit_inode_child(dentry, inode);
- 
--	fsnotify(inode, mask, d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
-+	fsnotify(inode, mask, d_inode, FSNOTIFY_EVENT_INODE,
-+			dentry->d_name.name, 0, NULL);
- }
- 
- /*
-@@ -200,26 +208,33 @@ static inline void fsnotify_access(struct file *file)
- 		mask |= FS_ISDIR;
- 
- 	if (!(file->f_mode & FMODE_NONOTIFY)) {
--		fsnotify_parent(path, NULL, mask);
--		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
-+		fsnotify_parent(path, NULL, mask, NULL);
-+		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0, NULL);
+ 	if (!inode_test_mask && !vfsmount_test_mask)
+ 		return 0;
+@@ -183,7 +186,7 @@ static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
+ 	if (!*event) {
+ 		*event = fsnotify_create_event(to_tell, mask, data,
+ 						data_is, file_name,
+-						cookie, GFP_KERNEL);
++						cookie, range, GFP_KERNEL);
+ 		if (!*event)
+ 			return -ENOMEM;
  	}
- }
+@@ -197,7 +200,8 @@ static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
+  * notification event in whatever means they feel necessary.
+  */
+ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+-	     const unsigned char *file_name, u32 cookie)
++	     const unsigned char *file_name, u32 cookie,
++	     struct fsnotify_range *range)
+ {
+ 	struct hlist_node *inode_node = NULL, *vfsmount_node = NULL;
+ 	struct fsnotify_mark *inode_mark = NULL, *vfsmount_mark = NULL;
+@@ -256,17 +260,17 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+ 		if (inode_group > vfsmount_group) {
+ 			/* handle inode */
+ 			ret = send_to_group(to_tell, NULL, inode_mark, NULL, mask, data,
+-					    data_is, cookie, file_name, &event);
++					    data_is, cookie, file_name, range, &event);
+ 			/* we didn't use the vfsmount_mark */
+ 			vfsmount_group = NULL;
+ 		} else if (vfsmount_group > inode_group) {
+ 			ret = send_to_group(to_tell, mnt, NULL, vfsmount_mark, mask, data,
+-					    data_is, cookie, file_name, &event);
++					    data_is, cookie, file_name, range, &event);
+ 			inode_group = NULL;
+ 		} else {
+ 			ret = send_to_group(to_tell, mnt, inode_mark, vfsmount_mark,
+ 					    mask, data, data_is, cookie, file_name,
+-					    &event);
++					    range, &event);
+ 		}
  
+ 		if (ret && (mask & ALL_FSNOTIFY_PERM_EVENTS))
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index 4c29fcf..cd39df7 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -295,7 +295,7 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 			iput(need_iput_tmp);
+ 
+ 		/* for each watch, send FS_UNMOUNT and then remove it */
+-		fsnotify(inode, FS_UNMOUNT, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
++		fsnotify(inode, FS_UNMOUNT, inode, FSNOTIFY_EVENT_INODE, NULL, 0, NULL);
+ 
+ 		fsnotify_inode_delete(inode);
+ 
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index 444c305..a5c2c69 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -524,7 +524,7 @@ void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
+ 
+ 	ignored_event = fsnotify_create_event(NULL, FS_IN_IGNORED, NULL,
+ 					      FSNOTIFY_EVENT_NONE, NULL, 0,
+-					      GFP_NOFS);
++					      NULL, GFP_NOFS);
+ 	if (!ignored_event)
+ 		return;
+ 
+diff --git a/fs/notify/notification.c b/fs/notify/notification.c
+index f39260f..20b86a0 100644
+--- a/fs/notify/notification.c
++++ b/fs/notify/notification.c
+@@ -395,7 +395,8 @@ struct fsnotify_event *fsnotify_clone_event(struct fsnotify_event *old_event)
+  */
+ struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask, void *data,
+ 					     int data_type, const unsigned char *name,
+-					     u32 cookie, gfp_t gfp)
++					     u32 cookie, struct fsnotify_range *range,
++					     gfp_t gfp)
+ {
+ 	struct fsnotify_event *event;
+ 
+@@ -422,6 +423,19 @@ struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask,
+ 	event->to_tell = to_tell;
+ 	event->data_type = data_type;
+ 
++	/* The range might be allocated on stack. */
++	if (mask & FS_MODIFY) {
++		event->mod_range = *range;
++	} else {
++		event->mod_range.start = -1;
++	}
 +
++	if (mask & FS_CLOSE_WRITE) {
++		event->cw_range = *range;
++	} else {
++		event->cw_range.start = -1;
++	}
 +
- /*
-  * fsnotify_modify - file was modified
-  */
--static inline void fsnotify_modify(struct file *file)
-+static inline void fsnotify_modify(struct file *file, loff_t original, size_t count) 
+ 	switch (data_type) {
+ 	case FSNOTIFY_EVENT_PATH: {
+ 		struct path *path = data;
+@@ -453,7 +467,7 @@ __init int fsnotify_notification_init(void)
+ 	fsnotify_event_holder_cachep = KMEM_CACHE(fsnotify_event_holder, SLAB_PANIC);
+ 
+ 	q_overflow_event = fsnotify_create_event(NULL, FS_Q_OVERFLOW, NULL,
+-						 FSNOTIFY_EVENT_NONE, NULL, 0,
++						 FSNOTIFY_EVENT_NONE, NULL, 0, NULL,
+ 						 GFP_KERNEL);
+ 	if (!q_overflow_event)
+ 		panic("unable to allocate fsnotify q_overflow_event\n");
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index 0a68f92..63237c5 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -240,6 +240,9 @@ struct fsnotify_event {
+ 	size_t name_len;
+ 	struct pid *tgid;
+ 
++	struct fsnotify_range mod_range; /* What has been modified last time */
++	struct fsnotify_range cw_range; /* What has been modified since the file was opened */
++
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+ 	__u32 response;	/* userspace answer to question */
+ #endif /* CONFIG_FANOTIFY_ACCESS_PERMISSIONS */
+@@ -305,8 +308,10 @@ struct fsnotify_mark {
+ 
+ /* main fsnotify call to send events */
+ extern int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+-		    const unsigned char *name, u32 cookie);
+-extern int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask);
++		    const unsigned char *name, u32 cookie,
++		    struct fsnotify_range *range);
++extern int __fsnotify_parent(struct path *path, struct dentry *dentry,
++		__u32 mask, struct fsnotify_range *range);
+ extern void __fsnotify_inode_delete(struct inode *inode);
+ extern void __fsnotify_vfsmount_delete(struct vfsmount *mnt);
+ extern u32 fsnotify_get_cookie(void);
+@@ -420,22 +425,34 @@ extern void fsnotify_unmount_inodes(struct list_head *list);
+ extern struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask,
+ 						    void *data, int data_is,
+ 						    const unsigned char *name,
+-						    u32 cookie, gfp_t gfp);
++						    u32 cookie,
++						    struct fsnotify_range *range,
++						    gfp_t gfp);
+ 
+ /* fanotify likes to change events after they are on lists... */
+ extern struct fsnotify_event *fsnotify_clone_event(struct fsnotify_event *old_event);
+ extern int fsnotify_replace_event(struct fsnotify_event_holder *old_holder,
+ 				  struct fsnotify_event *new_event);
+ 
++static inline void fsnotify_update_range(struct fsnotify_range *new,
++		struct fsnotify_range *old)
++{
++	/* Cast because an empty range starts at -1. */
++	new->start = min((unsigned long long) old->start, (unsigned long long) new->start);
++	new->end = max(old->end, new->end);
++}
++
+ #else
+ 
+ static inline int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+-			   const unsigned char *name, u32 cookie)
++			   const unsigned char *name, u32 cookie,
++			   struct fsnotify_range *range)
  {
- 	struct path *path = &file->f_path;
- 	struct inode *inode = path->dentry->d_inode;
- 	__u32 mask = FS_MODIFY;
-+	struct fsnotify_range range = {
-+		.start = original,
-+		.end = original + count,
-+	};
- 
-+	fsnotify_update_range(&file->f_whatchanged, &range);
- 	if (S_ISDIR(inode->i_mode))
- 		mask |= FS_ISDIR;
- 
- 	if (!(file->f_mode & FMODE_NONOTIFY)) {
--		fsnotify_parent(path, NULL, mask);
--		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
-+		fsnotify_parent(path, NULL, mask, &range);
-+		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0, &range);
- 	}
+ 	return 0;
  }
  
-@@ -238,8 +253,8 @@ static inline void fsnotify_open(struct file *file)
- 	/* FMODE_NONOTIFY must never be set from user */
- 	file->f_mode &= ~FMODE_NONOTIFY;
- 
--	fsnotify_parent(path, NULL, mask);
--	fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
-+	fsnotify_parent(path, NULL, mask, NULL);
-+	fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0, NULL);
+-static inline int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
++static inline int __fsnotify_parent(struct path *path, struct dentry *dentry,
++		__u32 mask, struct fsnotify_range *range)
+ {
+ 	return 0;
  }
+@@ -460,6 +477,10 @@ static inline u32 fsnotify_get_cookie(void)
+ static inline void fsnotify_unmount_inodes(struct list_head *list)
+ {}
  
- /*
-@@ -256,8 +271,9 @@ static inline void fsnotify_close(struct file *file)
- 		mask |= FS_ISDIR;
++static inline void fsnotify_update_range(struct fsnotify_range *new,
++		struct fsnotify_range *old)
++{}
++
+ #endif	/* CONFIG_FSNOTIFY */
  
- 	if (!(file->f_mode & FMODE_NONOTIFY)) {
--		fsnotify_parent(path, NULL, mask);
--		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
-+		fsnotify_parent(path, NULL, mask, &file->f_whatchanged);
-+		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH,
-+				NULL, 0, &file->f_whatchanged);
- 	}
- }
- 
-@@ -272,8 +288,8 @@ static inline void fsnotify_xattr(struct dentry *dentry)
- 	if (S_ISDIR(inode->i_mode))
- 		mask |= FS_ISDIR;
- 
--	fsnotify_parent(NULL, dentry, mask);
--	fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
-+	fsnotify_parent(NULL, dentry, mask, NULL);
-+	fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE, NULL, 0, NULL);
- }
- 
- /*
-@@ -307,8 +323,8 @@ static inline void fsnotify_change(struct dentry *dentry, unsigned int ia_valid)
- 		if (S_ISDIR(inode->i_mode))
- 			mask |= FS_ISDIR;
- 
--		fsnotify_parent(NULL, dentry, mask);
--		fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
-+		fsnotify_parent(NULL, dentry, mask, NULL);
-+		fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE, NULL, 0, NULL);
- 	}
- }
- 
+ #endif	/* __KERNEL __ */
 
