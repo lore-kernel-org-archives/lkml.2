@@ -1,137 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757662Ab0KVWKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 17:10:50 -0500
-Received: from mail.perches.com ([173.55.12.10]:1782 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756860Ab0KVWKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 17:10:48 -0500
-Subject: Re: [PATCH 00/62] drivers/net: Use static const
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, ath9k-devel@venema.h4ckr.net,
-        libertas-dev@lists.infradead.org, users@rt2x00.serialmonkey.com,
-        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de
-In-Reply-To: <20101120.205059.193725921.davem@davemloft.net>
-References: <cover.1290305773.git.joe@perches.com>
-	 <20101120.205059.193725921.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 14:10:46 -0800
-Message-ID: <1290463846.27683.36.camel@Joe-Laptop>
+	id S1755940Ab0KVWPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 17:15:32 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39786 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751404Ab0KVWPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 17:15:31 -0500
+Date: Mon, 22 Nov 2010 14:14:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+Message-Id: <20101122141449.9de58a2c.akpm@linux-foundation.org>
+In-Reply-To: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
+References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-20 at 20:50 -0800, David Miller wrote: 
-> From: Joe Perches <joe@perches.com>
-> Date: Sat, 20 Nov 2010 18:38:01 -0800
+On Sun, 21 Nov 2010 23:30:23 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
+
+> Recently, there are reported problem about thrashing.
+> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+> It happens by backup workloads(ex, nightly rsync).
+> That's because the workload makes just use-once pages
+> and touches pages twice. It promotes the page into
+> active list so that it results in working set page eviction.
 > 
-> > Using static const generally increases object text and decreases data size.
-> > It also generally decreases overall object size.
+> Some app developer want to support POSIX_FADV_NOREUSE.
+> But other OSes don't support it, either.
+> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
 > 
-> Joe, I'm going to be frank and say that I'm not going to review and
-> apply such a large chunk of networking patches.
-
-Hi David.  No worries.
-
-> Separation is cool, splitting up patches is cool to make review
-> perhaps easier and more distributed.
-
-I know you have ownership of netdev.  Thanks for doing all that
-work.  You may not get enough feedback on the very good job that
-you do at it.
-
-I posted these patches not so much to get you to immediately pick
-them up, but to get review from and/or notify the maintainers of
-each of these subsystems.  I would have submitted them to Jiri
-Kosina/trivial, but he asked me to post and track these style
-patches separately and wait for a few weeks before submitting any
-remaining patches not picked up by maintainers to him.
-
-> It severely negatively effects my mood,
-
-Can't have that...
-
-> You also make this more difficult for me by not using GIT.
-
-I do of course use git locally.  I have a public tree as well,
-but I hardly update it.  I updated it recently for this.
-
-These patches are available in:
-
-  git://repo.or.cz/linux-2.6/trivial-mods.git 20101121_net_next_static_const
-
-Perhaps I should ask Stephen Rothwell to include some trivial tree
-branch like this in next.
-
-> Even with patchwork helping me significantly, it's still a lot of work
-> to apply large sets of patches.
-
-I think that cc'ing netdev is always appropriate for netdev patches, but
-maybe trivial@kernel.org could become linux-trivial@vger.kernel.org or
-something like that.
-
-Perhaps there could be some way to automatically mark these exceptionally
-trivial patches as something like "not applicable" so they don't appear
-on your personal queue.
-
-> If I had to take in John Linville's
-> wireless stuff without GIT I'd be banging my head on a wall.
+> By Other approach, app developer uses POSIX_FADV_DONTNEED.
+> But it has a problem. If kernel meets page is writing
+> during invalidate_mapping_pages, it can't work.
+> It is very hard for application programmer to use it.
+> Because they always have to sync data before calling
+> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+> be discardable. At last, they can't use deferred write of kernel
+> so that they could see performance loss.
+> (http://insights.oetiker.ch/linux/fadvise.html)
 > 
-> And these incessant huge patch bombs also take time away from me for
-> the things I'd like to at least occiasionally work on that involve
-> more intellect than monkeying around with such mindless patches.
+> In fact, invalidate is very big hint to reclaimer.
+> It means we don't use the page any more. So let's move
+> the writing page into inactive list's head.
+> 
+> If it is real working set, it could have a enough time to
+> activate the page since we always try to keep many pages in
+> inactive list.
+> 
+> I reuse lru_demote of Peter with some change.
+> 
+>
+> ...
+>
+> +/*
+> + * Function used to forecefully demote a page to the head of the inactive
+> + * list.
+> + */
 
-Establishing trust is always a long term thing.
-Breaking trust is easy too.
+This comment is wrong?  The page gets moved to the _tail_ of the
+inactive list?
 
-Anyway, I think these patches are obvious and correct and can be
-directly applied without significant risk.
+> +void lru_deactive_page(struct page *page)
 
-I think the the issues are:
+Should be "deactivate" throughout the patch. IMO.
 
-o should the nominal maintainers of the subsystems pick them up
-o should these subsystem maintainers should be bypassed
-o should the subsystem mailing lists be cc'd
-o should these be pulled as a single changeset or multiples
+> +{
+> +	if (likely(get_page_unless_zero(page))) {
+> +		struct pagevec *pvec = &get_cpu_var(lru_deactive_pvecs);
+> +
+> +		if (!pagevec_add(pvec, page))
+> +			__pagevec_lru_deactive(pvec);
+> +		put_cpu_var(lru_deactive_pvecs);
+> +	}
+>  }
+>  
+> +
+>  void lru_add_drain(void)
+>  {
+>  	drain_cpu_pagevecs(get_cpu());
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index cd94607..c73fb19 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -332,7 +332,8 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+>  {
+>  	struct pagevec pvec;
+>  	pgoff_t next = start;
+> -	unsigned long ret = 0;
+> +	unsigned long ret;
+> +	unsigned long count = 0;
+>  	int i;
+>  
+>  	pagevec_init(&pvec, 0);
+> @@ -359,8 +360,10 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+>  			if (lock_failed)
+>  				continue;
+>  
+> -			ret += invalidate_inode_page(page);
+> -
+> +			ret = invalidate_inode_page(page);
+> +			if (!ret)
+> +				lru_deactive_page(page);
 
-I think that getting the nominal subsystem maintainers involved
-is good, but perhaps not too necessary for these sorts of patches.
+This is the core part of the patch and it needs a code comment to
+explain the reasons for doing this.
 
-btw: it doesn't seem that, other than John Linville for wireless,
-you currently pull from many (any?) other people.  Do let me know
-if you'd consider pulling these sorts of changes from me.
+I wonder about the page_mapped() case.  We were unable to invalidate
+the page because it was mapped into pagetables.  But was it really
+appropriate to deactivate the page in that case?
 
-$ git log --merges --since=2-years-ago drivers/net | grep "^Author: " | sort | uniq -c | sort -rn
-    259 Author: David S. Miller <davem@davemloft.net>
-    201 Author: Linus Torvalds <torvalds@linux-foundation.org>
-     45 Author: John W. Linville <linville@tuxdriver.com>
-     15 Author: Russell King <rmk@dyn-67.arm.linux.org.uk>
-     15 Author: Ingo Molnar <mingo@elte.hu>
-     14 Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-      7 Author: Russell King <rmk+kernel@arm.linux.org.uk>
-      6 Author: Jiri Kosina <jkosina@suse.cz>
-      4 Author: Reinette Chatre <reinette.chatre@intel.com>
-      3 Author: Roland Dreier <rolandd@cisco.com>
-      3 Author: James Morris <jmorris@namei.org>
-      2 Author: Tony Lindgren <tony@atomide.com>
-      2 Author: Grant Likely <grant.likely@secretlab.ca>
-      1 Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-      1 Author: root <root@dyn-67.arm.linux.org.uk>
-      1 Author: Paul Mackerras <paulus@samba.org>
-      1 Author: Kevin Hilman <khilman@deeprootsystems.com>
-      1 Author: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-> Thanks for your understanding.  Feel free to submit this stuff in
-> smaller chunks, say ~10 patches at a time.
+> +			count += ret;
+>  			unlock_page(page);
+>  			if (next > end)
+>  				break;
 
-Let me know if you want to pull or want them in smaller chunks in
-say a month from now.
+Suggested updates:
 
-cheers, Joe
+
+ include/linux/swap.h |    2 +-
+ mm/swap.c            |   13 ++++++-------
+ mm/truncate.c        |    7 ++++++-
+ 3 files changed, 13 insertions(+), 9 deletions(-)
+
+diff -puN include/linux/swap.h~mm-deactivate-invalidated-pages-fix include/linux/swap.h
+--- a/include/linux/swap.h~mm-deactivate-invalidated-pages-fix
++++ a/include/linux/swap.h
+@@ -213,7 +213,7 @@ extern void mark_page_accessed(struct pa
+ extern void lru_add_drain(void);
+ extern int lru_add_drain_all(void);
+ extern void rotate_reclaimable_page(struct page *page);
+-extern void lru_deactive_page(struct page *page);
++extern void lru_deactivate_page(struct page *page);
+ extern void swap_setup(void);
+ 
+ extern void add_page_to_unevictable_list(struct page *page);
+diff -puN mm/swap.c~mm-deactivate-invalidated-pages-fix mm/swap.c
+--- a/mm/swap.c~mm-deactivate-invalidated-pages-fix
++++ a/mm/swap.c
+@@ -39,7 +39,7 @@ int page_cluster;
+ 
+ static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+-static DEFINE_PER_CPU(struct pagevec, lru_deactive_pvecs);
++static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+ 
+ 
+ /*
+@@ -334,23 +334,22 @@ static void drain_cpu_pagevecs(int cpu)
+ 		local_irq_restore(flags);
+ 	}
+ 
+-	pvec = &per_cpu(lru_deactive_pvecs, cpu);
++	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
+ 	if (pagevec_count(pvec))
+ 		__pagevec_lru_deactive(pvec);
+ }
+ 
+ /*
+- * Function used to forecefully demote a page to the head of the inactive
+- * list.
++ * Forecfully demote a page to the tail of the inactive list.
+  */
+-void lru_deactive_page(struct page *page)
++void lru_deactivate_page(struct page *page)
+ {
+ 	if (likely(get_page_unless_zero(page))) {
+-		struct pagevec *pvec = &get_cpu_var(lru_deactive_pvecs);
++		struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
+ 
+ 		if (!pagevec_add(pvec, page))
+ 			__pagevec_lru_deactive(pvec);
+-		put_cpu_var(lru_deactive_pvecs);
++		put_cpu_var(lru_deactivate_pvecs);
+ 	}
+ }
+ 
+diff -puN mm/truncate.c~mm-deactivate-invalidated-pages-fix mm/truncate.c
+--- a/mm/truncate.c~mm-deactivate-invalidated-pages-fix
++++ a/mm/truncate.c
+@@ -361,8 +361,13 @@ unsigned long invalidate_mapping_pages(s
+ 				continue;
+ 
+ 			ret = invalidate_inode_page(page);
++			/*
++			 * If the page was dirty or under writeback we cannot
++			 * invalidate it now.  Move it to the tail of the
++			 * inactive LRU so that reclaim will free it promptly.
++			 */
+ 			if (!ret)
+-				lru_deactive_page(page);
++				lru_deactivate_page(page);
+ 			count += ret;
+ 			unlock_page(page);
+ 			if (next > end)
+_
 
