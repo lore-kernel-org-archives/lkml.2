@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab0KVAsM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 19:48:12 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:60937 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755371Ab0KVAsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 19:48:11 -0500
-Date: Mon, 22 Nov 2010 11:48:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: randy.dunlap@oracle.com, catalin.marinas@arm.com,
-        linux-kbuild@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lacombar@gmail.com,
-        xiyou.wangcong@gmail.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] Revert
- "kconfig: Temporarily disable dependency warnings"
-Message-Id: <20101122114801.2eee4c4d.sfr@canb.auug.org.au>
-In-Reply-To: <20101029113731.5c7c54b9.sfr@canb.auug.org.au>
-References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
-	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
-	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__22_Nov_2010_11_48_01_+1100_QpA0UhRlZBHf2=LP"
+	id S1755841Ab0KVAte (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 19:49:34 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44394 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754838Ab0KVAtd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 19:49:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qYkv0Wpi0eo0iBBsmF3jZ7dEPJ6tNVDY6V4ST3xZ9s/L3uBPOBe5EtnDKufGBmRfyP
+         ZylwcWk/2pC5FPQzxQzDrnz4EItx09m2aqIKGtelwLaOSDV5AldYujdB6v63i3G5SnWE
+         63aSFlXiegOCe6oWubKPVWs910zqUiDS2h1Sg=
+MIME-Version: 1.0
+In-Reply-To: <4CE95FD7.1060805@redhat.com>
+References: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
+	<4CE95FD7.1060805@redhat.com>
+Date: Mon, 22 Nov 2010 09:49:32 +0900
+Message-ID: <AANLkTimSE2j71uFPCZWBFdau4NE_hmTtTMvUOBWOdMhF@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: Make move_active_pages_to_lru more generic
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__22_Nov_2010_11_48_01_+1100_QpA0UhRlZBHf2=LP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 29 Oct 2010 11:37:31 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Mon, Nov 22, 2010 at 3:07 AM, Rik van Riel <riel@redhat.com> wrote:
+> On 11/21/2010 09:24 AM, Minchan Kim wrote:
+>>
+>> Now move_active_pages_to_lru can move pages into active or inactive.
+>> if it moves the pages into inactive, it itself can clear PG_acive.
+>> It makes the function more generic.
 >
-> On Tue, 12 Oct 2010 15:19:46 +0200 Michal Marek <mmarek@suse.cz> wrote:
-> >
-> > This reverts commit 71ebc01, which was a 2.6.36-only stopgap solution.
->=20
-> I was hoping that we would have the number of these warnings down to
-> something reasonable before this revert made it into Linus' tree ...
->=20
-> I guess fixing the V4L stuff will become a bit more urgent, now :-)
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index aa4f1cb..bd408b3 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1457,6 +1457,10 @@ static void move_active_pages_to_lru(struct zone
+>> *zone,
+>>                VM_BUG_ON(PageLRU(page));
+>>                SetPageLRU(page);
+>>
+>> +               /* we are de-activating */
+>> +               if (!is_active_lru(lru))
+>> +                       ClearPageActive(page);
+>> +
+>
+> Does that mean we also want code to ensure that pages have
+> the PG_active bit set when we add them to an active list?
 
-Is there any chance that the V4L kconfig warnings will be fixed?  It is
-quite irritating for those of us who do allmodconfig (and allyesconfig)
-builds ...
+Yes. the function name is move_"active"_pages_to_lru.
+So  caller have to make sure pages have PG_active.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>
+> --
+> All rights reversed
+>
 
---Signature=_Mon__22_Nov_2010_11_48_01_+1100_QpA0UhRlZBHf2=LP
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJM6b3BAAoJEDMEi1NhKgbsXXQH/0d2JlNkYZjGGJcmTedyZ74Y
-ozEWGjHSDKdRp4eBwIZHMqzeSmDFhjviUeDPe49bVYsvg+bqJiPpNcpOK3ZAybIi
-6LdKaKl/w9nsLiCZoRCA0qSI6dEQIw4Bxy0QBbl+KrDjlEHz1d3SyNNpls7Xf0qw
-la+s8S65/sS46m9oyTcexDHkF4KjhqfAnl7CMhfouF2hf02EuLIp/u8gMqnqEaTi
-kY4K5XxKP4uKSp8BFpXPEiTrsFRaIIvSkUjsaS0o/tYn0sGNiCEdhx7FzSnjbX9H
-QvPyuL0T5xSshWJZeTtXGmiRZrAtqQcrF3/KXsOpAzfU3xGPFuq7dRte1MVmSgQ=
-=P9YP
------END PGP SIGNATURE-----
-
---Signature=_Mon__22_Nov_2010_11_48_01_+1100_QpA0UhRlZBHf2=LP--
+-- 
+Kind regards,
+Minchan Kim
