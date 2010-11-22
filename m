@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab0KVBD4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 20:03:56 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42017 "EHLO
+	id S1756367Ab0KVBES (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 20:04:18 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35395 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838Ab0KVBDx (ORCPT
+	with ESMTP id S1756232Ab0KVBD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 20:03:53 -0500
+	Sun, 21 Nov 2010 20:03:59 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VxueOfY9viqiMvU5tjaOCLb/9p7YRJ5xr0IHEmUGd3f6wdFl2aXzllHDe4KZ70DBGx
-         M7gbeFEXE+9paRlgGphdsI8bwZL06vy4t1Jeq0//ZZ/Zftc4m0YzWYqZsnJf3/7jSima
-         Ao+fXQeLuniDpzUOc+5M1Yt2Ga8xn1kXLG+gc=
+        b=qYbVOVII/JNAn9IpQgaF++5tdjrZ14xSsM2ZpWasE741Wylg3NB7+w3O7aVxg+leJU
+         DVFahIuSyTQMmIht/u5v/NZrJAgWdf7c5cgIiYTJLpZaSVpklj4wJTN5s1m4tLU01OcU
+         fpJGQsmm2VneKdvfgHPXK66Xiz+6swm5AXio0=
 From: Tracey Dent <tdent48227@gmail.com>
 To: davem@davemloft.net
 Cc: marcel@holtmann.org, padovan@profusion.mobi,
@@ -24,9 +24,9 @@ Cc: marcel@holtmann.org, padovan@profusion.mobi,
         linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
         netfilter@vger.kernel.org, samuel@sortiz.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 01/17] Net: bluetooth: Makefile: Remove deprecated kbuild goal definitions
-Date: Sun, 21 Nov 2010 20:03:12 -0500
-Message-Id: <1290387808-2239-2-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 04/17] Net: ceph: Makefile: remove deprecated kbuild goal definitions
+Date: Sun, 21 Nov 2010 20:03:15 -0500
+Message-Id: <1290387808-2239-5-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276
 In-Reply-To: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
 References: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
@@ -40,19 +40,22 @@ Documentation/kbuild/makefiles.txt.
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- net/bluetooth/Makefile |    2 +-
+ net/ceph/Makefile |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/bluetooth/Makefile b/net/bluetooth/Makefile
-index d1e433f..7ca1f46 100644
---- a/net/bluetooth/Makefile
-+++ b/net/bluetooth/Makefile
-@@ -10,4 +10,4 @@ obj-$(CONFIG_BT_BNEP)	+= bnep/
- obj-$(CONFIG_BT_CMTP)	+= cmtp/
- obj-$(CONFIG_BT_HIDP)	+= hidp/
+diff --git a/net/ceph/Makefile b/net/ceph/Makefile
+index aab1cab..153bdec 100644
+--- a/net/ceph/Makefile
++++ b/net/ceph/Makefile
+@@ -6,7 +6,7 @@ ifneq ($(KERNELRELEASE),)
  
--bluetooth-objs := af_bluetooth.o hci_core.o hci_conn.o hci_event.o hci_sock.o hci_sysfs.o lib.o
-+bluetooth-y := af_bluetooth.o hci_core.o hci_conn.o hci_event.o hci_sock.o hci_sysfs.o lib.o
+ obj-$(CONFIG_CEPH_LIB) += libceph.o
+ 
+-libceph-objs := ceph_common.o messenger.o msgpool.o buffer.o pagelist.o \
++libceph-y := ceph_common.o messenger.o msgpool.o buffer.o pagelist.o \
+ 	mon_client.o \
+ 	osd_client.o osdmap.o crush/crush.o crush/mapper.o crush/hash.o \
+ 	debugfs.o \
 -- 
 1.7.3.2.245.g03276
 
