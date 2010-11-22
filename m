@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab0KVUCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:02:31 -0500
-Received: from web31803.mail.mud.yahoo.com ([68.142.207.66]:43723 "HELO
-	web31803.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757456Ab0KVUC2 (ORCPT
+	id S1757520Ab0KVUI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:08:59 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:4216 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757379Ab0KVUI5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:02:28 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=zUV1PoXUcZ6RTs6jyPZsLcVVc3nDqIFSmocBSQFelvrufGo2TNefnr22vHA/jZBIqPYjGc3wC1BbzS3Jz7W/7JHL2oqNATWaURmOSlFw+ql8FMeSCAH4GPX4qOZfIRJcKjiV9/QLW7JTwVBlUxnPuULi8DiPSGikPylefEZms88=;
-Message-ID: <538170.68988.qm@web31803.mail.mud.yahoo.com>
-X-YMail-OSG: 6iZonlsVM1mBzDTKVHDN7R_sDeyd9xiJ13_YlikN2gBJ.2F
- SEK.eB.hmzwoGWLmreCuPVEa6Hih6wZWDUwRp0xp3ATNN5kStKyeRi2tqSR2
- JyKYNhCDhK0GD5EPZKEtvkrAIpNES0nutmCwJ.Jiq4g52WETkYOBbeFi2KxP
- qcFjQVORU1vOOZizk9wJu8ee36AiQLuqQYfGa6whoQvMzzdj8ED9S..4fyzO
- kNCNO0eCMF9BWmjm8MZYRRZtCd21YDuokAYFOwNnptzmtZZBkCECnN1DexyX
- PcpQqwIjloybGA1_4ItrPE9DN3uAYVOdtDrvNr6V7R9H4Tg9MYGGWpnX05M3
- yhn8bLEjeVvyaNhsFF3bkOrZ0LIGGRklZ9JqonDPeP2WIjhjtWm2uwWlNdXU
- -
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Mon, 22 Nov 2010 12:02:26 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        James Bottomley <James.Bottomley@suse.de>
-In-Reply-To: <AANLkTi=7tW6wqrk8ZkFuTYwmS-wZ4nQ+jkxk8U95H42F@mail.gmail.com>
+	Mon, 22 Nov 2010 15:08:57 -0500
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+From: "Arend Van Spriel" <arend@broadcom.com>
+To: "Greg KH" <gregkh@suse.de>,
+        "Zimny Lech" <napohybelskurwysynom2010@gmail.com>
+cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Brett Rudley" <brudley@broadcom.com>,
+        "Henry Ptasinski" <henryp@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Date: Mon, 22 Nov 2010 12:08:28 -0800
+Subject: RE: linux-next: Tree for November 22
+Thread-Topic: linux-next: Tree for November 22
+Thread-Index: AcuKfgxWp0FdJFODQYio77vQ220+FAAAf21j
+Message-ID: <400C43189542CE41BC0A5B252FC90136952F05944A@SJEXCHCCR02.corp.ad.broadcom.com>
+References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>
+ <AANLkTi=QeU_vb6+XRei0pqz7GSfp2E4TC3oTJYy9adv4@mail.gmail.com>,<20101122194643.GB21985@suse.de>
+In-Reply-To: <20101122194643.GB21985@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-WSS-ID: 60F412550GS766-06-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 11/22/10, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > Some kernel transport drivers unconditionally disable
-> > retrieval of the Caching mode page. One such for
-> example is
-> > the BBB/CBI transport over USB.
-> 
-> One reason for that is that historically we've seen devices
-> that
-> simply go crazy - to the point of simply stopping to
-> respond to
-> anything - when you ask for pages that Windows doesn't ask
-> for.
-> 
-> It's especially common on USB storage, but it happens
-> elsewhere too.
-> The device firmware simply hasn't ever been tested in that
-> situation,
-> and it's buggy.
-> 
-> So I don't mind the patch per se, but I think it's
-> potentially way
-> more dangerous than it looks.
+Hi Greg, Stephen,
 
-This patch does not ask for pages that Windows doesn't ask for. The sd driver already asks for all pages (page code 0x3F) and then checks if the device is write protected. Here is the present code:
+The file wl_iw.c declare a struct semaphore variable and uses semaphore function, but there is no explicit inclusion of <linux/semaphore.h>. I hit this problem last week when trying a minimal kernel configuration for my development system. Normally we build and test against kernel configuration similar to Ubuntu configuration and we got the semaphore definitions for free. Expect a patch soon.
 
-  2217                  sd_read_write_protect_flag(sdkp, buffer);
-  2218                  sd_read_cache_type(sdkp, buffer);
-  2219                  sd_read_app_tag_own(sdkp, buffer);
+Gr. AvS
+________________________________________
+From: linux-wireless-owner@vger.kernel.org [linux-wireless-owner@vger.kernel.org] On Behalf Of Greg KH [gregkh@suse.de]
+Sent: Monday, November 22, 2010 8:46 PM
+To: Zimny Lech
+Cc: Stephen Rothwell; linux-next@vger.kernel.org; LKML; Brett Rudley; Henry Ptasinski; linux-wireless@vger.kernel.org
+Subject: Re: linux-next: Tree for November 22
 
-Line 2217 asks for page code 0x3F, meaning all mode pages.
-Line 2218 asks for the Caching mode page or not at all if the device flags forbid it (all USB storage devices in the Linux kernel).
+On Mon, Nov 22, 2010 at 04:37:57PM +0100, Zimny Lech wrote:
+> Salve
+>
+> 2010/11/22 Stephen Rothwell <sfr@canb.auug.org.au>:
+> > Hi all,
+> >
+> > Changes since 20101119:
+> >
+>
+>
+>   CC [M]  drivers/staging/brcm80211/brcmfmac/wl_iw.o
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:130:19:
+> error: field 'sysioc_sem' has incomplete type
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
+> function 'wl_iw_timerfunc':
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:1070:4:
+> error: implicit declaration of function 'up'
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
+> function '_iscan_sysioc_thread':
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:1181:2:
+> error: implicit declaration of function 'down_interruptible'
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
+> function 'wl_iw_attach':
+> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:3708:2:
+> error: implicit declaration of function 'sema_init'
+> make[5]: *** [drivers/staging/brcm80211/brcmfmac/wl_iw.o] Error 1
+> make[4]: *** [drivers/staging/brcm80211/brcmfmac] Error 2
+> make[3]: *** [drivers/staging/brcm80211] Error 2
+> make[2]: *** [drivers/staging] Error 2
+> make[1]: *** [drivers] Error 2
+> make: *** [sub-make] Error 2
+>
 
-This patch adds processing of the data returned when all mode pages are asked for (0x3F) in the function on line 2218. It then parses the data to find out if the Caching mode page is present.
+Ick, not good.
 
-   Luben
+Henry, Brett, any ideas?
+
+thanks,
+
+greg k-h
+--
+To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
