@@ -1,239 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab0KVMrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:47:35 -0500
-Received: from brother.balabit.com ([195.70.62.219]:43642 "EHLO
-	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841Ab0KVMrc (ORCPT
+	id S1756207Ab0KVMsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:48:01 -0500
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:53790 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732Ab0KVMr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:47:32 -0500
-Subject: Re: linux-next: Tree for November 18 (netfilter)
-From: KOVACS Krisztian <hidden@balabit.hu>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        netfilter-devel@vger.kernel.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Balazs Scheidler <bazsi@balabit.hu>
-In-Reply-To: <4CE5712B.2080909@trash.net>
-References: <20101118134256.fe132215.sfr@canb.auug.org.au>
-	 <20101118092520.6ad964c7.randy.dunlap@oracle.com>
-	 <4CE5712B.2080909@trash.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 13:14:37 +0100
-Message-ID: <1290428077.725556.3.camel@nienna.balabit>
+	Mon, 22 Nov 2010 07:47:59 -0500
+Subject: Re: [patch 0/4] taskstats: Improve cumulative time accounting
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <1290423780.1974.1.camel@holzheu-laptop>
+References: <20101119201108.269346583@linux.vnet.ibm.com>
+	 <1290197955.2109.1617.camel@laptop>
+	 <1290423780.1974.1.camel@holzheu-laptop>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Mon, 22 Nov 2010 13:47:55 +0100
+Message-ID: <1290430075.5655.3.camel@holzheu-laptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-11-22 at 12:03 +0100, Michael Holzheu wrote:
+> Or maybe we could add a sysctl that allows to switch between the two
+> semantics.
 
-On Thu, 2010-11-18 at 19:32 +0100, Patrick McHardy wrote:
-> Krisztian, Balazs, could you please have a look at this? If the
-> intention is to use NF_DEFRAG_IPV6 without conntrack, we probably
-> need a couple of ifdefs.
+Then patch 03/04 would be something like the following:
+---
+Subject: taskstats: Introduce complete cumulative accounting
 
-Indeed, we were missing quite a few of those ifdefs... The patch below
-seems to fix the issue for me.
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit ec0ac6f3e7749e25f481c1e0f75766974820fe84
-Author: KOVACS Krisztian <hidden@balabit.hu>
-Date:   Mon Nov 22 13:07:15 2010 +0100
+Currently the cumulative time accounting in Linux is not complete.
+Due to POSIX POSIX.1-2001, the CPU time of processes is not accounted
+to the cumulative time of the parents, if the parents ignore SIGCHLD
+or have set SA_NOCLDWAIT. This behaviour has the major drawback that
+it is not possible to calculate all consumed CPU time of a system by
+looking at the current tasks. CPU time can be lost.
 
-    netfilter: fix compilation when conntrack is disabled but tproxy is
-enabled
-    
-    The IPv6 tproxy patches split IPv6 defragmentation off of conntrack,
-but
-    failed to update the #ifdef stanzas guarding the defragmentation
-related
-    fields and code in skbuff and conntrack related code in
-nf_defrag_ipv6.c.
-    
-    This patch adds the required #ifdefs so that IPv6 tproxy can truly
-be used
-    without connection tracking.
-    
-    Original report:
-    http://marc.info/?l=linux-netdev&m=129010118516341&w=2
-    
-    Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-    Signed-off-by: KOVACS Krisztian <hidden@balabit.hu>
+This patch adds a new sysctl "kernel.full_cdata" that allows to switch
+between the POSIX behavior and complete cumulative accounting.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index e6ba898..4f2db79 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -255,6 +255,11 @@ typedef unsigned int sk_buff_data_t;
- typedef unsigned char *sk_buff_data_t;
- #endif
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ include/linux/sched.h |    1 +
+ kernel/exit.c         |   12 ++++++++----
+ kernel/sysctl.c       |    7 +++++++
+ 3 files changed, 16 insertions(+), 4 deletions(-)
+
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1907,6 +1907,7 @@ enum sched_tunable_scaling {
+ };
+ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
  
-+#if defined(CONFIG_NF_DEFRAG_IPV4) ||
-defined(CONFIG_NF_DEFRAG_IPV4_MODULE) || \
-+    defined(CONFIG_NF_DEFRAG_IPV6) ||
-defined(CONFIG_NF_DEFRAG_IPV6_MODULE)
-+#define NET_SKBUFF_NF_DEFRAG_NEEDED 1
-+#endif
++extern unsigned int full_cdata_enabled;
+ #ifdef CONFIG_SCHED_DEBUG
+ extern unsigned int sysctl_sched_migration_cost;
+ extern unsigned int sysctl_sched_nr_migrate;
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -57,6 +57,8 @@
+ #include <asm/pgtable.h>
+ #include <asm/mmu_context.h>
+ 
++unsigned int full_cdata_enabled = 1;
 +
- /** 
-  *	struct sk_buff - socket buffer
-  *	@next: Next buffer in list
-@@ -362,6 +367,8 @@ struct sk_buff {
- 	void			(*destructor)(struct sk_buff *skb);
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	struct nf_conntrack	*nfct;
-+#endif
-+#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
- 	struct sk_buff		*nfct_reasm;
- #endif
- #ifdef CONFIG_BRIDGE_NETFILTER
-@@ -2051,6 +2058,8 @@ static inline void nf_conntrack_get(struct
-nf_conntrack *nfct)
- 	if (nfct)
- 		atomic_inc(&nfct->use);
+ static void exit_mm(struct task_struct * tsk);
+ 
+ static void __unhash_process(struct task_struct *p, bool group_dead)
+@@ -77,7 +79,7 @@ static void __unhash_process(struct task
+ static void __account_cdata(struct task_struct *p)
+ {
+ 	struct cdata *cd, *pcd, *tcd;
+-	unsigned long maxrss;
++	unsigned long maxrss, flags;
+ 	cputime_t tgutime, tgstime;
+ 
+ 	/*
+@@ -100,7 +102,7 @@ static void __account_cdata(struct task_
+ 	 * group including the group leader.
+ 	 */
+ 	thread_group_times(p, &tgutime, &tgstime);
+-	spin_lock_irq(&p->real_parent->sighand->siglock);
++	spin_lock_irqsave(&p->real_parent->sighand->siglock, flags);
+ 	pcd = &p->real_parent->signal->cdata_wait;
+ 	tcd = &p->signal->cdata_threads;
+ 	cd = &p->signal->cdata_wait;
+@@ -137,7 +139,7 @@ static void __account_cdata(struct task_
+ 		pcd->maxrss = maxrss;
+ 	task_io_accounting_add(&p->real_parent->signal->ioac, &p->ioac);
+ 	task_io_accounting_add(&p->real_parent->signal->ioac, &p->signal->ioac);
+-	spin_unlock_irq(&p->real_parent->sighand->siglock);
++	spin_unlock_irqrestore(&p->real_parent->sighand->siglock, flags);
  }
-+#endif
-+#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
- static inline void nf_conntrack_get_reasm(struct sk_buff *skb)
- {
- 	if (skb)
-@@ -2079,6 +2088,8 @@ static inline void nf_reset(struct sk_buff *skb)
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	nf_conntrack_put(skb->nfct);
- 	skb->nfct = NULL;
-+#endif
-+#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
- 	nf_conntrack_put_reasm(skb->nfct_reasm);
- 	skb->nfct_reasm = NULL;
+ 
+ /*
+@@ -157,6 +159,8 @@ static void __exit_signal(struct task_st
+ 
+ 	posix_cpu_timers_exit(tsk);
+ 	if (group_dead) {
++		if (full_cdata_enabled)
++			__account_cdata(tsk);
+ 		posix_cpu_timers_exit_group(tsk);
+ 		tty = sig->tty;
+ 		sig->tty = NULL;
+@@ -1292,7 +1296,7 @@ static int wait_task_zombie(struct wait_
+ 	 * It can be ptraced but not reparented, check
+ 	 * !task_detached() to filter out sub-threads.
+ 	 */
+-	if (likely(!traced) && likely(!task_detached(p)))
++	if (likely(!traced) && likely(!task_detached(p)) && !full_cdata_enabled)
+ 		__account_cdata(p);
+ 
+ 	/*
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -963,6 +963,13 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
  #endif
-@@ -2095,6 +2106,8 @@ static inline void __nf_copy(struct sk_buff *dst,
-const struct sk_buff *src)
- 	dst->nfct = src->nfct;
- 	nf_conntrack_get(src->nfct);
- 	dst->nfctinfo = src->nfctinfo;
-+#endif
-+#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
- 	dst->nfct_reasm = src->nfct_reasm;
- 	nf_conntrack_get_reasm(src->nfct_reasm);
- #endif
-@@ -2108,6 +2121,8 @@ static inline void nf_copy(struct sk_buff *dst,
-const struct sk_buff *src)
- {
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	nf_conntrack_put(dst->nfct);
-+#endif
-+#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
- 	nf_conntrack_put_reasm(dst->nfct_reasm);
- #endif
- #ifdef CONFIG_BRIDGE_NETFILTER
-diff --git a/include/net/netfilter/ipv6/nf_conntrack_ipv6.h
-b/include/net/netfilter/ipv6/nf_conntrack_ipv6.h
-index 1ee717e..a4c9936 100644
---- a/include/net/netfilter/ipv6/nf_conntrack_ipv6.h
-+++ b/include/net/netfilter/ipv6/nf_conntrack_ipv6.h
-@@ -7,16 +7,6 @@ extern struct nf_conntrack_l4proto
-nf_conntrack_l4proto_tcp6;
- extern struct nf_conntrack_l4proto nf_conntrack_l4proto_udp6;
- extern struct nf_conntrack_l4proto nf_conntrack_l4proto_icmpv6;
- 
--extern int nf_ct_frag6_init(void);
--extern void nf_ct_frag6_cleanup(void);
--extern struct sk_buff *nf_ct_frag6_gather(struct sk_buff *skb, u32
-user);
--extern void nf_ct_frag6_output(unsigned int hooknum, struct sk_buff
-*skb,
--			       struct net_device *in,
--			       struct net_device *out,
--			       int (*okfn)(struct sk_buff *));
--
--struct inet_frags_ctl;
--
- #include <linux/sysctl.h>
- extern struct ctl_table nf_ct_ipv6_sysctl_table[];
- 
-diff --git a/include/net/netfilter/ipv6/nf_defrag_ipv6.h
-b/include/net/netfilter/ipv6/nf_defrag_ipv6.h
-index 94dd54d..fd79c9a 100644
---- a/include/net/netfilter/ipv6/nf_defrag_ipv6.h
-+++ b/include/net/netfilter/ipv6/nf_defrag_ipv6.h
-@@ -3,4 +3,14 @@
- 
- extern void nf_defrag_ipv6_enable(void);
- 
-+extern int nf_ct_frag6_init(void);
-+extern void nf_ct_frag6_cleanup(void);
-+extern struct sk_buff *nf_ct_frag6_gather(struct sk_buff *skb, u32
-user);
-+extern void nf_ct_frag6_output(unsigned int hooknum, struct sk_buff
-*skb,
-+			       struct net_device *in,
-+			       struct net_device *out,
-+			       int (*okfn)(struct sk_buff *));
-+
-+struct inet_frags_ctl;
-+
- #endif /* _NF_DEFRAG_IPV6_H */
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 104f844..74ebf4b 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -380,6 +380,8 @@ static void skb_release_head_state(struct sk_buff
-*skb)
- 	}
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	nf_conntrack_put(skb->nfct);
-+#endif
-+#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
- 	nf_conntrack_put_reasm(skb->nfct_reasm);
- #endif
- #ifdef CONFIG_BRIDGE_NETFILTER
-diff --git a/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c
-b/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c
-index 99abfb5..97c5b21 100644
---- a/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c
-+++ b/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c
-@@ -19,13 +19,15 @@
- 
- #include <linux/netfilter_ipv6.h>
- #include <linux/netfilter_bridge.h>
-+#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- #include <net/netfilter/nf_conntrack.h>
- #include <net/netfilter/nf_conntrack_helper.h>
- #include <net/netfilter/nf_conntrack_l4proto.h>
- #include <net/netfilter/nf_conntrack_l3proto.h>
- #include <net/netfilter/nf_conntrack_core.h>
--#include <net/netfilter/nf_conntrack_zones.h>
- #include <net/netfilter/ipv6/nf_conntrack_ipv6.h>
-+#endif
-+#include <net/netfilter/nf_conntrack_zones.h>
- #include <net/netfilter/ipv6/nf_defrag_ipv6.h>
- 
- static enum ip6_defrag_users nf_ct6_defrag_user(unsigned int hooknum,
-@@ -33,8 +35,10 @@ static enum ip6_defrag_users
-nf_ct6_defrag_user(unsigned int hooknum,
- {
- 	u16 zone = NF_CT_DEFAULT_ZONE;
- 
-+#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	if (skb->nfct)
- 		zone = nf_ct_zone((struct nf_conn *)skb->nfct);
-+#endif
- 
- #ifdef CONFIG_BRIDGE_NETFILTER
- 	if (skb->nf_bridge &&
-@@ -56,9 +60,11 @@ static unsigned int ipv6_defrag(unsigned int hooknum,
- {
- 	struct sk_buff *reasm;
- 
-+#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	/* Previously seen (loopback)?	*/
- 	if (skb->nfct && !nf_ct_is_template((struct nf_conn *)skb->nfct))
- 		return NF_ACCEPT;
-+#endif
- 
- 	reasm = nf_ct_frag6_gather(skb, nf_ct6_defrag_user(hooknum, skb));
- 	/* queued */
++	{
++		.procname	= "full_cdata",
++		.data		= &full_cdata_enabled,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
+ /*
+  * NOTE: do not add new entries to this table unless you have read
+  * Documentation/sysctl/ctl_unnumbered.txt
 
 
