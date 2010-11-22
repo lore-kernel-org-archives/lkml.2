@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab0KVGYc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 01:24:32 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37120 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab0KVGYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 01:24:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Tu8LsG+LJMx5XLvDeLVnVFFuYvnGZbqJvK0Z/KyP+5VjiVDlHQQk9Mqct5lG7WbgDU
-         /Wq7Lvrx7CbfekBXygHqmqM0ksSoxbvbW4jh2SbD+durHAxJ4PX19ukOf3nu5d7WcC9I
-         Sd6MSlZRPAAe/f59yImoYXpZx3b7FstCyq2TI=
-Date: Sun, 21 Nov 2010 22:24:21 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        Vojtech Pavlik <vojtech@ucw.cz>
-Subject: Re: [RFC][PATCH] Input: ct82c710 - remove a redundant
- serio_register_port()
-Message-ID: <20101122062421.GA31175@core.coreip.homeip.net>
-References: <1290406007.6941.15.camel@mola>
+	id S1751365Ab0KVGYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 01:24:48 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33307 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab0KVGYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 01:24:47 -0500
+Date: Mon, 22 Nov 2010 11:54:40 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Ben Gamari <bgamari.foss@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, tytso@mit.edu,
+        a.p.zijlstra@chello.nl, debiandev@gmail.com, alan@lxorguk.ukuu.org.uk,
+        dhaval.giani@gmail.com, efault@gmx.de, vgoyal@redhat.com,
+        oleg@redhat.com, markus@trippelsdorf.de,
+        mathieu.desnoyers@efficios.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101122062440.GF12043@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
+ <20101119.082944.226775934.davem@davemloft.net>
+ <20101119163430.GA12353@tango.0pointer.de>
+ <20101119.084302.71115175.davem@davemloft.net>
+ <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
+ <87mxp53z72.fsf@gmail.com>
+ <20101120011330.GB4183@tango.0pointer.de>
+ <20101120042557.GA12043@balbir.in.ibm.com>
+ <20101120154100.GA25803@tango.0pointer.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1290406007.6941.15.camel@mola>
+In-Reply-To: <20101120154100.GA25803@tango.0pointer.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 02:06:47PM +0800, Axel Lin wrote:
-> We already call serio_register_port() in ct82c710_probe(),
-> thus remove a redundant serio_register_port() in ct82c710_init().
-> 
-> Looks like this bug is introduced by 
-> 916d83cfe5da1cda454d8b0ae233f06b58bd7f91
-> "Input: ct82c710 - convert to the new platform device interface"
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> I don't have this hardware handy, I appreciate if someone can test this patch.
-> 
+* Lennart Poettering <mzxreary@0pointer.de> [2010-11-20 16:41:01]:
 
-I doubt anyone has; maybe I should start pruning older drivers...
+> On Sat, 20.11.10 09:55, Balbir Singh (balbir@linux.vnet.ibm.com) wrote:
+> 
+> > > However, I am not sure I like the idea of having pollable files like that,
+> > > because in the systemd case I am very much interested in getting
+> > > recursive notifications, i.e. I want to register once for getting
+> > > notifications for a full subtree instead of having to register for each
+> > > cgroup individually.
+> > > 
+> > > My personal favourite solution would be to get a netlink msg when a
+> > > cgroup runs empty. That way multiple programs could listen to the events
+> > > at the same time, and we'd have an easy way to subscribe to a whole
+> > > hierarchy of groups.
+> > 
+> > The netlink message should not be hard to do if we agree to work on
+> > it. The largest objections I've heard is that netlink implies
+> > network programming and most users want to be able to script in
+> > their automation and network scripting is hard.
+> 
+> Well, the notify_on_release stuff cannot be dropped anyway at this point
+> in time, so netlink support would be an addition to, not a replacement for
+> the current stuff that might be useful for scripting folks.
 
-BTW, the fix is obviously correct so I'll apply it and your other two
-patches as well. Thanks Axel.
+Agreed, we still need the old notify_on_release. Are you suggesting
+that for scripting we use the old interface and newer tools use
+netlink?
 
 -- 
-Dmitry
+	Three Cheers,
+	Balbir
