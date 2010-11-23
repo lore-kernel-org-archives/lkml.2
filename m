@@ -1,90 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0KWV2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 16:28:55 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63943 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0KWV2y (ORCPT
+	id S1752765Ab0KWV3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 16:29:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60899 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab0KWV3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 16:28:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=nOX82Yu0xHIBvMlYM+bwToeBysboTj5sLUqWgbvZ2XOyhcytKYkuY+ZvITd/SlE67m
-         R9xJU4i2wuza52IZ2pDr9aiASBX+OvPpDzAW2OyckogjhGaNg/3fy87EjzbVSFCjKci4
-         fgxjLOpSr7YbQil3RJpcg5S4jvbEqQhGOZcqE=
-Message-ID: <4CEC3211.7050503@gmail.com>
-Date: Tue, 23 Nov 2010 22:28:49 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Belisko Marek <marek.belisko@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created
- device.
-References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>	<4CEBC751.6090906@gmail.com> <AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
-In-Reply-To: <AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Nov 2010 16:29:45 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=VINkOuZDQI4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=bFFpurj40r1yWggvNcwA:9 a=HpFZT6cC3ci4AKUsP8kA:7 a=oya3Zwdy9X04qhNyp99ce0bKziMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
+ filesystem
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1290007007.2109.925.camel@laptop>
+References: <20101117005357.024472450@goodmis.org>
+	 <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de>
+	 <20101117103914.GA21976@elte.hu>
+	 <1289996753.30543.35.camel@gandalf.stny.rr.com>
+	 <1290007007.2109.925.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 23 Nov 2010 16:29:42 -0500
+Message-ID: <1290547782.30543.397.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2010 03:00 PM, Belisko Marek wrote:
-> On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->> On 11/23/2010 01:29 PM, Marek Belisko wrote:
->>> Use simple misc device for ioctl driver funtionality testing.
->>>
->>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
->>> ---
->>>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   90 ++++++++++++++++++---
->>>  1 files changed, 77 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->>> index 1aec926..d1784a3 100644
->>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->>> @@ -32,6 +32,7 @@
->>>  #include <linux/poll.h>
->>>  #include <linux/netdevice.h>
->>>  #include <linux/delay.h>
->>> +#include <linux/miscdevice.h>
->>>
->>>  #include <linux/fs.h>
->>>  #include <linux/kmod.h>
->>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
->>>       .llseek         = no_llseek,
->>>  };
->>>
->>> +struct ft1000_misc_device {
->>> +     struct miscdevice dev;
->>> +     int inf_id;
->>> +};
->>> +
->>> +#define FREE_ID (0xFF)
->>> +
->>> +/* we support just 3 devices */
->>> +#define MAX_DEVICE 3
->>
->> No, why this should be converted to miscdevice? Leave it as chrdev.
-> Is there any problem with using miscdev?
+Not sure if the stable vs debug tracepoints debate is dead.
 
-Yes, if you want more than a single device per system.
+On Wed, 2010-11-17 at 16:16 +0100, Peter Zijlstra wrote:
 
-> Old interface create /dev nodes with
-> calling kernel thread and some usermode_helper or whatever.
 
-Yes, that's crap indeed. But doesn't judge for miscdevice.
+> 
+> > Are these events now going to be labeled as stable? 
+> 
+> For now I'm concentrating on the hardware events, those are more or less
+> stable in that if you run it on the same hardware you get the same thing
+> counted. Different hardware may miss some events since it simply cannot
+> provide anything resembling, or count something related but slightly
+> different (speculative vs retired events, or different cache level, or a
+> slightly different definition of miss etc..)
+> 
+> Basically the same we already have with the perf 'generic' events.
+> 
+> >  Is every tracepoint
+> > we have, much have the same data?  Linus specifically said at Kernel
+> > Summit that he wants absolutely NO modules to have a stable tracepoint.
+> > 
+> > Also, if we just blindly label a tracepoint as "stable" then we must
+> > keep all its contents. For example, the sched_switch will contain the
+> > priority. As Peter has stated several times, that may go away. We also
+> > do not want to lose getting that information, as a lot of us use it.
+> 
+> For now I've not at all looked at representing tracepoints in sysfs, for
+> the hardware bits I'm looking to place the event_source (formerly known
+> as PMU) in the hardware topology already present in /sys/devices/.
+> 
+> One suggestion was to place the software and tracepoint events
+> in /sys/kernel/ some place. Another was to place driver specific, say
+> wifi things near the wifi driver node.
 
-> Just convert to misc dev
-> where this is done automatically.
 
-So the only thing you need to do is to send a uevent to udev appropriately.
+Should we create a /sys/kernel/tracepoints/
 
-regards,
--- 
-js
+directory for the stable tracepoints. And then have these directories
+have the format of those tracepoints? Or is that against the "sysfs"
+rule of only having a single line per file? The format is multi lines.
+
+
+> 
+> None of the proposals have dealt with the stable vs debug thing, simply
+> because none of them were post KS.
+> 
+> 
+> > Some distros already mount debugfs by default. It's a oneliner in fstab.
+> 
+> I haven't yet seen that.. maybe its automounted on /sys/kernel/debug/ or
+> some daft place like that by magic initscipts outside of fstab but I'd
+> not notice that.
+
+I'd still like to keep the general tracepoints in something
+like /sys/kernel/debug/events/... using the same format that we come up
+with for stable tracepoints. The fact that you need to mount the debugfs
+system to use it, should help keep some tools from using it.
+
+
+> 
+> > > 
+> > > So putting it into sysfs looks like a pretty intelligent solution all around and i'd 
+> > > prefer it.
+> > 
+> > Another downside is that you need to scan hundreds of directories to
+> > find tracepoints. And again, are they all now stable?
+> 
+> Not really, they'd be accessible through the bus structure, something
+> like:
+> 
+> /sys/bus/event_source/*/events/*
+
+That's for every event? Or just software ones?
+
+> 
+> Sure, that's more than 1 directory, but then so
+> is /debug/tracing/events/*/*/
+> 
+> 
+> > > Steve, would you be interested in helping out Lin Ming and PeterZ with the sysfs 
+> > > work - or at least help them come to the conclusion that we want eventfs?
+> > 
+> > I don't think I would be much help with the former, and I'm thinking I'm
+> > losing the later.
+> 
+> Yeah, eventfs simply won't work for what we want to do with hardware
+> events.
+
+Well, hardware events are something that only depends on what you have
+for hardware. I wasn't thinking of putting them in with the software
+events. They probably should be separate.
+
+Can the hardware events be traced? That is, not just profiled, but have
+them traced for when they occur individually.
+
+
+I'll go work on other things until we can come up with an agreement. I
+hate to keep wasting days of work just to have someone NAK it again.
+
+-- Steve
+
+
