@@ -1,137 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab0KWXxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 18:53:48 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:28731 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754187Ab0KWXv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 18:51:59 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 2Q6rebEVM1nQnSnE0DP_Sm_EKPLolt1NmGmZ7uo.Ap79B4J
- HQamIG1GfDMwGQgtXMgl4EiIaWbH0dQwwgyraSaYandiGyJxP7ZcIeO7_rG0
- EIFUIosC_dKR_ASU0CbG0bsZxKlXwSfBGuPjfYwXjHdrRMou48Oj5yCuZQO9
- TLdRkKwgit7axVLxPo9izHHWkM.fSR1g7bmJQ_xNmy8V_IKQdgLnfm1Sv8QP
- KW5B7J0buRZEFi3Nuekhq0zAnlHioZqMYuPlfAmF3xdo3tlRN5fBG
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101123235157.062638491@linux.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 23 Nov 2010 17:51:41 -0600
-From: Christoph Lameter <cl@linux.com>
-To: akpm@linux-foundation.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [thiscpuops upgrade 02/10] vmstat: Optimize zone counter modifications through the use of this cpu operations
-References: <20101123235139.908255844@linux.com>
-Content-Disposition: inline; filename=vmstat_this_cpu
+	id S1754324Ab0KWX41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 18:56:27 -0500
+Received: from ns.mindbit.ro ([80.86.127.26]:51075 "EHLO ns.mindbit.ro"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754137Ab0KWX40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 18:56:26 -0500
+X-Greylist: delayed 1937 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Nov 2010 18:56:19 EST
+Subject: Re: [PATCH v2 2/4] drivers: hwspinlock: add OMAP implementation
+From: Ionut Nicu <ionut.nicu@mindbit.ro>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>, Simon Que <sque@ti.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+In-Reply-To: <1290526740-27624-3-git-send-email-ohad@wizery.com>
+References: <1290526740-27624-1-git-send-email-ohad@wizery.com>
+	 <1290526740-27624-3-git-send-email-ohad@wizery.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MindBit
+Date: Wed, 24 Nov 2010 01:23:27 +0200
+Message-ID: <1290554607.3647.12.camel@atlantis.mindbit.ro>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this cpu operations can be used to slightly optimize the function. The
-changes will avoid some address calculations and replace them with the
-use of the percpu segment register.
+Hi Ohad,
 
-If one would have this_cpu_inc_return and this_cpu_dec_return then it
-would be possible to optimize inc_zone_page_state and dec_zone_page_state even
-more.
+On Tue, 2010-11-23 at 17:38 +0200, Ohad Ben-Cohen wrote:
+> From: Simon Que <sque@ti.com>
+> 
+> Add hwspinlock support for the OMAP4 Hardware Spinlock device.
+> 
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+<snip>
 
----
- mm/vmstat.c |   56 ++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 32 insertions(+), 24 deletions(-)
+> +
+> +	io_base = ioremap(res->start, resource_size(res));
+> +	if (!io_base) {
+> +		ret = -ENOMEM;
+> +		goto free_state;
+> +	}
+> +
+> +	/* Determine number of locks */
+> +	i = readl(io_base + SYSSTATUS_OFFSET);
+> +	i >>= SPINLOCK_NUMLOCKS_BIT_OFFSET;
+> +
+> +	/* exactly one of the four least significant bits must be 1 */
+> +	if (!i || !is_power_of_2(i) || i > 8) {
+> +		ret = -EINVAL;
+> +		goto iounmap_base;
+> +	}
+> +
 
-Index: linux-2.6/mm/vmstat.c
-===================================================================
---- linux-2.6.orig/mm/vmstat.c	2010-11-09 11:18:22.000000000 -0600
-+++ linux-2.6/mm/vmstat.c	2010-11-09 11:19:06.000000000 -0600
-@@ -167,18 +167,20 @@ static void refresh_zone_stat_thresholds
- void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
- 				int delta)
- {
--	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
--
--	s8 *p = pcp->vm_stat_diff + item;
-+	struct per_cpu_pageset * __percpu pcp = zone->pageset;
-+	s8 * __percpu p = pcp->vm_stat_diff + item;
- 	long x;
-+	long t;
-+
-+	x = delta + __this_cpu_read(*p);
- 
--	x = delta + *p;
-+	t = __this_cpu_read(pcp->stat_threshold);
- 
--	if (unlikely(x > pcp->stat_threshold || x < -pcp->stat_threshold)) {
-+	if (unlikely(x > t || x < -t)) {
- 		zone_page_state_add(x, zone, item);
- 		x = 0;
- 	}
--	*p = x;
-+	__this_cpu_write(*p, x);
- }
- EXPORT_SYMBOL(__mod_zone_page_state);
- 
-@@ -221,16 +223,19 @@ EXPORT_SYMBOL(mod_zone_page_state);
-  */
- void __inc_zone_state(struct zone *zone, enum zone_stat_item item)
- {
--	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
--	s8 *p = pcp->vm_stat_diff + item;
--
--	(*p)++;
-+	struct per_cpu_pageset * __percpu pcp = zone->pageset;
-+	s8 * __percpu p = pcp->vm_stat_diff + item;
-+	int v, t;
-+
-+	__this_cpu_inc(*p);
-+
-+	v = __this_cpu_read(*p);
-+	t = __this_cpu_read(pcp->stat_threshold);
-+	if (unlikely(v > t)) {
-+		int overstep = t / 2;
- 
--	if (unlikely(*p > pcp->stat_threshold)) {
--		int overstep = pcp->stat_threshold / 2;
--
--		zone_page_state_add(*p + overstep, zone, item);
--		*p = -overstep;
-+		zone_page_state_add(v + overstep, zone, item);
-+		__this_cpu_write(*p, overstep);
- 	}
- }
- 
-@@ -242,16 +247,19 @@ EXPORT_SYMBOL(__inc_zone_page_state);
- 
- void __dec_zone_state(struct zone *zone, enum zone_stat_item item)
- {
--	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
--	s8 *p = pcp->vm_stat_diff + item;
--
--	(*p)--;
--
--	if (unlikely(*p < - pcp->stat_threshold)) {
--		int overstep = pcp->stat_threshold / 2;
-+	struct per_cpu_pageset * __percpu pcp = zone->pageset;
-+	s8 * __percpu p = pcp->vm_stat_diff + item;
-+	int v, t;
-+
-+	__this_cpu_dec(*p);
-+
-+	v = __this_cpu_read(*p);
-+	t = __this_cpu_read(pcp->stat_threshold);
-+	if (unlikely(v < - t)) {
-+		int overstep = t / 2;
- 
--		zone_page_state_add(*p - overstep, zone, item);
--		*p = overstep;
-+		zone_page_state_add(v - overstep, zone, item);
-+		__this_cpu_write(*p, overstep);
- 	}
- }
- 
+At iounmap_base you unmap state->io_base, but that's set only after this
+check. You should probably iounmap(io_base).
+
+Regards,
+Ionut.
+
 
