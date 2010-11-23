@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab0KWUv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 15:51:26 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64762 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab0KWUvZ (ORCPT
+	id S1752545Ab0KWUzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 15:55:08 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:51485 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab0KWUzF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 15:51:25 -0500
+	Tue, 23 Nov 2010 15:55:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:disposition-notification-to:date:from:user-agent
-         :mime-version:to:subject:content-type:content-transfer-encoding;
-        b=ees14uZ3AbSPf3rTZRmYMiX/tpx4X2KwHbV7seh4zRDZJGTJCFqEKCOKY6/pgajOx4
-         KWbxyk5x5zVEqoLbfpMmKX85EluVB6lY1q9zd2dZ5YBLxAsf96K9PdJALLiH2WsA+vo6
-         G3jBIS4a5i0UjB2Y5NFzeFSN33HD+I6mXmXrs=
-Message-ID: <4CEC294A.5080706@gmail.com>
-Date: Tue, 23 Nov 2010 21:51:22 +0100
-From: Julien lengrand-lambert <jlengrand@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SUlDfjl87bSG+rVqd0XZeVXsQfuVjqbrS7h6u7WwFZdcIUrgabY+gYuVYy9+DRPmK0
+         gI2cZ8DaQE05bqNPerVA==
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Linux comptability with a KSK-6001 Keysonic Keyboard
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101122215746.e847742d.akpm@linux-foundation.org>
+References: <20101123050052.GA24039@google.com>
+	<20101122215746.e847742d.akpm@linux-foundation.org>
+Date: Tue, 23 Nov 2010 12:55:01 -0800
+Message-ID: <AANLkTi=dK9wQaHm=tXOCqN2BDw5jEtH5qfs9zRHbE0qT@mail.gmail.com>
+Subject: Re: [RFC] mlock: release mmap_sem every 256 faulted pages
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Nov 22, 2010 at 9:57 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 22 Nov 2010 21:00:52 -0800 Michel Lespinasse <walken@google.com> wrote:
+>> I'd like to sollicit comments on this proposal:
+>>
+>> Currently mlock() holds mmap_sem in exclusive mode while the pages get
+>> faulted in. In the case of a large mlock, this can potentially take a
+>> very long time.
+>
+> A more compelling description of why this problem needs addressing
+> would help things along.
 
-I found your mail while searching for help in the Linux usb device 
-community.
-  If this is the wrong way to ask, feel free to mail me back with the 
-good way so that I can correct it :)
+Oh my. It's probably not too useful for desktops, where such large
+mlocks are hopefully uncommon.
 
-I just bought a KSK-6001 UELX keyboard with my new computer.
-You may find more information here :
-http://www.maxpoint.de/de/products/keyboards.php?pid=1_3_7&we_objectID=1219
+At google we have many applications that serve data from memory and
+don't want to allow for disk latencies. Some of the simpler ones use
+mlock (though there are other ways - anon memory running with swap
+disabled is a surprisingly popular choice).
 
-I have an issue running on my Ubuntu Linux. The keyboard is detected 
-during the grub start, which I think is ruled by the bios driver.
-But it is totally impossible for me to use it as soon as the splash screen.
+Kosaki is also showing interest in mlock, though I'm not sure what his
+use case is.
 
-The keyboard is detected, as a lsusb prompt me :
-Bus 003 Device 004: ID 060b:2231 Solid Year
+Due to the large scope of mmap_sem, there are many things that may
+block while mlock() runs. If there are other threads running (and most
+of our programs are threaded from an early point in their execution),
+the threads might block on a page fault that needs to acquire
+mmap_sem. Also, various files such as /proc/pid/maps stop working.
+This is a problem for us because our cluster software can't monitor
+what's going on with that process - not by talking to it as the
+required threads might block, nor by looking at it through /proc
+files.
 
-However, when I look at the dmesg, I get the following error :
-[  171.544035] usb 3-2: new low speed USB device using ohci_hcd and 
-address 4
-[  171.725207] usb 3-2: configuration #1 chosen from 1 choice
-[  171.738509] input: KB USB Keyboard as 
-/devices/pci0000:00/0000:00:12.0/usb3/3-2/3-2:1.0/input/input6
-[  171.738669] generic-usb 0003:060B:2231.0005: input,hidraw1: USB HID 
-v1.10 Keyboard [KB USB Keyboard] on usb-0000:00:12.0-2/input0
-[  171.754316] generic-usb: probe of 0003:060B:2231.0006 failed with 
-error -22
+A separate, personal interest is that I'm still carrying the
+(admittedly poor-taste) down_read_unfair() patches internally, and I
+would be able to drop them if only long mmap_sem hold times could be
+eliminated.
 
-Seems like the keyboard is detected during start up; and it is well 
-detected as a keyboard interface. It is however impossible for him to be 
-driven by my OS.
+>> +             /*
+>> +              * Limit batch size to 256 pages in order to reduce
+>> +              * mmap_sem hold time.
+>> +              */
+>> +             nfault = nstart + 256 * PAGE_SIZE;
+>
+> It would be nicer if there was an rwsem API to ask if anyone is
+> currently blocked in down_read() or down_write().  That wouldn't be too
+> hard to do.  It wouldn't detect people polling down_read_trylock() or
+> down_write_trylock() though.
 
-I must add that I tested the keyboard on 4 different computers, with 
-various versions of Ubuntu Linux (from 10.04 to 10.10) and even with the 
-last 2.6.37 kernel.
+I can do that. I actually thought about it myself, but then dismissed
+it as too fancy for version 1. Only problem is that this would go into
+per-architecture files which I can't test. But I wouldn't have to
+actually write asm, so this may be OK. down_read_trylock() is no
+problem, as these calls will succeed unless there is a queued writer,
+which we can easily detect. down_write_trylock() is seldom used, the
+only caller I could find for mmap_sem is
+drivers/infiniband/core/umem.c and it'll do a regular down_write()
+soon enough if the initial try fails.
 
-I did not find any relevant information about it on the internet, and 
-the -22 error seems very rare :s
-
-Perhaps could you help me to solve this issue? I am ready to give you 
-any new information you may need.
-I would be really grateful to have some help, as I am already struggling 
-for two weeks to make it work.
-
-Best regards,
-Julien Lengrand-Lambert
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
