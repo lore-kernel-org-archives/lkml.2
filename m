@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab0KWAU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:20:58 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47077 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab0KWAU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:20:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=jROEqz8Cy6ltCVIa/5KSZN0vSkbUmAFFFR0D0Fo+Ed1qakj/te67NNv33MUFS6Xri5
-         kOUQbDXjcB1oFIkWnW7wlzpFpXJDhZ2T/DOAQcnba5fFbL+jg2dAdkSL1MCl/JD8q03j
-         uPV9onzd9FZQG1FXIP384beIWC/PEpM02+nZw=
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Vasiliy Kulikov <segoon@openwall.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-In-Reply-To: <20101122155043.fbbb74f4.akpm@linux-foundation.org>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-	 <20101112120834.33062900.akpm@linux-foundation.org>
-	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
-	 <20101114092533.GB5323@albatros>
-	 <20101114180643.593d19ac.akpm@linux-foundation.org>
-	 <1289848341.2607.125.camel@edumazet-laptop> <4CE268C8.5010203@panasas.com>
-	 <20101122155043.fbbb74f4.akpm@linux-foundation.org>
+	id S932566Ab0KWA2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:28:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29771 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932065Ab0KWA2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 19:28:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,239,1288594800"; 
+   d="scan'208";a="860363911"
+Subject: Re: 2.6.37-rc2 after KVM shutdown - unregister_netdevice: waiting
+ for vmtst01eth0 to become free. Usage count = 1
+From: "Alex,Shi" <alex.shi@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net
+Cc: "Chen, Tim C" <tim.c.chen@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>
+In-Reply-To: <AANLkTi=kx3uzrf29K7U8BFt2oTA_Dtw=4r2LdWPFUKv7@mail.gmail.com>
+References: <20101116084148.GA3781@pcnci.linuxbox.cz>
+	 <1289900812.5372.1.camel@edumazet-laptop>
+	 <20101118062822.GB3781@pcnci.linuxbox.cz>
+	 <1290071813.2781.1.camel@edumazet-laptop>
+	 <AANLkTi=kx3uzrf29K7U8BFt2oTA_Dtw=4r2LdWPFUKv7@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 01:20:48 +0100
-Message-ID: <1290471649.2704.24.camel@edumazet-laptop>
+Date: Tue, 23 Nov 2010 08:27:08 +0800
+Message-ID: <1290472028.16282.71.camel@debian>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 22 novembre 2010 à 15:50 -0800, Andrew Morton a écrit :
 
-> Well.  We certainly assume in many places that
+Seems the problem fixing is still out of 37-rc3 kernel. It block our
+network performance testing. I am glad to see the fixing patch in
+upstream. 
+
+
 > 
-> 	struct foo {
-> 		int a;
-> 		int b;
-> 	} f = {
-> 		.a = 1,
-> 	};
+> On Thu, Nov 18, 2010 at 5:16 PM, Eric Dumazet <eric.dumazet@gmail.com>
+> wrote:
+>         Le jeudi 18 novembre 2010 à 07:28 +0100, Nikola Ciprich a
+>         écrit :
+>         > > Yep, this is a known problem, thanks !
+>         > >
+>         > > fix is there :
+>         > >
+>         > > http://patchwork.ozlabs.org/patch/71354/
+>         > Thanks Eric, this indeed fixes the problem..
+>         > I noticed the fix didn't make it to 2.6.37-rc2-git3 though,
+>         > maybe it just got omited?
+>         > anyways, thanks for help!
+>         > n.
+>         
+>         
+>         Its in David Miller net-2.6 tree (all pending network patches
+>         for
+>         current linux-2.6 version), so it'll be included next time
+>         David push
+>         its tree to Linus, dont worry ;)
+>         
+>         
+
 > 
-> will initialise b to zero.  But I doubt if much code at all assumes
-> that this initialisation patterm will reliably zero out *holes* in the
-> struct.
-> 
-
-We did such assertions in the past, we were wrong.
-
-Check commit 1c40be12f7d8ca1d387510d39787b12e512a7ce8 for an example
-(net sched: fix some kernel memory leaks)
-
-I guess we must make a full audit of all C99 initializers or structures
-copied to userspace, giving a name to hidden holes, to force gcc to init
-them to 0.
-
-# cat try.c
-struct s {
-	char c;
-	long l;
-	};
-
-void bar(void *v)
-{
-	unsigned long *p = v;
-
-	printf("%lx %lx\n", p[0], p[1]);
-}
-
-int main()
-{
-	struct s s1 = {
-		.c = 1,
-		.l = 2,
-	};
-
-	bar(&s1);
-	return 0;
-}
-
-# gcc -O2 -o try try.c
-# ./try
-8049401 2
-
-Strangely, if we remove ".l = 2," line, gcc emits code to clear al the
-fields
-
-main:
-	pushl	%ebp
-	movl	%esp, %ebp
-	andl	$-16, %esp
-	subl	$32, %esp
-	leal	24(%esp), %eax
-	movl	$0, 24(%esp)
-	movl	%eax, (%esp)
-	movl	$0, 28(%esp)
-	movb	$1, 24(%esp)
-	call	bar
-	xorl	%eax, %eax
-	leave
-	ret
 
 
