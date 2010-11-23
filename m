@@ -1,210 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab0KWUlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 15:41:49 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51243 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab0KWUlr (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 23 Nov 2010 15:41:47 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH] xen/mmu, x86-32: Make swapper_pg_dir writeable before calling setup_arch.
-Date: Tue, 23 Nov 2010 15:41:36 -0500
-Message-Id: <1290544896-20754-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1290544896-20754-1-git-send-email-konrad.wilk@oracle.com>
-References: <1290544896-20754-1-git-send-email-konrad.wilk@oracle.com>
+	id S1752627Ab0KWUmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 15:42:07 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:15009
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752546Ab0KWUmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 15:42:04 -0500
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LCCUTY-01-PZY-02
+X-M-MSG: 
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <x86@kernel.org>, <brgerst@gmail.com>, <robert.richter@amd.com>,
+        <andreas.herrmann3@amd.com>, Hans Rosenfeld <hans.rosenfeld@amd.com>
+Subject: [RFC 1/2] x86, xsave: cleanup xsave/xrstor support
+Date: Tue, 23 Nov 2010 21:41:52 +0100
+Message-ID: <1290544913-489129-2-git-send-email-hans.rosenfeld@amd.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <AANLkTinBsut0Csubh1N85jkydH7wCp3YniASE-vyf7MP@mail.gmail.com>
+References: <AANLkTinBsut0Csubh1N85jkydH7wCp3YniASE-vyf7MP@mail.gmail.com>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b. Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr. 43632
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git commit b40827fa7268fda8a62490728a61c2856f33830b ("x86-32, mm: Add an initial
-page table for core bootstrapping") makes swapper_pg_dir be empty during
-early bootup and uses initial_page_table for the startup code. In setup_arch()
-it copies the contents of initial_page_table to swapper_pg_dir and pivots the
-cr3 to use swapper_pg_dir. Later on, at the end of setup_arch() it copies
-swapper_pg_dir contents to initial_page_table.
+Removed the functions fpu_fxrstor_checking() and restore_fpu_checking()
+because they weren't doing anything. Removed redundant xsave/xrstor
+implementations. Since xsave/xrstor is not specific to the FPU, and also
+for consistency, all xsave/xrstor functions now take a xsave_struct
+argument.
 
-While that works for baremetal, under Xen, before the setup_arch is called we
-setup swapper_pg_dir to be RO and also load it in %cr3, and initial_page_table is empty.
-
-To work with with the requirement of copying the contents of initial_page_table
-to swapper_pg_dir, and then latter vice-versa this patch introduces a new mechanism
-to pivot over to initial_page_table right before calling setup_arch and also set
-swapper_pg_dir to be writeable. Then right before setup_arch calls clone_pg_dir to copy
-swapper_pg_dir to initial_page_table (so back) we pivot our PGD from initial_page_table
-to swapper_pg_dir and set initial_page_table writeable.
-
-There is an extra piece of logic where we inhibit loading of cr3 between
-the start of setup_arch() up to x86_init.paging.pagetable_setup_start(). This
-is b/c Xen requires the PGD to be _RO and there are no calls in between
-those code paths that does that - so we end up with a nasty error from Xen with
-no updates to cr3.
-
-This patch makes it possible to bootup PAE Xen PV guest. 2.6.36 did not have
-this issues as it did not have git commit b40827fa7268fda8a62490728a61c2856f33830b.
-
-CC: Borislav Petkov <bp@alien8.de>
-CC: H. Peter Anvin <hpa@linux.intel.com>
-CC: Ian Campbell <Ian.Campbell@eu.citrix.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
 ---
- arch/x86/xen/enlighten.c |    1 +
- arch/x86/xen/mmu.c       |  100 ++++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/xen/xen-ops.h   |    2 +
- 3 files changed, 103 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/i387.h  |   20 +++-------
+ arch/x86/include/asm/xsave.h |   81 +++++++++++++++---------------------------
+ arch/x86/kernel/traps.c      |    2 +-
+ arch/x86/kernel/xsave.c      |    4 +-
+ 4 files changed, 38 insertions(+), 69 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 7250bef..8114fdb 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1256,6 +1256,7 @@ asmlinkage void __init xen_start_kernel(void)
- 
- 	/* Start the world */
- #ifdef CONFIG_X86_32
-+	xen_mk_swapper_pg_dir_writeable();
- 	i386_start_kernel();
- #else
- 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index bd2713a..b4b03cd 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1590,6 +1590,9 @@ void xen_exit_mmap(struct mm_struct *mm)
- 
- static __init void xen_pagetable_setup_start(pgd_t *base)
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index ef32890..d908383 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -227,12 +227,14 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ static inline void fpu_save_init(struct fpu *fpu)
  {
-+#ifdef CONFIG_X86_32
-+	xen_mk_swapper_pg_dir_writeable_fixup();
-+#endif
+ 	if (use_xsave()) {
+-		fpu_xsave(fpu);
++		struct xsave_struct *xstate = &fpu->state->xsave;
++
++		fpu_xsave(xstate);
+ 
+ 		/*
+ 		 * xsave header may indicate the init state of the FP.
+ 		 */
+-		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
++		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
+ 			return;
+ 	} else if (use_fxsr()) {
+ 		fpu_fxsave(fpu);
+@@ -262,22 +264,12 @@ static inline void __save_init_fpu(struct task_struct *tsk)
+ 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
  }
  
- static void xen_post_allocator_init(void);
-@@ -2264,7 +2267,104 @@ __init void xen_ident_map_ISA(void)
- 
- 	xen_flush_tlb();
- }
-+#ifdef CONFIG_X86_64
-+__init void xen_mk_swapper_pg_dir_writeable(void) { }
-+#else
-+static RESERVE_BRK_ARRAY(pmd_t, level2_kernel_pgt_bak, PTRS_PER_PMD);
-+
-+static void xen_mk_swapper_pg_dir_writeable_write_cr3(unsigned long cr3)
-+{
-+}
-+
-+__init void xen_mk_swapper_pg_dir_writeable(void)
-+{
-+	/* The purpose of this code is to make swapper_pg_dir writeable.
-+	 * 
-+	 * We need that b/c in setup_arch clone_pgd_range is used to copy
-+	 * from initial_page_table to swapper_pg_dir and we fault early.
-+	 *
-+	 * To make swapper_pg_dir writeable we need to stop using the
-+	 * swapper_pg_dir as PGD and create a whole new pgd with puds copied
-+	 * from the swapper_pg_dir. For that we deep-copy (one level) the
-+	 * swapper_pg_dir to initial_page_table and swap over to that one.
-+	 */
- 
-+	/* Inhibit the write_cr3 as Xen requires the pagetable that is to be
-+	 * the PGD to be RO and the code in arch_setup does not set it as so,
-+	 * so to inhibit Xen hypervisor from throwing errors.  We set this to
-+	 * stub (later in xen_mk_swapper_pg_dir_writeable_done we restore it). */
-+	pv_mmu_ops.write_cr3 = xen_mk_swapper_pg_dir_writeable_write_cr3;
-+
-+	/* Create a deep (one-level) copy of swapper_pg_dir */
-+	level2_kernel_pgt_bak = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
-+
-+	memcpy(level2_kernel_pgt_bak,
-+		m2v(swapper_pg_dir[KERNEL_PGD_BOUNDARY].pgd),
-+		sizeof(pmd_t) * PTRS_PER_PMD);
-+
-+	memcpy(initial_page_table, swapper_pg_dir, sizeof(pgd_t) * PTRS_PER_PGD);
-+	set_pgd(&initial_page_table[KERNEL_PGD_BOUNDARY],
-+			__pgd(__pa(level2_kernel_pgt_bak) | _PAGE_PRESENT));
-+
-+	/* L3 and the slot it points to _MUST_ be RO */
-+	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
-+	set_page_prot(level2_kernel_pgt_bak, PAGE_KERNEL_RO);
-+
-+	/* Pivot over to the new PGD. */
-+	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
-+
-+	xen_write_cr3(__pa(initial_page_table));
-+
-+	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(initial_page_table)));
-+
-+	/* And now swapper_pg_dir + level2_kernel_pgt is writeable. */
-+	set_page_prot(swapper_pg_dir, PAGE_KERNEL);
-+	set_page_prot(level2_kernel_pgt, PAGE_KERNEL);
-+
-+	printk(KERN_INFO "Pivoting from PGD: 0x%lx to 0x%lx\n",
-+			PFN_DOWN(__pa(swapper_pg_dir)),
-+			PFN_DOWN(__pa(initial_page_table)));
-+}
-+__init void xen_mk_swapper_pg_dir_writeable_fixup(void)
-+{
-+	int i;
-+	/* We MUST copy over the new L2 data as it has been updated. */
-+	memcpy(level2_kernel_pgt, level2_kernel_pgt_bak,
-+		sizeof(pmd_t) * PTRS_PER_PMD);
-+
-+	set_pgd(&swapper_pg_dir[KERNEL_PGD_BOUNDARY],
-+			__pgd(__pa(level2_kernel_pgt) | _PAGE_PRESENT));
-+
-+	for (i = 0; i < KERNEL_PGD_PTRS; i++) {
-+		if (swapper_pg_dir[i].pgd != initial_page_table[i].pgd)
-+			xen_raw_printk("[%3d] 0x%lx != 0x%lx\n", i, swapper_pg_dir[i],
-+				initial_page_table[i]);
-+		if (swapper_pg_dir[i].pgd != 0)
-+			xen_raw_printk("[%3d] 0x%lx\n", i, swapper_pg_dir[i]);
-+	}
-+
-+	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
-+	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
-+
-+	/* Swap PGD over to swapper_pg_dir. */
-+	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(initial_page_table)));
-+
-+	xen_write_cr3(__pa(swapper_pg_dir));
-+
-+	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
-+
-+	/* And now initial page table is writeable. */
-+	set_page_prot(initial_page_table, PAGE_KERNEL);
-+	set_page_prot(level2_kernel_pgt_bak, PAGE_KERNEL);
-+
-+	/* Restore the CR3 operation. */
-+	pv_mmu_ops.write_cr3 = xen_write_cr3;
-+
-+	printk(KERN_INFO "Pivoting back from PGD: 0x%lx to 0x%lx\n",
-+			PFN_DOWN(__pa(initial_page_table)),
-+			PFN_DOWN(__pa(swapper_pg_dir)));
-+}
-+#endif
- static __init void xen_post_allocator_init(void)
+-static inline int fpu_fxrstor_checking(struct fpu *fpu)
+-{
+-	return fxrstor_checking(&fpu->state->fxsave);
+-}
+-
+ static inline int fpu_restore_checking(struct fpu *fpu)
  {
- 	pv_mmu_ops.set_pte = xen_set_pte;
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 6404474..11e4aec 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -30,6 +30,8 @@ void xen_setup_machphys_mapping(void);
- pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
- void xen_ident_map_ISA(void);
- void xen_reserve_top(void);
-+void xen_mk_swapper_pg_dir_writeable(void);
-+void xen_mk_swapper_pg_dir_writeable_fixup(void);
- extern unsigned long xen_max_p2m_pfn;
+ 	if (use_xsave())
+-		return fpu_xrstor_checking(fpu);
++		return xrstor_checking(&fpu->state->xsave, -1);
+ 	else
+-		return fpu_fxrstor_checking(fpu);
+-}
+-
+-static inline int restore_fpu_checking(struct task_struct *tsk)
+-{
+-	return fpu_restore_checking(&tsk->thread.fpu);
++		return fxrstor_checking(&fpu->state->fxsave);
+ }
  
- void xen_set_pat(u64);
+ /*
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index c6ce245..8bcbbce 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -42,10 +42,11 @@ extern int check_for_xstate(struct i387_fxsave_struct __user *buf,
+ 			    void __user *fpstate,
+ 			    struct _fpx_sw_bytes *sw);
+ 
+-static inline int fpu_xrstor_checking(struct fpu *fpu)
++static inline int xrstor_checking(struct xsave_struct *fx, u64 mask)
+ {
+-	struct xsave_struct *fx = &fpu->state->xsave;
+ 	int err;
++	u32 lmask = mask;
++	u32 hmask = mask >> 32;
+ 
+ 	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
+ 		     "2:\n"
+@@ -55,13 +56,23 @@ static inline int fpu_xrstor_checking(struct fpu *fpu)
+ 		     ".previous\n"
+ 		     _ASM_EXTABLE(1b, 3b)
+ 		     : [err] "=r" (err)
+-		     : "D" (fx), "m" (*fx), "a" (-1), "d" (-1), "0" (0)
++		     : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask), "0" (0)
+ 		     : "memory");
+ 
+ 	return err;
+ }
+ 
+-static inline int xsave_user(struct xsave_struct __user *buf)
++static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
++{
++	u32 lmask = mask;
++	u32 hmask = mask >> 32;
++
++	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
++		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
++		     :   "memory");
++}
++
++static inline int xsave_checking(struct xsave_struct __user *buf)
+ {
+ 	int err;
+ 
+@@ -74,58 +85,24 @@ static inline int xsave_user(struct xsave_struct __user *buf)
+ 	if (unlikely(err))
+ 		return -EFAULT;
+ 
+-	__asm__ __volatile__("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
+-			     "2:\n"
+-			     ".section .fixup,\"ax\"\n"
+-			     "3:  movl $-1,%[err]\n"
+-			     "    jmp  2b\n"
+-			     ".previous\n"
+-			     ".section __ex_table,\"a\"\n"
+-			     _ASM_ALIGN "\n"
+-			     _ASM_PTR "1b,3b\n"
+-			     ".previous"
+-			     : [err] "=r" (err)
+-			     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
+-			     : "memory");
++	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
++		     "2:\n"
++		     ".section .fixup,\"ax\"\n"
++		     "3:  movl $-1,%[err]\n"
++		     "    jmp  2b\n"
++		     ".previous\n"
++		     _ASM_EXTABLE(1b,3b)
++		     : [err] "=r" (err)
++		     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
++		     : "memory");
++
+ 	if (unlikely(err) && __clear_user(buf, xstate_size))
+ 		err = -EFAULT;
+-	/* No need to clear here because the caller clears USED_MATH */
+-	return err;
+-}
+-
+-static inline int xrestore_user(struct xsave_struct __user *buf, u64 mask)
+-{
+-	int err;
+-	struct xsave_struct *xstate = ((__force struct xsave_struct *)buf);
+-	u32 lmask = mask;
+-	u32 hmask = mask >> 32;
+ 
+-	__asm__ __volatile__("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n"
+-			     "2:\n"
+-			     ".section .fixup,\"ax\"\n"
+-			     "3:  movl $-1,%[err]\n"
+-			     "    jmp  2b\n"
+-			     ".previous\n"
+-			     ".section __ex_table,\"a\"\n"
+-			     _ASM_ALIGN "\n"
+-			     _ASM_PTR "1b,3b\n"
+-			     ".previous"
+-			     : [err] "=r" (err)
+-			     : "D" (xstate), "a" (lmask), "d" (hmask), "0" (0)
+-			     : "memory");	/* memory required? */
++	/* No need to clear here because the caller clears USED_MATH */
+ 	return err;
+ }
+ 
+-static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
+-{
+-	u32 lmask = mask;
+-	u32 hmask = mask >> 32;
+-
+-	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
+-		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
+-		     :   "memory");
+-}
+-
+ static inline void xsave_state(struct xsave_struct *fx, u64 mask)
+ {
+ 	u32 lmask = mask;
+@@ -136,7 +113,7 @@ static inline void xsave_state(struct xsave_struct *fx, u64 mask)
+ 		     :   "memory");
+ }
+ 
+-static inline void fpu_xsave(struct fpu *fpu)
++static inline void fpu_xsave(struct xsave_struct *fx)
+ {
+ 	/* This, however, we can work around by forcing the compiler to select
+ 	   an addressing mode that doesn't require extended registers. */
+@@ -144,7 +121,7 @@ static inline void fpu_xsave(struct fpu *fpu)
+ 		".byte " REX_PREFIX "0x0f,0xae,0x27",
+ 		".byte " REX_PREFIX "0x0f,0xae,0x37",
+ 		X86_FEATURE_XSAVEOPT,
+-		[fx] "D" (&fpu->state->xsave), "a" (-1), "d" (-1) :
++		[fx] "D" (fx), "a" (-1), "d" (-1) :
+ 		"memory");
+ }
+ #endif
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index f02c179..1b0d148 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -720,7 +720,7 @@ void __math_state_restore(void)
+ 	/*
+ 	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+ 	 */
+-	if (unlikely(restore_fpu_checking(tsk))) {
++	if (unlikely(fpu_restore_checking(&tsk->thread.fpu))) {
+ 		stts();
+ 		force_sig(SIGSEGV, tsk);
+ 		return;
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 9c253bd..5eb15d4 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -170,7 +170,7 @@ int save_i387_xstate(void __user *buf)
+ 
+ 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+ 		if (use_xsave())
+-			err = xsave_user(buf);
++			err = xsave_checking(buf);
+ 		else
+ 			err = fxsave_user(buf);
+ 
+@@ -247,7 +247,7 @@ static int restore_user_xstate(void __user *buf)
+ 	/*
+ 	 * restore the state passed by the user.
+ 	 */
+-	err = xrestore_user(buf, mask);
++	err = xrstor_checking((__force struct xsave_struct *)buf, mask);
+ 	if (err)
+ 		return err;
+ 
 -- 
-1.7.1
+1.5.6.5
+
 
