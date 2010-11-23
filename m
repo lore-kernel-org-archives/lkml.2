@@ -1,97 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab0KWJHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 04:07:22 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64491 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab0KWJHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 04:07:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vS25r5+kPDAn8LgKsGYuaZ2jvYXyk9Hs/CnI+jn07E4PfIgo4TN4Xp3VbDsIVw6I9W
-         XLoJRr1Erua196CepY7SP+RS/yIEE6P9yhHea7e5MSgaBmXZz7G+QSnOWMrTqO1+GnNb
-         eus612sqFYAptiBtdHKAWYhN66xVru5RYWB5M=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=XeY5bktanMPm26y4YYbWMWicks9VkmFcaLH9B@mail.gmail.com>
-References: <20101123165240.7BC2.A69D9226@jp.fujitsu.com>
-	<AANLkTi=ibOd3OUZ5D-V60iaNcP0_eND2VrcJB+PBo8mD@mail.gmail.com>
-	<20101123175948.7BD1.A69D9226@jp.fujitsu.com>
-	<AANLkTi=XeY5bktanMPm26y4YYbWMWicks9VkmFcaLH9B@mail.gmail.com>
-Date: Tue, 23 Nov 2010 18:07:18 +0900
-Message-ID: <AANLkTi=E57YMwURbKDWHT+JB+F-6+tOS4BWchw+gC439@mail.gmail.com>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752174Ab0KWJIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 04:08:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:59393 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab0KWJIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 04:08:44 -0500
+Message-Id: <b9dded$h5thli@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,241,1288594800"; 
+   d="scan'208";a="576636594"
+Date: Tue, 23 Nov 2010 09:08:40 +0000
+To: Vincent Vanackere <vincent.vanackere@gmail.com>
+Subject: Re: [i915] 2.6.37-rc1 G33 regression : no DVI output
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CE95893.8040008@gmail.com>
+References: <AANLkTinEbBirwkREAVaaB4gH0w44tem0ik9nPU5-6aNJ@mail.gmail.com> <c6d829$pk1i4l@fmsmga001.fm.intel.com> <4CE95893.8040008@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 6:05 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Tue, Nov 23, 2010 at 6:02 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>> On Tue, Nov 23, 2010 at 5:01 PM, KOSAKI Motohiro
->>> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>> >> Hi KOSAKI,
->>> >>
->>> >> 2010/11/23 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
->>> >> >> By Other approach, app developer uses POSIX_FADV_DONTNEED.
->>> >> >> But it has a problem. If kernel meets page is writing
->>> >> >> during invalidate_mapping_pages, it can't work.
->>> >> >> It is very hard for application programmer to use it.
->>> >> >> Because they always have to sync data before calling
->>> >> >> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
->>> >> >> be discardable. At last, they can't use deferred write of kernel
->>> >> >> so that they could see performance loss.
->>> >> >> (http://insights.oetiker.ch/linux/fadvise.html)
->>> >> >
->>> >> > If rsync use the above url patch, we don't need your patch.
->>> >> > fdatasync() + POSIX_FADV_DONTNEED should work fine.
->>> >>
->>> >> It works well. But it needs always fdatasync before calling fadvise.
->>> >> For small file, it hurt performance since we can't use the deferred write.
->>> >
->>> > I doubt rsync need to call fdatasync. Why?
->>> >
->>> > If rsync continue to do following loop, some POSIX_FADV_DONTNEED
->>> > may not drop some dirty pages. But they can be dropped at next loop's
->>> > POSIX_FADV_DONTNEED. Then, It doesn't make serious issue.
->>> >
->>> > 1) read
->>> > 2) write
->>> > 3) POSIX_FADV_DONTNEED
->>> > 4) goto 1
->>>
->>> fadvise need pair (offset and len).
->>> if the pair in next turn is different with one's previous turn, it
->>> couldn't be dropped.
->>
->> invalidate_mapping_pages() are using pagevec_lookup() and pagevec_lookup()
->> are using radix tree lookup. Then, Even if rsync always use [0, inf) pair, I don't think
->> it makes much slowdown.
->>
->
-> I mean fdatasync causes slowdown, not fadvise.
-> if you fadvise(don't need) without fdatasync, you could loss the data.
+On Sun, 21 Nov 2010 18:36:19 +0100, Vincent Vanackere <vincent.vanackere@gmail.com> wrote:
+> [    8.740024] [drm:drm_crtc_helper_set_mode], [ENCODER:7:TMDS-7] set [MODE:13:1920x1200]
+> [    8.740027] [drm:intel_sdvo_debug_write], SDVOB: W: 07 01 00 00 00             (SDVO_CMD_SET_IN_OUT_MAP)
+> [    8.747826] [drm:intel_sdvo_write_cmd], command returns response Not supported [2]
+> [    8.747828] [drm:intel_sdvo_debug_write], SDVOB: W: 11 01 00                   (SDVO_CMD_SET_TARGET_OUTPUT)
+> [    8.753161] [drm:intel_sdvo_debug_write], SDVOB: W: 11 01 00                   (SDVO_CMD_SET_TARGET_OUTPUT)
+> [    8.758485] [drm:intel_sdvo_debug_write], SDVOB: W: 16 28 3C 80 A0 70 B0 23 40 (SDVO_CMD_SET_OUTPUT_TIMINGS_PART1)
+> [    8.771225] [drm:intel_sdvo_write_cmd], command returns response Not supported [2]
+> [    8.771227] [drm:intel_sdvo_debug_write], SDVOB: W: 10 00                      (SDVO_CMD_SET_TARGET_INPUT)
+> [    8.775340] [drm:intel_sdvo_debug_write], SDVOB: W: 93 01 00                   (SDVO_CMD_SET_HBUF_INDEX)
+> [    8.780688] [drm:intel_sdvo_write_cmd], command returns response Not supported [2]
 
-Oops sorry. Not lose data.
-Frequent fdatasync call doesn't use buffered write so that it causes
-slowdown than using deferred write.
+This was the bug. We aborted the modeset as we tried to perform an
+unsupported command. Should be fixed by:
 
-> --
-> Kind regards,
-> Minchan Kim
->
+commit da79de97d254145dcb7c08c978b1093eac15ec9c
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Mon Nov 22 11:12:46 2010 +0000
 
+    drm/i915/sdvo: Only enable HDMI encodings only if the commandset is supported
+    
+    As we conflated intel_sdvo->is_hdmi with both having HDMI support on the
+    ADD along with having HDMI support on the monitor, we would attempt to
+    use HDMI encodings even if the interface did not support those commands.
+    
+    Reported-by: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Tested-by: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
+    Reviewed-by: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
 
+available at
+git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git
+[drm-intel-fixes]
+-Chris
 
 -- 
-Kind regards,
-Minchan Kim
+Chris Wilson, Intel Open Source Technology Centre
