@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab0KWKEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 05:04:20 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:50644 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192Ab0KWKET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 05:04:19 -0500
-Date: Tue, 23 Nov 2010 10:04:03 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Simon Kirby <sim@hostway.ca>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: Free memory never fully used, swapping
-Message-ID: <20101123100402.GH19571@csn.ul.ie>
-References: <20101115195246.GB17387@hostway.ca> <20101122154419.ee0e09d2.akpm@linux-foundation.org>
+	id S1752991Ab0KWKFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 05:05:50 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:1694 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751572Ab0KWKFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 05:05:49 -0500
+X-IronPort-AV: E=Sophos;i="4.59,241,1288566000"; 
+   d="scan'208";a="80751857"
+Message-ID: <4CEB91FA.3040209@inria.fr>
+Date: Tue, 23 Nov 2010 11:05:46 +0100
+From: Brice Goglin <Brice.Goglin@inria.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101122154419.ee0e09d2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH] Cross Memory Attach v2 (resend)
+References: <20101122122847.3585b447@lilo> <20101122130527.c13c99d3.akpm@linux-foundation.org> <20101123195523.46e6addb@lilo>
+In-Reply-To: <20101123195523.46e6addb@lilo>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 03:44:19PM -0800, Andrew Morton wrote:
-> On Mon, 15 Nov 2010 11:52:46 -0800
-> Simon Kirby <sim@hostway.ca> wrote:
-> 
-> > I noticed that CONFIG_NUMA seems to enable some more complicated
-> > reclaiming bits and figured it might help since most stock kernels seem
-> > to ship with it now.  This seems to have helped, but it may just be
-> > wishful thinking.  We still see this happening, though maybe to a lesser
-> > degree.  (The following observations are with CONFIG_NUMA enabled.)
-> > 
+Le 23/11/2010 10:25, Christopher Yeoh a écrit :
+> On Mon, 22 Nov 2010 13:05:27 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+>   
+>> We have a bit of a track record of adding cool-looking syscalls and
+>> then regretting it a few years later.  Few people use them, and maybe
+>> they weren't so cool after all, and we have to maintain them for
+>> ever. Bugs (sometimes security-relevant ones) remain undiscovered for
+>> long periods because few people use (or care about) the code.
+>>
+>> So I think the bar is a high one - higher than it used to be.
+>> Convince us that this feature is so important that it's worth all
+>> that overhead and risk?
+>>     
+> Well there are the benchmark results to show that there is
+> real improvement for MPI implementations (well at least for those
+> benchmarks ;-) There's also been a few papers written on something
+> quite similar (KNEM) which goes into more detail on the potential gains.
+>
+> http://runtime.bordeaux.inria.fr/knem/
+>
+> I've also heard privately that something very similar has been used in
+> at least one device driver to support intranode operations for quite a
+> while
+>   
 
-Hi,
+Many HPC hardware vendors implemented something like this in their
+custom drivers to avoid going through their network loopback for local
+communication. Even if their loopback is very fast, going to the NIC and
+back to same host isn't really optimal. And I think all of them kept the
+traditional approach (double-copy across a shared-memory buffer) for
+small messages and only switched to this single-copy model for large
+messages (tens or hundreds of kB). CMA and KNEM are "standardizing" all
+this work and making it portable across multiple HPC platform/networks.
 
-As this is a NUMA machine, what is the value of
-/proc/sys/vm/zone_reclaim_mode ? When enabled, this reclaims memory
-local to the node in preference to using remote nodes. For certain
-workloads this performs better but for users that expect all of memory
-to be used, it has surprising results.
+Brice
 
-If set to 1, try testing with it set to 0 and see if it makes a
-difference. Thanks
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
