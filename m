@@ -1,140 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab0KWAGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:06:08 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42738 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab0KWAGH (ORCPT
+	id S932494Ab0KWAMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:12:37 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44019 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932369Ab0KWAMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:06:07 -0500
-Subject: Re: [RFC] persistent store
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 16:06:03 -0800
-Message-ID: <1290470763.3008.252.camel@localhost>
+	Mon, 22 Nov 2010 19:12:35 -0500
+Date: Mon, 22 Nov 2010 16:11:58 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter =?ISO-8859-1?Q?Sch=FCller?= <scode@spotify.com>
+Cc: linux-kernel@vger.kernel.org, Mattias de Zalenski <zalenski@spotify.com>,
+        linux-mm@kvack.org
+Subject: Re: Sudden and massive page cache eviction
+Message-Id: <20101122161158.02699d10.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Here's a patch based on some discussions I had with Thomas
-> Gleixner at plumbers conference that implements a generic
-> layer for persistent storage usable to pass tens or hundreds
-> of kilobytes of data from the dying breath of a crashing
-> kernel to its successor.
+(cc linux-mm)
+
+On Fri, 12 Nov 2010 17:20:21 +0100
+Peter Sch__ller <scode@spotify.com> wrote:
+
+> Hello,
 > 
-> The usage model I'm envisioning is that a platform driver
-> will register with this code to provide the actual storage.
-> I've tried to make this interface general, but I'm working
-> from a sample of one (the ACPI ERST code), so if anyone else
-> has some persistent store that can't be handled by this code,
-> speak up and we can put in the necessary tweaks.
-
-I recently posted a patch set for powerpc to capture the most recent
-oops or panic message in NVRAM:
-http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-November/087032.html
-It covers a lot of the same ground, and could be adapted to use your
-framework.  See below for concerns and suggestions.  I'd also be
-interested in feedback about the design decisions I mention below.
-
-On powerpc, the amount of NVRAM available for this may be as little
-as 1-2 Kbytes.  The minimal oops report (with essentially no backtrace)
-is about 1800 bytes.  See below for implications.
-
-We currently read our NVRAM contents via /dev/nvram and the nvram
-command.  NVRAM is divided up into several "partitions" -- only
-one of which is used for the oops/panic report -- so the user-space
-code needs to know about how the partitions are laid out.  It also
-needs to know how much text we actually wrote to the partition, and
-whether or not it's compressed.  Since the kernel already knows how
-to determine all this, it would probably be more convenient to get
-at the oops/panic partition through your /sys interface.
-
-> ...
-> 2) "Why do you read in all the data from the device when it
-> registers and save it in memory? Couldn't you just get the
-> list of records and pick up the data from the device when
-> the user reads the file?"
-> I don't think this is going to be very much data, just a few hundred
-> kilobytes (i.e. less that $0.01 worth of memory, even expensive server
-> memory). The memory is freed when the record is erased ... which is
-> likely to be soon after boot.
-
-Since the amount of text we capture is so tiny, this is unlikely to be
-an issue in my case.
-
-> ...
-> 6) "Is this widely useful? How many systems have persistent storage?"
-> Although ERST was only added to the ACPI spec earlier this year, it
-> merely documents existing functionality required for WHEA (Windows
-> Hardware Error Architecture). So most modern server systems should
-> have it (my test system has it, and it has a BIOS written in mid 2008).
-> Sorry desktops & laptops - no love for you here.
+> We have been seeing sudden and repeated evictions of huge amounts of
+> page cache on some of our servers for reasons that we cannot explain.
+> We are hoping that someone familiar with the vm subsystem may be able
+> to shed some light on the issue and perhaps confirm whether it is
+> plausibly a kernel bug or not. I will try to present the information
+> most-important-first, but this post will unavoidable be a bit long -
+> sorry.
 > 
-
-Powerpc p Series does, obviously, and we're looking to exploit it in
-just this way.
-
-> ...
-> +static void
-> +pstore_dump(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
-> + const char *s1, unsigned long l1,
-> + const char *s2, unsigned long l2)
-> +{
-> + unsigned long s1_start, s2_start;
-> + unsigned long l1_cpy, l2_cpy;
-> + char *dst = pstore_buf + psinfo->header_size;
-> +
-> + /* Don't dump oopses to persistent store */
-
-Why not?  In our case, we capture every oops and panic report, but keep
-only the most recent.  Seems like catching the last oops could be useful
-if your system hangs thereafter and can't be made to panic.  I suggest
-you pass along the reason (KMSG_DUMP_OOPS or whatever) and let the
-callback decide.
-
-You'd have to serialize the oops handling, I guess, in case multiple
-CPUs oops simultaneously.  (Gotta fix that in my code.)
-
-> + if (reason == KMSG_DUMP_OOPS)
-> + return;
-> +
-> + l2_cpy = min(l2, psinfo->data_size);
-> + l1_cpy = min(l1, psinfo->data_size - l2_cpy);
-> +
-> + s2_start = l2 - l2_cpy;
-> + s1_start = l1 - l1_cpy;
-> +
-> + memcpy(dst, s1 + s1_start, l1_cpy);
-> + memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
-> +
-> + psinfo->writer(PSTORE_DMESG, pstore_buf, l1_cpy + l2_cpy);
-
-This assumes that you always want to capture the last psinfo->data_size
-bytes of the printk buffer.  Given the small capacity of our NVRAM
-partition, I handle the case where the whole oops report doesn't fit.
-In that case, I sacrifice the end of the oops report to capture the
-beginning.  Patch #3 in my set is about this.
-
-> ...
-> +static int
-> +pstore_create_sysfs_entry(struct pstore_entry *new_pstore)
-> +{
-> ...
-> + new_pstore->attr.attr.mode = 0444;
-
-/var/log/messages is typically not readable by everybody.  This
-appears to circumvent that.
-
-> ...
-
-Thanks.
-
-Jim Keniston
-IBM Linux Technology Center
-Beaverton, OR
-
+> First, here is a good example of the symptom (more graphs later on):
+> 
+>    http://files.spotify.com/memcut/b_daily_allcut.png
+> 
+> After looking into this we have seen similar incidents on servers
+> running completely different software; but in this particular case
+> this machine is running a service which is heavily dependent on the
+> buffer cache to deal with incoming request load. The direct effects of
+> these is that we end up in complete I/O saturation (average queue
+> depth goes to 150-250 and stays there indefinitely or until we
+> actively tweak it (warm up caches etc)). Our interpretation of that is
+> that the eviction is not the result of something along the lines of a
+> large file being removed; given the effects on I/O load it is clear
+> that the data being evicted is in fact part of the active set used by
+> the service running on the machine.
+> 
+> The I/O load on these systems comes mainly from two things:
+> 
+>   (1) Seek-bound I/O generated by lookups in a BDB (b-tree traversal).
+>   (2) Seek-bound I/O generated by traversal of prefix directory trees
+> (i.e., 00/01/0001334234...., a poor man's b-tree on top of ext3).
+>   (3) Seek-bound I/O reading small segments of small-to-medium sized
+> files contained in the prefix tree.
+> 
+> The prefix tree consist of 8*2^16 directory entries in total, with
+> individual files being in the tens of millions per server.
+> 
+> We initially ran 2.6.32-bpo.5-amd64 (Debian backports kernel) and have
+> subsequently upgraded some of them to 2.6.36-rc6-amd64 (Debian
+> experimental repo). While it initially looked like it was behaving
+> better, it slowly reverted to not making a difference (maybe as a
+> function of uptime, but we have not had the opportunity to test this
+> by re-booting some of them so it is an untested hypothesis).
+> 
+> Most of the activity on this system (ignoring the usual stuff like
+> ssh/cron/syslog/etc) is coming from Python processes that consume
+> non-trivial amounts of heap space, plus the disk activity and some
+> POSIX shared memory caching utilized by the BDB library.
+> 
+> We have correlated the incidence of these page eviction with higher
+> loads on the system; i.e., it tends to happen under high-load periods
+> and in addition we tend to see additional machines having problems as
+> a result of us "fixing" a machine that experienced an eviction (we
+> have some limited cascading effects that causes slightly higher load
+> on other servers in the cluster when we do that).
+> 
+> We believe the most plausible way an application bug could trigger
+> this behavior would require that (1) the application allocates the
+> memory, and (2) actually touches the pages. We believe this to be
+> unlikely in this case because:
+> 
+>   (1) We see similar sudden evictions on various other servers, which
+> we noticed when we started looking for them.
+>   (2) The fact that it tends to trigger correlated with load suggests
+> that it is not a functional bug in the service as such as higher load
+> is in this case unlikely to trigger any paths that does anything
+> unique with respect to memory allocation. In particular because the
+> domain logic is all Python, and none of it really deals with data
+> chunks.
+>   (3) If we did manage to allocate something in the Python heap, we
+> would have to be "lucky" (or unlucky) if Python were consistently able
+> to munmap()/brk() down afterwards.
+> 
+> Some additional "sample" graphs showing a few incidences of the problem:
+> 
+>    http://files.spotify.com/memcut/a_daily.png
+>    http://files.spotify.com/memcut/a_weekly.png
+>    http://files.spotify.com/memcut/b_daily_allcut.png
+>    http://files.spotify.com/memcut/c_monthly.png
+>    http://files.spotify.com/memcut/c_yearly.png
+>    http://files.spotify.com/memcut/d_monthly.png
+>    http://files.spotify.com/memcut/d_yearly.png
+>    http://files.spotify.com/memcut/a_monthly.png
+>    http://files.spotify.com/memcut/a_yearly.png
+>    http://files.spotify.com/memcut/c_daily.png
+>    http://files.spotify.com/memcut/c_weekly.png
+>    http://files.spotify.com/memcut/d_daily.png
+>    http://files.spotify.com/memcut/d_weekly.png
+> 
+> And here is an example from a server only running PostgreSQL (where
+> the sudden drop of gigabytes of page cache is unlikely because we are
+> not DROP:ing tables, nor do we have multi-gigabyte WAL archive sizes,
+> nor do we have a use-case which will imply ftruncate() on table
+> files):
+> 
+>    http://files.spotify.com/memcut/postgresql_weekly.png
+> 
+> As you can see it's not as significant there, but it seems to, at
+> least visually, be the same "type" of effect. We've seen similar on
+> various machines, although depending on service running it may or may
+> not be explainable by regular file removal.
+> 
+> Further, we have observed the kernel's unwillingness to retain data in
+> page cache under interesting circumstances:
+> 
+> (1) page cache eviction happens
+> (2) we warm up our BDB files by cat:ing them (simple but effective)
+> (3) within a matter of minutes, while there is still several GB of
+> free (truly free, not page cached), these are evicted (as evidenced by
+> re-cat:ing them a little while later)
+> 
+> This latest observation we understand may be due to NUMA related
+> allocation issues, and we should probably try to use numactl to ask
+> for a more even allocation. We have not yet tried this. However, it is
+> not clear how any issues having to do with that would cause sudden
+> eviction of data already *in* the page cache (on whichever node).
+> 
 
