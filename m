@@ -1,260 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab0KWMzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 07:55:37 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20081 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab0KWMzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 07:55:36 -0500
-X-IronPort-AV: E=Sophos;i="4.59,241,1288569600"; 
-   d="scan'208";a="3003806"
-Date: Tue, 23 Nov 2010 12:55:37 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH] xen: use PHYSDEVOP_get_free_pirq to implement
- find_unbound_pirq
-In-Reply-To: <20101122161433.GC20383@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1011231237170.2373@kaball-desktop>
-References: <alpine.DEB.2.00.1011191350250.2373@kaball-desktop> <20101119162353.GA26747@dumpdata.com> <alpine.DEB.2.00.1011200115240.2373@kaball-desktop> <20101122161433.GC20383@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754035Ab0KWM5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 07:57:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46111 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754006Ab0KWM5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 07:57:21 -0500
+Date: Tue, 23 Nov 2010 13:57:16 +0100
+From: Jan Kara <jack@suse.cz>
+To: Amir Goldstein <amir73il@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ext3: Add journal error check into ext3_rename()
+Message-ID: <20101123125716.GE6113@quack.suse.cz>
+References: <1290486633-4534-1-git-send-email-namhyung@gmail.com>
+ <AANLkTi=Ve03g026yb_x1VMDcuq4nrppuRcovPvDwHEc8@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=Ve03g026yb_x1VMDcuq4nrppuRcovPvDwHEc8@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Nov 2010, Konrad Rzeszutek Wilk wrote:
-> On Sat, Nov 20, 2010 at 01:19:31AM +0000, Stefano Stabellini wrote:
-> > On Fri, 19 Nov 2010, Konrad Rzeszutek Wilk wrote:
-> > > On Fri, Nov 19, 2010 at 01:58:03PM +0000, Stefano Stabellini wrote:
-> > > > Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
-> > > > 
-> > > > Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
-> > > > pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
-> > > > amount of pirq available.
-> > > > 
-> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > 
-> > > > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > > > index 321a0c8..ffd286e 100644
-> > > > --- a/drivers/xen/events.c
-> > > > +++ b/drivers/xen/events.c
-> > > > @@ -382,12 +382,17 @@ static int get_nr_hw_irqs(void)
-> > > >  	return ret;
-> > > >  }
-> > > >  
-> > > > -/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-> > > > - * succeeded otherwise nr_pirqs won't hold the right value */
-> > > > -static int find_unbound_pirq(void)
-> > > > +static int find_unbound_pirq(int type)
-> > > >  {
-> > > > -	int i;
-> > > > -	for (i = nr_pirqs-1; i >= 0; i--) {
-> > > > +	int rc, i;
-> > > > +	struct physdev_get_free_pirq op_get_free_pirq;
-> > > > +	op_get_free_pirq.type = type;
-> > > > +
-> > > > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
-> > > > +	if (!rc)
-> > > > +		return op_get_free_pirq.pirq;
-> > > > +
-> > > > +	for (i = 16; i <= nr_pirqs-1; i++) {
-> > > 
-> > > 16? No no. Why not re-use the old loop, like so:
-> > > 
-> > >  	for (i = nr_pirqs-1; i >= 0; i--) {
-> > > 
-> > 
-> > Because we don't know the real nr_pirqs anymore (PHYSDEVOP_get_nr_pirqs
-> > has been removed), so it is highly possible that starting from the top
-> > down would give us pirq numbers out of range in Xen.  Therefore we need
-> > to start from the bottom up, and the bottom for Xen is 16.
+  Hello Amir,
+
+On Tue 23-11-10 09:58:58, Amir Goldstein wrote:
+> A better way to handle this situation is to get_write_access much sooner,
+> when things can still be rolled back properly.
+> Please find below a patch I am using in next3 to fix some un-handled
+> journal errors
+> and see if you can/want to use any of it as reference for your patches.
+  While generally it is certainly desirable to detect errors early and bail
+out without doing harm, in this particular case I don't see a big point
+in complicating the code since the only realistic failure case is that the
+journal is aborted, we have to run fsck anyway, and we are not causing any
+unfixable damage... So I'll take the patch as is.
+
+									Honza
+
+> Some places in Ext3 original code don't check for return value of
+> JBD functions.  Check for snapshot/journal errors in those places.
 > 
-> Right, I forgot about the hypercall call. How about using LEGACY_IRQ instead then?
+> Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
 > 
-
-Do you mean NR_IRQS_LEGACY? Yeah, I could do that.
-
-> > 
-> > 
-> > > >  		if (pirq_to_irq[i] < 0)
-> > > >  			return i;
-> > > >  	}
-> > > > @@ -669,7 +674,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
-> > > >  	if (*irq == -1)
-> > > >  		goto out;
-> > > >  
-> > > > -	*pirq = find_unbound_pirq();
-> > > > +	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
-> > > >  	if (*pirq == -1)
-> > > >  		goto out;
-> > > >  
-> > > > @@ -1504,23 +1509,12 @@ void xen_callback_vector(void) {}
-> > > >  void __init xen_init_IRQ(void)
-> > > >  {
-> > > >  	int i, rc;
-> > > > -	struct physdev_nr_pirqs op_nr_pirqs;
-> > > >  
-> > > >  	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
-> > > >  				    GFP_KERNEL);
-> > > >  	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
-> > > >  
-> > > > -	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
-> > > > -	if (rc < 0) {
-> > > > -		nr_pirqs = nr_irqs;
-> > > > -		if (rc != -ENOSYS)
-> > > > -			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
-> > > > -	} else {
-> > > > -		if (xen_pv_domain() && !xen_initial_domain())
-> > > > -			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
-> > > > -		else
-> > > > -			nr_pirqs = op_nr_pirqs.nr_pirqs;
-> > > > -	}
-> > > > +	nr_pirqs = nr_irqs;
-> > > 
-> > > Why not just get rid of nr_pirgs altogether then? And use 'nr_irqs' instead?
-> > > 
-> > 
-> > Yeah, I guess we could do that. I kept it around just to make it more
-> > obvious that the max pirq number is different from nr_irqs and we don't
-> > know what the exact value is.
+> --------------------------------------------------------------------------------
+> diff -Nuarp a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+> --- a/fs/ext3/balloc.c  2010-11-23 09:38:13.395922811 +0200
+> +++ b/fs/ext3/balloc.c  2010-11-23 09:38:13.185923236 +0200
+> @@ -674,7 +674,9 @@ do_more:
 > 
+>     /* We dirtied the bitmap block */
+>     BUFFER_TRACE(bitmap_bh, "dirtied bitmap block");
+> -   err = ext3_journal_dirty_metadata(handle, bitmap_bh);
+> +   ret = ext3_journal_dirty_metadata(handle, bitmap_bh);
+> +   if (!err)
+> +       err = ret;
 > 
-> But with this change it is the same, is it not?
+>     /* And the group descriptor block */
+>     BUFFER_TRACE(gd_bh, "dirtied group descriptor block");
 > 
-> 	"nr_pirgs = nr_irqs;"
+> diff -Nuarp a/fs/ext3/inode.c b/fs/ext3/inode.c
+> --- a/fs/ext3/inode.c   2010-11-23 09:38:13.405923214 +0200
+> +++ b/fs/ext3/inode.c   2010-11-23 09:38:13.195922747 +0200
+> @@ -2362,6 +2362,9 @@ static void ext3_clear_blocks(handle_t
+>         if (bh) {
+>             BUFFER_TRACE(bh, "retaking write access");
+>             ext3_journal_get_write_access_inode(handle, inode, bh);
+> +           /* we may have lost write_access on bh */
+> +           if (is_handle_aborted(handle))
+> +               return;
+>         }
+>     }
 > 
-> Or when you say "max pirq" you are referring to something else altogether?
+> @@ -2444,6 +2447,9 @@ static void ext3_free_data(handle_t *ha
+>                 ext3_clear_blocks(handle, inode, this_bh,
+>                           block_to_free,
+>                           count, block_to_free_p, p);
+> +               /* we may have lost write_access on this_bh */
+> +               if (is_handle_aborted(handle))
+> +                   return;
+>                 block_to_free = nr;
+>                 block_to_free_p = p;
+>                 count = 1;
+> @@ -2454,6 +2460,9 @@ static void ext3_free_data(handle_t *ha
+>     if (count > 0)
+>         ext3_clear_blocks(handle, inode, this_bh, block_to_free,
+>                   count, block_to_free_p, p);
+> +   /* we may have lost write_access on this_bh */
+> +   if (is_handle_aborted(handle))
+> +       return;
 > 
-
-Yes, it is the same. I guess a comment would be better then.
-
-Appended the updated version of this patch.
-
----
-
-Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
-
-Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
-pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
-amount of pirq available.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 2811bb9..9f19daa 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -105,7 +105,6 @@ struct irq_info
- 
- static struct irq_info *irq_info;
- static int *pirq_to_irq;
--static int nr_pirqs;
- 
- static int *evtchn_to_irq;
- struct cpu_evtchn_s {
-@@ -385,12 +384,17 @@ static int get_nr_hw_irqs(void)
- 	return ret;
- }
- 
--/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-- * succeeded otherwise nr_pirqs won't hold the right value */
--static int find_unbound_pirq(void)
-+static int find_unbound_pirq(int type)
- {
--	int i;
--	for (i = nr_pirqs-1; i >= 0; i--) {
-+	int rc, i;
-+	struct physdev_get_free_pirq op_get_free_pirq;
-+	op_get_free_pirq.type = type;
-+
-+	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
-+	if (!rc)
-+		return op_get_free_pirq.pirq;
-+
-+	for (i = NR_IRQS_LEGACY; i <= nr_irqs-1; i++) {
- 		if (pirq_to_irq[i] < 0)
- 			return i;
- 	}
-@@ -611,9 +615,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
- 
- 	spin_lock(&irq_mapping_update_lock);
- 
--	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
-+	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
- 		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
--			pirq > nr_pirqs ? "nr_pirqs" :"",
-+			pirq > nr_irqs ? "nr_pirqs" :"",
- 			gsi > nr_irqs ? "nr_irqs" : "");
- 		goto out;
- 	}
-@@ -672,7 +676,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
- 	if (*irq == -1)
- 		goto out;
- 
--	*pirq = find_unbound_pirq();
-+	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
- 	if (*pirq == -1)
- 		goto out;
- 
-@@ -1506,26 +1510,17 @@ void xen_callback_vector(void) {}
- 
- void __init xen_init_IRQ(void)
- {
--	int i, rc;
--	struct physdev_nr_pirqs op_nr_pirqs;
-+	int i;
- 
- 	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
- 				    GFP_KERNEL);
- 	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
- 
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
--	if (rc < 0) {
--		nr_pirqs = nr_irqs;
--		if (rc != -ENOSYS)
--			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
--	} else {
--		if (xen_pv_domain() && !xen_initial_domain())
--			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
--		else
--			nr_pirqs = op_nr_pirqs.nr_pirqs;
--	}
--	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
--	for (i = 0; i < nr_pirqs; i++)
-+	/* We are using nr_irqs as the maximum number of pirq available but
-+	 * that number is actually chosen by Xen and we don't know exactly
-+	 * what it is. Be careful choosing high pirq numbers. */
-+	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
-+	for (i = 0; i < nr_irqs; i++)
- 		pirq_to_irq[i] = -1;
- 
- 	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 2b2c66c..534cac8 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -188,6 +188,16 @@ struct physdev_nr_pirqs {
-     uint32_t nr_pirqs;
- };
- 
-+/* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
-+ * the hypercall returns a free pirq */
-+#define PHYSDEVOP_get_free_pirq    23
-+struct physdev_get_free_pirq {
-+    /* IN */ 
-+    int type;
-+    /* OUT */
-+    uint32_t pirq;
-+};
-+
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
+>     if (this_bh) {
+>         BUFFER_TRACE(this_bh, "call ext3_journal_dirty_metadata");
+> 
+> diff -Nuarp a/fs/ext3/namei.c b/fs/ext3/namei.c
+> --- a/fs/ext3/namei.c   2010-11-23 09:38:13.415922664 +0200
+> +++ b/fs/ext3/namei.c   2010-11-23 09:38:13.205923227 +0200
+> @@ -1649,8 +1649,12 @@ static int ext3_delete_entry (handle_t
+>         if (!ext3_check_dir_entry("ext3_delete_entry", dir, de, bh, i))
+>             return -EIO;
+>         if (de == de_del)  {
+> +           int err;
+> +
+>             BUFFER_TRACE(bh, "get_write_access");
+> -           ext3_journal_get_write_access(handle, bh);
+> +           err = ext3_journal_get_write_access(handle, bh);
+> +           if (err)
+> +               return err;
+>             if (pde)
+>                 pde->rec_len = ext3_rec_len_to_disk(
+>                     ext3_rec_len_from_disk(pde->rec_len) +
+> @@ -1797,7 +1801,16 @@ retry:
+>         goto out_stop;
+>     }
+>     BUFFER_TRACE(dir_block, "get_write_access");
+> -   ext3_journal_get_write_access(handle, dir_block);
+> +   err = ext3_journal_get_write_access(handle, dir_block);
+> +   if (err) {
+> +       drop_nlink(inode); /* is this nlink == 0? */
+> +       unlock_new_inode(inode);
+> +       /* no need to check for errors - we failed anyway */
+> +       (void) ext3_mark_inode_dirty(handle, inode);
+> +       iput(inode);
+> +       brelse(dir_block);
+> +       goto out_stop;
+> +   }
+>     de = (struct ext3_dir_entry_2 *) dir_block->b_data;
+>     de->inode = cpu_to_le32(inode->i_ino);
+>     de->name_len = 1;
+> 
+> @@ -2337,6 +2350,10 @@ static int ext3_rename (struct inode *
+>         if (!new_inode && new_dir!=old_dir &&
+>                 new_dir->i_nlink >= EXT3_LINK_MAX)
+>             goto end_rename;
+> +       BUFFER_TRACE(dir_bh, "get_write_access");
+> +       retval = ext3_journal_get_write_access(handle, dir_bh);
+> +       if (retval)
+> +           goto end_rename;
+>     }
+>     if (!new_bh) {
+>         retval = ext3_add_entry (handle, new_dentry, old_inode);
+> @@ -2344,7 +2361,9 @@ static int ext3_rename (struct inode *
+>             goto end_rename;
+>     } else {
+>         BUFFER_TRACE(new_bh, "get write access");
+> -       ext3_journal_get_write_access(handle, new_bh);
+> +       retval = ext3_journal_get_write_access(handle, new_bh);
+> +       if (retval)
+> +           goto end_rename;
+>         new_de->inode = cpu_to_le32(old_inode->i_ino);
+>         if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
+>                           EXT3_FEATURE_INCOMPAT_FILETYPE))
+> @@ -2401,8 +2420,6 @@ static int ext3_rename (struct inode *
+>     old_dir->i_ctime = old_dir->i_mtime = CURRENT_TIME_SEC;
+>     ext3_update_dx_flag(old_dir);
+>     if (dir_bh) {
+> -       BUFFER_TRACE(dir_bh, "get_write_access");
+> -       ext3_journal_get_write_access(handle, dir_bh);
+>         PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
+>         BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
+>         ext3_journal_dirty_metadata(handle, dir_bh);
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
