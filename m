@@ -1,97 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750861Ab0KWFA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 00:00:56 -0500
-Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:58841
-	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750699Ab0KWFAz (ORCPT
+	id S1751208Ab0KWFBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 00:01:04 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:55340 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab0KWFBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 00:00:55 -0500
-Date: Mon, 22 Nov 2010 21:00:48 -0800
-From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-To: Luben Tuikov <ltuikov@yahoo.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-Message-ID: <20101123050048.GL20296@one-eyed-alien.net>
-Mail-Followup-To: Luben Tuikov <ltuikov@yahoo.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-	linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-	James Bottomley <James.Bottomley@suse.de>
-References: <AANLkTi=7tW6wqrk8ZkFuTYwmS-wZ4nQ+jkxk8U95H42F@mail.gmail.com> <538170.68988.qm@web31803.mail.mud.yahoo.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qo7zVO9a9OQ5oQtr"
+	Tue, 23 Nov 2010 00:01:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=uoaFjwYJ9QmrJTrYqDw3GRAZxLRgDrQXFnL3DxQ5HN+mIKYtAbiWxcrNZuHm2vEMu6
+         jPVY0QUEkV8hpuIz5pxA==
+Date: Mon, 22 Nov 2010 21:00:52 -0800
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>
+Subject: [RFC] mlock: release mmap_sem every 256 faulted pages
+Message-ID: <20101123050052.GA24039@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538170.68988.qm@web31803.mail.mud.yahoo.com>
-User-Agent: Mutt/1.4.2.3i
-Organization: One Eyed Alien Networks
-X-Copyright: (C) 2010 Matthew Dharm, all rights reserved.
-X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Mon, 22 Nov 2010 21:00:49 -0800 (PST)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---qo7zVO9a9OQ5oQtr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'd like to sollicit comments on this proposal:
 
-On Mon, Nov 22, 2010 at 12:02:26PM -0800, Luben Tuikov wrote:
-> --- On Mon, 11/22/10, Linus Torvalds <torvalds@linux-foundation.org>
-> wrote:
-> > So I don't mind the patch per se, but I think it's potentially way more
-> > dangerous than it looks.
->=20
-> This patch does not ask for pages that Windows doesn't ask for. The sd
-> driver already asks for all pages (page code 0x3F) and then checks if the
-> device is write protected. Here is the present code:
->=20
->   2217                  sd_read_write_protect_flag(sdkp, buffer); 2218
->   sd_read_cache_type(sdkp, buffer); 2219
->   sd_read_app_tag_own(sdkp, buffer);
->=20
-> Line 2217 asks for page code 0x3F, meaning all mode pages.  Line 2218
-> asks for the Caching mode page or not at all if the device flags forbid
-> it (all USB storage devices in the Linux kernel).
->=20
-> This patch adds processing of the data returned when all mode pages are
-> asked for (0x3F) in the function on line 2218. It then parses the data to
-> find out if the Caching mode page is present.
+Currently mlock() holds mmap_sem in exclusive mode while the pages get
+faulted in. In the case of a large mlock, this can potentially take a
+very long time.
 
-As long as you are not changing the command stream that the devices see, I
-think this is a reasonable risk to take.
+I propose that mlock() could release mmap_sem after the VM_LOCKED bits
+have been set in all appropriate VMAs. Then a second pass could be done
+to actually mlock the pages, in small batches, never holding mmap_sem
+for longer than it takes to process one single batch. We need to recheck
+the vma flags whenever we re-acquire mmap_sem, but this is not difficult.
 
-What are the consequences if the device returns what appear to be a Caching
-Mode Page, but it is actually filled with garbage or otherwise inaccurate
-data?
+This is only an RFC rather than an actual submission, as I think this
+could / should be completed to handle more than the mlock() and
+mlockall() cases (there are many call sites to mlock_vma_pages_range()
+that should ideally be converted as well), and maybe use the fault retry
+mechanism to drop mmap_sem when blocking on disk access rather than
+using an arbitrary page batch size.
 
-Matt
+Patch is against v2.6.36, but should apply to linus tree too.
 
---=20
-Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
-net=20
-Maintainer, Linux USB Mass Storage Driver
+------------------------------- 8< -----------------------------
 
-You suck Stef.
-					-- Greg=20
-User Friendly, 11/29/97
+Let mlock / mlockall release mmap_sem after the vmas have been marked
+as VM_LOCKED. Then, mark the vmas as mlocked in small batches.
+For every batch, we need to grab mmap_sem in read mode, check that the
+vma has not been munlocked, and mlock the pages.
 
---qo7zVO9a9OQ5oQtr
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+In the case where a vma has been munlocked before mlock completes,
+pages that were already marked as PageMlocked() are handled by the
+munlock() call, and mlock() is careful to not mark new page batches
+as PageMlocked() after the munlock() call has cleared the VM_LOCKED
+vma flags. So, the end result will be identical to what'd happen if
+munlock() had executed after the mlock() call.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (GNU/Linux)
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ mm/mlock.c |   79 +++++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 63 insertions(+), 16 deletions(-)
 
-iD8DBQFM60qA3gL8qCooyc4RAvjXAJ0Q/1XXXgQnEKftIH230FA1kAcHEQCeNMHx
-LGoOvKb0liPwoEBJPy+zoYE=
-=E1Yj
------END PGP SIGNATURE-----
+diff --git a/mm/mlock.c b/mm/mlock.c
+index b70919c..0aa4df5 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -373,17 +373,11 @@ static int mlock_fixup(struct vm_area_struct *vma, struct vm_area_struct **prev,
+ 	int lock = newflags & VM_LOCKED;
+ 
+ 	if (newflags == vma->vm_flags ||
+-			(vma->vm_flags & (VM_IO | VM_PFNMAP)))
++	    (vma->vm_flags & (VM_IO | VM_PFNMAP |
++			      VM_DONTEXPAND | VM_RESERVED)) ||
++	    is_vm_hugetlb_page(vma) || vma == get_gate_vma(current))
+ 		goto out;	/* don't set VM_LOCKED,  don't count */
+ 
+-	if ((vma->vm_flags & (VM_DONTEXPAND | VM_RESERVED)) ||
+-			is_vm_hugetlb_page(vma) ||
+-			vma == get_gate_vma(current)) {
+-		if (lock)
+-			make_pages_present(start, end);
+-		goto out;	/* don't set VM_LOCKED,  don't count */
+-	}
+-
+ 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
+ 	*prev = vma_merge(mm, *prev, start, end, newflags, vma->anon_vma,
+ 			  vma->vm_file, pgoff, vma_policy(vma));
+@@ -419,14 +413,10 @@ success:
+ 	 * set VM_LOCKED, __mlock_vma_pages_range will bring it back.
+ 	 */
+ 
+-	if (lock) {
++	if (lock)
+ 		vma->vm_flags = newflags;
+-		ret = __mlock_vma_pages_range(vma, start, end);
+-		if (ret < 0)
+-			ret = __mlock_posix_error_return(ret);
+-	} else {
++	else
+ 		munlock_vma_pages_range(vma, start, end);
+-	}
+ 
+ out:
+ 	*prev = vma;
+@@ -439,7 +429,8 @@ static int do_mlock(unsigned long start, size_t len, int on)
+ 	struct vm_area_struct * vma, * prev;
+ 	int error;
+ 
+-	len = PAGE_ALIGN(len);
++	VM_BUG_ON(start & ~PAGE_MASK);
++	VM_BUG_ON(len != PAGE_ALIGN(len));
+ 	end = start + len;
+ 	if (end < start)
+ 		return -EINVAL;
+@@ -482,6 +473,58 @@ static int do_mlock(unsigned long start, size_t len, int on)
+ 	return error;
+ }
+ 
++static int do_mlock_pages(unsigned long start, size_t len)
++{
++	struct mm_struct *mm = current->mm;
++	unsigned long end, nstart, nend, nfault;
++	struct vm_area_struct *vma;
++	int error = 0;
++
++	VM_BUG_ON(start & ~PAGE_MASK);
++	VM_BUG_ON(len != PAGE_ALIGN(len));
++	end = start + len;
++
++	for (nstart = start; nstart < end; nstart = nend) {
++		down_read(&mm->mmap_sem);
++		nend = end;
++		vma = find_vma_intersection(mm, nstart, nend);
++		if (!vma)
++			goto up;
++		if (vma->vm_end < nend)
++			nend = vma->vm_end;
++		if (vma->vm_flags & (VM_IO | VM_PFNMAP))
++			goto up;
++		if (nstart < vma->vm_start)
++			nstart = vma->vm_start;
++
++		/*
++		 * Limit batch size to 256 pages in order to reduce
++		 * mmap_sem hold time.
++		 */
++		nfault = nstart + 256 * PAGE_SIZE;
++
++		/*
++		 * Now fault in a batch of pages. We need to check the vma
++		 * flags again, as we've not been holding mmap_sem.
++		 */
++		if ((vma->vm_flags & (VM_DONTEXPAND | VM_RESERVED)) ||
++		    is_vm_hugetlb_page(vma) || vma == get_gate_vma(current)) {
++			if (nfault < nend)
++				nend = nfault;
++			make_pages_present(nstart, nend);
++		} else if (vma->vm_flags & VM_LOCKED) {
++			if (nfault < nend)
++				nend = nfault;
++			error = __mlock_vma_pages_range(vma, nstart, nend);
++		}
++	up:
++		up_read(&mm->mmap_sem);
++		if (error)
++			return __mlock_posix_error_return(error);
++	}
++	return 0;
++}
++
+ SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
+ {
+ 	unsigned long locked;
+@@ -507,6 +550,8 @@ SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
+ 	if ((locked <= lock_limit) || capable(CAP_IPC_LOCK))
+ 		error = do_mlock(start, len, 1);
+ 	up_write(&current->mm->mmap_sem);
++	if (!error)
++		error = do_mlock_pages(start, len);
+ 	return error;
+ }
+ 
+@@ -571,6 +616,8 @@ SYSCALL_DEFINE1(mlockall, int, flags)
+ 	    capable(CAP_IPC_LOCK))
+ 		ret = do_mlockall(flags);
+ 	up_write(&current->mm->mmap_sem);
++	if (!ret && (flags & MCL_CURRENT))
++		ret = do_mlock_pages(0, TASK_SIZE);
+ out:
+ 	return ret;
+ }
 
---qo7zVO9a9OQ5oQtr--
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
