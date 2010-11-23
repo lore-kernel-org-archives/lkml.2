@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab0KWIKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 03:10:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23028 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751199Ab0KWIKB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 03:10:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,241,1288594800"; 
-   d="scan'208";a="629449347"
-From: "Berg, Johannes" <johannes.berg@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-CC: Arnd Hannemann <arnd@arndnet.de>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@linux.intel.com>
-Date: Tue, 23 Nov 2010 08:09:39 +0000
-Subject: RE: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
-Thread-Topic: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
-Thread-Index: AcuK5WfKZlpTYLivQSGqZ9Yg3qLZFQAAEtsA
-Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED77D@irsmsx504.ger.corp.intel.com>
-References: <20101116142027.GC19247@tiehlicka.suse.cz>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
-	<20101118082454.GC15928@tiehlicka.suse.cz>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
-	<4CEAA151.7050404@arndnet.de>	<20101123063200.GA23907@elte.hu>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
-	<20101122233654.117eef93.akpm@linux-foundation.org>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
-	<20101123075742.GA28714@elte.hu>
- <20101123000232.e51b99b7.akpm@linux-foundation.org>
-In-Reply-To: <20101123000232.e51b99b7.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: Bqxi CluS GVK7 NJ75 Ry/P R+9p aE+z es8d ggjt lDYC m+5T
- ABKxcA== ABqBIA== ACUlQw== ACce1g==
- ACwmkQ==;6;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAcgBuAGQAQABhAHIAbgBkAG4AZQB0AC4AZABlADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG0AaABvAGMAawBvAEAAcwB1AHMAZQAuAGMAegA7AG0AaQBuAGcAbwBAAGUAbAB0AGUALgBoAHUAOwByAHAAdQByAGQAaQBlAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0A;Sosha1_v1;7;{E4B8C437-D177-49CE-A8A3-159E7A083510};agBvAGgAYQBuAG4AZQBzAC4AYgBlAHIAZwBAAGkAbgB0AGUAbAAuAGMAbwBtAA==;Tue,
- 23 Nov 2010 08:09:39
- GMT;UgBFADoAIAA1AGEAZABhADIAOABiAGYANwA2ADcANQAyACAAYwBhAHUAcwBlAHMAIABjAG8AbQBwAGkAbABhAHQAaQBvAG4AIABlAHIAcgBvAHIAIABpAGYAIAAhAEMATwBOAEYASQBHAF8ATABFAEQAUwBfAEMATABBAFMAUwA=
-x-cr-puzzleid: {E4B8C437-D177-49CE-A8A3-159E7A083510}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1751256Ab0KWIMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 03:12:55 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:59322 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab0KWIMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 03:12:54 -0500
+Message-ID: <4CEB77E0.10202@cn.fujitsu.com>
+Date: Tue, 23 Nov 2010 16:14:24 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+To: Colin Cross <ccross@android.com>
+CC: linux-kernel@vger.kernel.org, Paul Menage <menage@google.com>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] cgroup: Convert synchronize_rcu to call_rcu in cgroup_attach_task
+References: <AANLkTikx6d0_VFtZ4zWQucRCf=vFt7N2M6=0jpnKasEE@mail.gmail.com> <1290398767-15230-1-git-send-email-ccross@android.com>
+In-Reply-To: <1290398767-15230-1-git-send-email-ccross@android.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-23 16:13:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-23 16:13:07,
+	Serialize complete at 2010-11-23 16:13:07
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > It applied with a fuzz here so something changed in that file since
-> you made the
-> > patch. I did a quick review of drivers/leds/Kconfig and your patch
-> seems complete to
-> > me.
+12:06, Colin Cross wrote:
+> The synchronize_rcu call in cgroup_attach_task can be very
+> expensive.  All fastpath accesses to task->cgroups that expect
+> task->cgroups not to change already use task_lock() or
+> cgroup_lock() to protect against updates, and, in cgroup.c,
+> only the CGROUP_DEBUG files have RCU read-side critical
+> sections.
 > 
-> It looks complete to me as well.  It already fixes LEDS_NETXBIG.
+> sched.c uses RCU read-side-critical sections on task->cgroups,
+> but only to ensure that a dereference of task->cgroups does
+> not become invalid, not that it doesn't change.
+> 
 
-Yeah, looks like I got confused -- or more likely my local version
-didn't quite match the one I'd posted for some reason.
+Other cgroup subsystems also use rcu_read_lock to access task->cgroups,
+for example net_cls cgroup and device cgroup.
 
-Thanks for checking.
+I don't think the performance of task attaching is so critically
+important that we have to use call_rcu() instead of synchronize_rcu()?
 
-johannes
+> This patch adds a function put_css_set_rcu, which delays the
+> put until after a grace period has elapsed.  This ensures that
+> any RCU read-side critical sections that dereferenced
+> task->cgroups in sched.c have completed before the css_set is
+> deleted.  The synchronize_rcu()/put_css_set() combo in
+> cgroup_attach_task() can then be replaced with
+> put_css_set_rcu().
+> 
 
---------------------------------------------------------------------------------------
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland 
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
-Registergericht: Muenchen HRB 47456 
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+> Also converts the CGROUP_DEBUG files that access
+> current->cgroups to use task_lock(current) instead of
+> rcu_read_lock().
+> 
 
+What for? What do we gain from doing this for those debug
+interfaces?
+
+> Signed-off-by: Colin Cross <ccross@android.com>
+> 
+> ---
+> 
+> This version fixes the problems with the previous patch by
+> keeping the use of RCU in cgroup_attach_task, but allowing
+> cgroup_attach_task to return immediately by deferring the
+> final put_css_reg to an rcu callback.
+> 
+>  include/linux/cgroup.h |    4 +++
+>  kernel/cgroup.c        |   58 ++++++++++++++++++++++++++++++++++++++----------
+>  2 files changed, 50 insertions(+), 12 deletions(-)
