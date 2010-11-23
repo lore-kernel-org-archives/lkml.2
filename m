@@ -1,459 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0KWRwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 12:52:05 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:16486 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab0KWRwC (ORCPT
+	id S1756085Ab0KWRyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 12:54:03 -0500
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:61357 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab0KWRyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 12:52:02 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6176"; a="63849212"
-Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1290109970-26752-2-git-send-email-gbean@codeaurora.org>
-References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
-	 <1290109970-26752-2-git-send-email-gbean@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 09:51:57 -0800
-Message-ID: <1290534717.4165.43.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 12:54:01 -0500
+Date: Tue, 23 Nov 2010 12:53:26 -0500 (EST)
+From: Oren Laadan <orenl@cs.columbia.edu>
+X-X-Sender: orenl@takamine.ncl.cs.columbia.edu
+To: Gene Cooperman <gene@ccs.neu.edu>
+cc: Tejun Heo <tj@kernel.org>, Kapil Arya <kapil@ccs.neu.edu>,
+        linux-kernel@vger.kernel.org, xemul@sw.ru,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+In-Reply-To: <20101121082143.GB21672@sundance.ccs.neu.edu>
+Message-ID: <Pine.LNX.4.64.1011231234410.11731@takamine.ncl.cs.columbia.edu>
+References: <4CD72150.9070705@cs.columbia.edu> <4CE3C334.9080401@kernel.org>
+ <20101117153902.GA1155@hallyn.com> <4CE3F8D1.10003@kernel.org>
+ <20101119041045.GC24031@hallyn.com> <4CE683E1.6010500@kernel.org>
+ <4CE69B8C.6050606@cs.columbia.edu> <Pine.LNX.4.64.1011201312470.15662@takamine.ncl.cs.columbia.edu>
+ <4CE8228C.3000108@kernel.org> <20101121081853.GA21672@sundance.ccs.neu.edu>
+ <20101121082143.GB21672@sundance.ccs.neu.edu>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 11:52 -0800, Gregory Bean wrote:
-> Complete the MSM v2 gpio subsystem by adding irq_chip.
+On Sun, 21 Nov 2010, Gene Cooperman wrote:
+
+> As Kapil and I wrote before, we benefited greatly from having talked with Oren,
+> and learning some more about the context of the discussion.  We were able
+> to understand better the good technical points that Oren was making.
+>     Since the comparison table below concerns DMTCP, we'd like to
+> state some additional technical points that could affect the conlusions.
 > 
-
-It looks like your actually doing more than what stated here. Like your
-adding pm related structure which shouldn't be needed for just the
-irq_chip.
-
-more comments below,
-
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
-> ---
->  v4 - miscellaneous cleanup to patch 1/2, per pkondeti@codeaurora.org
->  v3 - miscellaneous cleanup to patch 1/2, per baruch@tkos.co.il
->  v2 - miscellaneous cleanup to patch 1/2, per baruch@tkos.co.il
+> > category        linux-cr                        userspace
+> > --------------------------------------------------------------------------------
+> > PERFORMANCE     has _zero_ runtime overhead     visible overhead due to syscalls
+> >                                                 interposition and state tracking
+> >                                                 even w/o checkpoints;
 > 
->  arch/arm/mach-msm/gpio-v2.c |  344 ++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 326 insertions(+), 18 deletions(-)
+> In our experiments so far, the overhead of system calls has been
+> unmeasurable.  We never wrap read() or write(), in order to keep overhead low.
+> We also never wrap pthread synchronization primitives such as locks,
+> for the same reason.  The other system calls are used much less often, and so
+> the overhead has been too small to measure in our experiments.
+
+Syscall interception will have visible effect on applications that
+use those syscalls. You may not observe overheasd with HPC ones,
+but do you have numbers on server apps ?  apps that use fork/clone
+and pipes extensively ?  threads benchmarks et ?  compare that
+to aboslute zero overhead of linux-cr.
+
 > 
-> diff --git a/arch/arm/mach-msm/gpio-v2.c b/arch/arm/mach-msm/gpio-v2.c
-> index d907af6..926e3d0 100644
-> --- a/arch/arm/mach-msm/gpio-v2.c
-> +++ b/arch/arm/mach-msm/gpio-v2.c
-> @@ -15,7 +15,11 @@
->   * 02110-1301, USA.
->   *
->   */
-> +#include <linux/bitmap.h>
-> +#include <linux/bitops.h>
->  #include <linux/gpio.h>
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
->  #include <linux/io.h>
->  #include <linux/irq.h>
->  #include <linux/module.h>
-> @@ -31,17 +35,97 @@ enum {
->  	GPIO_OUT_BIT = 1
->  };
+> > OPTIMIZATIONS   many optimizations possible     limited, less effective
+> >                 only in kernel, for downtime,   w/ much larger overhead.
+> >                 image size, live-migration
 >  
-> +/* Bits of interest in the GPIO_INTR_STATUS register.
-> + */
-> +enum {
-> +	INTR_STATUS_BIT = 0,
-> +};
-> +
->  /* Bits of interest in the GPIO_CFG register.
->   */
->  enum {
->  	GPIO_OE_BIT = 9,
->  };
+> As above, we believe that the overhead while running is negligible.  I'm
+
+For the HPC apps that you use.
+
+> assuming that image size refers to in-kernel advantages for incremental
+> checkpointing.  This is useful for apps where the modified pages tend
+> not to dominate.  We agree with this point.  As an orthogonal point,
+> by default DMTCP compresses all checkpoint images using gzip on the fly.
+> This is useful even when most pages are modified between checkpoints.
+> Still, as Oren writes, Linux C/R could also add a userland component
+> to compress checkpoint images on the fly.
+
+This is not "userland component", it's "checkpoint | gzip > image.out"...
+
+>     Next, live migration is a question that we simply haven't thought much
+> about.  If it's important, we could think about what userland approaches might
+> exist, but we have no near-term plans to tackle live migration.
+
+As it is, live-migration _is_ a very important use case.
+
+> 
+> > OPERATION       applications run unmodified     to do c/r, needs 'controller'
+> >                                                 task (launch and manage _entire_
+> >                                                 execution) - point of failure.
+> >                                                 restricts how a system is used.
+> 
+> We'd like to clarify what may be some misconceptions.  The DMTCP
+> controller does not launch or manage any tasks.  The DMTCP controller
+> is stateless, and is only there to provide a barrier, namespace server,
+> and single point of contact to relay ckpt/restart commands.  Recall that
+> the DMTCP controller handls processes across hosts --- not just on a
+> single host.
+
+The controller is another point of failure. I already pointed that
+the (controlled) application crashes when your controller dies, and
+you mentioned it's a bug that should be fixed. But then there will always 
+be a risk for another, and another ...   You also mentioned that if the
+controller dies, then the app should contionue to run, but will not be
+checkpointable anymore (IIUC).
+
+The point is, that the controller is another point of failure, and makes 
+the execution/checkpoint intrusive. It also adds security and 
+user-management issues as you'll need one (or more ?) controller per user 
+(right now, it's one for all, no ?). and so on.
+
+Plus, because the restarted apps get their virtualized IDs from the 
+controller, then they can't now "see" existing/new processes that
+may get the "same" pids (virtualization is not in the kernel).
+
+
+>     Also, in any computation involving multiple processes, _every_ process
+> of the computation is a point of failure.  If any process of the computation
+> dies, then the simple application strategy is to give up and revert to an
+> earlier checkpoint.  There are techniques by which an app or DMTCP can
+> recreate certain failed processes.  DMTCP doesn't currently recreate
+> a dead controller (no demand for it), but it's not hard to do technically.
+
+The point is that you _add_ a point of failure: you make the "checkpoint" 
+operation a possible reason for the application to crash. In contrast, in 
+linux-cr the checkpoiint is idempotent - nunharmful because it does not 
+make the applications execute. Instead, it merely observes their state.
+
+
+> > PREEMPTIVE      checkpoint at any time, use     processes must be runnable and
+> >                 auxiliary task to save state;   "collaborate" for checkpoint;
+> >                 non-intrusive: failure does     long task coordination time
+> >                 not impact checkpointees.       with many tasks/threads. alters
+> >                                                 state of checkpointee if fails.
+> >                                                 e.g. cannot checkpoint when in
+> >                                                 vfork(), ptrace states, etc.
+> 
+> Our current support of vfork and ptrace has some of the issues that Oren points
+> out.  One example occurs if a process is in the kernel, and a ptrace state has
+> changed.  If it was important for some application, we would either have
+> to think of some "hack", or follow Tejun's alternative suggestion to work
+> with the developers to add further kernel support.  The kernel developers
+> on this list can estimate the difficulties of kernel support better than I can.
 >  
-> +/* Bits of interest in the GPIO_INTR_CFG register.
-> + */
-> +enum {
-> +	INTR_ENABLE_BIT        = 0,
-> +	INTR_POL_CTL_BIT       = 1,
-> +	INTR_DECT_CTL_BIT      = 2,
-> +	INTR_RAW_STATUS_EN_BIT = 3,
-> +};
-> +
-> +/* Codes of interest in GPIO_INTR_CFG_SU.
-> + */
-> +enum {
-> +	TARGET_PROC_SCORPION = 4,
-> +	TARGET_PROC_NONE     = 7,
-> +};
-> +
-> +/*
-> + * When a GPIO triggers, two separate decisions are made, controlled
-> + * by two separate flags.
-> + *
-> + * - First, INTR_RAW_STATUS_EN controls whether or not the GPIO_INTR_STATUS
-> + * register for that GPIO will be updated to reflect the triggering of that
-> + * gpio.  If this bit is 0, this register will not be updated.
-> + * - Second, INTR_ENABLE controls whether an interrupt is triggered.
-> + *
-> + * If INTR_ENABLE is set and INTR_RAW_STATUS_EN is NOT set, an interrupt
-> + * can be triggered but the status register will not reflect it.
-> + */
-> +#define INTR_RAW_STATUS_EN BIT(INTR_RAW_STATUS_EN_BIT)
-> +#define INTR_ENABLE        BIT(INTR_ENABLE_BIT)
-> +#define INTR_DECT_CTL_EDGE BIT(INTR_DECT_CTL_BIT)
-> +#define INTR_POL_CTL_HI    BIT(INTR_POL_CTL_BIT
+> > COVERAGE        save/restore _all_ task state;  needs new ABI for everything:
+> >                 identify shared resources; can  expose state, provide means to
+> >                 extend for new kernel features  restore state (e.g. TCP protocol
+> >                 easily                          options negotiated with peers)
+> 
+> Currently, the only kernel support used by DMTCP is system calls (wrappers),
+> /proc/*/fd, /proc/*/maps, /proc/*/cmdline, /proc/*/exe, /proc/*/stat.  (I think
+> I've named them all now.)  The kernel developers will know better
+> than us what other kernel state one might want to support for C/R, and what
+> types of applications would need that.
+> 
+> > RELIABILITY     checkpoint w/ single syscall;   non-atomic, cannot find leaks
+> >                 atomic operation. guaranteed    to determine restartability
+> >                 restartability for containers
+> 
+> My understanding is that the guarantees apply for Linux containers, but not
+> for a tree of processes.  Does this imply that linux-cr would have some
+> of the same reliability issues as DMTCP for a tree of processes?  (I mean
+> the question sincerely, and am not intending to be rude.)  In any case,
+> won't DMTCP and Linux C/R have to handle orthogonal reliability issues
+> such as external database, time virtualization, and other examples
+> from our previous post?
 
-This is a little bit inconsistent .. Your using BIT() in this case, but
-there are other cases where you define which bit and use BIT() in the
-code.
+There are two points in the claim above:
 
-> +#define GPIO_INTR_CFG_SU(gpio)    (MSM_TLMM_BASE + 0x0400 + (0x04 * (gpio)))
->  #define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
->  #define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
-> +#define GPIO_INTR_CFG(gpio)       (MSM_TLMM_BASE + 0x1008 + (0x10 * (gpio)))
-> +#define GPIO_INTR_STATUS(gpio)    (MSM_TLMM_BASE + 0x100c + (0x10 * (gpio)))
-> +
-> +/**
-> + * struct msm_gpio_dev: the MSM8660 SoC GPIO device structure
-> + *
-> + * @enabled_irqs: a bitmap used to optimize the summary-irq handler.  By
-> + * keeping track of which gpios are unmasked as irq sources, we avoid
-> + * having to do readl calls on hundreds of iomapped registers each time
-> + * the summary interrupt fires in order to locate the active interrupts.
-> + *
-> + * @wake_irqs: a bitmap for tracking which interrupt lines are enabled
-> + * as wakeup sources.  When the device is suspended, interrupts which are
-> + * not wakeup sources are disabled.
-> + *
-> + * @dual_edge_irqs: a bitmap used to track which irqs are configured
-> + * as dual-edge, as this is not supported by the hardware and requires
-> + * some special handling in the driver.
-> + */
-> +struct msm_gpio_dev {
-> +	struct gpio_chip gpio_chip;
-> +	DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
-> +	DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
-> +	DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
-> +};
->  
->  static DEFINE_SPINLOCK(tlmm_lock);
->  
-> +static inline struct msm_gpio_dev *to_msm_gpio_dev(struct gpio_chip *chip)
-> +{
-> +	return container_of(chip, struct msm_gpio_dev, gpio_chip);
-> +}
-> +
-> +static inline void set_gpio_bits(unsigned n, void __iomem *reg)
-> +{
-> +	writel(readl(reg) | n, reg);
-> +}
-> +
-> +static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
-> +{
-> +	writel(readl(reg) & ~n, reg);
-> +}
+1) linux-cr can checkpoint with a single syscall - it's atomic. This
+gives you more guarantees about the consistency of the checkpointed 
+application(s), and less "opportunitites" for the operation as a whole to 
+fail.
 
-It seems these functions actually accept output from BIT(). It would be
-safer to force these to accept the bit number then use BIT() inside this
-function to translate. That way you wouldn't use "unsigned n" for the
-argument you would use a named enum for the argument.
+2) restartability - for full-container checkpoint only.
 
->  static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
->  {
->  	return readl(GPIO_IN_OUT(offset)) & BIT(GPIO_IN_BIT);
-> @@ -57,8 +141,7 @@ static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
->  	unsigned long irq_flags;
->  
->  	spin_lock_irqsave(&tlmm_lock, irq_flags);
-> -	writel(readl(GPIO_CONFIG(offset)) & ~BIT(GPIO_OE_BIT),
-> -		GPIO_CONFIG(offset));
-> +	clr_gpio_bits(BIT(GPIO_OE_BIT), GPIO_CONFIG(offset));
+There is no "reliability" issue with c/r of non-containers - it's a matter 
+of definition: it depends on what your requirements from the userspace 
+application and what sort of "glue" you have for it.
+ 
+And I request again - let's leave out the questions of "time 
+virtualization" and "external databases" - how are they different for the 
+VM virtalization solution ?  they are conpletely orthogonal to the 
+question we are debating.
 
-so in this case you just send in GPIO_OE_BIT , but you also need 
-GPIO_OE_BIT to be part of the same enum as all the other bits sent to
-clr_gpio_bits/set_gpio_bits. I'd just use "clear_gpio_bits" for the
-name, doesn't look like there's a good reason to shorten it.
+Thanks,
 
->  	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
->  	return 0;
->  }
-> @@ -71,8 +154,7 @@ static int msm_gpio_direction_output(struct gpio_chip *chip,
->  
->  	spin_lock_irqsave(&tlmm_lock, irq_flags);
->  	msm_gpio_set(chip, offset, val);
-> -	writel(readl(GPIO_CONFIG(offset)) | BIT(GPIO_OE_BIT),
-> -		GPIO_CONFIG(offset));
-> +	set_gpio_bits(BIT(GPIO_OE_BIT), GPIO_CONFIG(offset));
->  	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
->  	return 0;
->  }
-> @@ -87,30 +169,215 @@ static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
->  	msm_gpiomux_put(chip->base + offset);
->  }
->  
-> -static struct gpio_chip msm_gpio = {
-> -	.base             = 0,
-> -	.ngpio            = NR_GPIO_IRQS,
-> -	.direction_input  = msm_gpio_direction_input,
-> -	.direction_output = msm_gpio_direction_output,
-> -	.get              = msm_gpio_get,
-> -	.set              = msm_gpio_set,
-> -	.request          = msm_gpio_request,
-> -	.free             = msm_gpio_free,
-> +static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	return MSM_GPIO_TO_INT(offset - chip->base);
-> +}
+Oren.
 
-Not chip->base + offset?
-
-> +
-> +static inline int msm_irq_to_gpio(struct gpio_chip *chip, unsigned irq)
-> +{
-> +	return irq - MSM_GPIO_TO_INT(chip->base);
-> +}
-> +
-> +static struct msm_gpio_dev msm_gpio = {
-> +	.gpio_chip = {
-> +		.base             = 0,
-
-I guess it's fine to do "offset - chip->base" if base is always zero,
-but why do subtraction at all.
-
-> +		.ngpio            = NR_GPIO_IRQS,
-> +		.direction_input  = msm_gpio_direction_input,
-> +		.direction_output = msm_gpio_direction_output,
-> +		.get              = msm_gpio_get,
-> +		.set              = msm_gpio_set,
-> +		.to_irq           = msm_gpio_to_irq,
-> +		.request          = msm_gpio_request,
-> +		.free             = msm_gpio_free,
-> +	},
-> +};
-> +
-> +/* For dual-edge interrupts in software, since the hardware has no
-> + * such support:
-> + *
-> + * At appropriate moments, this function may be called to flip the polarity
-> + * settings of both-edge irq lines to try and catch the next edge.
-> + *
-> + * The attempt is considered successful if:
-> + * - the status bit goes high, indicating that an edge was caught, or
-> + * - the input value of the gpio doesn't change during the attempt.
-> + * If the value changes twice during the process, that would cause the first
-> + * test to fail but would force the second, as two opposite
-> + * transitions would cause a detection no matter the polarity setting.
-> + *
-> + * The do-loop tries to sledge-hammer closed the timing hole between
-> + * the initial value-read and the polarity-write - if the line value changes
-> + * during that window, an interrupt is lost, the new polarity setting is
-> + * incorrect, and the first success test will fail, causing a retry.
-> + *
-> + * Algorithm comes from Google's msmgpio driver, see mach-msm/gpio.c.
-> + */
-> +static void msm_gpio_update_dual_edge_pos(unsigned gpio)
-> +{
-> +	int loop_limit = 100;
-> +	unsigned val, val2, intstat;
-> +
-> +	do {
-> +		val = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN_BIT);
-> +		if (val)
-> +			clr_gpio_bits(INTR_POL_CTL_HI, GPIO_INTR_CFG(gpio));
-> +		else
-> +			set_gpio_bits(INTR_POL_CTL_HI, GPIO_INTR_CFG(gpio));
-> +		val2 = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN_BIT);
-> +		intstat = readl(GPIO_INTR_STATUS(gpio)) & BIT(INTR_STATUS_BIT);
-> +		if (intstat || val == val2)
-> +			return;
-> +	} while (loop_limit-- > 0);
-> +	pr_err("%s: dual-edge irq failed to stabilize, "
-> +	       "interrupts dropped. %#08x != %#08x\n",
-> +	       __func__, val, val2);
-
-You could set pr_fmt so it automatically adds the __func__ prefix.
-Assuming you planned on adding more of these.
-
-> +}
-> +
-> +static void msm_gpio_irq_ack(unsigned int irq)
-> +{
-> +	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-> +
-> +	writel(BIT(INTR_STATUS_BIT), GPIO_INTR_STATUS(gpio));
-> +	if (test_bit(gpio, msm_gpio.dual_edge_irqs))
-> +		msm_gpio_update_dual_edge_pos(gpio);
-> +}
-> +
-> +static void msm_gpio_irq_mask(unsigned int irq)
-> +{
-> +	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-> +	unsigned long irq_flags;
-> +
-> +	spin_lock_irqsave(&tlmm_lock, irq_flags);
-> +	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
-> +	clr_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-> +	__clear_bit(gpio, msm_gpio.enabled_irqs);
-> +	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-> +}
-> +
-> +static void msm_gpio_irq_unmask(unsigned int irq)
-> +{
-> +	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-> +	unsigned long irq_flags;
-> +
-> +	spin_lock_irqsave(&tlmm_lock, irq_flags);
-> +	__set_bit(gpio, msm_gpio.enabled_irqs);
-> +	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-
-I's just break this into two calls, or make another helper that to set
-that accepts the mask and have set_gpio_bits call that. This here you
-would just use the other helper. like set_gpio_bits calls
-set_gpio_bits_mask() and you call the mask version here.
-
-> +	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
-> +	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-> +}
-> +
-> +static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
-> +{
-> +	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-> +	unsigned long irq_flags;
-> +	uint32_t bits;
-> +
-> +	spin_lock_irqsave(&tlmm_lock, irq_flags);
-> +
-> +	bits = readl(GPIO_INTR_CFG(gpio));
-> +
-> +	if (flow_type & IRQ_TYPE_EDGE_BOTH) {
-> +		bits |= INTR_DECT_CTL_EDGE;
-> +		irq_desc[irq].handle_irq = handle_edge_irq;
-> +		if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
-> +			__set_bit(gpio, msm_gpio.dual_edge_irqs);
-> +		else
-> +			__clear_bit(gpio, msm_gpio.dual_edge_irqs);
-> +	} else {
-> +		bits &= ~INTR_DECT_CTL_EDGE;
-> +		irq_desc[irq].handle_irq = handle_level_irq;
-> +		__clear_bit(gpio, msm_gpio.dual_edge_irqs);
-> +	}
-> +
-> +	if (flow_type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_LEVEL_HIGH))
-> +		bits |= INTR_POL_CTL_HI;
-> +	else
-> +		bits &= ~INTR_POL_CTL_HI;
-> +
-> +	writel(bits, GPIO_INTR_CFG(gpio));
-> +
-> +	if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
-> +		msm_gpio_update_dual_edge_pos(gpio);
-> +
-> +	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * When the summary IRQ is raised, any number of GPIO lines may be high.
-> + * It is the job of the summary handler to find all those GPIO lines
-> + * which have been set as summary IRQ lines and which are triggered,
-> + * and to call their interrupt handlers.
-> + */
-> +static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
-> +{
-> +	unsigned long i;
-> +
-> +	for (i = find_first_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
-> +	     i < NR_GPIO_IRQS;
-> +	     i = find_next_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS, i + 1)) {
-> +		if (readl(GPIO_INTR_STATUS(i)) & BIT(INTR_STATUS_BIT))
-> +			generic_handle_irq(msm_gpio_to_irq(&msm_gpio.gpio_chip,
-> +							   i));
-> +	}
-> +	desc->chip->ack(irq);
-> +}
-> +
-> +static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
-> +{
-> +	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-> +
-> +	if (on) {
-> +		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
-> +			set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 1);
-> +		set_bit(gpio, msm_gpio.wake_irqs);
-> +	} else {
-> +		clear_bit(gpio, msm_gpio.wake_irqs);
-> +		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
-> +			set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 0);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct irq_chip msm_gpio_irq_chip = {
-> +	.name		= "msmgpio",
-> +	.mask		= msm_gpio_irq_mask,
-> +	.unmask		= msm_gpio_irq_unmask,
-> +	.ack		= msm_gpio_irq_ack,
-> +	.set_type	= msm_gpio_irq_set_type,
-> +	.set_wake	= msm_gpio_irq_set_wake,
->  };
->  
->  static int __devinit msm_gpio_probe(struct platform_device *dev)
->  {
-> -	int ret;
-> +	int i, irq, ret;
->  
-> -	msm_gpio.label = dev->name;
-> -	ret = gpiochip_add(&msm_gpio);
-> +	bitmap_zero(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
-> +	bitmap_zero(msm_gpio.wake_irqs, NR_GPIO_IRQS);
-> +	bitmap_zero(msm_gpio.dual_edge_irqs, NR_GPIO_IRQS);
-> +	msm_gpio.gpio_chip.label = dev->name;
-> +	ret = gpiochip_add(&msm_gpio.gpio_chip);
-> +	if (ret < 0)
-> +		return ret;
->  
-> -	return ret;
-> +	for (i = 0; i < msm_gpio.gpio_chip.ngpio; ++i) {
-> +		irq = msm_gpio_to_irq(&msm_gpio.gpio_chip, i);
-> +		set_irq_chip(irq, &msm_gpio_irq_chip);
-> +		set_irq_handler(irq, handle_level_irq);
-> +		set_irq_flags(irq, IRQF_VALID);
-> +	}
-> +
-> +	set_irq_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
-> +				msm_summary_irq_handler);
-> +	return 0;
->  }
->  
->  static int __devexit msm_gpio_remove(struct platform_device *dev)
->  {
-> -	int ret = gpiochip_remove(&msm_gpio);
-> +	int ret = gpiochip_remove(&msm_gpio.gpio_chip);
->  
->  	if (ret < 0)
->  		return ret;
-> @@ -120,12 +387,53 @@ static int __devexit msm_gpio_remove(struct platform_device *dev)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM
-
-Then this I'd do a whole other patch for. Can this get used yet tho?
-
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+ > 
+> > USERSPACE GLUE  possible                        possible
+> > 
+> > SECURITY        root and non-root modes         root and non-root modes
+> >                 native support for LSM
+> > 
+> > MAINTENANCE     changes mainly for features     changes mainly for features;
+> >                                                 create new ABI for features
+> 
+> > iAnd by all means, I intend to cooperate with Gene to see how to
+> > make the other part of DMTCP, namely the userspace "glue", work on
+> > top of linux-cr to have the benefits of all worlds !
+> 
+> This is true, and we strongly welcome the cooperation.  We don't know how
+> this experiment will turn out, but the only way to find out is to sincerely
+> try it.  Whether we succeed or fail, we will learn something either way!
+> 
+> - Gene and Kapil
+> 
+> 
