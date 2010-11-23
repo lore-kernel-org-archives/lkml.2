@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab0KWAlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:41:15 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:57844 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932559Ab0KWAlO (ORCPT
+	id S932593Ab0KWAn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:43:59 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48902 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932339Ab0KWAn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:41:14 -0500
-Date: Mon, 22 Nov 2010 16:45:31 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: Greg KH <greg@kroah.com>
-cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
-In-Reply-To: <20101123001439.GB31294@kroah.com>
-Message-ID: <Pine.LNX.4.64.1011221626430.18814@cobra.newdream.net>
-References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
- <20101117171924.GC12050@kroah.com> <AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com>
- <20101118013002.GC8558@kroah.com> <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
- <20101119020820.GB18767@kroah.com> <1290468787.1792.63.camel@yehudasa-desktop>
- <20101123001439.GB31294@kroah.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 22 Nov 2010 19:43:58 -0500
+Date: Mon, 22 Nov 2010 16:43:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] romfs: have romfs_fs.h pull in necessary headers
+Message-Id: <20101122164356.ab44c4ae.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikJQ4usvm9tx1Xm+LcfFgduMVRqPyQPpkYUyjff@mail.gmail.com>
+References: <1290385461-29831-1-git-send-email-vapier@gentoo.org>
+	<20101122135855.6825700d.akpm@linux-foundation.org>
+	<AANLkTikJQ4usvm9tx1Xm+LcfFgduMVRqPyQPpkYUyjff@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Mon, 22 Nov 2010 19:40:16 -0500
+Mike Frysinger <vapier@gentoo.org> wrote:
 
-On Mon, 22 Nov 2010, Greg KH wrote:
-> On Mon, Nov 22, 2010 at 03:33:07PM -0800, Yehuda Sadeh wrote:
-> > 
-> > 
-> > On Fri, Nov 19, 2010 at 12:42 PM, Yehuda Sadeh Weinraub <yehuda@hq.newdream.net> wrote:
-> > > One solution would be to create kobjects for (3) and for (4), without
-> > > using a group name. Another way, we can create groups for (2), and (3)
-> > > under (1), but that's about it, you can't create the snap specific
-> > > directory this way without resorting to some internal sysfs directory
-> > > creation, which will be horribly wrong. At that point we don't have
-> > > anything for 'snaps', and we don't really need to do any operations
-> > > under that directory, we just need it to exist so that it contains the
-> > > snapshot-specific directories.
-> > >
-> > > Another way would be to create a group for (2) under (1) and create a
-> > > kobject for (3), for which you can create group per snapshot.
-> > >
-> > > Am I missing something? We already have the first solution (kobjects
-> > > only) implemented, is there some real benefit for using the third
-> > > method? We'll have to manually add remove groups anyway, as snapshots
-> > > can be removed and new snapshots can be added.
-> > >
-> > 
-> > And following is the implementation for the first solution. It has a device
-> > for the rbd_dev, a kobject for the top snapshot directory and a kobject per
-> > snapshot. Please let me know if there's any issue with this implementation.
-> > We'd like to get this fixed for 2.6.37 and considering the large patch,
-> > it'd be nice getting an ack for it.
+> On Mon, Nov 22, 2010 at 16:58, Andrew Morton wrote:
+> > On Sun, 21 Nov 2010 19:24:21 -0500 Mike Frysinger wrote:
+> >> This header uses things like __be32, so pull in linux/types.h.
+> >>
+> >> Further, it uses BLOCK_SIZE, so pull in linux/fs.h.
+> >>
+> >> --- a/include/linux/romfs_fs.h
+> >> +++ b/include/linux/romfs_fs.h
+> >> @@ -1,6 +1,9 @@
+> >> __#ifndef __LINUX_ROMFS_FS_H
+> >> __#define __LINUX_ROMFS_FS_H
+> >>
+> >> +#include <linux/types.h>
+> >> +#include <linux/fs.h>
+> >> +
+> >> __/* The basic structures of the romfs filesystem */
+> >>
+> >> __#define ROMBSIZE BLOCK_SIZE
+> >
+> > Better changelogs please.
+> >
+> > Does this fix any build error? __If so, is that build error present in
+> > 2.6.36 or earlier?
 > 
-> It's way too late for .37, as this is new stuff, right?
+> headers should include the headers that define types/things that the
+> header itself needs
 
-Well, that's the problem.  The current sysfs interface was based on 
-osdblk's.  That part didn't come up during review, and I wasn't aware that 
-the sysfs interface should get an explicit ack from you.  After RBD was 
-merged in 2.6.37-rc1 I saw part of the SCST sysfs thread and realized the 
-current interface was problematic, and we've been trying to work out how 
-to fix it ever since.
+I take that to mean "no" and "no", hence the fix is not needed in
+2.6.37 and is not needed in -stable.
 
-As things stand, we can either
- 1- wait, get an osdblk-like interface in 2.6.37, and change it later (a 
-    big fat no-no, as I understand things!)
- 2- get an improved sysfs interface sorted out and push to Linus ASAP (my 
-    preference)
- 3- have Linus revert RBD altogether :(
-
-I'm hoping for #2, but we may need a bit more help from you unfortunately!  
-
-Basically:
- - We keep putting the <snaps> in a subdir because can be arbitrarily 
-named, and we don't want them to collide with the other attributes.  It's 
-that or prefixing them with something like "snap_", but that seems uglier.
- - They are only there to expose some information to the user.
-
-Thanks!
-sage
+Thanks for being so helpful.
