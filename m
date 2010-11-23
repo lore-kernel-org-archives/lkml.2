@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab0KWVjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 16:39:16 -0500
-Received: from mtxmxout7.matrox.com ([138.11.2.97]:37675 "EHLO
-	mtxmxout7.matrox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0KWVjP (ORCPT
+	id S1752661Ab0KWVmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 16:42:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:64981 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab0KWVmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 16:39:15 -0500
-X-Greylist: delayed 824 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Nov 2010 16:39:15 EST
-X-Virus-MTX-Scanned: by Matrox Virus scanner at mars.matrox.com
-Message-ID: <4CEC3475.5030709@matrox.com>
-Date: Tue, 23 Nov 2010 16:39:01 -0500
-From: Yannick Heneault <yannick_heneault@matrox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [BUG] VGA palette corruption in vgacon.c for EFI machine
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 23 Nov 2010 16:42:11 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=dloADZ4KP7gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=YY22zN6FWk-OHBbpI8sA:9 a=u1DrlKNfgVzMBjTZRnvFPLd3vFIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/3] jump label: updates for 2.6.37
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, mathieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <cover.1290546539.git.jbaron@redhat.com>
+References: <cover.1290546539.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 23 Nov 2010 16:42:07 -0500
+Message-ID: <1290548527.30543.401.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2010-11-23 at 16:27 -0500, Jason Baron wrote:
+> Hi,
+> 
+> A few jump label patches that I want considered for 2.6.37. Patches are against
+> the latest -tip tree.
 
-It seems there is a small problem of VGA palette corruption on EFI 
-machine. When the kernel initializes the architecture, it checks if the 
-machine is a EFI machine and if the memory at 0xa0000 is not tagged as 
-conventional memory, which should not be the case because this is VGA 
-memory. In that case, the kernel assumes that a VGA console can exist. I 
-would think that this assumption is correct.
-
-When the kernel initialize the console in vgacon_startup it checks if it 
-can really use the VGA console. I think this is where a check is 
-missing. Currently, the function can fail if a VESA boot mode is 
-detected but not if a EFI boot mode was used. I think the code should be 
-modified like this :
-
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -377,7 +377,8 @@ static const char *vgacon_startup(void)
-         u16 saved1, saved2;
-         volatile u16 *p;
-
--       if (screen_info.orig_video_isVGA == VIDEO_TYPE_VLFB) {
-+       if (screen_info.orig_video_isVGA == VIDEO_TYPE_VLFB ||
-+           screen_info.orig_video_isVGA == VIDEO_TYPE_EFI) {
-               no_vga:
-  #ifdef CONFIG_DUMMY_CONSOLE
-                 conswitchp = &dummy_con;
+I can see patch 2 and 3 going to 2.6.37, but patch 1 seems a bit too
+big. If it is not a true fix for anything and is just a design change,
+then lets hold off till 2.6.38.
 
 
-In that case, the VGA console will fail and a dummy console will be 
-temporary used until the EFI driver get loaded. At that point the 
-console will be mapped to the EFI driver and graphics (splash screen and 
-penguins) will appear correctly.
+> 
+> The first one, which adds 'state' to the jump label mechanism is the most
+> important. Essentially, it ensures that if jump labels are enabled/disabled in
+> the core kernel but the actual call sites are in modules, we properly honor the
+> state of the jump label. This also works for jump labels which may be defined in
+> one module but made use of in another module.
 
-Currently, the function vgacon_startup doesn't fail and initialize the 
-video card for a real VGA mode. This function change the first 16 
-entries of the VGA palette. When the efifb driver kick-in, the palette 
-is not restored to default ramp value, thus the 16 first entry remain in 
-a modified state.
+What happens if we don't do this. What does "honoring" the state
+actually mean?
 
-Thanks,
 
-Yannick Heneault
+> 
+> There has been some discussion about using the 'key' variable to store the
+> enabled/disabled state for each jump label. However, I think a better design
+> will be to use the 'key' variable to store a pointer to the appropriate jump
+> label tables. In this way, we can enable/disable jump labels, without the
+> hashing that I'm currently doing. However, I didn't want to propose these more
+> invasive changes until 2.6.38. 
+
+I'm thinking even patch 1 is too invasive. Unless it crashes or truly
+breaks something without the change.
+
+Patch 2 is small and reasonable, and patch 3 is just documentation
+changes. Both OK for an -rc update.
+
+-- Steve
+
+
