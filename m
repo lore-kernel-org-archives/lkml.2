@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab0KWWxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:53:12 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:48400 "EHLO zene.cmpxchg.org"
+	id S1753725Ab0KWWzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:55:39 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:59581 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab0KWWxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:53:11 -0500
-Date: Tue, 23 Nov 2010 23:52:44 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] [BUG] memcg: fix false positive VM_BUG on non-SMP
-Message-ID: <20101123225244.GB22484@cmpxchg.org>
-References: <1290520130-9990-1-git-send-email-kirill@shutemov.name>
- <20101123121606.c07197e5.akpm@linux-foundation.org>
- <20101123210255.GA22484@cmpxchg.org>
- <20101123142247.e8566e3e.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101123142247.e8566e3e.akpm@linux-foundation.org>
+	id S1752991Ab0KWWzi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 17:55:38 -0500
+Date: Tue, 23 Nov 2010 23:55:27 +0100
+From: mat <castet.matthieu@free.fr>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
+Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX protection
+ for kernel data)
+Message-ID: <20101123235527.54293b59@mat-laptop>
+In-Reply-To: <20101122164247.GC21836@basil.fritz.box>
+References: <1290410581.2405.24.camel@minggr.sh.intel.com>
+	<1290431008.2072.119.camel@laptop>
+	<1290443379.4cea9a73cd9ce@imp.free.fr>
+	<1290443758.2072.318.camel@laptop>
+	<20101122164247.GC21836@basil.fritz.box>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 02:22:47PM -0800, Andrew Morton wrote:
-> On Tue, 23 Nov 2010 22:02:55 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > On Tue, Nov 23, 2010 at 12:16:06PM -0800, Andrew Morton wrote:
-> > > On Tue, 23 Nov 2010 15:48:50 +0200
-> > > "Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
-> > > 
-> > > > ------------[ cut here ]------------
-> > > > kernel BUG at mm/memcontrol.c:2155!
-> > > 
-> > > This bug has been there for a year, from which I conclude people don't
-> > > run memcg on uniprocessor machines a lot.
-> > > 
-> > > Which is a bit sad, really.  Small machines need resource control too,
-> > > perhaps more than large ones..
-> > 
-> > Admittedly, this patch is compile-tested on UP only, but it should be
-> > obvious enough.
-> > 
-> > ---
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > Subject: [patch] memcg: fix page cgroup lock assert on UP
-> > 
-> > Page cgroup locking primitives use the bit spinlock API functions,
-> > which do nothing on UP.
-> > 
-> > Thus, checking the lock state can not be done by looking at the bit
-> > directly, but one has to go through the bit spinlock API as well.
-> > 
-> > This fixes a guaranteed UP bug, where asserting the page cgroup lock
-> > bit as a sanity check crashes the kernel.
-> > 
-> 
-> hm, your patch is the same as Kirill's, except you named it
-> page_is_cgroup_locked() rather than is_page_cgroup_locked().  I guess
-> page_is_cgroup_locked() is a bit better.
+Le Mon, 22 Nov 2010 17:42:47 +0100,
+Andi Kleen <andi@firstfloor.org> a écrit :
 
-I had not sorted by threads and somehow assumed this was another
-forward from you of a bugzilla report or something.  I didn't see
-Kirill's patch until now.  Sorry!
+> > That seems to be a S3 specific code path, that won't fix anything.
+> > Simply do:
+> > 
+> > echo 0 > /sys/devices/system/cpu/cpu1/online;
+> > echo 1 > /sys/devices/system/cpu/cpu1/online;
+> > 
+> > and your machine will explode..
+> 
+> The SMP startup trampoline is copied I believe
+> and only executed in real mode without page tables.
+> 
+> So it's perhaps not the trampoline, but the early startup 
+> code that ends up being broken.
+yes :
+acpi wakeup code and smp trampoline are copied in low memory (first
+1MB).
 
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+So they can't end up int the kernel data mapping ?
+
+So it should something else.
+
+I will try to investigate on this.
+
+Matthieu
