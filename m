@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab0KWMnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 07:43:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34383 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0KWMnD convert rfc822-to-8bit (ORCPT
+	id S1753517Ab0KWMuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 07:50:13 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:40895 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab0KWMuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 07:43:03 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Date: Tue, 23 Nov 2010 18:12:38 +0530
-Subject: RE: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
- switches and LEDs
-Thread-Topic: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
- switches and LEDs
-Thread-Index: AcuKT8UFis+zfA4jTgerB3Hb5DuSqwAu6W3Q
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024793124F@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
-	<AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EB2D8@dbde02.ent.ti.com>
- <AANLkTin8+y0xkjv+RmnSZNKXgfwr2iV3c9P7cBMfVw3k@mail.gmail.com>
-In-Reply-To: <AANLkTin8+y0xkjv+RmnSZNKXgfwr2iV3c9P7cBMfVw3k@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 23 Nov 2010 07:50:12 -0500
+X-Greylist: delayed 407 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Nov 2010 07:50:12 EST
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.36.1
+Date: Tue, 23 Nov 2010 13:43:09 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-tp42-gtt-vram-apart-v2-dirty; KDE/4.5.3; i686; ; )
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+References: <20101122191831.GG4340@kroah.com> (sfid-20101122_213859_570360_74FEA74F)
+In-Reply-To: <20101122191831.GG4340@kroah.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2071928.XGHkB49eUo";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011231343.21778.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+--nextPart2071928.XGHkB49eUo
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 22, 2010 at 19:45:46, Ben Gardiner wrote:
-> Hi Sekhar,
->
-> On Mon, Nov 22, 2010 at 7:00 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> > Thanks for the explanation. I should have probably asked
-> > earlier, why do we need to prevent sysfs access of
-> > deep sleep enable and sw reset pins? We don't seem to be
-> > using them in the kernel either.
->
-> You're welcome.
->
-> I was assuming that those pins were not exported as gpio pins on
-> purpose; I was taking the prudent approach to prevent haphazard
-> toggling of sw_rst and deep_sleep_en from userspace. sw_rst because it
-> could initiate a reset of the cpu when toggled and deep_sleep_en
-> because it can override the behaviour of davinci_pm_enter().
->
-> I'm not sure how they would be used by existing kernel classes either.
-> The sw_rst pin could be used for reset but since it is on the other
-> end of an i2c bus and there is an existing implementation of reset
-> using the on chip watchdog I don't think it would be benficial to
-> switch. Deep_sleep_en could override the behaviour in
-> davinci_pm_enter() -- _maybe_ (I don't really know) it could be used
-> as a hardware-assisted suspend-blocker? But I totally guessing here.
+Am Montag 22 November 2010 schrieb Greg KH:
+> I'm announcing the release of the 2.6.36.1 kernel.
+>=20
+> All users of the 2.6.36 kernel series must upgrade.
+>=20
+> The updated 2.6.36.y git tree can be found at:
+>       =20
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.36.y.gi
+> t and can be browsed at the normal kernel.org git web browser:
+>       =20
+> http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-2.6.36.y.git;a=3D
+> summary
 
-My preference would be to leave these pins as is
-(don't call a gpio_request() on them) till someone
-comes up with a use case for them. From what you
-described, sysfs access cannot happen "accidently"
-so someone accessing these pins from sysfs surely
-knows what he is doing.
+I am missing=20
+
+drm/radeon/kms: MC vram map needs to be >=3D pci aperture size
+b7d8cce5b558e0c0aa6898c9865356481598b46d
+
+from Alex Deucher which fixes
+
+Bug 28402 - random radeon/kms/drm related freezes with kernel 2.6.34=20
+https://bugs.freedesktop.org/show_bug.cgi?id=3D28402
+
+random - possibly Radeon DRM KMS related - freezes
+https://bugzilla.kernel.org/show_bug.cgi?id=3D16376
+
+which according should have been queued for stable[1]
+
+[1] https://bugs.freedesktop.org/show_bug.cgi?id=3D28402#c96
 
 Thanks,
-Sekhar
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
+--nextPart2071928.XGHkB49eUo
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzrtt8ACgkQmRvqrKWZhMdQlwCeNqEgG4eb6Lm+1Kl59l3IWH97
+9EcAoJDEcrvk2DKDrupjjZRkU/FFmvsW
+=QtaE
+-----END PGP SIGNATURE-----
+
+--nextPart2071928.XGHkB49eUo--
