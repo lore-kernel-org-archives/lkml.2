@@ -1,51 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab0KWGCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 01:02:49 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58789 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751057Ab0KWGCs (ORCPT
+	id S1751473Ab0KWGFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 01:05:41 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46722 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab0KWGFk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 01:02:48 -0500
-Date: Mon, 22 Nov 2010 21:57:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+	Tue, 23 Nov 2010 01:05:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CV3t4gbMLDafhFRjvhczFZWZp20AC9ROc//psROWVqjlywOlB3SFk8WRZ/9jBv53lC
+         /J29aEj7TsM1uK7EAQ1KnMpyCThbDVmxmU5I1clE/8fYSgz/kNay4YcLLipmZXj+XMGD
+         GRWvH+MMuL85EEIB4Bh0PdJsWzkuMDSrbrfbw=
+MIME-Version: 1.0
+In-Reply-To: <20101122214814.36c209a6.akpm@linux-foundation.org>
+References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
+	<20101122141449.9de58a2c.akpm@linux-foundation.org>
+	<AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com>
+	<20101122210132.be9962c7.akpm@linux-foundation.org>
+	<AANLkTin62R1=2P+Sh0YKJ3=KAa6RfLQLKJcn2VEtoZfG@mail.gmail.com>
+	<20101122212220.ae26d9a5.akpm@linux-foundation.org>
+	<AANLkTinTp2N3_uLEm7nf0=Xu2f9Rjqg9Mjjxw-3YVCcw@mail.gmail.com>
+	<20101122214814.36c209a6.akpm@linux-foundation.org>
+Date: Tue, 23 Nov 2010 15:05:39 +0900
+Message-ID: <AANLkTimpfZuKW-hXjXknn3ESKP81AN3BaXO=qG81Lrae@mail.gmail.com>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC] mlock: release mmap_sem every 256 faulted pages
-Message-Id: <20101122215746.e847742d.akpm@linux-foundation.org>
-In-Reply-To: <20101123050052.GA24039@google.com>
-References: <20101123050052.GA24039@google.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Nov 2010 21:00:52 -0800 Michel Lespinasse <walken@google.com> wrote:
+On Tue, Nov 23, 2010 at 2:48 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 23 Nov 2010 14:45:15 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> On Tue, Nov 23, 2010 at 2:22 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Tue, 23 Nov 2010 14:23:33 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
+>> >
+>> >> On Tue, Nov 23, 2010 at 2:01 PM, Andrew Morton
+>> >> <akpm@linux-foundation.org> wrote:
+>> >> > On Tue, 23 Nov 2010 13:52:05 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
+>> >> >
+>> >> >> >> +/*
+>> >> >> >> + * Function used to forecefully demote a page to the head of the inactive
+>> >> >> >> + * list.
+>> >> >> >> + */
+>> >> >> >
+>> >> >> > This comment is wrong? __The page gets moved to the _tail_ of the
+>> >> >> > inactive list?
+>> >> >>
+>> >> >> No. I add it in _head_ of the inactive list intentionally.
+>> >> >> Why I don't add it to _tail_ is that I don't want to be aggressive.
+>> >> >> The page might be real working set. So I want to give a chance to
+>> >> >> activate it again.
+>> >> >
+>> >> > Well.. __why? __The user just tried to toss the page away altogether. __If
+>> >> > the kernel wasn't able to do that immediately, the best it can do is to
+>> >> > toss the page away asap?
+>> >> >
+>> >> >> If it's not working set, it can be reclaimed easily and it can prevent
+>> >> >> active page demotion since inactive list size would be big enough for
+>> >> >> not calling shrink_active_list.
+>> >> >
+>> >> > What is "working set"? __Mapped and unmapped pagecache, or are you
+>> >> > referring solely to mapped pagecache?
+>> >>
+>> >> I mean it's mapped by other processes.
+>> >>
+>> >> >
+>> >> > If it's mapped pagecache then the user was being a bit silly (or didn't
+>> >> > know that some other process had mapped the file). __In which case we
+>> >> > need to decide what to do - leave the page alone, deactivate it, or
+>> >> > half-deactivate it as this patch does.
+>> >>
+>> >>
+>> >> What I want is the half-deactivate.
+>> >>
+>> >> Okay. We will use the result of invalidate_inode_page.
+>> >> If fail happens by page_mapped, we can do half-deactivate.
+>> >> But if fail happens by dirty(ex, writeback), we can add it to tail.
+>> >> Does it make sense?
+>> >
+>> > Spose so. __It's unobvious.
+>> >
+>> > If the page is dirty or under writeback then reclaim will immediately
+>> > move it to the head of the LRU anyway. __But given that the user has
+>>
+>> Why does it move into head of LRU?
+>> If the page which isn't mapped doesn't have PG_referenced, it would be
+>> reclaimed.
+>
+> If it's dirty or under writeback it can't be reclaimed!
 
-> Hi,
-> 
-> I'd like to sollicit comments on this proposal:
-> 
-> Currently mlock() holds mmap_sem in exclusive mode while the pages get
-> faulted in. In the case of a large mlock, this can potentially take a
-> very long time.
+I see your point. And it's why I add it to head of inactive list.
 
-A more compelling description of why this problem needs addressing
-would help things along.
+>
+>> > just freed a bunch of pages with invalidate(), it's unlikely that
+>> > reclaim will be running soon.
+>>
+>> If reclaim doesn't start soon, it's good. That's because we have a
+>> time to activate it and
+>> when reclaim happens, reclaimer can reclaim pages easily.
+>>
+>> If I don't understand your point, could you elaborate on it?
+>
+> If reclaim doesn't happen soon and the page was dirty or under
+> writeback (and hence unreclaimable) then there's a better chance that
+> it _will_ be reclaimable by the time reclaim comes along and has a look
+> at it.  Yes, that's good.
+>
+> And a note to Mel: this is one way in which we can get significant
+> (perhaps tremendous) numbers of dirty pages coming off the tail of the
+> LRU, and hence eligible for pageout() treatment.
+>
 
-> +		/*
-> +		 * Limit batch size to 256 pages in order to reduce
-> +		 * mmap_sem hold time.
-> +		 */
-> +		nfault = nstart + 256 * PAGE_SIZE;
+I think you agree my as-is approach. Right?
+Then, could you revert your fixlet?
+I will add additional description with your fix.
 
-It would be nicer if there was an rwsem API to ask if anyone is
-currently blocked in down_read() or down_write().  That wouldn't be too
-hard to do.  It wouldn't detect people polling down_read_trylock() or
-down_write_trylock() though.
+
+-- 
+Kind regards,
+Minchan Kim
