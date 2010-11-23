@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab0KWSgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:36:50 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:37238 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab0KWSgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:36:49 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <alex@ozo.com>, <florian@openwrt.org>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/7] MIPS: Fix regression on BCM4710 processor detection
-Date: Tue, 23 Nov 2010 10:26:45 -0800
-Message-Id: <e5a865920b2154408318972b62e92953@localhost>
-In-Reply-To: <8a8eee995454c8b271cceb440e31699a@localhost>
-References: <8a8eee995454c8b271cceb440e31699a@localhost>
-User-Agent: vim 7.2
+	id S1756285Ab0KWShZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 13:37:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab0KWShX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 13:37:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=ZSasaaXKeLWh90buzf8Fn0h9zknp483/kHgfNoPEzOQETOxNTjs8fwGkl3jPXU8vTl
+         X6oTV9TA3c/2MVpNE7Jpn1rPs3TmwlnEzCToajpISvtMgnDT3Ou11ZXD5PPjI/d+547T
+         PvRsQOsc99x0tPcXnfcRxlR5/ksBIlzV31a7U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTikOub+x1oo8Cv7hBHgLPF9vjPfzmNwXzEvPPjRK@mail.gmail.com>
+References: <AANLkTikzSY09i=C+A2Y=_gVa-44r_bN76P-U2-NZMnpz@mail.gmail.com>
+	<20101123165657.GF18100@redhat.com>
+	<AANLkTimsz2XWQq7bJ4uhWXhoPuQw-fSJbCJ6D6Xo69XM@mail.gmail.com>
+	<1290536827.2072.417.camel@laptop>
+	<AANLkTikOub+x1oo8Cv7hBHgLPF9vjPfzmNwXzEvPPjRK@mail.gmail.com>
+Date: Tue, 23 Nov 2010 19:37:21 +0100
+Message-ID: <AANLkTi=Vvi7MBbmnT7-iuLOBH4_zBzirmBt3sjwqyhmZ@mail.gmail.com>
+Subject: Re: [PATCH] x86, perf, nmi: Disable perf if counters are not accessable
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BCM4710 uses the BMIPS32 core (like BCM6345), not the MIPS 4Kc core as
-was previously believed.
+On Tue, Nov 23, 2010 at 7:29 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Tue, Nov 23, 2010 at 7:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, 2010-11-23 at 19:21 +0100, Sedat Dilek wrote:
+>>> Due to BIOS l(ocal)apic is not possible:
+>>>
+>>> # dmesg | grep -i apic
+>>> [    0.000000] Using APIC driver default
+>>> [    0.000000] Local APIC disabled by BIOS -- you can enable it with "lapic"
+>>> [    0.000000] APIC: disable apic facility
+>>> [    0.000000] APIC: switched to apic NOOP
+>>> [    0.008891] no APIC, boot with the "lapic" boot parameter to force-enable it.
+>>> [    0.036141] Local APIC not detected. Using dummy APIC emulation.
+>>
+>> Have you tried booting with "lapic" as the second last msg suggests you
+>> do?
+>>
+>
+> Yes, I did try before there was [1], booting with "lapic" had no effect.
+>
+> - Sedat -
+>
+> [1] bugfix/x86/Skip-looking-for-ioapic-overrides-when-ioapics-are-not-present.patch
+>
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Tested-by: Alexandros C. Couloumbis <alex@ozo.com>
----
- arch/mips/include/asm/cpu.h  |    4 ++--
- arch/mips/kernel/cpu-probe.c |    7 ++-----
- 2 files changed, 4 insertions(+), 7 deletions(-)
+OK, some months went by when I last tested this option.
 
-diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
-index 06d59dc..8687753 100644
---- a/arch/mips/include/asm/cpu.h
-+++ b/arch/mips/include/asm/cpu.h
-@@ -111,8 +111,8 @@
-  * These are the PRID's for when 23:16 == PRID_COMP_BROADCOM
-  */
- 
--#define PRID_IMP_BMIPS4KC	0x4000
--#define PRID_IMP_BMIPS32	0x8000
-+#define PRID_IMP_BMIPS32_REV4	0x4000
-+#define PRID_IMP_BMIPS32_REV8	0x8000
- #define PRID_IMP_BMIPS3300	0x9000
- #define PRID_IMP_BMIPS3300_ALT	0x9100
- #define PRID_IMP_BMIPS3300_BUG	0x0000
-diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index 71620e1..68dae7b 100644
---- a/arch/mips/kernel/cpu-probe.c
-+++ b/arch/mips/kernel/cpu-probe.c
-@@ -905,7 +905,8 @@ static inline void cpu_probe_broadcom(struct cpuinfo_mips *c, unsigned int cpu)
- {
- 	decode_configs(c);
- 	switch (c->processor_id & 0xff00) {
--	case PRID_IMP_BMIPS32:
-+	case PRID_IMP_BMIPS32_REV4:
-+	case PRID_IMP_BMIPS32_REV8:
- 		c->cputype = CPU_BMIPS32;
- 		__cpu_name[cpu] = "Broadcom BMIPS32";
- 		break;
-@@ -933,10 +934,6 @@ static inline void cpu_probe_broadcom(struct cpuinfo_mips *c, unsigned int cpu)
- 		__cpu_name[cpu] = "Broadcom BMIPS5000";
- 		c->options |= MIPS_CPU_ULRI;
- 		break;
--	case PRID_IMP_BMIPS4KC:
--		c->cputype = CPU_4KC;
--		__cpu_name[cpu] = "MIPS 4Kc";
--		break;
- 	}
- }
- 
--- 
-1.7.0.4
+Now, with linux-next (next-20101123) things look better.
 
+# cat /proc/cmdline
+BOOT_IMAGE=/boot/vmlinuz-2.6.37-rc3-686
+root=UUID=1ceb69a7-ecf4-47e9-a231-b74e0f0a9b62 ro radeon.modeset=1
+lapic 3
+
+# dmesg | egrep -i 'NMI|APIC'
+[    0.000000] Using APIC driver default
+[    0.000000] Local APIC disabled by BIOS -- reenabling.
+[    0.000000] Found and enabled local APIC!
+[    0.000000] Kernel command line:
+BOOT_IMAGE=/boot/vmlinuz-2.6.37-rc3-686
+root=UUID=1ceb69a7-ecf4-47e9-a231-b74e0f0a9b62 ro radeon.modeset=1
+lapic 3
+[    0.032158] Enabling APIC mode:  Flat.  Using 0 I/O APICs
+[    0.036000] NMI watchdog enabled, takes one hw-pmu counter.
+
+- Sedat -
