@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab0KWHRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:17:13 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37372 "EHLO
+	id S1752238Ab0KWHRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:17:15 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37375 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab0KWHRB (ORCPT
+	with ESMTP id S1752174Ab0KWHRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:17:01 -0500
+	Tue, 23 Nov 2010 02:17:02 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: David Rientjes <rientjes@google.com>
-Subject: Re: [patch] oom: document obsolete oom_adj tunable
-Cc: kosaki.motohiro@jp.fujitsu.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Subject: Re: [PATCH] oom: create a resource limit for oom_adj
+Cc: kosaki.motohiro@jp.fujitsu.com, 7eggert@gmx.de,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1011150234530.2986@chino.kir.corp.google.com>
-References: <20101115091908.BEEB.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011150234530.2986@chino.kir.corp.google.com>
-Message-Id: <20101123161210.7BA8.A69D9226@jp.fujitsu.com>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1011141341360.22262@chino.kir.corp.google.com>
+References: <20101114140237.E010.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011141341360.22262@chino.kir.corp.google.com>
+Message-Id: <20101123160818.7B9F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 23 Nov 2010 16:16:59 +0900 (JST)
+Date: Tue, 23 Nov 2010 16:16:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 15 Nov 2010, KOSAKI Motohiro wrote:
+> On Sun, 14 Nov 2010, KOSAKI Motohiro wrote:
 > 
-> > > /proc/pid/oom_adj was deprecated in August 2010 with the introduction of
-> > > the new oom killer heuristic.
-> > > 
-> > > This patch copies the Documentation/feature-removal-schedule.txt entry
-> > > for this tunable to the Documentation/ABI/obsolete directory so nobody
-> > > misses it.
-> > > 
-> > > Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> > > Signed-off-by: David Rientjes <rientjes@google.com>
-> > 
-> > NAK. You seems to think shouting claim makes some effect. but It's incorrect.
-> > Your childish shout doesn't solve any real world issue. Only code fix does.
+> > I've sent revert patch to linus. We DON'T want to break any userland seriously. 
+> > So, we reconsider about this area. personally I hope to reintroduce oom_score_adj
+> > later, but It must don't break current userland.
 > > 
 > 
-> The tunable is deprecated.  If you are really that concerned about the 
-> existing users who you don't think can convert in the next two years, why 
-> don't you help them convert?  That fixes the issue, but you're not 
-> interested in that.  I offered to convert any open-source users you can 
-> list (the hardest part of the conversion is finding who to send patches to 
-> :).  You're only interested in continuing to assert your position as 
-> correct even when the kernel is obviously moving in a different direction.
+> Nobody is going to stall their development waiting for your patches to be 
+> merged (especially when you've proposed them four times before and they 
+> haven't been), so patches in this area should be against Linus' latest 
+> tree.
 
-Why don't you change by _your_ hand? 
-
-_Usually_ userland software changed at first _by_ who wanted the change.
-Example, we fujitsu changed elf core file format when vma are >65536, but
-It was not made any breakage. we changed gdb, binutils, elfutils and etc etc
-_at_ first.
-
-
-
-
-> 
-> Others may have a different opinion of who is being childish in this whole 
-> ordeal.
-
+Nobody want to accept you break userland.
 
 
