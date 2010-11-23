@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab0KWWLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:11:07 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:49542 "EHLO gir.skynet.ie"
+	id S1752271Ab0KWWNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:13:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab0KWWLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:11:05 -0500
-Date: Tue, 23 Nov 2010 22:10:49 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Gamari <bgamari@gmail.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-ID: <20101123221049.GR19571@csn.ul.ie>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <20101122141449.9de58a2c.akpm@linux-foundation.org> <AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com> <20101122210132.be9962c7.akpm@linux-foundation.org> <20101123093859.GE19571@csn.ul.ie> <87k4k49jii.fsf@gmail.com> <20101123145856.GQ19571@csn.ul.ie> <20101123123535.438e9750.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101123123535.438e9750.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1751284Ab0KWWNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 17:13:52 -0500
+Subject: Re: [PATCH] fanotify: on group destroy allow all waiters to bypass
+ permission check
+From: Eric Paris <eparis@redhat.com>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: linux-kernel@vger.kernel.org, agruen@suse.de,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20101119095807.GB22377@lsanfilippo.unix.rd.tt.avira.com>
+References: <20101119095807.GB22377@lsanfilippo.unix.rd.tt.avira.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 17:13:44 -0500
+Message-ID: <1290550424.1443.65.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 12:35:35PM -0800, Andrew Morton wrote:
-> On Tue, 23 Nov 2010 14:58:56 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > On Tue, Nov 23, 2010 at 09:55:49AM -0500, Ben Gamari wrote:
-> > > On Tue, 23 Nov 2010 09:38:59 +0000, Mel Gorman <mel@csn.ul.ie> wrote:
-> > > > > If it's mapped pagecache then the user was being a bit silly (or didn't
-> > > > > know that some other process had mapped the file).  In which case we
-> > > > > need to decide what to do - leave the page alone, deactivate it, or
-> > > > > half-deactivate it as this patch does.
-> > > > > 
-> > > > 
-> > > > What are the odds of an fadvise() user having used mincore() in advance
-> > > > to determine if the page was in use by another process? I would guess
-> > > > "low" so this half-deactivate gives a chance for the page to be promoted
-> > > > again as well as a chance for the flusher threads to clean the page if
-> > > > it really is to be reclaimed.
-> > > > 
-> > > Do we really want to make the user jump through such hoops as using
-> > > mincore() just to get the kernel to handle use-once pages properly?
-> > 
-> > I would think "no" which is why I support half-deactivating pages so they won't
-> > have to.
-> 
-> If the page is page_mapped() then we can assume that some other process
-> is using it and we leave it alone *altogether*.
-> 
+On Fri, 2010-11-19 at 10:58 +0100, Lino Sanfilippo wrote:
+> When fanotify_release() is called, there may still be processes waiting for
+> access permission. Currently only processes for which an event has already been
+> queued into the groups access list will be woken up.  Processes for which no
+> event has been queued will continue to sleep and thus cause a deadlock when
+> fsnotify_put_group() is called.
 
-Agreed, that makes perfect sense.
+I'm not sure what you mean by 'processes for which no event has been
+queued.'  You must mean a process that is about to send a notify event
+and is about to put itself on the wait queue...
 
-> If the page is dirty or under writeback (and !page_mapped()) then we
-> should assume that we should free it asap.  The PageReclaim() trick
-> might help with that.
-> 
+> Furthermore there is a race allowing further processes to be waiting on the
+> access wait queue after wake_up (if they arrive before clear_marks_by_group()
+> is called).
 
-Again agreed.
+This is what I think you meant in the above sentence but I'm not sure.
+In any case I think I described all of the possibilities here:
 
-> I just don't see any argument for moving the page to the head of the
-> inactive LRU as a matter of policy.  We can park it there because we
-> can't think of anythnig else to do with it, but it's the wrong place
-> for it.
-> 
+Lets think about the 4 relevant code paths from the PoV of the
+'operator' 'listener' 'responder' and 'closer'.  Where operator is the
+process doing an action (like open/read) which could require permission.
+Listener is the task (or in this case thread) slated with reading from
+the fanotify file descriptor.  The 'responder' is the thread responsible
+for responding to access requests.  'Closer' is the thread attempting to
+close the fanotify file descriptor.
 
-Is there a better alternative? One thing that springs to mind is that we are
-not exactly tracking very well what effect these policy changes have. The
-analysis scripts I have do a reasonable job on tracking reclaim activity
-(although only as part of the mmtests tarball, I should split them out as
-a standalone tool) but not the impact - namely minor and major faults. I
-should sort that out so we can put better reclaim analysis in place.
+The 'operator' is going to end up in:
+fanotify_handle_event()
+  get_response_from_access()
+    (THIS BLOCKS WAITING ON USERSPACE)
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+The 'listener' interesting code path
+fanotify_read()
+  copy_event_to_user()
+    prepare_for_access_response()
+      (THIS CREATES AN fanotify_response_event)
+
+The 'responder' code path:
+fanotify_write()
+  process_access_response()
+    (REMOVE A fanotify_response_event, SET RESPONSE, WAKE UP 'operator')
+
+The 'closer':
+fanotify_release()
+  (SUPPOSED TO CLEAN UP THE REST OF THIS MESS)
+
+What we have today is that in the closer we remove all of the
+fanotify_response_events and set a bit so no more response events are
+ever created in prepare_for_access_response().
+
+The bug is that we never wake all of the operators up and tell them to
+move along.  You fix that in fanotify_get_response_from_access().  You
+also fix other operators which haven't gotten there yet.  So I agree
+that's a good fix.
+
+But then you do:
+
+> Beside this it removes the unnecessary check for the bypass_perm flag in
+> prepare_for_access_response(), since this function cant be called any more at
+> the time release() is called and the flag is set.
+
+Which I guess is also correct but I don't like it in the same patch.
+It's dropping dead code rather than fixing this bug.  So it's
+distracting to review the patch.
+
+I'm going to split this into two patches, include my analysis in your
+changelog and apply them separately.  I hope you don't mind.  I also
+don't like the conversion to an atomic when I think a bool could work
+just as well.  I might convert it back to a boolean after I put some
+thought into it....
+
+-Eric
+
