@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab0KWV2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 16:28:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab0KWV2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 16:28:21 -0500
-Date: Tue, 23 Nov 2010 16:27:20 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: rostedt@goodmis.org, mingo@elte.hu
-Cc: peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+	id S1753160Ab0KWV2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 16:28:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63943 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0KWV2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 16:28:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=nOX82Yu0xHIBvMlYM+bwToeBysboTj5sLUqWgbvZ2XOyhcytKYkuY+ZvITd/SlE67m
+         R9xJU4i2wuza52IZ2pDr9aiASBX+OvPpDzAW2OyckogjhGaNg/3fy87EjzbVSFCjKci4
+         fgxjLOpSr7YbQil3RJpcg5S4jvbEqQhGOZcqE=
+Message-ID: <4CEC3211.7050503@gmail.com>
+Date: Tue, 23 Nov 2010 22:28:49 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Belisko Marek <marek.belisko@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Message-Id: <cover.1290546539.git.jbaron@redhat.com>
-Subject: [PATCH 0/3] jump label: updates for 2.6.37
+Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created
+ device.
+References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>	<4CEBC751.6090906@gmail.com> <AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
+In-Reply-To: <AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/23/2010 03:00 PM, Belisko Marek wrote:
+> On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>> On 11/23/2010 01:29 PM, Marek Belisko wrote:
+>>> Use simple misc device for ioctl driver funtionality testing.
+>>>
+>>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>>> ---
+>>>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   90 ++++++++++++++++++---
+>>>  1 files changed, 77 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>>> index 1aec926..d1784a3 100644
+>>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>>> @@ -32,6 +32,7 @@
+>>>  #include <linux/poll.h>
+>>>  #include <linux/netdevice.h>
+>>>  #include <linux/delay.h>
+>>> +#include <linux/miscdevice.h>
+>>>
+>>>  #include <linux/fs.h>
+>>>  #include <linux/kmod.h>
+>>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
+>>>       .llseek         = no_llseek,
+>>>  };
+>>>
+>>> +struct ft1000_misc_device {
+>>> +     struct miscdevice dev;
+>>> +     int inf_id;
+>>> +};
+>>> +
+>>> +#define FREE_ID (0xFF)
+>>> +
+>>> +/* we support just 3 devices */
+>>> +#define MAX_DEVICE 3
+>>
+>> No, why this should be converted to miscdevice? Leave it as chrdev.
+> Is there any problem with using miscdev?
 
-A few jump label patches that I want considered for 2.6.37. Patches are against
-the latest -tip tree.
+Yes, if you want more than a single device per system.
 
-The first one, which adds 'state' to the jump label mechanism is the most
-important. Essentially, it ensures that if jump labels are enabled/disabled in
-the core kernel but the actual call sites are in modules, we properly honor the
-state of the jump label. This also works for jump labels which may be defined in
-one module but made use of in another module.
+> Old interface create /dev nodes with
+> calling kernel thread and some usermode_helper or whatever.
 
-There has been some discussion about using the 'key' variable to store the
-enabled/disabled state for each jump label. However, I think a better design
-will be to use the 'key' variable to store a pointer to the appropriate jump
-label tables. In this way, we can enable/disable jump labels, without the
-hashing that I'm currently doing. However, I didn't want to propose these more
-invasive changes until 2.6.38. 
+Yes, that's crap indeed. But doesn't judge for miscdevice.
 
-thanks,
+> Just convert to misc dev
+> where this is done automatically.
 
--Jason
+So the only thing you need to do is to send a uevent to udev appropriately.
 
-Jason Baron (3):
-  jump label: add enabled/disabled state to jump label key entries
-  jump label: move jump table to r/w section
-  jump label: add docs
-
- Documentation/jump-label.txt      |  126 +++++++++++++++++++++++++++++++++++++
- include/asm-generic/vmlinux.lds.h |   14 +---
- kernel/jump_label.c               |  101 +++++++++++++++++++++++-------
- 3 files changed, 209 insertions(+), 32 deletions(-)
- create mode 100644 Documentation/jump-label.txt
-
+regards,
+-- 
+js
