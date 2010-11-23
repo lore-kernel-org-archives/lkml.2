@@ -1,112 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab0KWTly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 14:41:54 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:60735 "HELO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752106Ab0KWTlJ (ORCPT
+	id S1751600Ab0KWTno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 14:43:44 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39133 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab0KWTnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 14:41:09 -0500
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        Victor Rodriguez <vm.rod25@gmail.com>
-Subject: [PATCH v4 3/5] da850-evm: extract defines for SEL{A,B,C} pins in UI expander
-Date: Tue, 23 Nov 2010 14:40:58 -0500
-Message-Id: <a09d3988a54c2f0b25c72a11a3766764cc3f8c62.1290540916.git.bengardiner@nanometrics.ca>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1290540916.git.bengardiner@nanometrics.ca>
-References: <cover.1290201713.git.bengardiner@nanometrics.ca> <cover.1290540916.git.bengardiner@nanometrics.ca>
+	Tue, 23 Nov 2010 14:43:42 -0500
+Message-ID: <4CEC18FF.9030807@oracle.com>
+Date: Tue, 23 Nov 2010 11:41:51 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux kbuild list <linux-kbuild@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 23 (randconfig problem?)
+References: <20101123140609.2b6503ff.sfr@canb.auug.org.au>	<AANLkTi===xonvuovLS5Ch=coMDjzLQ4XSsPRDowDJ4L2@mail.gmail.com>	<20101123091551.f3ed937f.randy.dunlap@oracle.com> <AANLkTikLJW0be+kVgEnAZDbiDMVbYOrA7f5VYs+KHSe_@mail.gmail.com>
+In-Reply-To: <AANLkTikLJW0be+kVgEnAZDbiDMVbYOrA7f5VYs+KHSe_@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The setup and teardown methods of the UI expander reference the SEL_{A,B,C}
-pins by 'magic number' in each function. This uses the common enum for their offsets
-in the expander setup and teardown functions.
+On 11/23/10 11:04, Zimny Lech wrote:
+> 2010/11/23 Randy Dunlap <randy.dunlap@oracle.com>:
+>> On Tue, 23 Nov 2010 16:43:22 +0100 Zimny Lech wrote:
+>>
+>>> Ave
+>>>
+>>> 2010/11/23 Stephen Rothwell <sfr@canb.auug.org.au>:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20101122:
+>>>>
+>>>
+>>>
+>>> Random config generator has failed :)
+>>
+>> Hi,
+>> What do you mean by this?
+> 
+> This is what I get from "make" after "make randconfig".
+> 
+>>  I'm not seeing any randconfig generator problems.
+>> Are you using any options or inputs to kconfig?
+> 
+> No.
+> 
+> I'm using script below to build kernel - nothing really unusual. Log
+> and config for this failed build are attached to previous email
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
-Reviewed-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-CC: Victor Rodriguez <vm.rod25@gmail.com>
+[script deleted]
 
----
+OK, I see what you mean (I can reproduce it), but I don't see how it
+happens.  It looks like, from drivers/usb/gadget/Kconfig:
 
-Changes since v3:
- * no changes in this patch of the series
+#
+# USB Gadget Drivers
+#
+choice
+	tristate "USB Gadget Drivers"
+	depends on USB_GADGET && USB_GADGET_SELECTED
+	default USB_ETH
 
-Changes since v2:
- * rebased to 083eae3e28643e0eefc5243719f8b1572cf98299 of
-   git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
- * integrated the static array initialization patch provided by Sekhar Nori
+none of the choices inside this choice block was enabled by the randconfig.
 
-Changes since v1:
- * No changes since v1
+Anybody in linux-kbuild land see how that can happen?
 
----
- arch/arm/mach-davinci/board-da850-evm.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+Zimny, one way that you can work around this is to run:
 
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 51f5ffa..420b628 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -361,23 +361,23 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
- {
- 	int sel_a, sel_b, sel_c, ret;
- 
--	sel_a = gpio + 7;
--	sel_b = gpio + 6;
--	sel_c = gpio + 5;
-+	sel_a = gpio + DA850_EVM_UI_EXP_SEL_A;
-+	sel_b = gpio + DA850_EVM_UI_EXP_SEL_B;
-+	sel_c = gpio + DA850_EVM_UI_EXP_SEL_C;
- 
--	ret = gpio_request(sel_a, "sel_a");
-+	ret = gpio_request(sel_a, da850_evm_ui_exp[DA850_EVM_UI_EXP_SEL_A]);
- 	if (ret) {
- 		pr_warning("Cannot open UI expander pin %d\n", sel_a);
- 		goto exp_setup_sela_fail;
- 	}
- 
--	ret = gpio_request(sel_b, "sel_b");
-+	ret = gpio_request(sel_b, da850_evm_ui_exp[DA850_EVM_UI_EXP_SEL_B]);
- 	if (ret) {
- 		pr_warning("Cannot open UI expander pin %d\n", sel_b);
- 		goto exp_setup_selb_fail;
- 	}
- 
--	ret = gpio_request(sel_c, "sel_c");
-+	ret = gpio_request(sel_c, da850_evm_ui_exp[DA850_EVM_UI_EXP_SEL_C]);
- 	if (ret) {
- 		pr_warning("Cannot open UI expander pin %d\n", sel_c);
- 		goto exp_setup_selc_fail;
-@@ -420,13 +420,13 @@ static int da850_evm_ui_expander_teardown(struct i2c_client *client,
- 	platform_device_unregister(&da850_evm_ui_keys_device);
- 
- 	/* deselect all functionalities */
--	gpio_set_value_cansleep(gpio + 5, 1);
--	gpio_set_value_cansleep(gpio + 6, 1);
--	gpio_set_value_cansleep(gpio + 7, 1);
-+	gpio_set_value_cansleep(gpio + DA850_EVM_UI_EXP_SEL_C, 1);
-+	gpio_set_value_cansleep(gpio + DA850_EVM_UI_EXP_SEL_B, 1);
-+	gpio_set_value_cansleep(gpio + DA850_EVM_UI_EXP_SEL_A, 1);
- 
--	gpio_free(gpio + 5);
--	gpio_free(gpio + 6);
--	gpio_free(gpio + 7);
-+	gpio_free(gpio + DA850_EVM_UI_EXP_SEL_C);
-+	gpio_free(gpio + DA850_EVM_UI_EXP_SEL_B);
-+	gpio_free(gpio + DA850_EVM_UI_EXP_SEL_A);
- 
- 	return 0;
- }
+$ yes '' | make
+
+or
+$ yes '' | make oldconfig
+after the 'make randconfig'.  That sets the unknown kconfig symbol(s) to their
+default values.
+
+
+>>> USB Gadget Support (USB_GADGET) [Y/n/?] y
+>>>   Debugging messages (DEVELOPMENT) (USB_GADGET_DEBUG) [Y/n/?] y
+>>>   Debugging information files (DEVELOPMENT) (USB_GADGET_DEBUG_FILES) [N/y/?] n
+>>>   Debugging information files in debugfs (DEVELOPMENT)
+>>> (USB_GADGET_DEBUG_FS) [Y/n/?] y
+>>>   Maximum VBUS Power usage (2-500 mA) (USB_GADGET_VBUS_DRAW) [2] 2
+>>>   USB Peripheral Controller
+>>>   > 1. Renesas R8A66597 USB Peripheral Controller (USB_GADGET_R8A66597)
+>>>     2. Renesas M66592 USB Peripheral Controller (USB_GADGET_M66592)
+>>>   choice[1-2?]: 1
+>>>   USB Gadget Drivers
+>>>     1. Gadget Zero (DEVELOPMENT) (USB_ZERO)
+>>>     2. Audio Gadget (EXPERIMENTAL) (USB_AUDIO)
+>>>   > 3. Ethernet Gadget (with CDC Ethernet support) (USB_ETH)
+>>>     4. Serial Gadget (with CDC ACM and CDC OBEX support) (USB_G_SERIAL)
+>>>     5. Printer Gadget (USB_G_PRINTER)
+>>>     6. CDC Composite Device (Ethernet and ACM) (USB_CDC_COMPOSITE)
+>>>     7. HID Gadget (USB_G_HID)
+>>>     8. EHCI Debug Device Gadget (USB_G_DBGP)
+>>>   choice[1-8?]: 3
+>>>     RNDIS support (USB_ETH_RNDIS) [Y/n/?] (NEW) aborted!
+>>>
+>>> Console input/output is redirected. Run 'make oldconfig' to update
+>>> configuration.
+>>>
+>>> make[3]: *** [silentoldconfig] Error 1
+>>> make[2]: *** [silentoldconfig] Error 2
+>>> make[1]: *** No rule to make target `include/config/auto.conf', needed
+>>> by `include/config/kernel.release'.  Stop.
+>>> make: *** [sub-make] Error 2
+
+
+CONFIG_USB_GADGET=y
+CONFIG_USB_GADGET_DEBUG=y
+# CONFIG_USB_GADGET_DEBUG_FILES is not set
+CONFIG_USB_GADGET_DEBUG_FS=y
+CONFIG_USB_GADGET_VBUS_DRAW=2
+CONFIG_USB_GADGET_SELECTED=y
+CONFIG_USB_GADGET_R8A66597=y
+CONFIG_USB_R8A66597=y
+# CONFIG_USB_GADGET_M66592 is not set
+CONFIG_USB_GADGET_DUALSPEED=y
+# CONFIG_USB_ZERO is not set
+# CONFIG_USB_AUDIO is not set
+# CONFIG_USB_ETH is not set
+# CONFIG_USB_G_SERIAL is not set
+# CONFIG_USB_G_PRINTER is not set
+# CONFIG_USB_CDC_COMPOSITE is not set
+# CONFIG_USB_G_HID is not set
+# CONFIG_USB_G_DBGP is not set
+
 -- 
-1.7.0.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
