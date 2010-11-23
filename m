@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab0KWXCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 18:02:31 -0500
-Received: from eazy.amigager.de ([213.239.192.238]:32781 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab0KWXCa (ORCPT
+	id S1753517Ab0KWXFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 18:05:07 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47378 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752271Ab0KWXFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 18:02:30 -0500
-Date: Wed, 24 Nov 2010 00:02:51 +0100
-From: Tino Keitel <tino.keitel@tikei.de>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915/sdvo: Always fallback to querying the shared
- DDC line
-Message-ID: <20101123230251.GA5036@mac.home>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	linux-kernel@vger.kernel.org
-References: <20101123214704.GA26884@mac.home>
- <1290552152-16026-1-git-send-email-chris@chris-wilson.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290552152-16026-1-git-send-email-chris@chris-wilson.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 23 Nov 2010 18:05:05 -0500
+Date: Tue, 23 Nov 2010 23:03:59 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Timur Tabi <timur@freescale.com>
+Cc: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+Message-ID: <20101123230359.3c805e2e@lxorguk.ukuu.org.uk>
+In-Reply-To: <4CEBF668.2080708@freescale.com>
+References: <20101118163321.GA2723@suse.de>
+	<4CE5562B.8080604@freescale.com>
+	<20101118165136.GA3103@suse.de>
+	<4CE55ACB.80207@freescale.com>
+	<20101118171856.GA4283@suse.de>
+	<4CE5647F.5000203@freescale.com>
+	<20101118175832.GA4931@suse.de>
+	<4CE58005.7040308@freescale.com>
+	<20101118200230.GA25715@suse.de>
+	<4CE58736.4090703@freescale.com>
+	<20101118201035.GA26287@suse.de>
+	<4CE58FE5.3010502@freescale.com>
+	<20101118205647.677404ec@lxorguk.ukuu.org.uk>
+	<4CEA9B00.1000804@freescale.com>
+	<20101123135621.5d100e81@lxorguk.ukuu.org.uk>
+	<4CEBF668.2080708@freescale.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 22:42:32 +0000, Chris Wilson wrote:
-> On a few devices, like the Mac Mini, the CRT DDC pins are shared between
-> the analog connector and the digital connector. In this scenario, use
-> the EDID to determine if a digital panel is connected to the digital
-> connector.
+> Are you talking about this:
 > 
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> ---
+> static struct tty_driver *ehv_bc_console_device(struct console *co, int *index)
+> {
+> 	*index = co->index;
 > 
-> Looking closer I can't see any rationale for checking whether or not the
-> analog device is attached since we check whether the display is digital
-> before accepting the EDID.
+> 	return ehv_bc_driver;
+> }
 
-Hi,
+Yes.
 
-works fine with 2.6.37-rc3.
+> I never really understood this function, but almost everyone does the same
+> thing, and it seems to work for me.  Looking at console_device(), it appears
+> that all of the xxx_console_device functions are called in order until one of
+> them returns non-NULL.
 
-Thanks and regards,
-Tino
+*index is the minor number to use - so you can return whichever minor
+matches your primary interface
+
+> > I suspect in your case you probably want to attach the primary byte
+> > channel to minor 0 in the driver (and reserve it for that), or some
+> > similar rule.
+> 
+> Yes, that's a good idea.  It does simplify things a lot.
+
+It's probably the cleanest and simplest solution and it fits the
+"natural" order of things.
