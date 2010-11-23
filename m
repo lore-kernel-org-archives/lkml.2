@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab0KWN5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 08:57:30 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59819 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751721Ab0KWN53 (ORCPT
+	id S1754217Ab0KWN6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 08:58:16 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40799 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab0KWN6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 08:57:29 -0500
-Date: Tue, 23 Nov 2010 13:56:21 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Tabi <timur@freescale.com>
-Cc: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101123135621.5d100e81@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CEA9B00.1000804@freescale.com>
-References: <20101118163321.GA2723@suse.de>
-	<4CE5562B.8080604@freescale.com>
-	<20101118165136.GA3103@suse.de>
-	<4CE55ACB.80207@freescale.com>
-	<20101118171856.GA4283@suse.de>
-	<4CE5647F.5000203@freescale.com>
-	<20101118175832.GA4931@suse.de>
-	<4CE58005.7040308@freescale.com>
-	<20101118200230.GA25715@suse.de>
-	<4CE58736.4090703@freescale.com>
-	<20101118201035.GA26287@suse.de>
-	<4CE58FE5.3010502@freescale.com>
-	<20101118205647.677404ec@lxorguk.ukuu.org.uk>
-	<4CEA9B00.1000804@freescale.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 08:58:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=QXaGHCrXlaAc2Z4lC2J+8EcBQwammtEPhoCX/tfBrt5lphHT4JgI10J9WwOfmI1oOL
+         J/2bznmVs/YoWGC7yLi8H4vR3NqK+NSabPLCThdPfdSj/L8qxEjSreGDWMzrhKPFrJao
+         YQlFophHpmZhFCwCmhicE0y8Pi+7RNA6XkvX4=
+Date: Tue, 23 Nov 2010 22:01:11 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+Message-ID: <20101123140111.GA3816@hack>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com> <20101112120834.33062900.akpm@linux-foundation.org> <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca> <20101114092533.GB5323@albatros> <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1289848341.2607.125.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > You can - provide the required method in your console driver and it'll
-> > get used by /dev/console. Funnily enough a lot of other platform and
-> > consoles need that too.
-> 
-> Can you elaborate on that?  What is the "required method"?  My driver is mostly
-> working now, but I have to supply the command-line "console=ttyEHV73" in order
-> for the login prompt to show up.  Unfortunately, there's no way for the boot
-> loader to know that the primary byte channel for stdout is #73, so I need a way
-> for the driver to tell the kernel this.
+On Mon, Nov 15, 2010 at 08:12:21PM +0100, Eric Dumazet wrote:
+>Le dimanche 14 novembre 2010 à 18:06 -0800, Andrew Morton a écrit : 
+>> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
+>> >  
+>> >  	if (timeval) {
+>> > -		rtv.tv_sec = rts.tv_sec;
+>> > -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+>> > +		struct timeval rtv = {
+>> > +			.tv_sec = rts.tv_sec,
+>> > +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
+>> > +		};
+>> >  
+>> >  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
+>> >  			return ret;
+>> 
+>> Please check the assembly code - this will still leave four bytes of
+>> uninitalised stack data in 'rtv', surely.
+>
+>Thats a good question.
+>
+>In my understanding, gcc should initialize all holes (and other not
+>mentioned fields) with 0, even for automatic storage [C99 only mandates
+>this on static storage]
+>
+>I tested on x86_64 and this is the case, but could not find a definitive
+>answer in gcc documentation.
+>
 
-Your console driver provides a device method (see kernel/printk.c).
-When /dev/console is opened the kernel iterates the console list looking
-for one with ->device and then calls that method. On success it expects
-the passed int * to contain the minor number to use.
+Yeah, this is not clearly defined by C99 I think, but we can still
+find some clues in 6.2.6.1, Paragraph 6,
 
-I suspect in your case you probably want to attach the primary byte
-channel to minor 0 in the driver (and reserve it for that), or some
-similar rule.
+"
+When a value is stored in an object of structure or union type,
+including in a member object, the bytes of the object representation
+that correspond to any padding bytes take unspecified values.
+"
 
-> Also, if I have a /dev/ttyEHV76 entry for a byte channel that's not the primary
-> stdout tty, is the following supposed to work:
-> 
-> 	cat > /dev/ttyEHV76
-> 
-> That is, should I be able to use a TTY device as a normal character device,
-> where I can just write and read characters?
+So we can't rely on the compiler to initialize the padding bytes
+too.
 
-Sort of - processing gets done but you can disable the processing easily
-enough. If you have channels that are not tty related you may want to tap
-them directly to avoid the overhead of the tty layer if they are high
-data rate.
-
-Alan
+-- 
+Live like a child, think like the god.
+ 
