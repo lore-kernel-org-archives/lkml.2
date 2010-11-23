@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0KWLIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 06:08:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38719 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab0KWLIW convert rfc822-to-8bit (ORCPT
+	id S1753055Ab0KWLLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 06:11:18 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59782 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab0KWLLR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 06:08:22 -0500
-Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-In-Reply-To: <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
-References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
-	 <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
+	Tue, 23 Nov 2010 06:11:17 -0500
+Subject: Re: [PATCH] perf: add support for per-event sampling period or
+ frequency in perf record
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com
+In-Reply-To: <4ceb9b74.e6edd80a.3271.fffff742@mx.google.com>
+References: <4ceb9b74.e6edd80a.3271.fffff742@mx.google.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Nov 2010 12:08:32 +0100
-Message-ID: <1290510512.2072.387.camel@laptop>
+Date: Tue, 23 Nov 2010 12:11:20 +0100
+Message-ID: <1290510680.2072.390.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 16:35 +1100, Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
+On Tue, 2010-11-23 at 11:45 +0200, Stephane Eranian wrote:
+> This patch allows specifying a per event sampling period or frequency.
+> Up until now, the same sampling period or frequency was applied to all
+> the events specified on the command line of perf record. A sampling 
+> period depends on the event, thus it is necessary to specify it per event.
 > 
-> This patch adds extra ABI to the perf interface to allow the
-> PERF_RECORD_COMM and PERF_RECORD_MMAP events to optionally include a
-> timestamp, which they were previously missing.
+> With this patch, both the -F and -c options now take a comma separated
+> list of values. If a value is omitted for an event, it defaults to 1000Hz
+> frequency mode as before.
 > 
-> This has become necessary since the move to per-task-per-cpu events in
-> perf as those events would not necessarily be recorded prior to any
-> samples associated with them and would cause perf to miss-attribute
-> those events and produce bogus reports. This behaviour can be observed
-> almost every run on 64 CPU PowerPC systems, but has also been observed
-> on a simple quad core Intel i7.
-> 
-> The timestamp is requested by setting the all_timed flag in the
-> event attributes when opening the event and will be placed just after
-> the header of the events in question.
-> 
-> This patch also ensures that the PERF_RECORD_COMM event is dispatched
-> before enabling the counters for enable_on_exec.
-> 
-
-> @@ -332,6 +333,7 @@ enum perf_event_type {
->  	 *
->  	 * struct {
->  	 *	struct perf_event_header	header;
-> +	 *	{ u64			time;     } && all_timed
->  	 *
->  	 *	u32				pid, tid;
->  	 *	u64				addr;
-> @@ -354,6 +356,7 @@ enum perf_event_type {
->  	/*
->  	 * struct {
->  	 *	struct perf_event_header	header;
-> +	 *	{ u64			time;     } && all_timed
->  	 *
->  	 *	u32				pid, tid;
->  	 *	char				comm[];
+> $ perf record -e cycles,instructions -c 100000,200000 -a -- sleep 5
 
 
-Right, so acme had a patch adding
+I remember an email not too long ago where people proposed to change the
+syntax so that:
 
-PERF_SAMPLE_TID
-PERF_SAMPLE_TIME
-PERF_SAMPLE_ID
-PERF_SAMPLE_CPU
-PERF_SAMPLE_STREAM_ID
+ -e evnt1,evnt2     -- create a group containing both events
+ -e evnt1 -e evnt2  -- create two separate events
 
-(IIRC) to every record.. so solve this same problem. Except he got
-interrupted by KS and things and didn't get around to posting it.
+It would be nice to make sure these two proposals will not interfere.
 
-Arnaldo?
+Alternatively we extend the event syntax to include the period,
+something like:
+
+  -e evnt1:period=1234
+
+
