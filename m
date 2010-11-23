@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab0KWFgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 00:36:09 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:43370 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab0KWFgH (ORCPT
+	id S1751546Ab0KWFgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 00:36:10 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60837 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab0KWFgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 00:36:07 -0500
+	Tue, 23 Nov 2010 00:36:08 -0500
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org
-Subject: perf: Timestamp COMM and MMAP events for correct attribution
-Date: Tue, 23 Nov 2010 16:35:38 +1100
-Message-Id: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
+Cc: Ian Munsie <imunsie@au1.ibm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arun Sharma <aruns@google.com>
+Subject: [PATCH 1/6] perf: Display unknown rather than IP for unidentified DSO
+Date: Tue, 23 Nov 2010 16:35:39 +1100
+Message-Id: <1290490544-14349-2-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
+References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series fixes a bug introduced with the per-task-per-cpu event
-support in perf where PERF_RECORD_COMM and PERF_RECORD_MMAP events would arrive
-and be recorded via one CPUs buffer much later than samples corresponding to
-them arriving on another CPUs buffer, and would cause perf to mis-attribute
-those events.
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-This has been observed on multiple systems, but is more common the more CPUs
-present - on 64 CPU systems it is extremely common (one system tested occurred
-~50% of the time, while another was >99%), while on my quad Intel i7 it is much
-rarer (but I have observed it several times). Examining the data file with perf
-report -D shows the COMM and MMAP events a long way through the file (80% or
-more), well after many previous events.
+In the event that a DSO has not been identified, just print out
+<unknown> instead of the instruction pointer as we previously were
+doing, which is pretty meaningless for a shared object (at least to the
+users perspective).
 
-This series introduces an ABI change to perf to add the timestamps to the MMAP
-and COMM events so that they can be correlated with the samples corresponding
-to them. The timestamps are requested from the kernel by setting the all_timed
-bit in the attributes when opening the events and is placed just after the
-event header of the events in question.
+The IP we print out is fairly meaningless in general anyway - it's just
+one (the first) of the many addresses that were lumped together as
+unidentified, and could span many shared objects and symbols. In reality
+if we see this <unknown> output the debugging output (report -D) is
+going to be more useful anyway as we can see all the different address
+that it represents.
 
-While not necessary to fix this bug (or any other AFAIK), I have also included
-changes to the PERF_RECORD_READ and PERF_RECORD_LOST events to add the
-timestamp in the same manner. This could be useful to support and if we did
-eventually want to add it it would be easier to change all the events in
-question at once. Those changes are in separate patches from the COMM and MMAP
-changes so they can easily be dropped when merging this upstream if they are
-unwanted.
+If we are printing the symbols we are still going to see this IP in that
+column anyway since they shouldn't resolve either.
+
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ tools/perf/util/sort.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index b62a553..68dad55 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -170,7 +170,7 @@ static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
+ 		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
+ 	}
+ 
+-	return repsep_snprintf(bf, size, "%*Lx", width, self->ip);
++	return repsep_snprintf(bf, size, "%-*s", width, "<unknown>");
+ }
+ 
+ /* --sort symbol */
+-- 
+1.7.2.3
 
