@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab0KWH2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:28:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43522 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752023Ab0KWH2c (ORCPT
+	id S1752349Ab0KWHce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:32:34 -0500
+Received: from mga01.intel.com ([192.55.52.88]:1462 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab0KWHcc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:28:32 -0500
-Date: Mon, 22 Nov 2010 23:15:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-Id: <20101122231558.57b6e04c.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimpfZuKW-hXjXknn3ESKP81AN3BaXO=qG81Lrae@mail.gmail.com>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<20101122141449.9de58a2c.akpm@linux-foundation.org>
-	<AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com>
-	<20101122210132.be9962c7.akpm@linux-foundation.org>
-	<AANLkTin62R1=2P+Sh0YKJ3=KAa6RfLQLKJcn2VEtoZfG@mail.gmail.com>
-	<20101122212220.ae26d9a5.akpm@linux-foundation.org>
-	<AANLkTinTp2N3_uLEm7nf0=Xu2f9Rjqg9Mjjxw-3YVCcw@mail.gmail.com>
-	<20101122214814.36c209a6.akpm@linux-foundation.org>
-	<AANLkTimpfZuKW-hXjXknn3ESKP81AN3BaXO=qG81Lrae@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 02:32:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,241,1288594800"; 
+   d="scan'208";a="860459116"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Arnd Hannemann <arnd@arndnet.de>
+CC: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@linux.intel.com>
+Date: Tue, 23 Nov 2010 07:32:19 +0000
+Subject: RE: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Thread-Topic: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Thread-Index: AcuK2CymXMPKOxBkSJiGQqcn8AF9FwAB277w
+Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
+References: <20101116142027.GC19247@tiehlicka.suse.cz>
+ <C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
+ <20101118082454.GC15928@tiehlicka.suse.cz>
+ <C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
+ <4CEAA151.7050404@arndnet.de> <20101123063200.GA23907@elte.hu>
+In-Reply-To: <20101123063200.GA23907@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 15:05:39 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> On Tue, Nov 23, 2010 at 2:48 PM, Andrew Morton
-> >> > move it to the head of the LRU anyway. __But given that the user has
-> >>
-> >> Why does it move into head of LRU?
-> >> If the page which isn't mapped doesn't have PG_referenced, it would be
-> >> reclaimed.
-> >
-> > If it's dirty or under writeback it can't be reclaimed!
+> > I also ran into this today.
+> > Any updates or pointer to the patch?
 > 
-> I see your point. And it's why I add it to head of inactive list.
+> Same here - i'm running into this build bug frequently as well, as of
+> 2.6.37-rc3.
+> Please guys at minimum post the pending fix for this.
 
-But that *guarantees* that the page will get a full trip around the
-inactive list.  And this will guarantee that potentially useful pages
-are reclaimed before the pages which we *know* the user doesn't want! 
-Bad!
+Hmm. For some reason I thought this patch had made it into -mm,
+but I never double-checked and then went travelling ...
 
-Whereas if we queue it to the tail, it will only get that full trip if
-reclaim happens to run before the page is cleaned.  And we just agreed
-that reclaim isn't likely to run immediately, because pages are being
-freed.
+http://lkml.org/lkml/2010/10/26/79
 
-So we face a choice between guaranteed eviction of potentially-useful
-pages (which are very expensive to reestablish) versus a *possible*
-need to move an unreclaimable page to the head of the LRU, which is
-cheap.
+johannes
+--------------------------------------------------------------------------------------
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland 
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
+Registergericht: Muenchen HRB 47456 
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
-So we need to decide if
-
-	(certain * possibly-expensive) is less than (possible * cheap).
-
-So no, it's not obvious to me that this was the correct decision.
-
-
-One way to help with this guess would be to instrument those pages
-(would require adding a special page flag to identify them, I expect)
-and see how many of these pages get immediately reclaimed off the LRU
-versus how many get recycled.  And then run a batch of "typical
-workloads" under that instrumentation.
-
-Only there aren't any "typical workloads" for fadvise(DONTNEED) :(
