@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab0KWWXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:23:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33758 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752369Ab0KWWXO (ORCPT
+	id S1752856Ab0KWWZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:25:31 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41589 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab0KWWZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:23:14 -0500
-Date: Tue, 23 Nov 2010 14:22:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] [BUG] memcg: fix false positive VM_BUG on non-SMP
-Message-Id: <20101123142247.e8566e3e.akpm@linux-foundation.org>
-In-Reply-To: <20101123210255.GA22484@cmpxchg.org>
-References: <1290520130-9990-1-git-send-email-kirill@shutemov.name>
-	<20101123121606.c07197e5.akpm@linux-foundation.org>
-	<20101123210255.GA22484@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 17:25:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ocI1kWpHdW+kakJTFCrSOq01iskqDc4O4FnnFHaP8S3o+beOp3M50bSiO8L/s59Psj
+         Ols9COuE2Cejq493AMdBqjVvIvb61vIV5lg9ajhRgrK9n06TJrvTYdXgYWonSF/RLELp
+         hPbY+m2JCJayxpfqby3aymmVOPRDuoDq5IWAA=
+Date: Tue, 23 Nov 2010 14:24:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
+Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
+Message-ID: <20101123222458.GB20283@core.coreip.homeip.net>
+References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+ <20101122075554.GA27300@core.coreip.homeip.net>
+ <AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 22:02:55 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Tue, Nov 23, 2010 at 09:40:19AM -0800, Ping Cheng wrote:
+> On Sun, Nov 21, 2010 at 11:55 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > Hi Ping,
+> >
+> > On Thu, Nov 18, 2010 at 04:25:35PM -0800, Ping Cheng wrote:
+> >> We "borrowed" BTN_TOOL_FINGER from input/mouse to pass tablet
+> >> buttons to the user land. This has not been an issue since
+> >> tablet was not considered as a mouse replacement. With the
+> >> introduction of hybrid digitizer and touch devices, the tool
+> >> type is causing confusion. A new tool type is due for the
+> >> well-being of future input device drivers.
+> >>
+> >
+> > I am sorry but I do not understand the reasoning behind
+> > BTN_TOOL_BUTTONS.
+> 
+> Don't be sorry, Dmitry. Your statement is fair since:
+> 
+> 1.  I did not explain it clearly;
+> 2.  You do not have the physical device (Intuos series) to test with.
+> 
+> I'll explain it again by refering back to the code to see if I can
+> make it clear or not. The code I am going to refer to is under the
+> Linus tree at git.kernel.org.
+> 
+> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
+> > currently touching the surface of the device. Buttons are expected to be
+> > always present and can change their state regardless of what tool is
+> > being used at the moment. I.e. The full hardware state (between
+> > EV_SYN/SYN_REPORT) could be, for example,
+> >
+> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
+> > BTN_2) or
+> >
+> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
+> >
+> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
+> > BTN_TOOL_PEN or any other BTN_TOOL_*.
+> 
+> You are right. The tablet buttons can go with one of those other
+> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
+> tablet buttons.
+> 
+> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
+> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
+> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
+> (refer to wacom_wac.c line 622 to 665).
+> 
+> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
+> it, the two LEFT and RIGHT buttons will have a hard time to tell the
+> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
+> worst case could be the LEFT/RIGHT sent later overwrites the earlier
+> ones.
+> 
+> We could do some guesswork in the user land to figure out which
+> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
+> happen. But, it would be much cheaper and more reliable if we can tell
+> the user land where those LEFT and RIGHT come from. This is the whole
+> purpose of the kernel driver, isn't it?
 
-> On Tue, Nov 23, 2010 at 12:16:06PM -0800, Andrew Morton wrote:
-> > On Tue, 23 Nov 2010 15:48:50 +0200
-> > "Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
-> > 
-> > > ------------[ cut here ]------------
-> > > kernel BUG at mm/memcontrol.c:2155!
-> > 
-> > This bug has been there for a year, from which I conclude people don't
-> > run memcg on uniprocessor machines a lot.
-> > 
-> > Which is a bit sad, really.  Small machines need resource control too,
-> > perhaps more than large ones..
-> 
-> Admittedly, this patch is compile-tested on UP only, but it should be
-> obvious enough.
-> 
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] memcg: fix page cgroup lock assert on UP
-> 
-> Page cgroup locking primitives use the bit spinlock API functions,
-> which do nothing on UP.
-> 
-> Thus, checking the lock state can not be done by looking at the bit
-> directly, but one has to go through the bit spinlock API as well.
-> 
-> This fixes a guaranteed UP bug, where asserting the page cgroup lock
-> bit as a sanity check crashes the kernel.
-> 
+What would userspace want to figure what physical button was pressed?
+Input events convey _actions_, i.e. BTN_LEFT means that user pressed
+primary button on the device. It does not matter if it was pressed on
+tablet or the mouse/lens; the response should be the same.
 
-hm, your patch is the same as Kirill's, except you named it
-page_is_cgroup_locked() rather than is_page_cgroup_locked().  I guess
-page_is_cgroup_locked() is a bit better.
+If you expect different response, depending on which physical button is
+pressed, then they should emit different BTN_* events. If you are
+concerned that some users might want to have the same actions while
+others want different actions - then please implement key remapping in
+the driver.
 
+If you want to treat touch and pen as completely independent devices -
+we can do that too but as you remember there are some issues with
+"pairing" of the devices.
+
+Thanks.
+
+-- 
+Dmitry
