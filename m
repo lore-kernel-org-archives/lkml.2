@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab0KWJTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 04:19:05 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:34983 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab0KWJTC (ORCPT
+	id S1752410Ab0KWJWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 04:22:30 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39685 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab0KWJW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 04:19:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=u6mqecKV+efiHlCXnWt5BUfqMpMPBZSx61hUMigzgGZjHQ/oZR1zLrskuIyDuPZl+s
-         oK+l5y/i2JGhAIfy9brQ==
+	Tue, 23 Nov 2010 04:22:28 -0500
+Message-ID: <4CEB877D.9060709@kernel.org>
+Date: Tue, 23 Nov 2010 01:21:01 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <3889bf3ab66bbb35ea239b63d95cc4c4.squirrel@www.firstfloor.org>
-References: <1290340907.2245.125.camel@localhost>
-	<340872239c47b2ec237c88488cb7b6ac.squirrel@www.firstfloor.org>
-	<AANLkTi=bxEgsLjk-1CK4pSmknyxR_y3OxTJ9DZ_dBW8n@mail.gmail.com>
-	<3889bf3ab66bbb35ea239b63d95cc4c4.squirrel@www.firstfloor.org>
-Date: Tue, 23 Nov 2010 10:18:58 +0100
-Message-ID: <AANLkTi=9SYgy-bVvYVt5rb3G=yWJYYA4ym+SCDs-5o+y@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3 v2] perf: Update perf tool to monitor uncore events
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sparseirq: Increase nr_irqs if needed
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 5:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
->
->>>
->>> In fact I suspect uncore events are only really useful
->>> with "stat", but not with "top", or if they are used in top
->>> then the symbol reporting should be disabled.
->>>
->> I agree, uncore should only be used for counting on a
->> per-cpu basis. You can leave the perf tool as is, but
->
 
-I meant one cpu per socket: perf stat -a -C 0 -e unc_clk_unhalted.
-One could envision the tool picking one CPU per socket. It can
-figure this out from the topology information in sysfs.
+only do that when we need more.
 
-If you do perf stat -a -e unc_*, then you'll get into multiplexing very
-quickly AND it is useless especially because auto aggregation will
-yield bogus counts.
+For x86_64 system:
+when we have 128 cpus with 5 ioapics, will have nr_irqs = 3064
+	120 + 8 * 128 + 120 * 16
+systems could take 20 pcie,  when intel 10g are used with
+sriov and ixgbevf, every vf will need 3 irqs, and one device
+have 64 vf. so will need 20 * 3 * 64 = 3840.
+some 6 ports Intel 10gb may need more.
 
-> I think you mean per socket base, right? per cpu (= cpu core thread)
-> doesn't make sense for the uncore either.
->
-> Per socket would need a new command line mode. The new mode should
-> never report any symbols or processes, just events per socket.
->
-> -Andi
->
->
+with this patch, nr_irqs will increase 25% every time if nr_irqs is not
+big enough.
+
+Also later We could change nr_irqs initial value to
+	 min(nr_irqs_gsi, 224*nr_cpu_ids).
+for x86.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ kernel/irq/irqdesc.c |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/kernel/irq/irqdesc.c
+===================================================================
+--- linux-2.6.orig/kernel/irq/irqdesc.c
++++ linux-2.6/kernel/irq/irqdesc.c
+@@ -301,6 +301,27 @@ void irq_free_descs(unsigned int from, u
+ 	mutex_unlock(&sparse_irq_lock);
+ }
+ 
++static bool increase_nr_irqs(void)
++{
++#ifdef CONFIG_SPARSE_IRQ
++	int new;
++
++	if (nr_irqs == NR_IRQS)
++		return false;
++
++	new = nr_irqs;
++	new += nr_irqs >> 2;
++	if (new > NR_IRQS)
++		new = NR_IRQS;
++	if (new > nr_irqs) {
++		nr_irqs = new;
++		printk(KERN_INFO "nr_irqs increase to %d\n", nr_irqs);
++		return true;
++	}
++#endif
++	return false;
++}
++
+ /**
+  * irq_alloc_descs - allocate and initialize a range of irq descriptors
+  * @irq:	Allocate for specific irq number if irq >= 0
+@@ -320,14 +341,16 @@ irq_alloc_descs(int irq, unsigned int fr
+ 
+ 	mutex_lock(&sparse_irq_lock);
+ 
+-	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
++	start = bitmap_find_next_zero_area(allocated_irqs, NR_IRQS, from, cnt, 0);
+ 	ret = -EEXIST;
+ 	if (irq >=0 && start != irq)
+ 		goto err;
+ 
+ 	ret = -ENOMEM;
+-	if (start >= nr_irqs)
+-		goto err;
++	while ((start + cnt) >= nr_irqs) {
++		if (!increase_nr_irqs())
++			goto err;
++	}
+ 
+ 	bitmap_set(allocated_irqs, start, cnt);
+ 	mutex_unlock(&sparse_irq_lock);
