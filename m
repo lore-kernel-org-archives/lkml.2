@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab0KWQ1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 11:27:37 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38275
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753994Ab0KWQ1f (ORCPT
+	id S1755730Ab0KWQcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 11:32:50 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58031 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755670Ab0KWQcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 11:27:35 -0500
-Date: Tue, 23 Nov 2010 08:28:00 -0800 (PST)
-Message-Id: <20101123.082800.189699339.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, ath9k-devel@venema.h4ckr.net,
-        libertas-dev@lists.infradead.org, users@rt2x00.serialmonkey.com,
-        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de
-Subject: Re: [PATCH 00/62] drivers/net: Use static const
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290465605.27683.52.camel@Joe-Laptop>
-References: <1290463846.27683.36.camel@Joe-Laptop>
-	<20101122.141939.226774888.davem@davemloft.net>
-	<1290465605.27683.52.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 11:32:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=EzUqvVf1PtEMsccEZnGXRxFjKfBPwvIQY6abV8he4sGMhB2qBhmBIGHIXWHNhhBcaQ
+         JMAs1xyqyIGDZ2PRVgqXNcdjjT053yzb41LCuGnq3FbZQ6xy9p0RJoB2RybCONdpuz/+
+         4LdVNGU9gFJK2sGq2PZe9hQWmaDmd6gtvQFKQ=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikdCr--wvKCEa8YxOaCb8JaS=3d1GHTxLMtmw4t@mail.gmail.com>
+References: <20101123140609.2b6503ff.sfr@canb.auug.org.au>
+	<AANLkTikdCr--wvKCEa8YxOaCb8JaS=3d1GHTxLMtmw4t@mail.gmail.com>
+Date: Tue, 23 Nov 2010 18:32:47 +0200
+Message-ID: <AANLkTinUCrU6yqTRZ=mM0QecF8EV_tr+BDjMvMjywY7A@mail.gmail.com>
+Subject: Re: linux-next: Tree for November 23
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org,
+        Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 22 Nov 2010 14:40:05 -0800
-
-> I'll see who picks up or acks what and send a pull request to
-> you for the remainder of these patches mid December or so.
-
-Thanks.
-
-> Do you want micro patches or a single patch?
-
-You can group them by directory or similar if you like.
-
-F.e.:
-
-Patch 1: drivers/net/*.c
-Patch 2: drivers/net/*/*.c (wired drivers)
-Patch 3: drivers/net/wireless/*
-
-Thanks again.
+I get an panic from this version on my PC. Last time I checked was
+something like 10 days ago (running "next" fine).
+Kernel 2.6.37-rc3 running ok here, Intel Core Duo, Ubuntu 10.10.
