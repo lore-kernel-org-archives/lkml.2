@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab0KWQ4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 11:56:49 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51796 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab0KWQ4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 11:56:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=X1vnlCiUJM56Hwegx6p6X1zqGhxxKjpWuW8BVekhX2nZoMjyici7kTA24sfffY2ksm
-         jpU+/wvrqX5BmZnGyT9DM4Ea5tPXaHsNzuwGnk081YIv5wFcdVHaLQdX0+3wh5LdTpbR
-         28NKBfm5qWQMNXuW5FZxqu/BRw94oX9BVdKo0=
-Subject: Re: [PATCH 4/9] AF_UNIX: find the recipients for multicast messages
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        gorcunov@openvz.org, adobriyan@gmail.com, lennart@poettering.net,
-        kay.sievers@vrfy.org, ian.molton@collabora.co.uk,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1290528517.3046.91.camel@edumazet-laptop>
-References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
-	 <1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
-	 <20101122.110519.39205345.davem@davemloft.net>
-	 <20101123150315.4e67a139@chocolatine.cbg.collabora.co.uk>
-	 <1290528517.3046.91.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 17:56:40 +0100
-Message-ID: <1290531400.3046.117.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755857Ab0KWQ5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 11:57:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39884 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755833Ab0KWQ5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 11:57:04 -0500
+Date: Tue, 23 Nov 2010 11:56:57 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] x86, perf, nmi: Disable perf if counters are not
+ accessable
+Message-ID: <20101123165657.GF18100@redhat.com>
+References: <AANLkTikzSY09i=C+A2Y=_gVa-44r_bN76P-U2-NZMnpz@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikzSY09i=C+A2Y=_gVa-44r_bN76P-U2-NZMnpz@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 23, 2010 at 04:15:05PM +0100, Sedat Dilek wrote:
+> Hi,
+> 
+> I am seeing for a while this warning in my system-wide logs:
+> 
+> Nov 23 11:54:14 tbox kernel: [    0.040335] NMI watchdog failed to
+> create perf event on cpu0: ffffffa1
+> 
+> As I saw this patch from [1], I was hoping it's also fixing my problem
+> on an Intel Pentium-M (Banias) Single-Core CPU:
 
-Hmm, just thought about lockless again, and we had same multicast
-problem on udp as well.
+I doubt it.  This patch was intended for virtualization where the perf
+counters are not emulated but the perf subsystem didn't know that.
 
-We are forced to hold a lock (to forbid concurrent deletes), or we might
-going through one 'about to be removed' socket and abort the iteration
-in the middle. Some sockets would not receive a copy of the message.
+Your error code is 'ffffffa1'.  That translates to EOPNOTSUPP.  The only
+place I can see where that is returned is if your system does not have a
+local apic on it (as set by the cpu feature bits).
 
-(UDP sockets using SLAB_DESTROY_BY_RCU, we could even have multiple
-copies sent to some sockets, if the removed socket is re-inserted in
-front of chain because of instant reuse)
+Applying this patch may still get you the same result because the perf
+counters might be there but there is no local apic to deliver the
+interrupts.
 
-To have a true lockless path, you would need to restart the full scan if
-you notice a delete was done during the iteration, eventually using a
-sequence number per chain. That would be expensive, because you have to
-undo all the socket accumulation (refcount) done during the lookup,
-before restart the thing.
+I would have to see in your log file the output starting at the line with
 
-To avoid starvation, getting a lock at the second iteration would be
-good ;)
+Performance Events:
 
+and pasting the next dozen lines or so to have a better understanding what
+is going on.  Or you can just attach the whole log in your reply.
 
-
+Cheers,
+Don
