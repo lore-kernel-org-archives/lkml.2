@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab0KWI6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 03:58:12 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37931 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab0KWI6K (ORCPT
+	id S1751920Ab0KWI6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 03:58:45 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:50688 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab0KWI6n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 03:58:10 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [PATCH 2/2] kmsg_dump: adding to reboot, halt, poweroff and emergency_restart path
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
-        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
-        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "marco.stornelli@gmail.com" <marco.stornelli@gmail.com>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        Aaron Durbin <adurbin@google.com>,
-        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FE@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FA@USINDEVS01.corp.hds.com> <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FE@USINDEVS01.corp.hds.com>
-Message-Id: <20101123175450.7BCE.A69D9226@jp.fujitsu.com>
+	Tue, 23 Nov 2010 03:58:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=UNkEltHRdz/s5Q2bozq2sM4+CiSUtqGRtsF6sZk5krQtWtmQJo/rDWQybQJDTXKcM4
+         mknEYHHFMOUtZFzzmDhw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 23 Nov 2010 17:58:04 +0900 (JST)
+In-Reply-To: <4CEB77E0.10202@cn.fujitsu.com>
+References: <AANLkTikx6d0_VFtZ4zWQucRCf=vFt7N2M6=0jpnKasEE@mail.gmail.com>
+	<1290398767-15230-1-git-send-email-ccross@android.com>
+	<4CEB77E0.10202@cn.fujitsu.com>
+Date: Tue, 23 Nov 2010 00:58:39 -0800
+X-Google-Sender-Auth: l6uVw_byqRD7PqB8Uiuqir1kPbw
+Message-ID: <AANLkTimjpW6NZ6fEiVi0VzjkpQGVob4=VHsohXUiDQkJ@mail.gmail.com>
+Subject: Re: [PATCH] cgroup: Convert synchronize_rcu to call_rcu in cgroup_attach_task
+From: Colin Cross <ccross@android.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Paul Menage <menage@google.com>,
+        containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  We need to know the reason why system rebooted in support service.
->  However, we can't inform our customers of the reason because
->  final messages are lost on current Linux kernel.
->  
->  This patch improves the situation above because the final messages 
->  are saved by adding kmsg_dump() to reboot, halt, poweroff and 
->  emergency_restart path.
-> 
->  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+On Tue, Nov 23, 2010 at 12:14 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> 12:06, Colin Cross wrote:
+>> The synchronize_rcu call in cgroup_attach_task can be very
+>> expensive.  All fastpath accesses to task->cgroups that expect
+>> task->cgroups not to change already use task_lock() or
+>> cgroup_lock() to protect against updates, and, in cgroup.c,
+>> only the CGROUP_DEBUG files have RCU read-side critical
+>> sections.
+>>
+>> sched.c uses RCU read-side-critical sections on task->cgroups,
+>> but only to ensure that a dereference of task->cgroups does
+>> not become invalid, not that it doesn't change.
+>>
+>
+> Other cgroup subsystems also use rcu_read_lock to access task->cgroups,
+> for example net_cls cgroup and device cgroup.
+I believe the same comment applies as sched.c, I'll update the commit message.
 
-This patch doesn't have any notification consumer. It's too bad.
-As far as I know, some poeple are now discussing to make generic
-firmware access interface. perhaps your one can be integrate it.
-Please see and join following discussion.
+> I don't think the performance of task attaching is so critically
+> important that we have to use call_rcu() instead of synchronize_rcu()?
+On my desktop, moving a task between cgroups averages 100 ms, and on
+an Tegra2 SMP ARM platform it takes 20 ms.  Moving a task with many
+threads can take hundreds of milliseconds or more.  With this patch it
+takes 50 microseconds to move one task, a 400x improvement.
 
+>> This patch adds a function put_css_set_rcu, which delays the
+>> put until after a grace period has elapsed.  This ensures that
+>> any RCU read-side critical sections that dereferenced
+>> task->cgroups in sched.c have completed before the css_set is
+>> deleted.  The synchronize_rcu()/put_css_set() combo in
+>> cgroup_attach_task() can then be replaced with
+>> put_css_set_rcu().
+>>
+>
+>> Also converts the CGROUP_DEBUG files that access
+>> current->cgroups to use task_lock(current) instead of
+>> rcu_read_lock().
+>>
+>
+> What for? What do we gain from doing this for those debug
+> interfaces?
+Left over from the previous patch that incorrectly dropped RCU
+completely.  I'll put the rcu_read_locks back.
 
-From: "Luck, Tony" <tony.luck@intel.com>
-Subject: [RFC] persistent store
-
-
-
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>>
+>> ---
+>>
+>> This version fixes the problems with the previous patch by
+>> keeping the use of RCU in cgroup_attach_task, but allowing
+>> cgroup_attach_task to return immediately by deferring the
+>> final put_css_reg to an rcu callback.
+>>
+>>  include/linux/cgroup.h |    4 +++
+>>  kernel/cgroup.c        |   58 ++++++++++++++++++++++++++++++++++++++----------
+>>  2 files changed, 50 insertions(+), 12 deletions(-)
+>
