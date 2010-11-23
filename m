@@ -1,620 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab0KWRZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 12:25:17 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:42459 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753777Ab0KWRZP (ORCPT
+	id S1755856Ab0KWR0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 12:26:06 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:56634 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab0KWR0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 12:25:15 -0500
-Message-ID: <4CEBF8F7.1060100@armadeus.com>
-Date: Tue, 23 Nov 2010 18:25:11 +0100
-From: Fabien Marteau <fabien.marteau@armadeus.com>
-Reply-To: fabien.marteau@armadeus.com
-Organization: ARMadeus Systems
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Scott Moreau <oreaus@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] input: joystick: Adding Austria Microsystem AS5011 joystick
- driver (without wrapped lines)
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 17940089116325732763
-X-Ovh-Remote: 82.232.255.99 (arc68-6-82-232-255-99.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Tue, 23 Nov 2010 12:26:04 -0500
+From: Alexander Shishkin <virtuoso@slind.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Shishkin <virtuoso@slind.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
+Date: Tue, 23 Nov 2010 19:22:18 +0200
+Message-Id: <1290532938-7332-1-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.2.1.45.gb66c2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the latest mail, thunderbird wrapped patch lines
+Certain userspace applications (like "clock" desktop applets or cron or
+systemd) might want to be notified when some other application changes
+the system time. There are several known to me reasons for this:
+ - avoiding periodic wakeups to poll time changes;
+ - rearming CLOCK_REALTIME timers when said changes happen;
+ - changing system timekeeping policy for system-wide time management
+   programs;
+ - keeping guest applications/operating systems running in emulators
+   up to date.
 
-Driver for EasyPoint AS5011 2 axis joystick chip. This chip is plugged
-on an I2C bus. It as been tested on ARM processor (i.MX27).
+This is another attempt to approach notifying userspace about system
+clock changes. The other one is using an eventfd and a syscall [1]. In
+the course of discussing the necessity of a syscall for this kind of
+notifications, it was suggested that this functionality can be achieved
+via timers [2] (and timerfd in particular [3]). This idea got quite
+some support [4], [5], [6] and some vague criticism [7], so I decided
+to try and go a bit further with it.
 
-Signed-off-by: Fabien Marteau <fabien.marteau@armadeus.com>
+[1] http://marc.info/?l=linux-kernel&m=128950389423614&w=2
+[2] http://marc.info/?l=linux-kernel&m=128951020831573&w=2
+[3] http://marc.info/?l=linux-kernel&m=128951588006157&w=2
+[4] http://marc.info/?l=linux-kernel&m=128951503205111&w=2
+[5] http://marc.info/?l=linux-kernel&m=128955890118477&w=2
+[6] http://marc.info/?l=linux-kernel&m=129002967031104&w=2
+[7] http://marc.info/?l=linux-kernel&m=129002672227263&w=2
+
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Feng Tang <feng.tang@intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Michael Tokarev <mjt@tls.msk.ru>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: John Stultz <johnstul@us.ibm.com>
+CC: Chris Friesen <chris.friesen@genband.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>
+CC: Kirill A. Shutemov <kirill@shutemov.name>
+CC: Artem Bityutskiy <dedekind1@gmail.com>
+CC: Davide Libenzi <davidel@xmailserver.org>
+CC: linux-fsdevel@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
 ---
- drivers/input/joystick/Kconfig  |    9 +
- drivers/input/joystick/Makefile |    1 +
- drivers/input/joystick/as5011.c |  454 +++++++++++++++++++++++++++++++++++++++
- include/linux/as5011.h          |   72 ++++++
- 4 files changed, 536 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/joystick/as5011.c
- create mode 100644 include/linux/as5011.h
+ fs/timerfd.c            |   51 +++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/hrtimer.h |    6 +++++
+ include/linux/timerfd.h |    3 +-
+ kernel/hrtimer.c        |    3 ++
+ 4 files changed, 60 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-index 5b59616..5fad03e 100644
---- a/drivers/input/joystick/Kconfig
-+++ b/drivers/input/joystick/Kconfig
-@@ -255,6 +255,15 @@ config JOYSTICK_AMIGA
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called amijoy.
-
-+config JOYSTICK_AS5011
-+	tristate "Austria Microsystem AS5011 joystick"
-+	depends on I2C
-+	help
-+	  Say Y here if you have an AS5011 digital joystick.
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 8c4fc14..7890815 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -30,8 +30,13 @@ struct timerfd_ctx {
+ 	u64 ticks;
+ 	int expired;
+ 	int clockid;
++	struct list_head notifiers_list;
+ };
+ 
++/* TFD_NOTIFY_CLOCK_SET timers go here */
++static DEFINE_SPINLOCK(notifiers_lock);
++static LIST_HEAD(notifiers_list);
 +
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called as5011.
-+
- config JOYSTICK_JOYDUMP
- 	tristate "Gameport data dumper"
- 	select GAMEPORT
-diff --git a/drivers/input/joystick/Makefile b/drivers/input/joystick/Makefile
-index f3a8cbe..92dc0de 100644
---- a/drivers/input/joystick/Makefile
-+++ b/drivers/input/joystick/Makefile
-@@ -7,6 +7,7 @@
- obj-$(CONFIG_JOYSTICK_A3D)		+= a3d.o
- obj-$(CONFIG_JOYSTICK_ADI)		+= adi.o
- obj-$(CONFIG_JOYSTICK_AMIGA)		+= amijoy.o
-+obj-$(CONFIG_JOYSTICK_AS5011)		+= as5011.o
- obj-$(CONFIG_JOYSTICK_ANALOG)		+= analog.o
- obj-$(CONFIG_JOYSTICK_COBRA)		+= cobra.o
- obj-$(CONFIG_JOYSTICK_DB9)		+= db9.o
-diff --git a/drivers/input/joystick/as5011.c b/drivers/input/joystick/as5011.c
-new file mode 100644
-index 0000000..db0f129
---- /dev/null
-+++ b/drivers/input/joystick/as5011.c
-@@ -0,0 +1,454 @@
-+/*
-+ * Copyright (c) 2010 Fabien Marteau <fabien.marteau@armadeus.com>
-+ *
-+ * Sponsored by ARMadeus Systems
-+ */
-+
-+/*
-+ * Driver for Austria Microsystems joysticks AS5011
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * TODO:
-+ *	- Manage power mode
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/string.h>
-+#include <linux/list.h>
-+#include <linux/sysfs.h>
-+#include <linux/ctype.h>
-+#include <linux/hwmon-sysfs.h>
-+
-+#include <linux/types.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/mutex.h>
-+
-+#include <linux/input.h>
-+#include <linux/gpio.h>
-+#include <linux/workqueue.h>
-+
-+#include <linux/as5011.h>
-+#define DRIVER_DESC "Driver for Austria Microsystems AS5011 joystick"
-+
-+MODULE_AUTHOR("Fabien Marteau <fabien.marteau@armadeus.com>");
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE("GPL");
-+
-+#define SIZE_NAME 30
-+#define AS5011_MAX_AXIS	80
-+#define AS5011_MIN_AXIS	(-80)
-+#define AS5011_FUZZ	8
-+#define AS5011_FLAT	40
-+
-+static int g_num = 1; /* device counter */
-+
-+static signed char as5011_i2c_read(struct i2c_client *client,
-+			   uint8_t aRegAddr);
-+static int as5011_i2c_write(struct i2c_client *client,
-+			    uint8_t aRegAddr,
-+			    uint8_t aValue);
-+
-+/*
-+ * interrupts operations
-+ */
-+
-+static irqreturn_t button_interrupt(int irq, void *dev_id)
+ /*
+  * This gets called when the timer event triggers. We set the "expired"
+  * flag, but we do not re-arm the timer (in case it's necessary,
+@@ -51,6 +56,21 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
+ 	return HRTIMER_NORESTART;
+ }
+ 
++void timerfd_clock_was_set(void)
 +{
-+	struct as5011_platform_data *plat_dat =
-+		(struct as5011_platform_data *)dev_id;
-+	int ret;
++	struct timerfd_ctx *ctx;
++	unsigned long flags;
 +
-+	ret = gpio_get_value(plat_dat->button_gpio);
-+	if (ret)
-+		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 0);
-+	else
-+		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 1);
-+	input_sync(plat_dat->input_dev);
-+	return IRQ_HANDLED;
++	spin_lock(&notifiers_lock);
++	list_for_each_entry(ctx, &notifiers_list, notifiers_list) {
++		spin_lock_irqsave(&ctx->wqh.lock, flags);
++		ctx->ticks++;
++		wake_up_locked(&ctx->wqh);
++		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
++	}
++	spin_unlock(&notifiers_lock);
 +}
 +
-+static void as5011_update_axes(struct work_struct *work)
-+{
-+	struct as5011_platform_data *plat_dat =
-+		container_of(work,
-+			     struct as5011_platform_data,
-+			     update_axes_work);
-+	signed char x, y;
+ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
+ {
+ 	ktime_t remaining;
+@@ -72,6 +92,12 @@ static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
+ 	ctx->expired = 0;
+ 	ctx->ticks = 0;
+ 	ctx->tintv = timespec_to_ktime(ktmr->it_interval);
 +
-+	x = as5011_i2c_read(plat_dat->i2c_client, AS5011_X_RES_INT);
-+	y = as5011_i2c_read(plat_dat->i2c_client, AS5011_Y_RES_INT);
-+	input_report_abs(plat_dat->input_dev, ABS_X, x);
-+	input_report_abs(plat_dat->input_dev, ABS_Y, y);
-+	input_sync(plat_dat->input_dev);
-+}
-+
-+static irqreturn_t as5011_int_interrupt(int irq, void *dev_id)
-+{
-+	struct as5011_platform_data *plat_dat =
-+		(struct as5011_platform_data *)dev_id;
-+
-+	queue_work(plat_dat->workqueue, &plat_dat->update_axes_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/*
-+ * I2C bus operation
-+ */
-+
-+static int as5011_i2c_write(struct i2c_client *client,
-+			    uint8_t aRegAddr,
-+			    uint8_t aValue)
-+{
-+	int ret;
-+	uint8_t data[2] = { aRegAddr, aValue };
-+	struct i2c_msg msg = {	client->addr,
-+				I2C_M_IGNORE_NAK,
-+				2,
-+				(uint8_t *)data };
-+
-+	ret = i2c_transfer(client->adapter, &msg, 1);
-+	if (ret < 0)
-+		return -EINVAL;
-+	return 1;
-+}
-+
-+static signed char as5011_i2c_read(struct i2c_client *client,
-+			   uint8_t aRegAddr)
-+{
-+	int ret;
-+	uint8_t data[2];
-+	struct i2c_msg msg_set[2];
-+	struct i2c_msg msg1 = {	client->addr,
-+				I2C_M_REV_DIR_ADDR,
-+				1,
-+				(uint8_t *)data};
-+	struct i2c_msg msg2 = {	client->addr,
-+				I2C_M_RD|I2C_M_NOSTART,
-+				1,
-+				(uint8_t *)data};
-+
-+	data[0] = aRegAddr;
-+	msg_set[0] = msg1;
-+	msg_set[1] = msg2;
-+
-+	ret = i2c_transfer(client->adapter, msg_set, 2);
-+	if (ret < 0)
-+		return -EINVAL;
-+
-+	if (data[0] & 0x80)
-+		return -1*(1+(~data[0]));
-+	else
-+		return data[0];
-+}
-+
-+static int as5011_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct as5011_platform_data *plat_dat = client->dev.platform_data;
-+	int retval = 0;
-+
-+	plat_dat->num = g_num;
-+	g_num++;
-+
-+	retval = snprintf(plat_dat->workqueue_name,
-+			  SIZE_NAME,
-+			  "as5011_%d_workqueue", plat_dat->num);
-+	if (retval < 0) {
-+		dev_err(&client->dev, "as5011: Failed to give workqueue name\n");
-+		retval = -1;
-+		goto workqueue_name_error;
-+	}
-+	plat_dat->workqueue =
-+		create_singlethread_workqueue(plat_dat->workqueue_name);
-+	if (plat_dat->workqueue == NULL) {
-+		dev_err(&client->dev, "as5011: Failed to create workqueue\n");
-+		retval = -EINVAL;
-+		goto workqueue_create_error;
++	if (flags & TFD_NOTIFY_CLOCK_SET) {
++		list_add(&ctx->notifiers_list, &notifiers_list);
++		return;
 +	}
 +
-+	INIT_WORK(&plat_dat->update_axes_work, as5011_update_axes);
+ 	hrtimer_init(&ctx->tmr, ctx->clockid, htmode);
+ 	hrtimer_set_expires(&ctx->tmr, texp);
+ 	ctx->tmr.function = timerfd_tmrproc;
+@@ -83,7 +109,12 @@ static int timerfd_release(struct inode *inode, struct file *file)
+ {
+ 	struct timerfd_ctx *ctx = file->private_data;
+ 
+-	hrtimer_cancel(&ctx->tmr);
++	if (!list_empty(&ctx->notifiers_list)) {
++		spin_lock(&notifiers_lock);
++		list_del(&ctx->notifiers_list);
++		spin_unlock(&notifiers_lock);
++	} else
++		hrtimer_cancel(&ctx->tmr);
+ 	kfree(ctx);
+ 	return 0;
+ }
+@@ -113,6 +144,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 
+ 	if (count < sizeof(ticks))
+ 		return -EINVAL;
 +
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_PROTOCOL_MANGLING)) {
-+		dev_err(&client->dev,
-+		"i2c bus does not support protocol mangling, as5011 can't work\n");
-+		retval = -ENODEV;
-+		goto i2c_protocol_error;
-+	}
-+	plat_dat->i2c_client = client;
+ 	spin_lock_irq(&ctx->wqh.lock);
+ 	if (file->f_flags & O_NONBLOCK)
+ 		res = -EAGAIN;
+@@ -120,7 +152,8 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
+ 	if (ctx->ticks) {
+ 		ticks = ctx->ticks;
+-		if (ctx->expired && ctx->tintv.tv64) {
++		if (ctx->expired && ctx->tintv.tv64 &&
++		    list_empty(&ctx->notifiers_list)) {
+ 			/*
+ 			 * If tintv.tv64 != 0, this is a periodic timer that
+ 			 * needs to be re-armed. We avoid doing it in the timer
+@@ -218,13 +251,17 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	 * it to the new values.
+ 	 */
+ 	for (;;) {
++		spin_lock(&notifiers_lock);
+ 		spin_lock_irq(&ctx->wqh.lock);
+ 		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+ 			break;
+ 		spin_unlock_irq(&ctx->wqh.lock);
++		spin_unlock(&notifiers_lock);
+ 		cpu_relax();
+ 	}
+ 
++	INIT_LIST_HEAD(&ctx->notifiers_list);
 +
-+	plat_dat->input_dev = input_allocate_device();
-+	if (plat_dat->input_dev < 0) {
-+		dev_err(&client->dev,
-+		"not enough memory for input devices structure\n");
-+		retval = -ENOMEM;
-+		goto input_allocate_device_error;
-+	}
-+
-+	plat_dat->input_dev->name = "Austria Microsystem as5011 joystick";
-+	plat_dat->input_dev->uniq = "Austria0";
-+	plat_dat->input_dev->id.bustype = BUS_I2C;
-+	plat_dat->input_dev->phys = "/dev/input/event0";
-+	plat_dat->input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-+	plat_dat->input_dev->keybit[BIT_WORD(BTN_JOYSTICK)] =
-+					BIT_MASK(BTN_JOYSTICK);
-+
-+	input_set_abs_params(plat_dat->input_dev,
-+			     ABS_X,
-+			     AS5011_MIN_AXIS,
-+			     AS5011_MAX_AXIS,
-+			     AS5011_FUZZ,
-+			     AS5011_FLAT);
-+	input_set_abs_params(plat_dat->input_dev,
-+			     ABS_Y,
-+			     AS5011_MIN_AXIS,
-+			     AS5011_MAX_AXIS,
-+			     AS5011_FUZZ,
-+			     AS5011_FLAT);
-+
-+	plat_dat->button_irq_name =
-+		kmalloc(sizeof(unsigned char)*SIZE_NAME,
-+					 GFP_KERNEL);
-+	if (plat_dat->button_irq_name == NULL) {
-+		dev_err(&client->dev,
-+		"not enough memory for input devices irq name\n");
-+		retval = -ENOMEM;
-+		goto input_allocate_device_name_error;
-+	}
-+
-+
-+	retval = snprintf(plat_dat->button_irq_name,
-+			  SIZE_NAME,
-+			  "as5011_%d_button",
-+			  plat_dat->num);
-+	if (retval < 0) {
-+		dev_err(&client->dev, "as5011: Failed to give button irq name\n");
-+		retval = -EINVAL;
-+		goto button_irq_name_error;
-+	}
-+
-+	if (request_irq(plat_dat->button_irq, button_interrupt,
-+			0, plat_dat->button_irq_name, (void *)plat_dat)) {
-+		dev_err(&client->dev, "as5011: Can't allocate irq %d\n",
-+			plat_dat->button_irq);
-+		retval = -EBUSY;
-+		goto request_irq_error;
-+	}
-+
-+	plat_dat->int_irq_name =
-+		kmalloc(sizeof(unsigned char)*SIZE_NAME,
-+					 GFP_KERNEL);
-+	if (plat_dat->int_irq_name == NULL) {
-+		dev_err(&client->dev,
-+		"not enough memory for input devices int irq name\n");
-+		retval = -ENOMEM;
-+		goto input_allocate_int_device_name_error;
+ 	/*
+ 	 * If the timer is expired and it's periodic, we need to advance it
+ 	 * because the caller may want to know the previous expiration time.
+@@ -243,6 +280,7 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	timerfd_setup(ctx, flags, &ktmr);
+ 
+ 	spin_unlock_irq(&ctx->wqh.lock);
++	spin_unlock(&notifiers_lock);
+ 	fput(file);
+ 	if (otmr && copy_to_user(otmr, &kotmr, sizeof(kotmr)))
+ 		return -EFAULT;
+@@ -262,6 +300,14 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
+ 	ctx = file->private_data;
+ 
+ 	spin_lock_irq(&ctx->wqh.lock);
++	if (!list_empty(&ctx->notifiers_list)) {
++		kotmr.it_value = current_kernel_time();
++		kotmr.it_interval.tv_sec = 0;
++		kotmr.it_interval.tv_nsec = 0;
++		spin_unlock_irq(&ctx->wqh.lock);
++		goto out;
 +	}
 +
-+	retval = snprintf(plat_dat->int_irq_name,
-+			  SIZE_NAME,
-+			  "as5011_%d_int",
-+			  plat_dat->num);
-+	if (retval < 0) {
-+		dev_err(&client->dev, "as5011: Failed to give int irq name\n");
-+		retval = -EINVAL;
-+		goto int_irq_name_error;
-+	}
+ 	if (ctx->expired && ctx->tintv.tv64) {
+ 		ctx->expired = 0;
+ 		ctx->ticks +=
+@@ -273,6 +319,7 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
+ 	spin_unlock_irq(&ctx->wqh.lock);
+ 	fput(file);
+ 
++out:
+ 	return copy_to_user(otmr, &kotmr, sizeof(kotmr)) ? -EFAULT: 0;
+ }
+ 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0c1b8..eb9d331 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -247,6 +247,12 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
+     return ktime_sub(timer->_expires, timer->base->get_time());
+ }
+ 
++#ifdef CONFIG_TIMERFD
++extern void timerfd_clock_was_set(void);
++#else
++static inline void timerfd_clock_was_set(void) {}
++#endif
 +
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ struct clock_event_device;
+ 
+diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
+index 2d07929..c3ddad9 100644
+--- a/include/linux/timerfd.h
++++ b/include/linux/timerfd.h
+@@ -19,6 +19,7 @@
+  * shared O_* flags.
+  */
+ #define TFD_TIMER_ABSTIME (1 << 0)
++#define TFD_NOTIFY_CLOCK_SET (1 << 1)
+ #define TFD_CLOEXEC O_CLOEXEC
+ #define TFD_NONBLOCK O_NONBLOCK
+ 
+@@ -26,6 +27,6 @@
+ /* Flags for timerfd_create.  */
+ #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
+ /* Flags for timerfd_settime.  */
+-#define TFD_SETTIME_FLAGS TFD_TIMER_ABSTIME
++#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_NOTIFY_CLOCK_SET)
+ 
+ #endif /* _LINUX_TIMERFD_H */
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 72206cf..6f6403a 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -646,6 +646,9 @@ void clock_was_set(void)
+ {
+ 	/* Retrigger the CPU local events everywhere */
+ 	on_each_cpu(retrigger_next_event, NULL, 1);
 +
-+	if (request_irq(plat_dat->int_irq, as5011_int_interrupt,
-+			0, plat_dat->int_irq_name, (void *)plat_dat)) {
-+		dev_err(&client->dev, "as5011: Can't allocate int irq %d\n",
-+			plat_dat->int_irq);
-+		retval = -EBUSY;
-+		goto request_int_irq_error;
-+	}
-+
-+	retval = input_register_device(plat_dat->input_dev);
-+	if (retval) {
-+		dev_err(&client->dev, "as5011: Failed to register device\n");
-+		retval = -EINVAL;
-+		goto input_register_device_error;
-+	}
-+
-+	retval = plat_dat->init_gpio();
-+	if (retval < 0) {
-+		dev_err(&client->dev, "as5011: Failed to init gpios\n");
-+		retval = -EINVAL;
-+		goto init_gpio_error;
-+	}
-+
-+	/* chip soft reset */
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_CTRL1,
-+				  AS5011_CTRL1_SOFT_RST);
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: soft reset failed\n");
-+		retval = -EINVAL;
-+		goto soft_reset_error;
-+	}
-+
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_CTRL1,
-+				  AS5011_CTRL1_LP_PULSED |
-+				  AS5011_CTRL1_LP_ACTIVE |
-+				  AS5011_CTRL1_INT_ACT_EN
-+				  );
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: power config failed\n");
-+		retval = -EINVAL;
-+		goto soft_reset_error;
-+	}
-+
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_CTRL2,
-+				  AS5011_CTRL2_INV_SPINNING);
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: can't invert spinning\n");
-+		retval = -EINVAL;
-+		goto invert_spinning_error;
-+	}
-+
-+	/* write threshold */
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_XP,
-+				  plat_dat->Xp);
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: can't write threshold\n");
-+		retval = -EINVAL;
-+		goto threshold_error;
-+	}
-+
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_XN,
-+				  plat_dat->Xn);
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: can't write threshold\n");
-+		retval = -EINVAL;
-+		goto threshold_error;
-+	}
-+
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_YP,
-+				  plat_dat->Yp);
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: can't write threshold\n");
-+		retval = -EINVAL;
-+		goto threshold_error;
-+	}
-+
-+	retval = as5011_i2c_write(plat_dat->i2c_client,
-+				  AS5011_YN,
-+				  plat_dat->Yn);
-+	if (retval < 0) {
-+		dev_err(&plat_dat->i2c_client->dev,
-+			"as5011: can't write threshold\n");
-+		retval = -EINVAL;
-+		goto threshold_error;
-+	}
-+
-+	/* to free irq gpio in chip*/
-+	as5011_i2c_read(plat_dat->i2c_client, AS5011_X_RES_INT);
-+
-+	queue_work(plat_dat->workqueue, &plat_dat->update_axes_work);
-+
-+	return 0;
-+
-+	/* Error management */
-+threshold_error:
-+invert_spinning_error:
-+soft_reset_error:
-+	plat_dat->exit_gpio();
-+init_gpio_error:
-+	input_unregister_device(plat_dat->input_dev);
-+input_register_device_error:
-+	free_irq(plat_dat->int_irq, as5011_int_interrupt);
-+request_int_irq_error:
-+int_irq_name_error:
-+	kfree(plat_dat->int_irq_name);
-+input_allocate_int_device_name_error:
-+	free_irq(plat_dat->button_irq, button_interrupt);
-+request_irq_error:
-+button_irq_name_error:
-+	kfree(plat_dat->button_irq_name);
-+input_allocate_device_name_error:
-+	input_free_device(plat_dat->input_dev);
-+input_allocate_device_error:
-+i2c_protocol_error:
-+	destroy_workqueue(plat_dat->workqueue);
-+workqueue_create_error:
-+workqueue_name_error:
-+	return retval;
-+}
-+static int as5011_remove(struct i2c_client *client)
-+{
-+	struct as5011_platform_data *plat_dat = client->dev.platform_data;
-+
-+	destroy_workqueue(plat_dat->workqueue);
-+	input_unregister_device(plat_dat->input_dev);
-+	free_irq(plat_dat->button_irq, plat_dat);
-+	free_irq(plat_dat->int_irq, plat_dat);
-+	kfree(plat_dat->button_irq_name);
-+	input_free_device(plat_dat->input_dev);
-+	plat_dat->exit_gpio();
-+
-+	return 0;
-+}
-+static const struct i2c_device_id as5011_id[] = {
-+	{ "as5011", 0 },
-+	{ }
-+};
-+
-+static struct i2c_driver as5011_driver = {
-+	.driver = {
-+		.name = "as5011",
-+	},
-+	.probe		= as5011_probe,
-+	.remove		= as5011_remove,
-+	.id_table	= as5011_id,
-+};
-+
-+/*
-+ * Module initialization
-+ */
-+
-+static int __init as5011_init(void)
-+{
-+	return i2c_add_driver(&as5011_driver);
-+}
-+
-+static void __exit as5011_exit(void)
-+{
-+	i2c_del_driver(&as5011_driver);
-+}
-+
-+module_init(as5011_init);
-+module_exit(as5011_exit);
-diff --git a/include/linux/as5011.h b/include/linux/as5011.h
-new file mode 100644
-index 0000000..7db0a75
---- /dev/null
-+++ b/include/linux/as5011.h
-@@ -0,0 +1,72 @@
-+#ifndef _AS5011_H
-+#define _AS5011_H
-+
-+/*
-+ * Copyright (c) 2010 Fabien Marteau
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ */
-+
-+#define AS5011_MAX_NAME_LENGTH	64
-+#define AS5011_MAX_CNAME_LENGTH	16
-+#define AS5011_MAX_PHYS_LENGTH	64
-+#define AS5011_MAX_LENGTH	64
-+
-+/* registers */
-+#define AS5011_CTRL1		0x76
-+#define AS5011_CTRL2		0x75
-+#define AS5011_XP		0x43
-+#define AS5011_XN		0x44
-+#define AS5011_YP		0x53
-+#define AS5011_YN		0x54
-+#define AS5011_X_REG		0x41
-+#define AS5011_Y_REG		0x42
-+#define AS5011_X_RES_INT	0x51
-+#define AS5011_Y_RES_INT	0x52
-+
-+/* CTRL1 bits */
-+#define AS5011_CTRL1_LP_PULSED		0x80
-+#define AS5011_CTRL1_LP_ACTIVE		0x40
-+#define AS5011_CTRL1_LP_CONTINUE	0x20
-+#define AS5011_CTRL1_INT_WUP_EN		0x10
-+#define AS5011_CTRL1_INT_ACT_EN		0x08
-+#define AS5011_CTRL1_EXT_CLK_EN		0x04
-+#define AS5011_CTRL1_SOFT_RST		0x02
-+#define AS5011_CTRL1_DATA_VALID		0x01
-+
-+/* CTRL2 bits */
-+#define AS5011_CTRL2_EXT_SAMPLE_EN	0x08
-+#define AS5011_CTRL2_RC_BIAS_ON		0x04
-+#define AS5011_CTRL2_INV_SPINNING	0x02
-+
-+
-+struct as5011_platform_data {
-+	/* public */
-+	int button_gpio;
-+	int button_irq;
-+	int int_gpio;
-+	int int_irq;
-+	char Xp, Xn; /* threshold for x axis */
-+	char Yp, Yn; /* threshold for y axis */
-+
-+	int (*init_gpio)(void); /* init interrupts gpios */
-+	void (*exit_gpio)(void);/* exit gpios */
-+
-+	/* private */
-+	int num;
-+	struct input_dev *input_dev;
-+	struct i2c_client *i2c_client;
-+	unsigned char *button_irq_name;
-+	unsigned char *int_irq_name;
-+	char name[AS5011_MAX_NAME_LENGTH];
-+	char cname[AS5011_MAX_CNAME_LENGTH];
-+	char phys[AS5011_MAX_PHYS_LENGTH];
-+	unsigned char data[AS5011_MAX_LENGTH];
-+	char workqueue_name[AS5011_MAX_NAME_LENGTH];
-+	struct workqueue_struct *workqueue;
-+	struct work_struct update_axes_work;
-+};
-+
-+#endif /* _AS5011_H */
++	/* Trigger timerfd notifiers */
++	timerfd_clock_was_set();
+ }
+ 
+ /*
 -- 
-1.7.0.4
+1.7.2.1.45.gb66c2
 
