@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0KWHt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:49:56 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:36984 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab0KWHtz (ORCPT
+	id S1752546Ab0KWHvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:51:19 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33092 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab0KWHvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:49:55 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] mlock: release mmap_sem every 256 faulted pages
-Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
-        Michael Rubin <mrubin@google.com>
-In-Reply-To: <20101122215746.e847742d.akpm@linux-foundation.org>
-References: <20101123050052.GA24039@google.com> <20101122215746.e847742d.akpm@linux-foundation.org>
-Message-Id: <20101123164107.7BBC.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 23 Nov 2010 02:51:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=WpQwhxrVcgwyHa+K2wasNpia/Ner8pINkNRDuKzYDjHAehPCNvNHGQNWCFtw7cs15D
+         5iaFNjyH6Sxz+fb8v+wxasN95F210DyKKtHiXNuFoyTaEJS9NokgX5alAGX0XFm6mAco
+         I868gB599wG6OqCDuOO9oX2x5U4TNP3rXwuw0=
+Subject: [PATCH 1/3] ASoC: max98088 - fix a memory leak
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Hsiang <Peter.Hsiang@maxim-ic.com>,
+        Jesse Marroquin <jesse.marroquin@maxim-ic.com>
+Content-Type: text/plain
+Date: Tue, 23 Nov 2010 15:56:21 +0800
+Message-Id: <1290498981.7286.4.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 23 Nov 2010 16:49:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 22 Nov 2010 21:00:52 -0800 Michel Lespinasse <walken@google.com> wrote:
-> 
-> > Hi,
-> > 
-> > I'd like to sollicit comments on this proposal:
-> > 
-> > Currently mlock() holds mmap_sem in exclusive mode while the pages get
-> > faulted in. In the case of a large mlock, this can potentially take a
-> > very long time.
-> 
-> A more compelling description of why this problem needs addressing
-> would help things along.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/max98088.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Michel, as far as I know, now Michael Rubin (now I'm ccing him) are trying
-to make automatic MM test suit. So if possible, can you please make
-test case which reproduce your workload?
+diff --git a/sound/soc/codecs/max98088.c b/sound/soc/codecs/max98088.c
+index 4ee5b1a..b679586 100644
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -2020,7 +2020,10 @@ err_access:
+ 
+ static int max98088_remove(struct snd_soc_codec *codec)
+ {
++       struct max98088_priv *max98088 = snd_soc_codec_get_drvdata(codec);
++
+        max98088_set_bias_level(codec, SND_SOC_BIAS_OFF);
++       kfree(max98088->eq_texts);
+ 
+        return 0;
+ }
+-- 
+1.7.2
 
-http://code.google.com/p/samplergrapher/
-
-
-I hope to join to solve your issue. and I also hope you help to understand
-and reproduce your issue. 
-
-Thanks.
-
-> 
-> > +		/*
-> > +		 * Limit batch size to 256 pages in order to reduce
-> > +		 * mmap_sem hold time.
-> > +		 */
-> > +		nfault = nstart + 256 * PAGE_SIZE;
-> 
-> It would be nicer if there was an rwsem API to ask if anyone is
-> currently blocked in down_read() or down_write().  That wouldn't be too
-> hard to do.  It wouldn't detect people polling down_read_trylock() or
-> down_write_trylock() though.
-
-Andrew, yes it is certinally optimal. But I doubt it improve mlock
-performance a lot. because mlock is _very_ slooooooow syscall.
-lock regrabing may be cheap than it. So, _IF_ you can allow, I hope
-we take a simple method at first. personally I think Michel move 
-forwarding right way. then I don't hope to make a hardest hurdle.
-
-Thanks.
 
 
