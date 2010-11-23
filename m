@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab0KWPPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:15:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006Ab0KWPPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:15:06 -0500
-Date: Tue, 23 Nov 2010 16:08:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:sched/core] cpu: Remove incorrect BUG_ON
-Message-ID: <20101123150813.GA535@redhat.com>
-References: <tip-51a96c77815e7f139892a6e9c8275a50e9baebdf@git.kernel.org> <20101123143910.GA31502@redhat.com> <1290524704.2072.412.camel@laptop>
+	id S1754867Ab0KWPQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:16:43 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59843 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab0KWPQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 10:16:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Of47hyJ+Ds0IDUQYCqtVqAl845es6UeQV8rC9tVtSwI6dMK6cRdMm5anM1EbYoPH0R
+         PT9joRPTuWmIF9PBN1bEvMfHTgXfysFc2sC7xspR3UlR8mXLRdnKQM4VLRqp7yx5WQeY
+         Z3kr3NYmQSwHd/hUd8cei/qE5ZnrhQ6gi2p2k=
+Date: Tue, 23 Nov 2010 17:17:07 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Subject: Re: addrconf: refcnt with  IPV6_PRIVACY enabled
+Message-ID: <20101123151707.GA4076@swordfish.minsk.epam.com>
+References: <20101123134003.GB4142@swordfish.minsk.epam.com>
+ <1290522803.3046.11.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
 Content-Disposition: inline
-In-Reply-To: <1290524704.2072.412.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1290522803.3046.11.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23, Peter Zijlstra wrote:
->
-> Ah,. uhm,. you mean, not do anything at all?
->
-> Dunno, really, let me try and read the code there.
 
-Thanks. This is very minor of course, but it would be nice to
-undestand the reason. To me it looks unneeded, but I don't trust
-myself.  (snippets from my previous email below).
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On (11/23/10 15:33), Eric Dumazet wrote:
+> Are you sure the problem you try to solve is not already solved in
+> commit 88b2a9a3d98a19496d64aadda7158c0ad51cbe7d in net-2.6 tree ?
+>=20
+> http://git.kernel.org/?p=3Dlinux/kernel/git/davem/net-2.6.git;a=3Dcommitd=
+iff;h=3D88b2a9a3d98a19496d64aadda7158c0ad51cbe7d
+>=20
+
+Seems to work for me.=20
+Sorry for noise, thank you.
+
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
 
+	Sergey
 
-With or without this change, even if we know that rq->idle is running
-we can't know if it (say) already started play_dead_common() or not.
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature
 
-We are going to call __cpu_die(), afaics it should do the necessary
-synchronization in any case.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-For example, native_cpu_die() waits for cpu_state == CPU_DEAD in a
-loop. Of course it should work in practice (it also does msleep),
-but in theory there is no guarantee.
+iJwEAQECAAYFAkzr2vMACgkQfKHnntdSXjRqSgP/aBgyAjrdSbujD1o4fH0c3F7c
+yIruwfy+WWsHUaQV/THiWI7jupYW2DTrwZQZa9PpH9IWh5Bp9DmQ5XcKXQsYv+1R
+OZ0mKmFGbl63kH+BXhdMZIFdU4Oe5JsVuMNismb3g6jOndVv/umXrMpjHaeC+bUS
+st5Y7f5vkQnvP0ecqTo=
+=BMCe
+-----END PGP SIGNATURE-----
 
-So. Can't we just remove this wait-loop? We know that rq->idle
-will be scheduled "soon", I don't understand why it is necessary
-to ensure that context_switch() has already happened.
-
-Oleg.
-
+--KsGdsel6WgEHnImy--
