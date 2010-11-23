@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab0KWSka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:40:30 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:53170 "EHLO smtp.infotech.no"
+	id S1756185Ab0KWTBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 14:01:06 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:33602 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab0KWSk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:40:28 -0500
-Message-ID: <4CEC0A95.5020201@interlog.com>
-Date: Tue, 23 Nov 2010 13:40:21 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754613Ab0KWTBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 14:01:03 -0500
+Date: Tue, 23 Nov 2010 11:01:03 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] md: Call blk_queue_flush() to establish flush/fua
+	support
+Message-ID: <20101123190103.GW14383@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20101122232208.GU14383@tux1.beaverton.ibm.com> <20101123105000.331b40f8@notabene.brown>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>, ltuikov@yahoo.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-References: <949636.86471.qm@web31809.mail.mud.yahoo.com> <AANLkTi=7tW6wqrk8ZkFuTYwmS-wZ4nQ+jkxk8U95H42F@mail.gmail.com> <4CEABE2E.4010609@interlog.com> <20101123045900.GK20296@one-eyed-alien.net>
-In-Reply-To: <20101123045900.GK20296@one-eyed-alien.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101123105000.331b40f8@notabene.brown>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-22 11:59 PM, Matthew Dharm wrote:
-> On Mon, Nov 22, 2010 at 02:02:06PM -0500, Douglas Gilbert wrote:
->> On 10-11-22 12:07 PM, Linus Torvalds wrote:
->>> On Mon, Nov 22, 2010 at 8:56 AM, Luben Tuikov<ltuikov@yahoo.com>   wrote:
->>>>
->>>> Some kernel transport drivers unconditionally disable
->>>> retrieval of the Caching mode page. One such for example is
->>>> the BBB/CBI transport over USB.
->>>
->>> One reason for that is that historically we've seen devices that
->>> simply go crazy - to the point of simply stopping to respond to
->>> anything - when you ask for pages that Windows doesn't ask for.
->>>
->>> It's especially common on USB storage, but it happens elsewhere too.
->>> The device firmware simply hasn't ever been tested in that situation,
->>> and it's buggy.
->>>
->>> So I don't mind the patch per se, but I think it's potentially way
->>> more dangerous than it looks.
->>
->> The vast majority of USB mass storage devices are based
->> on SCSI-2 (1994) or a particularly nasty standard
->> called RBC (Reduced Block Commands, 1999) which is a
->> partial subset of the block commands (i.e. disk related).
->> We are all aware of the quality of most of the device
->> end implementations out in the wild.
->
-> Not true.  The vast majority of USB mass storage devices adhere to no SCSI
-> or T10 specification at all.  The official definition of the "Transparent
-> SCSI" operating mode of the USB Mass Storage Class is "that which
-> microsoft/sun/other major vendors use".  Of course, that's not written down
-> anywhere, but it was the intent of the committee and that is the reason why
-> the committee rejected all attempts by people like me to implement a
-> command-based compliance test.
+Here's a shorter version that sets up flush/fua unconditionally.
+---
+Before 2.6.37, the md layer had a mechanism for catching I/Os with the barrier
+flag set, and translating the barrier into barriers for all the underlying
+devices.  With 2.6.37, I/O barriers have become plain old flushes, and the md
+code was updated to reflect this.  However, one piece was left out -- the md
+layer does not tell the block layer that it supports flushes or FUA access at
+all, which results in md silently dropping flush requests.
 
-Okay.
+Since the support already seems there, just add this one piece of bookkeeping.
 
->> I believe what Luben is working with is a new standard
->> called UAS (soon to be ratified) which is based on
->> www.t10.org work in the last few years. It seems to be
->> an attempt to throw out the older USB mass storage
->> transport and do it again, properly.
->
-> Luben's patch changes the behavior of sd-mod, which would affect both
-> usb-storage and UAS.
->
-> The primary thing that UAS adds is support for USB 3.0 streams and TCQ,
-> which are both designed to improve performance.  I consider it likely that
-> the quality of device firmware will be equally poor as older devices.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-That depends on how low we, and particularly W7, set
-the bar. And W7 has a similar set of problems to
-us. For example, how to detect an SSD supporting
-trim behind a USB transport.
+ drivers/md/md.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Doug Gilbert
-
-> That said, Luben's patch is kinda slick.  sd-mod already asks for a lot of
-> mode page data; it does this so that it's request matches the observed
-> behavior of a "popular" Redmond, WA-based OS.  Luben's patch just searches
-> through that data to see if it can find what it is looking for, rather than
-> rqeuesting a specific mode page later (which may not be supported).
->
-> That said, I still consider this somewhat risky.  We've seen devices with
-> grossly inaccurate data before.
->
-> But, to my thinking, as long as the devices don't see any change in the
-> command stream, then I think the risk has been properly mitigated.  To my
-> understanding, this is the case.
->
-> Matt
->
-
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 324a366..43243a4 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -4338,6 +4338,8 @@ static int md_alloc(dev_t dev, char *name)
+ 	if (mddev->kobj.sd &&
+ 	    sysfs_create_group(&mddev->kobj, &md_bitmap_group))
+ 		printk(KERN_DEBUG "pointless warning\n");
++
++	blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
+  abort:
+ 	mutex_unlock(&disks_mutex);
+ 	if (!error && mddev->kobj.sd) {
