@@ -1,58 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab0KWXXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 18:23:32 -0500
-Received: from mail.perches.com ([173.55.12.10]:1822 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab0KWXXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 18:23:32 -0500
-Date: Tue, 23 Nov 2010 15:23:27 -0800 (PST)
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Arjan van de Ven <arjan@infradead.org>,
-        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: About multi-line printk and the need (not) to repeat loglevel
- markers [Was: Re: [PATCH] ARM: mx3/pcm037: properly allocate memory for
- mx3-camera]
-In-Reply-To: <20101123223344.GE26510@n2100.arm.linux.org.uk>
-Message-ID: <Pine.LNX.4.30.1011231520150.20819-100000@mail.perches.com>
+	id S1754168Ab0KWXYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 18:24:39 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51009 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab0KWXYh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 18:24:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gCy/f4l1MURGqbex9FSInDrww/fhE6ko9Sz34fQw/OcCE4eMIXzM41ureR6hPXAx31
+         x0Uq9Zq1nGmScCU79SG9eYYfbz90jmmop2/sYojDPzunt2m2bYBvIM50EXKesPJgr01M
+         G79srC682H7Gk1abUansg4SM/tbE/SBi9+4ik=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101123092826.GD19571@csn.ul.ie>
+References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
+	<20101123092826.GD19571@csn.ul.ie>
+Date: Wed, 24 Nov 2010 08:24:35 +0900
+Message-ID: <AANLkTi=KunDRwVd73vtbng0F+a=QBgJeV5BXrewYJa3R@mail.gmail.com>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010, Russell King - ARM Linux wrote:
+Hi Mel,
 
-> On Wed, Nov 24, 2010 at 07:16:06AM +0900, Linus Torvalds wrote:
-> > No. The KERN_WARNING in the middle of a string is always totally
-> > bogus. There is no "should be". It's just wrong.
-> Oh dear.
-> Sounds like this is something which needs auditing as a result of your
-> change, and sounds like its something that kernelnewbies people could
-> do.  My own greps haven't revealed any cases though.
+On Tue, Nov 23, 2010 at 6:28 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Sun, Nov 21, 2010 at 11:30:23PM +0900, Minchan Kim wrote:
+>> Recently, there are reported problem about thrashing.
+>> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+>> It happens by backup workloads(ex, nightly rsync).
+>> That's because the workload makes just use-once pages
+>> and touches pages twice. It promotes the page into
+>> active list so that it results in working set page eviction.
+>>
+>> Some app developer want to support POSIX_FADV_NOREUSE.
+>> But other OSes don't support it, either.
+>> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
+>>
+>> By Other approach, app developer uses POSIX_FADV_DONTNEED.
+>> But it has a problem. If kernel meets page is writing
+>> during invalidate_mapping_pages, it can't work.
+>> It is very hard for application programmer to use it.
+>> Because they always have to sync data before calling
+>> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+>> be discardable. At last, they can't use deferred write of kernel
+>> so that they could see performance loss.
+>> (http://insights.oetiker.ch/linux/fadvise.html)
+>>
+>> In fact, invalidate is very big hint to reclaimer.
+>> It means we don't use the page any more. So let's move
+>> the writing page into inactive list's head.
+>>
+>> If it is real working set, it could have a enough time to
+>> activate the page since we always try to keep many pages in
+>> inactive list.
+>>
+>> I reuse lru_demote of Peter with some change.
+>>
+>> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>>
+>> Ben, Remain thing is to modify rsync and use
+>> fadvise(POSIX_FADV_DONTNEED). Could you test it?
+>> ---
+>>  include/linux/swap.h |    1 +
+>>  mm/swap.c            |   61 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  mm/truncate.c        |   11 +++++---
+>>  3 files changed, 69 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>> index eba53e7..a3c9248 100644
+>> --- a/include/linux/swap.h
+>> +++ b/include/linux/swap.h
+>> @@ -213,6 +213,7 @@ extern void mark_page_accessed(struct page *);
+>>  extern void lru_add_drain(void);
+>>  extern int lru_add_drain_all(void);
+>>  extern void rotate_reclaimable_page(struct page *page);
+>> +extern void lru_deactive_page(struct page *page);
+>>  extern void swap_setup(void);
+>>
+>>  extern void add_page_to_unevictable_list(struct page *page);
+>> diff --git a/mm/swap.c b/mm/swap.c
+>> index 3f48542..56fa298 100644
+>> --- a/mm/swap.c
+>> +++ b/mm/swap.c
+>> @@ -39,6 +39,8 @@ int page_cluster;
+>>
+>>  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+>>  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+>> +static DEFINE_PER_CPU(struct pagevec, lru_deactive_pvecs);
+>> +
+>>
+>>  /*
+>>   * This path almost never happens for VM activity - pages are normally
+>> @@ -266,6 +268,45 @@ void add_page_to_unevictable_list(struct page *page)
+>>       spin_unlock_irq(&zone->lru_lock);
+>>  }
+>>
+>> +static void __pagevec_lru_deactive(struct pagevec *pvec)
+>> +{
+>
+> Might be worth commenting that this function must be called with pre-emption
+> disabled. FWIW, I am reasonably sure your implementation is prefectly safe
+> but a note wouldn't hurt.
 
-They used to.  I tried to fix all of the ones I could find
-about a year ago.
+Will fix.
 
-commit ad361c9884e809340f6daca80d56a9e9c871690a
-Author: Joe Perches <joe@perches.com>
-Date:   Mon Jul 6 13:05:40 2009 -0700
+>
+>> +     int i, lru, file;
+>> +
+>> +     struct zone *zone = NULL;
+>> +
+>> +     for (i = 0; i < pagevec_count(pvec); i++) {
+>> +             struct page *page = pvec->pages[i];
+>> +             struct zone *pagezone = page_zone(page);
+>> +
+>> +             if (pagezone != zone) {
+>> +                     if (zone)
+>> +                             spin_unlock_irq(&zone->lru_lock);
+>> +                     zone = pagezone;
+>> +                     spin_lock_irq(&zone->lru_lock);
+>> +             }
+>> +
+>> +             if (PageLRU(page)) {
+>> +                     if (PageActive(page)) {
+>> +                             file = page_is_file_cache(page);
+>> +                             lru = page_lru_base_type(page);
+>> +                             del_page_from_lru_list(zone, page,
+>> +                                             lru + LRU_ACTIVE);
+>> +                             ClearPageActive(page);
+>> +                             ClearPageReferenced(page);
+>> +                             add_page_to_lru_list(zone, page, lru);
+>> +                             __count_vm_event(PGDEACTIVATE);
+>> +
+>
+> What about memcg, do we not need to be calling mem_cgroup_add_lru_list() here
+> as well? I'm looking at the differences between what move_active_pages_to_lru()
 
-    Remove multiple KERN_ prefixes from printk formats
+Recently, add_page_to_lru_list contains mem_cgroup_add_lru_list.
 
-    Commit 5fd29d6ccbc98884569d6f3105aeca70858b3e0f ("printk: clean up
-    handling of log-levels and newlines") changed printk semantics.  printk
-    lines with multiple KERN_<level> prefixes are no longer emitted as
-    before the patch.
+> is doing and this. I'm wondering if it'd be worth your whole building a list
+> of active pages that are to be moved to the inactive list and passing them
+> to move_active_pages_to_lru() ? I confuess I have not thought about it deeply
+> so it might be a terrible suggestion but it might reduce duplication of code.
 
-    <level> is now included in the output on each additional use.
+Firstly I tried it so I sent a patch about making
+move_to_active_pages_to_lru more generic.
+move_to_active_pages_to_lru needs zone argument so I need gathering
+pages per zone in truncate.
+I don't want for user of the function to consider even zone and
+zone->lru_lock handling.
 
-    Remove all uses of multiple KERN_<level>s in formats.
+I think the lru_demote_pages could be used elsewhere(ex, readahead max
+size heuristic).
+So it's generic and easy to use. :)
 
-    Signed-off-by: Joe Perches <joe@perches.com>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>
+>> +                             update_page_reclaim_stat(zone, page, file, 0);
+>> +                     }
+>> +             }
+>> +     }
+>> +     if (zone)
+>> +             spin_unlock_irq(&zone->lru_lock);
+>> +
+>> +     release_pages(pvec->pages, pvec->nr, pvec->cold);
+>> +     pagevec_reinit(pvec);
+>> +}
+>> +
+>>  /*
+>>   * Drain pages out of the cpu's pagevecs.
+>>   * Either "cpu" is the current CPU, and preemption has already been
+>> @@ -292,8 +333,28 @@ static void drain_cpu_pagevecs(int cpu)
+>>               pagevec_move_tail(pvec);
+>>               local_irq_restore(flags);
+>>       }
+>> +
+>> +     pvec = &per_cpu(lru_deactive_pvecs, cpu);
+>> +     if (pagevec_count(pvec))
+>> +             __pagevec_lru_deactive(pvec);
+>> +}
+>> +
+>> +/*
+>> + * Function used to forecefully demote a page to the head of the inactive
+>> + * list.
+>
+> s/forecefully/forcefully/
+>
+> The comment should also state *why* and under what circumstances we move
+> pages to the inactive list like this. Also based on the discussions
+> elsewhere in this thread, it'd be nice to include a comment why it's the
+> head of the inactive list and not the tail.
 
+Fair enough.
+
+Thanks for the comment, Mel.
+
+-- 
+Kind regards,
+Minchan Kim
