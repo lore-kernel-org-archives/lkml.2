@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab0KWWZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:25:31 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41589 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab0KWWZ3 (ORCPT
+	id S1753036Ab0KWW3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:29:41 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6458 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929Ab0KWW3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:25:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ocI1kWpHdW+kakJTFCrSOq01iskqDc4O4FnnFHaP8S3o+beOp3M50bSiO8L/s59Psj
-         Ols9COuE2Cejq493AMdBqjVvIvb61vIV5lg9ajhRgrK9n06TJrvTYdXgYWonSF/RLELp
-         hPbY+m2JCJayxpfqby3aymmVOPRDuoDq5IWAA=
-Date: Tue, 23 Nov 2010 14:24:59 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
-Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
-Message-ID: <20101123222458.GB20283@core.coreip.homeip.net>
-References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
- <20101122075554.GA27300@core.coreip.homeip.net>
- <AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+	Tue, 23 Nov 2010 17:29:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 23 Nov 2010 14:25:17 -0800
+From: James Jones <jajones@nvidia.com>
+Organization: NVIDIA
+To: Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH] ARM: Fix find_next_zero_bit and related assembly
+Date: Tue, 23 Nov 2010 15:28:25 -0800
+User-Agent: KMail/1.13.3 (Linux/2.6.33.4; KDE/4.4.3; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1289524615-22484-1-git-send-email-jajones@nvidia.com> <alpine.LFD.2.00.1011231625380.9313@xanadu.home>
+In-Reply-To: <alpine.LFD.2.00.1011231625380.9313@xanadu.home>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011231528.25668.jajones@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 09:40:19AM -0800, Ping Cheng wrote:
-> On Sun, Nov 21, 2010 at 11:55 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > Hi Ping,
-> >
-> > On Thu, Nov 18, 2010 at 04:25:35PM -0800, Ping Cheng wrote:
-> >> We "borrowed" BTN_TOOL_FINGER from input/mouse to pass tablet
-> >> buttons to the user land. This has not been an issue since
-> >> tablet was not considered as a mouse replacement. With the
-> >> introduction of hybrid digitizer and touch devices, the tool
-> >> type is causing confusion. A new tool type is due for the
-> >> well-being of future input device drivers.
-> >>
-> >
-> > I am sorry but I do not understand the reasoning behind
-> > BTN_TOOL_BUTTONS.
+On Tuesday 23 November 2010 13:26:47 Nicolas Pitre wrote:
+> On Thu, 11 Nov 2010, James Jones wrote:
+> > The find_next_bit, find_first_bit, find_next_zero_bit
+> > and find_first_zero_bit functions were not properly
+> > clamping to the maxbit argument at the bit level. They
+> > were instead only checking maxbit at the byte level.
+> > To fix this, add a compare and a conditional move
+> > instruction to the end of the common bit-within-the-
+> > byte code used by all the functions and be sure not to
+> > clobber the maxbit argument before it is used.
+> > 
+> > Signed-off-by: James Jones <jajones@nvidia.com>
+> > Tested-by: Stephen Warren <swarren@nvidia.com>
 > 
-> Don't be sorry, Dmitry. Your statement is fair since:
+> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 > 
-> 1.  I did not explain it clearly;
-> 2.  You do not have the physical device (Intuos series) to test with.
-> 
-> I'll explain it again by refering back to the code to see if I can
-> make it clear or not. The code I am going to refer to is under the
-> Linus tree at git.kernel.org.
-> 
-> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
-> > currently touching the surface of the device. Buttons are expected to be
-> > always present and can change their state regardless of what tool is
-> > being used at the moment. I.e. The full hardware state (between
-> > EV_SYN/SYN_REPORT) could be, for example,
-> >
-> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
-> > BTN_2) or
-> >
-> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
-> >
-> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
-> > BTN_TOOL_PEN or any other BTN_TOOL_*.
-> 
-> You are right. The tablet buttons can go with one of those other
-> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
-> tablet buttons.
-> 
-> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
-> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
-> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
-> (refer to wacom_wac.c line 622 to 665).
-> 
-> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
-> it, the two LEFT and RIGHT buttons will have a hard time to tell the
-> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
-> worst case could be the LEFT/RIGHT sent later overwrites the earlier
-> ones.
-> 
-> We could do some guesswork in the user land to figure out which
-> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
-> happen. But, it would be much cheaper and more reliable if we can tell
-> the user land where those LEFT and RIGHT come from. This is the whole
-> purpose of the kernel driver, isn't it?
+> Please send to RMK's patch system.
 
-What would userspace want to figure what physical button was pressed?
-Input events convey _actions_, i.e. BTN_LEFT means that user pressed
-primary button on the device. It does not matter if it was pressed on
-tablet or the mouse/lens; the response should be the same.
+Thanks for the review.  It's already in the patch system, but I updated the 
+entry to include your reviewed-by line.
 
-If you expect different response, depending on which physical button is
-pressed, then they should emit different BTN_* events. If you are
-concerned that some users might want to have the same actions while
-others want different actions - then please implement key remapping in
-the driver.
+-James
 
-If you want to treat touch and pen as completely independent devices -
-we can do that too but as you remember there are some issues with
-"pairing" of the devices.
-
-Thanks.
-
--- 
-Dmitry
+> > ---
+> > 
+> >  arch/arm/lib/findbit.S |    6 ++++--
+> >  1 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+> > index 1e4cbd4..64f6bc1 100644
+> > --- a/arch/arm/lib/findbit.S
+> > +++ b/arch/arm/lib/findbit.S
+> > @@ -174,8 +174,8 @@ ENDPROC(_find_next_bit_be)
+> > 
+> >   */
+> >  
+> >  .L_found:
+> >  #if __LINUX_ARM_ARCH__ >= 5
+> > 
+> > -		rsb	r1, r3, #0
+> > -		and	r3, r3, r1
+> > +		rsb	r0, r3, #0
+> > +		and	r3, r3, r0
+> > 
+> >  		clz	r3, r3
+> >  		rsb	r3, r3, #31
+> >  		add	r0, r2, r3
+> > 
+> > @@ -190,5 +190,7 @@ ENDPROC(_find_next_bit_be)
+> > 
+> >  		addeq	r2, r2, #1
+> >  		mov	r0, r2
+> >  
+> >  #endif
+> > 
+> > +		cmp	r1, r0			@ Clamp to maxbit
+> > +		movlo	r0, r1
+> > 
+> >  		mov	pc, lr
