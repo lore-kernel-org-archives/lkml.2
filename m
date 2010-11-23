@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab0KWUgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 15:36:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57276 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751955Ab0KWUgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 15:36:32 -0500
-Date: Tue, 23 Nov 2010 12:35:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Ben Gamari <bgamari@gmail.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-Id: <20101123123535.438e9750.akpm@linux-foundation.org>
-In-Reply-To: <20101123145856.GQ19571@csn.ul.ie>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<20101122141449.9de58a2c.akpm@linux-foundation.org>
-	<AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com>
-	<20101122210132.be9962c7.akpm@linux-foundation.org>
-	<20101123093859.GE19571@csn.ul.ie>
-	<87k4k49jii.fsf@gmail.com>
-	<20101123145856.GQ19571@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752294Ab0KWUln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 15:41:43 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51056 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab0KWUlm (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 23 Nov 2010 15:41:42 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [RFC PATCH] fix 32-bit PAE bootup of Xen PV guests.
+Date: Tue, 23 Nov 2010 15:41:35 -0500
+Message-Id: <1290544896-20754-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 14:58:56 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+I was wondering if you could help me out. The git commit
+b40827fa7268fda8a62490728a61c2856f33830b ("x86-32, mm: Add an initial
+page table for core bootstrapping") crashes 32-bit PAE Xen PV guests.
 
-> On Tue, Nov 23, 2010 at 09:55:49AM -0500, Ben Gamari wrote:
-> > On Tue, 23 Nov 2010 09:38:59 +0000, Mel Gorman <mel@csn.ul.ie> wrote:
-> > > > If it's mapped pagecache then the user was being a bit silly (or didn't
-> > > > know that some other process had mapped the file).  In which case we
-> > > > need to decide what to do - leave the page alone, deactivate it, or
-> > > > half-deactivate it as this patch does.
-> > > > 
-> > > 
-> > > What are the odds of an fadvise() user having used mincore() in advance
-> > > to determine if the page was in use by another process? I would guess
-> > > "low" so this half-deactivate gives a chance for the page to be promoted
-> > > again as well as a chance for the flusher threads to clean the page if
-> > > it really is to be reclaimed.
-> > > 
-> > Do we really want to make the user jump through such hoops as using
-> > mincore() just to get the kernel to handle use-once pages properly?
-> 
-> I would think "no" which is why I support half-deactivating pages so they won't
-> have to.
+I am attaching an RFC patch that works around your patch, but honestly
+I was wondering if there is a better way to make this work for 2.6.37?
+Any recommendations?
 
-If the page is page_mapped() then we can assume that some other process
-is using it and we leave it alone *altogether*.
+Without this patch, a PV 32-bit PAE guest crashes during early bootup as
+so:
 
-If the page is dirty or under writeback (and !page_mapped()) then we
-should assume that we should free it asap.  The PageReclaim() trick
-might help with that.
-
-I just don't see any argument for moving the page to the head of the
-inactive LRU as a matter of policy.  We can park it there because we
-can't think of anythnig else to do with it, but it's the wrong place
-for it.
-
+mapping kernel into physical memory
+Xen: setup ISA identity maps
+about to get started...
+(XEN) d0:v0: unhandled page fault (ec=0003)
+(XEN) Pagetable walk from c158901c:
+(XEN)  L3[0x003] = 0000000025645001 00001645
+(XEN)  L2[0x00a] = 00000000258ae067 00019086 
+(XEN)  L1[0x189] = 0000000025589061 00001589
+(XEN) domain_crash_sync called from entry.S (ff1d10d5)
+(XEN) Domain 0 (vcpu#0) crashed on cpu#0:
+(XEN) ----[ Xen-4.1-101123  x86_32p  debug=y  Not tainted ]----
+(XEN) CPU:    0
+(XEN) EIP:    e019:[<c151d371>]
+(XEN) EFLAGS: 00000286   EM: 1   CONTEXT: pv guest
+(XEN) eax: 01586001   ebx: 00000000   ecx: 00000000   edx: 00000000
+(XEN) esi: c150cdc0   edi: c1511840   ebp: c14d5fa4   esp: c14d5f20
+(XEN) cr0: 8005003b   cr4: 000026f0   cr3: 0028aca0   cr2: c158901c
+(XEN) ds: e021   es: e021   fs: 00d8   gs: 0000   ss: e021   cs: e019
+(XEN) Guest stack trace from esp=c14d5f20:
+(XEN)    00000003 c151d371 0001e019 00010086 c14e09a4 c103b02d 00000000 0000000f
+(XEN)    00000035 00000000 00000000 c14d5f65 00000000 205b0000 30202020 3030302e
+(XEN)    c14d5fb4 c11a0020 c14df334 c14d5f78 c10073aa 00000000 00000000 c14df334
+(XEN)    c14d5f94 c100651a 00000000 c154d230 c14df334 c14d5fa4 00000000 c154d230
+(XEN)    c14df334 c14d5fbc c1518646 c143996d c139a010 c15180ab 18f8a000 c14d5fd4
+(XEN)    c15180df 017b2000 00000000 017b2000 c154d230 c14d5ffc c151afd5 1fc98375
+(XEN)    80000481 00040800 00000f62 00000001 00000000 d9076000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+(XEN)    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
 
