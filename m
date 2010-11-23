@@ -1,100 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab0KWPgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:36:45 -0500
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:11044 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753242Ab0KWPgo (ORCPT
+	id S1755402Ab0KWPhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:37:41 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47686 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651Ab0KWPhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:36:44 -0500
-Message-ID: <4CEBDF44.9060101@draigBrady.com>
-Date: Tue, 23 Nov 2010 15:35:32 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ben Gamari <bgamari.foss@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, rsync@lists.samba.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC PATCH] fadvise support in rsync
-References: <20101122103756.E236.A69D9226@jp.fujitsu.com> <1290523792-6170-1-git-send-email-bgamari.foss@gmail.com>
-In-Reply-To: <1290523792-6170-1-git-send-email-bgamari.foss@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Tue, 23 Nov 2010 10:37:39 -0500
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH v2 0/4]  Introduce common hardware spinlock interface
+Date: Tue, 23 Nov 2010 17:38:56 +0200
+Message-Id: <1290526740-27624-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/11/10 14:49, Ben Gamari wrote:
-> Warning for kernel folks: I'm not much of an mm person; let me know if I got
-> anything horribly wrong.
-> 
-> Many folks use rsync in their nightly backup jobs. In these applications, speed
-> is of minimal concern and should be sacrificed in order to minimize the effect
-> of rsync on the rest of the machine. When rsync is working on a large directory
-> it can quickly fill the page cache with written data, displacing the rest of
-> the system's working set. The solution for this is to inform the kernel that
-> our written pages will no longer be needed and should be expelled to disk. The
-> POSIX interface for this, posix_fadvise, has existed for some time, but there
-> has been no useable implementation in any of the major operating systems.
-> 
-> Attempts have been made in the past[1] to use the fadvise interface, but kernel
-> limitations have made this quite messy. In particular, the kernel supports
-> FADV_DONTNEED as a single-shot hint; i.e. if the page is clean when the hint is
-> given it will be freed, otherwise the hint is ignored. For this reason it is
-> necessary to fdatasync() against dirtied pages before giving the hint. This,
-> however, requires that rsync do some accounting, calling fdatasync() and
-> fadvise() only after giving the kernel an opportunity to flush the data itself.
-> 
-> Moreover, fadvise(DONTNEED) frees pages regardless of whether the hinting
-> process is the only referrer. For this reason, the previous fadvise patch also
-> used mincore to identify which pages are needed by other processes. Altogether,
-> this makes using fadvise very expensive from a complexity standpoint. This is
-> very unfortunately since the interface could be quite usable with a few minor
-> changes.
+OMAP4 introduces a Hardware Spinlock device, which provides hardware
+assistance for synchronization and mutual exclusion between heterogeneous
+processors and those not operating under a single, shared operating system
+(e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
 
-Thanks for the easy to understand summary,
-and for working through a solution.
+The intention of this hardware device is to allow remote processors,
+that have no alternative mechanism to accomplish synchronization and mutual
+exclusion operations, to share resources (such as memory and/or any other
+hardware resource).
 
-> I recently asked about this on the LKML[2], where Minchan Kim was nice enough
-> to put together a patch improving support for the FADV_DONTNEED hint. His patch
-> adds invalidated flagged pages to the inactive list. This obviates the need for
-> fdatasync() since the page will be reclaimed by the kernel in the standard
-> inactive reclaim path. Moreover, by adding hinted pages to the head of the
-> inactive list, other processes are given ample time to call the pages back to
-> the active list, eliminating the need for the previous mincore() hack.
-> 
-> Here is my attempt at adding fadvise support to rsync (against v3.0.7). I do
-> this in both the sender (hinting after match_sums()) and the receiver (hinting
-> after receive_data()).
+This patchset adds a generic hwspinlock framework that makes it possible
+for drivers to use those hwspinlock devices and stay platform-independent.
 
-So for the moment you still thrash the cache when
-backing up large files. Fair enough.
+Currently there are two users for this hwspinlock interface:
 
-> In principle we could get better granularity if this was
-> hooked up within match_sums() (or even the map_ptr() interface) and the receive
-> loop in receive_data(), but I wanted to keep things simple at first (any
-> comments on these ideas?) .
+1. Inter-processor communications: on OMAP4, cpu-intensive multimedia
+tasks are offloaded by the host to the remote M3 and/or C64x+ slave
+processors.
 
-I implemented finer grained fadvise(DONTNEED) in dvd-vr¹
-and noted that I had to be careful not to invalidate
-read ahead data from the cache. I.E. I had to specify
-the specific range I had processed.
+To achieve fast message-based communications, a minimal kernel support
+is needed to deliver messages arriving from a remote processor to the
+appropriate user process.
 
-> At the moment is for little more than testing.
-> Considering the potential negative effects of using FADV_DONTNEED on older
-> kernels, it is likely we will want this functionality off by default with a
-> command line flag to enable.
+This communication is based on a simple data structure that is shared between
+the remote processors, and access to it is synchronized using the hwspinlock
+module (remote processor directly places new messages in this shared data
+structure).
 
-The downside being, files opened by other apps may be dropped?
-Well if you're thrashing the cache anyway I'd just enable by
-default and get the good behavior on new kernels.
+2. On some OMAP4 boards, the I2C bus is shared between the A9 and the M3,
+and the hwspinlock is used to synchronize access to it.
 
-cheers,
-Pádraig.
+While (2) can get away with an omap-specific hwspinlock implementation,
+(1) is by no means omap-specific, and a common hwspinlock interface is
+needed to keep it generic, in hopes that it will be useful for other
+vendors as well.
 
-[1] http://www.pixelbeat.org/programs/dvd-vr/dvd-vr-0.9.7.tar.gz
+Changes since v1
+===============
+- Convert to a generic interface (Tony)
+- Provide API flexibility regarding irq handling (Arnd, Grant)
+
+  Note: after reviewing OMAP's L4 access times, and comparing them with
+  external memory latencies, I can say that there is no notable difference.
+  Because of that, we can safely treat the hwspinlock like we do
+  with regular spinlocks: preemption should be disabled, but whether
+  to disable interrupts or not is up to the caller.
+
+  So despite the TRM's recommendation to always disable local interrupts
+  when taking an OMAP Hardware Spinlock, I have decided to allow callers
+  not to do that (by providing the full extent of hwspin_lock(),
+  hwspin_lock_irq() and hwspin_lock_irqsave() API).
+
+  Just like regular spinlocks, it's up to the callers to decide whether
+  interrupts should be disabled or not.
+
+  Sleeping, btw, is still prohibited of course.
+
+- API should silently succeed if framework isn't built (Greg)
+- Don't use ERR_PTR pattern (Grant)
+- Use tristate, fix and extend commentary (Kevin)
+
+Patches are tested against linux-omap-2.6 master, which is 2.6.37-rc2 plus
+omap material, but they apply on top of mainline 2.6.37-rc3 as well
+
+Contributions
+=============
+
+Previous versions of an omap-specific hwspinlock driver circulated in
+linux-omap several times, and received substantial attention and contribution
+from many developers (see [1][2][3][4][5][6]):
+
+Simon Que did the initial implementation and pushed several iterations
+Benoit Cousson provided extensive review, help, improvements and hwmod support
+Hari Kanigeri helped out when Simon was away
+Sanjeev Premi, Santosh Shilimkar and Nishanth Menon did lots of review
+
+I'd like to thank Benoit Cousson, Steve Krueger, Hari Kanigeri,
+Nourredine Hamoudi and Richard Woodruff for useful discussions about
+the OMAP Spinlock requirements and use-cases.
+
+Relevant linux-omap threads:
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/38755
+[2] http://thread.gmane.org/gmane.linux.ports.arm.omap/38917
+[3] http://thread.gmane.org/gmane.linux.ports.arm.omap/39187
+[4] http://thread.gmane.org/gmane.linux.ports.arm.omap/39365
+[5] http://thread.gmane.org/gmane.linux.ports.arm.omap/39815
+[6] http://thread.gmane.org/gmane.linux.ports.arm.omap/40901
+
+Benoit Cousson (1):
+  OMAP4: hwmod data: Add hwspinlock
+
+Ohad Ben-Cohen (1):
+  drivers: hwspinlock: add generic framework
+
+Simon Que (2):
+  drivers: hwspinlock: add OMAP implementation
+  omap: add hwspinlock device
+
+ Documentation/hwspinlock.txt               |  339 +++++++++++++++++
+ arch/arm/mach-omap2/Makefile               |    1 +
+ arch/arm/mach-omap2/hwspinlock.c           |   63 +++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   63 +++
+ drivers/Kconfig                            |    2 +
+ drivers/Makefile                           |    1 +
+ drivers/hwspinlock/Kconfig                 |   22 ++
+ drivers/hwspinlock/Makefile                |    6 +
+ drivers/hwspinlock/hwspinlock.h            |   61 +++
+ drivers/hwspinlock/hwspinlock_core.c       |  561 ++++++++++++++++++++++++++++
+ drivers/hwspinlock/omap_hwspinlock.c       |  231 ++++++++++++
+ include/linux/hwspinlock.h                 |  376 +++++++++++++++++++
+ 12 files changed, 1726 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwspinlock.txt
+ create mode 100644 arch/arm/mach-omap2/hwspinlock.c
+ create mode 100644 drivers/hwspinlock/Kconfig
+ create mode 100644 drivers/hwspinlock/Makefile
+ create mode 100644 drivers/hwspinlock/hwspinlock.h
+ create mode 100644 drivers/hwspinlock/hwspinlock_core.c
+ create mode 100644 drivers/hwspinlock/omap_hwspinlock.c
+ create mode 100644 include/linux/hwspinlock.h
+
