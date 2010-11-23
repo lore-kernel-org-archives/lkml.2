@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab0KWWVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:21:07 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47128 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab0KWWVF (ORCPT
+	id S1752780Ab0KWWXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:23:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33758 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752369Ab0KWWXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:21:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Gdvg/vPYOcaGHPRvyDlqQA1STwlVV5Mohu/8we4kWrXx0VQbxQFTzOM4qW6zNnKTSj
-         b2wMOXNc315VqOffN7A5JzZVzVuI2e6Z3ZzW9mSlFCsm4fDA7LnZzPOXC6qIwLGnIvj4
-         MvQHhi0t+0qG3vcYhgchb0W1+1o6/qcEiViaA=
-MIME-Version: 1.0
-Date: Tue, 23 Nov 2010 23:21:05 +0100
-Message-ID: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
-Subject: Unix socket local DOS (OOM)
-From: Vegard Nossum <vegard.nossum@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Eugene Teo <eugene@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Nov 2010 17:23:14 -0500
+Date: Tue, 23 Nov 2010 14:22:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] [BUG] memcg: fix false positive VM_BUG on non-SMP
+Message-Id: <20101123142247.e8566e3e.akpm@linux-foundation.org>
+In-Reply-To: <20101123210255.GA22484@cmpxchg.org>
+References: <1290520130-9990-1-git-send-email-kirill@shutemov.name>
+	<20101123121606.c07197e5.akpm@linux-foundation.org>
+	<20101123210255.GA22484@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 23 Nov 2010 22:02:55 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-I found this program lying around on my laptop. It kills my box
-(2.6.35) instantly by consuming a lot of memory (allocated by the
-kernel, so the process doesn't get killed by the OOM killer). As far
-as I can tell, the memory isn't being freed when the program exits
-either. Maybe it will eventually get cleaned up the UNIX socket
-garbage collector thing, but in that case it doesn't get called
-quickly enough to save my machine at least.
+> On Tue, Nov 23, 2010 at 12:16:06PM -0800, Andrew Morton wrote:
+> > On Tue, 23 Nov 2010 15:48:50 +0200
+> > "Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
+> > 
+> > > ------------[ cut here ]------------
+> > > kernel BUG at mm/memcontrol.c:2155!
+> > 
+> > This bug has been there for a year, from which I conclude people don't
+> > run memcg on uniprocessor machines a lot.
+> > 
+> > Which is a bit sad, really.  Small machines need resource control too,
+> > perhaps more than large ones..
+> 
+> Admittedly, this patch is compile-tested on UP only, but it should be
+> obvious enough.
+> 
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] memcg: fix page cgroup lock assert on UP
+> 
+> Page cgroup locking primitives use the bit spinlock API functions,
+> which do nothing on UP.
+> 
+> Thus, checking the lock state can not be done by looking at the bit
+> directly, but one has to go through the bit spinlock API as well.
+> 
+> This fixes a guaranteed UP bug, where asserting the page cgroup lock
+> bit as a sanity check crashes the kernel.
+> 
 
-#include <sys/mount.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/wait.h>
+hm, your patch is the same as Kirill's, except you named it
+page_is_cgroup_locked() rather than is_page_cgroup_locked().  I guess
+page_is_cgroup_locked() is a bit better.
 
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-static int send_fd(int unix_fd, int fd)
-{
-        struct msghdr msgh;
-        struct cmsghdr *cmsg;
-        char buf[CMSG_SPACE(sizeof(fd))];
-
-        memset(&msgh, 0, sizeof(msgh));
-
-        memset(buf, 0, sizeof(buf));
-        msgh.msg_control = buf;
-        msgh.msg_controllen = sizeof(buf);
-
-        cmsg = CMSG_FIRSTHDR(&msgh);
-        cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
-        cmsg->cmsg_level = SOL_SOCKET;
-        cmsg->cmsg_type = SCM_RIGHTS;
-
-        msgh.msg_controllen = cmsg->cmsg_len;
-
-        memcpy(CMSG_DATA(cmsg), &fd, sizeof(fd));
-        return sendmsg(unix_fd, &msgh, 0);
-}
-
-int main(int argc, char *argv[])
-{
-        while (1) {
-                pid_t child;
-
-                child = fork();
-                if (child == -1)
-                        exit(EXIT_FAILURE);
-
-                if (child == 0) {
-                        int fd[2];
-                        int i;
-
-                        if (socketpair(PF_UNIX, SOCK_SEQPACKET, 0, fd) == -1)
-                                goto out_error;
-
-                        for (i = 0; i < 100; ++i) {
-                                if (send_fd(fd[0], fd[0]) == -1)
-                                        goto out_error;
-
-                                if (send_fd(fd[1], fd[1]) == -1)
-                                        goto out_error;
-                        }
-
-                        close(fd[0]);
-                        close(fd[1]);
-                        goto out;
-
-                out_error:
-                        fprintf(stderr, "error: %s\n", strerror(errno));
-                out:
-                        exit(EXIT_SUCCESS);
-                }
-
-                while (1) {
-                        pid_t kid;
-                        int status;
-
-                        kid = wait(&status);
-                        if (kid == -1) {
-                                if (errno == ECHILD)
-                                        break;
-                                if (errno == EINTR)
-                                        continue;
-
-                                exit(EXIT_FAILURE);
-                        }
-
-                        if (WIFEXITED(status)) {
-                                if (WEXITSTATUS(status))
-                                        exit(WEXITSTATUS(status));
-                                break;
-                        }
-                }
-        }
-
-        return EXIT_SUCCESS;
-}
-
-
-Vegard
