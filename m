@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0KWSf1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:35:27 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:36795 "EHLO b32.net"
+	id S1756193Ab0KWSgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 13:36:50 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:37238 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab0KWSf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:35:26 -0500
+	id S1752494Ab0KWSgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 13:36:49 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/7] MIPS: Fix CP0 COUNTER clockevent race
-Date: Tue, 23 Nov 2010 10:26:44 -0800
-Message-Id: <444ef6c4bbb47d55c700452d8cd23229@localhost>
+Cc: <alex@ozo.com>, <florian@openwrt.org>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 7/7] MIPS: Fix regression on BCM4710 processor detection
+Date: Tue, 23 Nov 2010 10:26:45 -0800
+Message-Id: <e5a865920b2154408318972b62e92953@localhost>
 In-Reply-To: <8a8eee995454c8b271cceb440e31699a@localhost>
 References: <8a8eee995454c8b271cceb440e31699a@localhost>
 User-Agent: vim 7.2
@@ -22,37 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider the following test case:
-
-write_c0_compare(read_c0_count());
-
-Even if the counter doesn't increment during execution, this might not
-generate an interrupt until the counter wraps around.  The CPU may
-perform the comparison each time CP0 COUNT increments, not when CP0
-COMPARE is written.
-
-If mips_next_event() is called with a very small delta, and CP0 COUNT
-increments during the calculation of "cnt += delta", it is possible
-that CP0 COMPARE will be written with the current value of CP0 COUNT.
-If this is detected, the function should return -ETIME, to indicate
-that the interrupt might not have actually gotten scheduled.
+BCM4710 uses the BMIPS32 core (like BCM6345), not the MIPS 4Kc core as
+was previously believed.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Tested-by: Alexandros C. Couloumbis <alex@ozo.com>
 ---
- arch/mips/kernel/cevt-r4k.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/mips/include/asm/cpu.h  |    4 ++--
+ arch/mips/kernel/cpu-probe.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/arch/mips/kernel/cevt-r4k.c b/arch/mips/kernel/cevt-r4k.c
-index 2f4d7a9..98c5a97 100644
---- a/arch/mips/kernel/cevt-r4k.c
-+++ b/arch/mips/kernel/cevt-r4k.c
-@@ -32,7 +32,7 @@ static int mips_next_event(unsigned long delta,
- 	cnt = read_c0_count();
- 	cnt += delta;
- 	write_c0_compare(cnt);
--	res = ((int)(read_c0_count() - cnt) > 0) ? -ETIME : 0;
-+	res = ((int)(read_c0_count() - cnt) >= 0) ? -ETIME : 0;
- 	return res;
+diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
+index 06d59dc..8687753 100644
+--- a/arch/mips/include/asm/cpu.h
++++ b/arch/mips/include/asm/cpu.h
+@@ -111,8 +111,8 @@
+  * These are the PRID's for when 23:16 == PRID_COMP_BROADCOM
+  */
+ 
+-#define PRID_IMP_BMIPS4KC	0x4000
+-#define PRID_IMP_BMIPS32	0x8000
++#define PRID_IMP_BMIPS32_REV4	0x4000
++#define PRID_IMP_BMIPS32_REV8	0x8000
+ #define PRID_IMP_BMIPS3300	0x9000
+ #define PRID_IMP_BMIPS3300_ALT	0x9100
+ #define PRID_IMP_BMIPS3300_BUG	0x0000
+diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
+index 71620e1..68dae7b 100644
+--- a/arch/mips/kernel/cpu-probe.c
++++ b/arch/mips/kernel/cpu-probe.c
+@@ -905,7 +905,8 @@ static inline void cpu_probe_broadcom(struct cpuinfo_mips *c, unsigned int cpu)
+ {
+ 	decode_configs(c);
+ 	switch (c->processor_id & 0xff00) {
+-	case PRID_IMP_BMIPS32:
++	case PRID_IMP_BMIPS32_REV4:
++	case PRID_IMP_BMIPS32_REV8:
+ 		c->cputype = CPU_BMIPS32;
+ 		__cpu_name[cpu] = "Broadcom BMIPS32";
+ 		break;
+@@ -933,10 +934,6 @@ static inline void cpu_probe_broadcom(struct cpuinfo_mips *c, unsigned int cpu)
+ 		__cpu_name[cpu] = "Broadcom BMIPS5000";
+ 		c->options |= MIPS_CPU_ULRI;
+ 		break;
+-	case PRID_IMP_BMIPS4KC:
+-		c->cputype = CPU_4KC;
+-		__cpu_name[cpu] = "MIPS 4Kc";
+-		break;
+ 	}
  }
  
 -- 
