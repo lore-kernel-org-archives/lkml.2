@@ -1,229 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab0KWPKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:10:55 -0500
-Received: from gse-mta-29-tx.emailfiltering.com ([194.116.198.160]:41018 "EHLO
-	gse-mta-29.emailfiltering.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752109Ab0KWPKx (ORCPT
+	id S1754586Ab0KWPOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:14:24 -0500
+Received: from www.chubut.gov.ar ([200.41.229.190]:36164 "EHLO
+	mail.chubut.gov.ar" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753489Ab0KWPOW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:10:53 -0500
-X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Nov 2010 10:10:53 EST
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
-Subject: PROBLEM: Kernel oops when overwriting a file being debugged in gdb
-From: "Mo Abrahams" <moab@pml.ac.uk>
-To: <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed;
-	boundary="=-TEOP18OS+11Zjw+f3L8x"
-Date: Tue, 23 Nov 2010 15:01:15 +0000
-Message-ID: <1290524475.2514.16.camel@pmpc1094.npm.ac.uk>
+	Tue, 23 Nov 2010 10:14:22 -0500
+Message-ID: <20101123101405.lx8u7vmqmo8gkocs@mail.chubut.gov.ar>
+Date: Tue, 23 Nov 2010 10:14:05 -0300
+From: Web Master Department <web@chubut.gov.ar>
+Reply-to: account.user2@live.com
+To: undisclosed-recipients:;
+Subject: K =?iso-8859-1?b?cnVr4W0sIA==?= =?iso-8859-1?b?+j9ldA==?=
+	u?ivatele
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+K rukám, ú?et u?ivatele,
 
---=-TEOP18OS+11Zjw+f3L8x
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Vezm?te laskav? na v?domí, ?e jsme v poslední dob? ud?lal n?jaké  
+upgrade v na?í
+databázi.
 
-Kernel oops when overwriting a file being debugged in gdb.
+B?hem upgradu do?lo neobvyklé reaguje kód z e-mailové adresy
 
-(The easy answer to this is "don't do it", but the kernel should
-possibly be able to deal with it)
+?ádající deaktivace.
 
-Linux version 2.6.34.7-61.fc13.x86_64
-(mockbuild@x86-02.phx2.fedoraproject.org) (gcc version 4.4.4 20100630
-(Red Hat 4.4.4-10) (GCC) ) #1 SMP Tue Oct 19 04:06:30 UTC 2010
+Ov??te deaktivovat nebo si e-mailový ú?et aktivní.
 
-gdb version GNU gdb (GDB) Fedora (7.1-34.fc13)
+Za ú?elem ov??ení / potvrzení vám e-identity, jste poskytnout následující
 
-Kernel oops messages attached.
+Dat;
 
-To replicate:
+Potvrdit e-mailovou IDENTITY ní?e
 
-/* code.c */
-#include <stdio.h>
+Jméno: ___________________________
 
-int main(void) {
+P?íjmení: _____________________________
 
-puts("hello\n");
-return 0;
-}
-/*end of code*/
+E-mail U?ivatelské jméno: ________________________
 
-> gcc -ggdb3 -o one code.c && gcc -ggdb3 -o two code.c
+E-mail: Heslo: ________________________
 
-> gdb one
-   break 3
-   run
-(breaks at line)
+Budoucí Heslo :___________________________
 
-> cp two one
+Webmail Link: __________________________
 
-KERNEL OOPS!
+Odebrání: __________________( specifikovat ano deaktivovat ?. udr?et.
 
-Mo Abrahams.
+Aktivní)
 
+D?vod pro Deactivation_____________ (pokud ano)
 
--------------------------------------------------------------------------=
--------
-Plymouth Marine Laboratory
-=20
-Registered Office:
-Prospect Place=20
-The Hoe
-Plymouth  PL1 3DH
-=20
-Website: www.pml.ac.uk
-Registered Charity No. 1091222
-PML is a company limited by guarantee
-registered in England & Wales
-company number 4178503
+Upozorn?ní! v selhání ov??ení va?eho e-mailového ú?tu do 48 hodin na
 
--------------------------------------------------------------------------=
--------
-This e-mail, its content and any file attachments are confidential.
+Obdr?ení tohoto oznámení, bude vá? ú?et automaticky
 
-If you have received this e-mail in error please do not copy, disclose =
-it to any third party or use the contents or attachments in any way. =
-Please notify the sender by replying to this e-mail or e-mail =
-forinfo@pml.ac.uk and then delete the email without making any copies or =
-using it in any other way.
+Deaktivován
 
-The content of this message may contain personal views which are not the =
-views of Plymouth Marine Laboratory unless specifically stated.
+D?kujeme Vám za pou?ití na?ich Webmail!
 
-You are reminded that e-mail communications are not secure and may =
-contain viruses. Plymouth Marine Laboratory accepts no liability for any =
-loss or damage which may be caused by viruses.
--------------------------------------------------------------------------=
--------
+Upozorn?ní Kód: ASPH8B02AXV
 
---=-TEOP18OS+11Zjw+f3L8x
-Content-Disposition: attachment;
-	filename="kernel_oops.txt"
-Content-Type: text/plain;
-	charset="UTF-8";
-	name="kernel_oops.txt"
-Content-Transfer-Encoding: base64
+S p?átelským pozdravem,
 
-Tm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtl
-cm5lbCBwYWdpbmcgcmVxdWVzdCBhdCBmZmZmZmZmZmZmZmZmZmZlDQpOb3YgMjMgMTQ6MzA6NTAg
-cG1wYzEwOTQga2VybmVsOiBJUDogWzxmZmZmZmZmZjgxMTBjNjhjPl0gbmFtZWlkYXRhX3RvX2Zp
-bHArMHgyNC8weDUwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBQR0QgMWE0NDA2
-NyBQVUQgMWE0NTA2NyBQTUQgMCANCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IE9v
-cHM6IDAwMDAgWyMyXSBTTVAgDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBsYXN0
-IHN5c2ZzIGZpbGU6IC9zeXMvZGV2aWNlcy9wY2kwMDAwOjAwLzAwMDA6MDA6MWMuNS8wMDAwOjA0
-OjAwLjAvaXJxDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBDUFUgMyANCk5vdiAy
-MyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IE1vZHVsZXMgbGlua2VkIGluOiBmdXNlIG5mcyBs
-b2NrZCBmc2NhY2hlIG5mc19hY2wgYXV0aF9ycGNnc3MgdmJveG5ldGFkcCB2Ym94bmV0Zmx0IHZi
-b3hkcnYgYXV0b2ZzNCBjb3JldGVtcCBzdW5ycGMgY3B1ZnJlcV9vbmRlbWFuZCBhY3BpX2NwdWZy
-ZXEgZnJlcV90YWJsZSBpcHY2IHVpbnB1dCBzbmRfaGRhX2NvZGVjX2FuYWxvZyBzbmRfaGRhX2lu
-dGVsIHNuZF9oZGFfY29kZWMgbnZpZGlhKFApIHNuZF9od2RlcCBzbmRfc2VxIHNuZF9zZXFfZGV2
-aWNlIHNuZF9wY20gaTJjX2k4MDEgaTJjX2NvcmUgcHBkZXYgcGFycG9ydF9wYyBwYXJwb3J0IHRn
-MyBzbmRfdGltZXIgc25kIHNvdW5kY29yZSBzbmRfcGFnZV9hbGxvYyB4MzhfZWRhYyBkY2RiYXMg
-aVRDT193ZHQgaVRDT192ZW5kb3Jfc3VwcG9ydCBlZGFjX2NvcmUgbWljcm9jb2RlIFtsYXN0IHVu
-bG9hZGVkOiBzY3NpX3dhaXRfc2Nhbl0NCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6
-DQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBQaWQ6IDE2NDA5LCBjb21tOiBjcCBU
-YWludGVkOiBQICAgICAgRCAgICAyLjYuMzQuNy02MS5mYzEzLng4Nl82NCAjMSAwVFA0MTIvUHJl
-Y2lzaW9uIFdvcmtTdGF0aW9uIFQzNDAwICANCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJu
-ZWw6IFJJUDogMDAxMDpbPGZmZmZmZmZmODExMGM2OGM+XSAgWzxmZmZmZmZmZjgxMTBjNjhjPl0g
-bmFtZWlkYXRhX3RvX2ZpbHArMHgyNC8weDUwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2Vy
-bmVsOiBSU1A6IDAwMTg6ZmZmZjg4MDIxMWEzMWQ1OCAgRUZMQUdTOiAwMDAxMDI4Mg0KTm92IDIz
-IDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogUkFYOiBmZmZmZmZmZmZmZmZmZmU2IFJCWDogZmZm
-Zjg4MDIxMWEzMWUyOCBSQ1g6IDAwMDAwMDAwMDAwMDAwMDQNCk5vdiAyMyAxNDozMDo1MCBwbXBj
-MTA5NCBrZXJuZWw6IFJEWDogMDAwMDAwMDAwMDAwMDAwMCBSU0k6IGZmZmY4ODAyMTFhMzFkNjgg
-UkRJOiBmZmZmODgwMjExYTMxZTI4DQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBS
-QlA6IGZmZmY4ODAyMTFhMzFkNjggUjA4OiBmZmZmODgwMWRjMzk1MDAwIFIwOTogMDAwMDAwMDAw
-MDAwMDAwMA0KTm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogUjEwOiAwMDAwMDAwMDAw
-MDAwNmFiIFIxMTogMDAwMDAwMDAwMDAwMDAwNCBSMTI6IDAwMDAwMDAwMDAwMDAwMDANCk5vdiAy
-MyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFIxMzogMDAwMDAwMDAwMDAwODIwMSBSMTQ6IDAw
-MDAwMDAwMDAwMDAyMDAgUjE1OiAwMDAwMDAwMDAwMDAwMDIyDQpOb3YgMjMgMTQ6MzA6NTAgcG1w
-YzEwOTQga2VybmVsOiBGUzogIDAwMDA3ZjE2ZmM0YTk3YTAoMDAwMCkgR1M6ZmZmZjg4MDAwMjBj
-MDAwMCgwMDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEw
-OTQga2VybmVsOiBDUzogIDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAwMDAwMDgwMDUw
-MDNiDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBDUjI6IGZmZmZmZmZmZmZmZmZm
-ZmUgQ1IzOiAwMDAwMDAwMWM4ZmNjMDAwIENSNDogMDAwMDAwMDAwMDA0MDZlMA0KTm92IDIzIDE0
-OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogRFIwOiAwMDAwMDAwMDAwMDAwMDAwIERSMTogMDAwMDAw
-MDAwMDAwMDAwMCBEUjI6IDAwMDAwMDAwMDAwMDAwMDANCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5
-NCBrZXJuZWw6IERSMzogMDAwMDAwMDAwMDAwMDAwMCBEUjY6IDAwMDAwMDAwZmZmZjBmZjAgRFI3
-OiAwMDAwMDAwMDAwMDAwNDAwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBQcm9j
-ZXNzIGNwIChwaWQ6IDE2NDA5LCB0aHJlYWRpbmZvIGZmZmY4ODAyMTFhMzAwMDAsIHRhc2sgZmZm
-Zjg4MDFmMmM2MTc3MCkNCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFN0YWNrOg0K
-Tm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogMDAwMDAwMDAwMDAwMDAwMCAwMDAwMDAw
-MDAwMDA4MjAxIGZmZmY4ODAyMTFhMzFkYjggZmZmZmZmZmY4MTExN2UyMQ0KTm92IDIzIDE0OjMw
-OjUwIHBtcGMxMDk0IGtlcm5lbDogPDA+IGZmZmY4ODAyMTFhMzFkODggMDAwMDAwMDA4MTFjZGM0
-ZiBmZmZmODgwMjExYTMxZGI4IGZmZmY4ODAyMTFhMzFlMjgNCk5vdiAyMyAxNDozMDo1MCBwbXBj
-MTA5NCBrZXJuZWw6IDwwPiAwMDAwMDAwMDAwMDA4MjAxIDAwMDAwMDAwMDAwMDAwMjIgMDAwMDAw
-MDAwMDAwMDAwMCAwMDAwMDAwMDAwMDA4MjAyDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2Vy
-bmVsOiBDYWxsIFRyYWNlOg0KTm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogWzxmZmZm
-ZmZmZjgxMTE3ZTIxPl0gZG9fbGFzdCsweDQ0Ny8weDViOA0KTm92IDIzIDE0OjMwOjUwIHBtcGMx
-MDk0IGtlcm5lbDogWzxmZmZmZmZmZjgxMTE5ODY4Pl0gZG9fZmlscF9vcGVuKzB4MjE3LzB4NWZl
-DQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBbPGZmZmZmZmZmODEyMTRlMjM+XSA/
-IG1pZ2h0X2ZhdWx0KzB4MjEvMHgyMw0KTm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDog
-WzxmZmZmZmZmZjgxMTIyNWNhPl0gPyBhbGxvY19mZCsweDdiLzB4MTI0DQpOb3YgMjMgMTQ6MzA6
-NTAgcG1wYzEwOTQga2VybmVsOiBbPGZmZmZmZmZmODExMGMyMzY+XSBkb19zeXNfb3BlbisweDYz
-LzB4MTBmDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBbPGZmZmZmZmZmODExMGMz
-MTU+XSBzeXNfb3BlbisweDIwLzB4MjINCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6
-IFs8ZmZmZmZmZmY4MTAwOWM3Mj5dIHN5c3RlbV9jYWxsX2Zhc3RwYXRoKzB4MTYvMHgxYg0KTm92
-IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogQ29kZTogNWIgNWUgNWIgNDEgNWMgYzkgYzMg
-NTUgNDggODkgZTUgNDggODMgZWMgMTAgMGYgMWYgNDQgMDAgMDAgNjUgNDggOGIgMDQgMjUgMDAg
-Y2MgMDAgMDAgNGMgOGIgODAgNjggMDQgMDAgMDAgNDggOGIgODcgOTAgMDAgMDAgMDAgPDQ4PiA4
-MyA3OCAxOCAwMCA3NSAxNiA0YyA4YiA0ZiAwOCA0OCA4YiAzNyAzMSBjOSA0OCA4OSBjMiA0YyA4
-OSANCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFJJUCAgWzxmZmZmZmZmZjgxMTBj
-NjhjPl0gbmFtZWlkYXRhX3RvX2ZpbHArMHgyNC8weDUwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEw
-OTQga2VybmVsOiBSU1AgPGZmZmY4ODAyMTFhMzFkNTg+DQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEw
-OTQga2VybmVsOiBDUjI6IGZmZmZmZmZmZmZmZmZmZmUNCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5
-NCBrZXJuZWw6IC0tLVsgZW5kIHRyYWNlIDM5ZTdmYWYwOWM2MzhkMmIgXS0tLQ0KTm92IDIzIDE0
-OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogQlVHOiBzbGVlcGluZyBmdW5jdGlvbiBjYWxsZWQgZnJv
-bSBpbnZhbGlkIGNvbnRleHQgYXQga2VybmVsL3J3c2VtLmM6MjENCk5vdiAyMyAxNDozMDo1MCBw
-bXBjMTA5NCBrZXJuZWw6IGluX2F0b21pYygpOiAwLCBpcnFzX2Rpc2FibGVkKCk6IDEsIHBpZDog
-MTY0MDksIG5hbWU6IGNwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBQaWQ6IDE2
-NDA5LCBjb21tOiBjcCBUYWludGVkOiBQICAgICAgRCAgICAyLjYuMzQuNy02MS5mYzEzLng4Nl82
-NCAjMQ0KTm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogQ2FsbCBUcmFjZToNCk5vdiAy
-MyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZmZmZmZmY4MTAzYzU2Yz5dIF9fbWlnaHRf
-c2xlZXArMHhlZC8weGVmDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBbPGZmZmZm
-ZmZmODE0NGMxZTE+XSBkb3duX3JlYWQrMHgyNC8weDNiDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEw
-OTQga2VybmVsOiBbPGZmZmZmZmZmODEwODJlNTM+XSBhY2N0X2NvbGxlY3QrMHg0NC8weDE4Mw0K
-Tm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogWzxmZmZmZmZmZjgxMDUwYmM0Pl0gZG9f
-ZXhpdCsweDIwOS8weDc0MA0KTm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogWzxmZmZm
-ZmZmZjgxNDRhYzg2Pl0gPyBwcmludGsrMHg0MS8weDQzDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEw
-OTQga2VybmVsOiBbPGZmZmZmZmZmODE0NGRmMTQ+XSBvb3BzX2VuZCsweGJmLzB4YzcNCk5vdiAy
-MyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZmZmZmZmY4MTAzMGJmOT5dIG5vX2NvbnRl
-eHQrMHgxZmMvMHgyMGINCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZmZmZm
-ZmY4MTAzMGQ4Yz5dIF9fYmFkX2FyZWFfbm9zZW1hcGhvcmUrMHgxODQvMHgxYTcNCk5vdiAyMyAx
-NDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZmZmZmZmY4MTAzMGRjMj5dIGJhZF9hcmVhX25v
-c2VtYXBob3JlKzB4MTMvMHgxNQ0KTm92IDIzIDE0OjMwOjUwIHBtcGMxMDk0IGtlcm5lbDogWzxm
-ZmZmZmZmZjgxNDUwMDk3Pl0gZG9fcGFnZV9mYXVsdCsweDE5MC8weDJiYg0KTm92IDIzIDE0OjMw
-OjUwIHBtcGMxMDk0IGtlcm5lbDogWzxmZmZmZmZmZjgxNDRkMzc1Pl0gcGFnZV9mYXVsdCsweDI1
-LzB4MzANCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZmZmZmZmY4MTEwYzY4
-Yz5dID8gbmFtZWlkYXRhX3RvX2ZpbHArMHgyNC8weDUwDQpOb3YgMjMgMTQ6MzA6NTAgcG1wYzEw
-OTQga2VybmVsOiBbPGZmZmZmZmZmODExMTdlMjE+XSBkb19sYXN0KzB4NDQ3LzB4NWI4DQpOb3Yg
-MjMgMTQ6MzA6NTAgcG1wYzEwOTQga2VybmVsOiBbPGZmZmZmZmZmODExMTk4Njg+XSBkb19maWxw
-X29wZW4rMHgyMTcvMHg1ZmUNCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZm
-ZmZmZmY4MTIxNGUyMz5dID8gbWlnaHRfZmF1bHQrMHgyMS8weDIzDQpOb3YgMjMgMTQ6MzA6NTAg
-cG1wYzEwOTQga2VybmVsOiBbPGZmZmZmZmZmODExMjI1Y2E+XSA/IGFsbG9jX2ZkKzB4N2IvMHgx
-MjQNCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6IFs8ZmZmZmZmZmY4MTEwYzIzNj5d
-IGRvX3N5c19vcGVuKzB4NjMvMHgxMGYNCk5vdiAyMyAxNDozMDo1MCBwbXBjMTA5NCBrZXJuZWw6
-IFs8ZmZmZmZmZmY4MTEwYzMxNT5dIHN5c19vcGVuKzB4MjAvMHgyMg0KTm92IDIzIDE0OjMwOjUw
-IHBtcGMxMDk0IGtlcm5lbDogWzxmZmZmZmZmZjgxMDA5YzcyPl0gc3lzdGVtX2NhbGxfZmFzdHBh
-dGgrMHgxNi8weDFiDQpOb3YgMjMgMTQ6MzI6MDcgcG1wYzEwOTQgYWJydDogS2VybmVsb29wczog
-UmVwb3J0ZWQgMiBrZXJuZWwgb29wc2VzIHRvIEFicnQNCk5vdiAyMyAxNDozMjowNyBwbXBjMTA5
-NCBhYnJ0ZDogRGlyZWN0b3J5ICdrZXJuZWxvb3BzLTEyOTA1MjI3MjctMTk3NC0yJyBjcmVhdGlv
-biBkZXRlY3RlZA0KTm92IDIzIDE0OjMyOjA3IHBtcGMxMDk0IGFicnRkOiBDcmFzaCBpcyBpbiBk
-YXRhYmFzZSBhbHJlYWR5IChkdXAgb2YgL3Zhci9zcG9vbC9hYnJ0L2tlcm5lbG9vcHMtMTI5MDUx
-NjkxOS0xOTg4LTIpDQpOb3YgMjMgMTQ6MzI6MDcgcG1wYzEwOTQgYWJydGQ6IERlbGV0aW5nIGNy
-YXNoIGtlcm5lbG9vcHMtMTI5MDUyMjcyNy0xOTc0LTIgKGR1cCBvZiBrZXJuZWxvb3BzLTEyOTA1
-MTY5MTktMTk4OC0yKSwgc2VuZGluZyBkYnVzIHNpZ25hbA0KTm92IDIzIDE0OjMyOjA3IHBtcGMx
-MDk0IGFicnRkOiBEaXJlY3RvcnkgJ2tlcm5lbG9vcHMtMTI5MDUyMjcyNy0xOTc0LTEnIGNyZWF0
-aW9uIGRldGVjdGVkDQpOb3YgMjMgMTQ6MzI6MDcgcG1wYzEwOTQgYWJydGQ6IE5ldyBjcmFzaCAv
-dmFyL3Nwb29sL2FicnQva2VybmVsb29wcy0xMjkwNTIyNzI3LTE5NzQtMSwgcHJvY2Vzc2luZw0K
-Tm92IDIzIDE0OjMyOjA3IHBtcGMxMDk0IGFicnRkOiBSdW5BcHAoJy92YXIvc3Bvb2wvYWJydC9r
-ZXJuZWxvb3BzLTEyOTA1MjI3MjctMTk3NC0xJywndGVzdCB4ImBjYXQgY29tcG9uZW50YCIgPSB4
-InhvcmcteDExLXNlcnZlci1Yb3JnIiAmJiBjcCAvdmFyL2xvZy9Yb3JnLjAubG9nIC4nKQ0KDQo=
+Webmail slu?ba ?ízení týmu.
+
+ABN 33
+
+V?echna práva vyhrazena.
+
+************************************************** ******
+
+Jedná se o správní Zpráva z Webmail Server. To není spam.
+
+?as od ?asu, bude Mezinárodní Webmail Server poslat jako
+
+Zprávy, aby mohl komunikovat d?le?ité informace o va?em
+
+P?edplatné.
+
+************************************************** *****
 
 
---=-TEOP18OS+11Zjw+f3L8x--
+
