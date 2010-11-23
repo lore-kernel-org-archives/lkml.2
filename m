@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab0KWOLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 09:11:51 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:2581 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752694Ab0KWOLt (ORCPT
+	id S1754778Ab0KWOMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 09:12:44 -0500
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:39953 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754750Ab0KWOMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 09:11:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuEJAMpZ60x5LdQd/2dsb2JhbACUYYECjQByvUeFSwSKXoUT
-Message-Id: <20101123140707.701911603@kernel.dk>
-User-Agent: quilt/0.48-1
-Date: Wed, 24 Nov 2010 01:06:11 +1100
-From: npiggin@kernel.dk
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [patch 1/7] fs: mark_inode_dirty barrier fix
-References: <20101123140610.292941494@kernel.dk>
-Content-Disposition: inline; filename=fs-mark_inode_dirty-barrier-fix.patch
+	Tue, 23 Nov 2010 09:12:42 -0500
+Subject: Re: [PATCH] mutex: Introduce arch_mutex_cpu_relax()
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Reply-To: gerald.schaefer@de.ibm.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <20101122121049.01c4690a.akpm@linux-foundation.org>
+References: <1290437256.7455.4.camel@thinkpad>
+	 <20101122121049.01c4690a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 15:12:36 +0100
+Message-ID: <1290521556.16834.25.camel@thinkpad>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystems appear to be using ->dirty_inode, expecting that the dirtying
-operating is done and visible to all CPUs (eg. setting private inode dirty
-bits, without any barriers themselves). So release the dirty "critical
-section" with a barrier before calling ->dirty_inode.
+On Mo, 2010-11-22 at 12:10 -0800, Andrew Morton wrote:
+> On Mon, 22 Nov 2010 15:47:36 +0100
+> Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
+> 
+> > From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> > 
+> > The spinning mutex implementation uses cpu_relax() in busy loops as a
+> > compiler barrier. Depending on the architecture, cpu_relax() may do more
+> > than needed in this specific mutex spin loops. On System z we also give
+> > up the time slice of the virtual cpu in cpu_relax(), which prevents
+> > effective spinning on the mutex.
+> > 
+> > This patch replaces cpu_relax() in the spinning mutex code with
+> > arch_mutex_cpu_relax(), which can be defined by each architecture that
+> > selects HAVE_ARCH_MUTEX_CPU_RELAX. The default is still cpu_relax(), so
+> > this patch should not affect other architectures than System z for now.
+> > 
+> > ...
+> >
+> > --- a/include/linux/mutex.h
+> > +++ b/include/linux/mutex.h
+> > @@ -160,4 +160,8 @@ extern int mutex_trylock(struct mutex *l
+> >  extern void mutex_unlock(struct mutex *lock);
+> >  extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+> >  
+> > +#ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
+> > +#define arch_mutex_cpu_relax()	cpu_relax()
+> > +#endif
+> 
+> A simpler way of doing this is to remove the CONFIG_ variable
+> altogether and do 
+> 
+> #ifndef arch_mutex_cpu_relax
+> #define arch_mutex_cpu_relax()	cpu_relax()
+> #endif
+> 
+> When doing this, one should be clear about _which_ arch file has the
+> responsibility of defining arch_mutex_cpu_relax, and make sure that
+> this arch file is reliably included in the .c file.
 
-Cost is not significantly changed, because we're just moving the barrier.
-Those filesystems that do use ->dirty_inode should have to care slightly
-less about barriers, which is a good thing.
+Well, I've tried that with my last approach, defining arch_mutex_cpu_relax()
+in <asm/mutex.h> and including that from <linux/mutex.h>. This didn't work
+well because of ugly header file dependencies, and Peter also commented
+that "including "asm/mutex.h" isn't advised". The problem is the following
+code in kernel/mutex.c (after including <linux/mutex.h>) when
+CONFIG_DEBUG_MUTEXES is set:
 
-Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+#ifdef CONFIG_DEBUG_MUTEXES
+# include "mutex-debug.h"
+# include <asm-generic/mutex-null.h>
+#else
+# include "mutex.h"
+# include <asm/mutex.h>
+#endif
 
-Index: linux-2.6/fs/fs-writeback.c
-===================================================================
---- linux-2.6.orig/fs/fs-writeback.c	2010-11-19 16:47:00.000000000 +1100
-+++ linux-2.6/fs/fs-writeback.c	2010-11-19 16:49:39.000000000 +1100
-@@ -934,6 +934,15 @@ void __mark_inode_dirty(struct inode *in
- 	bool wakeup_bdi = false;
- 
- 	/*
-+	 * Make sure that changes are seen by all cpus before we test i_state
-+	 * or mark anything as being dirty. Ie. all dirty state should be
-+	 * written to the inode and visible. Like an "unlock" operation, the
-+	 * mark_inode_dirty call must "release" our ordering window that is
-+	 * opened when we started modifying the inode.
-+	 */
-+	smp_mb();
-+
-+	/*
- 	 * Don't do this for I_DIRTY_PAGES - that doesn't actually
- 	 * dirty the inode itself
- 	 */
-@@ -942,12 +951,6 @@ void __mark_inode_dirty(struct inode *in
- 			sb->s_op->dirty_inode(inode);
- 	}
- 
--	/*
--	 * make sure that changes are seen by all cpus before we test i_state
--	 * -- mikulas
--	 */
--	smp_mb();
--
- 	/* avoid the locking if we can */
- 	if ((inode->i_state & flags) == flags)
- 		return;
+So I can only include <asm/mutex.h> from <linux/mutex.h> with an ugly
+"#ifndef CONFIG_DEBUG_MUTEXES" around it, or use a completely different
+or new arch header file (but <asm/mutex.h> seems like the right place
+for this). The CONFIG_ approach avoids all this header file dependency
+mess, or did I miss something (or maybe it's just me and it is not ugly
+at all)?
 
 
