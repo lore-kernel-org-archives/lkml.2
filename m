@@ -1,188 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab0KWDE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 22:04:29 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56293 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab0KWDE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 22:04:28 -0500
-Message-ID: <4CEB303A.5000803@cn.fujitsu.com>
-Date: Tue, 23 Nov 2010 11:08:42 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 5/6] KVM: MMU: abstract invalid guest pte mapping
-References: <4CE63CF4.80502@cn.fujitsu.com> <4CE63DB3.9010100@cn.fujitsu.com> <4CEA37A6.8040204@redhat.com>
-In-Reply-To: <4CEA37A6.8040204@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-23 11:04:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-23 11:04:44,
-	Serialize complete at 2010-11-23 11:04:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751528Ab0KWDGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 22:06:19 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:59181 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab0KWDGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 22:06:18 -0500
+Date: Tue, 23 Nov 2010 14:06:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for November 23
+Message-Id: <20101123140609.2b6503ff.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__23_Nov_2010_14_06_09_+1100_N3ztJxKNwcrU8872"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2010 05:28 PM, Avi Kivity wrote:
+--Signature=_Tue__23_Nov_2010_14_06_09_+1100_N3ztJxKNwcrU8872
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> +static bool FNAME(map_invalid_gpte)(struct kvm_vcpu *vcpu,
->> +                    struct kvm_mmu_page *sp, u64 *spte,
->> +                    pt_element_t gpte)
-> 
-> It's really only for speculative maps, the name should reflect that.
-> 
+Hi all,
 
-This is the new version and it use prefetch_invalid_gpte instead of
-map_invalid_gpte
+Changes since 20101122:
 
-Subject: [PATCH v3 5/6] KVM: MMU: abstract invalid guest pte mapping
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+The v4l-dvb tree lost its build failure but gained another for which I
+applied a patch.
 
-Introduce a common function to map invalid gpte
+The tip tree lost its build failure.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c         |    3 --
- arch/x86/kvm/paging_tmpl.h |   71 +++++++++++++++++++++++---------------------
- 2 files changed, 37 insertions(+), 37 deletions(-)
+----------------------------------------------------------------------------
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index d878dd1..e3d2ee0 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3074,9 +3074,6 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
- 		return;
-         }
- 
--	if (is_rsvd_bits_set(&vcpu->arch.mmu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
--		return;
--
- 	++vcpu->kvm->stat.mmu_pte_updated;
- 	if (!sp->role.cr4_pae)
- 		paging32_update_pte(vcpu, sp, spte, new);
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 60f00db..a43f4cc 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -299,25 +299,42 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
- 					addr, access);
- }
- 
-+static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
-+				    struct kvm_mmu_page *sp, u64 *spte,
-+				    pt_element_t gpte)
-+{
-+	u64 nonpresent = shadow_trap_nonpresent_pte;
-+
-+	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
-+		goto no_present;
-+
-+	if (!is_present_gpte(gpte)) {
-+		if (!sp->unsync)
-+			nonpresent = shadow_notrap_nonpresent_pte;
-+		goto no_present;
-+	}
-+
-+	if (!(gpte & PT_ACCESSED_MASK))
-+		goto no_present;
-+
-+	return false;
-+
-+no_present:
-+	drop_spte(vcpu->kvm, spte, nonpresent);
-+	return true;
-+}
-+
- static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			      u64 *spte, const void *pte)
- {
- 	pt_element_t gpte;
- 	unsigned pte_access;
- 	pfn_t pfn;
--	u64 new_spte;
- 
- 	gpte = *(const pt_element_t *)pte;
--	if (~gpte & (PT_PRESENT_MASK | PT_ACCESSED_MASK)) {
--		if (!is_present_gpte(gpte)) {
--			if (sp->unsync)
--				new_spte = shadow_trap_nonpresent_pte;
--			else
--				new_spte = shadow_notrap_nonpresent_pte;
--			__set_spte(spte, new_spte);
--		}
-+	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
- 		return;
--	}
-+
- 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
- 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
- 	if (gpte_to_gfn(gpte) != vcpu->arch.update_pte.gfn)
-@@ -364,7 +381,6 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- 				u64 *sptep)
- {
- 	struct kvm_mmu_page *sp;
--	struct kvm_mmu *mmu = &vcpu->arch.mmu;
- 	pt_element_t *gptep = gw->prefetch_ptes;
- 	u64 *spte;
- 	int i;
-@@ -395,16 +411,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- 
- 		gpte = gptep[i];
- 
--		if (is_rsvd_bits_set(mmu, gpte, PT_PAGE_TABLE_LEVEL))
--			continue;
--
--		if (!is_present_gpte(gpte)) {
--			if (!sp->unsync)
--				__set_spte(spte, shadow_notrap_nonpresent_pte);
--			continue;
--		}
--
--		if (!(gpte & PT_ACCESSED_MASK))
-+		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
- 			continue;
- 
- 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
-@@ -761,7 +768,6 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 		pt_element_t gpte;
- 		gpa_t pte_gpa;
- 		gfn_t gfn;
--		bool rsvd_bits_set;
- 
- 		if (!is_shadow_present_pte(sp->spt[i]))
- 			continue;
-@@ -773,18 +779,15 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 			return -EINVAL;
- 
- 		gfn = gpte_to_gfn(gpte);
--		rsvd_bits_set = is_rsvd_bits_set(&vcpu->arch.mmu, gpte,
--						 PT_PAGE_TABLE_LEVEL);
--		if (rsvd_bits_set || gfn != sp->gfns[i] ||
--		      !is_present_gpte(gpte) || !(gpte & PT_ACCESSED_MASK)) {
--			u64 nonpresent;
--
--			if (rsvd_bits_set || is_present_gpte(gpte) ||
--			      sp->unsync)
--				nonpresent = shadow_trap_nonpresent_pte;
--			else
--				nonpresent = shadow_notrap_nonpresent_pte;
--			drop_spte(vcpu->kvm, &sp->spt[i], nonpresent);
-+
-+		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte)) {
-+			kvm_flush_remote_tlbs(vcpu->kvm);
-+			continue;
-+		}
-+
-+		if (gfn != sp->gfns[i]) {
-+			drop_spte(vcpu->kvm, &sp->spt[i],
-+				      shadow_trap_nonpresent_pte);
- 			kvm_flush_remote_tlbs(vcpu->kvm);
- 			continue;
- 		}
--- 
-1.7.0.4
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 179 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
+Merging hid/for-next
+CONFLICT (content): Merge conflict in drivers/hid/hid-input.c
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen/upstream/xen
+Merging swiotlb-xen/master
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+Applying: media: const and __devinitdata do not mix
+
+--Signature=_Tue__23_Nov_2010_14_06_09_+1100_N3ztJxKNwcrU8872
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM6y+hAAoJEDMEi1NhKgbspZ8H/0hx93j+OUB68Y8Y+h71OTL/
+ih9xkhZoUApzyJd9k7OUZPskUpo4WLyC2ONBhgskdU+aQ8u2KCaBGW4meiH4fEFC
+xxxficY8s9lDkamy1YDFO1NLKabHZQ1Mc35r0S54dhnd58HzrNo8F/PzjxwuoS1G
+JkH+RLFKEAU9DO9yFcRSQEMcxqXqyYswd09KysTyn1krBBQUoB6pRJRxrk/1GnYf
+BrF0Cje78GCDmSkJbZvw5fpMqNoxS7SlGAFilQk8gv9Mw+J7hDDsW+4LIJjNLCO4
+/YzOQTkTYfKmv1oRkPtK2AYPoara1Czc2F29Jm8suIvnReKMmOeeAqXr4H/6H08=
+=C+Ow
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__23_Nov_2010_14_06_09_+1100_N3ztJxKNwcrU8872--
