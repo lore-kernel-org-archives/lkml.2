@@ -1,270 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab0KWR0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 12:26:06 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:56634 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab0KWR0E (ORCPT
+	id S1755272Ab0KWRdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 12:33:35 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60536 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab0KWRde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 12:26:04 -0500
-From: Alexander Shishkin <virtuoso@slind.org>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-Date: Tue, 23 Nov 2010 19:22:18 +0200
-Message-Id: <1290532938-7332-1-git-send-email-virtuoso@slind.org>
-X-Mailer: git-send-email 1.7.2.1.45.gb66c2
+	Tue, 23 Nov 2010 12:33:34 -0500
+Date: Tue, 23 Nov 2010 17:33:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 08/20] ARM: LPAE: MMU setup for the 3-level page
+	table format
+Message-ID: <20101123173319.GA26510@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-9-git-send-email-catalin.marinas@arm.com> <20101122131010.GD31227@n2100.arm.linux.org.uk> <AANLkTikGVZ5Na0GSG5ynO+YM2M6x65yb3dwJeBZjzFMN@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikGVZ5Na0GSG5ynO+YM2M6x65yb3dwJeBZjzFMN@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Certain userspace applications (like "clock" desktop applets or cron or
-systemd) might want to be notified when some other application changes
-the system time. There are several known to me reasons for this:
- - avoiding periodic wakeups to poll time changes;
- - rearming CLOCK_REALTIME timers when said changes happen;
- - changing system timekeeping policy for system-wide time management
-   programs;
- - keeping guest applications/operating systems running in emulators
-   up to date.
+On Tue, Nov 23, 2010 at 11:38:15AM +0000, Catalin Marinas wrote:
+> On 22 November 2010 13:10, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > Are you sure these shifts by 18 places are correct?  They're actually
+> > (val >> SECTION_SHIFT) << 2, so maybe they should be (SECTION_SHIFT -
+> > PMD_WORDS) ?
+> 
+> SECTION_SHIFT - PMD_ORDER is (20 - 2) for classic page tables and (21
+> - 3) for LPAE. But we could change the 18 to some macros for
+> clarification (the line would be long though).
 
-This is another attempt to approach notifying userspace about system
-clock changes. The other one is using an eventfd and a syscall [1]. In
-the course of discussing the necessity of a syscall for this kind of
-notifications, it was suggested that this functionality can be achieved
-via timers [2] (and timerfd in particular [3]). This idea got quite
-some support [4], [5], [6] and some vague criticism [7], so I decided
-to try and go a bit further with it.
-
-[1] http://marc.info/?l=linux-kernel&m=128950389423614&w=2
-[2] http://marc.info/?l=linux-kernel&m=128951020831573&w=2
-[3] http://marc.info/?l=linux-kernel&m=128951588006157&w=2
-[4] http://marc.info/?l=linux-kernel&m=128951503205111&w=2
-[5] http://marc.info/?l=linux-kernel&m=128955890118477&w=2
-[6] http://marc.info/?l=linux-kernel&m=129002967031104&w=2
-[7] http://marc.info/?l=linux-kernel&m=129002672227263&w=2
-
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Feng Tang <feng.tang@intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Michael Tokarev <mjt@tls.msk.ru>
-CC: Marcelo Tosatti <mtosatti@redhat.com>
-CC: John Stultz <johnstul@us.ibm.com>
-CC: Chris Friesen <chris.friesen@genband.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>
-CC: Kirill A. Shutemov <kirill@shutemov.name>
-CC: Artem Bityutskiy <dedekind1@gmail.com>
-CC: Davide Libenzi <davidel@xmailserver.org>
-CC: linux-fsdevel@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
----
- fs/timerfd.c            |   51 +++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/hrtimer.h |    6 +++++
- include/linux/timerfd.h |    3 +-
- kernel/hrtimer.c        |    3 ++
- 4 files changed, 60 insertions(+), 3 deletions(-)
-
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index 8c4fc14..7890815 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -30,8 +30,13 @@ struct timerfd_ctx {
- 	u64 ticks;
- 	int expired;
- 	int clockid;
-+	struct list_head notifiers_list;
- };
- 
-+/* TFD_NOTIFY_CLOCK_SET timers go here */
-+static DEFINE_SPINLOCK(notifiers_lock);
-+static LIST_HEAD(notifiers_list);
-+
- /*
-  * This gets called when the timer event triggers. We set the "expired"
-  * flag, but we do not re-arm the timer (in case it's necessary,
-@@ -51,6 +56,21 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
- 	return HRTIMER_NORESTART;
- }
- 
-+void timerfd_clock_was_set(void)
-+{
-+	struct timerfd_ctx *ctx;
-+	unsigned long flags;
-+
-+	spin_lock(&notifiers_lock);
-+	list_for_each_entry(ctx, &notifiers_list, notifiers_list) {
-+		spin_lock_irqsave(&ctx->wqh.lock, flags);
-+		ctx->ticks++;
-+		wake_up_locked(&ctx->wqh);
-+		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
-+	}
-+	spin_unlock(&notifiers_lock);
-+}
-+
- static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
- {
- 	ktime_t remaining;
-@@ -72,6 +92,12 @@ static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
- 	ctx->expired = 0;
- 	ctx->ticks = 0;
- 	ctx->tintv = timespec_to_ktime(ktmr->it_interval);
-+
-+	if (flags & TFD_NOTIFY_CLOCK_SET) {
-+		list_add(&ctx->notifiers_list, &notifiers_list);
-+		return;
-+	}
-+
- 	hrtimer_init(&ctx->tmr, ctx->clockid, htmode);
- 	hrtimer_set_expires(&ctx->tmr, texp);
- 	ctx->tmr.function = timerfd_tmrproc;
-@@ -83,7 +109,12 @@ static int timerfd_release(struct inode *inode, struct file *file)
- {
- 	struct timerfd_ctx *ctx = file->private_data;
- 
--	hrtimer_cancel(&ctx->tmr);
-+	if (!list_empty(&ctx->notifiers_list)) {
-+		spin_lock(&notifiers_lock);
-+		list_del(&ctx->notifiers_list);
-+		spin_unlock(&notifiers_lock);
-+	} else
-+		hrtimer_cancel(&ctx->tmr);
- 	kfree(ctx);
- 	return 0;
- }
-@@ -113,6 +144,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- 
- 	if (count < sizeof(ticks))
- 		return -EINVAL;
-+
- 	spin_lock_irq(&ctx->wqh.lock);
- 	if (file->f_flags & O_NONBLOCK)
- 		res = -EAGAIN;
-@@ -120,7 +152,8 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- 		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
- 	if (ctx->ticks) {
- 		ticks = ctx->ticks;
--		if (ctx->expired && ctx->tintv.tv64) {
-+		if (ctx->expired && ctx->tintv.tv64 &&
-+		    list_empty(&ctx->notifiers_list)) {
- 			/*
- 			 * If tintv.tv64 != 0, this is a periodic timer that
- 			 * needs to be re-armed. We avoid doing it in the timer
-@@ -218,13 +251,17 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	 * it to the new values.
- 	 */
- 	for (;;) {
-+		spin_lock(&notifiers_lock);
- 		spin_lock_irq(&ctx->wqh.lock);
- 		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
- 			break;
- 		spin_unlock_irq(&ctx->wqh.lock);
-+		spin_unlock(&notifiers_lock);
- 		cpu_relax();
- 	}
- 
-+	INIT_LIST_HEAD(&ctx->notifiers_list);
-+
- 	/*
- 	 * If the timer is expired and it's periodic, we need to advance it
- 	 * because the caller may want to know the previous expiration time.
-@@ -243,6 +280,7 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	timerfd_setup(ctx, flags, &ktmr);
- 
- 	spin_unlock_irq(&ctx->wqh.lock);
-+	spin_unlock(&notifiers_lock);
- 	fput(file);
- 	if (otmr && copy_to_user(otmr, &kotmr, sizeof(kotmr)))
- 		return -EFAULT;
-@@ -262,6 +300,14 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
- 	ctx = file->private_data;
- 
- 	spin_lock_irq(&ctx->wqh.lock);
-+	if (!list_empty(&ctx->notifiers_list)) {
-+		kotmr.it_value = current_kernel_time();
-+		kotmr.it_interval.tv_sec = 0;
-+		kotmr.it_interval.tv_nsec = 0;
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		goto out;
-+	}
-+
- 	if (ctx->expired && ctx->tintv.tv64) {
- 		ctx->expired = 0;
- 		ctx->ticks +=
-@@ -273,6 +319,7 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
- 	spin_unlock_irq(&ctx->wqh.lock);
- 	fput(file);
- 
-+out:
- 	return copy_to_user(otmr, &kotmr, sizeof(kotmr)) ? -EFAULT: 0;
- }
- 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index fd0c1b8..eb9d331 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -247,6 +247,12 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
-     return ktime_sub(timer->_expires, timer->base->get_time());
- }
- 
-+#ifdef CONFIG_TIMERFD
-+extern void timerfd_clock_was_set(void);
-+#else
-+static inline void timerfd_clock_was_set(void) {}
-+#endif
-+
- #ifdef CONFIG_HIGH_RES_TIMERS
- struct clock_event_device;
- 
-diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
-index 2d07929..c3ddad9 100644
---- a/include/linux/timerfd.h
-+++ b/include/linux/timerfd.h
-@@ -19,6 +19,7 @@
-  * shared O_* flags.
-  */
- #define TFD_TIMER_ABSTIME (1 << 0)
-+#define TFD_NOTIFY_CLOCK_SET (1 << 1)
- #define TFD_CLOEXEC O_CLOEXEC
- #define TFD_NONBLOCK O_NONBLOCK
- 
-@@ -26,6 +27,6 @@
- /* Flags for timerfd_create.  */
- #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
- /* Flags for timerfd_settime.  */
--#define TFD_SETTIME_FLAGS TFD_TIMER_ABSTIME
-+#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_NOTIFY_CLOCK_SET)
- 
- #endif /* _LINUX_TIMERFD_H */
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 72206cf..6f6403a 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -646,6 +646,9 @@ void clock_was_set(void)
- {
- 	/* Retrigger the CPU local events everywhere */
- 	on_each_cpu(retrigger_next_event, NULL, 1);
-+
-+	/* Trigger timerfd notifiers */
-+	timerfd_clock_was_set();
- }
- 
- /*
--- 
-1.7.2.1.45.gb66c2
-
+So yes, it's SECTION_SHIFT - PMD_ORDER, which is how they should be
+used IMHO.  I don't see why another macro would be necessary.
