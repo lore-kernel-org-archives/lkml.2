@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab0KWTlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 14:41:07 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:50698 "HELO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751527Ab0KWTlF (ORCPT
+	id S1752661Ab0KWTlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 14:41:10 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:33005 "HELO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751527Ab0KWTlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 14:41:05 -0500
+	Tue, 23 Nov 2010 14:41:08 -0500
 From: Ben Gardiner <bengardiner@nanometrics.ca>
 To: Kevin Hilman <khilman@deeprootsystems.com>,
         davinci-linux-open-source@linux.davincidsp.com,
@@ -14,109 +14,216 @@ To: Kevin Hilman <khilman@deeprootsystems.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org,
         Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: [PATCH v4 0/5] da850-evm: add gpio-{keys,leds} for UI and BB expanders
-Date: Tue, 23 Nov 2010 14:40:55 -0500
-Message-Id: <cover.1290540916.git.bengardiner@nanometrics.ca>
+        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Subject: [PATCH v4 2/5] da850-evm: add UI Expander pushbuttons
+Date: Tue, 23 Nov 2010 14:40:57 -0500
+Message-Id: <9e73184bfb5c0a0d47377dd9b0627405dd87ce8a.1290540916.git.bengardiner@nanometrics.ca>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1290201713.git.bengardiner@nanometrics.ca>
-References: <cover.1290201713.git.bengardiner@nanometrics.ca>
+In-Reply-To: <cover.1290540916.git.bengardiner@nanometrics.ca>
+References: <cover.1290201713.git.bengardiner@nanometrics.ca> <cover.1290540916.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The da850-evm baseboard (BB) and its UI board both have tca6416 IO expanders.
-They are bootstrapped to different I2C addresses so they can be used
-concurrently.
+This patch adds EV_KEYs for each of the 8 pushbuttons on the UI board via a
+gpio-key device.
 
-The expander on the UI board is currently used to enable/disable the
-peripherals that are available on the UI board. In addition to this
-functionality the expander is also connected to 8 pushbuttons. The expander
-on the baseboard is not currently used; it is connected to deep sleep enable,
-sw reset, a push button, some switches and LEDs.
+The expander is a tca6416; it controls the SEL_{A,B,C} lines which enable and
+disable the peripherals found on the UI board in addition to the 8 pushbuttons
+mentioned above. The reason the existing tca6416-keypad driver is not employed
+is because there was no aparent way to keep the gpio lines used as
+SEL_{A,B,C} registered while simultaneously registering the pushbuttons as a
+tca6416-keypad instance.
 
-This proposed patch series enables the push buttons and switches on the UI and
-BB expanders using the gpio-keys polling mode patch by Alexander Clouter. Some
-work was performed to test irq-based gpio-keys support on the expanders (a WIP
-patch can be posted on request) but I believe that it is not possible to use 
-irq-based gpio-keys on IO expanders for arm systems at this time. 
+Some experimentation with the polling interval was performed; we were searching
+for the largest polling interval that did not affect the feel of the
+responsiveness of the buttons. It is very subjective but 200ms seems to be a
+good value that accepts firm pushes but rejects very light ones. The key values
+assigned to the buttons were arbitrarily chosen to be F1-F8.
 
-The attempt started when I noticed the patch of Alek Du and Alan Cox [1] which 
-was recently committed [2]; a stab at integrating irq-based gpio-keys support
-based on that patch was attempted. I found that I either got a warning that the
-irq could not be mapped for the given gpio ; or, when N_IRQ was increased, a
-system freeze.
-
->From what I have read (particularly the message by Grant Likely [3]) IRQs on
-IO expanders are not ready in ARM yet. I _think_ that the sparse IRQ rework by
-Thomas Gleixner [4] will resolve the blocker to irq-based gpio-keys support. 
-
-In the meantime we have buttons and switches that we would like to excersise
-in our prototyping development. The patch to convert this series to irq-based
-gpio-keys will be straighforward once the support in arch/arm is there.
-
-There is an existing tca6416-keypad driver with polling support which I did not
-employ because it isn't possible to keep the gpio's used for peripheral
-enable/disable on the UI board or the LEDs on the baseboard registered while
-simultaneously registering the pushbuttons or switches as a tca6416-keypad 
-instance.
-
-I tested this patch series using evtest on the resulting /dev/input/eventN 
-devices and also on the event node of a non-polling gpio-keys instance to 
-ensure that irq-based input handling is not broken by the introduction of the
-polling-mode gpio-keys patch. The non-polling instance creation and
-registration is not included in this series since it uses one of the boot-mode
-DIP switches and woult not (I think) be suitable for mainline.
-
-Disclaimer: 
-I'm not an expert in irq's or gpio-keys; this is, in fact, my first proposed
-feature. Please feel free to correct me -- I welcome the chance to learn from
-your expertise.
-
-[1] http://article.gmane.org/gmane.linux.kernel/1052551
-[2] http://article.gmane.org/gmane.linux.kernel.commits.head/260919
-[3] http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg01974.html
-[4] http://article.gmane.org/gmane.linux.kernel.cross-arch/7786
-
-Alexander Clouter (1):
-  input: gpio_keys: polling mode support
-
-Ben Gardiner (4):
-  da850-evm: add UI Expander pushbuttons
-  da850-evm: extract defines for SEL{A,B,C} pins in UI expander
-  da850-evm: add baseboard GPIO expander buttons, switches and LEDs
-  da850-evm: KEYBOARD_GPIO and INPUT_POLLDEV Kconfig conditionals
-
- arch/arm/mach-davinci/Kconfig           |    4 +
- arch/arm/mach-davinci/board-da850-evm.c |  312 +++++++++++++++++++++++++++++--
- drivers/input/keyboard/gpio_keys.c      |  120 ++++++++++--
- include/linux/gpio_keys.h               |    1 +
- 4 files changed, 406 insertions(+), 31 deletions(-)
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
+CC: Govindarajan, Sriramakrishnan <srk@ti.com>
+Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>
 
 ---
 
 Changes since v3:
- * introduced patch 5 in the series by extracting the Kconfig changes proposed
-   in patch 2 of v3.
- * not gpio_request()'ing the sw_rst and deep_sleep_en lines as requested 
-   (Sekhar Nori)
+ * extracted Kconfig changes to patch 5/5
+ * fixed leading whitespace problem
 
 Changes since v2:
- * register a single input device for switches and keys on the baseboard since
-   there is no benefit to separate devices with different polling intervals
-   (Dmitry Torokhov)
- * use static array intialization and range intialization for platform data 
-   structure to minimize the amount of runtime intialization needed:
-   (Sekhar Nori)
- * Use the da850_evm variable name prefix for static symbols in
-   board-da850-evm.c
+ * rebased to 083eae3e28643e0eefc5243719f8b1572cf98299 of
+   git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
+ * remove the "TODO : populate at runtime using" in this patch instead of 4/4
+   (Nori, Sekhar)
+ * integrated the static array initialization patch of Sekhar Nori
+ * use static array initialization ranges
+ * rename DA850_PB_POLL_MS to DA850_GPIO_KEYS_POLL_MS
+ * use shorter names prefixed with da850_evm
 
 Changes since v1:
- * use locally defined functions that are no-ops/error checkers when
-   INPUT_POLLDEV is not defined.
- * disable polling mode support when input-polldev is a module and gpio_keys
-   is builtin
  * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
    unconditionally
  * adding note to description about why tca6416-keypad was not used
+ * adding Govindarajan, Sriramakrishnan, the author of the tca6416-keypad
+   driver
+
+---
+ arch/arm/mach-davinci/board-da850-evm.c |   98 ++++++++++++++++++++++++++++++-
+ 1 files changed, 97 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index f89b0b7..51f5ffa 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -17,8 +17,10 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c/at24.h>
+ #include <linux/i2c/pca953x.h>
++#include <linux/input.h>
+ #include <linux/mfd/tps6507x.h>
+ #include <linux/gpio.h>
++#include <linux/gpio_keys.h>
+ #include <linux/platform_device.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+@@ -272,6 +274,88 @@ static inline void da850_evm_setup_emac_rmii(int rmii_sel)
+ static inline void da850_evm_setup_emac_rmii(int rmii_sel) { }
+ #endif
+ 
++
++#define DA850_KEYS_DEBOUNCE_MS	10
++/*
++ * At 200ms polling interval it is possible to miss an
++ * event by tapping very lightly on the push button but most
++ * pushes do result in an event; longer intervals require the
++ * user to hold the button whereas shorter intervals require
++ * more CPU time for polling.
++ */
++#define DA850_GPIO_KEYS_POLL_MS	200
++
++enum da850_evm_ui_exp_pins {
++	DA850_EVM_UI_EXP_SEL_C = 5,
++	DA850_EVM_UI_EXP_SEL_B,
++	DA850_EVM_UI_EXP_SEL_A,
++	DA850_EVM_UI_EXP_PB8,
++	DA850_EVM_UI_EXP_PB7,
++	DA850_EVM_UI_EXP_PB6,
++	DA850_EVM_UI_EXP_PB5,
++	DA850_EVM_UI_EXP_PB4,
++	DA850_EVM_UI_EXP_PB3,
++	DA850_EVM_UI_EXP_PB2,
++	DA850_EVM_UI_EXP_PB1,
++};
++
++static const char const *da850_evm_ui_exp[] = {
++	[DA850_EVM_UI_EXP_SEL_C]        = "sel_c",
++	[DA850_EVM_UI_EXP_SEL_B]        = "sel_b",
++	[DA850_EVM_UI_EXP_SEL_A]        = "sel_a",
++	[DA850_EVM_UI_EXP_PB8]          = "pb8",
++	[DA850_EVM_UI_EXP_PB7]          = "pb7",
++	[DA850_EVM_UI_EXP_PB6]          = "pb6",
++	[DA850_EVM_UI_EXP_PB5]          = "pb5",
++	[DA850_EVM_UI_EXP_PB4]          = "pb4",
++	[DA850_EVM_UI_EXP_PB3]          = "pb3",
++	[DA850_EVM_UI_EXP_PB2]          = "pb2",
++	[DA850_EVM_UI_EXP_PB1]          = "pb1",
++};
++
++#define DA850_N_UI_PB		8
++
++static struct gpio_keys_button da850_evm_ui_keys[] = {
++	[0 ... DA850_N_UI_PB - 1] = {
++		.type			= EV_KEY,
++		.active_low		= 1,
++		.wakeup			= 0,
++		.debounce_interval	= DA850_KEYS_DEBOUNCE_MS,
++		.code			= -1, /* assigned at runtime */
++		.gpio			= -1, /* assigned at runtime */
++		.desc			= NULL, /* assigned at runtime */
++	},
++};
++
++static struct gpio_keys_platform_data da850_evm_ui_keys_pdata = {
++	.buttons = da850_evm_ui_keys,
++	.nbuttons = ARRAY_SIZE(da850_evm_ui_keys),
++	.rep = 0, /* disable auto-repeat */
++	.poll_interval = DA850_GPIO_KEYS_POLL_MS,
++};
++
++static struct platform_device da850_evm_ui_keys_device = {
++	.name = "gpio-keys",
++	.id = 0,
++	.dev = {
++		.platform_data = &da850_evm_ui_keys_pdata
++	},
++};
++
++static void da850_evm_ui_keys_init(unsigned gpio)
++{
++	int i;
++	struct gpio_keys_button *button;
++
++	for (i = 0; i < DA850_N_UI_PB; i++) {
++		button = &da850_evm_ui_keys[i];
++		button->code = KEY_F8 - i;
++		button->desc = (char *)
++				da850_evm_ui_exp[DA850_EVM_UI_EXP_PB8 + i];
++		button->gpio = gpio + DA850_EVM_UI_EXP_PB8 + i;
++	}
++}
++
+ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 						unsigned ngpio, void *c)
+ {
+@@ -304,15 +388,24 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 	gpio_direction_output(sel_b, 1);
+ 	gpio_direction_output(sel_c, 1);
+ 
++	da850_evm_ui_keys_init(gpio);
++	ret = platform_device_register(&da850_evm_ui_keys_device);
++	if (ret) {
++		pr_warning("Could not register UI GPIO expander push-buttons"
++				" device\n");
++		goto exp_setup_keys_fail;
++	}
++
+ 	ui_card_detected = 1;
+ 	pr_info("DA850/OMAP-L138 EVM UI card detected\n");
+ 
+ 	da850_evm_setup_nor_nand();
+-
+ 	da850_evm_setup_emac_rmii(sel_a);
+ 
+ 	return 0;
+ 
++exp_setup_keys_fail:
++	gpio_free(sel_c);
+ exp_setup_selc_fail:
+ 	gpio_free(sel_b);
+ exp_setup_selb_fail:
+@@ -324,6 +417,8 @@ exp_setup_sela_fail:
+ static int da850_evm_ui_expander_teardown(struct i2c_client *client,
+ 					unsigned gpio, unsigned ngpio, void *c)
+ {
++	platform_device_unregister(&da850_evm_ui_keys_device);
++
+ 	/* deselect all functionalities */
+ 	gpio_set_value_cansleep(gpio + 5, 1);
+ 	gpio_set_value_cansleep(gpio + 6, 1);
+@@ -340,6 +435,7 @@ static struct pca953x_platform_data da850_evm_ui_expander_info = {
+ 	.gpio_base	= DAVINCI_N_GPIO,
+ 	.setup		= da850_evm_ui_expander_setup,
+ 	.teardown	= da850_evm_ui_expander_teardown,
++	.names		= da850_evm_ui_exp,
+ };
+ 
+ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
+-- 
+1.7.0.4
 
