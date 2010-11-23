@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab0KWHk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:40:56 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:41940 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751994Ab0KWHkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:40:55 -0500
-From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
-To: ext Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH] ASoC: Do not update the cache if write to hardware failed
-Date: Tue, 23 Nov 2010 09:39:16 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo; KDE/4.5.3; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-References: <1290492847.7286.1.camel@mola>
-In-Reply-To: <1290492847.7286.1.camel@mola>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752515Ab0KWHlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:41:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58886 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752025Ab0KWHlS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 02:41:18 -0500
+Date: Mon, 22 Nov 2010 23:36:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Berg, Johannes" <johannes.berg@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnd Hannemann <arnd@arndnet.de>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@linux.intel.com>
+Subject: Re: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Message-Id: <20101122233654.117eef93.akpm@linux-foundation.org>
+In-Reply-To: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
+References: <20101116142027.GC19247@tiehlicka.suse.cz>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
+	<20101118082454.GC15928@tiehlicka.suse.cz>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
+	<4CEAA151.7050404@arndnet.de>
+	<20101123063200.GA23907@elte.hu>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011230939.17080.peter.ujfalusi@nokia.com>
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 November 2010 08:14:07 ext Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/tpa6130a2.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/tpa6130a2.c b/sound/soc/codecs/tpa6130a2.c
-> index bfef3da..2d64502 100644
-> --- a/sound/soc/codecs/tpa6130a2.c
-> +++ b/sound/soc/codecs/tpa6130a2.c
-> @@ -77,8 +77,10 @@ static int tpa6130a2_i2c_write(int reg, u8 value)
-> 
->  	if (data->power_state) {
->  		val = i2c_smbus_write_byte_data(tpa6130a2_client, reg, value);
-> -		if (val < 0)
-> +		if (val < 0) {
->  			dev_err(&tpa6130a2_client->dev, "Write failed\n");
-> +			return val;
-> +		}
->  	}
-> 
->  	/* Either powered on or off, we save the context */
+On Tue, 23 Nov 2010 07:32:19 +0000 "Berg, Johannes" <johannes.berg@intel.com> wrote:
 
-Nice catch, thank you!
+> 
+> > > I also ran into this today.
+> > > Any updates or pointer to the patch?
+> > 
+> > Same here - i'm running into this build bug frequently as well, as of
+> > 2.6.37-rc3.
+> > Please guys at minimum post the pending fix for this.
+> 
+> Hmm. For some reason I thought this patch had made it into -mm,
+> but I never double-checked and then went travelling ...
+> 
+> http://lkml.org/lkml/2010/10/26/79
 
-CC-ing alsa-devel
+oops, I filed it in the wrong drawer, under "non-urgent".  It then got
+buried in new paperwork.  But not lost!
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Gee it's big.  Could you please double-check that it is still complete?
+
