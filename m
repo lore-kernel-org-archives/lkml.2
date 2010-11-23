@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab0KWQcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 11:32:50 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58031 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab0KWQcs (ORCPT
+	id S1755757Ab0KWQed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 11:34:33 -0500
+Received: from ns1.dataart.com ([195.206.224.40]:63912 "EHLO
+	relay1.dataart.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755684Ab0KWQeb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 11:32:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=EzUqvVf1PtEMsccEZnGXRxFjKfBPwvIQY6abV8he4sGMhB2qBhmBIGHIXWHNhhBcaQ
-         JMAs1xyqyIGDZ2PRVgqXNcdjjT053yzb41LCuGnq3FbZQ6xy9p0RJoB2RybCONdpuz/+
-         4LdVNGU9gFJK2sGq2PZe9hQWmaDmd6gtvQFKQ=
+	Tue, 23 Nov 2010 11:34:31 -0500
+From: Anton Chikin <Anton.Chikin@dataart.com>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: "chatty@enac.fr" <chatty@enac.fr>, "spbnick@gmail.com" <spbnick@gmail.com>,
+        "anisse@astier.eu" <anisse@astier.eu>,
+        "cascardo@holoscopio.com" <cascardo@holoscopio.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Gregory Burmistrov <grig@dataart.com>
+Date: Tue, 23 Nov 2010 19:34:25 +0300
+Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
+ Panaboard T-780 and T-880
+Thread-Topic: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
+ Panaboard T-780 and T-880
+Thread-Index: AcuLEk0TuxBZgZtsR9yTu6sF/MJzYQAGF+ng
+Message-ID: <3BF066A8BAB61C43B779966CEE6D7FA019E8B47193@e6.universe.dart.spb>
+References: <1288169825-15422-1-git-send-email-Anton.Chikin@dataart.com>
+ <alpine.LNX.2.00.1010291453460.6879@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E19F2@e6.universe.dart.spb>
+ <alpine.LNX.2.00.1011011522120.15851@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1A45@e6.universe.dart.spb>
+ <alpine.LNX.2.00.1011030925310.15851@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10@e6.universe.dart.spb>
+ <alpine.LNX.2.00.1011231427090.18801@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011231427090.18801@pobox.suse.cz>
+Accept-Language: ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ru-RU
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikdCr--wvKCEa8YxOaCb8JaS=3d1GHTxLMtmw4t@mail.gmail.com>
-References: <20101123140609.2b6503ff.sfr@canb.auug.org.au>
-	<AANLkTikdCr--wvKCEa8YxOaCb8JaS=3d1GHTxLMtmw4t@mail.gmail.com>
-Date: Tue, 23 Nov 2010 18:32:47 +0200
-Message-ID: <AANLkTinUCrU6yqTRZ=mM0QecF8EV_tr+BDjMvMjywY7A@mail.gmail.com>
-Subject: Re: linux-next: Tree for November 23
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get an panic from this version on my PC. Last time I checked was
-something like 10 days ago (running "next" fine).
-Kernel 2.6.37-rc3 running ok here, Intel Core Duo, Ubuntu 10.10.
+Hi Jiri,
+
+>Hi,
+>
+>that's a bit strange. If you modprobe the module manually, does it get 
+>bound to the device and works properly?
+I've tried modprobe with no effect. Moreover I've inserted printk() into hid_bus_match() and hid_device_probe() to track devices processed by these functions - my device is never listed there.
+I've rolled back to 2.6.31 standard Ubuntu kernel and everything gone ok - probe() was called. Maybe I've missed something while configuring and installing new kernel?
+
+>Could you please send me the complete diff, including the changes to 
+>drivers/hid/hid-core.c?
+I've sent you all my changes as a patch in a separate letter.
+
+Thank you for your attention.
+
+With best regards,
+Anton Chikin
