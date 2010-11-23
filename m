@@ -1,122 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab0KWWsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:48:11 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39227 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab0KWWsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:48:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:user-agent:date:from:to:cc:subject:references
-         :content-disposition;
-        b=aLVzG4gXa76yAXroMb+/qYAyYiDbGGK1r61uy2MZz7QTEBEt7tan6V5/eXUjpauF77
-         +B/i/RUoW8PCmII7605Inm+gWARpL2+k7RkJx1eD5jJAvsAhNbLgryD/v9M++UpZUpjG
-         lfg3Iuw5CBG30MGV9LqzXy6Nbx/lp5vmvgAKs=
-Message-Id: <20101123224800.294919307@openvz.org>
-User-Agent: quilt/0.47-1
-Date: Wed, 24 Nov 2010 01:46:02 +0300
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Cc: ming.m.lin@intel.com, eranian@google.com, peterz@infradead.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [rfc 1/3] perf, x86: P4 PMU - describe config format
-References: <20101123224601.766827604@openvz.org>
-Content-Disposition: inline; filename=perf-x86-export-p4-bits
+	id S1753271Ab0KWWuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:50:46 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:57191 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab0KWWuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 17:50:44 -0500
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: [PATCH v1.5 0/5] keys: trusted and encrypted keys
+Date: Tue, 23 Nov 2010 17:50:30 -0500
+Message-Id: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.2
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add description of .config in a sake of RAW events.
-At least this should bring some light to those who
-will be reading this code.
+Changes in this patchset were again based on David Howell's comments,
+including an encrypted key locking bugfix. The remaining changes are
+listed in the individual patch changelogs. (This patchset applies to
+security-testing/#next.)
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/include/asm/perf_event_p4.h |   62 ++++++++++++++++++++++++++++++-----
- 1 file changed, 54 insertions(+), 8 deletions(-)
+Trusted and Encrypted Keys are two new key types added to the existing
+kernel key ring service. Both of these new types are variable length
+symmetic keys, and in both cases all keys are created in the kernel, and
+user space sees, stores, and loads only encrypted blobs.  Trusted Keys
+require the availability of a Trusted Platform Module (TPM) chip for
+greater security, while Encrypted Keys can be used on any system. All
+user level blobs, are displayed and loaded in hex ascii for convenience,
+and are integrity verified.  
 
-Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-=====================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
-+++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-@@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
- };
- 
- /*
-- * P4 PEBS specifics (Replay Event only)
-- *
-- * Format (bits):
-- *   0-6: metric from P4_PEBS_METRIC enum
-- *    7 : reserved
-- *    8 : reserved
-- * 9-11 : reserved
-- *
-  * Note we have UOP and PEBS bits reserved for now
-  * just in case if we will need them once
-  */
-@@ -788,5 +780,59 @@ enum P4_PEBS_METRIC {
- 	P4_PEBS_METRIC__max
- };
- 
-+/*
-+ * Notes on internal configuration of ESCR+CCCR tuples
-+ *
-+ * Since P4 has quite the different architecture of
-+ * performance registers in compare with "architectural"
-+ * once and we have on 64 bits to keep configuration
-+ * of performance event, the following trick is used.
-+ *
-+ * 1) Since both ESCR and CCCR registers have only low
-+ *    32 bits valuable, we pack them into a single 64 bit
-+ *    configuration. Low 32 bits of such config correspond
-+ *    to low 32 bits of CCCR register and high 32 bits
-+ *    correspond to low 32 bits of ESCR register.
-+ *
-+ * 2) The meaning of every bit of such config field can
-+ *    be found in Intel SDM but it should be noted that
-+ *    we "borrow" some reserved bits for own usage and
-+ *    clean them or set to a proper value when we do
-+ *    a real write to hardware registers.
-+ *
-+ * 3) The format of bits of config is the following
-+ *    and should be either 0 or set to some predefined
-+ *    values:
-+ *
-+ *    Low 32 bits
-+ *    -----------
-+ *      0-6: P4_PEBS_METRIC enum
-+ *     7-11:                    reserved
-+ *       12: Active thread
-+ *    13-15:                    reserved (ESCR select)
-+ *    16-17: Compare
-+ *       18: Complement
-+ *    20-23: Threshold
-+ *       24: Edge
-+ *       25:                    reserved (FORCE_OVF)
-+ *       26:                    reserved (OVF_PMI_T0)
-+ *       27:                    reserved (OVF_PMI_T1)
-+ *    28-29:                    reserved
-+ *       30:                    reserved (Cascade)
-+ *       31:                    reserved (OVF)
-+ *
-+ *    High 32 bits
-+ *    ------------
-+ *        0:                    reserved (T1_USR)
-+ *        1:                    reserved (T1_OS)
-+ *        2:                    reserved (T0_USR)
-+ *        3:                    reserved (T0_OS)
-+ *        4: Tag Enable
-+ *      5-8: Tag Value
-+ *     9-24: Event Mask (may use P4_ESCR_EMASK_BIT helper)
-+ *    25-30: enum P4_EVENTS
-+ *       31:                    reserved (HT thread)
-+ */
-+
- #endif /* PERF_EVENT_P4_H */
- 
+Trusted Keys use a TPM both to generate and to seal the keys.  Keys are
+sealed under a 2048 bit RSA key in the TPM, and optionally sealed to
+specified PCR (integrity measurement) values, and only unsealed by the
+TPM, if PCRs and blob integrity verifications match.  A loaded Trusted
+Key can be updated with new (future) PCR values, so keys are easily
+migrated to new pcr values, such as when the kernel and initramfs are
+updated.  The same key can have many saved blobs under different PCR
+values, so multiple boots are easily supported.
+
+By default, trusted keys are sealed under the SRK, which has the default
+authorization value (20 zeros).  This can be set at takeownership time
+with the trouser's utility: "tpm_takeownership -u -z".
+
+Usage:
+    keyctl add trusted name "new keylen [options]" ring
+    keyctl add trusted name "load hex_blob [pcrlock=pcrnum]" ring
+    keyctl update key "update [options]"
+    keyctl print keyid
+
+    options:
+       keyhandle= ascii hex value of sealing key default 0x40000000 (SRK)
+       keyauth=	  ascii hex auth for sealing key default 0x00...
+		  (40 ascii zeros)
+       blobauth=  ascii hex auth for sealed data default 0x00...
+		  (40 ascii zeros)
+       pcrinfo=	  ascii hex of PCR_INFO or PCR_INFO_LONG (no default)
+       pcrlock=	  pcr number to be extended to "lock" blob
+       migratable= 0|1 indicating permission to reseal to new PCR values, 
+                   default 1 (resealing allowed)
+
+keyctl print returns an ascii hex copy of the sealed key, which is in
+standard TPM_STORED_DATA format.  The key length for new keys are always
+in bytes.  Trusted Keys can be 32 - 128 bytes (256 - 1024 bits), the
+upper limit is to fit within the 2048 bit SRK (RSA) keylength, with all
+necessary structure/padding. 
+
+Encrypted keys do not depend on a TPM, and are faster, as they use AES
+for encryption/decryption.  New keys are created from kernel generated
+random numbers, and are encrypted/decrypted using a specified 'master'
+key.  The 'master' key can either be a trusted-key or user-key type. The
+main disadvantage of encrypted keys is that if they are not rooted in a
+trusted key, they are only as secure as the user key encrypting them.
+The master user key should therefore be loaded in as secure a way as
+possible, preferably early in boot.
+
+Usage:
+  keyctl add encrypted name "new master-key-name keylen" ring
+  keyctl add encrypted name "load hex_blob" ring
+  keyctl update keyid "update master-key-name"
+
+where 'key-type' is either 'trusted' or 'user'.
+
+The initial consumer of trusted keys is EVM, which at boot time needs a
+high quality symmetric key for HMAC protection of file metadata. The use
+of a trusted key provides strong guarantees that the EVM key has not
+been compromised by a user level problem, and when sealed to specific
+boot PCR values, protects against boot and offline attacks.  Other uses
+for trusted and encrypted keys, such as for disk and file encryption are
+anticipated.
+
+Mimi Zohar
+David Safford
+
+Mimi Zohar (5):
+  lib: hex2bin converts ascii hexadecimal string to binary
+  tpm: add module_put wrapper
+  key: add tpm_send command
+  keys: add new trusted key-type
+  keys: add new key-type encrypted
+
+ Documentation/keys-trusted-encrypted.txt |  145 ++++
+ drivers/char/tpm/tpm.c                   |   20 +-
+ drivers/char/tpm/tpm.h                   |    5 +
+ include/keys/encrypted-type.h            |   29 +
+ include/keys/trusted-type.h              |   31 +
+ include/linux/kernel.h                   |    1 +
+ include/linux/tpm.h                      |    4 +
+ include/linux/tpm_command.h              |   28 +
+ lib/hexdump.c                            |   16 +
+ security/Kconfig                         |   31 +
+ security/keys/Makefile                   |    2 +
+ security/keys/encrypted_defined.c        |  907 +++++++++++++++++++++++
+ security/keys/encrypted_defined.h        |   56 ++
+ security/keys/trusted_defined.c          | 1151 ++++++++++++++++++++++++++++++
+ security/keys/trusted_defined.h          |  134 ++++
+ 15 files changed, 2558 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/keys-trusted-encrypted.txt
+ create mode 100644 include/keys/encrypted-type.h
+ create mode 100644 include/keys/trusted-type.h
+ create mode 100644 include/linux/tpm_command.h
+ create mode 100644 security/keys/encrypted_defined.c
+ create mode 100644 security/keys/encrypted_defined.h
+ create mode 100644 security/keys/trusted_defined.c
+ create mode 100644 security/keys/trusted_defined.h
+
+-- 
+1.7.2.2
 
