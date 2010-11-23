@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0KWV5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 16:57:17 -0500
-Received: from mtxmxout2.matrox.com ([138.11.2.92]:40111 "EHLO
-	mtxmxout2.matrox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab0KWV5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 16:57:16 -0500
-X-Virus-MTX-Scanned: by Matrox Virus scanner at venus.matrox.com
-Message-ID: <4CEC3149.60004@matrox.com>
-Date: Tue, 23 Nov 2010 16:25:29 -0500
-From: Yannick Heneault <yannick_heneault@matrox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1751708Ab0KWWLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:11:07 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:49542 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab0KWWLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 17:11:05 -0500
+Date: Tue, 23 Nov 2010 22:10:49 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ben Gamari <bgamari@gmail.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+Message-ID: <20101123221049.GR19571@csn.ul.ie>
+References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <20101122141449.9de58a2c.akpm@linux-foundation.org> <AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com> <20101122210132.be9962c7.akpm@linux-foundation.org> <20101123093859.GE19571@csn.ul.ie> <87k4k49jii.fsf@gmail.com> <20101123145856.GQ19571@csn.ul.ie> <20101123123535.438e9750.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [BUG] VGA palette corruption in vgacon.c for EFI machine
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20101123123535.438e9750.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Nov 23, 2010 at 12:35:35PM -0800, Andrew Morton wrote:
+> On Tue, 23 Nov 2010 14:58:56 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > On Tue, Nov 23, 2010 at 09:55:49AM -0500, Ben Gamari wrote:
+> > > On Tue, 23 Nov 2010 09:38:59 +0000, Mel Gorman <mel@csn.ul.ie> wrote:
+> > > > > If it's mapped pagecache then the user was being a bit silly (or didn't
+> > > > > know that some other process had mapped the file).  In which case we
+> > > > > need to decide what to do - leave the page alone, deactivate it, or
+> > > > > half-deactivate it as this patch does.
+> > > > > 
+> > > > 
+> > > > What are the odds of an fadvise() user having used mincore() in advance
+> > > > to determine if the page was in use by another process? I would guess
+> > > > "low" so this half-deactivate gives a chance for the page to be promoted
+> > > > again as well as a chance for the flusher threads to clean the page if
+> > > > it really is to be reclaimed.
+> > > > 
+> > > Do we really want to make the user jump through such hoops as using
+> > > mincore() just to get the kernel to handle use-once pages properly?
+> > 
+> > I would think "no" which is why I support half-deactivating pages so they won't
+> > have to.
+> 
+> If the page is page_mapped() then we can assume that some other process
+> is using it and we leave it alone *altogether*.
+> 
 
-It seems there is a small problem of VGA palette corruption on EFI 
-machine. When the kernel initializes the architecture, it checks if the 
-machine is a EFI machine and if the memory at 0xa0000 is not tagged as 
-conventional memory, which should not be the case because this is VGA 
-memory. In that case, the kernel assumes that a VGA console can exist. I 
-would think that this assumption is correct.
+Agreed, that makes perfect sense.
 
-When the kernel initialize the console in vgacon_startup it checks if it 
-can really use the VGA console. I think this is where a check is 
-missing. Currently, the function can fail if a VESA boot mode is 
-detected but not if a EFI boot mode was used. I think the code should be 
-modified like this :
+> If the page is dirty or under writeback (and !page_mapped()) then we
+> should assume that we should free it asap.  The PageReclaim() trick
+> might help with that.
+> 
 
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -377,7 +377,8 @@ static const char *vgacon_startup(void)
-         u16 saved1, saved2;
-         volatile u16 *p;
+Again agreed.
 
--       if (screen_info.orig_video_isVGA == VIDEO_TYPE_VLFB) {
-+       if (screen_info.orig_video_isVGA == VIDEO_TYPE_VLFB ||
-+           screen_info.orig_video_isVGA == VIDEO_TYPE_EFI) {
-               no_vga:
-  #ifdef CONFIG_DUMMY_CONSOLE
-                 conswitchp = &dummy_con;
+> I just don't see any argument for moving the page to the head of the
+> inactive LRU as a matter of policy.  We can park it there because we
+> can't think of anythnig else to do with it, but it's the wrong place
+> for it.
+> 
 
+Is there a better alternative? One thing that springs to mind is that we are
+not exactly tracking very well what effect these policy changes have. The
+analysis scripts I have do a reasonable job on tracking reclaim activity
+(although only as part of the mmtests tarball, I should split them out as
+a standalone tool) but not the impact - namely minor and major faults. I
+should sort that out so we can put better reclaim analysis in place.
 
-In that case, the VGA console will fail and a dummy console will be 
-temporary used until the EFI driver get loaded. At that point the 
-console will be mapped to the EFI driver and graphics (splash screen and 
-penguins) will appear correctly.
-
-Currently, the function vgacon_startup doesn't fail and initialize the 
-video card for a real VGA mode. This function change the first 16 
-entries of the VGA palette. When the efifb driver kick-in, the palette 
-is not restored to default ramp value, thus the 16 first entry remain in 
-a modified state.
-
-Thanks,
-
-Yannick Heneault
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
