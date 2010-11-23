@@ -1,149 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab0KWAMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:12:37 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44019 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932369Ab0KWAMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:12:35 -0500
-Date: Mon, 22 Nov 2010 16:11:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter =?ISO-8859-1?Q?Sch=FCller?= <scode@spotify.com>
-Cc: linux-kernel@vger.kernel.org, Mattias de Zalenski <zalenski@spotify.com>,
-        linux-mm@kvack.org
-Subject: Re: Sudden and massive page cache eviction
-Message-Id: <20101122161158.02699d10.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
-References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932522Ab0KWAOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:14:54 -0500
+Received: from kroah.org ([198.145.64.141]:39759 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932465Ab0KWAOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 19:14:53 -0500
+Date: Mon, 22 Nov 2010 16:14:10 -0800
+From: Greg KH <greg@kroah.com>
+To: Yehuda Sadeh Weinraub <yehuda@hq.newdream.net>
+Cc: sage@newdream.net, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
+Message-ID: <20101123001410.GA31294@kroah.com>
+References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
+ <20101117171924.GC12050@kroah.com>
+ <AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com>
+ <20101118013002.GC8558@kroah.com>
+ <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
+ <20101119020820.GB18767@kroah.com>
+ <AANLkTim4p=tpaQG_XDE5Vk0YAypYCegAguYNKRg-LeDF@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim4p=tpaQG_XDE5Vk0YAypYCegAguYNKRg-LeDF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc linux-mm)
+On Fri, Nov 19, 2010 at 12:42:51PM -0800, Yehuda Sadeh Weinraub wrote:
+> On Thu, Nov 18, 2010 at 6:08 PM, Greg KH <greg@kroah.com> wrote:
+> > On Thu, Nov 18, 2010 at 02:53:35PM -0800, Yehuda Sadeh Weinraub wrote:
+> >> Yes, pretty much. One problem that I do see is that if we define the
+> >> snaps/ as a device (and not just as a kobj) as you suggested before,
+> >> it'll automatically create a 'uevent' entry under it which can be a
+> >> real issue in the case we have a snapshot named like that. Shouldn't
+> >> we just create it as a kobj in that case?
+> >
+> > No.  Just use the subdirectory option of an attribute group to handle
+> > that and you will not need to create any device or kobject with that
+> > name, the driver core will handle it all automatically for you.
+> >
+> 
+> One issue with using the groups name, is that it's not nested (unless
+> I'm missing something), so we can't have it done for the entire
+> planned hierarchy without holding a kobject on the way. Just a
+> reminder, the device-specific hierarchy would look like this:
+> 
+> 1. /sys/bus/rbd/devices/<id>/
+> 2. /sys/bus/rbd/devices/<id>/<device_attrs>
+> 3. /sys/bus/rbd/devices/<id>/snaps/
+> 4. /sys/bus/rbd/devices/<id>/snaps/<snap_name>/
+> 5. /sys/bus/rbd/devices/<id>/snaps/<snap_name>/<snap_attrs>
+> 
+> One solution would be to create kobjects for (3) and for (4), without
+> using a group name.
 
-On Fri, 12 Nov 2010 17:20:21 +0100
-Peter Sch__ller <scode@spotify.com> wrote:
+Ick, no.
 
-> Hello,
-> 
-> We have been seeing sudden and repeated evictions of huge amounts of
-> page cache on some of our servers for reasons that we cannot explain.
-> We are hoping that someone familiar with the vm subsystem may be able
-> to shed some light on the issue and perhaps confirm whether it is
-> plausibly a kernel bug or not. I will try to present the information
-> most-important-first, but this post will unavoidable be a bit long -
-> sorry.
-> 
-> First, here is a good example of the symptom (more graphs later on):
-> 
->    http://files.spotify.com/memcut/b_daily_allcut.png
-> 
-> After looking into this we have seen similar incidents on servers
-> running completely different software; but in this particular case
-> this machine is running a service which is heavily dependent on the
-> buffer cache to deal with incoming request load. The direct effects of
-> these is that we end up in complete I/O saturation (average queue
-> depth goes to 150-250 and stays there indefinitely or until we
-> actively tweak it (warm up caches etc)). Our interpretation of that is
-> that the eviction is not the result of something along the lines of a
-> large file being removed; given the effects on I/O load it is clear
-> that the data being evicted is in fact part of the active set used by
-> the service running on the machine.
-> 
-> The I/O load on these systems comes mainly from two things:
-> 
->   (1) Seek-bound I/O generated by lookups in a BDB (b-tree traversal).
->   (2) Seek-bound I/O generated by traversal of prefix directory trees
-> (i.e., 00/01/0001334234...., a poor man's b-tree on top of ext3).
->   (3) Seek-bound I/O reading small segments of small-to-medium sized
-> files contained in the prefix tree.
-> 
-> The prefix tree consist of 8*2^16 directory entries in total, with
-> individual files being in the tens of millions per server.
-> 
-> We initially ran 2.6.32-bpo.5-amd64 (Debian backports kernel) and have
-> subsequently upgraded some of them to 2.6.36-rc6-amd64 (Debian
-> experimental repo). While it initially looked like it was behaving
-> better, it slowly reverted to not making a difference (maybe as a
-> function of uptime, but we have not had the opportunity to test this
-> by re-booting some of them so it is an untested hypothesis).
-> 
-> Most of the activity on this system (ignoring the usual stuff like
-> ssh/cron/syslog/etc) is coming from Python processes that consume
-> non-trivial amounts of heap space, plus the disk activity and some
-> POSIX shared memory caching utilized by the BDB library.
-> 
-> We have correlated the incidence of these page eviction with higher
-> loads on the system; i.e., it tends to happen under high-load periods
-> and in addition we tend to see additional machines having problems as
-> a result of us "fixing" a machine that experienced an eviction (we
-> have some limited cascading effects that causes slightly higher load
-> on other servers in the cluster when we do that).
-> 
-> We believe the most plausible way an application bug could trigger
-> this behavior would require that (1) the application allocates the
-> memory, and (2) actually touches the pages. We believe this to be
-> unlikely in this case because:
-> 
->   (1) We see similar sudden evictions on various other servers, which
-> we noticed when we started looking for them.
->   (2) The fact that it tends to trigger correlated with load suggests
-> that it is not a functional bug in the service as such as higher load
-> is in this case unlikely to trigger any paths that does anything
-> unique with respect to memory allocation. In particular because the
-> domain logic is all Python, and none of it really deals with data
-> chunks.
->   (3) If we did manage to allocate something in the Python heap, we
-> would have to be "lucky" (or unlucky) if Python were consistently able
-> to munmap()/brk() down afterwards.
-> 
-> Some additional "sample" graphs showing a few incidences of the problem:
-> 
->    http://files.spotify.com/memcut/a_daily.png
->    http://files.spotify.com/memcut/a_weekly.png
->    http://files.spotify.com/memcut/b_daily_allcut.png
->    http://files.spotify.com/memcut/c_monthly.png
->    http://files.spotify.com/memcut/c_yearly.png
->    http://files.spotify.com/memcut/d_monthly.png
->    http://files.spotify.com/memcut/d_yearly.png
->    http://files.spotify.com/memcut/a_monthly.png
->    http://files.spotify.com/memcut/a_yearly.png
->    http://files.spotify.com/memcut/c_daily.png
->    http://files.spotify.com/memcut/c_weekly.png
->    http://files.spotify.com/memcut/d_daily.png
->    http://files.spotify.com/memcut/d_weekly.png
-> 
-> And here is an example from a server only running PostgreSQL (where
-> the sudden drop of gigabytes of page cache is unlikely because we are
-> not DROP:ing tables, nor do we have multi-gigabyte WAL archive sizes,
-> nor do we have a use-case which will imply ftruncate() on table
-> files):
-> 
->    http://files.spotify.com/memcut/postgresql_weekly.png
-> 
-> As you can see it's not as significant there, but it seems to, at
-> least visually, be the same "type" of effect. We've seen similar on
-> various machines, although depending on service running it may or may
-> not be explainable by regular file removal.
-> 
-> Further, we have observed the kernel's unwillingness to retain data in
-> page cache under interesting circumstances:
-> 
-> (1) page cache eviction happens
-> (2) we warm up our BDB files by cat:ing them (simple but effective)
-> (3) within a matter of minutes, while there is still several GB of
-> free (truly free, not page cached), these are evicted (as evidenced by
-> re-cat:ing them a little while later)
-> 
-> This latest observation we understand may be due to NUMA related
-> allocation issues, and we should probably try to use numactl to ask
-> for a more even allocation. We have not yet tried this. However, it is
-> not clear how any issues having to do with that would cause sudden
-> eviction of data already *in* the page cache (on whichever node).
-> 
+> Another way, we can create groups for (2), and (3)
+> under (1), but that's about it,
 
+attribute group for 2 is fine.
+
+> you can't create the snap specific directory this way without
+> resorting to some internal sysfs directory creation, which will be
+> horribly wrong. At that point we don't have anything for 'snaps', and
+> we don't really need to do any operations under that directory, we
+> just need it to exist so that it contains the snapshot-specific
+> directories.
+
+But you need to do something with those snapshots, right?  So, why even
+have "snaps" be a subdir?  Why not just make <snap_name> a struct device
+with <id> being the parent, and it living on the same bus_type, but
+being a different device_type (like partitions and block devices are), 
+
+> Another way would be to create a group for (2) under (1) and create a
+> kobject for (3), for which you can create group per snapshot.
+> 
+> Am I missing something? We already have the first solution (kobjects
+> only) implemented, is there some real benefit for using the third
+> method? We'll have to manually add remove groups anyway, as snapshots
+> can be removed and new snapshots can be added.
+
+Never add kobjects to a struct device, that is showing you that
+something is wrong, and that userspace really will want to get that
+create/destroy event of the sub child.
+
+sorry for the delay, was gone last weekend.
+
+greg k-h
