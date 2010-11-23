@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab0KWE5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 23:57:20 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53607 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab0KWE5T convert rfc822-to-8bit (ORCPT
+	id S1751972Ab0KWE7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 23:59:13 -0500
+Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:58826
+	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751017Ab0KWE7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 23:57:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=svoYIo2EWY66N+oBRksXMG9TmltTPXYEYrFcz7whNVe9xLDTlsYjJ1F3QYtf2+zhXD
-         YVnIZbsMSXbWGxQ0iNdpVo2ST2cCmBSX+BBEmnD+W9mczTUKIVhlkQj11Wyif8XKabF8
-         q2/LGF94AIReUZD0dWKu5+TKe2y3KeuPmfJFg=
-MIME-Version: 1.0
-In-Reply-To: <20101122142109.2f3e168c.akpm@linux-foundation.org>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<5d205f8a4df078b0da3681063bbf37382b02dd23.1290349672.git.minchan.kim@gmail.com>
-	<20101122142109.2f3e168c.akpm@linux-foundation.org>
-Date: Tue, 23 Nov 2010 13:57:17 +0900
-Message-ID: <AANLkTimm9KzAYBecikb4WqnRCo-Gw5eJdSD5dhX5ObYa@mail.gmail.com>
-Subject: Re: [RFC 2/2] Prevent promotion of page in madvise_dontneed
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Nov 2010 23:59:11 -0500
+Date: Mon, 22 Nov 2010 20:59:00 -0800
+From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
+To: Douglas Gilbert <dgilbert@interlog.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, ltuikov@yahoo.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+Message-ID: <20101123045900.GK20296@one-eyed-alien.net>
+Mail-Followup-To: Douglas Gilbert <dgilbert@interlog.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>, ltuikov@yahoo.com,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+	linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+	James Bottomley <James.Bottomley@suse.de>
+References: <949636.86471.qm@web31809.mail.mud.yahoo.com> <AANLkTi=7tW6wqrk8ZkFuTYwmS-wZ4nQ+jkxk8U95H42F@mail.gmail.com> <4CEABE2E.4010609@interlog.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="enGqbSaueFq5omEL"
+Content-Disposition: inline
+In-Reply-To: <4CEABE2E.4010609@interlog.com>
+User-Agent: Mutt/1.4.2.3i
+Organization: One Eyed Alien Networks
+X-Copyright: (C) 2010 Matthew Dharm, all rights reserved.
+X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Mon, 22 Nov 2010 20:59:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 7:21 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 21 Nov 2010 23:30:24 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> Now zap_pte_range alwayas promotes pages which are pte_young &&
->> !VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
->> it's unnecessary since the page wouldn't use any more.
->>
->> If the page is sharred by other processes and it's real working set
->
-> This patch doesn't actually do anything.  It passes variable `promote'
-> all the way down to unmap_vmas(), but unmap_vmas() doesn't use that new
-> variable.
 
-Oops. Sorry for that.
-I will resend the patch with your fixlet and Ben's point.
-Thank you.
+--enGqbSaueFq5omEL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Have a comment fixlet:
->
-> --- a/mm/memory.c~mm-prevent-promotion-of-page-in-madvise_dontneed-fix
-> +++ a/mm/memory.c
-> @@ -1075,7 +1075,7 @@ static unsigned long unmap_page_range(st
->  * @end_addr: virtual address at which to end unmapping
->  * @nr_accounted: Place number of unmapped pages in vm-accountable vma's here
->  * @details: details of nonlinear truncation or shared cache invalidation
-> - * @promote: whether pages inclued vma would be promoted or not
-> + * @promote: whether pages included in the vma should be promoted or not
->  *
->  * Returns the end address of the unmapping (restart addr if interrupted).
->  *
-> _
->
-> Also, I'd suggest that we avoid introducing the term "promote".  It
-> isn't a term which is presently used in Linux MM.  Probably "activate"
-> has a better-known meaning.
->
-> And `activate' could be a bool if one is in the mood for that.
->
+On Mon, Nov 22, 2010 at 02:02:06PM -0500, Douglas Gilbert wrote:
+> On 10-11-22 12:07 PM, Linus Torvalds wrote:
+> >On Mon, Nov 22, 2010 at 8:56 AM, Luben Tuikov<ltuikov@yahoo.com>  wrote:
+> >>
+> >>Some kernel transport drivers unconditionally disable
+> >>retrieval of the Caching mode page. One such for example is
+> >>the BBB/CBI transport over USB.
+> >
+> >One reason for that is that historically we've seen devices that
+> >simply go crazy - to the point of simply stopping to respond to
+> >anything - when you ask for pages that Windows doesn't ask for.
+> >
+> >It's especially common on USB storage, but it happens elsewhere too.
+> >The device firmware simply hasn't ever been tested in that situation,
+> >and it's buggy.
+> >
+> >So I don't mind the patch per se, but I think it's potentially way
+> >more dangerous than it looks.
+>=20
+> The vast majority of USB mass storage devices are based
+> on SCSI-2 (1994) or a particularly nasty standard
+> called RBC (Reduced Block Commands, 1999) which is a
+> partial subset of the block commands (i.e. disk related).
+> We are all aware of the quality of most of the device
+> end implementations out in the wild.
 
+Not true.  The vast majority of USB mass storage devices adhere to no SCSI
+or T10 specification at all.  The official definition of the "Transparent
+SCSI" operating mode of the USB Mass Storage Class is "that which
+microsoft/sun/other major vendors use".  Of course, that's not written down
+anywhere, but it was the intent of the committee and that is the reason why
+the committee rejected all attempts by people like me to implement a
+command-based compliance test.
 
+> I believe what Luben is working with is a new standard
+> called UAS (soon to be ratified) which is based on
+> www.t10.org work in the last few years. It seems to be
+> an attempt to throw out the older USB mass storage
+> transport and do it again, properly.
 
--- 
-Kind regards,
-Minchan Kim
+Luben's patch changes the behavior of sd-mod, which would affect both
+usb-storage and UAS.
+
+The primary thing that UAS adds is support for USB 3.0 streams and TCQ,
+which are both designed to improve performance.  I consider it likely that
+the quality of device firmware will be equally poor as older devices.
+
+That said, Luben's patch is kinda slick.  sd-mod already asks for a lot of
+mode page data; it does this so that it's request matches the observed
+behavior of a "popular" Redmond, WA-based OS.  Luben's patch just searches
+through that data to see if it can find what it is looking for, rather than
+rqeuesting a specific mode page later (which may not be supported).
+
+That said, I still consider this somewhat risky.  We've seen devices with
+grossly inaccurate data before.
+
+But, to my thinking, as long as the devices don't see any change in the
+command stream, then I think the risk has been properly mitigated.  To my
+understanding, this is the case.
+
+Matt
+
+--=20
+Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
+net=20
+Maintainer, Linux USB Mass Storage Driver
+
+Sir, for the hundreth time, we do NOT carry 600-round boxes of belt-fed=20
+suction darts!
+					-- Salesperson to Greg
+User Friendly, 12/30/1997
+
+--enGqbSaueFq5omEL
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (GNU/Linux)
+
+iD8DBQFM60oU3gL8qCooyc4RAirnAJ9EiydgakBEm8qiem9ngfrC2COMHwCeNZ0B
+tSbKvpLGzZ6w4HUFyO+4ksI=
+=esEZ
+-----END PGP SIGNATURE-----
+
+--enGqbSaueFq5omEL--
