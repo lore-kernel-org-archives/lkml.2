@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab0KWLGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 06:06:30 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37688 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab0KWLG1 (ORCPT
+	id S1752953Ab0KWLIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 06:08:23 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38719 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab0KWLIW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 06:06:27 -0500
-From: Jamie Iles <jamie@jamieiles.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jamie Iles <jamie@jamieiles.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Subject: [PATCH 4/4] avr32: at32ap700x: specify DMA src and dst masters
-Date: Tue, 23 Nov 2010 11:06:11 +0000
-Message-Id: <1290510371-23077-5-git-send-email-jamie@jamieiles.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1290510371-23077-1-git-send-email-jamie@jamieiles.com>
-References: <1290510371-23077-1-git-send-email-jamie@jamieiles.com>
+	Tue, 23 Nov 2010 06:08:22 -0500
+Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
+References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
+	 <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 23 Nov 2010 12:08:32 +0100
+Message-ID: <1290510512.2072.387.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the dw_dmac DMA driver supports configurable source and
-destination masters we need to specify which ones to use. This was
-previously hardcoded to 0 and 1 respectively in the driver.
+On Tue, 2010-11-23 at 16:35 +1100, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> This patch adds extra ABI to the perf interface to allow the
+> PERF_RECORD_COMM and PERF_RECORD_MMAP events to optionally include a
+> timestamp, which they were previously missing.
+> 
+> This has become necessary since the move to per-task-per-cpu events in
+> perf as those events would not necessarily be recorded prior to any
+> samples associated with them and would cause perf to miss-attribute
+> those events and produce bogus reports. This behaviour can be observed
+> almost every run on 64 CPU PowerPC systems, but has also been observed
+> on a simple quad core Intel i7.
+> 
+> The timestamp is requested by setting the all_timed flag in the
+> event attributes when opening the event and will be placed just after
+> the header of the events in question.
+> 
+> This patch also ensures that the PERF_RECORD_COMM event is dispatched
+> before enabling the counters for enable_on_exec.
+> 
 
-Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
----
- arch/avr32/mach-at32ap/at32ap700x.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> @@ -332,6 +333,7 @@ enum perf_event_type {
+>  	 *
+>  	 * struct {
+>  	 *	struct perf_event_header	header;
+> +	 *	{ u64			time;     } && all_timed
+>  	 *
+>  	 *	u32				pid, tid;
+>  	 *	u64				addr;
+> @@ -354,6 +356,7 @@ enum perf_event_type {
+>  	/*
+>  	 * struct {
+>  	 *	struct perf_event_header	header;
+> +	 *	{ u64			time;     } && all_timed
+>  	 *
+>  	 *	u32				pid, tid;
+>  	 *	char				comm[];
 
-diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-index e67c999..2747cde 100644
---- a/arch/avr32/mach-at32ap/at32ap700x.c
-+++ b/arch/avr32/mach-at32ap/at32ap700x.c
-@@ -2048,6 +2048,8 @@ at32_add_device_ac97c(unsigned int id, struct ac97c_platform_data *data,
- 		rx_dws->reg_width = DW_DMA_SLAVE_WIDTH_16BIT;
- 		rx_dws->cfg_hi = DWC_CFGH_SRC_PER(3);
- 		rx_dws->cfg_lo &= ~(DWC_CFGL_HS_DST_POL | DWC_CFGL_HS_SRC_POL);
-+		rx_dws->src_master = 0;
-+		rx_dws->dst_master = 1;
- 	}
- 
- 	/* Check if DMA slave interface for playback should be configured. */
-@@ -2056,6 +2058,8 @@ at32_add_device_ac97c(unsigned int id, struct ac97c_platform_data *data,
- 		tx_dws->reg_width = DW_DMA_SLAVE_WIDTH_16BIT;
- 		tx_dws->cfg_hi = DWC_CFGH_DST_PER(4);
- 		tx_dws->cfg_lo &= ~(DWC_CFGL_HS_DST_POL | DWC_CFGL_HS_SRC_POL);
-+		rx_dws->src_master = 0;
-+		rx_dws->dst_master = 1;
- 	}
- 
- 	if (platform_device_add_data(pdev, data,
-@@ -2128,6 +2132,8 @@ at32_add_device_abdac(unsigned int id, struct atmel_abdac_pdata *data)
- 	dws->reg_width = DW_DMA_SLAVE_WIDTH_32BIT;
- 	dws->cfg_hi = DWC_CFGH_DST_PER(2);
- 	dws->cfg_lo &= ~(DWC_CFGL_HS_DST_POL | DWC_CFGL_HS_SRC_POL);
-+	dws->src_master = 0;
-+	dws->dst_master = 1;
- 
- 	if (platform_device_add_data(pdev, data,
- 				sizeof(struct atmel_abdac_pdata)))
--- 
-1.7.2.3
 
+Right, so acme had a patch adding
+
+PERF_SAMPLE_TID
+PERF_SAMPLE_TIME
+PERF_SAMPLE_ID
+PERF_SAMPLE_CPU
+PERF_SAMPLE_STREAM_ID
+
+(IIRC) to every record.. so solve this same problem. Except he got
+interrupted by KS and things and didn't get around to posting it.
+
+Arnaldo?
