@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab0KWQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 11:12:58 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59569 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab0KWQM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 11:12:57 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Will Schmidt <will_schmidt@vnet.ibm.com>
-Subject: [PATCH] trivial: make comment about vs{n,cn,}printf more understandable
-Date: Tue, 23 Nov 2010 17:12:45 +0100
-Message-Id: <1290528765-25057-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1755320Ab0KWQTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 11:19:53 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:41997 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753816Ab0KWQTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 11:19:52 -0500
+Subject: Re: Sudden and massive page cache eviction
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Peter =?ISO-8859-1?Q?Sch=FCller?= <scode@spotify.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Mattias de Zalenski <zalenski@spotify.com>, linux-mm@kvack.org
+In-Reply-To: <AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com>
+References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+	 <20101122161158.02699d10.akpm@linux-foundation.org>
+	 <1290501502.2390.7029.camel@nimitz>
+	 <AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 23 Nov 2010 08:19:31 -0800
+Message-ID: <1290529171.2390.7994.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"You probably want ... instead." sounds like a recommendation better
-not to use the v... functions.
+On Tue, 2010-11-23 at 10:44 +0100, Peter Schüller wrote:
+> > You don't have anybody messing with /proc/sys/vm/drop_caches, do you?
+> 
+> Highly unlikely given that (1) evictions, while often very
+> significant, are usually not *complete* (although the first graph
+> example I provided had a more or less complete eviction) and (2) the
+> evictions are not obviously periodic indicating some kind of cron job,
+> and (3) we see the evictions happening across a wide variety of
+> machines.
+> 
+> So yes, I feel confident that we are not accidentally doing that.
 
-Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
----
- lib/vsprintf.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+Yeah, drop_caches doesn't seem very likely.
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index c150d3d..ec43171 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -1279,8 +1279,7 @@ qualifier:
-  * return is greater than or equal to @size, the resulting
-  * string is truncated.
-  *
-- * Call this function if you are already dealing with a va_list.
-- * You probably want snprintf() instead.
-+ * If you're not already dealing with a va_list better use snprintf().
-  */
- int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
- {
-@@ -1454,8 +1453,7 @@ EXPORT_SYMBOL(vsnprintf);
-  * the @buf not including the trailing '\0'. If @size is <= 0 the function
-  * returns 0.
-  *
-- * Call this function if you are already dealing with a va_list.
-- * You probably want scnprintf() instead.
-+ * If you're not already dealing with a va_list better use scnprintf().
-  *
-  * See the vsnprintf() documentation for format string extensions over C99.
-  */
-@@ -1534,8 +1532,7 @@ EXPORT_SYMBOL(scnprintf);
-  * into @buf. Use vsnprintf() or vscnprintf() in order to avoid
-  * buffer overflows.
-  *
-- * Call this function if you are already dealing with a va_list.
-- * You probably want sprintf() instead.
-+ * If you're not already dealing with a va_list better use sprintf().
-  *
-  * See the vsnprintf() documentation for format string extensions over C99.
-  */
--- 
-1.7.2.3
+Your postgres data looks the cleanest and is probably the easiest to
+analyze.  Might as well start there:
+
+	http://files.spotify.com/memcut/postgresql_weekly.png
+
+As you said, it might not be the same as the others, but it's a decent
+place to start.  If someone used drop_caches or if someone was randomly
+truncating files, we'd expect to see the active/inactive lines both drop
+by relatively equivalent amounts, and see them happen at _exactly_ the
+same time as the cache eviction.  The eviction about 1/3 of the way
+through Wednesday in the above graph kinda looks this way, but it's the
+exception.
+
+Just eyeballing it, _most_ of the evictions seem to happen after some
+movement in the active/inactive lists.  We see an "inactive" uptick as
+we start to launder pages, and the page activation doesn't keep up with
+it.  This is a _bit_ weird since we don't see any slab cache or other
+users coming to fill the new space.  Something _wanted_ the memory, so
+why isn't it being used?
+
+Do you have any large page (hugetlbfs) or other multi-order (> 1 page)
+allocations happening in the kernel?  
+
+If you could start recording /proc/{vmstat,buddystat,meminfo,slabinfo},
+it would be immensely useful.  The munin graphs are really great, but
+they don't have the detail which you can get from stuff like vmstat.
+
+> Further, we have observed the kernel's unwillingness to retain data in
+> page cache under interesting circumstances:
+> 
+> (1) page cache eviction happens
+> (2) we warm up our BDB files by cat:ing them (simple but effective)
+> (3) within a matter of minutes, while there is still several GB of
+> free (truly free, not page cached), these are evicted (as evidenced by
+> re-cat:ing them a little while later)
+>
+> This latest observation we understand may be due to NUMA related
+> allocation issues, and we should probably try to use numactl to ask
+> for a more even allocation. We have not yet tried this. However, it is
+> not clear how any issues having to do with that would cause sudden
+> eviction of data already *in* the page cache (on whichever node)..
+
+For a page-cache-heavy workload where you care a lot more about things
+being _in_ cache rather than having good NUMA locality, you probably
+want "zone_reclaim_mode" set to 0:
+
+	http://www.kernel.org/doc/Documentation/sysctl/vm.txt
+
+That'll be a bit more comprehensive than messing with numactl.  It
+really is the best thing if you just don't care about NUMA latencies all
+that much.  What kind of hardware is this, btw?
+
+-- Dave
 
