@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0KWPWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:22:03 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40418 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab0KWPV7 (ORCPT
+	id S1755381Ab0KWPWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:22:17 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:51242 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab0KWPWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:21:59 -0500
+	Tue, 23 Nov 2010 10:22:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=jWl3srsh9M5CykHIVHg6jVRfXWWTKKwqW6QaYOwQ87SdAtm33jFO6wRfaC9yBZfbXm
-         85z6kM89a8ieAoTMgrV6MZUHTnvHMCtDYLLDN6HLKDtMMA/f0yw+tJ01ud9vfxVVCDLx
-         PiSQ/cal+RIx3461VLNgdk4o3e79/kz/0Z95Q=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] perf: don't bother to init the hrtimer for no SW sampling counters
-Date: Tue, 23 Nov 2010 16:21:45 +0100
-Message-Id: <1290525705-6265-3-git-send-email-fbuihuu@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1290525705-6265-2-git-send-email-fbuihuu@gmail.com>
-References: <1290525705-6265-1-git-send-email-fbuihuu@gmail.com>
- <1290525705-6265-2-git-send-email-fbuihuu@gmail.com>
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=hwtrYyU/sHkSZuQMXf9yn2ML7PldJimch2qU76uaRghpgItH3J3f4lZu8ypbw62FG6
+         zBZqZf2hosiBb3QZuamU3Um09LaGgFem0Wlh5e5XOlBzvVITg+blPyaAhzu9vmcIppAz
+         cym+I2My0GxRKGRGUvcIy7glkIrvZE25wyB1g=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 23 Nov 2010 16:15:05 +0100
+Message-ID: <AANLkTikzSY09i=C+A2Y=_gVa-44r_bN76P-U2-NZMnpz@mail.gmail.com>
+Subject: Re: [PATCH] x86, perf, nmi: Disable perf if counters are not accessable
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, dzickus@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
+Hi,
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
- kernel/perf_event.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+I am seeing for a while this warning in my system-wide logs:
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 813b09e..31515200 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4894,24 +4894,26 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
- static void perf_swevent_start_hrtimer(struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
-+	s64 period;
-+
-+	if (!is_sampling_event(event))
-+		return;
- 
- 	hrtimer_init(&hwc->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	hwc->hrtimer.function = perf_swevent_hrtimer;
--	if (is_sampling_event(event)) {
--		s64 period = local64_read(&hwc->period_left);
- 
--		if (period) {
--			if (period < 0)
--				period = 10000;
-+	period = local64_read(&hwc->period_left);
-+	if (period) {
-+		if (period < 0)
-+			period = 10000;
- 
--			local64_set(&hwc->period_left, 0);
--		} else {
--			period = max_t(u64, 10000, hwc->sample_period);
--		}
--		__hrtimer_start_range_ns(&hwc->hrtimer,
-+		local64_set(&hwc->period_left, 0);
-+	} else {
-+		period = max_t(u64, 10000, hwc->sample_period);
-+	}
-+	__hrtimer_start_range_ns(&hwc->hrtimer,
- 				ns_to_ktime(period), 0,
- 				HRTIMER_MODE_REL_PINNED, 0);
--	}
- }
- 
- static void perf_swevent_cancel_hrtimer(struct perf_event *event)
--- 
-1.7.3.2
+Nov 23 11:54:14 tbox kernel: [    0.040335] NMI watchdog failed to
+create perf event on cpu0: ffffffa1
 
+As I saw this patch from [1], I was hoping it's also fixing my problem
+on an Intel Pentium-M (Banias) Single-Core CPU:
+
+"So I changed it to:
+
+static bool check_hw_exists(void)
+{
+        u64 val, val_new = 0;
+        int ret = 0;
+        val = 0xabcdUL;
+        ret |= checking_wrmsrl(x86_pmu.perfctr, val);
+        ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
+        if (ret || val != val_new)
+                return false;
+        return true;
+}
+And have applied the patch,
+
+Thanks Don!"
+
+Where did you apply it? Shouldn't that be in linux-2.6-tip perf/* GIT tree?
+
+Regards,
+- Sedat -
+
+[1] http://lkml.org/lkml/2010/11/23/121
+[2] http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=summary
