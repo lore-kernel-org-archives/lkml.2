@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0KWOuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 09:50:01 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51300 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab0KWOuA (ORCPT
+	id S1754846Ab0KWOuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 09:50:23 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:53725 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692Ab0KWOuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 09:50:00 -0500
+	Tue, 23 Nov 2010 09:50:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=aQzk1o5I37SxbQyQd5iP52jOdU3aH0YJGNcjop/DH/qartdn0XgjKkutdV6mfQ9AY8
-         DP9UwcW1E8co4XoQeH3Pj/ETjIpVNwCI99WsZNw1w/AMPMwQQO6WTvs6A8BlUF+NLQeF
-         sKxl144SbwDv7TAEoekvNUn/6OlMsimwMwISo=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 23 Nov 2010 15:49:57 +0100
-Message-ID: <AANLkTin6ZJr3vXw=HVeA65aq39qxtnJGGXW2nwfp_PwS@mail.gmail.com>
-Subject: Re: linux-next: boot failure in sep driver
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>, mark.a.allyn@intel.com,
-        jayant.mangalampalli@intel.com
-Cc: sfr@canb.auug.org.au, Greg KH <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Hq/zrSM27O72xDZClZu2svB8araC06yyP7mp8sRCZn20OWdz+fM0w3aA8Y0hOTgdPx
+         2WQ6eoltqKe5yCWeqjXlrP2vr69hmhdZ7uqEzzMrmCV/ymfGlE2PEFd8bseU2iIHycQl
+         A4U4ovVrMN00CF7U66D65PEo3bw13LwYI51vE=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, rsync@lists.samba.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Ben Gamari <bgamari.foss@gmail.com>
+Subject: [PATCH 1/3] Add fadvise interface wrapper
+Date: Tue, 23 Nov 2010 09:49:50 -0500
+Message-Id: <1290523792-6170-2-git-send-email-bgamari.foss@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101122103756.E236.A69D9226@jp.fujitsu.com>
+References: <20101122103756.E236.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+With recent discussion on the LKML[1], it seems likely that Linux will
+finally support posix_fadvise in a useful way with the FADV_DONTNEED
+flag. This should allow us to minimize the effect of rsync on the
+system's working set. Add the necessary wrapper to syscall.c.
 
-just fall into the same pitfall... While digging into this driver, I
-saw a typo in:
+[1] http://lkml.org/lkml/2010/11/21/59
+---
+ syscall.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-[ drivers/staging/sep/Kconfig ]
+diff --git a/syscall.c b/syscall.c
+index cfabc3e..9f5b1c3 100644
+--- a/syscall.c
++++ b/syscall.c
+@@ -28,6 +28,7 @@
+ #ifdef HAVE_SYS_ATTR_H
+ #include <sys/attr.h>
+ #endif
++#include <fcntl.h>
+ 
+ extern int dry_run;
+ extern int am_root;
+@@ -282,3 +283,13 @@ OFF_T do_lseek(int fd, OFF_T offset, int whence)
+ 	return lseek(fd, offset, whence);
+ #endif
+ }
++
++#if _XOPEN_SOURCE >= 600
++int do_fadvise(int fd, OFF_T offset, OFF_T len, int advise)
++{
++        return posix_fadvise(fd, offset, len, advise);
++}
++#else
++#define do_fadvise() 
++#endif
++
+-- 
+1.7.1
 
-config DX_SEP
-        tristate "Discretix SEP driver"
-        depends on PCI
-        default y
-        help
-          Discretix SEP driver; used for the security processor subsystem
-          on bard the Intel Mobile Internet Device.
-
-          The driver's name is sep_driver.
-
-          If unsure, select N.
-- EOF -
-
-Shouldn't this be "...used for the security processor subsystem...
-"...*shipped with Intel Mobile Internet Devices.*" ?
-I can only imagine that the original author(s) wanted to figure out it
-is an onboard-solution.
-
-
-Kind Regards,
-- Sedat -
-
-P.S.: Note to myself: Add the folowing snippet to:
-
-[ debian/config/config ]
-...
-##
-## file: drivers/staging/sep/Kconfig
-##
-# CONFIG_DX_SEP is not set
-...
