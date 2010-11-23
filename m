@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab0KWIuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 03:50:04 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:45976 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab0KWIuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 03:50:03 -0500
-X-ASG-Debug-ID: 1290502199-08b7e12f0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4CEB8034.80400@fusionio.com>
-Date: Tue, 23 Nov 2010 09:49:56 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751349Ab0KWIyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 03:54:11 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51148 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab0KWIyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 03:54:09 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [PATCH 1/2] kmsg_dump: adding to reboot, halt, poweroff and emergency_restart path
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
+        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
+        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
+        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "marco.stornelli@gmail.com" <marco.stornelli@gmail.com>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        Aaron Durbin <adurbin@google.com>,
+        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FA@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2F5@USINDEVS01.corp.hds.com> <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FA@USINDEVS01.corp.hds.com>
+Message-Id: <20101123175405.7BCB.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] generic-ipi: add lock context annotations
-References: <1290411232-11439-1-git-send-email-namhyung@gmail.com>	 <1290430003.2072.101.camel@laptop> <1290482390.1857.26.camel@leonhard>
-X-ASG-Orig-Subj: Re: [PATCH] generic-ipi: add lock context annotations
-In-Reply-To: <1290482390.1857.26.camel@leonhard>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1290502199
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.60
-X-Barracuda-Spam-Status: No, SCORE=0.60 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=MARKETING_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.47441
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 23 Nov 2010 17:54:06 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-23 04:19, Namhyung Kim wrote:
-> 2010-11-22 (월), 13:46 +0100, Peter Zijlstra:
->> On Mon, 2010-11-22 at 16:33 +0900, Namhyung Kim wrote:
->>> The ipi_call_[un]lock[_irq] functions grab/release a spin lock
->>> but were missing proper annotations. Add it.
->>
->> I really have to ask why bother? Why not add some smarts to whatever
->> uses these annotations?
+> This patch alters mtdoops and ramoops to perform their actions only for KMSG_DUMP_PANIC,
+> KMSG_DUMP_OOPS and KMSG_DUMP_KEXEC because they would like to log crashes only.
 > 
-> I just thought that removing bogus warnings from sparse helps us focus
-> on real issues when using it. Currently sparse emits too many messages
-> and some (many?) of them might be removed trivially (or by adding bit of
-> ugliness. :( )
+>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> 
+> ---
+>  drivers/char/ramoops.c |    5 +++++
+>  drivers/mtd/mtdoops.c  |    5 +++++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c index 73dcb0e..8998b29 100644
+> --- a/drivers/char/ramoops.c
+> +++ b/drivers/char/ramoops.c
+> @@ -69,6 +69,11 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>  	char *buf;
+>  	struct timeval timestamp;
+>  
+> +	if (reason != KMSG_DUMP_OOPS &&
+> +	    reason != KMSG_DUMP_PANIC &&
+> +	    reason != KMSG_DUMP_KEXEC)
+> +		return;
+> +
+>  	/* Only dump oopses if dump_oops is set */
+>  	if (reason == KMSG_DUMP_OOPS && !dump_oops)
+>  		return;
+> diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c index 1ee72f3..c948150 100644
+> --- a/drivers/mtd/mtdoops.c
+> +++ b/drivers/mtd/mtdoops.c
+> @@ -307,6 +307,11 @@ static void mtdoops_do_dump(struct kmsg_dumper *dumper,
+>  	unsigned long l1_cpy, l2_cpy;
+>  	char *dst;
+>  
+> +	if (reason != KMSG_DUMP_OOPS &&
+> +	    reason != KMSG_DUMP_PANIC &&
+> +	    reason != KMSG_DUMP_KEXEC)
+> +		return;
+> +
+>  	/* Only dump oopses if dump_oops is set */
+>  	if (reason == KMSG_DUMP_OOPS && !dump_oops)
+>  		return;
 
-It's not too big a deal, I have no problem adding the annotation.
+Looks good.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-> BTW, I didn't get what you mean about "some smarts". Could you explain
-> them little more?
 
-I guess what Peter means is that the fact that the function grabs the
-lock is apparent in the code, if sparse was a bit "smarter", it would
-see and note this itself.
-
--- 
-Jens Axboe
 
