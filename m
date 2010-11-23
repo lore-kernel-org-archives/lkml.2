@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab0KWNm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 08:42:56 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:49226 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319Ab0KWNj4 (ORCPT
+	id S1754387Ab0KWNkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 08:40:02 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57002 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754358Ab0KWNj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 08:39:56 -0500
+	Tue, 23 Nov 2010 08:39:59 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=xvL2VXaYZVp1ddI7k7QhlsG8uZvkRvT2hzGAJcRCVVB5zIvVShLQLH99+WxA2FPcQQ
-         KBGqQcE+Dqa3gdvE9TSCuOZ+0ynBRllHNe7qmWgTKfuvseUT8iVV+554WhT5IsL+Fpo9
-         KAKpVdv+SzZQ24EhCXOo7ew7vX2wrV8jgc+hY=
+        b=WTaqpA4ltvjfQ6oAGzo1O7nU4yKbFoeW3XCvaKIktGIFuZJI0SQhGJka325hI829VI
+         lVnNrPrJ8jl2eClYBTwy7YfleaebB9RCtyG1kQFFpi7Qj4yWPoSIGo8A79R/hqi9j949
+         jsW+SnVWkXhVO1zPTnVseKUtk9PqZEMGs7fb8=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH v3 10/22] asm-generic: use little-endian bitops
-Date: Tue, 23 Nov 2010 22:38:12 +0900
-Message-Id: <1290519504-3958-11-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH v3 11/22] ext3: use little-endian bitops
+Date: Tue, 23 Nov 2010 22:38:13 +0900
+Message-Id: <1290519504-3958-12-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1290519504-3958-1-git-send-email-akinobu.mita@gmail.com>
 References: <1290519504-3958-1-git-send-email-akinobu.mita@gmail.com>
@@ -32,34 +34,43 @@ asm/bitops.h. This converts ext2 non-atomic bit operations to
 little-endian bit operations.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
 No change from previous submission
- include/asm-generic/bitops/ext2-atomic.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/ext3_fs.h |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/include/asm-generic/bitops/ext2-atomic.h b/include/asm-generic/bitops/ext2-atomic.h
-index ab1c875..bcf359f 100644
---- a/include/asm-generic/bitops/ext2-atomic.h
-+++ b/include/asm-generic/bitops/ext2-atomic.h
-@@ -5,7 +5,7 @@
- 	({						\
- 		int ret;				\
- 		spin_lock(lock);			\
--		ret = ext2_set_bit((nr), (unsigned long *)(addr)); \
-+		ret = __test_and_set_le_bit((nr), (unsigned long *)(addr)); \
- 		spin_unlock(lock);			\
- 		ret;					\
- 	})
-@@ -14,7 +14,7 @@
- 	({						\
- 		int ret;				\
- 		spin_lock(lock);			\
--		ret = ext2_clear_bit((nr), (unsigned long *)(addr)); \
-+		ret = __test_and_clear_le_bit((nr), (unsigned long *)(addr)); \
- 		spin_unlock(lock);			\
- 		ret;					\
- 	})
+diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
+index 6ce1bca..34ef455 100644
+--- a/include/linux/ext3_fs.h
++++ b/include/linux/ext3_fs.h
+@@ -418,13 +418,18 @@ struct ext3_inode {
+ #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
+ #endif
+ 
+-#define ext3_set_bit			ext2_set_bit
++#define ext3_set_bit(nr, addr)	\
++	__test_and_set_le_bit((nr), (unsigned long *)(addr))
+ #define ext3_set_bit_atomic		ext2_set_bit_atomic
+-#define ext3_clear_bit			ext2_clear_bit
++#define ext3_clear_bit(nr, addr)	\
++	__test_and_clear_le_bit((nr), (unsigned long *)(addr))
+ #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
+-#define ext3_test_bit			ext2_test_bit
+-#define ext3_find_first_zero_bit	ext2_find_first_zero_bit
+-#define ext3_find_next_zero_bit		ext2_find_next_zero_bit
++#define ext3_test_bit(nr, addr)	\
++	test_le_bit((nr), (unsigned long *)(addr))
++#define ext3_find_first_zero_bit(addr, size)	\
++	find_first_zero_le_bit((unsigned long *)(addr), (size))
++#define ext3_find_next_zero_bit(addr, size, off)	\
++	find_next_zero_le_bit((unsigned long *)(addr), (size), (off))
+ 
+ /*
+  * Maximal mount counts between two filesystem checks
 -- 
 1.7.3.2
 
