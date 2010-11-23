@@ -1,153 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab0KWNjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 08:39:15 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57507 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab0KWNjM (ORCPT
+	id S1754164Ab0KWNjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 08:39:41 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53593 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab0KWNjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 08:39:12 -0500
+	Tue, 23 Nov 2010 08:39:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rbeS9CHY4lMzWc+7FmDVAviHB45gMjA7f/mk1thCcy+IkG2k88J2vA3rMn6DY9eByP
-         uxdX9FJpXB+OUs3s6W3/i98HOkMXJslKQKzq6gvpu6Qbw8NQAF4o5gj/2LTtBjk4tlK5
-         DdDsok19s988yKhfPvCgUlRk4F+JY/JJQelxI=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH v3 03/22] s390: introduce little-endian bitops
-Date: Tue, 23 Nov 2010 22:38:05 +0900
-Message-Id: <1290519504-3958-4-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1290519504-3958-1-git-send-email-akinobu.mita@gmail.com>
-References: <1290519504-3958-1-git-send-email-akinobu.mita@gmail.com>
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=tG39dURypKWnJ0J3yW7OjPUwOaohM4qhmv2Q49/DqRd9Z0mM0ygUqqwB/dyAV74/OR
+         assh7OQdr8mTsN+YKinQOP8J5x9C6C7spPmt4eGj5InrGzzlSqeOoG40BU5GWRCyhNx4
+         FJCTYVGyT8iiq2n88xnFrcwiQB08aGMZncUiI=
+Date: Tue, 23 Nov 2010 15:40:04 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Subject: addrconf: refcnt with  IPV6_PRIVACY enabled
+Message-ID: <20101123134003.GB4142@swordfish.minsk.epam.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce little-endian bit operations by renaming native ext2 bit
-operations. The ext2 bit operations are kept as wrapper macros using
-little-endian bit operations to maintain bisectability until the
-conversions are finished.
+Hello,
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
+I've sent a patch http://lkml.org/lkml/2010/11/21/124 
+"[PATCH] ipv6: fix inet6_dev refcnt with IPV6_PRIVACY enabled" related
+to wrong in6_dev refcnt value when IPV6_PRIVACY enabled.
+
+I've took a second look, and question arised - 
+Is it actually necessary to in6_dev_hold/in6_dev_put in ipv6_regen_rndid?
+In ipv6_regen_rndid we call in6_dev_hold only when mod_timer == 0,
+and always in6_dev_put. 
+
+
+I've removed check for < 0 and goto from __ipv6_regen_rndid call, since it 
+always return 0.
+
+
+Please, kindly review V2.
+
 ---
-No change from previous submission
- arch/s390/include/asm/bitops.h |   59 +++++++++++++++++++++++++++------------
- 1 files changed, 41 insertions(+), 18 deletions(-)
 
-diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
-index 2e05972..e10b81e 100644
---- a/arch/s390/include/asm/bitops.h
-+++ b/arch/s390/include/asm/bitops.h
-@@ -742,18 +742,22 @@ static inline int sched_find_first_bit(unsigned long *b)
-  *    23 22 21 20 19 18 17 16 31 30 29 28 27 26 25 24
-  */
- 
--#define ext2_set_bit(nr, addr)       \
--	__test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)addr)
--#define ext2_set_bit_atomic(lock, nr, addr)       \
--	test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)addr)
--#define ext2_clear_bit(nr, addr)     \
--	__test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)addr)
--#define ext2_clear_bit_atomic(lock, nr, addr)     \
--	test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)addr)
--#define ext2_test_bit(nr, addr)      \
--	test_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)addr)
--
--static inline int ext2_find_first_zero_bit(void *vaddr, unsigned int size)
-+#define __set_le_bit(nr, addr)	\
-+	__set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+#define __clear_le_bit(nr, addr)	\
-+	__clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+#define __test_and_set_le_bit(nr, addr)	\
-+	__test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+#define test_and_set_le_bit(nr, addr)	\
-+	test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+#define __test_and_clear_le_bit(nr, addr)	\
-+	__test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+#define test_and_clear_le_bit(nr, addr)	\
-+	test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+#define test_le_bit(nr, addr)	\
-+	test_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-+
-+static inline int find_first_zero_le_bit(void *vaddr, unsigned int size)
- {
- 	unsigned long bytes, bits;
- 
-@@ -764,7 +768,7 @@ static inline int ext2_find_first_zero_bit(void *vaddr, unsigned int size)
- 	return (bits < size) ? bits : size;
- }
- 
--static inline int ext2_find_next_zero_bit(void *vaddr, unsigned long size,
-+static inline int find_next_zero_le_bit(void *vaddr, unsigned long size,
- 					  unsigned long offset)
- {
-         unsigned long *addr = vaddr, *p;
-@@ -790,11 +794,10 @@ static inline int ext2_find_next_zero_bit(void *vaddr, unsigned long size,
- 		size -= __BITOPS_WORDSIZE;
- 		p++;
-         }
--	return offset + ext2_find_first_zero_bit(p, size);
-+	return offset + find_first_zero_le_bit(p, size);
- }
- 
--static inline unsigned long ext2_find_first_bit(void *vaddr,
--						unsigned long size)
-+static inline unsigned long find_first_le_bit(void *vaddr, unsigned long size)
- {
- 	unsigned long bytes, bits;
- 
-@@ -805,7 +808,7 @@ static inline unsigned long ext2_find_first_bit(void *vaddr,
- 	return (bits < size) ? bits : size;
- }
- 
--static inline int ext2_find_next_bit(void *vaddr, unsigned long size,
-+static inline int find_next_le_bit(void *vaddr, unsigned long size,
- 				     unsigned long offset)
- {
- 	unsigned long *addr = vaddr, *p;
-@@ -831,9 +834,29 @@ static inline int ext2_find_next_bit(void *vaddr, unsigned long size,
- 		size -= __BITOPS_WORDSIZE;
- 		p++;
+ net/ipv6/addrconf.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 2fc35b3..8187d14 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -425,7 +425,6 @@ static struct inet6_dev * ipv6_add_dev(struct net_device *dev)
+ 		       dev->name);
+ 		ndev->cnf.use_tempaddr = -1;
+ 	} else {
+-		in6_dev_hold(ndev);
+ 		ipv6_regen_rndid((unsigned long) ndev);
  	}
--	return offset + ext2_find_first_bit(p, size);
-+	return offset + find_first_le_bit(p, size);
+ #endif
+@@ -1653,8 +1652,7 @@ static void ipv6_regen_rndid(unsigned long data)
+ 	if (idev->dead)
+ 		goto out;
+ 
+-	if (__ipv6_regen_rndid(idev) < 0)
+-		goto out;
++	__ipv6_regen_rndid(idev);
+ 
+ 	expires = jiffies +
+ 		idev->cnf.temp_prefered_lft * HZ -
+@@ -1667,13 +1665,11 @@ static void ipv6_regen_rndid(unsigned long data)
+ 		goto out;
+ 	}
+ 
+-	if (!mod_timer(&idev->regen_timer, expires))
+-		in6_dev_hold(idev);
+-
++	mod_timer(&idev->regen_timer, expires);
++	
+ out:
+ 	write_unlock_bh(&idev->lock);
+ 	rcu_read_unlock_bh();
+-	in6_dev_put(idev);
  }
  
-+#define ext2_set_bit(nr, addr)       \
-+	__test_and_set_le_bit((nr), (unsigned long *)(addr))
-+#define ext2_set_bit_atomic(lock, nr, addr)       \
-+	test_and_set_le_bit((nr), (unsigned long *)(addr))
-+#define ext2_clear_bit(nr, addr)     \
-+	__test_and_clear_le_bit((nr), (unsigned long *)(addr))
-+#define ext2_clear_bit_atomic(lock, nr, addr)     \
-+	test_and_clear_le_bit((nr), (unsigned long *)(addr))
-+#define ext2_test_bit(nr, addr)      \
-+	test_le_bit((nr), (unsigned long *)(addr))
-+
-+#define ext2_find_first_zero_bit(vaddr, size)	\
-+	find_first_zero_le_bit((unsigned long *)(vaddr), (size))
-+#define ext2_find_next_zero_bit(vaddr, size, offset)	\
-+	find_next_zero_le_bit((unsigned long *)(vaddr), (size), (offset))
-+#define ext2_find_first_bit(vaddr, size)	\
-+	find_first_le_bit((unsigned long *)(vaddr), (size))
-+#define ext2_find_next_bit(vaddr, size, offset)	\
-+	find_next_le_bit((unsigned long *)(vaddr), (size), (offset))
-+
- #include <asm-generic/bitops/minix.h>
- 
- #endif /* __KERNEL__ */
--- 
-1.7.3.2
+ static int __ipv6_try_regen_rndid(struct inet6_dev *idev, struct in6_addr *tmpaddr) {
 
