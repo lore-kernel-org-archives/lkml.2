@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab0KWEa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 23:30:58 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47281 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab0KWEa4 convert rfc822-to-8bit (ORCPT
+	id S1751656Ab0KWEam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 23:30:42 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43475 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab0KWEak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 23:30:56 -0500
+	Mon, 22 Nov 2010 23:30:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=MN/T48E2cQzxBH7NjBPFuCKx8ARpP5aDDFL6rP7CFd9mE09WxXFCRmVzOoCziiPAjO
-         s4jsf2XBq9l1b4Iw0Ufj+FVpo3KnAqI9Ct/PBNOMqiJoeQ2KEGJD9u97OMYityJJavXp
-         3sbX4eHy9fgqWwVmNnPUOZo9BOw1vSvXsmr1g=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimCBX7FSBByeOmCp_ofYvmFeE8OF85OzB5tfjhw@mail.gmail.com>
-References: <1290470763.3008.252.camel@localhost>
-	<AANLkTi=MM-GVGcswHfLXE-6JFHiXUT4k-wt61rqwkjAf@mail.gmail.com>
-	<AANLkTimCBX7FSBByeOmCp_ofYvmFeE8OF85OzB5tfjhw@mail.gmail.com>
-Date: Tue, 23 Nov 2010 13:30:54 +0900
-X-Google-Sender-Auth: VPVhPKCP-WpiqDazSkjUaJiyuZk
-Message-ID: <AANLkTikbHsOpv858ts-h9oB8NvK+Tk6wf9sX8HWfecqD@mail.gmail.com>
-Subject: Re: [RFC] persistent store
-From: Kyungmin Park <kmpark@infradead.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=TdOcsjn+g+Rj6rscPKSrNPR59t400qrZzUmPf6OUq9JHpB/jBcScoeyTtkq3IC93ez
+         wpcXW7j2B59cUW8Yz5HtPp54JnqW+djuwTrVwvmJcnAj8lcZH9TyyztANVOuP/AVutHr
+         782RNP7xQOmSJBwpq21s3dgdBfLgAogEZU4t8=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ext3: Add journal error check into ext3_rename()
+Date: Tue, 23 Nov 2010 13:30:33 +0900
+Message-Id: <1290486633-4534-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 12:10 PM, Tony Luck <tony.luck@intel.com> wrote:
-> On Mon, Nov 22, 2010 at 5:37 PM, Tony Luck <tony.luck@intel.com> wrote:
->> Yes - I assume here that the last "data_size" bytes will be enough
->> to be useful. But in your case it most likely won't be.  You could
->> lie about how much space you allow and then include some oops
->> parsing code to get the vital bits out of what is passed to you. Not
->> pretty - but it would work. If there are many such devices with limited
->> capacity, then it would make sense to include this parsing code
->> in this generic layer.
->
-> Sorry - finding the good bits from the console log is architecture
-> dependent ... so it can't be done (easily) in the generic code.
+Check return value of ext3_journal_get_write_access() and
+ext3_journal_dirty_metadata().
 
-FYI:
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ext3/namei.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-Now we use ramoops for this purpose. Even tough ramoops uses volatile
-memory, it's safe soft-reset and watchdog reset.
-To overcome limiataion of ramoops. not persist, I'm working on mmcoops
-as persistent oops record.
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index 672cea1..c8415e7 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -2371,7 +2371,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+ 			goto end_rename;
+ 	} else {
+ 		BUFFER_TRACE(new_bh, "get write access");
+-		ext3_journal_get_write_access(handle, new_bh);
++		retval = ext3_journal_get_write_access(handle, new_bh);
++		if (retval)
++			goto journal_error;
+ 		new_de->inode = cpu_to_le32(old_inode->i_ino);
+ 		if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
+ 					      EXT3_FEATURE_INCOMPAT_FILETYPE))
+@@ -2380,7 +2382,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+ 		new_dir->i_ctime = new_dir->i_mtime = CURRENT_TIME_SEC;
+ 		ext3_mark_inode_dirty(handle, new_dir);
+ 		BUFFER_TRACE(new_bh, "call ext3_journal_dirty_metadata");
+-		ext3_journal_dirty_metadata(handle, new_bh);
++		retval = ext3_journal_dirty_metadata(handle, new_bh);
++		if (retval)
++			goto journal_error;
+ 		brelse(new_bh);
+ 		new_bh = NULL;
+ 	}
+@@ -2429,10 +2433,17 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+ 	ext3_update_dx_flag(old_dir);
+ 	if (dir_bh) {
+ 		BUFFER_TRACE(dir_bh, "get_write_access");
+-		ext3_journal_get_write_access(handle, dir_bh);
++		retval = ext3_journal_get_write_access(handle, dir_bh);
++		if (retval)
++			goto journal_error;
+ 		PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
+ 		BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
+-		ext3_journal_dirty_metadata(handle, dir_bh);
++		retval = ext3_journal_dirty_metadata(handle, dir_bh);
++		if (retval) {
++journal_error:
++			ext3_std_error(new_dir->i_sb, retval);
++			goto end_rename;
++		}
+ 		drop_nlink(old_dir);
+ 		if (new_inode) {
+ 			drop_nlink(new_inode);
+-- 
+1.7.0.4
 
-As the discussed story. it covers the previous oops devices,
-mtdoops(drivers/mtd/mtdoops.c), ramoops (drivers/char/ramoops.c) and
-mmcoops (drivers/mmc/card/mmc_oops.c).
-
-Actually I tried to enable the lcdoops, display oops message at LCD.
-but it doesn't work since not much time to display LCD.
-
-Thank you,
-Kyungmin Park
-
-
->
-> -Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
