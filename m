@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab0KWXFH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 18:05:07 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47378 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752271Ab0KWXFF (ORCPT
+	id S1753975Ab0KWXIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 18:08:09 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:4160 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab0KWXII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 18:05:05 -0500
-Date: Tue, 23 Nov 2010 23:03:59 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Tabi <timur@freescale.com>
-Cc: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101123230359.3c805e2e@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CEBF668.2080708@freescale.com>
-References: <20101118163321.GA2723@suse.de>
-	<4CE5562B.8080604@freescale.com>
-	<20101118165136.GA3103@suse.de>
-	<4CE55ACB.80207@freescale.com>
-	<20101118171856.GA4283@suse.de>
-	<4CE5647F.5000203@freescale.com>
-	<20101118175832.GA4931@suse.de>
-	<4CE58005.7040308@freescale.com>
-	<20101118200230.GA25715@suse.de>
-	<4CE58736.4090703@freescale.com>
-	<20101118201035.GA26287@suse.de>
-	<4CE58FE5.3010502@freescale.com>
-	<20101118205647.677404ec@lxorguk.ukuu.org.uk>
-	<4CEA9B00.1000804@freescale.com>
-	<20101123135621.5d100e81@lxorguk.ukuu.org.uk>
-	<4CEBF668.2080708@freescale.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 18:08:08 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6176"; a="64083096"
+Date: Tue, 23 Nov 2010 15:08:05 -0800 (PST)
+From: Gregory Bean <gbean@codeaurora.org>
+X-X-Sender: gbean@gbean-linux.qualcomm.com
+To: Daniel Walker <dwalker@codeaurora.org>
+cc: Gregory Bean <gbean@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
+In-Reply-To: <1290534717.4165.43.camel@m0nster>
+Message-ID: <alpine.DEB.2.00.1011231456380.17082@gbean-linux.qualcomm.com>
+References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>  <1290109970-26752-2-git-send-email-gbean@codeaurora.org> <1290534717.4165.43.camel@m0nster>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Are you talking about this:
-> 
-> static struct tty_driver *ehv_bc_console_device(struct console *co, int *index)
-> {
-> 	*index = co->index;
-> 
-> 	return ehv_bc_driver;
-> }
+>> +static inline void set_gpio_bits(unsigned n, void __iomem *reg)
+>> +{
+>> +	writel(readl(reg) | n, reg);
+>> +}
+>> +
+>> +static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
+>> +{
+>> +	writel(readl(reg) & ~n, reg);
+>> +}
+>
+> It seems these functions actually accept output from BIT(). It would be
+> safer to force these to accept the bit number then use BIT() inside this
+> function to translate. That way you wouldn't use "unsigned n" for the
+> argument you would use a named enum for the argument.
 
-Yes.
+I don't think that will work well, because there are cases where we want
+to set or clear more than one bit at a time.  Making these functions
+take a bit number as an argument would restrict them to setting or clearing
+only one bit at a time, forcing users to call them multiple times to set
+or clear more than one bit, meaning lots of readl & writel calls for
+compount bit-changes.
 
-> I never really understood this function, but almost everyone does the same
-> thing, and it seems to work for me.  Looking at console_device(), it appears
-> that all of the xxx_console_device functions are called in order until one of
-> them returns non-NULL.
+>> +static struct msm_gpio_dev msm_gpio = {
+>> +	.gpio_chip = {
+>> +		.base             = 0,
+>
+> I guess it's fine to do "offset - chip->base" if base is always zero,
+> but why do subtraction at all.
 
-*index is the minor number to use - so you can return whichever minor
-matches your primary interface
+If the chip is ever moved, not accounting for the base would produce an error.
+I know that 'speculative coding' is frowned upon, but isn't removing an 
+addition (as you pointed out, the subtraction is a bug) because this instance
+of the chip is at offset zero a little over the top?
 
-> > I suspect in your case you probably want to attach the primary byte
-> > channel to minor 0 in the driver (and reserve it for that), or some
-> > similar rule.
-> 
-> Yes, that's a good idea.  It does simplify things a lot.
+>> +	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
+>
+> I's just break this into two calls, or make another helper that to set
+> that accepts the mask and have set_gpio_bits call that. This here you
+> would just use the other helper. like set_gpio_bits calls
+> set_gpio_bits_mask() and you call the mask version here.
 
-It's probably the cleanest and simplest solution and it fits the
-"natural" order of things.
+Why make two readl/writel call pairs, or have one version of a helper which
+can set a single bit and another version which can set more than one
+at a time?  That seems really complicated.
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
