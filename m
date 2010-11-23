@@ -1,131 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab0KWVOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 16:14:49 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59163 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab0KWVOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 16:14:47 -0500
-Date: Tue, 23 Nov 2010 16:05:19 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-11-23
-Message-ID: <20101123210518.GB2372@tuxdriver.com>
+	id S1751458Ab0KWVRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 16:17:42 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46149 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab0KWVRl (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 23 Nov 2010 16:17:41 -0500
+Date: Tue, 23 Nov 2010 16:18:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH] fix 32-bit PAE bootup of Xen PV guests.
+Message-ID: <20101123211801.GA29499@dumpdata.com>
+References: <1290544896-20754-1-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1290544896-20754-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On Tue, Nov 23, 2010 at 03:41:35PM -0500, Konrad Rzeszutek Wilk wrote:
+> I was wondering if you could help me out. The git commit
+> b40827fa7268fda8a62490728a61c2856f33830b ("x86-32, mm: Add an initial
+> page table for core bootstrapping") crashes 32-bit PAE Xen PV guests.
+> 
+> I am attaching an RFC patch that works around your patch, but honestly
+> I was wondering if there is a better way to make this work for 2.6.37?
+> Any recommendations?
 
-Here are some fixes intended for 2.6.37 -- a collection of one-liners!  :-)
-
-The carl9170 patch fixes a NULL pointer dereference.  The b43-pci-bridge
-one just adds a device ID.  The ath9k patch fixes a timeout that also
-triggers a warning in dmesg.  Finally, the b43 patch fixes a resource
-leak on an error path.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit cf41a51db89850033efc11c18a5257de810b5417:
-
-  of/phylib: Use device tree properties to initialize Marvell PHYs. (2010-11-22 08:34:23 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Christian Lamparter (1):
-      carl9170: fix virtual interface setup crash
-
-Daniel Klaffenbach (1):
-      ssb: b43-pci-bridge: Add new vendor for BCM4318
-
-Felix Fietkau (1):
-      ath9k: fix timeout on stopping rx dma
-
-Guennadi Liakhovetski (1):
-      wireless: b43: fix error path in SDIO
-
- drivers/net/wireless/ath/ath9k/recv.c    |    2 +-
- drivers/net/wireless/ath/carl9170/main.c |    2 +-
- drivers/net/wireless/b43/sdio.c          |    1 +
- drivers/ssb/b43_pci_bridge.c             |    1 +
- include/linux/pci_ids.h                  |    1 +
- 5 files changed, 5 insertions(+), 2 deletions(-)
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-index c76ea53..1a62e35 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -518,7 +518,7 @@ bool ath_stoprecv(struct ath_softc *sc)
- 	bool stopped;
- 
- 	spin_lock_bh(&sc->rx.rxbuflock);
--	ath9k_hw_stoppcurecv(ah);
-+	ath9k_hw_abortpcurecv(ah);
- 	ath9k_hw_setrxfilter(ah, 0);
- 	stopped = ath9k_hw_stopdmarecv(ah);
- 
-diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-index 980ae70..a314c2c 100644
---- a/drivers/net/wireless/ath/carl9170/main.c
-+++ b/drivers/net/wireless/ath/carl9170/main.c
-@@ -647,7 +647,7 @@ init:
- 	}
- 
- unlock:
--	if (err && (vif_id != -1)) {
-+	if (err && (vif_id >= 0)) {
- 		vif_priv->active = false;
- 		bitmap_release_region(&ar->vif_bitmap, vif_id, 0);
- 		ar->vifs--;
-diff --git a/drivers/net/wireless/b43/sdio.c b/drivers/net/wireless/b43/sdio.c
-index 9a55338..09e2dfd 100644
---- a/drivers/net/wireless/b43/sdio.c
-+++ b/drivers/net/wireless/b43/sdio.c
-@@ -163,6 +163,7 @@ static int b43_sdio_probe(struct sdio_func *func,
- err_free_ssb:
- 	kfree(sdio);
- err_disable_func:
-+	sdio_claim_host(func);
- 	sdio_disable_func(func);
- err_release_host:
- 	sdio_release_host(func);
-diff --git a/drivers/ssb/b43_pci_bridge.c b/drivers/ssb/b43_pci_bridge.c
-index ef9c6a0..744d3f6 100644
---- a/drivers/ssb/b43_pci_bridge.c
-+++ b/drivers/ssb/b43_pci_bridge.c
-@@ -24,6 +24,7 @@ static const struct pci_device_id b43_pci_bridge_tbl[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4312) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4315) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4318) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_BCM_GVC,  0x4318) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4319) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4320) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4321) },
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index d278dd9..f29c25e 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2043,6 +2043,7 @@
- #define PCI_DEVICE_ID_AFAVLAB_P030	0x2182
- #define PCI_SUBDEVICE_ID_AFAVLAB_P061		0x2150
- 
-+#define PCI_VENDOR_ID_BCM_GVC          0x14a4
- #define PCI_VENDOR_ID_BROADCOM		0x14e4
- #define PCI_DEVICE_ID_TIGON3_5752	0x1600
- #define PCI_DEVICE_ID_TIGON3_5752M	0x1601
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Ignore this patch please. Ian's fix (
+http://marc.info/?l=linux-kernel&m=128879861204118&w=2) is much cleaner.
