@@ -1,268 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0KWS3P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:29:15 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:57545 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756185Ab0KWS3O (ORCPT
+	id S1756229Ab0KWS3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 13:29:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60778 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab0KWS3X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:29:14 -0500
-From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: [PATCH 3/3] mach-ux500: Updated and added regulator board configuration in ab8500
-Date: Tue, 23 Nov 2010 19:25:54 +0100
-Message-ID: <1290536754-21775-4-git-send-email-bengt.g.jonsson@stericsson.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1290536754-21775-1-git-send-email-bengt.g.jonsson@stericsson.com>
-References: <1290536754-21775-1-git-send-email-bengt.g.jonsson@stericsson.com>
+	Tue, 23 Nov 2010 13:29:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=LnFbmHvR1ozrjVxbthZIC+YGozjrOajKCh4R5Gb3DOdSU+12rekeghZsEgPUm86Gdf
+         zTSj1coxOE9jT5TrUM2F3HfgdgUl1D6kEPkRoOISPM/QoyzzoxL9bdGaJvP4X9flyYSB
+         mJILY4KjlaOk6FVHwtVjEcn0EZFnShmON7TiU=
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1290536827.2072.417.camel@laptop>
+References: <AANLkTikzSY09i=C+A2Y=_gVa-44r_bN76P-U2-NZMnpz@mail.gmail.com>
+	<20101123165657.GF18100@redhat.com>
+	<AANLkTimsz2XWQq7bJ4uhWXhoPuQw-fSJbCJ6D6Xo69XM@mail.gmail.com>
+	<1290536827.2072.417.camel@laptop>
+Date: Tue, 23 Nov 2010 19:29:20 +0100
+Message-ID: <AANLkTikOub+x1oo8Cv7hBHgLPF9vjPfzmNwXzEvPPjRK@mail.gmail.com>
+Subject: Re: [PATCH] x86, perf, nmi: Disable perf if counters are not accessable
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ab8500 regulator board configuration is updated and put in an
-array which can easily be used in the MFD board configuration. The
-regulator board configuration is also added to the MFD
-configuration in this patch.
+On Tue, Nov 23, 2010 at 7:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-11-23 at 19:21 +0100, Sedat Dilek wrote:
+>> Due to BIOS l(ocal)apic is not possible:
+>>
+>> # dmesg | grep -i apic
+>> [    0.000000] Using APIC driver default
+>> [    0.000000] Local APIC disabled by BIOS -- you can enable it with "lapic"
+>> [    0.000000] APIC: disable apic facility
+>> [    0.000000] APIC: switched to apic NOOP
+>> [    0.008891] no APIC, boot with the "lapic" boot parameter to force-enable it.
+>> [    0.036141] Local APIC not detected. Using dummy APIC emulation.
+>
+> Have you tried booting with "lapic" as the second last msg suggests you
+> do?
+>
 
-Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
----
- arch/arm/mach-ux500/board-mop500-regulators.c |  153 ++++++++++++-------------
- arch/arm/mach-ux500/board-mop500-regulators.h |   18 +++
- arch/arm/mach-ux500/board-mop500.c            |    4 +
- 3 files changed, 96 insertions(+), 79 deletions(-)
- create mode 100644 arch/arm/mach-ux500/board-mop500-regulators.h
+Yes, I did try before there was [1], booting with "lapic" had no effect.
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 1187f1f..5ebd168 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -3,99 +3,94 @@
-  *
-  * License Terms: GNU General Public License v2
-  *
-- * Author: Sundar Iyer <sundar.iyer@stericsson.com>
-+ * Authors: Sundar Iyer <sundar.iyer@stericsson.com>
-+ *          Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
-  *
-  * MOP500 board specific initialization for regulators
-  */
- #include <linux/kernel.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/ab8500.h>
- 
--/* supplies to the display/camera */
--static struct regulator_init_data ab8500_vaux1_regulator = {
--	.constraints = {
--		.name = "V-DISPLAY",
--		.min_uV = 2500000,
--		.max_uV = 2900000,
--		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
--					REGULATOR_CHANGE_STATUS,
-+/* AB8500 regulators */
-+struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATOR] = {
-+	/* supplies to the display/camera */
-+	[AB8500_REGULATOR_AUX1] = {
-+		.constraints = {
-+			.name = "V-DISPLAY",
-+			.min_uV = 2500000,
-+			.max_uV = 2900000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supplies to the on-board eMMC */
--static struct regulator_init_data ab8500_vaux2_regulator = {
--	.constraints = {
--		.name = "V-eMMC1",
--		.min_uV = 1100000,
--		.max_uV = 3300000,
--		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
--					REGULATOR_CHANGE_STATUS,
-+	/* supplies to the on-board eMMC */
-+	[AB8500_REGULATOR_AUX2] = {
-+		.constraints = {
-+			.name = "V-eMMC1",
-+			.min_uV = 1100000,
-+			.max_uV = 3300000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for VAUX3, supplies to SDcard slots */
--static struct regulator_init_data ab8500_vaux3_regulator = {
--	.constraints = {
--		.name = "V-MMC-SD",
--		.min_uV = 1100000,
--		.max_uV = 3300000,
--		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
--					REGULATOR_CHANGE_STATUS,
-+	/* supply for VAUX3, supplies to SDcard slots */
-+	[AB8500_REGULATOR_AUX3] = {
-+		.constraints = {
-+			.name = "V-MMC-SD",
-+			.min_uV = 1100000,
-+			.max_uV = 3300000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for tvout, gpadc, TVOUT LDO */
--static struct regulator_init_data ab8500_vtvout_init = {
--	.constraints = {
--		.name = "V-TVOUT",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for tvout, gpadc, TVOUT LDO */
-+	[AB8500_REGULATOR_TVOUT] = {
-+		.constraints = {
-+			.name = "V-TVOUT",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for ab8500-vaudio, VAUDIO LDO */
--static struct regulator_init_data ab8500_vaudio_init = {
--	.constraints = {
--		.name = "V-AUD",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for ab8500-vaudio, VAUDIO LDO */
-+	[AB8500_REGULATOR_AUDIO] = {
-+		.constraints = {
-+			.name = "V-AUD",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-anamic1 VAMic1-LDO */
--static struct regulator_init_data ab8500_vamic1_init = {
--	.constraints = {
--		.name = "V-AMIC1",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-anamic1 VAMic1-LDO */
-+	[AB8500_REGULATOR_AMIC1] = {
-+		.constraints = {
-+			.name = "V-AMIC1",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-amic2, VAMIC2 LDO, reuse constants for AMIC1 */
--static struct regulator_init_data ab8500_vamic2_init = {
--	.constraints = {
--		.name = "V-AMIC2",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-amic2, VAMIC2 LDO, reuse constants for AMIC1 */
-+	[AB8500_REGULATOR_AMIC2] = {
-+		.constraints = {
-+			.name = "V-AMIC2",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-dmic, VDMIC LDO */
--static struct regulator_init_data ab8500_vdmic_init = {
--	.constraints = {
--		.name = "V-DMIC",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-dmic, VDMIC LDO */
-+	[AB8500_REGULATOR_DMIC] = {
-+		.constraints = {
-+			.name = "V-DMIC",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-intcore12, VINTCORE12 LDO */
--static struct regulator_init_data ab8500_vintcore_init = {
--	.constraints = {
--		.name = "V-INTCORE",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-intcore12, VINTCORE12 LDO */
-+	[AB8500_REGULATOR_INTCORE] = {
-+		.constraints = {
-+			.name = "V-INTCORE",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for U8500 CSI/DSI, VANA LDO */
--static struct regulator_init_data ab8500_vana_init = {
--	.constraints = {
--		.name = "V-CSI/DSI",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for U8500 CSI/DSI, VANA LDO */
-+	[AB8500_REGULATOR_ANA] = {
-+		.constraints = {
-+			.name = "V-CSI/DSI",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
- };
--
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-new file mode 100644
-index 0000000..c58b991
---- /dev/null
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-@@ -0,0 +1,18 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License Terms: GNU General Public License v2
-+ *
-+ * Author: Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
-+ *
-+ * MOP500 board specific initialization for regulators
-+ */
-+
-+#ifndef __BOARD_MOP500_REGULATORS_H
-+#define __BOARD_MOP500_REGULATORS_H
-+
-+#include <linux/regulator/machine.h>
-+
-+extern struct regulator_init_data *ab8500_regulators[];
-+
-+#endif
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index cac83a6..85d048e 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -34,6 +34,7 @@
- 
- #include "pins-db8500.h"
- #include "board-mop500.h"
-+#include "board-mop500-regulators.h"
- 
- static pin_cfg_t mop500_pins[] = {
- 	/* SSP0 */
-@@ -89,6 +90,9 @@ struct pl022_config_chip ab4500_chip_info = {
- 
- static struct ab8500_platform_data ab8500_platdata = {
- 	.irq_base	= MOP500_AB8500_IRQ_BASE,
-+#ifdef CONFIG_REGULATOR
-+	.regulator_data = ab8500_regulators,
-+#endif
- };
- 
- static struct resource ab8500_resources[] = {
--- 
-1.7.2.2
+- Sedat -
 
+[1] bugfix/x86/Skip-looking-for-ioapic-overrides-when-ioapics-are-not-present.patch
