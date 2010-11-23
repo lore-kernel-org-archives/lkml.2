@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab0KWN6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 08:58:16 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40799 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab0KWN6O (ORCPT
+	id S1754157Ab0KWOAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 09:00:41 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60884 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab0KWOAk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 08:58:14 -0500
+	Tue, 23 Nov 2010 09:00:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=QXaGHCrXlaAc2Z4lC2J+8EcBQwammtEPhoCX/tfBrt5lphHT4JgI10J9WwOfmI1oOL
-         J/2bznmVs/YoWGC7yLi8H4vR3NqK+NSabPLCThdPfdSj/L8qxEjSreGDWMzrhKPFrJao
-         YQlFophHpmZhFCwCmhicE0y8Pi+7RNA6XkvX4=
-Date: Tue, 23 Nov 2010 22:01:11 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-Message-ID: <20101123140111.GA3816@hack>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com> <20101112120834.33062900.akpm@linux-foundation.org> <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca> <20101114092533.GB5323@albatros> <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UNw66IsL3sqVFb6Ii3C0g+tqOemjMivXim3+Wwl4nwUKymPXJJXuQx+IeJSH+iQ2LA
+         0er56P3XXmur63PjNia6Y9e77lUb/tZjKJ+XJEX4HsBoWeg8oQj4J0OvLZ/YYc2k5h5i
+         WUKXyCLkb7Szj62u8otLVYAp4Nq+HRr4LGCQQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289848341.2607.125.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4CEBC751.6090906@gmail.com>
+References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>
+	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
+	<4CEBC751.6090906@gmail.com>
+Date: Tue, 23 Nov 2010 15:00:38 +0100
+Message-ID: <AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
+Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created device.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 08:12:21PM +0100, Eric Dumazet wrote:
->Le dimanche 14 novembre 2010 à 18:06 -0800, Andrew Morton a écrit : 
->> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
->> >  
->> >  	if (timeval) {
->> > -		rtv.tv_sec = rts.tv_sec;
->> > -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
->> > +		struct timeval rtv = {
->> > +			.tv_sec = rts.tv_sec,
->> > +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
->> > +		};
->> >  
->> >  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
->> >  			return ret;
->> 
->> Please check the assembly code - this will still leave four bytes of
->> uninitalised stack data in 'rtv', surely.
+On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 11/23/2010 01:29 PM, Marek Belisko wrote:
+>> Use simple misc device for ioctl driver funtionality testing.
+>>
+>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>> ---
+>>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   90 ++++++++++++++++++---
+>>  1 files changed, 77 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>> index 1aec926..d1784a3 100644
+>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>> @@ -32,6 +32,7 @@
+>>  #include <linux/poll.h>
+>>  #include <linux/netdevice.h>
+>>  #include <linux/delay.h>
+>> +#include <linux/miscdevice.h>
+>>
+>>  #include <linux/fs.h>
+>>  #include <linux/kmod.h>
+>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
+>>       .llseek         = no_llseek,
+>>  };
+>>
+>> +struct ft1000_misc_device {
+>> +     struct miscdevice dev;
+>> +     int inf_id;
+>> +};
+>> +
+>> +#define FREE_ID (0xFF)
+>> +
+>> +/* we support just 3 devices */
+>> +#define MAX_DEVICE 3
 >
->Thats a good question.
+> No, why this should be converted to miscdevice? Leave it as chrdev.
+Is there any problem with using miscdev? Old interface create /dev nodes with
+calling kernel thread and some usermode_helper or whatever. Just
+convert to misc dev
+where this is done automatically.
 >
->In my understanding, gcc should initialize all holes (and other not
->mentioned fields) with 0, even for automatic storage [C99 only mandates
->this on static storage]
->
->I tested on x86_64 and this is the case, but could not find a definitive
->answer in gcc documentation.
+> regards,
+> --
+> js
 >
 
-Yeah, this is not clearly defined by C99 I think, but we can still
-find some clues in 6.2.6.1, Paragraph 6,
+thanks,
 
-"
-When a value is stored in an object of structure or union type,
-including in a member object, the bytes of the object representation
-that correspond to any padding bytes take unspecified values.
-"
-
-So we can't rely on the compiler to initialize the padding bytes
-too.
+marek
 
 -- 
-Live like a child, think like the god.
- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
