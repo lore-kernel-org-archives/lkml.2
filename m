@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab0KWH5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:57:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58896 "EHLO mga11.intel.com"
+	id S1752722Ab0KWH54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:57:56 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41074 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085Ab0KWH5m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:57:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,241,1288594800"; 
-   d="scan'208";a="860465358"
-From: "Berg, Johannes" <johannes.berg@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Arnd Hannemann <arnd@arndnet.de>,
-        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+	id S1752635Ab0KWH5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 02:57:54 -0500
+Date: Tue, 23 Nov 2010 08:57:42 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Berg, Johannes" <johannes.berg@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Hannemann <arnd@arndnet.de>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
         Richard Purdie <rpurdie@linux.intel.com>
-Date: Tue, 23 Nov 2010 07:57:18 +0000
-Subject: RE: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
-Thread-Topic: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
-Thread-Index: AcuK4uQos7PDJyVHQaOjCvPhSkVsJwAAM6Vw
-Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED769@irsmsx504.ger.corp.intel.com>
+Subject: Re: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Message-ID: <20101123075742.GA28714@elte.hu>
 References: <20101116142027.GC19247@tiehlicka.suse.cz>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
-	<20101118082454.GC15928@tiehlicka.suse.cz>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
-	<4CEAA151.7050404@arndnet.de>	<20101123063200.GA23907@elte.hu>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
-	<20101122233654.117eef93.akpm@linux-foundation.org>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
- <20101122234407.c710e578.akpm@linux-foundation.org>
-In-Reply-To: <20101122234407.c710e578.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+ <C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
+ <20101118082454.GC15928@tiehlicka.suse.cz>
+ <C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
+ <4CEAA151.7050404@arndnet.de>
+ <20101123063200.GA23907@elte.hu>
+ <C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
+ <20101122233654.117eef93.akpm@linux-foundation.org>
+ <C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> > Will do. I suspect it should, unless you took new LED drivers? But
-> then
-> > again you will now probably want a patch against -rc, not -mm?
-> >
+* Berg, Johannes <johannes.berg@intel.com> wrote:
+
+> > > Hmm. For some reason I thought this patch had made it into -mm,
+> > > but I never double-checked and then went travelling ...
+> > >
+> > > http://lkml.org/lkml/2010/10/26/79
+> > 
+> > oops, I filed it in the wrong drawer, under "non-urgent".  It then got
+> > buried in new paperwork.  But not lost!
+> > 
+> > Gee it's big.  Could you please double-check that it is still complete?
 > 
-> It applied OK(ish) to current mainline.
+> Will do. I suspect it should, unless you took new LED drivers? But then
+> again you will now probably want a patch against -rc, not -mm?
 
-It seems to need a "depends on LEDS_CLASS" to the new driver
-"config LEDS_NETXBIG" in drivers/leds/. Other than that, it
-still seems to be complete against current mainline (-rc3).
+It applied with a fuzz here so something changed in that file since you made the 
+patch. I did a quick review of drivers/leds/Kconfig and your patch seems complete to 
+me.
 
-Do you just want to add the single line to it yourself?
+Thanks,
 
-johannes
-
---------------------------------------------------------------------------------------
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland 
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
-Registergericht: Muenchen HRB 47456 
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
-
+	Ingo
