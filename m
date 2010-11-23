@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab0KWJWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 04:22:30 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39685 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab0KWJW2 (ORCPT
+	id S1752610Ab0KWJZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 04:25:27 -0500
+Received: from web31809.mail.mud.yahoo.com ([68.142.207.72]:47206 "HELO
+	web31809.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752248Ab0KWJZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 04:22:28 -0500
-Message-ID: <4CEB877D.9060709@kernel.org>
-Date: Tue, 23 Nov 2010 01:21:01 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	Tue, 23 Nov 2010 04:25:26 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=Ei6gNbEiqMDf4g2n/0+wBsllaOLmcvX2Dq50E/UZHfyk776ZD6OD7Yd5DRpnhkg19ICbNuijCTVszmL7pv99wCqqnBeaBZhVHw964ooiMxBP6c4JwQ52llW+RNWinsYpCpcYETi16greXgAgO4FijkTxQRRsDFhbqQxczPu7Zxs=;
+Message-ID: <589506.10541.qm@web31809.mail.mud.yahoo.com>
+X-YMail-OSG: FPlLS44VM1mElQl04hlehk7JgHdWNMZogg7kh4u63Mum1dJ
+ 5v8FCHFJdNiLnvM3h6n_7gPksTy0uWqqUDJmbbwFgnL6cP8.O80qfp7AK5aJ
+ xxmkKCC8AYZH2WaoEDdv0kuthCa0y3OvHLB9T2bt47ZTQqGlQHM1jVn1bd7N
+ KdyqkaU0jnZRkmE6fkn.wlHEAsp7_lHFVUnFB.evQRHl0YC8YHplhvcKWSGr
+ EZtQzCDao1yk2ba381cHL38MWPzCRJo9btPBAAMpXEXglYJjFcD0mq2IGa9a
+ PGutgRoEtVyf5PSJIDWc.p6VN9KPncAD4qN_OfML4BLItVThVwZ1gx6cvzj7
+ sejLbyz0J6YDxMxC_4t0jF9MioXyLivIW.LL0
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Tue, 23 Nov 2010 01:25:23 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        James Bottomley <James.Bottomley@suse.de>
+In-Reply-To: <20101123050048.GL20296@one-eyed-alien.net>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sparseirq: Increase nr_irqs if needed
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--- On Mon, 11/22/10, Matthew Dharm <mdharm-kernel@one-eyed-alien.net> wrote:
 
-only do that when we need more.
+> As long as you are not changing the command stream that the
+> devices see, I
+> think this is a reasonable risk to take.
 
-For x86_64 system:
-when we have 128 cpus with 5 ioapics, will have nr_irqs = 3064
-	120 + 8 * 128 + 120 * 16
-systems could take 20 pcie,  when intel 10g are used with
-sriov and ixgbevf, every vf will need 3 irqs, and one device
-have 64 vf. so will need 20 * 3 * 64 = 3840.
-some 6 ports Intel 10gb may need more.
+No, not at all.
 
-with this patch, nr_irqs will increase 25% every time if nr_irqs is not
-big enough.
+> What are the consequences if the device returns what appear
+> to be a Caching
+> Mode Page, but it is actually filled with garbage or
+> otherwise inaccurate
+> data?
 
-Also later We could change nr_irqs initial value to
-	 min(nr_irqs_gsi, 224*nr_cpu_ids).
-for x86.
+Data corruption would be no different than when determining whether the media is write protected or determining other parameters. A similar question would be "What would the consequences be if the device misreported the media write-protect bit?" I suppose such a device would be quite broken and inoperative.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+   Luben
 
----
- kernel/irq/irqdesc.c |   29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/kernel/irq/irqdesc.c
-===================================================================
---- linux-2.6.orig/kernel/irq/irqdesc.c
-+++ linux-2.6/kernel/irq/irqdesc.c
-@@ -301,6 +301,27 @@ void irq_free_descs(unsigned int from, u
- 	mutex_unlock(&sparse_irq_lock);
- }
- 
-+static bool increase_nr_irqs(void)
-+{
-+#ifdef CONFIG_SPARSE_IRQ
-+	int new;
-+
-+	if (nr_irqs == NR_IRQS)
-+		return false;
-+
-+	new = nr_irqs;
-+	new += nr_irqs >> 2;
-+	if (new > NR_IRQS)
-+		new = NR_IRQS;
-+	if (new > nr_irqs) {
-+		nr_irqs = new;
-+		printk(KERN_INFO "nr_irqs increase to %d\n", nr_irqs);
-+		return true;
-+	}
-+#endif
-+	return false;
-+}
-+
- /**
-  * irq_alloc_descs - allocate and initialize a range of irq descriptors
-  * @irq:	Allocate for specific irq number if irq >= 0
-@@ -320,14 +341,16 @@ irq_alloc_descs(int irq, unsigned int fr
- 
- 	mutex_lock(&sparse_irq_lock);
- 
--	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
-+	start = bitmap_find_next_zero_area(allocated_irqs, NR_IRQS, from, cnt, 0);
- 	ret = -EEXIST;
- 	if (irq >=0 && start != irq)
- 		goto err;
- 
- 	ret = -ENOMEM;
--	if (start >= nr_irqs)
--		goto err;
-+	while ((start + cnt) >= nr_irqs) {
-+		if (!increase_nr_irqs())
-+			goto err;
-+	}
- 
- 	bitmap_set(allocated_irqs, start, cnt);
- 	mutex_unlock(&sparse_irq_lock);
