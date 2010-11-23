@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750882Ab0KWInN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 03:43:13 -0500
-Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:42725 "HELO
-	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750736Ab0KWInL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 03:43:11 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=fnEFKAzoZavnzWteZOQdlqdYfFoRUsJHPxeR729CcZurS5vdizTmqD1A/AMwlRtZ2q2pN6IVH7F5FqR6bwvVmpH+w3rTAET/K1F7R9tDHLfumQcsGc/Rm4DPzZOYOEbiiN/GnPAK7aSCkzlete//+pQh0tbepdgSgZsAXKG2VkU=;
-Message-ID: <987735.18126.qm@web31812.mail.mud.yahoo.com>
-X-YMail-OSG: zx.M2HIVM1nED880xlMYYI2knn8jRG6LQ83rKQmWoi.VEEu
- bjXk0pOAluePPHtTS9ZWUXeoXBp4cUHcYQpamJeMI7QiF6H1rGGJTYXbprX3
- sT.p7emvVobMXqcTgw.IeIayH1vTSMXWrrbNmBTsXaat4hrDYNBykgfoc8tW
- W_VQPGKDngpvPTMdU3kccX78SYren5TRA1I3niKKa0sv2Y4Nrsk1qu4QE_Ra
- CyKvc_TZWYusPSXu5p84S5HWJYhxSkUyo1io_nKxkKud0QPjrkRzpCaNtbhj
- bY2dxEpqjlcTpJeNWSDm6.PAxgOWjNbg8nB0eeUgsYRWlgFCzTOgDhUJRRWu
- 77MjV2JWagw--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Tue, 23 Nov 2010 00:43:09 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-To: Douglas Gilbert <dgilbert@interlog.com>,
-        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        James Bottomley <James.Bottomley@suse.de>
+	id S1751301Ab0KWIpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 03:45:00 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59696 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab0KWIo7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 03:44:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dod5JV+Koy7S1z1GO5+++UHQ2iQ7rWSJbP0gpfva9gw3UHomxDkSQXOOJwI5/Ufd6/
+         QSyh5cIJck7quEOvlfXv76BeBC2KShcdDIxDWlyEJg1XD6zxDWY1uqBfIwDqcr3M6riX
+         Az1igvIKcFylTwUekJRgJC0Wkyl+C9tE9OgH4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20101123165240.7BC2.A69D9226@jp.fujitsu.com>
+References: <20101122143817.E242.A69D9226@jp.fujitsu.com>
+	<AANLkTinZmv540r+EkjwUu6cd9c1u7qG9iR+pvp3YqZC1@mail.gmail.com>
+	<20101123165240.7BC2.A69D9226@jp.fujitsu.com>
+Date: Tue, 23 Nov 2010 17:44:57 +0900
+Message-ID: <AANLkTi=ibOd3OUZ5D-V60iaNcP0_eND2VrcJB+PBo8mD@mail.gmail.com>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 11/22/10, Matthew Dharm <mdharm-kernel@one-eyed-alien.net> wrote:
+On Tue, Nov 23, 2010 at 5:01 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> Hi KOSAKI,
+>>
+>> 2010/11/23 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+>> >> By Other approach, app developer uses POSIX_FADV_DONTNEED.
+>> >> But it has a problem. If kernel meets page is writing
+>> >> during invalidate_mapping_pages, it can't work.
+>> >> It is very hard for application programmer to use it.
+>> >> Because they always have to sync data before calling
+>> >> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+>> >> be discardable. At last, they can't use deferred write of kernel
+>> >> so that they could see performance loss.
+>> >> (http://insights.oetiker.ch/linux/fadvise.html)
+>> >
+>> > If rsync use the above url patch, we don't need your patch.
+>> > fdatasync() + POSIX_FADV_DONTNEED should work fine.
+>>
+>> It works well. But it needs always fdatasync before calling fadvise.
+>> For small file, it hurt performance since we can't use the deferred write.
+>
+> I doubt rsync need to call fdatasync. Why?
+>
+> If rsync continue to do following loop, some POSIX_FADV_DONTNEED
+> may not drop some dirty pages. But they can be dropped at next loop's
+> POSIX_FADV_DONTNEED. Then, It doesn't make serious issue.
+>
+> 1) read
+> 2) write
+> 3) POSIX_FADV_DONTNEED
+> 4) goto 1
 
-> That said, Luben's patch is kinda slick.
+fadvise need pair (offset and len).
+if the pair in next turn is different with one's previous turn, it
+couldn't be dropped.
 
-Thank you.
-
-> sd-modalready asks for a lot of
-> mode page data; it does this so that it's request matches
-> the observed
-> behavior of a "popular" Redmond, WA-based OS.  Luben's
-> patch just searches
-> through that data to see if it can find what it is looking
-> for, rather than
-> rqeuesting a specific mode page later (which may not be
-> supported).
-
-Yes, devices wouldn't sense a change in requests. The patch preserves this quality of device discovery.
-
-   Luben
-
+-- 
+Kind regards,
+Minchan Kim
