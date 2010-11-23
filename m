@@ -1,49 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab0KWVCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 16:02:34 -0500
-Received: from 206.83.70.70.ptr.us.xo.net ([206.83.70.70]:47763 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab0KWVCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 16:02:33 -0500
-Message-ID: <4CEC2BE7.4060205@tilera.com>
-Date: Tue, 23 Nov 2010 16:02:31 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1752683Ab0KWVDP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 16:03:15 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33848 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751767Ab0KWVDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 16:03:14 -0500
+Date: Tue, 23 Nov 2010 22:02:55 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] [BUG] memcg: fix false positive VM_BUG on non-SMP
+Message-ID: <20101123210255.GA22484@cmpxchg.org>
+References: <1290520130-9990-1-git-send-email-kirill@shutemov.name>
+ <20101123121606.c07197e5.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Cypher Wu <cypher.w@gmail.com>
-CC: <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] arch/tile: fix rwlock so would-be write lockers don't
- block new readers
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>	<1289489007.17691.1310.camel@edumazet-laptop>	<AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>	<ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>	<4CDF1945.8090101@tilera.com>	<AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>	<201011151425.oAFEPU3W005682@farm-0010.internal.tilera.com>	<AANLkTikGj+zG9OqVJseKh4fGqQNnqnJpHgcaaXOL8nNi@mail.gmail.com>	<4CEA71AD.5010606@tilera.com> <AANLkTim1YyujwGZfenU_m52HEJJSFmTg3Wswn2DkqA3a@mail.gmail.com>
-In-Reply-To: <AANLkTim1YyujwGZfenU_m52HEJJSFmTg3Wswn2DkqA3a@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101123121606.c07197e5.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2010 8:36 PM, Cypher Wu wrote:
-> Say, if core A try to write_lock() rwlock and current_ticket_ is 0 and
-> it write next_ticket_ to 1, when it processing the lock, core B try to
-> write_lock() again and write next_ticket_ to 2, then when A
-> write_unlock() it seen that (current_ticket_+1) is not equal to
-> next_ticket_, so it increment current_ticket_, and core B get the
-> lock. If core A try write_lock again before core B write_unlock, it
-> will increment next_ticket_ to 3. And so on.
-> This may rarely happened, I've tested it yesterday for several hours
-> it goes very well under pressure.
+On Tue, Nov 23, 2010 at 12:16:06PM -0800, Andrew Morton wrote:
+> On Tue, 23 Nov 2010 15:48:50 +0200
+> "Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
+> 
+> > ------------[ cut here ]------------
+> > kernel BUG at mm/memcontrol.c:2155!
+> 
+> This bug has been there for a year, from which I conclude people don't
+> run memcg on uniprocessor machines a lot.
+> 
+> Which is a bit sad, really.  Small machines need resource control too,
+> perhaps more than large ones..
 
-This should be OK when it happens (other than starving out the readers, but
-that was the decision made by doing a ticket lock in the first place). 
-Even if we wrap around 255 back to zero on the tickets, the ticket queue
-will work correctly.  The key is not to need more than 256 concurrent write
-lock waiters, which we don't.
+Admittedly, this patch is compile-tested on UP only, but it should be
+obvious enough.
 
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] memcg: fix page cgroup lock assert on UP
+
+Page cgroup locking primitives use the bit spinlock API functions,
+which do nothing on UP.
+
+Thus, checking the lock state can not be done by looking at the bit
+directly, but one has to go through the bit spinlock API as well.
+
+This fixes a guaranteed UP bug, where asserting the page cgroup lock
+bit as a sanity check crashes the kernel.
+
+Reported-by: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/page_cgroup.h |    7 +++++--
+ mm/memcontrol.c             |    2 +-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 5bb13b3..6c1ac38 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -59,8 +59,6 @@ static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
+ static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+ 	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+ 
+-TESTPCGFLAG(Locked, LOCK)
+-
+ /* Cache flag is set only once (at allocation) */
+ TESTPCGFLAG(Cache, CACHE)
+ CLEARPCGFLAG(Cache, CACHE)
+@@ -104,6 +102,11 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
++static inline int page_cgroup_is_locked(struct page_cgroup *pc)
++{
++	return bit_spin_is_locked(PCG_LOCK, &pc->flags);
++}
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct page_cgroup;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 2efa8ea..5d5015b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2152,7 +2152,7 @@ static void __mem_cgroup_move_account(struct page_cgroup *pc,
+ {
+ 	VM_BUG_ON(from == to);
+ 	VM_BUG_ON(PageLRU(pc->page));
+-	VM_BUG_ON(!PageCgroupLocked(pc));
++	VM_BUG_ON(!page_cgroup_is_locked(pc));
+ 	VM_BUG_ON(!PageCgroupUsed(pc));
+ 	VM_BUG_ON(pc->mem_cgroup != from);
+ 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.3.2
 
