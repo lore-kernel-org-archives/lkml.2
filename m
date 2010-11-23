@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab0KWG7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 01:59:38 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38222 "EHLO
+	id S1752071Ab0KWHGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:06:20 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55219 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab0KWG7g (ORCPT
+	with ESMTP id S1751979Ab0KWHGT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 01:59:36 -0500
+	Tue, 23 Nov 2010 02:06:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OiRO10MpeXx1hyZd0zdJwDITO5Eyxb476BYHqTDj7FiqBO4+3qXLP0BqsqYbrZwnsh
-         uxwpNMuE79VNzmZxKswKPIYBUUIUtx6zZeNJ9TkAhXXKWqqM8dSz7JRTxv+svn2WT3F1
-         P6Vmf65qCx7RZ6FvpAH5SMVxbMNl82rSptssc=
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-In-Reply-To: <20101123051259.GF1522@bicker>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-	 <20101112120834.33062900.akpm@linux-foundation.org>
-	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
-	 <20101114092533.GB5323@albatros>
-	 <20101114180643.593d19ac.akpm@linux-foundation.org>
-	 <1289848341.2607.125.camel@edumazet-laptop> <4CE268C8.5010203@panasas.com>
-	 <20101122155043.fbbb74f4.akpm@linux-foundation.org>
-	 <1290471649.2704.24.camel@edumazet-laptop>
-	 <20101122163234.5470e33e.akpm@linux-foundation.org>
-	 <20101123051259.GF1522@bicker>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 07:59:29 +0100
-Message-ID: <1290495569.2704.27.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OojGxKHTZeDKqf/CzjWgh/rE0Sj7lkQBpo+Zx7pWsiUv3wWCJNnQ6PqiiKIAudyfWS
+         F1pG1pw3+hQYbuqUZeJT6anzQuyUXr/qpNkAST/3USXRuVPDopO2loodZQHAwDmwDdxL
+         Kw5U4VKTajnmKR9HyASrrVr0dAg9IYra0R+6o=
+MIME-Version: 1.0
+In-Reply-To: <20101119143416.GA5558@nowhere>
+References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
+	<1290063401-25440-5-git-send-email-dengcheng.zhu@gmail.com>
+	<20101119143416.GA5558@nowhere>
+Date: Tue, 23 Nov 2010 15:06:17 +0800
+Message-ID: <AANLkTi=xZZMGdS62tdY62ifgEEV8Jpo5y5=MrCb5HvaK@mail.gmail.com>
+Subject: Re: [PATCH 4/5] MIPS/Perf-events: Work with the new callchain interface
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, will.deacon@arm.com,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 23 novembre 2010 Ã  08:12 +0300, Dan Carpenter a Ã©crit :
-
-> Well, that sucks...  I know I wrote some code that relied on holes
-> getting zeroed as well.  Is there no option to GCC to make this work?
-> 
-
-Apparently not.
-
-At least, commits 0f04cfd098fb81fded74e78ea1a1b86cc6c6c31e and
-1c40be12f7d8ca1d387510d39787b12e512a7ce8 were safe, as structures that
-were touched dont have holes.
+Yes, MIPS Perf-events got added in recently and missed some important
+commits.
 
 
+Thanks!
 
+Deng-Cheng
+
+
+2010/11/19 Frederic Weisbecker <fweisbec@gmail.com>:
+> On Thu, Nov 18, 2010 at 02:56:40PM +0800, Deng-Cheng Zhu wrote:
+>> This is the MIPS part of the following commits by Frederic Weisbecker:
+>>
+>> f72c1a931e311bb7780fee19e41a89ac42cab50e
+>>       perf: Factorize callchain context handling
+>> 56962b4449af34070bb1994621ef4f0265eed4d8
+>>       perf: Generalize some arch callchain code
+>> 70791ce9ba68a5921c9905ef05d23f62a90bc10c
+>>       perf: Generalize callchain_store()
+>> c1a65932fd7216fdc9a0db8bbffe1d47842f862c
+>>       perf: Drop unappropriate tests on arch callchains
+>>
+>> Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+>> ---
+>
+>
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+>
+> Why did I miss this arch? I did a grep on HAVE_PERF_EVENT or something,
+> may be it hadn't it at that time?
+>
+> Thanks!
+>
+>
