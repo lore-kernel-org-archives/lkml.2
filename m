@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0KWPGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:06:19 -0500
-Received: from io.pong.be ([68.233.169.42]:58072 "EHLO io.pong.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755060Ab0KWPGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:06:18 -0500
-X-Greylist: delayed 1303 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Nov 2010 10:06:18 EST
-Date: Tue, 23 Nov 2010 09:44:28 -0500
-From: Ward Vandewege <ward@gnu.org>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Bernie Innocenti <bernie@codewiz.org>, lkml <linux-kernel@vger.kernel.org>,
-        Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org
-Subject: Re: pc300too on a modern kernel?
-Message-ID: <20101123144428.GA18504@countzero.vandewege.net>
-Mail-Followup-To: Ward Vandewege <ward@gnu.org>,
-	Krzysztof Halasa <khc@pm.waw.pl>,
-	Bernie Innocenti <bernie@codewiz.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org
-References: <20100902131531.GA19028@countzero.vandewege.net>
- <m3mxrw1lg0.fsf@intrepid.localdomain>
- <1289421869.9336.49.camel@giskard.codewiz.org>
- <m3sjz34mka.fsf@intrepid.localdomain>
- <1289944619.2677.22.camel@giskard.codewiz.org>
- <m3tyjd7za9.fsf@intrepid.localdomain>
- <1290442675.5515.92.camel@giskard.codewiz.org>
- <m38w0l2gzh.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m38w0l2gzh.fsf@intrepid.localdomain>
-X-message-flag: Outlook (Express) is an extremely dangerous program that
- will get you all sorts of nasty viruses.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-detected-operating-system: by mail.pong.be: Error: This connection is not (no longer?) in the cache.
+	id S1755275Ab0KWPJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:09:04 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37775 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab0KWPJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 10:09:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=rnRZBkRYezbpBlCQG5uSyChAPagMlRZwYizUaTcVI96U2nalRzcF3Z9h/ZPCeG3p/1
+         GfN6jvw1/Bt2feyZv8YH+MzG+d1uo0DzvfYDNL5G//zAw8D030iTmjwmy04tKRD+Jl5p
+         W/R5zC2OTShYCKb216LN65x1nLDqbzzi7pBtI=
+Subject: Re: addrconf: refcnt with  IPV6_PRIVACY enabled
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+In-Reply-To: <20101123145331.GA4102@swordfish.minsk.epam.com>
+References: <20101123134003.GB4142@swordfish.minsk.epam.com>
+	 <1290522803.3046.11.camel@edumazet-laptop>
+	 <20101123145331.GA4102@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 16:08:57 +0100
+Message-ID: <1290524937.3046.33.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 10:20:02PM +0100, Krzysztof Halasa wrote:
-> > With this workaround applied, we're st seeing occasional clusters of
-> > packet loss. We're working to graph the ping loss alongside traffic to
-> > see if there's any correlation.
+Le mardi 23 novembre 2010 à 16:53 +0200, Sergey Senozhatsky a écrit :
+>  
+> > ipv6_regen_rndid() is the timer handler function, it must call
+> > in6_dev_put() at the end, unless we rearm the timer.
+> > 
+> > So this code is correct.
+> > 
+> > 
+> > if (!mod_timer(&idev->regen_timer, expires))
+> > 	in6_dev_hold(idev);
+> > ...
+> > in6_dev_put(idev);
+> >
 > 
-> That's interesting. I remember seeing some TX underruns at higher
-> speeds, though nothing alike at 2 Mb/s. What bit rate are you using?
-> Does "ifconfig hdlc0" show any errors?
+> Even if in6_dev_hold hasn't been called from ipv6_regen_rndid?
+> 
 
-This turned out to be caused by line saturation. We were not seeing this
-before we upgraded to the latest kernel because we have a set of qos rules
-that we forgot to install on our new box. Mea culpa...
 
-Thanks,
-Ward.
+Yes.
 
--- 
-Ward Vandewege <ward@gnu.org>
+Rules are :
+
+in6_dev_hold() when arming timer, so that device doesnt disappear while
+timer handler might run and need it.
+
+in6_dev_put() when timer handler finishes
+
+
+
+
