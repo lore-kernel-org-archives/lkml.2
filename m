@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab0KWAPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:15:08 -0500
-Received: from kroah.org ([198.145.64.141]:39763 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932480Ab0KWAOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:14:54 -0500
-Date: Mon, 22 Nov 2010 16:14:39 -0800
-From: Greg KH <greg@kroah.com>
-To: Yehuda Sadeh <yehuda@hq.newdream.net>
-Cc: sage@newdream.net, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
-Message-ID: <20101123001439.GB31294@kroah.com>
-References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
- <20101117171924.GC12050@kroah.com>
- <AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com>
- <20101118013002.GC8558@kroah.com>
- <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
- <20101119020820.GB18767@kroah.com>
- <1290468787.1792.63.camel@yehudasa-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290468787.1792.63.camel@yehudasa-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932534Ab0KWAU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:20:58 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47077 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab0KWAU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 19:20:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=jROEqz8Cy6ltCVIa/5KSZN0vSkbUmAFFFR0D0Fo+Ed1qakj/te67NNv33MUFS6Xri5
+         kOUQbDXjcB1oFIkWnW7wlzpFpXJDhZ2T/DOAQcnba5fFbL+jg2dAdkSL1MCl/JD8q03j
+         uPV9onzd9FZQG1FXIP384beIWC/PEpM02+nZw=
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+In-Reply-To: <20101122155043.fbbb74f4.akpm@linux-foundation.org>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+	 <20101112120834.33062900.akpm@linux-foundation.org>
+	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+	 <20101114092533.GB5323@albatros>
+	 <20101114180643.593d19ac.akpm@linux-foundation.org>
+	 <1289848341.2607.125.camel@edumazet-laptop> <4CE268C8.5010203@panasas.com>
+	 <20101122155043.fbbb74f4.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 01:20:48 +0100
+Message-ID: <1290471649.2704.24.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 03:33:07PM -0800, Yehuda Sadeh wrote:
+Le lundi 22 novembre 2010 à 15:50 -0800, Andrew Morton a écrit :
+
+> Well.  We certainly assume in many places that
 > 
+> 	struct foo {
+> 		int a;
+> 		int b;
+> 	} f = {
+> 		.a = 1,
+> 	};
 > 
-> On Fri, Nov 19, 2010 at 12:42 PM, Yehuda Sadeh Weinraub <yehuda@hq.newdream.net> wrote:
-> > One solution would be to create kobjects for (3) and for (4), without
-> > using a group name. Another way, we can create groups for (2), and (3)
-> > under (1), but that's about it, you can't create the snap specific
-> > directory this way without resorting to some internal sysfs directory
-> > creation, which will be horribly wrong. At that point we don't have
-> > anything for 'snaps', and we don't really need to do any operations
-> > under that directory, we just need it to exist so that it contains the
-> > snapshot-specific directories.
-> >
-> > Another way would be to create a group for (2) under (1) and create a
-> > kobject for (3), for which you can create group per snapshot.
-> >
-> > Am I missing something? We already have the first solution (kobjects
-> > only) implemented, is there some real benefit for using the third
-> > method? We'll have to manually add remove groups anyway, as snapshots
-> > can be removed and new snapshots can be added.
-> >
+> will initialise b to zero.  But I doubt if much code at all assumes
+> that this initialisation patterm will reliably zero out *holes* in the
+> struct.
 > 
-> And following is the implementation for the first solution. It has a device
-> for the rbd_dev, a kobject for the top snapshot directory and a kobject per
-> snapshot. Please let me know if there's any issue with this implementation.
-> We'd like to get this fixed for 2.6.37 and considering the large patch,
-> it'd be nice getting an ack for it.
 
-It's way too late for .37, as this is new stuff, right?
+We did such assertions in the past, we were wrong.
 
-Anyway, see my previous message about why you should not use kobjects
-here at all.
+Check commit 1c40be12f7d8ca1d387510d39787b12e512a7ce8 for an example
+(net sched: fix some kernel memory leaks)
 
-thanks,
+I guess we must make a full audit of all C99 initializers or structures
+copied to userspace, giving a name to hidden holes, to force gcc to init
+them to 0.
 
-greg k-h
+# cat try.c
+struct s {
+	char c;
+	long l;
+	};
+
+void bar(void *v)
+{
+	unsigned long *p = v;
+
+	printf("%lx %lx\n", p[0], p[1]);
+}
+
+int main()
+{
+	struct s s1 = {
+		.c = 1,
+		.l = 2,
+	};
+
+	bar(&s1);
+	return 0;
+}
+
+# gcc -O2 -o try try.c
+# ./try
+8049401 2
+
+Strangely, if we remove ".l = 2," line, gcc emits code to clear al the
+fields
+
+main:
+	pushl	%ebp
+	movl	%esp, %ebp
+	andl	$-16, %esp
+	subl	$32, %esp
+	leal	24(%esp), %eax
+	movl	$0, 24(%esp)
+	movl	%eax, (%esp)
+	movl	$0, 28(%esp)
+	movb	$1, 24(%esp)
+	call	bar
+	xorl	%eax, %eax
+	leave
+	ret
+
+
