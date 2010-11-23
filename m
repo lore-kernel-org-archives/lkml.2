@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab0KXOps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:45:48 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45576 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab0KXOpr (ORCPT
+	id S1752271Ab0KXOq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:46:29 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:38206 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751342Ab0KXOq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:45:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=viSyFpJmwea4UCpWjhmI59pQh0nLternWLyfzq6uy8p1Pf2hxpDb7f/DisEYnQmDa6
-         NKTVWxPjV26Za8OH7WWCNfSI6qkwrVzQVt/DDFUOzGyKDPtfD7e0PeXVA3DOusCCUb9L
-         4Uy/AhwoeBNk/+PMHwnM1GtVXMZ7XFOLNiSDc=
-Date: Wed, 24 Nov 2010 12:45:40 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: tom.leiming@gmail.com
-Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au1.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 1/2] perf:tools: avoid to create much more maps for
- kernel symbols on ARM
-Message-ID: <20101124144540.GB15875@ghostprotocols.net>
-References: <1290598502-31727-1-git-send-email-tom.leiming@gmail.com>
+	Wed, 24 Nov 2010 09:46:28 -0500
+Date: Tue, 23 Nov 2010 18:24:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Kyle Moffett <kyle@moffetthome.net>, Marcus Meissner <meissner@suse.de>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        tj@kernel.org, akpm@osdl.org, hpa@zytor.com, w@1wt.eu,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101123172437.GB8412@ucw.cz>
+References: <20101116104600.GA24015@suse.de>
+ <AANLkTi=F1vbwpOzyN9o0nuRtsEUTQx2j3==kLu9j7Ccb@mail.gmail.com>
+ <20101118073126.GB32621@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290598502-31727-1-git-send-email-tom.leiming@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101118073126.GB32621@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 24, 2010 at 07:35:02PM +0800, tom.leiming@gmail.com escreveu:
-> From: Ming Lei <tom.leiming@gmail.com>
- 
-> On ARM, module addresss space is ahead of kernel space, so the module
-> symbols are handled before kernel symbol in dso__split_kallsyms, then
-> cause one map is created for each kernel symbol.
- 
-> This patch fixes the issue by restoring to original kernel map in
-> dso__split_kallsyms() to avoid create unnecessary maps for kernel
-> symbols when starting to handle kenel symbol maps but after module
-> symbol maps are handled over.
+Hi!
 
-Can you try with the following patch instead?
+> >   (2) Most of the arguments about introducing "uncertainty" into the
+> > hacking process are specious as well. [...]
+> 
+> It is only specious if you ignore the arguments i made in the previous
+> discussion. One argument i made was:
 
-- Arnaldo
+Well, but it has downsides, too.
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b39f499..a7518d2 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -530,7 +530,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
- 	struct machine *machine = kmaps->machine;
- 	struct map *curr_map = map;
- 	struct symbol *pos;
--	int count = 0;
-+	int count = 0, moved = 0;	
- 	struct rb_root *root = &self->symbols[map->type];
- 	struct rb_node *next = rb_first(root);
- 	int kernel_range = 0;
-@@ -588,6 +588,11 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
- 			char dso_name[PATH_MAX];
- 			struct dso *dso;
- 
-+			if (count == 0) {
-+				curr_map = map;
-+				goto filter_symbol;
-+			}
-+
- 			if (self->kernel == DSO_TYPE_GUEST_KERNEL)
- 				snprintf(dso_name, sizeof(dso_name),
- 					"[guest.kernel].%d",
-@@ -613,7 +618,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
- 			map_groups__insert(kmaps, curr_map);
- 			++kernel_range;
- 		}
--
-+filter_symbol:
- 		if (filter && filter(curr_map, pos)) {
- discard_symbol:		rb_erase(&pos->rb_node, root);
- 			symbol__delete(pos);
-@@ -621,8 +626,9 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
- 			if (curr_map != map) {
- 				rb_erase(&pos->rb_node, root);
- 				symbols__insert(&curr_map->dso->symbols[curr_map->type], pos);
--			}
--			count++;
-+				++moved;
-+			} else
-+				++count;
- 		}
- 	}
- 
-@@ -632,7 +638,7 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
- 		dso__set_loaded(curr_map->dso, curr_map->type);
- 	}
- 
--	return count;
-+	return count + moved;
- }
- 
- int dso__load_kallsyms(struct dso *self, const char *filename,
+If I know school server is vulnerable, I can get admin to fix it... if
+I can see dmesg without being root, I can help with problems. I have
+done both before...
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
