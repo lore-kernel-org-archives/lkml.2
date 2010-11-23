@@ -1,45 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab0KWCyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 21:54:46 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47233 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab0KWCyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 21:54:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=q/3808M9YgGsisVoOLoVHQAx6i470naFCFjqaONp3ZwgO1Tx+QgPA3bspKwe9MqU5a
-         NT628+mtzeCd3XfCVCPeHk6Kf/v9mLGdhsJQob7FDlfv+cEiRL3a/ABMvU6o+EUeooXU
-         yNxRwRm3LJHMa/MJNQ29dscZLpBUG62+o1Tqc=
-Subject: Re: [PATCH] scripts: Fix gfp-translate for recent changes to gfp.h
-From: Namhyung Kim <namhyung@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101122120002.GB1890@csn.ul.ie>
-References: <20101122120002.GB1890@csn.ul.ie>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 11:54:36 +0900
-Message-ID: <1290480876.1857.2.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1751502Ab0KWDE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 22:04:29 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56293 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab0KWDE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 22:04:28 -0500
+Message-ID: <4CEB303A.5000803@cn.fujitsu.com>
+Date: Tue, 23 Nov 2010 11:08:42 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 5/6] KVM: MMU: abstract invalid guest pte mapping
+References: <4CE63CF4.80502@cn.fujitsu.com> <4CE63DB3.9010100@cn.fujitsu.com> <4CEA37A6.8040204@redhat.com>
+In-Reply-To: <4CEA37A6.8040204@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-23 11:04:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-23 11:04:44,
+	Serialize complete at 2010-11-23 11:04:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-11-22 (월), 12:00 +0000, Mel Gorman:
-> The recent changes to gfp.h to satisfy sparse broke
-> scripts/gfp-translate. This patch fixes it up to work with old and new
-> versions of gfp.h .
+On 11/22/2010 05:28 PM, Avi Kivity wrote:
 
-Oh, I didn't even know the script exists. Sorry.
+>> +static bool FNAME(map_invalid_gpte)(struct kvm_vcpu *vcpu,
+>> +                    struct kvm_mmu_page *sp, u64 *spte,
+>> +                    pt_element_t gpte)
+> 
+> It's really only for speculative maps, the name should reflect that.
+> 
 
+This is the new version and it use prefetch_invalid_gpte instead of
+map_invalid_gpte
+
+Subject: [PATCH v3 5/6] KVM: MMU: abstract invalid guest pte mapping
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+
+Introduce a common function to map invalid gpte
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c         |    3 --
+ arch/x86/kvm/paging_tmpl.h |   71 +++++++++++++++++++++++---------------------
+ 2 files changed, 37 insertions(+), 37 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index d878dd1..e3d2ee0 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3074,9 +3074,6 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
+ 		return;
+         }
+ 
+-	if (is_rsvd_bits_set(&vcpu->arch.mmu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
+-		return;
+-
+ 	++vcpu->kvm->stat.mmu_pte_updated;
+ 	if (!sp->role.cr4_pae)
+ 		paging32_update_pte(vcpu, sp, spte, new);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 60f00db..a43f4cc 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -299,25 +299,42 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
+ 					addr, access);
+ }
+ 
++static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
++				    struct kvm_mmu_page *sp, u64 *spte,
++				    pt_element_t gpte)
++{
++	u64 nonpresent = shadow_trap_nonpresent_pte;
++
++	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
++		goto no_present;
++
++	if (!is_present_gpte(gpte)) {
++		if (!sp->unsync)
++			nonpresent = shadow_notrap_nonpresent_pte;
++		goto no_present;
++	}
++
++	if (!(gpte & PT_ACCESSED_MASK))
++		goto no_present;
++
++	return false;
++
++no_present:
++	drop_spte(vcpu->kvm, spte, nonpresent);
++	return true;
++}
++
+ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			      u64 *spte, const void *pte)
+ {
+ 	pt_element_t gpte;
+ 	unsigned pte_access;
+ 	pfn_t pfn;
+-	u64 new_spte;
+ 
+ 	gpte = *(const pt_element_t *)pte;
+-	if (~gpte & (PT_PRESENT_MASK | PT_ACCESSED_MASK)) {
+-		if (!is_present_gpte(gpte)) {
+-			if (sp->unsync)
+-				new_spte = shadow_trap_nonpresent_pte;
+-			else
+-				new_spte = shadow_notrap_nonpresent_pte;
+-			__set_spte(spte, new_spte);
+-		}
++	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
+ 		return;
+-	}
++
+ 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
+ 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
+ 	if (gpte_to_gfn(gpte) != vcpu->arch.update_pte.gfn)
+@@ -364,7 +381,6 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 				u64 *sptep)
+ {
+ 	struct kvm_mmu_page *sp;
+-	struct kvm_mmu *mmu = &vcpu->arch.mmu;
+ 	pt_element_t *gptep = gw->prefetch_ptes;
+ 	u64 *spte;
+ 	int i;
+@@ -395,16 +411,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 
+ 		gpte = gptep[i];
+ 
+-		if (is_rsvd_bits_set(mmu, gpte, PT_PAGE_TABLE_LEVEL))
+-			continue;
+-
+-		if (!is_present_gpte(gpte)) {
+-			if (!sp->unsync)
+-				__set_spte(spte, shadow_notrap_nonpresent_pte);
+-			continue;
+-		}
+-
+-		if (!(gpte & PT_ACCESSED_MASK))
++		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
+ 			continue;
+ 
+ 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
+@@ -761,7 +768,6 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 		pt_element_t gpte;
+ 		gpa_t pte_gpa;
+ 		gfn_t gfn;
+-		bool rsvd_bits_set;
+ 
+ 		if (!is_shadow_present_pte(sp->spt[i]))
+ 			continue;
+@@ -773,18 +779,15 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 			return -EINVAL;
+ 
+ 		gfn = gpte_to_gfn(gpte);
+-		rsvd_bits_set = is_rsvd_bits_set(&vcpu->arch.mmu, gpte,
+-						 PT_PAGE_TABLE_LEVEL);
+-		if (rsvd_bits_set || gfn != sp->gfns[i] ||
+-		      !is_present_gpte(gpte) || !(gpte & PT_ACCESSED_MASK)) {
+-			u64 nonpresent;
+-
+-			if (rsvd_bits_set || is_present_gpte(gpte) ||
+-			      sp->unsync)
+-				nonpresent = shadow_trap_nonpresent_pte;
+-			else
+-				nonpresent = shadow_notrap_nonpresent_pte;
+-			drop_spte(vcpu->kvm, &sp->spt[i], nonpresent);
++
++		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte)) {
++			kvm_flush_remote_tlbs(vcpu->kvm);
++			continue;
++		}
++
++		if (gfn != sp->gfns[i]) {
++			drop_spte(vcpu->kvm, &sp->spt[i],
++				      shadow_trap_nonpresent_pte);
+ 			kvm_flush_remote_tlbs(vcpu->kvm);
+ 			continue;
+ 		}
 -- 
-Regards,
-Namhyung Kim
-
-
+1.7.0.4
