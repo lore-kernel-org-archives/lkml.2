@@ -1,156 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab0KWGkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 01:40:07 -0500
-Received: from mga03.intel.com ([143.182.124.21]:35390 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab0KWGkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 01:40:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,241,1288594800"; 
-   d="scan'208";a="352097553"
-Subject: Re: [RFC][PATCH] perf: Tracepoint collection support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, fweisbec <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, paulus <paulus@samba.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimyvB5tkHuYyitT_UA3sg0-TY+g6L040ncZQxnr@mail.gmail.com>
-References: <1290445737.2072.338.camel@laptop>
-	 <AANLkTimyvB5tkHuYyitT_UA3sg0-TY+g6L040ncZQxnr@mail.gmail.com>
+	id S1752043Ab0KWG7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 01:59:38 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38222 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab0KWG7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 01:59:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OiRO10MpeXx1hyZd0zdJwDITO5Eyxb476BYHqTDj7FiqBO4+3qXLP0BqsqYbrZwnsh
+         uxwpNMuE79VNzmZxKswKPIYBUUIUtx6zZeNJ9TkAhXXKWqqM8dSz7JRTxv+svn2WT3F1
+         P6Vmf65qCx7RZ6FvpAH5SMVxbMNl82rSptssc=
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+In-Reply-To: <20101123051259.GF1522@bicker>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+	 <20101112120834.33062900.akpm@linux-foundation.org>
+	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+	 <20101114092533.GB5323@albatros>
+	 <20101114180643.593d19ac.akpm@linux-foundation.org>
+	 <1289848341.2607.125.camel@edumazet-laptop> <4CE268C8.5010203@panasas.com>
+	 <20101122155043.fbbb74f4.akpm@linux-foundation.org>
+	 <1290471649.2704.24.camel@edumazet-laptop>
+	 <20101122163234.5470e33e.akpm@linux-foundation.org>
+	 <20101123051259.GF1522@bicker>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 14:41:05 +0800
-Message-ID: <1290494465.2405.42.camel@minggr.sh.intel.com>
+Date: Tue, 23 Nov 2010 07:59:29 +0100
+Message-ID: <1290495569.2704.27.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le mardi 23 novembre 2010 à 08:12 +0300, Dan Carpenter a écrit :
 
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Tue, Nov 23, 2010 at 1:08 AM
+> Well, that sucks...  I know I wrote some code that relied on holes
+> getting zeroed as well.  Is there no option to GCC to make this work?
 > 
-> Due to popular request this implements a tracepoint collection event
-> { .type = PERF_TYPE_TRACEPOINT, .config = ~0ULL }. by default it
-> contains no tracepoints, but tracepoints can be added using:
->  ioctl(fd, PERF_EVENT_IOC_ADD_TP, tp_id);
-> 
-> In order to provide a dense ID space for tracepoints replace the
-> tracepoint ID generation with an IDR tree.
-> 
-> Furthermore, replace the whole trace-event <-> perf infrastructure with
-> multiple IDR trees.
-> 
-> We keep an IDR tree per perf_event, this tree collects all the
-> tracepoints the perf_event is interested in and stores the corresponding
-> 'node'. This tree manages the node life-time.
-> 
-> Then we keep an IDR tree per task and per CPU. Both of these trees are
-> accumulation trees, they're the union of all events of that particular
-> task/CPU. It stores a list of 'node's.
-> 
-> Then, when a trace-event happens, we look for it in both the CPU tree as
-> well as the current task tree. For both, if present we iterate the node
-> list and deliver the event to the corresponding perf_events.
-> 
-> We manage the IDR trees on perf_event creation/destruction and
-> ioctl(ADD_TP) time. This mean that pmu::{add,remove} are empty ops, the
-> per-task stat is taken care of in the per-task tree after all.
-> 
-> The patch is lightly tested and wants some serious testing/review before
-> merging.
-> 
-> Also, it has a number of open points, like the breakpoint much it
-> suffers from the pmu::event_init() vs context-attach inversion, and the
-> whole fancy inherited context avoid switch logic needs a fix.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  include/linux/ftrace_event.h    |    9
->  include/linux/perf_event.h      |    9
->  include/linux/sched.h           |    9
->  include/trace/ftrace.h          |    4
->  kernel/perf_event.c             |  389 ++++++++++++++++++++++++++++++++++++++--
->  kernel/trace/trace_event_perf.c |   95 ++++-----
->  kernel/trace/trace_kprobe.c     |   10 -
->  kernel/trace/trace_output.c     |   77 +------
->  kernel/trace/trace_syscalls.c   |    8
->  9 files changed, 459 insertions(+), 151 deletions(-)
-> 
-> Index: linux-2.6/include/linux/ftrace_event.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/ftrace_event.h
-> +++ linux-2.6/include/linux/ftrace_event.h
-> @@ -87,7 +87,6 @@ struct trace_event_functions {
->  };
-> 
->  struct trace_event {
-> -       struct hlist_node               node;
->        struct list_head                list;
 
-Cool patch!
+Apparently not.
 
-ftrace_event_list/trace_event::list can be deleted now.
+At least, commits 0f04cfd098fb81fded74e78ea1a1b86cc6c6c31e and
+1c40be12f7d8ca1d387510d39787b12e512a7ce8 were safe, as structures that
+were touched dont have holes.
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index cba21d3..f3c03ac 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -87,7 +87,6 @@ struct trace_event_functions {
- };
- 
- struct trace_event {
--	struct list_head		list;
- 	int				type;
- 	struct trace_event_functions	*funcs;
- };
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 8f30dd3..7803022 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -664,8 +664,6 @@ struct trace_event *ftrace_find_event(int type)
- 	return idr_find(&trace_type_idr, type);
- }
- 
--static LIST_HEAD(ftrace_event_list);
--
- void trace_event_read_lock(void)
- {
- 	down_read(&trace_event_mutex);
-@@ -703,10 +701,7 @@ int register_ftrace_event(struct trace_event *event)
- 	if (WARN_ON(!event->funcs))
- 		goto out;
- 
--	INIT_LIST_HEAD(&event->list);
--
- 	if (!event->type) {
--		struct list_head *list = NULL;
- 		int type, err;
- 
- 		err = idr_pre_get(&trace_type_idr, GFP_KERNEL);
-@@ -723,10 +718,6 @@ int register_ftrace_event(struct trace_event *event)
- 		}
- 
- 		event->type = type;
--		list = &ftrace_event_list;
--
--		list_add_tail(&event->list, list);
--
- 	} else if (event->type > __TRACE_LAST_TYPE) {
- 		printk(KERN_WARNING "Need to add type to trace.h\n");
- 		WARN_ON(1);
-@@ -760,7 +751,6 @@ EXPORT_SYMBOL_GPL(register_ftrace_event);
- int __unregister_ftrace_event(struct trace_event *event)
- {
- 	idr_remove(&trace_type_idr, event->type);
--	list_del(&event->list);
- 	return 0;
- }
- 
 
-Thanks,
-Lin Ming
 
