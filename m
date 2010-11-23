@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab0KWO7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 09:59:13 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:33111 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab0KWO7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 09:59:12 -0500
-Date: Tue, 23 Nov 2010 14:58:56 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Ben Gamari <bgamari@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+	id S1755075Ab0KWPDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:03:37 -0500
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:52748 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab0KWPDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 10:03:35 -0500
+Subject: Re: [PATCH] mutex: Introduce arch_mutex_cpu_relax()
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Reply-To: gerald.schaefer@de.ibm.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-ID: <20101123145856.GQ19571@csn.ul.ie>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <20101122141449.9de58a2c.akpm@linux-foundation.org> <AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com> <20101122210132.be9962c7.akpm@linux-foundation.org> <20101123093859.GE19571@csn.ul.ie> <87k4k49jii.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <87k4k49jii.fsf@gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <1290522000.2072.406.camel@laptop>
+References: <1290437256.7455.4.camel@thinkpad>
+	 <20101122121049.01c4690a.akpm@linux-foundation.org>
+	 <1290521556.16834.25.camel@thinkpad>  <1290522000.2072.406.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 16:03:32 +0100
+Message-ID: <1290524612.16834.69.camel@thinkpad>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 09:55:49AM -0500, Ben Gamari wrote:
-> On Tue, 23 Nov 2010 09:38:59 +0000, Mel Gorman <mel@csn.ul.ie> wrote:
-> > > If it's mapped pagecache then the user was being a bit silly (or didn't
-> > > know that some other process had mapped the file).  In which case we
-> > > need to decide what to do - leave the page alone, deactivate it, or
-> > > half-deactivate it as this patch does.
+On Di, 2010-11-23 at 15:20 +0100, Peter Zijlstra wrote:
+> On Tue, 2010-11-23 at 15:12 +0100, Gerald Schaefer wrote:
+> > On Mo, 2010-11-22 at 12:10 -0800, Andrew Morton wrote:
+> > > On Mon, 22 Nov 2010 15:47:36 +0100
+> > > Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
 > > > 
+> > > > From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> > > > 
+> > > > The spinning mutex implementation uses cpu_relax() in busy loops as a
+> > > > compiler barrier. Depending on the architecture, cpu_relax() may do more
+> > > > than needed in this specific mutex spin loops. On System z we also give
+> > > > up the time slice of the virtual cpu in cpu_relax(), which prevents
+> > > > effective spinning on the mutex.
+> > > > 
+> > > > This patch replaces cpu_relax() in the spinning mutex code with
+> > > > arch_mutex_cpu_relax(), which can be defined by each architecture that
+> > > > selects HAVE_ARCH_MUTEX_CPU_RELAX. The default is still cpu_relax(), so
+> > > > this patch should not affect other architectures than System z for now.
+> > > > 
+> > > > ...
+> > > >
+> > > > --- a/include/linux/mutex.h
+> > > > +++ b/include/linux/mutex.h
+> > > > @@ -160,4 +160,8 @@ extern int mutex_trylock(struct mutex *l
+> > > >  extern void mutex_unlock(struct mutex *lock);
+> > > >  extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+> > > >  
+> > > > +#ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
+> > > > +#define arch_mutex_cpu_relax()	cpu_relax()
+> > > > +#endif
+> > > 
+> > > A simpler way of doing this is to remove the CONFIG_ variable
+> > > altogether and do 
+> > > 
+> > > #ifndef arch_mutex_cpu_relax
+> > > #define arch_mutex_cpu_relax()	cpu_relax()
+> > > #endif
+> > > 
+> > > When doing this, one should be clear about _which_ arch file has the
+> > > responsibility of defining arch_mutex_cpu_relax, and make sure that
+> > > this arch file is reliably included in the .c file.
 > > 
-> > What are the odds of an fadvise() user having used mincore() in advance
-> > to determine if the page was in use by another process? I would guess
-> > "low" so this half-deactivate gives a chance for the page to be promoted
-> > again as well as a chance for the flusher threads to clean the page if
-> > it really is to be reclaimed.
+> > Well, I've tried that with my last approach, defining arch_mutex_cpu_relax()
+> > in <asm/mutex.h> and including that from <linux/mutex.h>. This didn't work
+> > well because of ugly header file dependencies, and Peter also commented
+> > that "including "asm/mutex.h" isn't advised". The problem is the following
+> > code in kernel/mutex.c (after including <linux/mutex.h>) when
+> > CONFIG_DEBUG_MUTEXES is set:
 > > 
-> Do we really want to make the user jump through such hoops as using
-> mincore() just to get the kernel to handle use-once pages properly?
-
-I would think "no" which is why I support half-deactivating pages so they won't
-have to. The downside is that it's essentially a race window as another process
-needs to reactivate the page before it gets reclaimed to avoid a major fault.
-
-> I hope the answer is no. I know that fadvise isn't supposed to be a
-> magic bullet, but it would be nice if more processes would use it to
-> indicate their access patterns and the only way that will happen is if
-> it is reasonably straightforward to use.
+> > #ifdef CONFIG_DEBUG_MUTEXES
+> > # include "mutex-debug.h"
+> > # include <asm-generic/mutex-null.h>
+> > #else
+> > # include "mutex.h"
+> > # include <asm/mutex.h>
+> > #endif
+> > 
+> > So I can only include <asm/mutex.h> from <linux/mutex.h> with an ugly
+> > "#ifndef CONFIG_DEBUG_MUTEXES" around it, or use a completely different
+> > or new arch header file (but <asm/mutex.h> seems like the right place
+> > for this). The CONFIG_ approach avoids all this header file dependency
+> > mess, or did I miss something (or maybe it's just me and it is not ugly
+> > at all)?
 > 
-> - Ben
-> 
+> Yeah, that all cause massive grief.. I've applied your patch as is,
+> assuming s390 already has the needed arch_mutex_cpu_relax()
+> implementation (otherwise I've just broken my s390 build).
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Thanks, my patch already includes the s390 implementation for
+arch_mutex_cpu_relax() in arch/s390/include/asm/mutex.h (we use a
+simple barrier() in this case). We still have HAVE_DEFAULT_NO_SPIN_MUTEXES
+selected though, this will be removed with one of Martins next patches,
+once this preparation patch is upstream.
+
+
