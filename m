@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab0KWShZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:37:25 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34386 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab0KWShX convert rfc822-to-8bit (ORCPT
+	id S1756201Ab0KWSig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 13:38:36 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43985 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752033Ab0KWSif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:37:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=ZSasaaXKeLWh90buzf8Fn0h9zknp483/kHgfNoPEzOQETOxNTjs8fwGkl3jPXU8vTl
-         X6oTV9TA3c/2MVpNE7Jpn1rPs3TmwlnEzCToajpISvtMgnDT3Ou11ZXD5PPjI/d+547T
-         PvRsQOsc99x0tPcXnfcRxlR5/ksBIlzV31a7U=
+	Tue, 23 Nov 2010 13:38:35 -0500
+Date: Tue, 23 Nov 2010 18:38:33 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 2/3] regulators: Update of ab8500 driver
+Message-ID: <20101123183833.GB19212@rakim.wolfsonmicro.main>
+References: <1290536754-21775-1-git-send-email-bengt.g.jonsson@stericsson.com>
+ <1290536754-21775-3-git-send-email-bengt.g.jonsson@stericsson.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTikOub+x1oo8Cv7hBHgLPF9vjPfzmNwXzEvPPjRK@mail.gmail.com>
-References: <AANLkTikzSY09i=C+A2Y=_gVa-44r_bN76P-U2-NZMnpz@mail.gmail.com>
-	<20101123165657.GF18100@redhat.com>
-	<AANLkTimsz2XWQq7bJ4uhWXhoPuQw-fSJbCJ6D6Xo69XM@mail.gmail.com>
-	<1290536827.2072.417.camel@laptop>
-	<AANLkTikOub+x1oo8Cv7hBHgLPF9vjPfzmNwXzEvPPjRK@mail.gmail.com>
-Date: Tue, 23 Nov 2010 19:37:21 +0100
-Message-ID: <AANLkTi=Vvi7MBbmnT7-iuLOBH4_zBzirmBt3sjwqyhmZ@mail.gmail.com>
-Subject: Re: [PATCH] x86, perf, nmi: Disable perf if counters are not accessable
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290536754-21775-3-git-send-email-bengt.g.jonsson@stericsson.com>
+X-Cookie: I brake for chezlogs!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 7:29 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> On Tue, Nov 23, 2010 at 7:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Tue, 2010-11-23 at 19:21 +0100, Sedat Dilek wrote:
->>> Due to BIOS l(ocal)apic is not possible:
->>>
->>> # dmesg | grep -i apic
->>> [    0.000000] Using APIC driver default
->>> [    0.000000] Local APIC disabled by BIOS -- you can enable it with "lapic"
->>> [    0.000000] APIC: disable apic facility
->>> [    0.000000] APIC: switched to apic NOOP
->>> [    0.008891] no APIC, boot with the "lapic" boot parameter to force-enable it.
->>> [    0.036141] Local APIC not detected. Using dummy APIC emulation.
->>
->> Have you tried booting with "lapic" as the second last msg suggests you
->> do?
->>
->
-> Yes, I did try before there was [1], booting with "lapic" had no effect.
->
-> - Sedat -
->
-> [1] bugfix/x86/Skip-looking-for-ioapic-overrides-when-ioapics-are-not-present.patch
->
+On Tue, Nov 23, 2010 at 07:25:53PM +0100, Bengt Jonsson wrote:
+> This patch updates the driver with some bug fixes, support
+> for v2 hardware, support for regulator_count_voltages,
+> changes for reading the board config, added indexing of
+> the regulator array and added debug prints.
 
-OK, some months went by when I last tested this option.
+This is a whole series of changes which don't seem terribly related to
+each other and aren't clearly described - please split this out into a
+patch series which clearly shows each individual change.  For example,
+one change per bug fix, another adding v2 support, another adding count
+support and so on.  As things stand it's very difficult to review your
+patch as it's not clear what each change is supposed to be doing or that
+bits haven't been missed from changes.
 
-Now, with linux-next (next-20101123) things look better.
+> -	ret = abx500_get_register_interruptible(info->dev, info->voltage_bank,
+> -		info->voltage_reg, &value);
+> +	ret = abx500_get_register_interruptible(info->dev,
+> +			info->voltage_bank, info->voltage_reg, &regval);
 
-# cat /proc/cmdline
-BOOT_IMAGE=/boot/vmlinuz-2.6.37-rc3-686
-root=UUID=1ceb69a7-ecf4-47e9-a231-b74e0f0a9b62 ro radeon.modeset=1
-lapic 3
+In addition to what's noted above you also appear to have some renaming
+of variables and struct members plus some other stylistic changes which
+adds to the noise, again these should be split out for ease of review.
 
-# dmesg | egrep -i 'NMI|APIC'
-[    0.000000] Using APIC driver default
-[    0.000000] Local APIC disabled by BIOS -- reenabling.
-[    0.000000] Found and enabled local APIC!
-[    0.000000] Kernel command line:
-BOOT_IMAGE=/boot/vmlinuz-2.6.37-rc3-686
-root=UUID=1ceb69a7-ecf4-47e9-a231-b74e0f0a9b62 ro radeon.modeset=1
-lapic 3
-[    0.032158] Enabling APIC mode:  Flat.  Using 0 I/O APICs
-[    0.036000] NMI watchdog enabled, takes one hw-pmu counter.
+> +	[AB8500_REGULATOR_INTCORE] = {
+> +		.desc = {
+> +			.name		= "intcore",
 
-- Sedat -
+The previous way of listing the regulators with a macro seemed more
+immediately readable?
