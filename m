@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab0KWSig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:38:36 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43985 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752033Ab0KWSif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:38:35 -0500
-Date: Tue, 23 Nov 2010 18:38:33 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 2/3] regulators: Update of ab8500 driver
-Message-ID: <20101123183833.GB19212@rakim.wolfsonmicro.main>
-References: <1290536754-21775-1-git-send-email-bengt.g.jonsson@stericsson.com>
- <1290536754-21775-3-git-send-email-bengt.g.jonsson@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290536754-21775-3-git-send-email-bengt.g.jonsson@stericsson.com>
-X-Cookie: I brake for chezlogs!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756373Ab0KWSjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 13:39:25 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60953
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756352Ab0KWSjX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 13:39:23 -0500
+Date: Tue, 23 Nov 2010 10:39:49 -0800 (PST)
+Message-Id: <20101123.103949.39186245.davem@davemloft.net>
+To: alban.crequy@collabora.co.uk
+Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, gorcunov@openvz.org,
+        adobriyan@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
+        ian.molton@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] AF_UNIX: find the recipients for multicast messages
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101123174701.1b2f6f16@chocolatine.cbg.collabora.co.uk>
+References: <20101123150315.4e67a139@chocolatine.cbg.collabora.co.uk>
+	<1290528517.3046.91.camel@edumazet-laptop>
+	<20101123174701.1b2f6f16@chocolatine.cbg.collabora.co.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 07:25:53PM +0100, Bengt Jonsson wrote:
-> This patch updates the driver with some bug fixes, support
-> for v2 hardware, support for regulator_count_voltages,
-> changes for reading the board config, added indexing of
-> the regulator array and added debug prints.
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+Date: Tue, 23 Nov 2010 17:47:01 +0000
 
-This is a whole series of changes which don't seem terribly related to
-each other and aren't clearly described - please split this out into a
-patch series which clearly shows each individual change.  For example,
-one change per bug fix, another adding v2 support, another adding count
-support and so on.  As things stand it's very difficult to review your
-patch as it's not clear what each change is supposed to be doing or that
-bits haven't been missed from changes.
+> Le Tue, 23 Nov 2010 17:08:37 +0100,
+> Eric Dumazet <eric.dumazet@gmail.com> a écrit :
+>> I am not sure if doing 90 clones of skb and filtering them one by one
+>> is going to be fast :-(
+> 
+> Yes... I think it can be optimized. Run the socket filter first by
+> calling sk_run_filter() directly and then call skb_clone() + pskb_trim()
+> only on the few remaining sockets.
 
-> -	ret = abx500_get_register_interruptible(info->dev, info->voltage_bank,
-> -		info->voltage_reg, &value);
-> +	ret = abx500_get_register_interruptible(info->dev,
-> +			info->voltage_bank, info->voltage_reg, &regval);
+BTW, we have and have talked about the same exact problem with
+AF_PACKET socket users such as DHCP.
 
-In addition to what's noted above you also appear to have some renaming
-of variables and struct members plus some other stylistic changes which
-adds to the noise, again these should be split out for ease of review.
+We clone and push the packet down into the AF_PACKET protocol
+code from the pt_type callback when %99 of the time the socket
+filter doesn't match and thus the clone is completely wasted
+work.
 
-> +	[AB8500_REGULATOR_INTCORE] = {
-> +		.desc = {
-> +			.name		= "intcore",
+If we know the socket, or more specifically the filter, early enough,
+we could have a special interface like:
 
-The previous way of listing the regulators with a macro seemed more
-immediately readable?
+	struct sk_buff *skb_filter_or_clone(struct sk_buff *skb, ...)
+
+Which returns a non-NULL cloned SKB if the filter accepts the
+packet.
