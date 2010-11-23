@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab0KWOeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 09:34:11 -0500
-Received: from isp6.4u.com.gh ([80.87.72.6]:60540 "HELO isp6.4u.com.gh"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753303Ab0KWOeJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 09:34:09 -0500
-Message-ID: <b92335dfd432c104c8c97c86c40dd989.squirrel@webmail.4u.com.gh>
-Date: Tue, 23 Nov 2010 08:43:50 -0000 (GMT)
-Subject: 
-From: "Mr. Peter Lee" <krayetech@4u.com.gh>
-Reply-To: peterlee333@aol.com
-User-Agent: SquirrelMail/1.4.17
+	id S1754624Ab0KWOfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 09:35:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49377 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754420Ab0KWOfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 09:35:12 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: thiago <thsalex@gmail.com>, linux-usb@vger.kernel.org
+Subject: Re: Problem with usb card
+Date: Tue, 23 Nov 2010 15:35:55 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <4CEBBF07.9090607@gmail.com>
+In-Reply-To: <4CEBBF07.9090607@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-Content-Transfer-Encoding: 7BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011231535.55886.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Dienstag, 23. November 2010, 14:17:59 schrieb thiago:
+> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.25-custom #1
+> [    0.000000]  [<c0121207>] warn_on_slowpath+0x40/0x4f
+> [    0.000000]  [<c02b1dfd>] _spin_unlock_irqrestore+0xd/0x10
+> [    0.000000]  [<c0121897>] release_console_sem+0x186/0x19f
+> [    0.000000]  [<c0121cc0>] vprintk+0x2d0/0x2fe
+> [    0.000000]  [<c0372eb0>] mtrr_trim_uncached_memory+0x1a7/0x1ac
+> [    0.000000]  [<c0370f64>] setup_arch+0x23d/0x418
+> [    0.000000]  [<c036b5c6>] start_kernel+0x70/0x33a
+> [    0.000000]  =======================
+> [    0.000000] ---[ end trace ca143223eefdc828 ]---
+> 
+> After that message error, i lost the partition table of the my sdcard
+> and all work is lost too
+> 
 
-Dear Friend,
-I am Mr. Peter Lee a South Korean, happily married with children, and
-i am a Director of Hang Seng Bank Ltd, in charge of the International
-Remittance department. I have a confidential business of 22.5 million
-dollars for you.
-Please endeavour to reply me if interested peterlee333@aol.com
+This does look like an mtrr problem, not a USB problem.
 
-Thanks,
-Best Regard,
-Mr. Peter Lee
-
+	Regards
+		Oliver
