@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab0KWMhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 07:37:15 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53621 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab0KWMhM convert rfc822-to-8bit (ORCPT
+	id S1753134Ab0KWMis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 07:38:48 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57990 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520Ab0KWMiq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 07:37:12 -0500
+	Tue, 23 Nov 2010 07:38:46 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Clouter <alex@digriz.org.uk>,
+        Chris Cordahi <christophercordahi@nanometrics.ca>
+Date: Tue, 23 Nov 2010 18:08:22 +0530
+Subject: RE: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
+Thread-Topic: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
+Thread-Index: AcuKTEd2gNmg3bisQZ+oHqUzpkAl5gAvlWAQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB5930247931247@dbde02.ent.ti.com>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca>
+	<cover.1289935504.git.bengardiner@nanometrics.ca>
+	<95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
+	<B85A65D85D7EB246BE421B3FB0FBB59302477EA939@dbde02.ent.ti.com>
+	<AANLkTi=HS7ym8n6=hF8vAg2WR33Md5=YRZL2NS7a+F2y@mail.gmail.com>
+	<B85A65D85D7EB246BE421B3FB0FBB59302477EB2BE@dbde02.ent.ti.com>
+ <AANLkTimRbsmR6xMok8P_wXpQAd1Xykew6_pPhqUWGsEN@mail.gmail.com>
+In-Reply-To: <AANLkTimRbsmR6xMok8P_wXpQAd1Xykew6_pPhqUWGsEN@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-X-Originating-IP: [192.163.20.231]
-In-Reply-To: <20101122164623.GB8882@bicker>
-References: <1290424125-2717-1-git-send-email-pavan_savoy@ti.com>
-	<20101122164623.GB8882@bicker>
-Date: Tue, 23 Nov 2010 18:07:11 +0530
-Message-ID: <AANLkTik0WAK9QvDeXWb7n07TPAadXn6fYsYgjjfUE0uJ@mail.gmail.com>
-Subject: Re: [PATCH v6] Bluetooth: btwilink driver
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Dan Carpenter <error27@gmail.com>, pavan_savoy@ti.com, marcel@holtmann.org,
-        padovan@profusion.mobi, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan, Marcel, Gustavo,
+Hi Ben,
 
-On Mon, Nov 22, 2010 at 10:16 PM, Dan Carpenter <error27@gmail.com> wrote:
-> On Mon, Nov 22, 2010 at 06:08:45AM -0500, pavan_savoy@ti.com wrote:
->> +static int bt_ti_probe(struct platform_device *pdev)
->> +{
->> +     static struct ti_st *hst;
->> +     struct hci_dev *hdev;
->> +     int err;
->> +
->> +     hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
->> +     if (!hst)
->> +             return -ENOMEM;
->> +
->> +     /* Expose "hciX" device to user space */
->> +     hdev = hci_alloc_dev();
->> +     if (!hdev) {
->> +             kfree(hst);
->> +             return -ENOMEM;
->> +     }
->> +
->> +     BT_DBG("hdev %p", hdev);
->> +
->> +     hst->hdev = hdev;
->> +     hdev->bus = HCI_UART;
->> +     hdev->driver_data = hst;
->> +     hdev->open = ti_st_open;
->> +     hdev->close = ti_st_close;
->> +     hdev->flush = NULL;
->> +     hdev->send = ti_st_send_frame;
->> +     hdev->destruct = ti_st_destruct;
->> +     hdev->owner = THIS_MODULE;
->> +
->> +     err = hci_register_dev(hdev);
->> +     if (err < 0) {
->> +             BT_ERR("Can't register HCI device error %d", err);
->> +             hci_free_dev(hdev);
+On Mon, Nov 22, 2010 at 19:20:48, Ben Gardiner wrote:
+> On Mon, Nov 22, 2010 at 6:49 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
+> > On Fri, Nov 19, 2010 at 21:08:10, Ben Gardiner wrote:
+> >> [...]
+> >> By setting INPUT_POLLDEV default for the da850-evm users will get
+> >> functioning pushbuttons and switches with the default config but they
+> >> will be able to disable INPUT_POLLDEV or gpio-keys drivers in their
+> >> defconfig at their convenience.
+> >
+> > I guess we could also just modify the defconfig to switch on
+> > INPUT_POLLDEV? Since only gpio-keys functionality is affected
+> > by not enabling the correct options in kernel, it should be OK.
 >
->        Should there be a kfree(hst); here?  That's how it's done in
->        bpa10x_probe() from drivers/bluetooth/bpa10x.c
+> Yes -- only gpio-keys is affected but enabling the option does
+> introduce an additional .o file:
 >
->> +             return err;
->> +     }
->> +
->> +     BT_DBG(" HCI device registered (hdev %p)", hdev);
->                ^
->        Quite a few places have an extra space at the start.
+> drivers/input/Makefile:obj-$(CONFIG_INPUT_POLLDEV)      += input-polldev.o
 >
->> +
->> +     dev_set_drvdata(&pdev->dev, hst);
->> +     return err;
->> +}
+> I agree that in its current state a user couls inadvertently disable
+> the gpio-keys support on da850-evm simply by disabling INPUT_POLLDEV
+> -- which is less than Ideal. How about I replace the current changes
+> to arch/arm/mach-davinci/Kconfig with:
 >
-> regards,
-> dan carpenter
+> config KEYBOARD_GPIO
+>         default MACH_DAVINCI_DA850_EVM
+>         select INPUT_POLLDEV
+>
+> So 1) gpio-keys functionality is default for the da850evm and 2)
+> whenever gpio-keys is enabled so is INPUT_POLLDEV.
 
-Thanks Dan for the comments,
-Marcel, Gustavo - Please provide your comments too... So I can bundle
-them all and post a v7 ....
+This looks better than what was posted earlier, but I am not
+sure if platforms should influence driver configuration this
+way.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I guess I am just afraid that this makes a precedent for
+many driver config symbols to get replicated in the platform
+Kconfig files.
+
+Lets see if others have an opinion on this.
+
+Thanks,
+Sekhar
+
