@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0KWNx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 08:53:26 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41226 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab0KWNxZ (ORCPT
+	id S1753843Ab0KWNzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 08:55:38 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48979 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab0KWNzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 08:53:25 -0500
+	Tue, 23 Nov 2010 08:55:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=xI4IY/rsgQZg0hn9dutmr/RBLob4v4JgL0vM54HX53T0AsUiEs7S2DFgXiD3GX8xRI
-         kNFq/CxOyOzpSraJlMHfOXWfJzlB6JVhJskTIrZwJUqoPdCzRIsB5leg6hQKcc+bHuzc
-         F8sa+TzqgYfUMVsP4c2E83g6UkB396XSTWR5M=
-Message-ID: <4CEBC751.6090906@gmail.com>
-Date: Tue, 23 Nov 2010 14:53:21 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=Tg4AEQB9us+ifg+gwtrXNMwsY+Cpn8RRp4KXZo0MUWYpPhotB2d3X8xe0eGYRHo2C7
+         k8UbjHd8eZQLK/rCi+wDi96lL1BFi0a+UVANHOl6as220WrgikijtUcCaNgLcynU93g4
+         GLf1Yz67OwFl3R4wnpKQklQn1mZOTHBHCT8k8=
+From: Ben Gamari <bgamari@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+In-Reply-To: <20101122103756.E236.A69D9226@jp.fujitsu.com>
+References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <874obawvlt.fsf@gmail.com> <20101122103756.E236.A69D9226@jp.fujitsu.com>
+User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Tue, 23 Nov 2010 08:48:53 -0500
+Message-ID: <87mxp09mm2.fsf@gmail.com>
 MIME-Version: 1.0
-To: Marek Belisko <marek.belisko@open-nandra.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created
- device.
-References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com> <1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
-In-Reply-To: <1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2010 01:29 PM, Marek Belisko wrote:
-> Use simple misc device for ioctl driver funtionality testing.
+On Tue, 23 Nov 2010 16:16:55 +0900 (JST), KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > On Sun, 21 Nov 2010 23:30:23 +0900, Minchan Kim <minchan.kim@gmail.com> wrote:
+> > > 
+> > > Ben, Remain thing is to modify rsync and use
+> > > fadvise(POSIX_FADV_DONTNEED). Could you test it?
+> > 
+> > Thanks a ton for the patch. Looks good. Testing as we speak.
 > 
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> ---
->  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   90 ++++++++++++++++++---
->  1 files changed, 77 insertions(+), 13 deletions(-)
+For the record, this was a little premature. As I spoke the kernel was
+building but I still haven't had a chance to take any data. Any
+suggestions for how to determine the effect (or hopefully lack thereof)
+of rsync on the system's working set?
+
+> If possible, can you please post your rsync patch and your testcase
+> (or your rsync option + system memory size info + data size info)?
 > 
-> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-> index 1aec926..d1784a3 100644
-> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-> @@ -32,6 +32,7 @@
->  #include <linux/poll.h>
->  #include <linux/netdevice.h>
->  #include <linux/delay.h>
-> +#include <linux/miscdevice.h>
->  
->  #include <linux/fs.h>
->  #include <linux/kmod.h>
-> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
->  	.llseek		= no_llseek,
->  };
->  
-> +struct ft1000_misc_device {
-> +	struct miscdevice dev;
-> +	int inf_id;
-> +};
-> +
-> +#define FREE_ID (0xFF)
-> +
-> +/* we support just 3 devices */
-> +#define MAX_DEVICE 3
+Patch coming right up.
 
-No, why this should be converted to miscdevice? Leave it as chrdev.
+The original test case is a backup script for my home directory. rsync
+is invoked with,
 
-regards,
--- 
-js
+rsync --archive --update --progress --delete --delete-excluded
+--exclude-from=~/.backup/exclude --log-file=~/.backup/rsync.log -e ssh
+/home/ben ben@myserver:/mnt/backup/current
+
+My home directory is 120 GB with typical delta sizes of tens of
+megabytes between backups (although sometimes deltas can be gigabytes,
+after which the server has severe interactivity issues). The server is
+unfortunately quite memory constrained with only 1.5GB of memory (old
+inherited hardware). Given the size of my typical deltas, I'm worried
+that even simply walking the directory hierarchy might be enough to push
+out my working set.
+
+Looking at the rsync access pattern with strace it seems that it does
+a very good job of avoid duplicate reads which is good news for these
+patches.
+
+Cheers,
+
+- Ben
+
+
