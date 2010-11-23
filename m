@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab0KWPFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:05:17 -0500
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:55696 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123Ab0KWPFN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:05:13 -0500
-Date: Tue, 23 Nov 2010 15:03:15 +0000
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, gorcunov@openvz.org,
-        adobriyan@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
-        ian.molton@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] AF_UNIX: find the recipients for multicast messages
-Message-ID: <20101123150315.4e67a139@chocolatine.cbg.collabora.co.uk>
-In-Reply-To: <20101122.110519.39205345.davem@davemloft.net>
-References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
-	<1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
-	<20101122.110519.39205345.davem@davemloft.net>
-Organization: Collabora
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755206Ab0KWPGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:06:19 -0500
+Received: from io.pong.be ([68.233.169.42]:58072 "EHLO io.pong.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755060Ab0KWPGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 10:06:18 -0500
+X-Greylist: delayed 1303 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Nov 2010 10:06:18 EST
+Date: Tue, 23 Nov 2010 09:44:28 -0500
+From: Ward Vandewege <ward@gnu.org>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Bernie Innocenti <bernie@codewiz.org>, lkml <linux-kernel@vger.kernel.org>,
+        Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org
+Subject: Re: pc300too on a modern kernel?
+Message-ID: <20101123144428.GA18504@countzero.vandewege.net>
+Mail-Followup-To: Ward Vandewege <ward@gnu.org>,
+	Krzysztof Halasa <khc@pm.waw.pl>,
+	Bernie Innocenti <bernie@codewiz.org>,
+	lkml <linux-kernel@vger.kernel.org>,
+	Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org
+References: <20100902131531.GA19028@countzero.vandewege.net>
+ <m3mxrw1lg0.fsf@intrepid.localdomain>
+ <1289421869.9336.49.camel@giskard.codewiz.org>
+ <m3sjz34mka.fsf@intrepid.localdomain>
+ <1289944619.2677.22.camel@giskard.codewiz.org>
+ <m3tyjd7za9.fsf@intrepid.localdomain>
+ <1290442675.5515.92.camel@giskard.codewiz.org>
+ <m38w0l2gzh.fsf@intrepid.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m38w0l2gzh.fsf@intrepid.localdomain>
+X-message-flag: Outlook (Express) is an extremely dangerous program that
+ will get you all sorts of nasty viruses.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-detected-operating-system: by mail.pong.be: Error: This connection is not (no longer?) in the cache.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Mon, 22 Nov 2010 11:05:19 -0800 (PST),
-David Miller <davem@davemloft.net> a écrit :
-
-> From: Alban Crequy <alban.crequy@collabora.co.uk>
-> Date: Mon, 22 Nov 2010 18:36:17 +0000
+On Mon, Nov 22, 2010 at 10:20:02PM +0100, Krzysztof Halasa wrote:
+> > With this workaround applied, we're st seeing occasional clusters of
+> > packet loss. We're working to graph the ping loss alongside traffic to
+> > see if there's any correlation.
 > 
-> > unix_find_multicast_recipients() builds an array of recipients. It
-> > can either find the peers of a specific multicast address, or find
-> > all the peers of all multicast group the sender is part of.
-> > 
-> > Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
-> 
-> You really should use RCU to lock this stuff, this way sends run
-> lockless and have less worries wrt. the memory allocation.  You'll
-> also only take a spinlock in the write paths which change the
-> multicast groups, which ought to be rare.
+> That's interesting. I remember seeing some TX underruns at higher
+> speeds, though nothing alike at 2 Mb/s. What bit rate are you using?
+> Does "ifconfig hdlc0" show any errors?
 
-I understand the benefit to use RCU in order to have lockless sends.
+This turned out to be caused by line saturation. We were not seeing this
+before we upgraded to the latest kernel because we have a set of qos rules
+that we forgot to install on our new box. Mea culpa...
 
-But with RCU I will still have worries about the memory allocation:
+Thanks,
+Ward.
 
-- I cannot allocate inside a rcu_read_lock()-rcu_read_unlock() block.
-
-- If I iterate locklessly over the multicast group members with 
-  hlist_for_each_entry_rcu(), new members can be added, so the
-  array can be allocated with the wrong size and I have to try again
-  ("goto try_again") when this rare case occurs.
-
-- Another idea would be to avoid completely the allocation by inlining
-  unix_find_multicast_recipients() inside unix_dgram_sendmsg() and
-  delivering the messages to the recipients as long as the list is
-  being iterated locklessly. But I want to provide atomicity of
-  delivery: the message must be delivered with skb_queue_tail() either
-  to all the recipients or to none of them in case of interruption or
-  memory pressure. I don't see how I can achieve that without
-  iterating several times on the list of recipients, hence the
-  allocation and the copy in the array. I also want to guarantee the
-  order of delivery as described in multicast-unix-sockets.txt and for
-  this, I am taking lots of spinlocks anyway. I don't see how to avoid
-  that, but I would be happy to be wrong and have a better solution.
-
-> Although to be honest you should optimize the case of small numbers of
-> recipients, in the same way we optimize small numbers of iovecs on
-> sends.  Have an on-stack array that holds a small number of entries
-> and use that if the set fits, otherwise dynamic allocation.
-
-To give an idea of the number of members in a multicast group for the
-D-Bus use case, I have 90 D-Bus connections on my session bus:
-
-$ dbus-send --print-reply --dest=org.freedesktop.DBus \
-/org/freedesktop/DBus org.freedesktop.DBus.ListNames | grep '":'|wc -l
-90
-
-In common cases, there should be only a few real recipients (1 or 2?)
-after the socket filters eliminate most of them, but
-unix_find_multicast_recipients() will still allocate an array of
-about that size.
-
+-- 
+Ward Vandewege <ward@gnu.org>
