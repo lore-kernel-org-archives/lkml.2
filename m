@@ -1,149 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab0KWADS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:03:18 -0500
-Received: from imta-38.everyone.net ([216.200.145.38]:59720 "EHLO
-	imta-38.everyone.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab0KWADR (ORCPT
+	id S932406Ab0KWAGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:06:08 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42738 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177Ab0KWAGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:03:17 -0500
-X-Eon-Dm: dm0103
-MIME-Version: 1.0
+	Mon, 22 Nov 2010 19:06:07 -0500
+Subject: Re: [RFC] persistent store
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20101122160259.57EE1AF9@resin17.mta.everyone.net>
-Date: Mon, 22 Nov 2010 16:02:59 -0800
-From: "Denis Kaganovich" <root@eu.by>
-Reply-To: <mahatma@eu.by>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Dan Carpenter" <error27@gmail.com>
-Subject: [PATCH v3+]viafb: I2C/DDC LCD detection for VIA framebuffer
-X-Eon-Sig: AQGpYklM6wSzy5x8tQEAAAAC,f11a2912a752d67949165fee81121b2d
-X-Originating-Ip: 81.30.81.200
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=10
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1010190000 definitions=main-1011220187
+Date: Mon, 22 Nov 2010 16:06:03 -0800
+Message-ID: <1290470763.3008.252.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I2C/DDC LCD detection for VIA framebuffer
+> Here's a patch based on some discussions I had with Thomas
+> Gleixner at plumbers conference that implements a generic
+> layer for persistent storage usable to pass tens or hundreds
+> of kilobytes of data from the dying breath of a crashing
+> kernel to its successor.
+> 
+> The usage model I'm envisioning is that a platform driver
+> will register with this code to provide the actual storage.
+> I've tried to make this interface general, but I'm working
+> from a sample of one (the ACPI ERST code), so if anyone else
+> has some persistent store that can't be handled by this code,
+> speak up and we can put in the necessary tweaks.
 
-Adding legacy I2C/DDC support for VIA framebuffer, used to fix LCD
-panel size and (if "via_active_dev" is empty default) force LCD
-detection. This solving at least defaults on Chrome9 video
-on HP mini 2133 notebook, but must be good in other cases,
-include double-LCD. Also forcing viafb_active_dev to NULL as bugfix.
+I recently posted a patch set for powerpc to capture the most recent
+oops or panic message in NVRAM:
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-November/087032.html
+It covers a lot of the same ground, and could be adapted to use your
+framework.  See below for concerns and suggestions.  I'd also be
+interested in feedback about the design decisions I mention below.
 
-Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
----
-diff -pruN a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
---- a/drivers/video/via/via-core.c	2010-11-22 13:11:44.000000000 +0200
-+++ b/drivers/video/via/via-core.c	2010-11-23 00:37:14.000000000 +0200
-@@ -2,6 +2,7 @@
-  * Copyright 1998-2009 VIA Technologies, Inc. All Rights Reserved.
-  * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
-  * Copyright 2009 Jonathan Corbet <corbet@lwn.net>
-+ * Copyright 2010 Dzianis Kahanovich <mahatma@eu.by>
-  */
- 
- /*
-@@ -16,6 +17,8 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- 
-+extern char *viafb_active_dev;
-+
- /*
-  * The default port config.
-  */
-@@ -576,6 +579,56 @@ static void via_teardown_subdevs(void)
- }
- 
- 
-+static void via_i2c_detect(void)
-+{
-+	u8 *edid;
-+	struct fb_var_screeninfo var;
-+	int i, n = 0;
-+	struct i2c_adapter *adapter;
-+
-+	for (i = 0; i < VIAFB_NUM_PORTS; i++) {
-+		adapter = viafb_find_i2c_adapter(i);
-+		if (!adapter || !adapter->algo_data ||
-+		    !(edid = fb_ddc_read(adapter)))
-+			continue;
-+		if (fb_parse_edid(edid, &var))
-+			goto free_edid;
-+		if (n) {
-+			fb_edid_to_monspecs(edid, &viafbinfo1->monspecs);
-+			viaparinfo->lvds_setting_info2->lcd_panel_hres =
-+			    var.xres;
-+			viaparinfo->lvds_setting_info2->lcd_panel_vres =
-+			    var.yres;
-+			if (!viafb_active_dev) {
-+				viafb_SAMM_ON = STATE_ON;
-+				if (viafbinfo1->monspecs.input & FB_DISP_DDI)
-+					viafb_LCD2_ON = STATE_ON;
-+			}
-+		} else {
-+			fb_edid_to_monspecs(edid, &viafbinfo->monspecs);
-+			viaparinfo->lvds_setting_info->lcd_panel_hres =
-+			    var.xres;
-+			viaparinfo->lvds_setting_info->lcd_panel_vres =
-+			    var.yres;
-+			if (!viafb_active_dev) {
-+				viafb_DVI_ON =
-+				    viaparinfo->tmds_setting_info->
-+				    max_hres ? STATE_ON : STATE_OFF;
-+				if (viafbinfo->monspecs.input & FB_DISP_DDI) {
-+					viafb_DeviceStatus = LCD_Device;
-+					viafb_primary_dev = LCD_Device;
-+					viafb_LCD_ON = STATE_ON;
-+				}
-+			}
-+		}
-+		n++;
-+free_edid:
-+		kfree(edid);
-+		if (n > 1)
-+			break;
-+	}
-+}
-+
- static int __devinit via_pci_probe(struct pci_dev *pdev,
- 		const struct pci_device_id *ent)
- {
-@@ -607,6 +660,7 @@ static int __devinit via_pci_probe(struc
- 	ret = via_fb_pci_probe(&global_dev);
- 	if (ret)
- 		goto out_subdevs;
-+	via_i2c_detect();
- 	return 0;
- 
- out_subdevs:
-diff -pruN a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
---- a/drivers/video/via/viafbdev.c	2010-11-22 13:11:44.000000000 +0200
-+++ b/drivers/video/via/viafbdev.c	2010-11-22 13:59:07.000000000 +0200
-@@ -43,7 +43,7 @@ static int viafb_second_size;
- static int viafb_accel = 1;
- 
- /* Added for specifying active devices.*/
--char *viafb_active_dev;
-+char *viafb_active_dev = NULL;
- 
- /*Added for specify lcd output port*/
- char *viafb_lcd_port = "";
-diff -pruN a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
---- a/drivers/video/via/via_i2c.c	2010-11-22 13:11:44.000000000 +0200
-+++ b/drivers/video/via/via_i2c.c	2010-11-23 01:07:20.000000000 +0200
-@@ -188,7 +188,7 @@ struct i2c_adapter *viafb_find_i2c_adapt
- {
- 	struct via_i2c_stuff *stuff = &via_i2c_par[which];
- 
--	return &stuff->adapter;
-+	return stuff->is_active ? &stuff->adapter : NULL;
- }
- EXPORT_SYMBOL_GPL(viafb_find_i2c_adapter);
- 
---
-PS Sorry for lamering. Bad webmail, home & bugfix...
+On powerpc, the amount of NVRAM available for this may be as little
+as 1-2 Kbytes.  The minimal oops report (with essentially no backtrace)
+is about 1800 bytes.  See below for implications.
+
+We currently read our NVRAM contents via /dev/nvram and the nvram
+command.  NVRAM is divided up into several "partitions" -- only
+one of which is used for the oops/panic report -- so the user-space
+code needs to know about how the partitions are laid out.  It also
+needs to know how much text we actually wrote to the partition, and
+whether or not it's compressed.  Since the kernel already knows how
+to determine all this, it would probably be more convenient to get
+at the oops/panic partition through your /sys interface.
+
+> ...
+> 2) "Why do you read in all the data from the device when it
+> registers and save it in memory? Couldn't you just get the
+> list of records and pick up the data from the device when
+> the user reads the file?"
+> I don't think this is going to be very much data, just a few hundred
+> kilobytes (i.e. less that $0.01 worth of memory, even expensive server
+> memory). The memory is freed when the record is erased ... which is
+> likely to be soon after boot.
+
+Since the amount of text we capture is so tiny, this is unlikely to be
+an issue in my case.
+
+> ...
+> 6) "Is this widely useful? How many systems have persistent storage?"
+> Although ERST was only added to the ACPI spec earlier this year, it
+> merely documents existing functionality required for WHEA (Windows
+> Hardware Error Architecture). So most modern server systems should
+> have it (my test system has it, and it has a BIOS written in mid 2008).
+> Sorry desktops & laptops - no love for you here.
+> 
+
+Powerpc p Series does, obviously, and we're looking to exploit it in
+just this way.
+
+> ...
+> +static void
+> +pstore_dump(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
+> + const char *s1, unsigned long l1,
+> + const char *s2, unsigned long l2)
+> +{
+> + unsigned long s1_start, s2_start;
+> + unsigned long l1_cpy, l2_cpy;
+> + char *dst = pstore_buf + psinfo->header_size;
+> +
+> + /* Don't dump oopses to persistent store */
+
+Why not?  In our case, we capture every oops and panic report, but keep
+only the most recent.  Seems like catching the last oops could be useful
+if your system hangs thereafter and can't be made to panic.  I suggest
+you pass along the reason (KMSG_DUMP_OOPS or whatever) and let the
+callback decide.
+
+You'd have to serialize the oops handling, I guess, in case multiple
+CPUs oops simultaneously.  (Gotta fix that in my code.)
+
+> + if (reason == KMSG_DUMP_OOPS)
+> + return;
+> +
+> + l2_cpy = min(l2, psinfo->data_size);
+> + l1_cpy = min(l1, psinfo->data_size - l2_cpy);
+> +
+> + s2_start = l2 - l2_cpy;
+> + s1_start = l1 - l1_cpy;
+> +
+> + memcpy(dst, s1 + s1_start, l1_cpy);
+> + memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
+> +
+> + psinfo->writer(PSTORE_DMESG, pstore_buf, l1_cpy + l2_cpy);
+
+This assumes that you always want to capture the last psinfo->data_size
+bytes of the printk buffer.  Given the small capacity of our NVRAM
+partition, I handle the case where the whole oops report doesn't fit.
+In that case, I sacrifice the end of the oops report to capture the
+beginning.  Patch #3 in my set is about this.
+
+> ...
+> +static int
+> +pstore_create_sysfs_entry(struct pstore_entry *new_pstore)
+> +{
+> ...
+> + new_pstore->attr.attr.mode = 0444;
+
+/var/log/messages is typically not readable by everybody.  This
+appears to circumvent that.
+
+> ...
+
+Thanks.
+
+Jim Keniston
+IBM Linux Technology Center
+Beaverton, OR
+
+
