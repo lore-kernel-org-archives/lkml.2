@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab0KWPaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:30:21 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:52384 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab0KWPaU (ORCPT
+	id S1755328Ab0KWPgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:36:45 -0500
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:11044 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753242Ab0KWPgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:30:20 -0500
-Message-ID: <4CEBDE08.9030804@canonical.com>
-Date: Tue, 23 Nov 2010 16:30:16 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	Tue, 23 Nov 2010 10:36:44 -0500
+Message-ID: <4CEBDF44.9060101@draigBrady.com>
+Date: Tue, 23 Nov 2010 15:35:32 +0000
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org
-CC: Greg Kroah-Hartman <gregkh@suse.de>, John Tapsell <johnflux@gmail.com>
-Subject: [PATCH resend] Staging: rt2870: Add USB ID for Buffalo Airstation
- WLI-UC-GN
+To: Ben Gamari <bgamari.foss@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, rsync@lists.samba.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [RFC PATCH] fadvise support in rsync
+References: <20101122103756.E236.A69D9226@jp.fujitsu.com> <1290523792-6170-1-git-send-email-bgamari.foss@gmail.com>
+In-Reply-To: <1290523792-6170-1-git-send-email-bgamari.foss@gmail.com>
 X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------000506090605000409010202"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000506090605000409010202
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+On 23/11/10 14:49, Ben Gamari wrote:
+> Warning for kernel folks: I'm not much of an mm person; let me know if I got
+> anything horribly wrong.
+> 
+> Many folks use rsync in their nightly backup jobs. In these applications, speed
+> is of minimal concern and should be sacrificed in order to minimize the effect
+> of rsync on the rest of the machine. When rsync is working on a large directory
+> it can quickly fill the page cache with written data, displacing the rest of
+> the system's working set. The solution for this is to inform the kernel that
+> our written pages will no longer be needed and should be expelled to disk. The
+> POSIX interface for this, posix_fadvise, has existed for some time, but there
+> has been no useable implementation in any of the major operating systems.
+> 
+> Attempts have been made in the past[1] to use the fadvise interface, but kernel
+> limitations have made this quite messy. In particular, the kernel supports
+> FADV_DONTNEED as a single-shot hint; i.e. if the page is clean when the hint is
+> given it will be freed, otherwise the hint is ignored. For this reason it is
+> necessary to fdatasync() against dirtied pages before giving the hint. This,
+> however, requires that rsync do some accounting, calling fdatasync() and
+> fadvise() only after giving the kernel an opportunity to flush the data itself.
+> 
+> Moreover, fadvise(DONTNEED) frees pages regardless of whether the hinting
+> process is the only referrer. For this reason, the previous fadvise patch also
+> used mincore to identify which pages are needed by other processes. Altogether,
+> this makes using fadvise very expensive from a complexity standpoint. This is
+> very unfortunately since the interface could be quite usable with a few minor
+> changes.
 
-This was tested under 2.6.35 and sent back then, but for one or the other reason
-did not really make it anywhere. Patch applies to current tip of Linus tree and
-2.6.36.y.
+Thanks for the easy to understand summary,
+and for working through a solution.
 
--Stefan
+> I recently asked about this on the LKML[2], where Minchan Kim was nice enough
+> to put together a patch improving support for the FADV_DONTNEED hint. His patch
+> adds invalidated flagged pages to the inactive list. This obviates the need for
+> fdatasync() since the page will be reclaimed by the kernel in the standard
+> inactive reclaim path. Moreover, by adding hinted pages to the head of the
+> inactive list, other processes are given ample time to call the pages back to
+> the active list, eliminating the need for the previous mincore() hack.
+> 
+> Here is my attempt at adding fadvise support to rsync (against v3.0.7). I do
+> this in both the sender (hinting after match_sums()) and the receiver (hinting
+> after receive_data()).
 
---------------000506090605000409010202
-Content-Type: text/x-diff;
- name="0001-Staging-rt2870-Add-USB-ID-for-Buffalo-Airstation-WLI.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-Staging-rt2870-Add-USB-ID-for-Buffalo-Airstation-WLI.pa";
- filename*1="tch"
+So for the moment you still thrash the cache when
+backing up large files. Fair enough.
 
->From cfd78277cec4927bf02d6881a6001fa6f73a1b01 Mon Sep 17 00:00:00 2001
-From: John Tapsell <johnflux@gmail.com>
-Date: Thu, 25 Mar 2010 13:30:45 +0000
-Subject: [PATCH] Staging: rt2870: Add USB ID for Buffalo Airstation WLI-UC-GN
+> In principle we could get better granularity if this was
+> hooked up within match_sums() (or even the map_ptr() interface) and the receive
+> loop in receive_data(), but I wanted to keep things simple at first (any
+> comments on these ideas?) .
 
-BugLink: http://bugs.launchpad.net/bugs/441990
+I implemented finer grained fadvise(DONTNEED) in dvd-vr¹
+and noted that I had to be careful not to invalidate
+read ahead data from the cache. I.E. I had to specify
+the specific range I had processed.
 
-This was tested to successfully enable the hardware.
+> At the moment is for little more than testing.
+> Considering the potential negative effects of using FADV_DONTNEED on older
+> kernels, it is likely we will want this functionality off by default with a
+> command line flag to enable.
 
-Signed-off-by: John Tapsell <johnflux@gmail.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-CC: stable@kernel.org
----
- drivers/staging/rt2860/usb_main_dev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The downside being, files opened by other apps may be dropped?
+Well if you're thrashing the cache anyway I'd just enable by
+default and get the good behavior on new kernels.
 
-diff --git a/drivers/staging/rt2860/usb_main_dev.c b/drivers/staging/rt2860/usb_main_dev.c
-index ddacfc6..cd15daa 100644
---- a/drivers/staging/rt2860/usb_main_dev.c
-+++ b/drivers/staging/rt2860/usb_main_dev.c
-@@ -182,6 +182,7 @@ struct usb_device_id rtusb_usb_id[] = {
- 	{USB_DEVICE(0x2001, 0x3C09)},	/* D-Link */
- 	{USB_DEVICE(0x2001, 0x3C0A)},	/* D-Link 3072 */
- 	{USB_DEVICE(0x2019, 0xED14)},	/* Planex Communications, Inc. */
-+	{USB_DEVICE(0x0411, 0x015D)},	/* Buffalo Airstation WLI-UC-GN */
- 	{}			/* Terminating entry */
- };
- 
--- 
-1.7.0.4
+cheers,
+Pádraig.
 
-
---------------000506090605000409010202--
+[1] http://www.pixelbeat.org/programs/dvd-vr/dvd-vr-0.9.7.tar.gz
