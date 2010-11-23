@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab0KWOqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 09:46:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab0KWOqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 09:46:08 -0500
-Date: Tue, 23 Nov 2010 15:39:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:sched/core] cpu: Remove incorrect BUG_ON
-Message-ID: <20101123143910.GA31502@redhat.com>
-References: <tip-51a96c77815e7f139892a6e9c8275a50e9baebdf@git.kernel.org>
+	id S1754574Ab0KWOuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 09:50:01 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51300 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab0KWOuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 09:50:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=aQzk1o5I37SxbQyQd5iP52jOdU3aH0YJGNcjop/DH/qartdn0XgjKkutdV6mfQ9AY8
+         DP9UwcW1E8co4XoQeH3Pj/ETjIpVNwCI99WsZNw1w/AMPMwQQO6WTvs6A8BlUF+NLQeF
+         sKxl144SbwDv7TAEoekvNUn/6OlMsimwMwISo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-51a96c77815e7f139892a6e9c8275a50e9baebdf@git.kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 23 Nov 2010 15:49:57 +0100
+Message-ID: <AANLkTin6ZJr3vXw=HVeA65aq39qxtnJGGXW2nwfp_PwS@mail.gmail.com>
+Subject: Re: linux-next: boot failure in sep driver
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>, mark.a.allyn@intel.com,
+        jayant.mangalampalli@intel.com
+Cc: sfr@canb.auug.org.au, Greg KH <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23, tip-bot for Peter Zijlstra wrote:
->
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -249,8 +249,11 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  	 * The migration_call() CPU_DYING callback will have removed all
->  	 * runnable tasks from the cpu, there's only the idle task left now
->  	 * that the migration thread is done doing the stop_machine thing.
-> +	 *
-> +	 * Wait for the stop thread to go away.
->  	 */
-> -	BUG_ON(!idle_cpu(cpu));
-> +	while (!idle_cpu(cpu))
-> +		cpu_relax();
+Hi,
 
-Yes... but I still can't understand why should we wait at all.
+just fall into the same pitfall... While digging into this driver, I
+saw a typo in:
 
-Peter, I am just curious, help ;)
+[ drivers/staging/sep/Kconfig ]
 
-Oleg.
+config DX_SEP
+        tristate "Discretix SEP driver"
+        depends on PCI
+        default y
+        help
+          Discretix SEP driver; used for the security processor subsystem
+          on bard the Intel Mobile Internet Device.
 
+          The driver's name is sep_driver.
+
+          If unsure, select N.
+- EOF -
+
+Shouldn't this be "...used for the security processor subsystem...
+"...*shipped with Intel Mobile Internet Devices.*" ?
+I can only imagine that the original author(s) wanted to figure out it
+is an onboard-solution.
+
+
+Kind Regards,
+- Sedat -
+
+P.S.: Note to myself: Add the folowing snippet to:
+
+[ debian/config/config ]
+...
+##
+## file: drivers/staging/sep/Kconfig
+##
+# CONFIG_DX_SEP is not set
+...
