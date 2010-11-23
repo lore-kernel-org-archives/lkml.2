@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab0KWJjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 04:39:16 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:53314 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab0KWJjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 04:39:15 -0500
-Date: Tue, 23 Nov 2010 09:38:59 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-ID: <20101123093859.GE19571@csn.ul.ie>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <20101122141449.9de58a2c.akpm@linux-foundation.org> <AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com> <20101122210132.be9962c7.akpm@linux-foundation.org>
+	id S1752549Ab0KWJka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 04:40:30 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57843 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab0KWJk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 04:40:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=mheXdGOg6YxC1LGabp8xdvtsSc3GjLU0ITOrk9F3mi40XP+utGaDG/h/ZfTtQG8C5m
+         vOy98R5hRxhhld5whQAhjHYJXovRBX1n7P+Hjni40999p/STxYiHyoQ9S1U32H0f6B8D
+         GUDXPHtAZH7J2GoSlQUTUsj4tBVsD9Y6QiFgM=
+Date: Tue, 23 Nov 2010 12:40:16 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] generic-ipi: add lock context annotations
+Message-ID: <20101123094016.GC8882@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Jens Axboe <jaxboe@fusionio.com>, Namhyung Kim <namhyung@gmail.com>,
+	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1290411232-11439-1-git-send-email-namhyung@gmail.com>
+ <1290430003.2072.101.camel@laptop>
+ <1290482390.1857.26.camel@leonhard>
+ <4CEB8034.80400@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101122210132.be9962c7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4CEB8034.80400@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 09:01:32PM -0800, Andrew Morton wrote:
-> On Tue, 23 Nov 2010 13:52:05 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
-> 
-> > >> +/*
-> > >> + * Function used to forecefully demote a page to the head of the inactive
-> > >> + * list.
-> > >> + */
-> > >
-> > > This comment is wrong? __The page gets moved to the _tail_ of the
-> > > inactive list?
-> > 
-> > No. I add it in _head_ of the inactive list intentionally.
-> > Why I don't add it to _tail_ is that I don't want to be aggressive.
-> > The page might be real working set. So I want to give a chance to
-> > activate it again.
-> 
-> Well..  why?  The user just tried to toss the page away altogether.  If
-> the kernel wasn't able to do that immediately, the best it can do is to
-> toss the page away asap?
-> 
+On Tue, Nov 23, 2010 at 09:49:56AM +0100, Jens Axboe wrote:
+> I guess what Peter means is that the fact that the function grabs the
+> lock is apparent in the code, if sparse was a bit "smarter", it would
+> see and note this itself.
 
-I'm just guessing here on the motivation but maybe it is in case FADV_DONENEED
-was called on a page in use by another process (via read/write more do than
-being mapped). Process A says "I don't need this" but by moving it to the
-head of the list we give Process B a chance to reference it and reactivate
-without incurring a major fault?
+The sparse warning messages should have been included in the commit
+message.  Here they are:
 
-> > If it's not working set, it can be reclaimed easily and it can prevent
-> > active page demotion since inactive list size would be big enough for
-> > not calling shrink_active_list.
-> 
-> What is "working set"?  Mapped and unmapped pagecache, or are you
-> referring solely to mapped pagecache?
-> 
-> If it's mapped pagecache then the user was being a bit silly (or didn't
-> know that some other process had mapped the file).  In which case we
-> need to decide what to do - leave the page alone, deactivate it, or
-> half-deactivate it as this patch does.
-> 
+kernel/smp.c:513:6: warning: context imbalance in 'ipi_call_lock' - wrong count at exit
+kernel/smp.c:518:6: warning: context imbalance in 'ipi_call_unlock' - unexpected unlock
+kernel/smp.c:523:6: warning: context imbalance in 'ipi_call_lock_irq' - wrong count at exit
+kernel/smp.c:528:6: warning: context imbalance in 'ipi_call_unlock_irq' - unexpected unlock
 
-What are the odds of an fadvise() user having used mincore() in advance
-to determine if the page was in use by another process? I would guess
-"low" so this half-deactivate gives a chance for the page to be promoted
-again as well as a chance for the flusher threads to clean the page if
-it really is to be reclaimed.
+What happens is that sparse *does* see that the locks are unlocked and
+that's what it complains about.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Sparse works before the code is linked so this change doesn't affect
+anything outside kernel/smp.c.  If we added these annotations to
+include/linux/smp.h then they would be used for checking
+kernel/smpboot.c
+
+regards,
+dan carpenter
+
