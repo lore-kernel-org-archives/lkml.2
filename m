@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab0KWAdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:33:20 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33540 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932359Ab0KWAdT (ORCPT
+	id S932574Ab0KWAkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:40:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45712 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab0KWAkj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:33:19 -0500
-Date: Mon, 22 Nov 2010 16:32:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Vasiliy Kulikov <segoon@openwall.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-Message-Id: <20101122163234.5470e33e.akpm@linux-foundation.org>
-In-Reply-To: <1290471649.2704.24.camel@edumazet-laptop>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-	<20101112120834.33062900.akpm@linux-foundation.org>
-	<8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
-	<20101114092533.GB5323@albatros>
-	<20101114180643.593d19ac.akpm@linux-foundation.org>
-	<1289848341.2607.125.camel@edumazet-laptop>
-	<4CE268C8.5010203@panasas.com>
-	<20101122155043.fbbb74f4.akpm@linux-foundation.org>
-	<1290471649.2704.24.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Nov 2010 19:40:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=XJLUsmIoRjo5+x1Zx2U528gi7b/v+0Bl60nsGf9wwfax3sADOD0N/vH1IZdoq356C2
+         f0oGPel3IcQNP5Aa2uVUrdeE4sFz6PMV9PFek7fNx80YCZwo6vk6BMziJjOxYzVpFW+X
+         k1CO5H7AKZlqdhvSyMx1OX1UKrtUgcJjt39JA=
+MIME-Version: 1.0
+In-Reply-To: <20101122135855.6825700d.akpm@linux-foundation.org>
+References: <1290385461-29831-1-git-send-email-vapier@gentoo.org> <20101122135855.6825700d.akpm@linux-foundation.org>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 22 Nov 2010 19:40:16 -0500
+X-Google-Sender-Auth: Sxa-9jwsoIIO-OMYvThWcZKNI-A
+Message-ID: <AANLkTikJQ4usvm9tx1Xm+LcfFgduMVRqPyQPpkYUyjff@mail.gmail.com>
+Subject: Re: [PATCH] romfs: have romfs_fs.h pull in necessary headers
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 01:20:48 +0100
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Mon, Nov 22, 2010 at 16:58, Andrew Morton wrote:
+> On Sun, 21 Nov 2010 19:24:21 -0500 Mike Frysinger wrote:
+>> This header uses things like __be32, so pull in linux/types.h.
+>>
+>> Further, it uses BLOCK_SIZE, so pull in linux/fs.h.
+>>
+>> --- a/include/linux/romfs_fs.h
+>> +++ b/include/linux/romfs_fs.h
+>> @@ -1,6 +1,9 @@
+>>  #ifndef __LINUX_ROMFS_FS_H
+>>  #define __LINUX_ROMFS_FS_H
+>>
+>> +#include <linux/types.h>
+>> +#include <linux/fs.h>
+>> +
+>>  /* The basic structures of the romfs filesystem */
+>>
+>>  #define ROMBSIZE BLOCK_SIZE
+>
+> Better changelogs please.
+>
+> Does this fix any build error?  If so, is that build error present in
+> 2.6.36 or earlier?
 
-> Le lundi 22 novembre 2010 __ 15:50 -0800, Andrew Morton a __crit :
-> 
-> > Well.  We certainly assume in many places that
-> > 
-> > 	struct foo {
-> > 		int a;
-> > 		int b;
-> > 	} f = {
-> > 		.a = 1,
-> > 	};
-> > 
-> > will initialise b to zero.  But I doubt if much code at all assumes
-> > that this initialisation patterm will reliably zero out *holes* in the
-> > struct.
-> > 
-> 
-> We did such assertions in the past, we were wrong.
-> 
-> Check commit 1c40be12f7d8ca1d387510d39787b12e512a7ce8 for an example
-> (net sched: fix some kernel memory leaks)
-> 
-> I guess we must make a full audit of all C99 initializers or structures
-> copied to userspace, giving a name to hidden holes, to force gcc to init
-> them to 0.
-> 
-> # cat try.c
-> struct s {
-> 	char c;
-> 	long l;
-> 	};
-> 
-> void bar(void *v)
-> {
-> 	unsigned long *p = v;
-> 
-> 	printf("%lx %lx\n", p[0], p[1]);
-> }
-> 
-> int main()
-> {
-> 	struct s s1 = {
-> 		.c = 1,
-> 		.l = 2,
-> 	};
-> 
-> 	bar(&s1);
-> 	return 0;
-> }
-> 
-> # gcc -O2 -o try try.c
-> # ./try
-> 8049401 2
-
-OK, thanks.  That rather settles it then.  memset() it is.
-
-> Strangely, if we remove ".l = 2," line, gcc emits code to clear al the
-> fields
-
-Maybe a glitch, maybe a small optimisation?  That's the sort of thing
-which will change over gcc versions too..
-
-
+headers should include the headers that define types/things that the
+header itself needs
+-mike
