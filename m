@@ -1,220 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab0KWH7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:59:00 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52497 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab0KWH67 convert rfc822-to-8bit (ORCPT
+	id S1752635Ab0KWIBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 03:01:18 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37166 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab0KWIBR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:58:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EbyRSgWTl/cTHQ3Fo6Pk5UwXAy59BckvtHHbB3eSI+0g4lKn9zqyaJmr4Y4tsECBAS
-         b0XA5ZCxCX7ePwKBLEB1vwq+ypyuw4U3lNz9UADUnQ0YsEpPLWS7eT6uIF4NS7G/VNUv
-         yf3TAQqUi5485VUo9VyXz/cUFfnCYMn5NuJo4=
+	Tue, 23 Nov 2010 03:01:17 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <AANLkTinZmv540r+EkjwUu6cd9c1u7qG9iR+pvp3YqZC1@mail.gmail.com>
+References: <20101122143817.E242.A69D9226@jp.fujitsu.com> <AANLkTinZmv540r+EkjwUu6cd9c1u7qG9iR+pvp3YqZC1@mail.gmail.com>
+Message-Id: <20101123165240.7BC2.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1290486633-4534-1-git-send-email-namhyung@gmail.com>
-References: <1290486633-4534-1-git-send-email-namhyung@gmail.com>
-Date: Tue, 23 Nov 2010 09:58:58 +0200
-Message-ID: <AANLkTi=Ve03g026yb_x1VMDcuq4nrppuRcovPvDwHEc8@mail.gmail.com>
-Subject: Re: [PATCH v2] ext3: Add journal error check into ext3_rename()
-From: Amir Goldstein <amir73il@gmail.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 23 Nov 2010 17:01:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 6:30 AM, Namhyung Kim <namhyung@gmail.com> wrote:
-> Check return value of ext3_journal_get_write_access() and
-> ext3_journal_dirty_metadata().
+> Hi KOSAKI,
+> 
+> 2010/11/23 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+> >> By Other approach, app developer uses POSIX_FADV_DONTNEED.
+> >> But it has a problem. If kernel meets page is writing
+> >> during invalidate_mapping_pages, it can't work.
+> >> It is very hard for application programmer to use it.
+> >> Because they always have to sync data before calling
+> >> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+> >> be discardable. At last, they can't use deferred write of kernel
+> >> so that they could see performance loss.
+> >> (http://insights.oetiker.ch/linux/fadvise.html)
+> >
+> > If rsync use the above url patch, we don't need your patch.
+> > fdatasync() + POSIX_FADV_DONTNEED should work fine.
+> 
+> It works well. But it needs always fdatasync before calling fadvise.
+> For small file, it hurt performance since we can't use the deferred write.
+
+I doubt rsync need to call fdatasync. Why?
+
+If rsync continue to do following loop, some POSIX_FADV_DONTNEED
+may not drop some dirty pages. But they can be dropped at next loop's
+POSIX_FADV_DONTNEED. Then, It doesn't make serious issue.
+
+1) read
+2) write
+3) POSIX_FADV_DONTNEED
+4) goto 1
+
+
+Am I missing anything?
+
+
+> > So, I think the core worth of previous PeterZ's patch is in readahead
+> > based heuristics. I'm curious why you drop it.
+> >
+> 
+> In previous peter's patch, it couldn't move active page into inactive list.
+> So it's not what i want and I think invalidation is stronger hint than
+> the readahead heuristic.
+> But if we need it, I will add it in my series. It can help reclaiming
+> unnecessary inactive page asap.
+> but before that, I hope we make sure fadvise works well enough.
+
+I've got it.Yeah, 1) implement manual  oepration 2) add automatic heuristic 
+is right order. I think. we can easily test your one.
+
+
+
+> >> In fact, invalidate is very big hint to reclaimer.
+> >> It means we don't use the page any more. So let's move
+> >> the writing page into inactive list's head.
+> >
+> > But, I agree this.
+> 
+> Thank you.
 >
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  fs/ext3/namei.c |   19 +++++++++++++++----
->  1 files changed, 15 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-> index 672cea1..c8415e7 100644
-> --- a/fs/ext3/namei.c
-> +++ b/fs/ext3/namei.c
-> @@ -2371,7 +2371,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
->                        goto end_rename;
->        } else {
->                BUFFER_TRACE(new_bh, "get write access");
-> -               ext3_journal_get_write_access(handle, new_bh);
-> +               retval = ext3_journal_get_write_access(handle, new_bh);
-> +               if (retval)
-> +                       goto journal_error;
->                new_de->inode = cpu_to_le32(old_inode->i_ino);
->                if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
->                                              EXT3_FEATURE_INCOMPAT_FILETYPE))
-> @@ -2380,7 +2382,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
->                new_dir->i_ctime = new_dir->i_mtime = CURRENT_TIME_SEC;
->                ext3_mark_inode_dirty(handle, new_dir);
->                BUFFER_TRACE(new_bh, "call ext3_journal_dirty_metadata");
-> -               ext3_journal_dirty_metadata(handle, new_bh);
-> +               retval = ext3_journal_dirty_metadata(handle, new_bh);
-> +               if (retval)
-> +                       goto journal_error;
->                brelse(new_bh);
->                new_bh = NULL;
->        }
-> @@ -2429,10 +2433,17 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
->        ext3_update_dx_flag(old_dir);
->        if (dir_bh) {
->                BUFFER_TRACE(dir_bh, "get_write_access");
-> -               ext3_journal_get_write_access(handle, dir_bh);
-> +               retval = ext3_journal_get_write_access(handle, dir_bh);
-> +               if (retval)
-> +                       goto journal_error;
->                PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
->                BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
-> -               ext3_journal_dirty_metadata(handle, dir_bh);
-> +               retval = ext3_journal_dirty_metadata(handle, dir_bh);
-> +               if (retval) {
-> +journal_error:
-> +                       ext3_std_error(new_dir->i_sb, retval);
-> +                       goto end_rename;
-> +               }
+> >> +static void __pagevec_lru_deactive(struct pagevec *pvec)
+> >> +{
+> >> +     int i, lru, file;
+> >> +
+> >> +     struct zone *zone = NULL;
+> >> +
+> >> +     for (i = 0; i < pagevec_count(pvec); i++) {
+> >> +             struct page *page = pvec->pages[i];
+> >> +             struct zone *pagezone = page_zone(page);
+> >> +
+> >> +             if (pagezone != zone) {
+> >> +                     if (zone)
+> >> +                             spin_unlock_irq(&zone->lru_lock);
+> >> +                     zone = pagezone;
+> >> +                     spin_lock_irq(&zone->lru_lock);
+> >> +             }
+> >> +
+> >> +             if (PageLRU(page)) {
+> >> +                     if (PageActive(page)) {
+> >> +                             file = page_is_file_cache(page);
+> >> +                             lru = page_lru_base_type(page);
+> >> +                             del_page_from_lru_list(zone, page,
+> >> +                                             lru + LRU_ACTIVE);
+> >> +                             ClearPageActive(page);
+> >> +                             ClearPageReferenced(page);
+> >> +                             add_page_to_lru_list(zone, page, lru);
+> >> +                             __count_vm_event(PGDEACTIVATE);
+> >> +
+> >> +                             update_page_reclaim_stat(zone, page, file, 0);
+> >
+> > When PageActive is unset, we need to change cgroup lru too.
+> 
+> Doesn't add_page_to_lru_list/del_page_from_lru_list do it?
+
+Grr, my fault. I've forgot to we changed add_page_to_lru_list. 
 
 
-Hi Kim,
 
-A better way to handle this situation is to get_write_access much sooner,
-when things can still be rolled back properly.
-Please find below a patch I am using in next3 to fix some un-handled
-journal errors
-and see if you can/want to use any of it as reference for your patches.
-
-Amir.
-
-
-Some places in Ext3 original code don't check for return value of
-JBD functions.  Check for snapshot/journal errors in those places.
-
-Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
-
---------------------------------------------------------------------------------
-diff -Nuarp a/fs/ext3/balloc.c b/fs/ext3/balloc.c
---- a/fs/ext3/balloc.c  2010-11-23 09:38:13.395922811 +0200
-+++ b/fs/ext3/balloc.c  2010-11-23 09:38:13.185923236 +0200
-@@ -674,7 +674,9 @@ do_more:
-
-    /* We dirtied the bitmap block */
-    BUFFER_TRACE(bitmap_bh, "dirtied bitmap block");
--   err = ext3_journal_dirty_metadata(handle, bitmap_bh);
-+   ret = ext3_journal_dirty_metadata(handle, bitmap_bh);
-+   if (!err)
-+       err = ret;
-
-    /* And the group descriptor block */
-    BUFFER_TRACE(gd_bh, "dirtied group descriptor block");
-
-diff -Nuarp a/fs/ext3/inode.c b/fs/ext3/inode.c
---- a/fs/ext3/inode.c   2010-11-23 09:38:13.405923214 +0200
-+++ b/fs/ext3/inode.c   2010-11-23 09:38:13.195922747 +0200
-@@ -2362,6 +2362,9 @@ static void ext3_clear_blocks(handle_t
-        if (bh) {
-            BUFFER_TRACE(bh, "retaking write access");
-            ext3_journal_get_write_access_inode(handle, inode, bh);
-+           /* we may have lost write_access on bh */
-+           if (is_handle_aborted(handle))
-+               return;
-        }
-    }
-
-@@ -2444,6 +2447,9 @@ static void ext3_free_data(handle_t *ha
-                ext3_clear_blocks(handle, inode, this_bh,
-                          block_to_free,
-                          count, block_to_free_p, p);
-+               /* we may have lost write_access on this_bh */
-+               if (is_handle_aborted(handle))
-+                   return;
-                block_to_free = nr;
-                block_to_free_p = p;
-                count = 1;
-@@ -2454,6 +2460,9 @@ static void ext3_free_data(handle_t *ha
-    if (count > 0)
-        ext3_clear_blocks(handle, inode, this_bh, block_to_free,
-                  count, block_to_free_p, p);
-+   /* we may have lost write_access on this_bh */
-+   if (is_handle_aborted(handle))
-+       return;
-
-    if (this_bh) {
-        BUFFER_TRACE(this_bh, "call ext3_journal_dirty_metadata");
-
-diff -Nuarp a/fs/ext3/namei.c b/fs/ext3/namei.c
---- a/fs/ext3/namei.c   2010-11-23 09:38:13.415922664 +0200
-+++ b/fs/ext3/namei.c   2010-11-23 09:38:13.205923227 +0200
-@@ -1649,8 +1649,12 @@ static int ext3_delete_entry (handle_t
-        if (!ext3_check_dir_entry("ext3_delete_entry", dir, de, bh, i))
-            return -EIO;
-        if (de == de_del)  {
-+           int err;
-+
-            BUFFER_TRACE(bh, "get_write_access");
--           ext3_journal_get_write_access(handle, bh);
-+           err = ext3_journal_get_write_access(handle, bh);
-+           if (err)
-+               return err;
-            if (pde)
-                pde->rec_len = ext3_rec_len_to_disk(
-                    ext3_rec_len_from_disk(pde->rec_len) +
-@@ -1797,7 +1801,16 @@ retry:
-        goto out_stop;
-    }
-    BUFFER_TRACE(dir_block, "get_write_access");
--   ext3_journal_get_write_access(handle, dir_block);
-+   err = ext3_journal_get_write_access(handle, dir_block);
-+   if (err) {
-+       drop_nlink(inode); /* is this nlink == 0? */
-+       unlock_new_inode(inode);
-+       /* no need to check for errors - we failed anyway */
-+       (void) ext3_mark_inode_dirty(handle, inode);
-+       iput(inode);
-+       brelse(dir_block);
-+       goto out_stop;
-+   }
-    de = (struct ext3_dir_entry_2 *) dir_block->b_data;
-    de->inode = cpu_to_le32(inode->i_ino);
-    de->name_len = 1;
-
-@@ -2337,6 +2350,10 @@ static int ext3_rename (struct inode *
-        if (!new_inode && new_dir!=old_dir &&
-                new_dir->i_nlink >= EXT3_LINK_MAX)
-            goto end_rename;
-+       BUFFER_TRACE(dir_bh, "get_write_access");
-+       retval = ext3_journal_get_write_access(handle, dir_bh);
-+       if (retval)
-+           goto end_rename;
-    }
-    if (!new_bh) {
-        retval = ext3_add_entry (handle, new_dentry, old_inode);
-@@ -2344,7 +2361,9 @@ static int ext3_rename (struct inode *
-            goto end_rename;
-    } else {
-        BUFFER_TRACE(new_bh, "get write access");
--       ext3_journal_get_write_access(handle, new_bh);
-+       retval = ext3_journal_get_write_access(handle, new_bh);
-+       if (retval)
-+           goto end_rename;
-        new_de->inode = cpu_to_le32(old_inode->i_ino);
-        if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
-                          EXT3_FEATURE_INCOMPAT_FILETYPE))
-@@ -2401,8 +2420,6 @@ static int ext3_rename (struct inode *
-    old_dir->i_ctime = old_dir->i_mtime = CURRENT_TIME_SEC;
-    ext3_update_dx_flag(old_dir);
-    if (dir_bh) {
--       BUFFER_TRACE(dir_bh, "get_write_access");
--       ext3_journal_get_write_access(handle, dir_bh);
-        PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
-        BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
-        ext3_journal_dirty_metadata(handle, dir_bh);
