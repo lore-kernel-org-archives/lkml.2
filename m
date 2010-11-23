@@ -1,135 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab0KWGFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 01:05:41 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46722 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab0KWGFk convert rfc822-to-8bit (ORCPT
+	id S1751322Ab0KWGJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 01:09:07 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:62581 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0KWGJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 01:05:40 -0500
+	Tue, 23 Nov 2010 01:09:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CV3t4gbMLDafhFRjvhczFZWZp20AC9ROc//psROWVqjlywOlB3SFk8WRZ/9jBv53lC
-         /J29aEj7TsM1uK7EAQ1KnMpyCThbDVmxmU5I1clE/8fYSgz/kNay4YcLLipmZXj+XMGD
-         GRWvH+MMuL85EEIB4Bh0PdJsWzkuMDSrbrfbw=
-MIME-Version: 1.0
-In-Reply-To: <20101122214814.36c209a6.akpm@linux-foundation.org>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<20101122141449.9de58a2c.akpm@linux-foundation.org>
-	<AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com>
-	<20101122210132.be9962c7.akpm@linux-foundation.org>
-	<AANLkTin62R1=2P+Sh0YKJ3=KAa6RfLQLKJcn2VEtoZfG@mail.gmail.com>
-	<20101122212220.ae26d9a5.akpm@linux-foundation.org>
-	<AANLkTinTp2N3_uLEm7nf0=Xu2f9Rjqg9Mjjxw-3YVCcw@mail.gmail.com>
-	<20101122214814.36c209a6.akpm@linux-foundation.org>
-Date: Tue, 23 Nov 2010 15:05:39 +0900
-Message-ID: <AANLkTimpfZuKW-hXjXknn3ESKP81AN3BaXO=qG81Lrae@mail.gmail.com>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=CLluZ3AIqK8HqK4H53bG6iyb28ceLrenbD3rkS9Emx/sKHrtiUIsYNd0tVCGizlw1Q
+         S4o0RFAT9xjqQM2my+zJO+kfIIj5yWanFHh8vlBPmeHg6NlQGDVYrwr4nPclPUmtpKvL
+         Tn7RIz6Ngrc4fgXWbZeebGOevyf7VMNhlQfsU=
+Subject: [PATCH] ASoC: Do not update the cache if write to hardware failed
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Content-Type: text/plain
+Date: Tue, 23 Nov 2010 14:14:07 +0800
+Message-Id: <1290492847.7286.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 2:48 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 23 Nov 2010 14:45:15 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Tue, Nov 23, 2010 at 2:22 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Tue, 23 Nov 2010 14:23:33 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
->> >
->> >> On Tue, Nov 23, 2010 at 2:01 PM, Andrew Morton
->> >> <akpm@linux-foundation.org> wrote:
->> >> > On Tue, 23 Nov 2010 13:52:05 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
->> >> >
->> >> >> >> +/*
->> >> >> >> + * Function used to forecefully demote a page to the head of the inactive
->> >> >> >> + * list.
->> >> >> >> + */
->> >> >> >
->> >> >> > This comment is wrong? __The page gets moved to the _tail_ of the
->> >> >> > inactive list?
->> >> >>
->> >> >> No. I add it in _head_ of the inactive list intentionally.
->> >> >> Why I don't add it to _tail_ is that I don't want to be aggressive.
->> >> >> The page might be real working set. So I want to give a chance to
->> >> >> activate it again.
->> >> >
->> >> > Well.. __why? __The user just tried to toss the page away altogether. __If
->> >> > the kernel wasn't able to do that immediately, the best it can do is to
->> >> > toss the page away asap?
->> >> >
->> >> >> If it's not working set, it can be reclaimed easily and it can prevent
->> >> >> active page demotion since inactive list size would be big enough for
->> >> >> not calling shrink_active_list.
->> >> >
->> >> > What is "working set"? __Mapped and unmapped pagecache, or are you
->> >> > referring solely to mapped pagecache?
->> >>
->> >> I mean it's mapped by other processes.
->> >>
->> >> >
->> >> > If it's mapped pagecache then the user was being a bit silly (or didn't
->> >> > know that some other process had mapped the file). __In which case we
->> >> > need to decide what to do - leave the page alone, deactivate it, or
->> >> > half-deactivate it as this patch does.
->> >>
->> >>
->> >> What I want is the half-deactivate.
->> >>
->> >> Okay. We will use the result of invalidate_inode_page.
->> >> If fail happens by page_mapped, we can do half-deactivate.
->> >> But if fail happens by dirty(ex, writeback), we can add it to tail.
->> >> Does it make sense?
->> >
->> > Spose so. __It's unobvious.
->> >
->> > If the page is dirty or under writeback then reclaim will immediately
->> > move it to the head of the LRU anyway. __But given that the user has
->>
->> Why does it move into head of LRU?
->> If the page which isn't mapped doesn't have PG_referenced, it would be
->> reclaimed.
->
-> If it's dirty or under writeback it can't be reclaimed!
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/tpa6130a2.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-I see your point. And it's why I add it to head of inactive list.
-
->
->> > just freed a bunch of pages with invalidate(), it's unlikely that
->> > reclaim will be running soon.
->>
->> If reclaim doesn't start soon, it's good. That's because we have a
->> time to activate it and
->> when reclaim happens, reclaimer can reclaim pages easily.
->>
->> If I don't understand your point, could you elaborate on it?
->
-> If reclaim doesn't happen soon and the page was dirty or under
-> writeback (and hence unreclaimable) then there's a better chance that
-> it _will_ be reclaimable by the time reclaim comes along and has a look
-> at it.  Yes, that's good.
->
-> And a note to Mel: this is one way in which we can get significant
-> (perhaps tremendous) numbers of dirty pages coming off the tail of the
-> LRU, and hence eligible for pageout() treatment.
->
-
-I think you agree my as-is approach. Right?
-Then, could you revert your fixlet?
-I will add additional description with your fix.
-
-
+diff --git a/sound/soc/codecs/tpa6130a2.c b/sound/soc/codecs/tpa6130a2.c
+index bfef3da..2d64502 100644
+--- a/sound/soc/codecs/tpa6130a2.c
++++ b/sound/soc/codecs/tpa6130a2.c
+@@ -77,8 +77,10 @@ static int tpa6130a2_i2c_write(int reg, u8 value)
+ 
+ 	if (data->power_state) {
+ 		val = i2c_smbus_write_byte_data(tpa6130a2_client, reg, value);
+-		if (val < 0)
++		if (val < 0) {
+ 			dev_err(&tpa6130a2_client->dev, "Write failed\n");
++			return val;
++		}
+ 	}
+ 
+ 	/* Either powered on or off, we save the context */
 -- 
-Kind regards,
-Minchan Kim
+1.7.2
+
+
+
