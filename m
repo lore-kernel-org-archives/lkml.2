@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0KWMl2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 07:41:28 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56179 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab0KWMl1 (ORCPT
+	id S1753306Ab0KWMnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 07:43:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34383 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab0KWMnD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 07:41:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=ATgJNSf8r6Vnnvl9Lr5yvAcWo72jWHAS7Cd9rSQkmReSfn8kQU0lh0gaUjjp3zUdXm
-         Xg646rvkauH3KC9cdQg0UGljH4kY3QaowLlkyV2TpX4v7U0Kp2zIOK+G4CWkmbPctTIe
-         4E3IrtrT3jxrAc8FjSelMFQZ5S8ImicGqPweQ=
-Date: Tue, 23 Nov 2010 10:41:21 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
-Message-ID: <20101123124121.GA11101@ghostprotocols.net>
-References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
- <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
- <1290510512.2072.387.camel@laptop>
+	Tue, 23 Nov 2010 07:43:03 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Clouter <alex@digriz.org.uk>,
+        Chris Cordahi <christophercordahi@nanometrics.ca>
+Date: Tue, 23 Nov 2010 18:12:38 +0530
+Subject: RE: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
+ switches and LEDs
+Thread-Topic: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
+ switches and LEDs
+Thread-Index: AcuKT8UFis+zfA4jTgerB3Hb5DuSqwAu6W3Q
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024793124F@dbde02.ent.ti.com>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca>
+	<cover.1289935504.git.bengardiner@nanometrics.ca>
+	<d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
+	<B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
+	<AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
+	<B85A65D85D7EB246BE421B3FB0FBB59302477EB2D8@dbde02.ent.ti.com>
+ <AANLkTin8+y0xkjv+RmnSZNKXgfwr2iV3c9P7cBMfVw3k@mail.gmail.com>
+In-Reply-To: <AANLkTin8+y0xkjv+RmnSZNKXgfwr2iV3c9P7cBMfVw3k@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290510512.2072.387.camel@laptop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 23, 2010 at 12:08:32PM +0100, Peter Zijlstra escreveu:
-> Right, so acme had a patch adding
-> 
-> PERF_SAMPLE_TID
-> PERF_SAMPLE_TIME
-> PERF_SAMPLE_ID
-> PERF_SAMPLE_CPU
-> PERF_SAMPLE_STREAM_ID
-> 
-> (IIRC) to every record.. so solve this same problem. Except he got
-> interrupted by KS and things and didn't get around to posting it.
-> 
-> Arnaldo?
+Hi Ben,
 
-Will post later today, IIRC I have to break it down because I did some
-refactorings, etc.
+On Mon, Nov 22, 2010 at 19:45:46, Ben Gardiner wrote:
+> Hi Sekhar,
+>
+> On Mon, Nov 22, 2010 at 7:00 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
+> > Thanks for the explanation. I should have probably asked
+> > earlier, why do we need to prevent sysfs access of
+> > deep sleep enable and sw reset pins? We don't seem to be
+> > using them in the kernel either.
+>
+> You're welcome.
+>
+> I was assuming that those pins were not exported as gpio pins on
+> purpose; I was taking the prudent approach to prevent haphazard
+> toggling of sw_rst and deep_sleep_en from userspace. sw_rst because it
+> could initiate a reset of the cpu when toggled and deep_sleep_en
+> because it can override the behaviour of davinci_pm_enter().
+>
+> I'm not sure how they would be used by existing kernel classes either.
+> The sw_rst pin could be used for reset but since it is on the other
+> end of an i2c bus and there is an existing implementation of reset
+> using the on chip watchdog I don't think it would be benficial to
+> switch. Deep_sleep_en could override the behaviour in
+> davinci_pm_enter() -- _maybe_ (I don't really know) it could be used
+> as a hardware-assisted suspend-blocker? But I totally guessing here.
 
-- Arnaldo
+My preference would be to leave these pins as is
+(don't call a gpio_request() on them) till someone
+comes up with a use case for them. From what you
+described, sysfs access cannot happen "accidently"
+so someone accessing these pins from sysfs surely
+knows what he is doing.
+
+Thanks,
+Sekhar
+
