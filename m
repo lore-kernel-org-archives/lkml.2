@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab0KWWut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 17:50:49 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:34450 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753214Ab0KWWuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 17:50:46 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v1.5 2/5] tpm: add module_put wrapper
-Date: Tue, 23 Nov 2010 17:50:32 -0500
-Message-Id: <1290552635-3356-3-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753777Ab0KWWwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 17:52:07 -0500
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:41000 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753084Ab0KWWwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 17:52:05 -0500
+Date: Wed, 24 Nov 2010 09:51:48 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: npiggin@kernel.dk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/7] fs: fix or note I_DIRTY handling bugs in
+ filesystems
+Message-ID: <20101123225148.GZ22876@dastard>
+References: <20101123140610.292941494@kernel.dk>
+ <20101123140708.132861329@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101123140708.132861329@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For readability, define a tpm_chip_put() wrapper to call module_put().
-Replace existing module_put() calls with the wrapper.
+On Wed, Nov 24, 2010 at 01:06:17AM +1100, npiggin@kernel.dk wrote:
+> Comments?
 
-(Change based on trusted/encrypted patchset review by David Howells.)
+How did you test the changes?
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Signed-off-by: David Safford <safford@watson.ibm.com>
-Acked-by: David Howells <dhowells@redhat.com>
----
- drivers/char/tpm/tpm.c |    4 ++--
- drivers/char/tpm/tpm.h |    5 +++++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+> +++ linux-2.6/fs/xfs/linux-2.6/xfs_file.c	2010-11-24 00:08:03.000000000 +1100
+> @@ -99,6 +99,7 @@ xfs_file_fsync(
+>  	struct xfs_trans	*tp;
+>  	int			error = 0;
+>  	int			log_flushed = 0;
+> +	unsigned		dirty, mask;
+>  
+>  	trace_xfs_file_fsync(ip);
+>  
+> @@ -132,9 +133,16 @@ xfs_file_fsync(
+>  	 * might gets cleared when the inode gets written out via the AIL
+>  	 * or xfs_iflush_cluster.
+>  	 */
+> -	if (((inode->i_state & I_DIRTY_DATASYNC) ||
+> -	    ((inode->i_state & I_DIRTY_SYNC) && !datasync)) &&
+> -	    ip->i_update_core) {
+> +	spin_lock(&inode_lock);
+> +	inode_writeback_begin(inode, 1);
+> +	if (datasync)
+> +		mask = I_DIRTY_DATASYNC;
+> +	else
+> +		mask = I_DIRTY_SYNC | I_DIRTY_DATASYNC;
+> +	dirty = inode->i_state & mask;
+> +	inode->i_state &= ~mask;
+> +	spin_unlock(&inode_lock);
+> +	if (dirty && ip->i_update_core) {
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 7c41335..26c09f3 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -736,7 +736,7 @@ int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf)
- 	if (chip == NULL)
- 		return -ENODEV;
- 	rc = __tpm_pcr_read(chip, pcr_idx, res_buf);
--	module_put(chip->dev->driver->owner);
-+	tpm_chip_put(chip);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(tpm_pcr_read);
-@@ -775,7 +775,7 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
- 	rc = transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
- 			  "attempting extend a PCR value");
- 
--	module_put(chip->dev->driver->owner);
-+	tpm_chip_put(chip);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(tpm_pcr_extend);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 792868d..72ddb03 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -113,6 +113,11 @@ struct tpm_chip {
- 
- #define to_tpm_chip(n) container_of(n, struct tpm_chip, vendor)
- 
-+static inline void tpm_chip_put(struct tpm_chip *chip)
-+{
-+	module_put(chip->dev->driver->owner);
-+}
-+
- static inline int tpm_read_index(int base, int index)
- {
- 	outb(index, base);
+It looks to me like the pattern "inode_writeback_begin(); get dirty
+state from i_state" repeated for each filesystem is wrong. The
+inode_writeback_begin() helper does this:
+
+	inode->i_state &= ~I_DIRTY;
+
+which clears all the dirty bits from the i_state, which means the
+followup:
+
+	dirty = inode->i_state & mask;
+
+will always result in a zero value for dirty.  IOWs, this seems to
+ensure that ->fsync never sees dirty inodes anymore. This will break
+fsync on XFS, and probably on all the other filesystems you modified
+to use this pattern as well.
+
+Also, I think the pattern is racy with respect to concurrent page
+cache dirtiers. i.e if the inode was dirtied between writeback and
+->fsync() in vfs_fsync_range(), then this new code clears the
+I_DIRTY_PAGES bit in i_state without writing back the dirty pages.
+
+And FWIW, I'm not sure that we want to be propagating the inode_lock
+into every filesystem...
+
+Cheers,
+
+Dave.
 -- 
-1.7.2.2
-
+Dave Chinner
+david@fromorbit.com
