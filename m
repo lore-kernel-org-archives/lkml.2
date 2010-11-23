@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344Ab0KWF0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 00:26:52 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34777 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751057Ab0KWF0v (ORCPT
+	id S1751419Ab0KWFgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 00:36:09 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:43370 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab0KWFgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 00:26:51 -0500
-Date: Mon, 22 Nov 2010 21:22:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-Id: <20101122212220.ae26d9a5.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTin62R1=2P+Sh0YKJ3=KAa6RfLQLKJcn2VEtoZfG@mail.gmail.com>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<20101122141449.9de58a2c.akpm@linux-foundation.org>
-	<AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com>
-	<20101122210132.be9962c7.akpm@linux-foundation.org>
-	<AANLkTin62R1=2P+Sh0YKJ3=KAa6RfLQLKJcn2VEtoZfG@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 00:36:07 -0500
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: linux-kernel@vger.kernel.org
+Subject: perf: Timestamp COMM and MMAP events for correct attribution
+Date: Tue, 23 Nov 2010 16:35:38 +1100
+Message-Id: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 14:23:33 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
+This patch series fixes a bug introduced with the per-task-per-cpu event
+support in perf where PERF_RECORD_COMM and PERF_RECORD_MMAP events would arrive
+and be recorded via one CPUs buffer much later than samples corresponding to
+them arriving on another CPUs buffer, and would cause perf to mis-attribute
+those events.
 
-> On Tue, Nov 23, 2010 at 2:01 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Tue, 23 Nov 2010 13:52:05 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> >> +/*
-> >> >> + * Function used to forecefully demote a page to the head of the inactive
-> >> >> + * list.
-> >> >> + */
-> >> >
-> >> > This comment is wrong? __The page gets moved to the _tail_ of the
-> >> > inactive list?
-> >>
-> >> No. I add it in _head_ of the inactive list intentionally.
-> >> Why I don't add it to _tail_ is that I don't want to be aggressive.
-> >> The page might be real working set. So I want to give a chance to
-> >> activate it again.
-> >
-> > Well.. __why? __The user just tried to toss the page away altogether. __If
-> > the kernel wasn't able to do that immediately, the best it can do is to
-> > toss the page away asap?
-> >
-> >> If it's not working set, it can be reclaimed easily and it can prevent
-> >> active page demotion since inactive list size would be big enough for
-> >> not calling shrink_active_list.
-> >
-> > What is "working set"? __Mapped and unmapped pagecache, or are you
-> > referring solely to mapped pagecache?
-> 
-> I mean it's mapped by other processes.
-> 
-> >
-> > If it's mapped pagecache then the user was being a bit silly (or didn't
-> > know that some other process had mapped the file). __In which case we
-> > need to decide what to do - leave the page alone, deactivate it, or
-> > half-deactivate it as this patch does.
-> 
-> 
-> What I want is the half-deactivate.
-> 
-> Okay. We will use the result of invalidate_inode_page.
-> If fail happens by page_mapped, we can do half-deactivate.
-> But if fail happens by dirty(ex, writeback), we can add it to tail.
-> Does it make sense?
+This has been observed on multiple systems, but is more common the more CPUs
+present - on 64 CPU systems it is extremely common (one system tested occurred
+~50% of the time, while another was >99%), while on my quad Intel i7 it is much
+rarer (but I have observed it several times). Examining the data file with perf
+report -D shows the COMM and MMAP events a long way through the file (80% or
+more), well after many previous events.
 
-Spose so.  It's unobvious.
+This series introduces an ABI change to perf to add the timestamps to the MMAP
+and COMM events so that they can be correlated with the samples corresponding
+to them. The timestamps are requested from the kernel by setting the all_timed
+bit in the attributes when opening the events and is placed just after the
+event header of the events in question.
 
-If the page is dirty or under writeback then reclaim will immediately
-move it to the head of the LRU anyway.  But given that the user has
-just freed a bunch of pages with invalidate(), it's unlikely that
-reclaim will be running soon.
-
+While not necessary to fix this bug (or any other AFAIK), I have also included
+changes to the PERF_RECORD_READ and PERF_RECORD_LOST events to add the
+timestamp in the same manner. This could be useful to support and if we did
+eventually want to add it it would be easier to change all the events in
+question at once. Those changes are in separate patches from the COMM and MMAP
+changes so they can easily be dropped when merging this upstream if they are
+unwanted.
 
