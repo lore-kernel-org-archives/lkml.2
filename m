@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab0KWJ7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 04:59:34 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54262 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab0KWJ7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 04:59:33 -0500
-Date: Tue, 23 Nov 2010 10:59:17 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Berg, Johannes" <johannes.berg@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Hannemann <arnd@arndnet.de>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@linux.intel.com>
-Subject: Re: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
-Message-ID: <20101123095917.GA28998@elte.hu>
-References: <C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
- <4CEAA151.7050404@arndnet.de>
- <20101123063200.GA23907@elte.hu>
- <C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
- <20101122233654.117eef93.akpm@linux-foundation.org>
- <C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
- <20101123075742.GA28714@elte.hu>
- <20101123000232.e51b99b7.akpm@linux-foundation.org>
- <20101123091756.GA22530@elte.hu>
- <C5C86A19469DAE48AAAD0E5F3716E44501D41ED81C@irsmsx504.ger.corp.intel.com>
+	id S1752700Ab0KWKAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 05:00:51 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52789 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab0KWKAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 05:00:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=o8au/Gnfly2ueTb1q5lhuNi8A5bklvMR4r4lyKH/rIc4FELZJF+isC2MYV1eYQmsEo
+         1HSeLcjy78vgAd4ZmCoQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED81C@irsmsx504.ger.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1290361473.2153.39.camel@laptop>
+References: <1290340877.2245.124.camel@localhost>
+	<8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
+	<1290348259.2245.172.camel@localhost>
+	<1290361473.2153.39.camel@laptop>
+Date: Tue, 23 Nov 2010 11:00:46 +0100
+Message-ID: <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Berg, Johannes <johannes.berg@intel.com> wrote:
-
-> > It fails to build on x86 64-bit allmodconfig:
-> > 
-> > drivers/leds/led-triggers.c:39:20: error: ‘TRIG_NAME_MAX’ undeclared
-> > (first use in this function)
-> 
-> Grr. I give up on the modular thing ...
-> 
-> There are a whole bunch of ifdefs on TRIGGERS, which need to be
-> || modular, but the easier thing is to remove the bool->tristate
-> changes from my patch.
-
-Please post a patch that does so.
-
-Thanks,
-
-	Ingo
+On Sun, Nov 21, 2010 at 6:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
+>> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
+>> > >
+>> > > 2. Uncore pmu NMI handling
+>> > >
+>> > > All the 4 cores are programmed to receive uncore counter overflow
+>> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
+>> > > counters enabled by all 4 cores.
+>> >
+>> > Really for uncore monitoring there is no need to use an NMI handler.
+>> > You can't profile a core anyways, so you can just delay the reporting
+>> > a little bit. It may simplify the code to not use one here
+>> > and just use an ordinary handler.
+>>
+>> OK, I can use on ordinary interrupt handler here.
+>
+> Does the hardware actually allow using a different interrupt source?
+>
+It does not. It's using whatever you've programmed into the APIC
+LVT vector, AFAIK. Uncore interrupt mode is enabled via
+IA32_DEBUGCTL. Regarless of sampling or not, you need the interrupt
+to virtualize the counters to 64 bits.
