@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab0KWHxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 02:53:36 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64695 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab0KWHxf (ORCPT
+	id S1752692Ab0KWH5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 02:57:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58896 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085Ab0KWH5m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 02:53:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=HTB27vFuHdJ+jXmQRPh/vUdAzHBnOzx0CIZZcsijuAylw8ZdtTZXJY30Y2ZX1ArZqV
-         RoR1QqwWaFoEbSDkM5GZuCCVTRbGFTpJ26acWvDSKxqqywZ+eqXsDISLO+6qEwGTMZ2o
-         hVkZtB4ARW7lzm4hGgD/t1N+nAHBMppCh6baY=
-Subject: [PATCH 3/3] ASoC: wm8994 - fix memory leaks
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1290499069.7286.6.camel@mola>
-References: <1290498981.7286.4.camel@mola>  <1290499069.7286.6.camel@mola>
-Content-Type: text/plain
-Date: Tue, 23 Nov 2010 15:58:39 +0800
-Message-Id: <1290499119.7286.8.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 02:57:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,241,1288594800"; 
+   d="scan'208";a="860465358"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, Arnd Hannemann <arnd@arndnet.de>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@linux.intel.com>
+Date: Tue, 23 Nov 2010 07:57:18 +0000
+Subject: RE: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Thread-Topic: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Thread-Index: AcuK4uQos7PDJyVHQaOjCvPhSkVsJwAAM6Vw
+Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D41ED769@irsmsx504.ger.corp.intel.com>
+References: <20101116142027.GC19247@tiehlicka.suse.cz>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
+	<20101118082454.GC15928@tiehlicka.suse.cz>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
+	<4CEAA151.7050404@arndnet.de>	<20101123063200.GA23907@elte.hu>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
+	<20101122233654.117eef93.akpm@linux-foundation.org>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
+ <20101122234407.c710e578.akpm@linux-foundation.org>
+In-Reply-To: <20101122234407.c710e578.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8994.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 63a3895..2833994 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2503,6 +2503,8 @@ static int  wm8994_codec_remove(struct snd_soc_codec *codec)
- 	wm8994_free_irq(codec->control_data, WM8994_IRQ_MIC2_DET, wm8994);
- 	wm8994_free_irq(codec->control_data, WM8994_IRQ_MIC1_SHRT, wm8994);
- 	wm8994_free_irq(codec->control_data, WM8994_IRQ_MIC1_DET, wm8994);
-+	kfree(wm8994->retune_mobile_texts);
-+	kfree(wm8994->drc_texts);
- 	kfree(wm8994);
- 
- 	return 0;
--- 
-1.7.2
+> > Will do. I suspect it should, unless you took new LED drivers? But
+> then
+> > again you will now probably want a patch against -rc, not -mm?
+> >
+> 
+> It applied OK(ish) to current mainline.
 
+It seems to need a "depends on LEDS_CLASS" to the new driver
+"config LEDS_NETXBIG" in drivers/leds/. Other than that, it
+still seems to be complete against current mainline (-rc3).
 
+Do you just want to add the single line to it yourself?
+
+johannes
+
+--------------------------------------------------------------------------------------
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland 
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
+Registergericht: Muenchen HRB 47456 
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
