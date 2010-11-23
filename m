@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab0KWTSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 14:18:08 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60470 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab0KWTSG (ORCPT
+	id S1756528Ab0KWTSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 14:18:24 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45541 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab0KWTSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 14:18:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=GOQyJjHcAHBDGECUqyKvoFgBYB1BWRd1gV5fHmTsnel1QAo57PyNkouWXFKQxS48bT
-         O1rHi8IW1sLma9v4QlT+6HcvX1CiNsTLy+bc8IhL36EH7w2oHHqHeww7l+EBT7nUDtDa
-         PmcFR9CgPUkR6H26SB7OSLidBQQipg0+D74WY=
-Date: Tue, 23 Nov 2010 22:18:01 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, sedat.dilek@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] x86, perf, nmi: Disable perf if counters are not
-	accessable
-Message-ID: <20101123191801.GD5997@lenovo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 23 Nov 2010 14:18:23 -0500
+Date: Tue, 23 Nov 2010 11:16:58 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Change return type of obvious Boolean list fns to
+ "bool".
+Message-Id: <20101123111658.8bfb91cd.randy.dunlap@oracle.com>
+In-Reply-To: <alpine.DEB.2.00.1011210819350.25385@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1011210819350.25385@localhost6.localdomain6>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 08:07:47PM +0100, Peter Zijlstra wrote:
-> On Tue, 2010-11-23 at 22:04 +0300, Cyrill Gorcunov wrote:
-> > On Tue, Nov 23, 2010 at 07:27:07PM +0100, Peter Zijlstra wrote:
-> > > On Tue, 2010-11-23 at 19:21 +0100, Sedat Dilek wrote:
-> > > > Due to BIOS l(ocal)apic is not possible:
-> > > > 
-> > > > # dmesg | grep -i apic
-> > > > [    0.000000] Using APIC driver default
-> > > > [    0.000000] Local APIC disabled by BIOS -- you can enable it with "lapic"
-> > > > [    0.000000] APIC: disable apic facility
-> > > > [    0.000000] APIC: switched to apic NOOP
-> > > > [    0.008891] no APIC, boot with the "lapic" boot parameter to force-enable it.
-> > > > [    0.036141] Local APIC not detected. Using dummy APIC emulation. 
-> > > 
-> > > Have you tried booting with "lapic" as the second last msg suggests you
-> > > do?
-> > 
-> >  Peter, Don, might not we need something like the patch below -- ie to check for
-> > apic earlier and do not acquire cpu for PERF cpu bit, and its cpu model, etc
-> > if there is no active apic? And perhaps for nmi-watchdog, we should not try
-> > to creat perf event for same reason and simply report that nmi-watchdog is
-> > disabled (though of course hpet based one should try to continue).
-> > 
-> >  No?
-> > 
+On Sun, 21 Nov 2010 08:35:04 -0500 (EST) Robert P. J. Day wrote:
+
 > 
-> Ah, no.. now I get what you mean.
+> It's clear that a number of basic list routines return simply a
+> Boolean value, so change their return type from "int" to "bool".
 > 
-> We can use the pmu without interrupt with we miss the lapic, that is
-> perf-stat will still work.
+> Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
 > 
 
-Yeah, I forgot about perf-stat
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
- Cyrill
+with allmodconfig on i386 and x86_64.
+
+
+> ---
+> 
+>   Compile-tested with defconfig on x86_64.  Not sure who should
+> be CCed when a patch touches something this basic.  Andrew?
+> 
+> 
+> diff --git a/include/linux/list.h b/include/linux/list.h
+> index 9a5f8a7..1d6ed55 100644
+> --- a/include/linux/list.h
+> +++ b/include/linux/list.h
+> @@ -167,7 +167,7 @@ static inline void list_move_tail(struct list_head *list,
+>   * @list: the entry to test
+>   * @head: the head of the list
+>   */
+> -static inline int list_is_last(const struct list_head *list,
+> +static inline bool list_is_last(const struct list_head *list,
+>  				const struct list_head *head)
+>  {
+>  	return list->next == head;
+> @@ -177,7 +177,7 @@ static inline int list_is_last(const struct list_head *list,
+>   * list_empty - tests whether a list is empty
+>   * @head: the list to test.
+>   */
+> -static inline int list_empty(const struct list_head *head)
+> +static inline bool list_empty(const struct list_head *head)
+>  {
+>  	return head->next == head;
+>  }
+> @@ -195,7 +195,7 @@ static inline int list_empty(const struct list_head *head)
+>   * to the list entry is list_del_init(). Eg. it cannot be used
+>   * if another CPU could re-list_add() it.
+>   */
+> -static inline int list_empty_careful(const struct list_head *head)
+> +static inline bool list_empty_careful(const struct list_head *head)
+>  {
+>  	struct list_head *next = head->next;
+>  	return (next == head) && (next == head->prev);
+> @@ -219,7 +219,7 @@ static inline void list_rotate_left(struct list_head *head)
+>   * list_is_singular - tests whether a list has just one entry.
+>   * @head: the list to test.
+>   */
+> -static inline int list_is_singular(const struct list_head *head)
+> +static inline bool list_is_singular(const struct list_head *head)
+>  {
+>  	return !list_empty(head) && (head->next == head->prev);
+>  }
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
