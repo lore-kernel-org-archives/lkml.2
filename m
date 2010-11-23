@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab0KWDhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 22:37:18 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40780 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0KWDhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 22:37:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tXD6Z+OrWNlh5jxBlTioO3a+J4g7yJRSQ3KRxrZp2p1t14QYlUAqmd6EoArMPRdGBl
-         TZqyW6Ex2xhIhXVzyBFkc0OipwSipZ3wT0YTlDGZXOEks06Z6DIo1chXhfxGOt2vvBeL
-         SFmttxG754b3iOM6o9qk30/aEGz4mZCw9bA6A=
-Subject: Re: [PATCH 2/2] ext3: Add journal error check into ext3_rename()
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101122180501.GE5012@quack.suse.cz>
-References: <1290151716-4041-1-git-send-email-namhyung@gmail.com>
-	 <1290151716-4041-2-git-send-email-namhyung@gmail.com>
-	 <20101122180501.GE5012@quack.suse.cz>
+	id S1751572Ab0KWDkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 22:40:12 -0500
+Received: from mail.perches.com ([173.55.12.10]:1799 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab0KWDkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 22:40:11 -0500
+Subject: [PATCH] scsi: Use vsprint extension %pV, save ~16KB
+From: Joe Perches <joe@perches.com>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 12:37:10 +0900
-Message-ID: <1290483430.1857.43.camel@leonhard>
+Date: Mon, 22 Nov 2010 19:40:09 -0800
+Message-ID: <1290483609.27683.68.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-11-22 (월), 19:05 +0100, Jan Kara:
->   Uhuh, why ext3_journal_revoke()? I expect you want to cancel the changes
-> you possibly did to new_bh. ext3_journal_forget() is for that but even that
-> doesn't necessarily do what you want because it could cancel also changes
-> some unrelated operation did to the buffer. So the only way to really undo
-> the change is to set new_de->inode and new_de->file_type to original
-> values. Also since we already unlinked the inode from the old directory,
-> I'm not sure it's even beneficial to undo linking it to the new one. So I'd
-> just bail out as fast as we can and leave on fsck to handle the mess...
-> 
-> 								Honza
+Make a function out of the scmd_printk macro.
+Use %pV in the scmd_printk function to reduce string duplication.
+Move the function prototype to include/scsi/scsi_cmnd.h
 
-Right. I wanted cancel the changes but I wasn't sure what I did. Thanks
-for the explanation. I'll send v2 soon.
+allyesconfig x86 size
+   text	   data	    bss	    dec	    hex	filename
+5329860	 125779	1279944	6735583	 66c6df	drivers/scsi/built-in.o.new
+5345681	 125779	1281912	6753372	 670c5c	drivers/scsi/built-in.o.old
 
--- 
-Regards,
-Namhyung Kim
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/scsi/sd.c          |   24 ++++++++++++++++++++++++
+ include/scsi/scsi_cmnd.h   |    4 ++++
+ include/scsi/scsi_device.h |    6 ------
+ 3 files changed, 28 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 9564961..5a15e1b 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2711,3 +2711,27 @@ static void sd_print_result(struct scsi_disk *sdkp, int result)
+ 	scsi_show_result(result);
+ }
+ 
++/* scmd_printk utility routine */
++
++int scmd_printk(const char *prefix, const struct scsi_cmnd *scmd,
++		const char *fmt, ...)
++{
++	int rtn;
++	struct va_format vaf;
++	va_list args;
++	
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	if (scmd->request->rq_disk)
++		rtn = sdev_printk(prefix, scmd->device, "[%s] %pV",
++				  scmd->request->rq_disk->disk_name, &vaf);
++	else
++		rtn = sdev_printk(prefix, scmd->device, "%pV", &vaf);
++
++	va_end(args);
++
++	return rtn;
++}
+diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
+index a5e885a..e055815 100644
+--- a/include/scsi/scsi_cmnd.h
++++ b/include/scsi/scsi_cmnd.h
+@@ -302,4 +302,8 @@ static inline void set_driver_byte(struct scsi_cmnd *cmd, char status)
+ 	cmd->result |= status << 24;
+ }
+ 
++__attribute__((format (printf, 3, 4)))
++int scmd_printk(const char *prefix, const struct scsi_cmnd *scmd,
++		const char *fmt, ...);
++
+ #endif /* _SCSI_SCSI_CMND_H */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 85867dc..6f6fb36 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -214,12 +214,6 @@ struct scsi_dh_data {
+ #define sdev_printk(prefix, sdev, fmt, a...)	\
+ 	dev_printk(prefix, &(sdev)->sdev_gendev, fmt, ##a)
+ 
+-#define scmd_printk(prefix, scmd, fmt, a...)				\
+-        (scmd)->request->rq_disk ?					\
+-	sdev_printk(prefix, (scmd)->device, "[%s] " fmt,		\
+-		    (scmd)->request->rq_disk->disk_name, ##a) :		\
+-	sdev_printk(prefix, (scmd)->device, fmt, ##a)
+-
+ enum scsi_target_state {
+ 	STARGET_CREATED = 1,
+ 	STARGET_RUNNING,
 
 
