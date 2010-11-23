@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab0KWPFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 10:05:06 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58859 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab0KWPFE convert rfc822-to-8bit (ORCPT
+	id S1755209Ab0KWPFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 10:05:17 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:55696 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755123Ab0KWPFN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 10:05:04 -0500
-Subject: Re: [tip:sched/core] cpu: Remove incorrect BUG_ON
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101123143910.GA31502@redhat.com>
-References: <tip-51a96c77815e7f139892a6e9c8275a50e9baebdf@git.kernel.org>
-	 <20101123143910.GA31502@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Nov 2010 16:05:04 +0100
-Message-ID: <1290524704.2072.412.camel@laptop>
+	Tue, 23 Nov 2010 10:05:13 -0500
+Date: Tue, 23 Nov 2010 15:03:15 +0000
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, gorcunov@openvz.org,
+        adobriyan@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
+        ian.molton@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] AF_UNIX: find the recipients for multicast messages
+Message-ID: <20101123150315.4e67a139@chocolatine.cbg.collabora.co.uk>
+In-Reply-To: <20101122.110519.39205345.davem@davemloft.net>
+References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
+	<1290450982-17480-4-git-send-email-alban.crequy@collabora.co.uk>
+	<20101122.110519.39205345.davem@davemloft.net>
+Organization: Collabora
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 15:39 +0100, Oleg Nesterov wrote:
-> On 11/23, tip-bot for Peter Zijlstra wrote:
-> >
-> > --- a/kernel/cpu.c
-> > +++ b/kernel/cpu.c
-> > @@ -249,8 +249,11 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
-> >  	 * The migration_call() CPU_DYING callback will have removed all
-> >  	 * runnable tasks from the cpu, there's only the idle task left now
-> >  	 * that the migration thread is done doing the stop_machine thing.
-> > +	 *
-> > +	 * Wait for the stop thread to go away.
-> >  	 */
-> > -	BUG_ON(!idle_cpu(cpu));
-> > +	while (!idle_cpu(cpu))
-> > +		cpu_relax();
+Le Mon, 22 Nov 2010 11:05:19 -0800 (PST),
+David Miller <davem@davemloft.net> a écrit :
+
+> From: Alban Crequy <alban.crequy@collabora.co.uk>
+> Date: Mon, 22 Nov 2010 18:36:17 +0000
 > 
-> Yes... but I still can't understand why should we wait at all.
+> > unix_find_multicast_recipients() builds an array of recipients. It
+> > can either find the peers of a specific multicast address, or find
+> > all the peers of all multicast group the sender is part of.
+> > 
+> > Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
 > 
-> Peter, I am just curious, help ;)
+> You really should use RCU to lock this stuff, this way sends run
+> lockless and have less worries wrt. the memory allocation.  You'll
+> also only take a spinlock in the write paths which change the
+> multicast groups, which ought to be rare.
 
-Ah,. uhm,. you mean, not do anything at all?
+I understand the benefit to use RCU in order to have lockless sends.
 
-Dunno, really, let me try and read the code there.
+But with RCU I will still have worries about the memory allocation:
 
+- I cannot allocate inside a rcu_read_lock()-rcu_read_unlock() block.
+
+- If I iterate locklessly over the multicast group members with 
+  hlist_for_each_entry_rcu(), new members can be added, so the
+  array can be allocated with the wrong size and I have to try again
+  ("goto try_again") when this rare case occurs.
+
+- Another idea would be to avoid completely the allocation by inlining
+  unix_find_multicast_recipients() inside unix_dgram_sendmsg() and
+  delivering the messages to the recipients as long as the list is
+  being iterated locklessly. But I want to provide atomicity of
+  delivery: the message must be delivered with skb_queue_tail() either
+  to all the recipients or to none of them in case of interruption or
+  memory pressure. I don't see how I can achieve that without
+  iterating several times on the list of recipients, hence the
+  allocation and the copy in the array. I also want to guarantee the
+  order of delivery as described in multicast-unix-sockets.txt and for
+  this, I am taking lots of spinlocks anyway. I don't see how to avoid
+  that, but I would be happy to be wrong and have a better solution.
+
+> Although to be honest you should optimize the case of small numbers of
+> recipients, in the same way we optimize small numbers of iovecs on
+> sends.  Have an on-stack array that holds a small number of entries
+> and use that if the set fits, otherwise dynamic allocation.
+
+To give an idea of the number of members in a multicast group for the
+D-Bus use case, I have 90 D-Bus connections on my session bus:
+
+$ dbus-send --print-reply --dest=org.freedesktop.DBus \
+/org/freedesktop/DBus org.freedesktop.DBus.ListNames | grep '":'|wc -l
+90
+
+In common cases, there should be only a few real recipients (1 or 2?)
+after the socket filters eliminate most of them, but
+unix_find_multicast_recipients() will still allocate an array of
+about that size.
 
