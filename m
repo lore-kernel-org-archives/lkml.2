@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab0KWEam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 23:30:42 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:43475 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab0KWEak (ORCPT
+	id S1751855Ab0KWEc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 23:32:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50411 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab0KWEc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 23:30:40 -0500
+	Mon, 22 Nov 2010 23:32:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=TdOcsjn+g+Rj6rscPKSrNPR59t400qrZzUmPf6OUq9JHpB/jBcScoeyTtkq3IC93ez
-         wpcXW7j2B59cUW8Yz5HtPp54JnqW+djuwTrVwvmJcnAj8lcZH9TyyztANVOuP/AVutHr
-         782RNP7xQOmSJBwpq21s3dgdBfLgAogEZU4t8=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ext3: Add journal error check into ext3_rename()
-Date: Tue, 23 Nov 2010 13:30:33 +0900
-Message-Id: <1290486633-4534-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JoMFCLuwE9nAW+ULWkrX4mxz0Q4LPKh0IYLwZKRDTzkBDqxrv6C1fTXqQ8QTDDSGoM
+         xj+NGrCcR0dhPpLyf1WhVPE0miS/FNUazYBfcATbOuW0vzAamOTjcIO3hLb2vZNRAhQb
+         X7hxyXChVqI0vKnqAZNyLQf3fQriPsCJNyXLY=
+Date: Tue, 23 Nov 2010 12:37:10 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts: Fix gfp-translate for recent changes to gfp.h
+Message-ID: <20101123043710.GA5187@cr0.nay.redhat.com>
+References: <20101122120002.GB1890@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101122120002.GB1890@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check return value of ext3_journal_get_write_access() and
-ext3_journal_dirty_metadata().
+On Mon, Nov 22, 2010 at 12:00:02PM +0000, Mel Gorman wrote:
+>The recent changes to gfp.h to satisfy sparse broke
+>scripts/gfp-translate. This patch fixes it up to work with old and new
+>versions of gfp.h .
+>
+>Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+>---
+> scripts/gfp-translate |    7 ++++++-
+> 1 files changed, 6 insertions(+), 1 deletions(-)
+>
+>diff --git a/scripts/gfp-translate b/scripts/gfp-translate
+>index d81b968..128937e 100644
+>--- a/scripts/gfp-translate
+>+++ b/scripts/gfp-translate
+>@@ -63,7 +63,12 @@ fi
+> 
+> # Extract GFP flags from the kernel source
+> TMPFILE=`mktemp -t gfptranslate-XXXXXX` || exit 1
+>-grep "^#define __GFP" $SOURCE/include/linux/gfp.h | sed -e 's/(__force gfp_t)//' | sed -e 's/u)/)/' | grep -v GFP_BITS | sed -e 's/)\//) \//' > $TMPFILE
+>+grep ___GFP $SOURCE/include/linux/gfp.h > /dev/null
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/ext3/namei.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+You might want 'grep -q'. :)
 
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index 672cea1..c8415e7 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -2371,7 +2371,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
- 			goto end_rename;
- 	} else {
- 		BUFFER_TRACE(new_bh, "get write access");
--		ext3_journal_get_write_access(handle, new_bh);
-+		retval = ext3_journal_get_write_access(handle, new_bh);
-+		if (retval)
-+			goto journal_error;
- 		new_de->inode = cpu_to_le32(old_inode->i_ino);
- 		if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
- 					      EXT3_FEATURE_INCOMPAT_FILETYPE))
-@@ -2380,7 +2382,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
- 		new_dir->i_ctime = new_dir->i_mtime = CURRENT_TIME_SEC;
- 		ext3_mark_inode_dirty(handle, new_dir);
- 		BUFFER_TRACE(new_bh, "call ext3_journal_dirty_metadata");
--		ext3_journal_dirty_metadata(handle, new_bh);
-+		retval = ext3_journal_dirty_metadata(handle, new_bh);
-+		if (retval)
-+			goto journal_error;
- 		brelse(new_bh);
- 		new_bh = NULL;
- 	}
-@@ -2429,10 +2433,17 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
- 	ext3_update_dx_flag(old_dir);
- 	if (dir_bh) {
- 		BUFFER_TRACE(dir_bh, "get_write_access");
--		ext3_journal_get_write_access(handle, dir_bh);
-+		retval = ext3_journal_get_write_access(handle, dir_bh);
-+		if (retval)
-+			goto journal_error;
- 		PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
- 		BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
--		ext3_journal_dirty_metadata(handle, dir_bh);
-+		retval = ext3_journal_dirty_metadata(handle, dir_bh);
-+		if (retval) {
-+journal_error:
-+			ext3_std_error(new_dir->i_sb, retval);
-+			goto end_rename;
-+		}
- 		drop_nlink(old_dir);
- 		if (new_inode) {
- 			drop_nlink(new_inode);
--- 
-1.7.0.4
 
+>+if [ $? -eq 0 ]; then
+>+	grep "^#define ___GFP" $SOURCE/include/linux/gfp.h | sed -e 's/u$//' | grep -v GFP_BITS > $TMPFILE
+>+else
+>+	grep "^#define __GFP" $SOURCE/include/linux/gfp.h | sed -e 's/(__force gfp_t)//' | sed -e 's/u)/)/' | grep -v GFP_BITS | sed -e 's/)\//) \//' > $TMPFILE
+>+fi
+> 
+> # Parse the flags
+> IFS="
+
+Other than that, this patch looks fine for me.
+
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks.
