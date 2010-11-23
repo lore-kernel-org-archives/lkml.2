@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab0KWSdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 13:33:31 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:49174 "EHLO b32.net"
+	id S1756251Ab0KWSe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 13:34:28 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:49486 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab0KWSdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 13:33:31 -0500
+	id S1754342Ab0KWSe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 13:34:27 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <anemo@mba.ocn.ne.jp>, <linux-mips@linux-mips.org>,
+Cc: <dediao@cisco.com>, <ddaney@caviumnetworks.com>, <dvomlehn@cisco.com>,
+        <sshtylyov@mvista.com>, <linux-mips@linux-mips.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 RESEND 3/7] MIPS: Move FIXADDR_TOP into spaces.h
-Date: Tue, 23 Nov 2010 10:26:41 -0800
-Message-Id: <a3aec020607ecd552631c7ea9a5fa583@localhost>
+Subject: [PATCH v4 RESEND 4/7] MIPS: HIGHMEM DMA on noncoherent MIPS32 processors
+Date: Tue, 23 Nov 2010 10:26:42 -0800
+Message-Id: <9b2005899868ac5f3e209a15c6261e70@localhost>
 In-Reply-To: <8a8eee995454c8b271cceb440e31699a@localhost>
 References: <8a8eee995454c8b271cceb440e31699a@localhost>
 User-Agent: vim 7.2
@@ -23,133 +24,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory maps and addressing quirks are normally defined in <spaces.h>.
-There are already three targets that need to override FIXADDR_TOP, and
-others exist.  This will be a cleaner approach than adding lots of
-ifdefs in fixmap.h .
+The MIPS DMA coherency functions do not work properly (i.e. kernel oops)
+when HIGHMEM pages are passed in as arguments.  Use kmap_atomic() to
+temporarily map high pages for cache maintenance operations.
 
+Tested on a 2.6.37-rc1 1GB HIGHMEM SMP no-alias system.
+
+Signed-off-by: Dezhong Diao <dediao@cisco.com>
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/mips/include/asm/fixmap.h              |   10 +---------
- arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
- arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
- arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
- arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
- 5 files changed, 56 insertions(+), 9 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
+ arch/mips/mm/dma-default.c |  114 ++++++++++++++++++++++++++------------------
+ 1 files changed, 68 insertions(+), 46 deletions(-)
 
-diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
-index 0b89b83..98bcc98 100644
---- a/arch/mips/include/asm/fixmap.h
-+++ b/arch/mips/include/asm/fixmap.h
-@@ -14,6 +14,7 @@
- #define _ASM_FIXMAP_H
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 4fc1a0f..1e20758 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -15,18 +15,18 @@
+ #include <linux/scatterlist.h>
+ #include <linux/string.h>
+ #include <linux/gfp.h>
++#include <linux/highmem.h>
  
- #include <asm/page.h>
-+#include <spaces.h>
- #ifdef CONFIG_HIGHMEM
- #include <linux/threads.h>
- #include <asm/kmap_types.h>
-@@ -67,15 +68,6 @@ enum fixed_addresses {
-  * the start of the fixmap, and leave one page empty
-  * at the top of mem..
-  */
--#ifdef CONFIG_BCM63XX
--#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
--#else
--#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
--#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
--#else
--#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
--#endif
--#endif
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
+ #include <asm/cache.h>
+ #include <asm/io.h>
  
-diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-new file mode 100644
-index 0000000..61e750f
---- /dev/null
-+++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_BCM63XX_SPACES_H
-+#define _ASM_BCM63XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xff000000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_BCM63XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
-index c9fa4b1..d7a9efd 100644
---- a/arch/mips/include/asm/mach-generic/spaces.h
-+++ b/arch/mips/include/asm/mach-generic/spaces.h
-@@ -82,4 +82,8 @@
- #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
- #endif
+ #include <dma-coherence.h>
  
-+#ifndef FIXADDR_TOP
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfffe0000)
-+#endif
-+
- #endif /* __ASM_MACH_GENERIC_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
-new file mode 100644
-index 0000000..151fe7a
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
-@@ -0,0 +1,17 @@
+-static inline unsigned long dma_addr_to_virt(struct device *dev,
++static inline struct page *dma_addr_to_page(struct device *dev,
+ 	dma_addr_t dma_addr)
+ {
+-	unsigned long addr = plat_dma_addr_to_phys(dev, dma_addr);
+-
+-	return (unsigned long)phys_to_virt(addr);
++	return pfn_to_page(
++		plat_dma_addr_to_phys(dev, dma_addr) >> PAGE_SHIFT);
+ }
+ 
+ /*
+@@ -148,20 +148,20 @@ static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
+ 	free_pages(addr, get_order(size));
+ }
+ 
+-static inline void __dma_sync(unsigned long addr, size_t size,
++static inline void __dma_sync_virtual(void *addr, size_t size,
+ 	enum dma_data_direction direction)
+ {
+ 	switch (direction) {
+ 	case DMA_TO_DEVICE:
+-		dma_cache_wback(addr, size);
++		dma_cache_wback((unsigned long)addr, size);
+ 		break;
+ 
+ 	case DMA_FROM_DEVICE:
+-		dma_cache_inv(addr, size);
++		dma_cache_inv((unsigned long)addr, size);
+ 		break;
+ 
+ 	case DMA_BIDIRECTIONAL:
+-		dma_cache_wback_inv(addr, size);
++		dma_cache_wback_inv((unsigned long)addr, size);
+ 		break;
+ 
+ 	default:
+@@ -169,12 +169,49 @@ static inline void __dma_sync(unsigned long addr, size_t size,
+ 	}
+ }
+ 
 +/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ * A single sg entry may refer to multiple physically contiguous
++ * pages. But we still need to process highmem pages individually.
++ * If highmem is not configured then the bulk of this loop gets
++ * optimized out.
 + */
-+#ifndef _ASM_TX39XX_SPACES_H
-+#define _ASM_TX39XX_SPACES_H
++static inline void __dma_sync(struct page *page,
++	unsigned long offset, size_t size, enum dma_data_direction direction)
++{
++	size_t left = size;
 +
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
++	do {
++		size_t len = left;
 +
-+#include <asm/mach-generic/spaces.h>
++		if (PageHighMem(page)) {
++			void *addr;
 +
-+#endif /* __ASM_TX39XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
-new file mode 100644
-index 0000000..0cb10a6
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX49XX_SPACES_H
-+#define _ASM_TX49XX_SPACES_H
++			if (offset + len > PAGE_SIZE) {
++				if (offset >= PAGE_SIZE) {
++					page += offset >> PAGE_SHIFT;
++					offset &= ~PAGE_MASK;
++				}
++				len = PAGE_SIZE - offset;
++			}
 +
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
++			addr = kmap_atomic(page);
++			__dma_sync_virtual(addr + offset, len, direction);
++			kunmap_atomic(addr);
++		} else
++			__dma_sync_virtual(page_address(page) + offset,
++					   size, direction);
++		offset = 0;
++		page++;
++		left -= len;
++	} while (left);
++}
 +
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX49XX_SPACES_H */
+ static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+ 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+ {
+ 	if (cpu_is_noncoherent_r10000(dev))
+-		__dma_sync(dma_addr_to_virt(dev, dma_addr), size,
+-		           direction);
++		__dma_sync(dma_addr_to_page(dev, dma_addr),
++			   dma_addr & ~PAGE_MASK, size, direction);
+ 
+ 	plat_unmap_dma_mem(dev, dma_addr, size, direction);
+ }
+@@ -185,13 +222,11 @@ static int mips_dma_map_sg(struct device *dev, struct scatterlist *sg,
+ 	int i;
+ 
+ 	for (i = 0; i < nents; i++, sg++) {
+-		unsigned long addr;
+-
+-		addr = (unsigned long) sg_virt(sg);
+-		if (!plat_device_is_coherent(dev) && addr)
+-			__dma_sync(addr, sg->length, direction);
+-		sg->dma_address = plat_map_dma_mem(dev,
+-				                   (void *)addr, sg->length);
++		if (!plat_device_is_coherent(dev))
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
++		sg->dma_address = plat_map_dma_mem_page(dev, sg_page(sg)) +
++				  sg->offset;
+ 	}
+ 
+ 	return nents;
+@@ -201,30 +236,23 @@ static dma_addr_t mips_dma_map_page(struct device *dev, struct page *page,
+ 	unsigned long offset, size_t size, enum dma_data_direction direction,
+ 	struct dma_attrs *attrs)
+ {
+-	unsigned long addr;
+-
+-	addr = (unsigned long) page_address(page) + offset;
+-
+ 	if (!plat_device_is_coherent(dev))
+-		__dma_sync(addr, size, direction);
++		__dma_sync(page, offset, size, direction);
+ 
+-	return plat_map_dma_mem(dev, (void *)addr, size);
++	return plat_map_dma_mem_page(dev, page) + offset;
+ }
+ 
+ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+ 	int nhwentries, enum dma_data_direction direction,
+ 	struct dma_attrs *attrs)
+ {
+-	unsigned long addr;
+ 	int i;
+ 
+ 	for (i = 0; i < nhwentries; i++, sg++) {
+ 		if (!plat_device_is_coherent(dev) &&
+-		    direction != DMA_TO_DEVICE) {
+-			addr = (unsigned long) sg_virt(sg);
+-			if (addr)
+-				__dma_sync(addr, sg->length, direction);
+-		}
++		    direction != DMA_TO_DEVICE)
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
+ 		plat_unmap_dma_mem(dev, sg->dma_address, sg->length, direction);
+ 	}
+ }
+@@ -232,24 +260,18 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+ static void mips_dma_sync_single_for_cpu(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+ {
+-	if (cpu_is_noncoherent_r10000(dev)) {
+-		unsigned long addr;
+-
+-		addr = dma_addr_to_virt(dev, dma_handle);
+-		__dma_sync(addr, size, direction);
+-	}
++	if (cpu_is_noncoherent_r10000(dev))
++		__dma_sync(dma_addr_to_page(dev, dma_handle),
++			   dma_handle & ~PAGE_MASK, size, direction);
+ }
+ 
+ static void mips_dma_sync_single_for_device(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+ {
+ 	plat_extra_sync_for_device(dev);
+-	if (!plat_device_is_coherent(dev)) {
+-		unsigned long addr;
+-
+-		addr = dma_addr_to_virt(dev, dma_handle);
+-		__dma_sync(addr, size, direction);
+-	}
++	if (!plat_device_is_coherent(dev))
++		__dma_sync(dma_addr_to_page(dev, dma_handle),
++			   dma_handle & ~PAGE_MASK, size, direction);
+ }
+ 
+ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+@@ -260,8 +282,8 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+ 		if (cpu_is_noncoherent_r10000(dev))
+-			__dma_sync((unsigned long)page_address(sg_page(sg)),
+-			           sg->length, direction);
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
+ 	}
+ }
+ 
+@@ -273,8 +295,8 @@ static void mips_dma_sync_sg_for_device(struct device *dev,
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+ 		if (!plat_device_is_coherent(dev))
+-			__dma_sync((unsigned long)page_address(sg_page(sg)),
+-			           sg->length, direction);
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
+ 	}
+ }
+ 
+@@ -295,7 +317,7 @@ void mips_dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ 
+ 	plat_extra_sync_for_device(dev);
+ 	if (!plat_device_is_coherent(dev))
+-		__dma_sync((unsigned long)vaddr, size, direction);
++		__dma_sync_virtual(vaddr, size, direction);
+ }
+ 
+ static struct dma_map_ops mips_default_dma_map_ops = {
 -- 
 1.7.0.4
 
