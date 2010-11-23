@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab0KWAaJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 19:30:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:14950 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab0KWAaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 19:30:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,239,1288594800"; 
-   d="scan'208";a="629355137"
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-From: Huang Ying <ying.huang@intel.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <4CEB0037.3000303@teksavvy.com>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-	 <AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
-	 <AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
-	 <AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
-	 <AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
-	 <AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>
-	 <AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com>
-	 <AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
-	 <AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
-	 <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
-	 <4CEB0037.3000303@teksavvy.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 08:29:58 +0800
-Message-ID: <1290472198.2903.156.camel@yhuang-dev>
+	id S932596Ab0KWAdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 19:33:20 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33540 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932359Ab0KWAdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 19:33:19 -0500
+Date: Mon, 22 Nov 2010 16:32:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+Message-Id: <20101122163234.5470e33e.akpm@linux-foundation.org>
+In-Reply-To: <1290471649.2704.24.camel@edumazet-laptop>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+	<20101112120834.33062900.akpm@linux-foundation.org>
+	<8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+	<20101114092533.GB5323@albatros>
+	<20101114180643.593d19ac.akpm@linux-foundation.org>
+	<1289848341.2607.125.camel@edumazet-laptop>
+	<4CE268C8.5010203@panasas.com>
+	<20101122155043.fbbb74f4.akpm@linux-foundation.org>
+	<1290471649.2704.24.camel@edumazet-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 07:43 +0800, Mark Lord wrote:
-> On 10-11-20 08:06 PM, huang ying wrote:
-> >
-> > I have no objection to report hardware errors in system logs too. So
-> > these people can get the information too. I just want to add another
-> > tool oriented interface too. So that some other users (like cluster
-> > administrator) can get their work done better too.
+On Tue, 23 Nov 2010 01:20:48 +0100
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> Le lundi 22 novembre 2010 __ 15:50 -0800, Andrew Morton a __crit :
 > 
-> So, use the standard interface for the tool:  syslog.
-
-Although it may be possible to extract some information from syslog and
-parse it in a fault tolerant way, we can only use that human oriented
-interface for a tool? That sounds like hack.
-
-> Have this obscure new tool simply parse the log messages,
-> and the send/save the data whatever way you like.
+> > Well.  We certainly assume in many places that
+> > 
+> > 	struct foo {
+> > 		int a;
+> > 		int b;
+> > 	} f = {
+> > 		.a = 1,
+> > 	};
+> > 
+> > will initialise b to zero.  But I doubt if much code at all assumes
+> > that this initialisation patterm will reliably zero out *holes* in the
+> > struct.
+> > 
 > 
-> No new specialized kernel API required.
+> We did such assertions in the past, we were wrong.
+> 
+> Check commit 1c40be12f7d8ca1d387510d39787b12e512a7ce8 for an example
+> (net sched: fix some kernel memory leaks)
+> 
+> I guess we must make a full audit of all C99 initializers or structures
+> copied to userspace, giving a name to hidden holes, to force gcc to init
+> them to 0.
+> 
+> # cat try.c
+> struct s {
+> 	char c;
+> 	long l;
+> 	};
+> 
+> void bar(void *v)
+> {
+> 	unsigned long *p = v;
+> 
+> 	printf("%lx %lx\n", p[0], p[1]);
+> }
+> 
+> int main()
+> {
+> 	struct s s1 = {
+> 		.c = 1,
+> 		.l = 2,
+> 	};
+> 
+> 	bar(&s1);
+> 	return 0;
+> }
+> 
+> # gcc -O2 -o try try.c
+> # ./try
+> 8049401 2
 
-Adding a new device file will be seen as a new kernel API?
+OK, thanks.  That rather settles it then.  memset() it is.
 
-Best Regards,
-Huang Ying
+> Strangely, if we remove ".l = 2," line, gcc emits code to clear al the
+> fields
+
+Maybe a glitch, maybe a small optimisation?  That's the sort of thing
+which will change over gcc versions too..
 
 
