@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab0KXOAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:00:54 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41770 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752640Ab0KXOAw (ORCPT
+	id S1752931Ab0KXOBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:01:34 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37248 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab0KXOBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:00:52 -0500
-Date: Wed, 24 Nov 2010 14:00:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [question] NR_IRQS in genirq
-Message-ID: <20101124140048.GG24970@rakim.wolfsonmicro.main>
-References: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com>
- <alpine.LFD.2.00.1011241416360.2900@localhost6.localdomain6>
- <AANLkTik5N0d9wcaiS538UWQ83E_HhXoWC8nMxVY__1+k@mail.gmail.com>
- <20101124135048.GC13507@sirena.org.uk>
- <alpine.LFD.2.00.1011241453330.2900@localhost6.localdomain6>
+	Wed, 24 Nov 2010 09:01:33 -0500
+Message-ID: <4CED1AB8.80305@retis.net.pl>
+Date: Wed, 24 Nov 2010 15:01:28 +0100
+From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100703 Lightning/1.0b2pre Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011241453330.2900@localhost6.localdomain6>
-X-Cookie: Made with real ingredients.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com,
+        jbarnes@virtuousgeek.org
+Subject: [regression] 2.6.37-rc1: Freeze while booting on HP nx6325
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 02:54:38PM +0100, Thomas Gleixner wrote:
-> On Wed, 24 Nov 2010, Mark Brown wrote:
-> > On Wed, Nov 24, 2010 at 09:46:06PM +0800, Haojian Zhuang wrote:
+Hi, I have a problem with 2.6.37-rc1. My HP nx6325 freezes during boot.
+It happens after printing lines:
 
-> > Most ARM platforms have come up with some Kconfig gunk to allow boards
-> > to extend this for off-SoC GPIOs.  It'd be really nice to get rid of
-> > NR_IRQS and stop having to worry about this at all :(
+[    0.298457] atiixp 0000:00:14.1: not 100% native mode: will probe
+irqs later
+[    0.298515]     ide0: BM-DMA at 0x7040-0x7047
+[    0.298573] atiixp 0000:00:14.1: simplex device: DMA disabled
+[    0.298625] ide1: DMA disabled
+<Freeze>
 
-> I mean with sparse_irq you can set NR_IRQS insanely high w/o
-> increasing memory consumption. That's the whole point.
+This didn't happen in 2.6.36. I bisected between 2.6.36 and 2.6.37-rc1:
 
-Yeah, I was just pointing out common practice on ARM (sparse IRQ isn't
-widely enough deployed there :/ ).
+1af3c2e45e7a641e774bbb84fa428f2f0bf2d9c9 is the first bad commit
+commit 1af3c2e45e7a641e774bbb84fa428f2f0bf2d9c9
+Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Date:   Tue Oct 26 15:41:54 2010 -0600
 
-Would it be worth having sparse_irq change the default NR_IRQS to be
-something suitably large - there doesn't seem any point in having
-platforms using it each pick their own particular definition of insanely
-high?  I'll take a look and cook up a patch unless I can spot anything
-silly about that by myself.
+    x86: allocate space within a region top-down
+
+    Request that allocate_resource() use available space from high addresses
+    first, rather than the default of using low addresses first.
+
+    The most common place this makes a difference is when we move or assign
+    new PCI device resources.  Low addresses are generally scarce, so it's
+    better to use high addresses when possible.  This follows Windows
+practice
+    for PCI allocation.
+
+    Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c42
+    Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+Reverting above patch from latest linus-tree resolves problem.
+
+My lspci:
+
+00:00.0 Host bridge: ATI Technologies Inc RS480 Host Bridge (rev 10)
+00:01.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
+00:04.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
+00:05.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
+00:06.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
+00:12.0 IDE interface: ATI Technologies Inc IXP SB400 Serial ATA
+Controller (rev 80)
+00:13.0 USB Controller: ATI Technologies Inc IXP SB400 USB Host
+Controller (rev 80)
+00:13.1 USB Controller: ATI Technologies Inc IXP SB400 USB Host
+Controller (rev 80)
+00:13.2 USB Controller: ATI Technologies Inc IXP SB400 USB2 Host
+Controller (rev 80)
+00:14.0 SMBus: ATI Technologies Inc IXP SB400 SMBus Controller (rev 82)
+00:14.1 IDE interface: ATI Technologies Inc IXP SB400 IDE Controller
+(rev 80)
+00:14.2 Audio device: ATI Technologies Inc IXP SB4x0 High Definition
+Audio Controller (rev 01)
+00:14.3 ISA bridge: ATI Technologies Inc IXP SB400 PCI-ISA Bridge (rev 80)
+00:14.4 PCI bridge: ATI Technologies Inc IXP SB400 PCI-PCI Bridge (rev 80)
+00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
+HyperTransport Technology Configuration
+00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
+Address Map
+00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
+DRAM Controller
+
+00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
+Miscellaneous Control
+
+01:05.0 VGA compatible controller: ATI Technologies Inc RS482 [Radeon
+Xpress 200M]
+
+02:01.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5788
+Gigabit Ethernet (rev 03)
+
+02:04.0 CardBus bridge: Texas Instruments PCIxx12 Cardbus Controller
+
+
+02:04.1 FireWire (IEEE 1394): Texas Instruments PCIxx12 OHCI Compliant
+IEEE 1394 Host Controller
+
+02:04.2 Mass storage controller: Texas Instruments 5-in-1 Multimedia
+Card Reader (SD/MMC/MS/MS PRO/xD)
+
+02:04.3 SD Host controller: Texas Instruments PCIxx12 SDA Standard
+Compliant SD Host Controller
+
+03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8169
+Gigabit Ethernet (rev 10)
+
+30:00.0 Network controller: Broadcom Corporation BCM4312 802.11a/b/g
+(rev 01)
+
+Please CC to me, as I'm not subscribed to the list.
+
+-- 
+Greetings
+Grzegorz Chwesewicz
+mailto:grzegorz.chwesewicz@retis.net.pl
