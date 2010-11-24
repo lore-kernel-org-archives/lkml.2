@@ -1,56 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab0KXPpK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 10:45:10 -0500
-Received: from www.tglx.de ([62.245.132.106]:50112 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab0KXPpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 10:45:08 -0500
-Date: Wed, 24 Nov 2010 16:45:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asm-generic: Raise default NR_IRQS when using sparse
- IRQs
-In-Reply-To: <1290613156-861-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Message-ID: <alpine.LFD.2.00.1011241642540.2900@localhost6.localdomain6>
-References: <1290613156-861-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753486Ab0KXPpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 10:45:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58464 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845Ab0KXPpN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 10:45:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hWMEC19S6r6a4FN1F6vIg9MLVcBMGmVF0SdcLdbAF+/LF3AeXpVDrtnAqSM0skNmMQ
+         4Hczz7rDUfeR3WHqmnmGlczTykYd3PgdWc3vk0W1PPbtwZTc/wPLooKSDSTx5oVxX2Ss
+         VA0HW6u2Ul/J6m/ay/k24I/N+H1gvaiT/keWE=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101124144240.GC2165@linux.vnet.ibm.com>
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+	<1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
+	<20101124005820.GH8056@linux.vnet.ibm.com>
+	<AANLkTikhGErGQrFB-QNiYjWt2PqRGdF+m3kOkt2tmnER@mail.gmail.com>
+	<AANLkTinFhEf1XVSRYuL+JL=JETLZ6cz3GYCR8CL3ex8X@mail.gmail.com>
+	<20101124062212.GA2165@linux.vnet.ibm.com>
+	<AANLkTimjZnAfeuAXU7oXPRG5=qJ2d7aZVoozSm88kXMT@mail.gmail.com>
+	<20101124144240.GC2165@linux.vnet.ibm.com>
+Date: Wed, 24 Nov 2010 16:45:11 +0100
+Message-ID: <AANLkTi=EA09DACMNLUpTU8qH5wFPdXvOMQzJeejXX170@mail.gmail.com>
+Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states after
+ extended grace periods
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010, Mark Brown wrote:
+2010/11/24 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Wed, Nov 24, 2010 at 02:48:46PM +0100, Frederic Weisbecker wrote:
+>> 2010/11/24 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+>> > On Wed, Nov 24, 2010 at 03:33:21AM +0100, Frederic Weisbecker wrote:
+>> >> 2010/11/24 Frederic Weisbecker <fweisbec@gmail.com>:
+>> >> > On Tue, Nov 23, 2010 at 04:58:20PM -0800, Paul E. McKenney wrote:
+>> >> >> On Wed, Nov 24, 2010 at 01:31:12AM +0100, Frederic Weisbecker wrote:
+>> >> > The softirq fires, we call rcu_process_gp_end() which will
+>> >> > update rdp->completed into the global state:
+>> >> > (rsp->completed = rnp->pgnum = rnp->completed = rsp->pgnum = 4294967002).
+>> >> >
+>> >> > But rsp->pgnum is still 2 offsets backwards.
+>> >
+>> > This one is hard for me to believe -- rsp->gpnum drives the rest of
+>> > the ->gpnum fields, right?
+>>
+>> Oops, I meant rdp->pgnum is still 2 offsets backward, for CPU 1.
+>>
+>> Sorry.
+>
+> CPU 1?  Or CPU 0?
 
-> Rather than have each platform using sparse IRQs pick a suitably large
-> NR_IRQS for use with sparse IRQs make the default exceptionally high
-> when they are enabled.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  include/asm-generic/irq.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/asm-generic/irq.h b/include/asm-generic/irq.h
-> index b90ec0b..a76bea2 100644
-> --- a/include/asm-generic/irq.h
-> +++ b/include/asm-generic/irq.h
-> @@ -4,11 +4,15 @@
->  /*
->   * NR_IRQS is the upper bound of how many interrupts can be handled
->   * in the platform. It is used to size the static irq_map array,
-> - * so don't make it too big.
-> + * so don't make it too big unless we're using sparse IRQs.
->   */
->  #ifndef NR_IRQS
-> +#ifdef CONFIG_SPARSE_IRQ
-> +#define NR_IRQS 0x7fffffff
 
-Resulting in a 256 MB bitmap. I guess you did not try to boot that on
-some random ARM board :)
+CPU 1, the one that was idle :-D
 
-Thanks,
+So CPU 1 rdp did catch up with node and state for its completed field.
+But not its pgnum yet.
 
-	tglx
+
+>> >> > Now we call rcu_check_quiescent_state() -> check_for_new_grace_period()
+>> >> > -> note_new_gpnum() and then we end up a requested quiescent state while
+>> >> > every grace periods are completed.
+>> >>
+>> >> Sorry I should have described that in the changelogs but my ideas
+>> >> weren't as clear as they
+>> >> are now (at least I feel they are, doesn't mean they actually are ;)
+>> >> Chasing these RCU bugs for too much hours has toasted my brain..
+>> >
+>> > Welcome to my world!!!  But keep in mind that an extra timer tick
+>> > or two is much preferable to a potential hang!  And you only get
+>> > the extra timer tick if there was some other reason that the
+>> > CPU came out of nohz mode, correct?
+>>
+>> Yeah, either because of a timer, hrtimer, or a reschedule.
+>> But you still generate a spurious softirq in this scheme.
+>
+> Eliminating spurious softirqs is a good thing, but let's review the
+> overall priorities (probably missing a few, but this should give you
+> an overall view):
+>
+> 1.      No too-short grace periods!!!
+
+
+Oh, I did not know that. Is it to avoid too much
+short series of callbacks execution or?
+
+
+> 2.      No grace-period hangs!!
+>
+> 3.      Minimize read-side overhead!
+>
+> 4.      Maintain decent update-side performance and scalability!
+>
+> 5.      Avoid inflicting real-time latency problems!
+>
+> 6.      Avoid waking up sleeping CPUs!
+>
+> 7.      Let CPUs that can do so go to sleep immediately (as opposed to
+>        waiting a few milliseconds).
+>
+> 8.      Avoid spurious softirqs.
+
+
+Avoiding spurious softirqs bring us back to 7, even though it's not a matter
+of ms but rather us.
+
+
+>
+> 9.      Super-optimization of update and grace-period paths.  (I normally
+>        just say "no" -- it has to be an impressive optimization for me
+>        to be willing to risk messing up #1 through #7.)
+>
+> Nevertheless, simple changes that avoid spurious softirqs are good things.
+
+
+Ok, then the original patch of this discussion seems to fit then.
+Although I need to respin the changelog.
+
+
+>> Two in fact: one because of the rnp->completed != rsp->completed condition
+>> in rcu_pending(), another one because when we update the pgnum, we
+>> always start chasing QS, regardless of the last GP beeing completed or not.
+>
+> OK -- is this an example of #8 above, or is it really #7?  I am absolutely
+> not worried about a pair of back-to-back softirqs, and I don't believe
+> that you should be, either.  ;-)
+
+
+This seems to be 8 and 7.
+
+A pair of back-to-back softirqs is no huge deal, but still time
+consuming, spurious, etc...
+if we can easily spott they are useless, why not get rid of them. At
+least we can easily
+and reliably avoid the second one from note_new_gpnum().
+
+
+
+>> > Which is why checking the rnp fields makes more sense to me, actually.
+>> > Acquiring rnp->lock is much less painful than pinning down the rsp state.
+>>
+>> Right.
+>>
+>> Another thing, we  already have the (rnp->gpnum) != rdp->gpnu check in
+>> rcu_pending(),
+>> why also checking (rnp->completed) != rdp->completed) ?
+>
+> Because if (rnp->completed != rdp->completed), we might need to process
+> some callbacks, either advancing them or invoking them.
+
+
+The rdp->nxttail in rcu is still an obscur part for me, so I just believe you :)
+
+
+> By the way, have you introduced a config variable for your HPC dynticks
+> changes?
+
+I will, because I'll have to touch some fast path and I would prefer to do
+that compile-conditional.
+
+But for now I don't care and experiment drafts :)
+
+I'm quite close to something that seems to work well BTW, those series of
+softirq were my latest problem as it made rcu_pending() returning 1 for
+a good while and I coudn't stop the tick. After the 2nd patch it should be
+fine now, I hope.
+
+
+>  Longer term, __rcu_pending() for your HPC dynticks case
+> could check for the current CPU having any callbacks before the call to
+> check_cpu_stalls(), as in rcu_needs_cpu_quick_check().  That way, the
+> CPUs with callbacks would drive the RCU core state machine.
+
+
+Ah, because currently every CPUs calling rcu_pending() can be pulled into
+handling the state machine because of this check, right?
+
+        /* Has an RCU GP gone long enough to send resched IPIs &c? */
+	if (rcu_gp_in_progress(rsp) &&
+	    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs), jiffies)) {
+		rdp->n_rp_need_fqs++;
+		return 1;
+	
+So the goal would be to let this job to CPUs that have callbacks, right?
+
+
+> We don't
+> necessarily want this in the common case because it can increase
+> grace-period latency
+
+
+Because it makes less CPUs to handle the grace period state machine?
+
+
+> but it could be very useful in the HPC-dyntick
+> case -- eliminate any number of sources of spurious ticks with low
+> risk to the high-priority RCU properties.  There are some corresponding
+> changes required on the force_quiescent_state() path, but these are
+> reasonably straightforward.
+
+Ok, I may have a try at it (if I completely understand what you suggest :-)
+But first I'll try to get that dyntick mode with the current state, which seems
+to be enough for the basic desired functionality.
