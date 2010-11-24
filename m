@@ -1,110 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0KXBKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 20:10:54 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64718 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735Ab0KXBKw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 20:10:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=bKn3tqfRQooKbvAnRH/KxH1z0yYHTVS+RJ4vkE3Qic76UOpQLO6VFR9lPYUajrONZO
-         +nfTOMzjaYhmOmzPCZTW5gGUx/uxdm4IjjAH7Xzq/24UYR/YK00gCrp2BVeiAWFPIUJR
-         bg/x2m1g9tD0bR8gxQaDHPzajKzWZdI3Hxv3E=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinJZyDcORj5DBGNr6Ss8penFyLxw4YDBFaTNLSK@mail.gmail.com>
-References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
-	<20101122075554.GA27300@core.coreip.homeip.net>
-	<AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
-	<20101123222458.GB20283@core.coreip.homeip.net>
-	<AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
-	<20101124003832.GA27368@core.coreip.homeip.net>
-	<AANLkTinJZyDcORj5DBGNr6Ss8penFyLxw4YDBFaTNLSK@mail.gmail.com>
-Date: Tue, 23 Nov 2010 17:10:50 -0800
-Message-ID: <AANLkTi=_swc-_J+hO-UWYh1sbQj=Lr2gFW-rK88fE6Z6@mail.gmail.com>
-Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
-From: Ping Cheng <pinglinux@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756332Ab0KXBRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 20:17:31 -0500
+Received: from mga11.intel.com ([192.55.52.93]:27535 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754833Ab0KXBR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 20:17:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,245,1288594800"; 
+   d="scan'208";a="860781793"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC][PATCH 1/3] Add CPER PCIe error section structure and constants definition
+Date: Wed, 24 Nov 2010 09:16:52 +0800
+Message-Id: <1290561414-13313-2-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1290561414-13313-1-git-send-email-ying.huang@intel.com>
+References: <1290561414-13313-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 4:51 PM, Ping Cheng <pinglinux@gmail.com> wrote:
-> On Tue, Nov 23, 2010 at 4:38 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> On Tue, Nov 23, 2010 at 04:12:13PM -0800, Ping Cheng wrote:
->>> On Tue, Nov 23, 2010 at 2:24 PM, Dmitry Torokhov
->>> <dmitry.torokhov@gmail.com> wrote:
->>> >
->>> >> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
->>> >> > currently touching the surface of the device. Buttons are expected to be
->>> >> > always present and can change their state regardless of what tool is
->>> >> > being used at the moment. I.e. The full hardware state (between
->>> >> > EV_SYN/SYN_REPORT) could be, for example,
->>> >> >
->>> >> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
->>> >> > BTN_2) or
->>> >> >
->>> >> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
->>> >> >
->>> >> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
->>> >> > BTN_TOOL_PEN or any other BTN_TOOL_*.
->>> >>
->>> >> You are right. The tablet buttons can go with one of those other
->>> >> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
->>> >> tablet buttons.
->>> >>
->>> >> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
->>> >> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
->>> >> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
->>> >> (refer to wacom_wac.c line 622 to 665).
->>> >>
->>> >> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
->>> >> it, the two LEFT and RIGHT buttons will have a hard time to tell the
->>> >> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
->>> >> worst case could be the LEFT/RIGHT sent later overwrites the earlier
->>> >> ones.
->>> >>
->>> >> We could do some guesswork in the user land to figure out which
->>> >> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
->>> >> happen. But, it would be much cheaper and more reliable if we can tell
->>> >> the user land where those LEFT and RIGHT come from. This is the whole
->>> >> purpose of the kernel driver, isn't it?
->>> >
->>> > What would userspace want to figure what physical button was pressed?
->>> > Input events convey _actions_, i.e. BTN_LEFT means that user pressed
->>> > primary button on the device. It does not matter if it was pressed on
->>> > tablet or the mouse/lens; the response should be the same.
->>>
->>> You're right, if the user wants a LEFT click. In a lot of cases, they
->>> want to translate it into something else. LEFT is only a default value
->>> that we give them if they do nothing.
->>>
->>> > If you expect different response, depending on which physical button is
->>> > pressed, then they should emit different BTN_* events. If you are
->>> > concerned that some users might want to have the same actions while
->>> > others want different actions - then please implement key remapping in
->>> > the driver.
->>>
->>> That is exactly what I am trying to convince you. Without being able
->>> to tell one button event from the other, even just logically, how can
->>> I and other clients remap them?
->>
->> EVIOCSKEYCODE. You just need to wire wacom driver to support this ioctl.
+On some machine, PCIe error is reported via APEI (ACPI Platform Error
+Interface).  The error data is passed from firmware to Linux via CPER
+PCIe error section structure.
 
-Hold on. I was too concentrated on the buttons then. There are touch
-rings (reported as ABS_WHEEL) on the tablet. How do we pass the raw
-ring data to the user land and tell if that ABS_WHEEL is from the ring
-or from a stylus' wheel? Should we add an ABS_RING then?
+This patch adds CPER PCIe error section structure and constants
+definition.
 
-Also, if there is no tool on the tablet, which BTN_TOOL_* should we
-use to report those buttons and strips/rings? They are not PEN, not
-MOUSE, and not TOUCH. They are in fact an independent tool, like it or
-not.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ include/linux/cper.h |   74 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
 
-Ping
+--- a/include/linux/cper.h
++++ b/include/linux/cper.h
+@@ -201,6 +201,67 @@
+ 	UUID_LE(0x036F84E1, 0x7F37, 0x428c, 0xA7, 0x9E, 0x57, 0x5F,	\
+ 		0xDF, 0xAA, 0x84, 0xEC)
+ 
++#define CPER_PROC_VALID_TYPE			0x0001
++#define CPER_PROC_VALID_ISA			0x0002
++#define CPER_PROC_VALID_ERROR_TYPE		0x0004
++#define CPER_PROC_VALID_OPERATION		0x0008
++#define CPER_PROC_VALID_FLAGS			0x0010
++#define CPER_PROC_VALID_LEVEL			0x0020
++#define CPER_PROC_VALID_VERSION			0x0040
++#define CPER_PROC_VALID_BRAND_INFO		0x0080
++#define CPER_PROC_VALID_ID			0x0100
++#define CPER_PROC_VALID_TARGET_ADDRESS		0x0200
++#define CPER_PROC_VALID_REQUESTOR_ID		0x0400
++#define CPER_PROC_VALID_RESPONDER_ID		0x0800
++#define CPER_PROC_VALID_IP			0x1000
++
++#define CPER_MEM_VALID_ERROR_STATUS		0x0001
++#define CPER_MEM_VALID_PHYSICAL_ADDRESS		0x0002
++#define CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK	0x0004
++#define CPER_MEM_VALID_NODE			0x0008
++#define CPER_MEM_VALID_CARD			0x0010
++#define CPER_MEM_VALID_MODULE			0x0020
++#define CPER_MEM_VALID_BANK			0x0040
++#define CPER_MEM_VALID_DEVICE			0x0080
++#define CPER_MEM_VALID_ROW			0x0100
++#define CPER_MEM_VALID_COLUMN			0x0200
++#define CPER_MEM_VALID_BIT_POSITION		0x0400
++#define CPER_MEM_VALID_REQUESTOR_ID		0x0800
++#define CPER_MEM_VALID_RESPONDER_ID		0x1000
++#define CPER_MEM_VALID_TARGET_ID		0x2000
++#define CPER_MEM_VALID_ERROR_TYPE		0x4000
++
++#define CPER_PCIE_VALID_PORT_TYPE		0x0001
++#define CPER_PCIE_VALID_VERSION			0x0002
++#define CPER_PCIE_VALID_COMMAND_STATUS		0x0004
++#define CPER_PCIE_VALID_DEVICE_ID		0x0008
++#define CPER_PCIE_VALID_SERIAL_NUMBER		0x0010
++#define CPER_PCIE_VALID_BRIDGE_CONTROL_STATUS	0x0020
++#define CPER_PCIE_VALID_CAPABILITY		0x0040
++#define CPER_PCIE_VALID_AER_INFO		0x0080
++
++#define CPER_PCIE_VERSION_MINOR			0
++#define CPER_PCIE_VERSION_MAJOR			1
++
++#define CPER_PCIE_COMMAND_REG			0
++#define CPER_PCIE_STATUS_REG			1
++
++#define CPER_PCIE_DEVID_VENDOR_ID		0
++#define CPER_PCIE_DEVID_DEVICE_ID		2
++#define CPER_PCIE_DEVID_CLASS_CODE		4
++#define CPER_PCIE_DEVID_FUNC			7
++#define CPER_PCIE_DEVID_DEV			8
++#define CPER_PCIE_DEVID_SEGMENT			9
++#define CPER_PCIE_DEVID_BUS_PRIMARY		11
++#define CPER_PCIE_DEVID_BUS_SECONDARY		12
++#define CPER_PCIE_DEVID_SLOT			13
++
++#define CPER_PCIE_SERIAL_NUMBER_LOW		0
++#define CPER_PCIE_SERIAL_NUMBER_HIGH		1
++
++#define CPER_PCIE_BRIDGE_SECONDARY_STATUS_REG	0
++#define CPER_PCIE_BRIDGE_CONTROL_REG		1
++
+ /*
+  * All tables and structs must be byte-packed to match CPER
+  * specification, since the tables are provided by the system BIOS
+@@ -306,6 +367,19 @@ struct cper_sec_mem_err {
+ 	__u8	error_type;
+ };
+ 
++struct cper_sec_pcie {
++	__u64	validation_bits;
++	__u32	port_type;
++	__u8	version[4];
++	__u16	command_status[2];
++	__u32	reserved;
++	__u8	device_id[16];
++	__u32	serial_number[2];
++	__u16	bridge_control_status[2];
++	__u8	capability[60];
++	__u8	aer_info[96];
++};
++
+ /* Reset to default packing */
+ #pragma pack()
+ 
