@@ -1,93 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab0KXSDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:03:08 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37087 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab0KXSDE convert rfc822-to-8bit (ORCPT
+	id S1755638Ab0KXSCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 13:02:37 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40859 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754447Ab0KXSCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:03:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <4CED48CE.5060300@caviumnetworks.com>
-References: <1290607413.12457.44.camel@concordia> <fa44e045-9600-4c46-939a-af246afab4f6@VA3EHSMHS019.ehs.local>
- <4CED48CE.5060300@caviumnetworks.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 24 Nov 2010 11:02:41 -0700
-X-Google-Sender-Auth: UrwBy-eprr41B2l28Wms4mgGJew
-Message-ID: <AANLkTim+cmxtkw28aeW6ZrspTaiad+w_FHKTys7_NEfR@mail.gmail.com>
-Subject: Re: Mega rename of device tree routines from of_*() to dt_*()
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>,
-        michael@ellerman.id.au, LKML <linux-kernel@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Nov 2010 13:02:03 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 7/7] mfd: Add initial WM8958 support
+Date: Wed, 24 Nov 2010 18:01:45 +0000
+Message-Id: <1290621705-6926-7-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101124180055.GO24970@rakim.wolfsonmicro.main>
+References: <20101124180055.GO24970@rakim.wolfsonmicro.main>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 10:18 AM, David Daney <ddaney@caviumnetworks.com> wrote:
-> On 11/24/2010 09:02 AM, Stephen Neuendorffer wrote:
->>
->>
->>> -----Original Message-----
->>> From: linuxppc-dev-bounces+stephen=neuendorffer.name@lists.ozlabs.org
->>> [mailto:linuxppc-dev-
->>> bounces+stephen=neuendorffer.name@lists.ozlabs.org] On Behalf Of Michael
->>> Ellerman
->>> Sent: Wednesday, November 24, 2010 6:04 AM
->>> To: LKML
->>> Cc: linux-mips; microblaze-uclinux@itee.uq.edu.au;
->>> devicetree-discuss@lists.ozlabs.org; linuxppc-dev
->>> list; sparclinux@vger.kernel.org
->>> Subject: RFC: Mega rename of device tree routines from of_*() to dt_*()
->>>
->>> Hi all,
->>>
->>> There were some murmurings on IRC last week about renaming the of_*()
->>> routines. I was procrastinating at the time and said I'd have a look at
->>> it, so here I am.
->>>
->>> The thinking is that on many platforms that use the of_() routines
->>> OpenFirmware is not involved at all, this is true even on many powerpc
->>> platforms. Also for folks who don't know the OpenFirmware connection it
->>> reads as "of", as in "a can of worms".
->>>
->>> Personally I'm a bit ambivalent about it, the OF name is a bit wrong so
->>> it would be nice to get rid of, but it's a lot of churn.
->>>
->>> So I'm hoping people with either say "YES this is a great idea", or "NO
->>> this is stupid".
->>
->> Personally, I think it's a great idea, if only because I stared long and
->> hard
->> at the code once upon a time trying to figure out what is really
->> OF-related
->> and what isn't.  It's somewhat clearer now that drivers/of has been
->> factored
->> out (although, shouldn't it be drivers/dt???)
+The WM8958 is a derivative of the WM8994 which is register compatible
+with the addition of some extra features, mostly in the CODEC side.
+The major change visible at the MFD level is that rather than a single
+DBVDD supply we now have three separate DBVDDs so we must request and
+enable a different set of supplies.
 
-Yes, the directory name should change, as should the CONFIG_OF* defines.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
 
->>
->> That said, it *is* alot of code churn.  If it's going to be done, I think
->> it should be
->> done in concert with fixing a bunch of the function names which don't
->> really follow any
->> sane naming convention, so that the backporting discontinuity only happens
->> once.
->>
->
-> Oh, you mean things like:
->
-> of_{,un}register_platform_driver vs. platform_driver_{,un}register
->
-> That one is particularly annoying to me.
+As the bulk of the work for this device is in the CODEC driver it would
+be great if we could merge it via the ASoC tree.
 
-Ignore that one.  of_{,un}platform_driver is deprecated and users will
-all be converted to platform_drivers.
+ drivers/mfd/wm8994-core.c       |   93 +++++++++++++++++++++++++++++++--------
+ include/linux/mfd/wm8994/core.h |    8 +++
+ 2 files changed, 82 insertions(+), 19 deletions(-)
 
-g.
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index b3b2aaf..8d221ba 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -218,6 +218,18 @@ static const char *wm8994_main_supplies[] = {
+ 	"SPKVDD2",
+ };
+ 
++static const char *wm8958_main_supplies[] = {
++	"DBVDD1",
++	"DBVDD2",
++	"DBVDD3",
++	"DCVDD",
++	"AVDD1",
++	"AVDD2",
++	"CPVDD",
++	"SPKVDD1",
++	"SPKVDD2",
++};
++
+ #ifdef CONFIG_PM
+ static int wm8994_device_suspend(struct device *dev)
+ {
+@@ -239,7 +251,7 @@ static int wm8994_device_suspend(struct device *dev)
+ 	if (ret < 0)
+ 		dev_err(dev, "Failed to save LDO registers: %d\n", ret);
+ 
+-	ret = regulator_bulk_disable(ARRAY_SIZE(wm8994_main_supplies),
++	ret = regulator_bulk_disable(wm8994->num_supplies,
+ 				     wm8994->supplies);
+ 	if (ret != 0) {
+ 		dev_err(dev, "Failed to disable supplies: %d\n", ret);
+@@ -254,7 +266,7 @@ static int wm8994_device_resume(struct device *dev)
+ 	struct wm8994 *wm8994 = dev_get_drvdata(dev);
+ 	int ret;
+ 
+-	ret = regulator_bulk_enable(ARRAY_SIZE(wm8994_main_supplies),
++	ret = regulator_bulk_enable(wm8994->num_supplies,
+ 				    wm8994->supplies);
+ 	if (ret != 0) {
+ 		dev_err(dev, "Failed to enable supplies: %d\n", ret);
+@@ -305,9 +317,10 @@ static int wm8994_ldo_in_use(struct wm8994_pdata *pdata, int ldo)
+ /*
+  * Instantiate the generic non-control parts of the device.
+  */
+-static int wm8994_device_init(struct wm8994 *wm8994, unsigned long id, int irq)
++static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ {
+ 	struct wm8994_pdata *pdata = wm8994->dev->platform_data;
++	const char *devname;
+ 	int ret, i;
+ 
+ 	mutex_init(&wm8994->io_lock);
+@@ -323,25 +336,48 @@ static int wm8994_device_init(struct wm8994 *wm8994, unsigned long id, int irq)
+ 		goto err;
+ 	}
+ 
++	switch (wm8994->type) {
++	case WM8994:
++		wm8994->num_supplies = ARRAY_SIZE(wm8994_main_supplies);
++		break;
++	case WM8958:
++		wm8994->num_supplies = ARRAY_SIZE(wm8958_main_supplies);
++		break;
++	default:
++		BUG();
++		return -EINVAL;
++	}
++
+ 	wm8994->supplies = kzalloc(sizeof(struct regulator_bulk_data) *
+-				   ARRAY_SIZE(wm8994_main_supplies),
++				   wm8994->num_supplies,
+ 				   GFP_KERNEL);
+ 	if (!wm8994->supplies) {
+ 		ret = -ENOMEM;
+ 		goto err;
+ 	}
+ 
+-	for (i = 0; i < ARRAY_SIZE(wm8994_main_supplies); i++)
+-		wm8994->supplies[i].supply = wm8994_main_supplies[i];
+-
+-	ret = regulator_bulk_get(wm8994->dev, ARRAY_SIZE(wm8994_main_supplies),
++	switch (wm8994->type) {
++	case WM8994:
++		for (i = 0; i < ARRAY_SIZE(wm8994_main_supplies); i++)
++			wm8994->supplies[i].supply = wm8994_main_supplies[i];
++		break;
++	case WM8958:
++		for (i = 0; i < ARRAY_SIZE(wm8958_main_supplies); i++)
++			wm8994->supplies[i].supply = wm8958_main_supplies[i];
++		break;
++	default:
++		BUG();
++		return -EINVAL;
++	}
++		
++	ret = regulator_bulk_get(wm8994->dev, wm8994->num_supplies,
+ 				 wm8994->supplies);
+ 	if (ret != 0) {
+ 		dev_err(wm8994->dev, "Failed to get supplies: %d\n", ret);
+ 		goto err_supplies;
+ 	}
+ 
+-	ret = regulator_bulk_enable(ARRAY_SIZE(wm8994_main_supplies),
++	ret = regulator_bulk_enable(wm8994->num_supplies,
+ 				    wm8994->supplies);
+ 	if (ret != 0) {
+ 		dev_err(wm8994->dev, "Failed to enable supplies: %d\n", ret);
+@@ -353,7 +389,22 @@ static int wm8994_device_init(struct wm8994 *wm8994, unsigned long id, int irq)
+ 		dev_err(wm8994->dev, "Failed to read ID register\n");
+ 		goto err_enable;
+ 	}
+-	if (ret != 0x8994) {
++	switch (ret) {
++	case 0x8994:
++		devname = "WM8994";
++		if (wm8994->type != WM8994)
++			dev_warn(wm8994->dev, "Device registered as type %d\n",
++				 wm8994->type);
++		wm8994->type = WM8994;
++		break;
++	case 0x8958:
++		devname = "WM8958";
++		if (wm8994->type != WM8958)
++			dev_warn(wm8994->dev, "Device registered as type %d\n",
++				 wm8994->type);
++		wm8994->type = WM8958;
++		break;
++	default:
+ 		dev_err(wm8994->dev, "Device is not a WM8994, ID is %x\n",
+ 			ret);
+ 		ret = -EINVAL;
+@@ -370,14 +421,16 @@ static int wm8994_device_init(struct wm8994 *wm8994, unsigned long id, int irq)
+ 	switch (ret) {
+ 	case 0:
+ 	case 1:
+-		dev_warn(wm8994->dev, "revision %c not fully supported\n",
+-			'A' + ret);
++		if (wm8994->type == WM8994)
++			dev_warn(wm8994->dev,
++				 "revision %c not fully supported\n",
++				 'A' + ret);
+ 		break;
+ 	default:
+-		dev_info(wm8994->dev, "revision %c\n", 'A' + ret);
+ 		break;
+ 	}
+ 
++	dev_info(wm8994->dev, "%s revision %c\n", devname, 'A' + ret);
+ 
+ 	if (pdata) {
+ 		wm8994->irq_base = pdata->irq_base;
+@@ -423,10 +476,10 @@ static int wm8994_device_init(struct wm8994 *wm8994, unsigned long id, int irq)
+ err_irq:
+ 	wm8994_irq_exit(wm8994);
+ err_enable:
+-	regulator_bulk_disable(ARRAY_SIZE(wm8994_main_supplies),
++	regulator_bulk_disable(wm8994->num_supplies,
+ 			       wm8994->supplies);
+ err_get:
+-	regulator_bulk_free(ARRAY_SIZE(wm8994_main_supplies), wm8994->supplies);
++	regulator_bulk_free(wm8994->num_supplies, wm8994->supplies);
+ err_supplies:
+ 	kfree(wm8994->supplies);
+ err:
+@@ -439,9 +492,9 @@ static void wm8994_device_exit(struct wm8994 *wm8994)
+ {
+ 	mfd_remove_devices(wm8994->dev);
+ 	wm8994_irq_exit(wm8994);
+-	regulator_bulk_disable(ARRAY_SIZE(wm8994_main_supplies),
++	regulator_bulk_disable(wm8994->num_supplies,
+ 			       wm8994->supplies);
+-	regulator_bulk_free(ARRAY_SIZE(wm8994_main_supplies), wm8994->supplies);
++	regulator_bulk_free(wm8994->num_supplies, wm8994->supplies);
+ 	kfree(wm8994->supplies);
+ 	kfree(wm8994);
+ }
+@@ -506,8 +559,9 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 	wm8994->read_dev = wm8994_i2c_read_device;
+ 	wm8994->write_dev = wm8994_i2c_write_device;
+ 	wm8994->irq = i2c->irq;
++	wm8994->type = id->driver_data;
+ 
+-	return wm8994_device_init(wm8994, id->driver_data, i2c->irq);
++	return wm8994_device_init(wm8994, i2c->irq);
+ }
+ 
+ static int wm8994_i2c_remove(struct i2c_client *i2c)
+@@ -535,7 +589,8 @@ static int wm8994_i2c_resume(struct i2c_client *i2c)
+ #endif
+ 
+ static const struct i2c_device_id wm8994_i2c_id[] = {
+-	{ "wm8994", 0 },
++	{ "wm8994", WM8994 },
++	{ "wm8958", WM8958 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, wm8994_i2c_id);
+diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
+index de79bae..3fd3684 100644
+--- a/include/linux/mfd/wm8994/core.h
++++ b/include/linux/mfd/wm8994/core.h
+@@ -17,6 +17,11 @@
+ 
+ #include <linux/interrupt.h>
+ 
++enum wm8994_type {
++	WM8994 = 0,
++	WM8958 = 1,
++};
++
+ struct regulator_dev;
+ struct regulator_bulk_data;
+ 
+@@ -48,6 +53,8 @@ struct wm8994 {
+ 	struct mutex io_lock;
+ 	struct mutex irq_lock;
+ 
++	enum wm8994_type type;
++
+ 	struct device *dev;
+ 	int (*read_dev)(struct wm8994 *wm8994, unsigned short reg,
+ 			int bytes, void *dest);
+@@ -68,6 +75,7 @@ struct wm8994 {
+ 	u16 gpio_regs[WM8994_NUM_GPIO_REGS];
+ 
+ 	struct regulator_dev *dbvdd;
++	int num_supplies;
+ 	struct regulator_bulk_data *supplies;
+ };
+ 
+-- 
+1.7.1
+
