@@ -1,573 +1,549 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab0KXQYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:24:55 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:55539 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab0KXQYw (ORCPT
+	id S1755444Ab0KXQZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:25:24 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63448 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab0KXQZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:24:52 -0500
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: [PATCHv5 06/17] pps: access pps device by direct pointer
-Date: Wed, 24 Nov 2010 19:15:44 +0300
-Message-Id: <a17c3d890e34d2d0faf24a5b7ea6205cd7a86aa4.1290599844.git.lasaine@lvk.cs.msu.su>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
-References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+	Wed, 24 Nov 2010 11:25:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qi6yxeH3iGvshhNkeXgUq0Ge0N8dgBf6VUk0dvvTaCErX3cz/x5QQXTv9pwbB44xs0
+         0NRxrYaLhBpppw3TjLv/B+PIvxz0zTuR1zb6wKl471d+XTFiWsjBH4UJv9isyebWVxMN
+         1ClM7CTAwm1nVUm8YhDpHOKJAqEjjuhu7+CHk=
+Date: Wed, 24 Nov 2010 19:25:12 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: mkl0301@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] USB: cns3xxx: Add EHCI and OHCI bus glue for
+ cns3xxx SOCs
+Message-ID: <20101124162512.GB10890@oksana.dev.rtsoft.ru>
+References: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
+ <1290443565-20766-4-git-send-email-mkl0301@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1290443565-20766-4-git-send-email-mkl0301@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using device index as a pointer needs some unnecessary work to be done
-every time the pointer is needed (in irq handler for example).
-Using a direct pointer is much more easy (and safe as well).
+On Tue, Nov 23, 2010 at 12:32:45AM +0800, mkl0301@gmail.com wrote:
+> From: Mac Lin <mkl0301@gmail.com>
+> 
+> The CNS3XXX SOC has include USB EHCI and OHCI compatible controllers. This
+> patch adds the necessary glue logic to allow ehci-hcd and ohci-hcd drivers to
+> work on CNS3XXX
+> 
+> The EHCI and OHCI controllers share a common clock control and reset bit,
+> therefore additional check for the timming of enabling and disabling is
+> required. The USB bit of PLL Power Down Control is also shared by OTG, 24MHz
+> UART clock, Crypto clock, PCIe reference clock, and Clock Scale Generator.
+> Therefore we only ensure it is enabled, while not disabling it.
+> 
+> Signed-off-by: Mac Lin <mkl0301@gmail.com>
 
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
----
- drivers/pps/clients/pps-ktimer.c |   30 ++++-----
- drivers/pps/clients/pps-ldisc.c  |   36 ++++++-----
- drivers/pps/kapi.c               |  124 +++++++++-----------------------------
- drivers/pps/pps.c                |   22 ++-----
- include/linux/pps_kernel.h       |   23 +++----
- 5 files changed, 75 insertions(+), 160 deletions(-)
+Thanks for the patch!
 
-diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
-index e1bdd8b..966ead1 100644
---- a/drivers/pps/clients/pps-ktimer.c
-+++ b/drivers/pps/clients/pps-ktimer.c
-@@ -31,7 +31,7 @@
-  * Global variables
-  */
- 
--static int source;
-+static struct pps_device *pps;
- static struct timer_list ktimer;
- 
- /*
-@@ -47,7 +47,7 @@ static void pps_ktimer_event(unsigned long ptr)
- 
- 	pr_info("PPS event at %lu\n", jiffies);
- 
--	pps_event(source, &ts, PPS_CAPTUREASSERT, NULL);
-+	pps_event(pps, &ts, PPS_CAPTUREASSERT, NULL);
- 
- 	mod_timer(&ktimer, jiffies + HZ);
- }
-@@ -56,12 +56,11 @@ static void pps_ktimer_event(unsigned long ptr)
-  * The echo function
-  */
- 
--static void pps_ktimer_echo(int source, int event, void *data)
-+static void pps_ktimer_echo(struct pps_device *pps, int event, void *data)
- {
--	pr_info("echo %s %s for source %d\n",
-+	dev_info(pps->dev, "echo %s %s\n",
- 		event & PPS_CAPTUREASSERT ? "assert" : "",
--		event & PPS_CAPTURECLEAR ? "clear" : "",
--		source);
-+		event & PPS_CAPTURECLEAR ? "clear" : "");
- }
- 
- /*
-@@ -84,30 +83,27 @@ static struct pps_source_info pps_ktimer_info = {
- 
- static void __exit pps_ktimer_exit(void)
- {
--	del_timer_sync(&ktimer);
--	pps_unregister_source(source);
-+	dev_info(pps->dev, "ktimer PPS source unregistered\n");
- 
--	pr_info("ktimer PPS source unregistered\n");
-+	del_timer_sync(&ktimer);
-+	pps_unregister_source(pps);
- }
- 
- static int __init pps_ktimer_init(void)
- {
--	int ret;
--
--	ret = pps_register_source(&pps_ktimer_info,
-+	pps = pps_register_source(&pps_ktimer_info,
- 				PPS_CAPTUREASSERT | PPS_OFFSETASSERT);
--	if (ret < 0) {
-+	if (pps == NULL) {
- 		printk(KERN_ERR "cannot register ktimer source\n");
--		return ret;
-+		return -ENOMEM;
- 	}
--	source = ret;
- 
- 	setup_timer(&ktimer, pps_ktimer_event, 0);
- 	mod_timer(&ktimer, jiffies + HZ);
- 
--	pr_info("ktimer PPS source registered at %d\n", source);
-+	dev_info(pps->dev, "ktimer PPS source registered\n");
- 
--	return  0;
-+	return 0;
- }
- 
- module_init(pps_ktimer_init);
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 20fc9f7..f0ba65e 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -29,7 +29,7 @@
- static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
- 				struct pps_event_time *ts)
- {
--	int id = (long)tty->disc_data;
-+	struct pps_device *pps = (struct pps_device *)tty->disc_data;
- 	struct pps_event_time __ts;
- 
- 	/* First of all we get the time stamp... */
-@@ -39,12 +39,14 @@ static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
- 	if (!ts)	/* No. Do it ourself! */
- 		ts = &__ts;
- 
-+	BUG_ON(pps == NULL);
-+
- 	/* Now do the PPS event report */
--	pps_event(id, ts, status ? PPS_CAPTUREASSERT : PPS_CAPTURECLEAR,
--			NULL);
-+	pps_event(pps, ts, status ? PPS_CAPTUREASSERT :
-+			PPS_CAPTURECLEAR, NULL);
- 
--	pr_debug("PPS %s at %lu on source #%d\n",
--			status ? "assert" : "clear", jiffies, id);
-+	dev_dbg(pps->dev, "PPS %s at %lu\n",
-+			status ? "assert" : "clear", jiffies);
- }
- 
- static int (*alias_n_tty_open)(struct tty_struct *tty);
-@@ -54,7 +56,7 @@ static int pps_tty_open(struct tty_struct *tty)
- 	struct pps_source_info info;
- 	struct tty_driver *drv = tty->driver;
- 	int index = tty->index + drv->name_base;
--	int ret;
-+	struct pps_device *pps;
- 
- 	info.owner = THIS_MODULE;
- 	info.dev = NULL;
-@@ -64,20 +66,19 @@ static int pps_tty_open(struct tty_struct *tty)
- 			PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
- 			PPS_CANWAIT | PPS_TSFMT_TSPEC;
- 
--	ret = pps_register_source(&info, PPS_CAPTUREBOTH | \
-+	pps = pps_register_source(&info, PPS_CAPTUREBOTH | \
- 				PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
--	if (ret < 0) {
-+	if (pps == NULL) {
- 		pr_err("cannot register PPS source \"%s\"\n", info.path);
--		return ret;
-+		return -ENOMEM;
- 	}
--	tty->disc_data = (void *)(long)ret;
-+	tty->disc_data = pps;
- 
- 	/* Should open N_TTY ldisc too */
--	ret = alias_n_tty_open(tty);
--	if (ret < 0)
--		pps_unregister_source((long)tty->disc_data);
-+	if (alias_n_tty_open(tty) < 0)
-+		pps_unregister_source(pps);
- 
--	pr_info("PPS source #%d \"%s\" added\n", ret, info.path);
-+	dev_info(pps->dev, "source \"%s\" added\n", info.path);
- 
- 	return 0;
- }
-@@ -86,12 +87,13 @@ static void (*alias_n_tty_close)(struct tty_struct *tty);
- 
- static void pps_tty_close(struct tty_struct *tty)
- {
--	int id = (long)tty->disc_data;
-+	struct pps_device *pps = (struct pps_device *)tty->disc_data;
- 
--	pps_unregister_source(id);
- 	alias_n_tty_close(tty);
- 
--	pr_info("PPS source #%d removed\n", id);
-+	tty->disc_data = NULL;
-+	dev_info(pps->dev, "removed\n");
-+	pps_unregister_source(pps);
- }
- 
- static struct tty_ldisc_ops pps_ldisc_ops;
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index b431d83..98d4012 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -32,11 +32,11 @@
- #include <linux/slab.h>
- 
- /*
-- * Global variables
-+ * Local variables
-  */
- 
--DEFINE_SPINLOCK(pps_idr_lock);
--DEFINE_IDR(pps_idr);
-+static DEFINE_SPINLOCK(pps_idr_lock);
-+static DEFINE_IDR(pps_idr);
- 
- /*
-  * Local functions
-@@ -60,60 +60,6 @@ static void pps_add_offset(struct pps_ktime *ts, struct pps_ktime *offset)
-  * Exported functions
-  */
- 
--/* pps_get_source - find a PPS source
-- * @source: the PPS source ID.
-- *
-- * This function is used to find an already registered PPS source into the
-- * system.
-- *
-- * The function returns NULL if found nothing, otherwise it returns a pointer
-- * to the PPS source data struct (the refcounter is incremented by 1).
-- */
--
--struct pps_device *pps_get_source(int source)
--{
--	struct pps_device *pps;
--	unsigned long flags;
--
--	spin_lock_irqsave(&pps_idr_lock, flags);
--
--	pps = idr_find(&pps_idr, source);
--	if (pps != NULL)
--		atomic_inc(&pps->usage);
--
--	spin_unlock_irqrestore(&pps_idr_lock, flags);
--
--	return pps;
--}
--
--/* pps_put_source - free the PPS source data
-- * @pps: a pointer to the PPS source.
-- *
-- * This function is used to free a PPS data struct if its refcount is 0.
-- */
--
--void pps_put_source(struct pps_device *pps)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&pps_idr_lock, flags);
--	BUG_ON(atomic_read(&pps->usage) == 0);
--
--	if (!atomic_dec_and_test(&pps->usage)) {
--		pps = NULL;
--		goto exit;
--	}
--
--	/* No more reference to the PPS source. We can safely remove the
--	 * PPS data struct.
--	 */
--	idr_remove(&pps_idr, pps->id);
--
--exit:
--	spin_unlock_irqrestore(&pps_idr_lock, flags);
--	kfree(pps);
--}
--
- /* pps_register_source - add a PPS source in the system
-  * @info: the PPS info struct
-  * @default_params: the default PPS parameters of the new source
-@@ -122,10 +68,11 @@ exit:
-  * source is described by info's fields and it will have, as default PPS
-  * parameters, the ones specified into default_params.
-  *
-- * The function returns, in case of success, the PPS source ID.
-+ * The function returns, in case of success, the PPS device. Otherwise NULL.
-  */
- 
--int pps_register_source(struct pps_source_info *info, int default_params)
-+struct pps_device *pps_register_source(struct pps_source_info *info,
-+		int default_params)
- {
- 	struct pps_device *pps;
- 	int id;
-@@ -168,7 +115,6 @@ int pps_register_source(struct pps_source_info *info, int default_params)
- 
- 	init_waitqueue_head(&pps->queue);
- 	spin_lock_init(&pps->lock);
--	atomic_set(&pps->usage, 1);
- 
- 	/* Get new ID for the new PPS source */
- 	if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0) {
-@@ -211,7 +157,7 @@ int pps_register_source(struct pps_source_info *info, int default_params)
- 
- 	pr_info("new PPS source %s at ID %d\n", info->name, id);
- 
--	return id;
-+	return pps;
- 
- free_idr:
- 	spin_lock_irq(&pps_idr_lock);
-@@ -224,38 +170,33 @@ kfree_pps:
- pps_register_source_exit:
- 	printk(KERN_ERR "pps: %s: unable to register source\n", info->name);
- 
--	return err;
-+	return NULL;
- }
- EXPORT_SYMBOL(pps_register_source);
- 
- /* pps_unregister_source - remove a PPS source from the system
-- * @source: the PPS source ID
-+ * @pps: the PPS source
-  *
-  * This function is used to remove a previously registered PPS source from
-  * the system.
-  */
- 
--void pps_unregister_source(int source)
-+void pps_unregister_source(struct pps_device *pps)
- {
--	struct pps_device *pps;
-+	unsigned int id = pps->id;
- 
--	spin_lock_irq(&pps_idr_lock);
--	pps = idr_find(&pps_idr, source);
-+	pps_unregister_cdev(pps);
- 
--	if (!pps) {
--		BUG();
--		spin_unlock_irq(&pps_idr_lock);
--		return;
--	}
-+	spin_lock_irq(&pps_idr_lock);
-+	idr_remove(&pps_idr, pps->id);
- 	spin_unlock_irq(&pps_idr_lock);
- 
--	pps_unregister_cdev(pps);
--	pps_put_source(pps);
-+	kfree(pps);
- }
- EXPORT_SYMBOL(pps_unregister_source);
- 
- /* pps_event - register a PPS event into the system
-- * @source: the PPS source ID
-+ * @pps: the PPS device
-  * @ts: the event timestamp
-  * @event: the event type
-  * @data: userdef pointer
-@@ -263,30 +204,24 @@ EXPORT_SYMBOL(pps_unregister_source);
-  * This function is used by each PPS client in order to register a new
-  * PPS event into the system (it's usually called inside an IRQ handler).
-  *
-- * If an echo function is associated with the PPS source it will be called
-+ * If an echo function is associated with the PPS device it will be called
-  * as:
-- *	pps->info.echo(source, event, data);
-+ *	pps->info.echo(pps, event, data);
-  */
--
--void pps_event(int source, struct pps_event_time *ts, int event, void *data)
-+void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
-+		void *data)
- {
--	struct pps_device *pps;
- 	unsigned long flags;
- 	int captured = 0;
- 	struct pps_ktime ts_real;
- 
- 	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
--		printk(KERN_ERR "pps: unknown event (%x) for source %d\n",
--			event, source);
-+		dev_err(pps->dev, "unknown event (%x)\n", event);
- 		return;
- 	}
- 
--	pps = pps_get_source(source);
--	if (!pps)
--		return;
--
--	pr_debug("PPS event on source %d at %ld.%09ld\n",
--			pps->id, ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
-+	dev_dbg(pps->dev, "PPS event at %ld.%09ld\n",
-+			ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
- 
- 	timespec_to_pps_ktime(&ts_real, ts->ts_real);
- 
-@@ -294,7 +229,7 @@ void pps_event(int source, struct pps_event_time *ts, int event, void *data)
- 
- 	/* Must call the echo function? */
- 	if ((pps->params.mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)))
--		pps->info.echo(source, event, data);
-+		pps->info.echo(pps, event, data);
- 
- 	/* Check the event */
- 	pps->current_mode = pps->params.mode;
-@@ -308,8 +243,8 @@ void pps_event(int source, struct pps_event_time *ts, int event, void *data)
- 		/* Save the time stamp */
- 		pps->assert_tu = ts_real;
- 		pps->assert_sequence++;
--		pr_debug("capture assert seq #%u for source %d\n",
--			pps->assert_sequence, source);
-+		dev_dbg(pps->dev, "capture assert seq #%u\n",
-+			pps->assert_sequence);
- 
- 		captured = ~0;
- 	}
-@@ -323,8 +258,8 @@ void pps_event(int source, struct pps_event_time *ts, int event, void *data)
- 		/* Save the time stamp */
- 		pps->clear_tu = ts_real;
- 		pps->clear_sequence++;
--		pr_debug("capture clear seq #%u for source %d\n",
--			pps->clear_sequence, source);
-+		dev_dbg(pps->dev, "capture clear seq #%u\n",
-+			pps->clear_sequence);
- 
- 		captured = ~0;
- 	}
-@@ -338,8 +273,5 @@ void pps_event(int source, struct pps_event_time *ts, int event, void *data)
- 	}
- 
- 	spin_unlock_irqrestore(&pps->lock, flags);
--
--	/* Now we can release the PPS source for (possible) deregistration */
--	pps_put_source(pps);
- }
- EXPORT_SYMBOL(pps_event);
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index dc7e66c..1922f27 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -204,12 +204,6 @@ static int pps_cdev_open(struct inode *inode, struct file *file)
- {
- 	struct pps_device *pps = container_of(inode->i_cdev,
- 						struct pps_device, cdev);
--	int found;
--
--	found = pps_get_source(pps->id) != 0;
--	if (!found)
--		return -ENODEV;
--
- 	file->private_data = pps;
- 
- 	return 0;
-@@ -217,11 +211,6 @@ static int pps_cdev_open(struct inode *inode, struct file *file)
- 
- static int pps_cdev_release(struct inode *inode, struct file *file)
- {
--	struct pps_device *pps = file->private_data;
--
--	/* Free the PPS source and wake up (possible) deregistration */
--	pps_put_source(pps);
--
- 	return 0;
- }
- 
-@@ -242,22 +231,23 @@ static const struct file_operations pps_cdev_fops = {
- int pps_register_cdev(struct pps_device *pps)
- {
- 	int err;
-+	dev_t devt;
-+
-+	devt = MKDEV(MAJOR(pps_devt), pps->id);
- 
--	pps->devno = MKDEV(MAJOR(pps_devt), pps->id);
- 	cdev_init(&pps->cdev, &pps_cdev_fops);
- 	pps->cdev.owner = pps->info.owner;
- 
--	err = cdev_add(&pps->cdev, pps->devno, 1);
-+	err = cdev_add(&pps->cdev, devt, 1);
- 	if (err) {
- 		printk(KERN_ERR "pps: %s: failed to add char device %d:%d\n",
- 				pps->info.name, MAJOR(pps_devt), pps->id);
- 		return err;
- 	}
--	pps->dev = device_create(pps_class, pps->info.dev, pps->devno, NULL,
-+	pps->dev = device_create(pps_class, pps->info.dev, devt, pps,
- 							"pps%d", pps->id);
- 	if (IS_ERR(pps->dev))
- 		goto del_cdev;
--	dev_set_drvdata(pps->dev, pps);
- 
- 	pr_debug("source %s got cdev (%d:%d)\n", pps->info.name,
- 			MAJOR(pps_devt), pps->id);
-@@ -272,7 +262,7 @@ del_cdev:
- 
- void pps_unregister_cdev(struct pps_device *pps)
- {
--	device_destroy(pps_class, pps->devno);
-+	device_destroy(pps_class, pps->dev->devt);
- 	cdev_del(&pps->cdev);
- }
- 
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index 32aa676..1aedf50 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -31,13 +31,16 @@
-  * Global defines
-  */
- 
-+struct pps_device;
-+
- /* The specific PPS source info */
- struct pps_source_info {
- 	char name[PPS_MAX_NAME_LEN];		/* simbolic name */
- 	char path[PPS_MAX_NAME_LEN];		/* path of connected device */
- 	int mode;				/* PPS's allowed mode */
- 
--	void (*echo)(int source, int event, void *data); /* PPS echo function */
-+	void (*echo)(struct pps_device *pps,
-+			int event, void *data);	/* PPS echo function */
- 
- 	struct module *owner;
- 	struct device *dev;
-@@ -65,35 +68,27 @@ struct pps_device {
- 	unsigned int id;			/* PPS source unique ID */
- 	struct cdev cdev;
- 	struct device *dev;
--	int devno;
- 	struct fasync_struct *async_queue;	/* fasync method */
- 	spinlock_t lock;
--
--	atomic_t usage;				/* usage count */
- };
- 
- /*
-  * Global variables
-  */
- 
--extern spinlock_t pps_idr_lock;
--extern struct idr pps_idr;
--
- extern struct device_attribute pps_attrs[];
- 
- /*
-  * Exported functions
-  */
- 
--struct pps_device *pps_get_source(int source);
--extern void pps_put_source(struct pps_device *pps);
--extern int pps_register_source(struct pps_source_info *info,
--				int default_params);
--extern void pps_unregister_source(int source);
-+extern struct pps_device *pps_register_source(
-+		struct pps_source_info *info, int default_params);
-+extern void pps_unregister_source(struct pps_device *pps);
- extern int pps_register_cdev(struct pps_device *pps);
- extern void pps_unregister_cdev(struct pps_device *pps);
--extern void pps_event(int source, struct pps_event_time *ts, int event,
--		void *data);
-+extern void pps_event(struct pps_device *pps,
-+		struct pps_event_time *ts, int event, void *data);
- 
- static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
- 		struct timespec ts)
+A few (mostly cosmetic) comments down below.
+
+> ---
+>  drivers/usb/Kconfig             |    2 +
+>  drivers/usb/host/Kconfig        |   15 ++++
+>  drivers/usb/host/ehci-cns3xxx.c |  176 +++++++++++++++++++++++++++++++++++++++
+>  drivers/usb/host/ehci-hcd.c     |    5 +
+>  drivers/usb/host/ohci-cns3xxx.c |  171 +++++++++++++++++++++++++++++++++++++
+>  drivers/usb/host/ohci-hcd.c     |    5 +
+>  6 files changed, 374 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/usb/host/ehci-cns3xxx.c
+>  create mode 100644 drivers/usb/host/ohci-cns3xxx.c
+> 
+> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+> index 67eb377..5a7c8f1 100644
+> --- a/drivers/usb/Kconfig
+> +++ b/drivers/usb/Kconfig
+> @@ -41,6 +41,7 @@ config USB_ARCH_HAS_OHCI
+>  	default y if MFD_TC6393XB
+>  	default y if ARCH_W90X900
+>  	default y if ARCH_DAVINCI_DA8XX
+> +	default y if ARCH_CNS3XXX
+>  	# PPC:
+>  	default y if STB03xxx
+>  	default y if PPC_MPC52xx
+> @@ -66,6 +67,7 @@ config USB_ARCH_HAS_EHCI
+>  	default y if ARCH_AT91SAM9G45
+>  	default y if ARCH_MXC
+>  	default y if ARCH_OMAP3
+> +	default y if ARCH_CNS3XXX
+>  	default PCI
+>  
+>  # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 6f4f8e6..f8970d1 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -147,6 +147,14 @@ config USB_W90X900_EHCI
+>  	---help---
+>  		Enables support for the W90X900 USB controller
+>  
+> +config USB_CNS3XXX_EHCI
+> +	bool "Cavium CNS3XXX EHCI Module"
+> +	depends on USB_EHCI_HCD && ARCH_CNS3XXX
+> +	---help---
+> +	  Enable support for the CNS3XXX SOC's on-chip EHCI controller.
+> +	  It is needed for high-speed (480Mbit/sec) USB 2.0 device
+> +	  support.
+> +
+>  config USB_OXU210HP_HCD
+>  	tristate "OXU210HP HCD support"
+>  	depends on USB
+> @@ -286,6 +294,13 @@ config USB_OHCI_HCD_SSB
+>  
+>  	  If unsure, say N.
+>  
+> +config USB_CNS3XXX_OHCI
+> +	bool "Cavium CNS3XXX OHCI Module"
+> +	depends on USB_OHCI_HCD && ARCH_CNS3XXX
+> +	---help---
+> +	  Enable support for the CNS3XXX SOC's on-chip OHCI controller.
+> +	  It is needed for low-speed USB 1.0 device support.
+> +
+>  config USB_OHCI_BIG_ENDIAN_DESC
+>  	bool
+>  	depends on USB_OHCI_HCD
+> diff --git a/drivers/usb/host/ehci-cns3xxx.c b/drivers/usb/host/ehci-cns3xxx.c
+> new file mode 100644
+> index 0000000..87c0ee8
+> --- /dev/null
+> +++ b/drivers/usb/host/ehci-cns3xxx.c
+> @@ -0,0 +1,176 @@
+> +/*
+> + * Copyright 2008 Cavium Networks
+> + *
+> + * This file is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, Version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <asm/atomic.h>
+> +#include <mach/cns3xxx.h>
+> +#include <mach/pm.h>
+> +
+> +static int cns3xxx_ehci_init(struct usb_hcd *hcd)
+> +{
+> +	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+> +	int retval = 0;
+
+No need for = 0 initializer;
+
+> +
+> +	/* EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 */
+> +	if (1 == atomic_inc_return(&usb_pwr_ref)) {
+
+1 == thing() isn't readable. I'd suggest to change the order.
+If you fear for 'thing() = 1' type of errors, don't worry, gcc
+will warn. ;-)
+
+> +		cns3xxx_pwr_power_up(1<<PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
+
+Spaces around <<.
+
+> +		cns3xxx_pwr_clk_en(1<<PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +		cns3xxx_pwr_soft_rst(1<<PM_SOFT_RST_REG_OFFST_USB_HOST);
+> +	}
+> +
+> +	ehci->caps = hcd->regs;
+> +	ehci->regs = hcd->regs
+> +		+ HC_LENGTH(ehci_readl(ehci, &ehci->caps->hc_capbase));
+> +	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+> +
+> +	hcd->has_tt = 0;
+> +	ehci_reset(ehci);
+> +
+> +	retval = ehci_init(hcd);
+> +	if (retval)
+> +		return retval;
+> +
+> +	ehci_port_power(ehci, 0);
+> +
+> +	return retval;
+> +}
+> +
+> +static const struct hc_driver cns3xxx_ehci_hc_driver = {
+> +	.description		= hcd_name,
+> +	.product_desc		= "CNS3XXX EHCI Host Controller",
+> +	.hcd_priv_size		= sizeof(struct ehci_hcd),
+> +	.irq			= ehci_irq,
+> +	.flags			= HCD_MEMORY | HCD_USB2,
+> +	.reset			= cns3xxx_ehci_init,
+> +	.start			= ehci_run,
+> +	.stop			= ehci_stop,
+> +	.shutdown		= ehci_shutdown,
+> +	.urb_enqueue		= ehci_urb_enqueue,
+> +	.urb_dequeue		= ehci_urb_dequeue,
+> +	.endpoint_disable	= ehci_endpoint_disable,
+> +	.endpoint_reset		= ehci_endpoint_reset,
+> +	.get_frame_number	= ehci_get_frame,
+> +	.hub_status_data	= ehci_hub_status_data,
+> +	.hub_control		= ehci_hub_control,
+> +#ifdef CONFIG_PM
+> +	.bus_suspend		= ehci_bus_suspend,
+> +	.bus_resume		= ehci_bus_resume,
+> +#endif
+> +	.relinquish_port	= ehci_relinquish_port,
+> +	.port_handed_over	= ehci_port_handed_over,
+> +
+> +	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+> +};
+> +
+> +static int cns3xxx_ehci_probe(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd;
+> +	const struct hc_driver *driver = &cns3xxx_ehci_hc_driver;
+> +	struct resource *res;
+> +	int irq;
+> +	int retval;
+> +
+> +	if (usb_disabled())
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev,
+
+the pdev->dev is very repetitive. Please, introduce
+'struct device *dev';
+
+> +			"Found HC with no IRQ. Check %s setup!\n",
+> +			dev_name(&pdev->dev));
+
+No need for dev_name() thing here. dev_err and friends will print
+device name anyway.
+
+> +		return -ENODEV;
+> +	}
+
+Empty line here.
+
+> +	irq = res->start;
+> +
+> +	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+> +	if (!hcd)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev,
+> +			"Found HC with no register addr. Check %s setup!\n",
+> +			dev_name(&pdev->dev));
+> +		retval = -ENODEV;
+> +		goto err1;
+> +	}
+> +	hcd->rsrc_start = res->start;
+> +	hcd->rsrc_len = res->end - res->start + 1;
+> +
+> +#ifdef CNS3XXX_USB_BASE_VIRT
+> +	hcd->regs = (void __iomem *) CNS3XXX_USB_BASE_VIRT;
+> +#else
+> +	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+> +				driver->description)) {
+> +		dev_dbg(&pdev->dev, "controller already in use\n");
+> +		retval = -EBUSY;
+> +		goto err1;
+> +	}
+> +
+> +	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
+> +
+
+No need for this empty line.
+
+> +	if (hcd->regs == NULL) {
+> +		dev_dbg(&pdev->dev, "error mapping memory\n");
+> +		retval = -EFAULT;
+> +		goto err2;
+> +	}
+> +#endif
+> +
+> +	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+> +	if (retval == 0)
+> +		return retval;
+> +
+> +#ifndef CNS3XXX_USB_BASE_VIRT
+> +	iounmap(hcd->regs);
+> +err2:
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +#endif
+> +err1:
+> +	usb_put_hcd(hcd);
+> +
+> +	return retval;
+> +}
+> +
+> +static int cns3xxx_ehci_remove(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +
+> +	usb_remove_hcd(hcd);
+> +#ifndef CNS3XXX_USB_BASE_VIRT
+> +	iounmap(hcd->regs);
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +#endif
+> +
+> +	/* EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 */
+
+Please use canonical multiline comments, i.e.
+
+/*
+ * Text here.
+ */
+
+> +	if (0 == atomic_dec_return(&usb_pwr_ref))
+
+if (atomic_dec_return(&usb_pwr_ref) == 0)
+
+> +		cns3xxx_pwr_clk_dis(1<<PM_CLK_GATE_REG_OFFSET_USB_HOST);
+
+spaces around <<.
+> +
+> +	usb_put_hcd(hcd);
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	return 0;
+> +}
+> +
+> +MODULE_ALIAS("platform:cns3xxx-ehci");
+> +
+> +static struct platform_driver cns3xxx_ehci_driver = {
+> +	.probe = cns3xxx_ehci_probe,
+> +	.remove = cns3xxx_ehci_remove,
+> +	.driver = {
+> +		.name = "cns3xxx-ehci",
+> +	},
+> +};
+> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> index 502a7e6..c5dd1c3 100644
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -1216,6 +1216,11 @@ MODULE_LICENSE ("GPL");
+>  #define PLATFORM_DRIVER		ehci_octeon_driver
+>  #endif
+>  
+> +#ifdef CONFIG_USB_CNS3XXX_EHCI
+> +#include "ehci-cns3xxx.c"
+> +#define PLATFORM_DRIVER     cns3xxx_ehci_driver
+> +#endif
+> +
+>  #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
+>      !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
+>      !defined(XILINX_OF_PLATFORM_DRIVER)
+> diff --git a/drivers/usb/host/ohci-cns3xxx.c b/drivers/usb/host/ohci-cns3xxx.c
+> new file mode 100644
+> index 0000000..7617b8c
+> --- /dev/null
+> +++ b/drivers/usb/host/ohci-cns3xxx.c
+> @@ -0,0 +1,171 @@
+> +/*
+> + * Copyright 2008 Cavium Networks
+> + *
+> + * This file is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, Version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <asm/atomic.h>
+> +#include <mach/cns3xxx.h>
+> +#include <mach/pm.h>
+> +
+> +static int __devinit
+> +cns3xxx_ohci_start(struct usb_hcd *hcd)
+> +{
+> +	struct ohci_hcd		*ohci = hcd_to_ohci(hcd);
+> +	int			ret;
+
+Either you indent declarations or not in the single file
+(I'd prefer not to), otherwise it's very inconsistent.
+
+> +
+> +	/* EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 */
+> +	if (1 == atomic_inc_return(&usb_pwr_ref)) {
+
+unreadable order
+
+> +		cns3xxx_pwr_power_up(1<<PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
+
+spaces
+
+> +		cns3xxx_pwr_clk_en(1<<PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +		cns3xxx_pwr_soft_rst(1<<PM_SOFT_RST_REG_OFFST_USB_HOST);
+> +	}
+> +
+> +	ret = ohci_init(ohci);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ohci->num_ports = 1;
+> +
+> +	ret = ohci_run(ohci);
+> +	if (ret < 0) {
+> +		err("can't start %s", hcd->self.bus_name);
+> +		ohci_stop(hcd);
+> +		return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static const struct hc_driver cns3xxx_ohci_hc_driver = {
+> +	.description		= hcd_name,
+> +	.product_desc		= "CNS3XXX OHCI Host controller",
+> +	.hcd_priv_size		= sizeof(struct ohci_hcd),
+> +	.irq			= ohci_irq,
+> +	.flags			= HCD_USB11 | HCD_MEMORY,
+> +	.start			= cns3xxx_ohci_start,
+> +	.stop			= ohci_stop,
+> +	.shutdown		= ohci_shutdown,
+> +	.urb_enqueue		= ohci_urb_enqueue,
+> +	.urb_dequeue		= ohci_urb_dequeue,
+> +	.endpoint_disable	= ohci_endpoint_disable,
+> +	.get_frame_number	= ohci_get_frame,
+> +	.hub_status_data	= ohci_hub_status_data,
+> +	.hub_control		= ohci_hub_control,
+> +#ifdef CONFIG_PM
+> +	.bus_suspend		= ohci_bus_suspend,
+> +	.bus_resume		= ohci_bus_resume,
+> +#endif
+> +	.start_port_reset	= ohci_start_port_reset,
+> +};
+> +
+> +static int cns3xxx_ohci_probe(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd = NULL;
+
+No need for = NULL initializer.
+
+> +	const struct hc_driver *driver = &cns3xxx_ohci_hc_driver;
+> +	struct resource *res;
+> +	int irq;
+> +	int retval;
+> +
+> +	if (usb_disabled())
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev,
+> +			"Found HC with no IRQ. Check %s setup!\n",
+> +			dev_name(&pdev->dev));
+> +		return -ENODEV;
+> +	}
+> +	irq = res->start;
+> +
+> +	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+> +	if (!hcd)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev,
+
+pdev->dev is repetitive
+
+> +			"Found HC with no register addr. Check %s setup!\n",
+> +			dev_name(&pdev->dev));
+
+no need for dev_name
+
+> +		retval = -ENODEV;
+> +		goto err1;
+> +	}
+> +	hcd->rsrc_start = res->start;
+> +	hcd->rsrc_len = res->end - res->start + 1;
+> +
+> +#ifdef CNS3XXX_USB_OHCI_BASE_VIRT
+> +	hcd->regs = (void __iomem *) CNS3XXX_USB_OHCI_BASE_VIRT;
+> +#else
+> +	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+> +			driver->description)) {
+> +		dev_dbg(&pdev->dev, "controller already in use\n");
+> +		retval = -EBUSY;
+> +		goto err1;
+> +	}
+> +
+> +	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
+> +
+
+I'd not place this empty line here.
+
+> +	if (hcd->regs == NULL) {
+
+I'd write it as if (!hcd->regs), which is more natural.
+
+> +		dev_dbg(&pdev->dev, "error mapping memory\n");
+> +		retval = -EFAULT;
+> +		goto err2;
+> +	}
+> +#endif
+> +
+> +	ohci_hcd_init(hcd_to_ohci(hcd));
+> +
+> +	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+> +	if (retval == 0)
+> +		return retval;
+> +
+> +#ifndef CNS3XXX_USB_OHCI_BASE_VIRT
+> +	iounmap(hcd->regs);
+> +err2:
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +#endif
+> +err1:
+> +	usb_put_hcd(hcd);
+> +	return retval;
+> +}
+> +
+> +static int cns3xxx_ohci_remove(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +
+> +	usb_remove_hcd(hcd);
+> +#ifndef CNS3XXX_USB_OHCI_BASE_VIRT
+> +	iounmap(hcd->regs);
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +#endif
+> +
+> +	/* EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 */
+> +	if (0 == atomic_dec_return(&usb_pwr_ref))
+
+order
+
+> +		cns3xxx_pwr_clk_dis(1<<PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +
+> +	usb_put_hcd(hcd);
+
+Thanks,
+
 -- 
-1.7.2.3
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
