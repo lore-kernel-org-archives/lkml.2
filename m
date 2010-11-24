@@ -1,173 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab0KXOVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:21:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13583 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab0KXOVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:21:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,248,1288594800"; 
-   d="scan'208";a="577175932"
-Date: Wed, 24 Nov 2010 22:21:42 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
-Message-ID: <20101124142142.GA14123@localhost>
-References: <20101117042720.033773013@intel.com>
- <20101117042850.002299964@intel.com>
- <1290596732.2072.450.camel@laptop>
- <20101124121046.GA8333@localhost>
- <1290603047.2072.465.camel@laptop>
- <20101124131437.GE10413@localhost>
- <20101124132012.GA12117@localhost>
- <1290606129.2072.467.camel@laptop>
- <20101124134641.GA12987@localhost>
- <1290607953.2072.472.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290607953.2072.472.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752748Ab0KXOYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:24:07 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47122 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab0KXOYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 09:24:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Wftw7gLmHrEqN/z4fOW+mQ+AdjnjSwjD6RFsw0zp5MLa5VQtm/HzIXPWNefkpPE4X9
+         ZxueZ6MR8PiFQI7IAxiK6MluYr+DoHRA2z4ELsABub2B4/4xgS1SrJdonih859vX82KY
+         sqTz3XrQuVPimQIlw4Rb6wkApVGv9wyTTHgbs=
+Subject: [PATCH 2/2 RESEND] ASoC: Fix resource reclaim for osk5912
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Charulatha <charu@ti.com>, Jarkko Nikula <jhnikula@gmail.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 22:24:01 +0800
+Message-ID: <1290608641.2235.5.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 10:12:33PM +0800, Peter Zijlstra wrote:
-> On Wed, 2010-11-24 at 21:46 +0800, Wu Fengguang wrote:
-> > On Wed, Nov 24, 2010 at 09:42:09PM +0800, Peter Zijlstra wrote:
-> > > On Wed, 2010-11-24 at 21:20 +0800, Wu Fengguang wrote:
-> > > > >         (jiffies - bdi->write_bandwidth_update_time < elapsed)
-> > > > 
-> > > > this will be true if someone else has _done_ overlapped estimation,
-> > > > otherwise it will equal:
-> > > > 
-> > > >         jiffies - bdi->write_bandwidth_update_time == elapsed
-> > > > 
-> > > > Sorry the comment needs updating. 
-> > > 
-> > > Right, but its racy as hell..
-> > 
-> > Yeah, for N concurrent dirtiers, plus the background flusher, only
-> > one is able to update write_bandwidth[_update_time]..
-> 
-> Wrong, nr_cpus are, they could all observe the old value before seeing
-> the update of the variable.
+In current implementation, there are resources leak in the error path.
+This patch properly reclaims the allocated resources in the error path.
 
-Yes, that's what I meant to do it "per-cpu" in the previous email.
+Also adds a missing clk_put in osk_soc_exit.
 
-> Why not something like the below, which keeps the stamps per bdi and
-> serializes on a lock (trylock, you only need a single updater at any one
-> time anyway):
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Jarkko Nikula <jhnikula@gmail.com>
+---
+ sound/soc/omap/osk5912.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-Hmm, but why not avoid locking at all?  With per-cpu bandwidth vars,
-each CPU will see slightly different bandwidth, but that should be
-close enough and not a big problem.
+diff --git a/sound/soc/omap/osk5912.c b/sound/soc/omap/osk5912.c
+index 18d053d..7e75e77 100644
+--- a/sound/soc/omap/osk5912.c
++++ b/sound/soc/omap/osk5912.c
+@@ -177,7 +177,8 @@ static int __init osk_soc_init(void)
+ 	tlv320aic23_mclk = clk_get(dev, "mclk");
+ 	if (IS_ERR(tlv320aic23_mclk)) {
+ 		printk(KERN_ERR "Could not get mclk clock\n");
+-		return -ENODEV;
++		err = PTR_ERR(tlv320aic23_mclk);
++		goto err2;
+ 	}
+ 
+ 	/*
+@@ -188,7 +189,7 @@ static int __init osk_soc_init(void)
+ 		if (clk_set_rate(tlv320aic23_mclk, CODEC_CLOCK)) {
+ 			printk(KERN_ERR "Cannot set MCLK for AIC23 CODEC\n");
+ 			err = -ECANCELED;
+-			goto err1;
++			goto err3;
+ 		}
+ 	}
+ 
+@@ -196,9 +197,12 @@ static int __init osk_soc_init(void)
+ 	       (uint) clk_get_rate(tlv320aic23_mclk), CODEC_CLOCK);
+ 
+ 	return 0;
+-err1:
++
++err3:
+ 	clk_put(tlv320aic23_mclk);
++err2:
+ 	platform_device_del(osk_snd_device);
++err1:
+ 	platform_device_put(osk_snd_device);
+ 
+ 	return err;
+@@ -207,6 +211,7 @@ err1:
+ 
+ static void __exit osk_soc_exit(void)
+ {
++	clk_put(tlv320aic23_mclk);
+ 	platform_device_unregister(osk_snd_device);
+ }
+ 
+-- 
+1.7.2
 
-> probably got the math wrong, but the idea should be clear, you can even
-> add an explicit bdi_update_bandwidth_stamps() function which resets the
-> stamps to the current situation in order to skip periods of low
-> throughput (that would need to do spin_lock).
-> 
-> ---
-> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-> index 4ce34fa..de690c3 100644
-> --- a/include/linux/backing-dev.h
-> +++ b/include/linux/backing-dev.h
-> @@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
->  enum bdi_stat_item {
->  	BDI_RECLAIMABLE,
->  	BDI_WRITEBACK,
-> +	BDI_WRITTEN,
->  	NR_BDI_STAT_ITEMS
->  };
->  
-> @@ -88,6 +89,11 @@ struct backing_dev_info {
->  
->  	struct timer_list laptop_mode_wb_timer;
->  
-> +	spinlock_t bw_lock;
-> +	unsigned long bw_time_stamp;
-> +	unsigned long bw_write_stamp;
-> +	int write_bandwidth;
-> +
->  #ifdef CONFIG_DEBUG_FS
->  	struct dentry *debug_dir;
->  	struct dentry *debug_stats;
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index 027100d..a934fe9 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -661,6 +661,11 @@ int bdi_init(struct backing_dev_info *bdi)
->  	bdi->dirty_exceeded = 0;
->  	err = prop_local_init_percpu(&bdi->completions);
->  
-> +	spin_lock_init(&bdi->bw_lock);
-> +	bdi->bw_time_stamp = jiffies;
-> +	bdi->bw_write_stamp = 0;
-> +	bdi->write_bandwidth = 100 << (20 - PAGE_SHIFT); /* 100 MB/s */
-> +
->  	if (err) {
->  err:
->  		while (i--)
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index b840afa..f3f5c24 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -219,6 +219,7 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
->   */
->  static inline void __bdi_writeout_inc(struct backing_dev_info *bdi)
->  {
-> +	__inc_bdi_state(bdi, BDI_WRITTEN);
->  	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
->  			      bdi->max_prop_frac);
->  }
-> @@ -238,6 +239,35 @@ void task_dirty_inc(struct task_struct *tsk)
->  	prop_inc_single(&vm_dirties, &tsk->dirties);
->  }
->  
-> +void bdi_update_write_bandwidth(struct backing_dev_info *bdi)
-> +{
-> +	unsigned long time_now, write_now;
-> +	long time_delta, write_delta;
-> +	long bw;
-> +
-> +	if (!spin_try_lock(&bdi->bw_lock))
-> +		return;
 
-spin_try_lock is good, however is still global state and risks
-cacheline bouncing..
 
-> +	write_now = bdi_stat(bdi, BDI_WRITTEN);
-> +	time_now = jiffies;
-> +
-> +	write_delta = write_now - bdi->bw_write_stamp;
-> +	time_delta = time_now - bdi->bw_time_stamp;
-> +
-> +	/* rate-limit, only update once every 100ms */
-> +	if (time_delta < HZ/10 || !write_delta)
-> +		goto unlock;
-> +
-> +	bdi->bw_write_stamp = write_now;
-> +	bdi->bw_time_stamp = time_now;
-> +
-> +	bw = write_delta * HZ / time_delta;
-> +	bdi->write_bandwidth = (bdi->write_bandwidth + bw + 3) / 4;
-> +
-> +unlock:
-> +	spin_unlock(&bdi->bw_lock);
-> +}
-> +
->  /*
->   * Obtain an accurate fraction of the BDI's portion.
->   */
-> 
+
