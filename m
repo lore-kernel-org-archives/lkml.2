@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0KXA5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:57:43 -0500
-Received: from mail.perches.com ([173.55.12.10]:1827 "EHLO mail.perches.com"
+	id S1755735Ab0KXA55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:57:57 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49548 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab0KXA5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:57:42 -0500
-Subject: [PATCH] md: Fix single printks with multiple KERN_<level>s
-From: Joe Perches <joe@perches.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101123223344.GE26510@n2100.arm.linux.org.uk>
-References: <20101011152516.GF27153@n2100.arm.linux.org.uk>
-	 <1290505382-16110-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <20101123101210.GA18170@n2100.arm.linux.org.uk>
-	 <20101123103940.GN4693@pengutronix.de>
-	 <20101123105830.GO4693@pengutronix.de>
-	 <AANLkTinmky17XZZPh7QvcY_r=66f_PwzRYFPUSvhiJGK@mail.gmail.com>
-	 <20101123223344.GE26510@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 16:57:40 -0800
-Message-ID: <1290560260.11971.5.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755567Ab0KXA5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 19:57:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [Regression, post-2.6.37-rc2] Unable to start KDE with 2.6.37-rc3 on Acer Ferrari One
+Date: Wed, 24 Nov 2010 01:57:00 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        DRI <dri-devel@lists.freedesktop.org>
+References: <201011240122.33174.rjw@sisk.pl>
+In-Reply-To: <201011240122.33174.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011240157.00726.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Noticed-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Joe Perches <joe@perches.com>
----
-> Note that KERN_foo in the middle of strings, even after a newline are
-> preserved in the output.  So:
+On Wednesday, November 24, 2010, Rafael J. Wysocki wrote:
+> Hi,
 > 
->                 printk(KERN_WARNING "BUG: Your driver calls ioremap() on system memory.  This leads\n"
->                        KERN_WARNING "to architecturally unpredictable behaviour on ARMv6+, and ioremap()\n"
->                        KERN_WARNING "will fail in the next kernel release.  Please fix your driver.\n");
+> I cannot start KDE with the 2.6.37-rc3 kernel.  The X server and display
+> manager start normally, but when I attempt to log into KDE, it attempts to
+> start, but then the X apparently crashes and this appears in the dmesg output:
 > 
-> results in <4>'s appearing on the console.  I've always written code
-> over the last 15 years assuming that after any newline in printk output,
-> the log level gets reset and so needs a new log level specifier.
+> [   24.342287] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> [   24.342298] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> [   24.342304] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> [   24.694106] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [   93.938946] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> [   93.938956] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> [   93.938962] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> [   94.278050] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [  114.898043] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> [  114.898053] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> [  114.898058] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> [  115.266113] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [  129.722472] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [  142.984314] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> [  142.984324] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> [  142.984330] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> [  143.370083] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
 > 
-> Sounds like this is something which needs auditing as a result of your
-> change, and sounds like its something that kernelnewbies people could
-> do.  My own greps haven't revealed any cases though.
+> This doesn't happen with 2.6.37-rc2.
 
- drivers/md/raid1.c  |    5 +++--
- drivers/md/raid10.c |    5 +++--
- drivers/md/raid5.c  |    1 -
- 3 files changed, 6 insertions(+), 5 deletions(-)
+Reverting the following commit:
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 45f8324..e05381b 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1027,8 +1027,9 @@ static void error(mddev_t *mddev, mdk_rdev_t *rdev)
- 	} else
- 		set_bit(Faulty, &rdev->flags);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
--	printk(KERN_ALERT "md/raid1:%s: Disk failure on %s, disabling device.\n"
--	       KERN_ALERT "md/raid1:%s: Operation continuing on %d devices.\n",
-+	printk(KERN_ALERT
-+	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
-+	       "md/raid1:%s: Operation continuing on %d devices.\n",
- 	       mdname(mddev), bdevname(rdev->bdev, b),
- 	       mdname(mddev), conf->raid_disks - mddev->degraded);
- }
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index c67aa54..686543d 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1051,8 +1051,9 @@ static void error(mddev_t *mddev, mdk_rdev_t *rdev)
- 	}
- 	set_bit(Faulty, &rdev->flags);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
--	printk(KERN_ALERT "md/raid10:%s: Disk failure on %s, disabling device.\n"
--	       KERN_ALERT "md/raid10:%s: Operation continuing on %d devices.\n",
-+	printk(KERN_ALERT
-+	       "md/raid10:%s: Disk failure on %s, disabling device.\n"
-+	       "md/raid10:%s: Operation continuing on %d devices.\n",
- 	       mdname(mddev), bdevname(rdev->bdev, b),
- 	       mdname(mddev), conf->raid_disks - mddev->degraded);
- }
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index dc574f3..316fbe7 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1721,7 +1721,6 @@ static void error(mddev_t *mddev, mdk_rdev_t *rdev)
- 		set_bit(Faulty, &rdev->flags);
- 		printk(KERN_ALERT
- 		       "md/raid:%s: Disk failure on %s, disabling device.\n"
--		       KERN_ALERT
- 		       "md/raid:%s: Operation continuing on %d devices.\n",
- 		       mdname(mddev),
- 		       bdevname(rdev->bdev, b),
+commit 16790569eddf4d406a16a65f4750f405fa669c52
+Author: Alex Deucher <alexdeucher@gmail.com>
+Date:   Sun Nov 14 20:24:35 2010 -0500
 
+    drm/radeon/kms: fix and unify tiled buffer alignment checking for r6xx/7xx
 
+fixes the issue for me (so everyone involved is already in the Cc list ;-)).
+
+Thanks,
+Rafael
