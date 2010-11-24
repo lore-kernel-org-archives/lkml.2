@@ -1,74 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab0KXQRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:17:13 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:46681 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752748Ab0KXQRM (ORCPT
+	id S1753896Ab0KXQUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:20:35 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44195 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab0KXQUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:17:12 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: oZ_EV10VM1kZkd1s8SbTIrwL8pPzCHYL9LOfQ3S84Hk029U
- 64pFlloiPlWawam88KDsKlx5aM3IDdkNUN8oF.awi.GVImroL83rz4OnmDAO
- yMUKra0z5goHxy0QVpjaeV.PMlkKRgCjLDRFdOnpJQVSX0XkqOHvfAx0FBzI
- 4bxBD5zfFzPdrWXXaaKhQouKZEIR.0wTgjEqVRN8_NpAIfy6bSejiQxAm3_0
- jt6xqJk0S_uo-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 24 Nov 2010 10:17:08 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless) fastpaths
- for slub
-In-Reply-To: <AANLkTikVFWYS9UeCP1DJxhzYn9_rMcrovSfbQpNmXsvk@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1011241012180.14268@router.home>
-References: <20101123235139.908255844@linux.com> <20101123235201.758191189@linux.com> <AANLkTikVFWYS9UeCP1DJxhzYn9_rMcrovSfbQpNmXsvk@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-1745053467-1290615190=:14268"
-Content-ID: <alpine.DEB.2.00.1011241015070.14268@router.home>
+	Wed, 24 Nov 2010 11:20:33 -0500
+X-Spam-ASN: 
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: linux-kernel@vger.kernel.org
+Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Weber <weber@corscience.de>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Jiri Kosina <jkosina@suse.cz>, John Stultz <johnstul@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-doc@vger.kernel.org
+Subject: [PATCHv5 15/17] pps: add kernel consumer support
+Date: Wed, 24 Nov 2010 19:15:53 +0300
+Message-Id: <0f364a4dca1d9680b90be297b2c4f2d171f42168.1290599845.git.lasaine@lvk.cs.msu.su>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
+References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Add an optional feature of PPSAPI, kernel consumer support, which uses
+the added hardpps() function.
 
----1463811839-1745053467-1290615190=:14268
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Content-ID: <alpine.DEB.2.00.1011241015071.14268@router.home>
+Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+---
+ Documentation/ioctl/ioctl-number.txt |    2 +-
+ drivers/pps/Kconfig                  |    1 +
+ drivers/pps/kapi.c                   |   27 +++++++++++++++
+ drivers/pps/pps.c                    |   62 +++++++++++++++++++++++++++++++++-
+ include/linux/pps.h                  |    7 ++++
+ include/linux/pps_kernel.h           |    6 +++
+ 6 files changed, 103 insertions(+), 2 deletions(-)
 
-On Wed, 24 Nov 2010, Pekka Enberg wrote:
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index 33223ff..de2b113 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -249,7 +249,7 @@ Code  Seq#(hex)	Include File		Comments
+ 'p'	40-7F	linux/nvram.h
+ 'p'	80-9F	linux/ppdev.h		user-space parport
+ 					<mailto:tim@cyberelk.net>
+-'p'	A1-A4	linux/pps.h		LinuxPPS
++'p'	A1-A5	linux/pps.h		LinuxPPS
+ 					<mailto:giometti@linux.it>
+ 'q'	00-1F	linux/serio.h
+ 'q'	80-FF	linux/telephony.h	Internet PhoneJACK, Internet LineJACK
+diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
+index 33c9126..4823e47 100644
+--- a/drivers/pps/Kconfig
++++ b/drivers/pps/Kconfig
+@@ -7,6 +7,7 @@ menu "PPS support"
+ config PPS
+ 	tristate "PPS support"
+ 	depends on EXPERIMENTAL
++	select NTP_PPS
+ 	---help---
+ 	  PPS (Pulse Per Second) is a special pulse provided by some GPS
+ 	  antennae. Userland can use it to get a high-precision time
+diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+index ebf3374..ed78f6d 100644
+--- a/drivers/pps/kapi.c
++++ b/drivers/pps/kapi.c
+@@ -26,12 +26,23 @@
+ #include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/time.h>
++#include <linux/timex.h>
+ #include <linux/spinlock.h>
+ #include <linux/fs.h>
+ #include <linux/pps_kernel.h>
+ #include <linux/slab.h>
+ 
+ /*
++ * Global variables
++ */
++
++/* state variables to bind kernel consumer */
++/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
++DEFINE_SPINLOCK(pps_kc_hardpps_lock);
++void	*pps_kc_hardpps_dev;	/* some unique pointer to device */
++int	pps_kc_hardpps_mode;	/* mode bits for kernel consumer */
++
++/*
+  * Local functions
+  */
+ 
+@@ -139,6 +150,16 @@ EXPORT_SYMBOL(pps_register_source);
+ 
+ void pps_unregister_source(struct pps_device *pps)
+ {
++	spin_lock_irq(&pps_kc_hardpps_lock);
++	if (pps == pps_kc_hardpps_dev) {
++		pps_kc_hardpps_mode = 0;
++		pps_kc_hardpps_dev = NULL;
++		spin_unlock_irq(&pps_kc_hardpps_lock);
++		dev_info(pps->dev, "unbound kernel consumer"
++				" on device removal\n");
++	} else
++		spin_unlock_irq(&pps_kc_hardpps_lock);
++
+ 	pps_unregister_cdev(pps);
+ 
+ 	/* don't have to kfree(pps) here because it will be done on
+@@ -211,6 +232,12 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
+ 		captured = ~0;
+ 	}
+ 
++	/* Pass some events to kernel consumer if activated */
++	spin_lock(&pps_kc_hardpps_lock);
++	if (pps == pps_kc_hardpps_dev && event & pps_kc_hardpps_mode)
++		hardpps(&ts->ts_real, &ts->ts_raw);
++	spin_unlock(&pps_kc_hardpps_lock);
++
+ 	/* Wake up if captured something */
+ 	if (captured) {
+ 		pps->last_ev++;
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index 54964a5..76f4b5e 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -197,9 +197,69 @@ static long pps_cdev_ioctl(struct file *file,
+ 
+ 		break;
+ 	}
++	case PPS_KC_BIND: {
++		struct pps_bind_args bind_args;
++
++		dev_dbg(pps->dev, "PPS_KC_BIND\n");
++
++		/* Check the capabilities */
++		if (!capable(CAP_SYS_TIME))
++			return -EPERM;
++
++		if (copy_from_user(&bind_args, uarg,
++					sizeof(struct pps_bind_args)))
++			return -EFAULT;
++
++		/* Check for supported capabilities */
++		if ((bind_args.edge & ~pps->info.mode) != 0) {
++			dev_err(pps->dev, "unsupported capabilities (%x)\n",
++					bind_args.edge);
++			return -EINVAL;
++		}
++
++		/* Validate parameters roughly */
++		if (bind_args.tsformat != PPS_TSFMT_TSPEC ||
++				(bind_args.edge & ~PPS_CAPTUREBOTH) != 0 ||
++				bind_args.consumer != PPS_KC_HARDPPS) {
++			dev_err(pps->dev, "invalid kernel consumer bind"
++					" parameters (%x)\n", bind_args.edge);
++			return -EINVAL;
++		}
++
++		/* Check if another consumer is already bound */
++		spin_lock_irq(&pps_kc_hardpps_lock);
++
++		if (bind_args.edge == 0)
++			if (pps_kc_hardpps_dev == pps) {
++				pps_kc_hardpps_mode = 0;
++				pps_kc_hardpps_dev = NULL;
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_info(pps->dev, "unbound kernel"
++						" consumer\n");
++			} else {
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_err(pps->dev, "selected kernel consumer"
++						" is not bound\n");
++				return -EINVAL;
++			}
++		else
++			if (pps_kc_hardpps_dev == NULL ||
++					pps_kc_hardpps_dev == pps) {
++				pps_kc_hardpps_mode = bind_args.edge;
++				pps_kc_hardpps_dev = pps;
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_info(pps->dev, "bound kernel consumer: "
++					"edge=0x%x\n", bind_args.edge);
++			} else {
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_err(pps->dev, "another kernel consumer"
++						" is already bound\n");
++				return -EINVAL;
++			}
++		break;
++	}
+ 	default:
+ 		return -ENOTTY;
+-		break;
+ 	}
+ 
+ 	return 0;
+diff --git a/include/linux/pps.h b/include/linux/pps.h
+index 0194ab0..a9bb1d9 100644
+--- a/include/linux/pps.h
++++ b/include/linux/pps.h
+@@ -114,11 +114,18 @@ struct pps_fdata {
+ 	struct pps_ktime timeout;
+ };
+ 
++struct pps_bind_args {
++	int tsformat;	/* format of time stamps */
++	int edge;	/* selected event type */
++	int consumer;	/* selected kernel consumer */
++};
++
+ #include <linux/ioctl.h>
+ 
+ #define PPS_GETPARAMS		_IOR('p', 0xa1, struct pps_kparams *)
+ #define PPS_SETPARAMS		_IOW('p', 0xa2, struct pps_kparams *)
+ #define PPS_GETCAP		_IOR('p', 0xa3, int *)
+ #define PPS_FETCH		_IOWR('p', 0xa4, struct pps_fdata *)
++#define PPS_KC_BIND		_IOW('p', 0xa5, struct pps_bind_args *)
+ 
+ #endif /* _PPS_H_ */
+diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
+index 6ae8898..2302274 100644
+--- a/include/linux/pps_kernel.h
++++ b/include/linux/pps_kernel.h
+@@ -79,6 +79,12 @@ struct pps_device {
+ 
+ extern struct device_attribute pps_attrs[];
+ 
++/* state variables to bind kernel consumer */
++/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
++extern spinlock_t pps_kc_hardpps_lock;
++extern void *pps_kc_hardpps_dev;	/* some unique pointer to device */
++extern int pps_kc_hardpps_mode;		/* mode bits for kernel consumer */
++
+ /*
+  * Exported functions
+  */
+-- 
+1.7.2.3
 
-> > + =A0 =A0 =A0 /*
-> > + =A0 =A0 =A0 =A0* The transaction ids are globally unique per cpu and =
-per operation on
-> > + =A0 =A0 =A0 =A0* a per cpu queue. Thus they can be guarantee that the=
- cmpxchg_double
-> > + =A0 =A0 =A0 =A0* occurs on the right processor and that there was no =
-operation on the
-> > + =A0 =A0 =A0 =A0* linked list in between.
-> > + =A0 =A0 =A0 =A0*/
-> > + =A0 =A0 =A0 tid =3D c->tid;
-> > + =A0 =A0 =A0 barrier();
->
-> You're using a compiler barrier after every load from c->tid. Why?
-
-To make sure that the compiler does not do something like loading the tid
-later. The tid must be obtained before the rest of the information from
-the per cpu slab data is retrieved in order to ensure that we have a
-consistent set of data to operate on.
-
-The critical section begins with the retrieval of the tid and it ends with
-the replacement of the tid with the newly generated one. This means that
-all state data for the alloc and free operation needs to be retrieved in
-that critical section. The change must be saved with the final
-cmpxchg_double of the critical section.
-
----1463811839-1745053467-1290615190=:14268--
