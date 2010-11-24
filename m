@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab0KXQbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:31:51 -0500
-Received: from igw2.watson.ibm.com ([129.34.20.6]:60228 "EHLO
-	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0KXQbu convert rfc822-to-8bit (ORCPT
+	id S1755106Ab0KXQhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:37:21 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52330 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab0KXQhU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:31:50 -0500
-Subject: Re: [PATCH v1.5 3/5] key: add tpm_send command
-From: David Safford <safford@watson.ibm.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-In-Reply-To: <20101124145925.GA2203@tiny>
-References: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1290556456.2604.14.camel@localhost.localdomain>
-	 <20101124023238.GA26540@tiny>
-	 <1290602771.2785.14.camel@localhost.localdomain>
-	 <20101124145925.GA2203@tiny>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 24 Nov 2010 11:37:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=mz/lO1VQ7KfBiuLAw4BExQ4TBEfZWw9LfiQ2UJToZ9KwGemi4bdeFbaQS2oshLuHcp
+         V4237J083xkgysMD2zMEo8fmwtkuD7OAGsp8CY5kLZ1RSkxz8gTJKSXam494mnnmBWCq
+         m144ks0yjNDZJtaO1bD3lj3wCdFVnX6QEYANw=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1011241012180.14268@router.home>
+References: <20101123235139.908255844@linux.com>
+	<20101123235201.758191189@linux.com>
+	<AANLkTikVFWYS9UeCP1DJxhzYn9_rMcrovSfbQpNmXsvk@mail.gmail.com>
+	<alpine.DEB.2.00.1011241012180.14268@router.home>
+Date: Wed, 24 Nov 2010 18:37:19 +0200
+X-Google-Sender-Auth: NnVnqGlua6WL4JpZn_PR-unfGso
+Message-ID: <AANLkTikxrvbDJ=rDhj=gC-FJTa1Jeky1uLWjnP6VF_pX@mail.gmail.com>
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless) fastpaths
+ for slub
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Nov 2010 11:31:23 -0500
-Message-ID: <1290616283.2785.36.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 08:59 -0600, Serge Hallyn wrote:
-> Quoting David Safford (safford@watson.ibm.com):
-> > On Tue, 2010-11-23 at 20:32 -0600, Serge Hallyn wrote:
-> > > Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
-> > > > Add internal kernel tpm_send() command used to seal/unseal keys.
-> > ... 
-> > > > +int tpm_send(u32 chip_num, void *cmd, size_t buflen)
-> > > 
-> > > Hate to nit-pick, but any particular reason you're not following the
-> > > rest of the file and using 'struct tpm_cmd_t *cmd' here?
-> > > 
-> > > Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> > 
-> > We put some thought into this one. TPM command packets are
-> > binary blobs with lots of optional and variable length fields,
-> > and there are at least three common approaches to creating them:
-> > structures (as used in tpm.c), load/store (as used in trousers
-> > and trusted-keys), and an sprintf like format string (as used
-> > in the original libtpm.) Each has its advantages and disadvantages.
-> > Structures are nice for the simple TPM commands, but they become
-> > unwieldy for the complex commands like seal and unseal. Load/store
-> > is much more readable for the complex seal and unseal commands.
-> > Format strings are nice for creating the most complex commands
-> > in the fewest lines of code, but are way overkill for simple ones.
-> > 
-> > With the void *cmd, we are allowing the other modules to pick
-> > whichever method most suits their needs.
-> 
-> Jinkeys, that's complicated :)
-> 
-> But doesn't that mean that the transmit_cmd() parameters are lying?
-> Should the second argument for transmit_cmd() be a union?
-> 
-> (If only to help out the lamentable reader)
-> 
-> thanks,
-> -serge
-ah.
-transmit_cmd() takes a struct tpm_cmd_t * and immediately casts
-it to u8 * for tpm_transmit(). So sending in a u8 * isn't
-so much lying as recognizing that tpm_cmd_t * and u8 * are
-equivalent :-) 
-I suppose a union would be more correct, although I'm not
-sure it would be easier for the lamentable reader...
+On Wed, Nov 24, 2010 at 6:17 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Wed, 24 Nov 2010, Pekka Enberg wrote:
+>
+>> > +       /*
+>> > +        * The transaction ids are globally unique per cpu and per operation on
+>> > +        * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
+>> > +        * occurs on the right processor and that there was no operation on the
+>> > +        * linked list in between.
+>> > +        */
+>> > +       tid = c->tid;
+>> > +       barrier();
+>>
+>> You're using a compiler barrier after every load from c->tid. Why?
+>
+> To make sure that the compiler does not do something like loading the tid
+> later. The tid must be obtained before the rest of the information from
+> the per cpu slab data is retrieved in order to ensure that we have a
+> consistent set of data to operate on.
+>
+> The critical section begins with the retrieval of the tid and it ends with
+> the replacement of the tid with the newly generated one. This means that
+> all state data for the alloc and free operation needs to be retrieved in
+> that critical section. The change must be saved with the final
+> cmpxchg_double of the critical section.
 
-dave
+Right and we don't need a *memory barrier* here because we're
+accessing a per-CPU variable which means operations appear in-order.
 
-
+                        Pekka
