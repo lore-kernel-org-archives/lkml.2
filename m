@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab0KXA3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:29:16 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49226 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410Ab0KXA3P (ORCPT
+	id S1756136Ab0KXAb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:31:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53469 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab0KXAbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:29:15 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 24 Nov 2010 09:23:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutsemov" <kirill@shutemov.name>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] [BUG] memcg: fix false positive VM_BUG on non-SMP
-Message-Id: <20101124092337.b9fe888f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101123225244.GB22484@cmpxchg.org>
-References: <1290520130-9990-1-git-send-email-kirill@shutemov.name>
-	<20101123121606.c07197e5.akpm@linux-foundation.org>
-	<20101123210255.GA22484@cmpxchg.org>
-	<20101123142247.e8566e3e.akpm@linux-foundation.org>
-	<20101123225244.GB22484@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 19:31:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=NfM7KphfAyg6mQOs5GAytVqg20jIb7HHdtjX55S51Ktu4XZey/5xumIhaLAgiZSKEM
+         D5CPLVCaNEyTTq+wXtB5uRVsUVKiBUTeCPFcdKf2D0ouMjSm5O15FONdHKZISmFIQS93
+         gwrIGrqygp86ZGLUWUULJRM1gjoNib5xZvGKk=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states after extended grace periods
+Date: Wed, 24 Nov 2010 01:31:12 +0100
+Message-Id: <1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 23:52:44 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+When a cpu is in an extended quiescent state, which includes idle
+nohz or CPU offline, others CPUs will take care of the grace periods
+on its behalf.
 
-> On Tue, Nov 23, 2010 at 02:22:47PM -0800, Andrew Morton wrote:
-> > On Tue, 23 Nov 2010 22:02:55 +0100
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > On Tue, Nov 23, 2010 at 12:16:06PM -0800, Andrew Morton wrote:
-> > > > On Tue, 23 Nov 2010 15:48:50 +0200
-> > > > "Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
-> > > > 
-> > > > > ------------[ cut here ]------------
-> > > > > kernel BUG at mm/memcontrol.c:2155!
-> > > > 
-> > > > This bug has been there for a year, from which I conclude people don't
-> > > > run memcg on uniprocessor machines a lot.
-> > > > 
-> > > > Which is a bit sad, really.  Small machines need resource control too,
-> > > > perhaps more than large ones..
-> > > 
-> > > Admittedly, this patch is compile-tested on UP only, but it should be
-> > > obvious enough.
-> > > 
-> > > ---
-> > > From: Johannes Weiner <hannes@cmpxchg.org>
-> > > Subject: [patch] memcg: fix page cgroup lock assert on UP
-> > > 
-> > > Page cgroup locking primitives use the bit spinlock API functions,
-> > > which do nothing on UP.
-> > > 
-> > > Thus, checking the lock state can not be done by looking at the bit
-> > > directly, but one has to go through the bit spinlock API as well.
-> > > 
-> > > This fixes a guaranteed UP bug, where asserting the page cgroup lock
-> > > bit as a sanity check crashes the kernel.
-> > > 
-> > 
-> > hm, your patch is the same as Kirill's, except you named it
-> > page_is_cgroup_locked() rather than is_page_cgroup_locked().  I guess
-> > page_is_cgroup_locked() is a bit better.
-> 
-> I had not sorted by threads and somehow assumed this was another
-> forward from you of a bugzilla report or something.  I didn't see
-> Kirill's patch until now.  Sorry!
-> 
-> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+When this CPU exits its extended quiescent state, it will catch up
+with the last started grace period and start chasing its own
+quiescent states to end the current grace period.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+However in this case we always start to track quiescent states if the
+grace period number has changed since we started our extended
+quiescent state. And we do this because we always assume that the last
+grace period is not finished and needs us to complete it, which is
+sometimes wrong.
 
-Thank you.
+This patch verifies if the last grace period has been completed and
+if so, start hunting local quiescent states like we always did.
+Otherwise don't do anything, this economizes us some work and
+an unnecessary softirq.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ccdc04c..5f038a1 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -620,8 +620,17 @@ static void __init check_cpu_stall_init(void)
+ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
+ {
+ 	if (rdp->gpnum != rnp->gpnum) {
+-		rdp->qs_pending = 1;
+-		rdp->passed_quiesc = 0;
++		/*
++		 * Another CPU might have taken take of this new grace period
++		 * while we were idle and handled us as in an extended quiescent
++		 * state. In that case, we don't need to chase a local quiescent
++		 * state, otherwise:
++		 */
++		if (rdp->completed != rnp->gpnum) {
++			rdp->qs_pending = 1;
++			rdp->passed_quiesc = 0;
++		}
++
+ 		rdp->gpnum = rnp->gpnum;
+ 	}
+ }
+-- 
+1.7.1
 
