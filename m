@@ -1,154 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab0KXVTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 16:19:42 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:35252 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab0KXVTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 16:19:41 -0500
-Date: Wed, 24 Nov 2010 13:19:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states
- after extended grace periods
-Message-ID: <20101124211937.GD8469@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTinFhEf1XVSRYuL+JL=JETLZ6cz3GYCR8CL3ex8X@mail.gmail.com>
- <20101124062212.GA2165@linux.vnet.ibm.com>
- <AANLkTimjZnAfeuAXU7oXPRG5=qJ2d7aZVoozSm88kXMT@mail.gmail.com>
- <20101124144240.GC2165@linux.vnet.ibm.com>
- <AANLkTi=EA09DACMNLUpTU8qH5wFPdXvOMQzJeejXX170@mail.gmail.com>
- <20101124161513.GA2207@linux.vnet.ibm.com>
- <AANLkTikbZUO6MbSC=uWYp4JRCdHPHrr5Z2_=to1YsC1X@mail.gmail.com>
- <20101124182051.GF2207@linux.vnet.ibm.com>
- <20101124202236.GA7989@linux.vnet.ibm.com>
- <AANLkTi=DmGiYK5r0cuzQkLFF3V4XaG=CGvcDh2S4M2t+@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=DmGiYK5r0cuzQkLFF3V4XaG=CGvcDh2S4M2t+@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1755656Ab0KXV1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 16:27:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45062 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab0KXV1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 16:27:19 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=zd76gMVDP8oA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=ZHuW213a5PPuM921CWsA:9 a=xCOGtt_LFsbaLgq7t6y0UqYlO18A:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101124212333.808256210@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 24 Nov 2010 16:23:33 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org,
+        Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
+Subject: [RFC][PATCH 0/2] Move kmalloc tracepoints out of inlined code
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 09:45:08PM +0100, Frederic Weisbecker wrote:
-> 2010/11/24 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > I take it back.  I queued the following -- your code, but updated
-> > comment and commit message.  Please let me know if I missed anything.
-> >
-> >                                                        Thanx, Paul
-> >
-> > ------------------------------------------------------------------------
-> >
-> > commit 1d9d947bb882371a0877ba05207a0b996dcb38ee
-> > Author: Frederic Weisbecker <fweisbec@gmail.com>
-> > Date:   Wed Nov 24 01:31:12 2010 +0100
-> >
-> >    rcu: Don't chase unnecessary quiescent states after extended grace periods
-> >
-> >    When a CPU is in an extended quiescent state, including offline and
-> >    dyntick-idle mode, other CPUs will detect the extended quiescent state
-> >    and respond to the the current grace period on that CPU's behalf.
-> >    However, the locking design prevents those other CPUs from updating
-> >    the first CPU's rcu_data state.
-> >
-> >    Therefore, when this CPU exits its extended quiescent state, it must
-> >    update its rcu_data state.  Because such a CPU will usually check for
-> >    the completion of a prior grace period before checking for the start of a
-> >    new grace period, the rcu_data ->completed field will be updated before
-> >    the rcu_data ->gpnum field.  This means that if RCU is currently idle,
-> >    the CPU will usually enter __note_new_gpnum() with ->completed set to
-> >    the current grace-period number, but with ->gpnum set to some long-ago
-> >    grace period number.  Unfortunately, __note_new_gpnum() will then insist
-> >    that the current CPU needlessly check for a new quiescent state.  This
-> >    checking can result in this CPU needlessly taking several scheduling-clock
-> >    interrupts.
-> 
-> 
-> So I'm all ok for the commit and the comments updated. But just a doubt about
-> the about sentence.
-> 
-> The effect seems more that there will be one extra softirq. But not an
-> extra tick
-> because before sleeping, the CPU will check rcu_needs_cpu() which
-> doesn't check for
-> the need of noting a quiescent state, IIRC...
-> 
-> And I think the softirq will be only raised on the next tick.
-> 
-> Hm?
+Anyone have any objections to this code?
 
-Good point!  This paragraph now reads:
+Tracepoints do carry a bit of weight and having them in a common
+inlined function such as kmalloc() adds a bit of bloat to the kernel.
 
-	Therefore, when this CPU exits its extended quiescent state,
-	it must update its rcu_data state.  Because such a CPU will
-	usually check for the completion of a prior grace period
-	before checking for the start of a new grace period, the
-	rcu_data ->completed field will be updated before the rcu_data
-	->gpnum field.	This means that if RCU is currently idle, the
-	CPU will usually enter __note_new_gpnum() with ->completed set
-	to the current grace-period number, but with ->gpnum set to some
-	long-ago grace period number.  Unfortunately, __note_new_gpnum()
-	will then insist that the current CPU needlessly check for a new
-	quiescent state.  This checking can result in this CPU needlessly
-	taking an additional softirq for unnecessary RCU processing.
+This is an RFC patch (to get comments) and hopefully will be something
+to pull in for 2.6.38. It should not change the functionality
+of the tracepoints, that is, you should still get the same result
+from them as we have before. Just they are now inside the sl*b C code
+instead of being scattered about the kernel.
 
-Fair enough?
+If you are fine with these patches, please add your Acked-by.
 
-							Thanx, Paul
+Thanks,
 
-> >    This bug is harmless in most cases, but is a problem for users concerned
-> >    with OS jitter for HPC applications or concerned with battery lifetime
-> >    for portable SMP embedded devices.  This commit therefore makes the
-> >    test in __note_new_gpnum() check for this situation and avoid the needless
-> >    quiescent-state checks.
-> >
-> >    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> >    Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >    Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> >    Cc: Ingo Molnar <mingo@elte.hu>
-> >    Cc: Thomas Gleixner <tglx@linutronix.de>
-> >    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >    Cc: Steven Rostedt <rostedt@goodmis.org>
-> >    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 5df948f..76cd5d2 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -616,8 +616,20 @@ static void __init check_cpu_stall_init(void)
-> >  static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
-> >  {
-> >        if (rdp->gpnum != rnp->gpnum) {
-> > -               rdp->qs_pending = 1;
-> > -               rdp->passed_quiesc = 0;
-> > +               /*
-> > +                * Because RCU checks for the prior grace period ending
-> > +                * before checking for a new grace period starting, it
-> > +                * is possible for rdp->gpnum to be set to the old grace
-> > +                * period and rdp->completed to be set to the new grace
-> > +                * period.  So don't bother checking for a quiescent state
-> > +                * for the rnp->gpnum grace period unless it really is
-> > +                * waiting for this CPU.
-> > +                */
-> > +               if (rdp->completed != rnp->gpnum) {
-> > +                       rdp->qs_pending = 1;
-> > +                       rdp->passed_quiesc = 0;
-> > +               }
-> > +
-> >                rdp->gpnum = rnp->gpnum;
-> >        }
-> >  }
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- Steve
+
+
+The following patches are in:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+
+    branch: rfc/trace
+
+
+Steven Rostedt (2):
+      tracing/slab: Move kmalloc tracepoint out of inline code
+      tracing/slub: Move kmalloc tracepoint out of inline code
+
+----
+ include/linux/slab_def.h |   33 +++++++++++++--------------------
+ include/linux/slub_def.h |   46 +++++++++++++++++++++-------------------------
+ mm/page_alloc.c          |   14 ++++++++++++++
+ mm/slab.c                |   38 +++++++++++++++++++++++---------------
+ mm/slub.c                |   27 +++++++++++++++++++--------
+ 5 files changed, 90 insertions(+), 68 deletions(-)
