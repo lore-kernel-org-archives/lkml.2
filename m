@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab0KXXQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 18:16:41 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52714 "EHLO ogre.sisk.pl"
+	id S932128Ab0KXXQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:16:55 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52715 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756470Ab0KXXQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754641Ab0KXXQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Nov 2010 18:16:38 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 4/13] ACPI / PM: Add functions for manipulating lists of power resources
-Date: Thu, 25 Nov 2010 00:06:09 +0100
+Subject: [PATCH 3/13] ACPI / PM: Prevent acpi_power_get_inferred_state() from making changes
+Date: Thu, 25 Nov 2010 00:05:17 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
@@ -22,123 +22,91 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011250006.09337.rjw@sisk.pl>
+Message-Id: <201011250005.17710.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-ACPI device power resources should be reference counted during
-device initialization, so that their reference counters are always
-up to date.  It is convenient to do that with the help of a function
-that will reference count and possibly turn on power resources in
-a given list, so introduce that function, acpi_power_on_list().
-For symmetry, introduce acpi_power_off_list() for performing the
-reverse operation and use the both of them to simplify
-acpi_power_transition().
+acpi_power_get_inferred_state() should not update
+device->power.state behind the back of its caller, so make it return
+the state via a pointer instead.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/power.c |   67 ++++++++++++++++++++++++++++-----------------------
- 1 file changed, 38 insertions(+), 29 deletions(-)
+ drivers/acpi/bus.c      |    3 ++-
+ drivers/acpi/internal.h |    2 +-
+ drivers/acpi/power.c    |   12 ++++--------
+ 3 files changed, 7 insertions(+), 10 deletions(-)
 
 Index: linux-2.6/drivers/acpi/power.c
 ===================================================================
 --- linux-2.6.orig/drivers/acpi/power.c
 +++ linux-2.6/drivers/acpi/power.c
-@@ -266,6 +266,35 @@ static int acpi_power_off_device(acpi_ha
- 	return result;
- }
+@@ -423,19 +423,16 @@ int acpi_disable_wakeup_device_power(str
+                              Device Power Management
+    -------------------------------------------------------------------------- */
  
-+static void __acpi_power_off_list(struct acpi_handle_list *list, int num_res)
-+{
-+	int i;
-+
-+	for (i = num_res - 1; i >= 0 ; i--)
-+		acpi_power_off_device(list->handles[i]);
-+}
-+
-+static void acpi_power_off_list(struct acpi_handle_list *list)
-+{
-+	__acpi_power_off_list(list, list->count);
-+}
-+
-+static int acpi_power_on_list(struct acpi_handle_list *list)
-+{
-+	int result = 0;
-+	int i;
-+
-+	for (i = 0; i < list->count; i++) {
-+		result = acpi_power_on(list->handles[i]);
-+		if (result) {
-+			__acpi_power_off_list(list, i);
-+			break;
-+		}
-+	}
-+
-+	return result;
-+}
-+
- /**
-  * acpi_device_sleep_wake - execute _DSW (Device Sleep Wake) or (deprecated in
-  *                          ACPI 3.0) _PSW (Power State Wake)
-@@ -458,10 +487,7 @@ int acpi_power_get_inferred_state(struct
- 
- int acpi_power_transition(struct acpi_device *device, int state)
+-int acpi_power_get_inferred_state(struct acpi_device *device)
++int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
  {
--	int result = 0;
--	struct acpi_handle_list *cl = NULL;	/* Current Resources */
--	struct acpi_handle_list *tl = NULL;	/* Target Resources */
--	int i = 0;
-+	int result;
+ 	int result = 0;
+ 	struct acpi_handle_list *list = NULL;
+ 	int list_state = 0;
+ 	int i = 0;
  
- 	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
+-
+-	if (!device)
++	if (!device || !state)
  		return -EINVAL;
-@@ -473,37 +499,20 @@ int acpi_power_transition(struct acpi_de
- 	    || (device->power.state > ACPI_STATE_D3))
- 		return -ENODEV;
  
--	cl = &device->power.states[device->power.state].resources;
--	tl = &device->power.states[state].resources;
+-	device->power.state = ACPI_STATE_UNKNOWN;
 -
- 	/* TBD: Resources must be ordered. */
- 
  	/*
- 	 * First we reference all power resources required in the target list
--	 * (e.g. so the device doesn't lose power while transitioning).
--	 */
--	for (i = 0; i < tl->count; i++) {
--		result = acpi_power_on(tl->handles[i]);
--		if (result)
--			goto end;
--	}
+ 	 * We know a device's inferred power state when all the resources
+ 	 * required for a given D-state are 'on'.
+@@ -450,13 +447,12 @@ int acpi_power_get_inferred_state(struct
+ 			return result;
+ 
+ 		if (list_state == ACPI_POWER_RESOURCE_STATE_ON) {
+-			device->power.state = i;
++			*state = i;
+ 			return 0;
+ 		}
+ 	}
+ 
+-	device->power.state = ACPI_STATE_D3;
 -
--	/*
--	 * Then we dereference all power resources used in the current list.
-+	 * (e.g. so the device doesn't lose power while transitioning).  Then,
-+	 * we dereference all power resources used in the current list.
- 	 */
--	for (i = 0; i < cl->count; i++) {
--		result = acpi_power_off_device(cl->handles[i]);
--		if (result)
--			goto end;
--	}
-+	result = acpi_power_on_list(&device->power.states[state].resources);
-+	if (!result)
-+		acpi_power_off_list(
-+			&device->power.states[device->power.state].resources);
- 
--     end:
--	if (result)
--		device->power.state = ACPI_STATE_UNKNOWN;
--	else {
--	/* We shouldn't change the state till all above operations succeed */
--		device->power.state = state;
--	}
-+	/* We shouldn't change the state unless the above operations succeed. */
-+	device->power.state = result ? ACPI_STATE_UNKNOWN : state;
- 
- 	return result;
++	*state = ACPI_STATE_D3;
+ 	return 0;
  }
+ 
+Index: linux-2.6/drivers/acpi/bus.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/bus.c
++++ linux-2.6/drivers/acpi/bus.c
+@@ -222,7 +222,8 @@ int acpi_bus_get_power(acpi_handle handl
+ 		 * indirectly (via power resources).
+ 		 */
+ 		if (device->power.flags.power_resources) {
+-			result = acpi_power_get_inferred_state(device);
++			result = acpi_power_get_inferred_state(device,
++							&device->power.state);
+ 			if (result)
+ 				return result;
+ 		} else if (device->power.flags.explicit_get) {
+Index: linux-2.6/drivers/acpi/internal.h
+===================================================================
+--- linux-2.6.orig/drivers/acpi/internal.h
++++ linux-2.6/drivers/acpi/internal.h
+@@ -41,7 +41,7 @@ static inline int acpi_debugfs_init(void
+ int acpi_power_init(void);
+ int acpi_device_sleep_wake(struct acpi_device *dev,
+                            int enable, int sleep_state, int dev_state);
+-int acpi_power_get_inferred_state(struct acpi_device *device);
++int acpi_power_get_inferred_state(struct acpi_device *device, int *state);
+ int acpi_power_transition(struct acpi_device *device, int state);
+ extern int acpi_power_nocheck;
+ 
 
