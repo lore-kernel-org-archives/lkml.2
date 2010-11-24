@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab0KXQXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:23:41 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44320 "EHLO
+	id S1755285Ab0KXQYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:24:00 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44306 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab0KXQXj (ORCPT
+	with ESMTP id S1754462Ab0KXQXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:23:39 -0500
+	Wed, 24 Nov 2010 11:23:30 -0500
 X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Subject: [PATCHv5 04/17] pps: unify timestamp gathering
-Date: Wed, 24 Nov 2010 19:15:42 +0300
-Message-Id: <36bdaa098582e679d4f627c0d29551e6b02836f8.1290599844.git.lasaine@lvk.cs.msu.su>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv5 16/17] pps: add parallel port PPS client
+Date: Wed, 24 Nov 2010 19:15:54 +0300
+Message-Id: <be0cb37e4c675ec6b65ccb7d0feef5ade01d2eab.1290599845.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
 References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
@@ -29,233 +25,306 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a helper function to gather timestamps. This way clients don't have
-to duplicate it.
+Add parallel port PPS client. It uses a standard method for capturing
+timestamps for assert edge transitions: getting a timestamp soon after
+an interrupt has happened. This is not a very precise source of time
+information due to interrupt handling delays. However, timestamps for
+clear edge transitions are much more precise because the interrupt
+handler continuously polls hardware port until the transition is done.
+Hardware port operations require only about 1us so the maximum error
+should not exceed this value. This was my primary goal when developing
+this client.
+Clear edge capture could be disabled using clear_wait parameter.
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- drivers/pps/clients/pps-ktimer.c |    9 ++-------
- drivers/pps/clients/pps-ldisc.c  |   18 ++++++------------
- drivers/pps/kapi.c               |   19 ++++++++++++-------
- include/linux/pps_kernel.h       |   19 ++++++++++++++++++-
- include/linux/serial_core.h      |    5 +++--
- include/linux/tty_ldisc.h        |    5 +++--
- 6 files changed, 44 insertions(+), 31 deletions(-)
+ drivers/pps/clients/Kconfig       |    7 +
+ drivers/pps/clients/Makefile      |    1 +
+ drivers/pps/clients/pps_parport.c |  247 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 255 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pps/clients/pps_parport.c
 
-diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
-index e7ef5b8..e1bdd8b 100644
---- a/drivers/pps/clients/pps-ktimer.c
-+++ b/drivers/pps/clients/pps-ktimer.c
-@@ -40,18 +40,13 @@ static struct timer_list ktimer;
+diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
+index 4e801bd..8520a7f 100644
+--- a/drivers/pps/clients/Kconfig
++++ b/drivers/pps/clients/Kconfig
+@@ -22,4 +22,11 @@ config PPS_CLIENT_LDISC
+ 	  If you say yes here you get support for a PPS source connected
+ 	  with the CD (Carrier Detect) pin of your serial port.
  
- static void pps_ktimer_event(unsigned long ptr)
- {
--	struct timespec __ts;
--	struct pps_ktime ts;
-+	struct pps_event_time ts;
- 
- 	/* First of all we get the time stamp... */
--	getnstimeofday(&__ts);
-+	pps_get_ts(&ts);
- 
- 	pr_info("PPS event at %lu\n", jiffies);
- 
--	/* ... and translate it to PPS time data struct */
--	ts.sec = __ts.tv_sec;
--	ts.nsec = __ts.tv_nsec;
--
- 	pps_event(source, &ts, PPS_CAPTUREASSERT, NULL);
- 
- 	mod_timer(&ktimer, jiffies + HZ);
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 8e1932d..20fc9f7 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -27,26 +27,20 @@
- #define PPS_TTY_MAGIC		0x0001
- 
- static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
--				struct timespec *ts)
-+				struct pps_event_time *ts)
- {
- 	int id = (long)tty->disc_data;
--	struct timespec __ts;
--	struct pps_ktime pps_ts;
-+	struct pps_event_time __ts;
- 
- 	/* First of all we get the time stamp... */
--	getnstimeofday(&__ts);
-+	pps_get_ts(&__ts);
- 
- 	/* Does caller give us a timestamp? */
--	if (ts) {	/* Yes. Let's use it! */
--		pps_ts.sec = ts->tv_sec;
--		pps_ts.nsec = ts->tv_nsec;
--	} else {	/* No. Do it ourself! */
--		pps_ts.sec = __ts.tv_sec;
--		pps_ts.nsec = __ts.tv_nsec;
--	}
-+	if (!ts)	/* No. Do it ourself! */
-+		ts = &__ts;
- 
- 	/* Now do the PPS event report */
--	pps_event(id, &pps_ts, status ? PPS_CAPTUREASSERT : PPS_CAPTURECLEAR,
-+	pps_event(id, ts, status ? PPS_CAPTUREASSERT : PPS_CAPTURECLEAR,
- 			NULL);
- 
- 	pr_debug("PPS %s at %lu on source #%d\n",
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 3f89f5eb..b431d83 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -268,11 +268,12 @@ EXPORT_SYMBOL(pps_unregister_source);
-  *	pps->info.echo(source, event, data);
-  */
- 
--void pps_event(int source, struct pps_ktime *ts, int event, void *data)
-+void pps_event(int source, struct pps_event_time *ts, int event, void *data)
- {
- 	struct pps_device *pps;
- 	unsigned long flags;
- 	int captured = 0;
-+	struct pps_ktime ts_real;
- 
- 	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
- 		printk(KERN_ERR "pps: unknown event (%x) for source %d\n",
-@@ -284,8 +285,10 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 	if (!pps)
- 		return;
- 
--	pr_debug("PPS event on source %d at %llu.%06u\n",
--			pps->id, (unsigned long long) ts->sec, ts->nsec);
-+	pr_debug("PPS event on source %d at %ld.%09ld\n",
-+			pps->id, ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
++config PPS_CLIENT_PARPORT
++	tristate "Parallel port PPS client"
++	depends on PPS && PARPORT
++	help
++	  If you say yes here you get support for a PPS source connected
++	  with the interrupt pin of your parallel port.
 +
-+	timespec_to_pps_ktime(&ts_real, ts->ts_real);
+ endif
+diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
+index 812c9b1..42517da 100644
+--- a/drivers/pps/clients/Makefile
++++ b/drivers/pps/clients/Makefile
+@@ -4,6 +4,7 @@
  
- 	spin_lock_irqsave(&pps->lock, flags);
+ obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
+ obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
++obj-$(CONFIG_PPS_CLIENT_PARPORT) += pps_parport.o
  
-@@ -299,10 +302,11 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 			(pps->params.mode & PPS_CAPTUREASSERT)) {
- 		/* We have to add an offset? */
- 		if (pps->params.mode & PPS_OFFSETASSERT)
--			pps_add_offset(ts, &pps->params.assert_off_tu);
-+			pps_add_offset(&ts_real,
-+					&pps->params.assert_off_tu);
- 
- 		/* Save the time stamp */
--		pps->assert_tu = *ts;
-+		pps->assert_tu = ts_real;
- 		pps->assert_sequence++;
- 		pr_debug("capture assert seq #%u for source %d\n",
- 			pps->assert_sequence, source);
-@@ -313,10 +317,11 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 			(pps->params.mode & PPS_CAPTURECLEAR)) {
- 		/* We have to add an offset? */
- 		if (pps->params.mode & PPS_OFFSETCLEAR)
--			pps_add_offset(ts, &pps->params.clear_off_tu);
-+			pps_add_offset(&ts_real,
-+					&pps->params.clear_off_tu);
- 
- 		/* Save the time stamp */
--		pps->clear_tu = *ts;
-+		pps->clear_tu = ts_real;
- 		pps->clear_sequence++;
- 		pr_debug("capture clear seq #%u for source %d\n",
- 			pps->clear_sequence, source);
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index c3aed4b..32aa676 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -43,6 +43,10 @@ struct pps_source_info {
- 	struct device *dev;
- };
- 
-+struct pps_event_time {
-+	struct timespec ts_real;
+ ifeq ($(CONFIG_PPS_DEBUG),y)
+ EXTRA_CFLAGS += -DDEBUG
+diff --git a/drivers/pps/clients/pps_parport.c b/drivers/pps/clients/pps_parport.c
+new file mode 100644
+index 0000000..501d440
+--- /dev/null
++++ b/drivers/pps/clients/pps_parport.c
+@@ -0,0 +1,247 @@
++/*
++ * pps_parport.c -- kernel parallel port PPS client
++ *
++ *
++ * Copyright (C) 2009   Alexander Gordeev <lasaine@lvk.cs.msu.su>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++
++/*
++ * TODO:
++ * implement echo over SEL pin
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/irqnr.h>
++#include <linux/time.h>
++#include <linux/parport.h>
++#include <linux/pps_kernel.h>
++
++#define DRVDESC "parallel port PPS client"
++
++/* module parameters */
++
++#define CLEAR_WAIT_MAX		100
++#define CLEAR_WAIT_MAX_ERRORS	5
++
++static unsigned int clear_wait = 100;
++MODULE_PARM_DESC(clear_wait,
++	"Maximum number of port reads when polling for signal clear,"
++	" zero turns clear edge capture off entirely");
++module_param(clear_wait, uint, 0);
++
++
++/* internal per port structure */
++struct pps_client_pp {
++	struct pardevice *pardev;	/* parport device */
++	struct pps_device *pps;		/* PPS device */
++	unsigned int cw;		/* port clear timeout */
++	unsigned int cw_err;		/* number of timeouts */
 +};
 +
- /* The main struct */
- struct pps_device {
- 	struct pps_source_info info;		/* PSS source info */
-@@ -88,7 +92,20 @@ extern int pps_register_source(struct pps_source_info *info,
- extern void pps_unregister_source(int source);
- extern int pps_register_cdev(struct pps_device *pps);
- extern void pps_unregister_cdev(struct pps_device *pps);
--extern void pps_event(int source, struct pps_ktime *ts, int event, void *data);
-+extern void pps_event(int source, struct pps_event_time *ts, int event,
-+		void *data);
-+
-+static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
-+		struct timespec ts)
++static inline int signal_is_set(struct parport *port)
 +{
-+	kt->sec = ts.tv_sec;
-+	kt->nsec = ts.tv_nsec;
++	return (port->ops->read_status(port) & PARPORT_STATUS_ACK) != 0;
 +}
 +
-+static inline void pps_get_ts(struct pps_event_time *ts)
++/* parport interrupt handler */
++static void parport_irq(void *handle)
 +{
-+	getnstimeofday(&ts->ts_real);
++	struct pps_event_time ts_assert, ts_clear;
++	struct pps_client_pp *dev = handle;
++	struct parport *port = dev->pardev->port;
++	unsigned int i;
++	unsigned long flags;
++
++	/* first of all we get the time stamp... */
++	pps_get_ts(&ts_assert);
++
++	if (dev->cw == 0)
++		/* clear edge capture disabled */
++		goto out_assert;
++
++	/* try capture the clear edge */
++	local_irq_save(flags);
++	/* check the signal (no signal means the pulse is lost this time) */
++	if (!signal_is_set(port)) {
++		local_irq_restore(flags);
++		dev_err(dev->pps->dev, "lost the signal\n");
++		goto out_assert;
++	}
++
++	/* poll the port until the signal is unset */
++	for (i = dev->cw; i; i--)
++		if (!signal_is_set(port)) {
++			pps_get_ts(&ts_clear);
++			local_irq_restore(flags);
++			dev->cw_err = 0;
++			goto out_both;
++		}
++	local_irq_restore(flags);
++
++	/* timeout */
++	dev->cw_err++;
++	if (dev->cw_err >= CLEAR_WAIT_MAX_ERRORS) {
++		dev_err(dev->pps->dev, "disabled clear edge capture after %d"
++				" timeouts\n", dev->cw_err);
++		dev->cw = 0;
++		dev->cw_err = 0;
++	}
++
++out_assert:
++	/* fire assert event */
++	pps_event(dev->pps, &ts_assert,
++			PPS_CAPTUREASSERT, NULL);
++	return;
++
++out_both:
++	/* fire assert event */
++	pps_event(dev->pps, &ts_assert,
++			PPS_CAPTUREASSERT, NULL);
++	/* fire clear event */
++	pps_event(dev->pps, &ts_clear,
++			PPS_CAPTURECLEAR, NULL);
++	return;
 +}
- 
- #endif /* LINUX_PPS_KERNEL_H */
- 
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 563e234..55c8192 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -206,6 +206,7 @@
- #include <linux/tty.h>
- #include <linux/mutex.h>
- #include <linux/sysrq.h>
-+#include <linux/pps_kernel.h>
- 
- struct uart_port;
- struct serial_struct;
-@@ -510,10 +511,10 @@ uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
- 	struct uart_state *state = uport->state;
- 	struct tty_port *port = &state->port;
- 	struct tty_ldisc *ld = tty_ldisc_ref(port->tty);
--	struct timespec ts;
-+	struct pps_event_time ts;
- 
- 	if (ld && ld->ops->dcd_change)
--		getnstimeofday(&ts);
-+		pps_get_ts(&ts);
- 
- 	uport->icount.dcd++;
- #ifdef CONFIG_HARD_PPS
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index 526d66f..763e061 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -101,7 +101,7 @@
-  *	any pending driver I/O is completed.
-  *
-  * void (*dcd_change)(struct tty_struct *tty, unsigned int status,
-- * 			struct timespec *ts)
-+ *			struct pps_event_time *ts)
-  *
-  *	Tells the discipline that the DCD pin has changed its status and
-  *	the relative timestamp. Pointer ts can be NULL.
-@@ -109,6 +109,7 @@
- 
- #include <linux/fs.h>
- #include <linux/wait.h>
-+#include <linux/pps_kernel.h>
- 
- struct tty_ldisc_ops {
- 	int	magic;
-@@ -143,7 +144,7 @@ struct tty_ldisc_ops {
- 			       char *fp, int count);
- 	void	(*write_wakeup)(struct tty_struct *);
- 	void	(*dcd_change)(struct tty_struct *, unsigned int,
--				struct timespec *);
-+				struct pps_event_time *);
- 
- 	struct  module *owner;
- 	
++
++/* the PPS echo function */
++static void pps_echo(struct pps_device *pps, int event, void *data)
++{
++	dev_info(pps->dev, "echo %s %s\n",
++		event & PPS_CAPTUREASSERT ? "assert" : "",
++		event & PPS_CAPTURECLEAR ? "clear" : "");
++}
++
++static void parport_attach(struct parport *port)
++{
++	struct pps_client_pp *device;
++	struct pps_source_info info = {
++		.name		= KBUILD_MODNAME,
++		.path		= "",
++		.mode		= PPS_CAPTUREBOTH | \
++				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
++				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
++				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
++		.echo		= pps_echo,
++		.owner		= THIS_MODULE,
++		.dev		= NULL
++	};
++
++	device = kzalloc(sizeof(struct pps_client_pp), GFP_KERNEL);
++	if (!device) {
++		pr_err("memory allocation failed, not attaching\n");
++		return;
++	}
++
++	device->pardev = parport_register_device(port, KBUILD_MODNAME,
++			NULL, NULL, parport_irq, 0, device);
++	if (!device->pardev) {
++		pr_err("couldn't register with %s\n", port->name);
++		goto err_free;
++	}
++
++	if (parport_claim_or_block(device->pardev) < 0) {
++		pr_err("couldn't claim %s\n", port->name);
++		goto err_unregister_dev;
++	}
++
++	device->pps = pps_register_source(&info,
++			PPS_CAPTUREBOTH | PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
++	if (device->pps == NULL) {
++		pr_err("couldn't register PPS source\n");
++		goto err_release_dev;
++	}
++
++	device->cw = clear_wait;
++
++	port->ops->enable_irq(port);
++
++	pr_info("attached to %s\n", port->name);
++
++	return;
++
++err_release_dev:
++	parport_release(device->pardev);
++err_unregister_dev:
++	parport_unregister_device(device->pardev);
++err_free:
++	kfree(device);
++}
++
++static void parport_detach(struct parport *port)
++{
++	struct pardevice *pardev = port->cad;
++	struct pps_client_pp *device;
++
++	/* FIXME: oooh, this is ugly! */
++	if (strcmp(pardev->name, KBUILD_MODNAME))
++		/* not our port */
++		return;
++
++	device = pardev->private;
++
++	port->ops->disable_irq(port);
++	pps_unregister_source(device->pps);
++	parport_release(pardev);
++	parport_unregister_device(pardev);
++	kfree(device);
++}
++
++static struct parport_driver pps_parport_driver = {
++	.name = KBUILD_MODNAME,
++	.attach = parport_attach,
++	.detach = parport_detach,
++};
++
++/* module staff */
++
++static int __init pps_parport_init(void)
++{
++	int ret;
++
++	pr_info(DRVDESC "\n");
++
++	if (clear_wait > CLEAR_WAIT_MAX) {
++		pr_err("clear_wait value should be not greater"
++				" then %d\n", CLEAR_WAIT_MAX);
++		return -EINVAL;
++	}
++
++	ret = parport_register_driver(&pps_parport_driver);
++	if (ret) {
++		pr_err("unable to register with parport\n");
++		return ret;
++	}
++
++	return  0;
++}
++
++static void __exit pps_parport_exit(void)
++{
++	parport_unregister_driver(&pps_parport_driver);
++}
++
++module_init(pps_parport_init);
++module_exit(pps_parport_exit);
++
++MODULE_AUTHOR("Alexander Gordeev <lasaine@lvk.cs.msu.su>");
++MODULE_DESCRIPTION(DRVDESC);
++MODULE_LICENSE("GPL");
 -- 
 1.7.2.3
 
