@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab0KXAmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:42:33 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50799 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab0KXAmc (ORCPT
+	id S1754548Ab0KXAod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:44:33 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:62997 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab0KXAoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:42:32 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 24 Nov 2010 09:36:53 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: =?UTF-8?B?TWljaGHFgg==?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        minchan.kim@gmail.com, Bob Liu <lliubbo@gmail.com>,
-        fujita.tomonori@lab.ntt.co.jp, pawel@osciak.com, andi.kleen@intel.com,
-        felipe.contreras@gmail.com,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 0/4] big chunk memory allocator v4
-Message-Id: <20101124093653.bb8692e4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <op.vmmre1vv7p4s8u@pikus>
-References: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101119125653.16dd5452.akpm@linux-foundation.org>
-	<20101122090431.4ff9c941.kamezawa.hiroyu@jp.fujitsu.com>
-	<op.vmmre1vv7p4s8u@pikus>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 23 Nov 2010 19:44:32 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6176"; a="64098677"
+Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Gregory Bean <gbean@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1011231456380.17082@gbean-linux.qualcomm.com>
+References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
+	 <1290109970-26752-2-git-send-email-gbean@codeaurora.org>
+	 <1290534717.4165.43.camel@m0nster>
+	 <alpine.DEB.2.00.1011231456380.17082@gbean-linux.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 16:44:31 -0800
+Message-ID: <1290559471.4165.85.camel@m0nster>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 16:46:03 +0100
-Michał Nazarewicz <m.nazarewicz@samsung.com> wrote:
+On Tue, 2010-11-23 at 15:08 -0800, Gregory Bean wrote:
+> >> +static inline void set_gpio_bits(unsigned n, void __iomem *reg)
+> >> +{
+> >> +	writel(readl(reg) | n, reg);
+> >> +}
+> >> +
+> >> +static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
+> >> +{
+> >> +	writel(readl(reg) & ~n, reg);
+> >> +}
+> >
+> > It seems these functions actually accept output from BIT(). It would be
+> > safer to force these to accept the bit number then use BIT() inside this
+> > function to translate. That way you wouldn't use "unsigned n" for the
+> > argument you would use a named enum for the argument.
+> 
+> I don't think that will work well, because there are cases where we want
+> to set or clear more than one bit at a time.  Making these functions
+> take a bit number as an argument would restrict them to setting or clearing
+> only one bit at a time, forcing users to call them multiple times to set
+> or clear more than one bit, meaning lots of readl & writel calls for
+> compount bit-changes.
 
-> A few things than:
-> 
-> 1. As Felipe mentioned, on ARM it is often desired to have the memory
->     mapped as non-cacheable, which most often mean that the memory never
->     reaches the page allocator.  This means, that alloc_contig_pages()
->     would not be suitable for cases where one needs such memory.
-> 
->     Or could this be overcome by adding the memory back as highmem?  But
->     then, it would force to compile in highmem support even if platform
->     does not really need it.
-> 
-> 2. Device drivers should not by themselves know what ranges of memory to
->     allocate memory from.  Moreover, some device drivers could require
->     allocation different buffers from different ranges.  As such, this
->     would require some management code on top of alloc_contig_pages().
-> 
-> 3. When posting hwmem, Johan Mossberg mentioned that he'd like to see
->     notion of "pinning" chunks (so that not-pinned chunks can be moved
->     around when hardware does not use them to defragment memory).  This
->     would again require some management code on top of
->     alloc_contig_pages().
-> 
-> 4. I might be mistaken here, but the way I understand ZONE_MOVABLE work
->     is that it is cut of from the end of memory.  Or am I talking nonsense?
->     My concern is that at least one chip I'm working with requires
->     allocations from different memory banks which would basically mean that
->     there would have to be two movable zones, ie:
-> 
->     +-------------------+-------------------+
->     | Memory Bank #1    | Memory Bank #2    |
->     +---------+---------+---------+---------+
->     | normal  | movable | normal  | movable |
->     +---------+---------+---------+---------+
-> 
-yes.
+How often will you do the multiple bit changes tho?
 
-> So even though I'm personally somehow drawn by alloc_contig_pages()'s
-> simplicity (compared to CMA at least), those quick thoughts make me think
-> that alloc_contig_pages() would work rather as a backend (as Kamezawa
-> mentioned) for some, maybe even tiny but still present, management code
-> which would handle "marking memory fragments as ZONE_MOVABLE" (whatever
-> that would involve) and deciding which memory ranges drivers can allocate
-> from.
+> >> +static struct msm_gpio_dev msm_gpio = {
+> >> +	.gpio_chip = {
+> >> +		.base             = 0,
+> >
+> > I guess it's fine to do "offset - chip->base" if base is always zero,
+> > but why do subtraction at all.
 > 
-> I'm also wondering whether alloc_contig_pages()'s first-fit is suitable but
-> that probably cannot be judged without some benchmarks.
+> If the chip is ever moved, not accounting for the base would produce an error.
+> I know that 'speculative coding' is frowned upon, but isn't removing an 
+> addition (as you pointed out, the subtraction is a bug) because this instance
+> of the chip is at offset zero a little over the top?
+
+Up to you what to do here ..  I don't care if you have it be redundant
+addition, you might want to comment on it tho.
+
+> >> +	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
+> >
+> > I's just break this into two calls, or make another helper that to set
+> > that accepts the mask and have set_gpio_bits call that. This here you
+> > would just use the other helper. like set_gpio_bits calls
+> > set_gpio_bits_mask() and you call the mask version here.
 > 
+> Why make two readl/writel call pairs, or have one version of a helper which
+> can set a single bit and another version which can set more than one
+> at a time?  That seems really complicated.
 
-I'll continue to update patches, you can freely reuse my code and integrate
-this set to yours. I works for this firstly for EMBEDED but I want this to be
-a _generic_ function for gerenal purpose architecture.
-There may be guys who want 1G page on a host with tons of free memory.
+The benefit is that you would have type checking on the values sent in.
+You would get that from using the enum to define the argument. With just
+using unsigned int you can send in any value you want (even invalid
+ones).
 
+Daniel
 
-Thanks,
--Kame
- 
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
 
