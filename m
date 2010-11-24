@@ -1,34 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab0KXQxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:53:51 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:37374 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab0KXQxt (ORCPT
+	id S1755625Ab0KXQx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:53:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34298 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab0KXQxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:53:49 -0500
-Date: Wed, 24 Nov 2010 16:53:43 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Colin King <colin.king@canonical.com>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] WMI: Cater for multiple events with same GUID
-Message-ID: <20101124165343.GK2150@srcf.ucam.org>
-References: <1290181202-9439-1-git-send-email-colin.king@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290181202-9439-1-git-send-email-colin.king@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 24 Nov 2010 11:53:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=aG9ipDmyUJXx7dXBxBluUDUZtdceMYJEYVOBXzTgvD1PEsgp3q7bKGNCR27jtwypg8
+         Ay4KgoBT9JTgTqZzMVJpWxB0GeCgzghvt6hNcKD09XGck3UVyzMUAIPXtlxJmuBbMEdq
+         k8yB7++yXyGO4oFApdUczg/0c73GBgqP3tlLs=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ext3: Add more journal error check
+Date: Thu, 25 Nov 2010 01:53:13 +0900
+Message-Id: <1290617593-4615-2-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1290617593-4615-1-git-send-email-namhyung@gmail.com>
+References: <1290617593-4615-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've applied this to -next - is there anything that needs this that 
-would benefit from it in .37?
+Check return value of ext3_journal_get_write_acccess() and
+ext3_journal_dirty_metadata().
 
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ext3/inode.c |    6 ++++--
+ fs/ext3/namei.c |    4 +++-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 460b6d4..1fd908d 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -2151,13 +2151,15 @@ static void ext3_clear_blocks(handle_t *handle, struct inode *inode,
+ 	if (try_to_extend_transaction(handle, inode)) {
+ 		if (bh) {
+ 			BUFFER_TRACE(bh, "call ext3_journal_dirty_metadata");
+-			ext3_journal_dirty_metadata(handle, bh);
++			if (ext3_journal_dirty_metadata(handle, bh))
++				return;
+ 		}
+ 		ext3_mark_inode_dirty(handle, inode);
+ 		truncate_restart_transaction(handle, inode);
+ 		if (bh) {
+ 			BUFFER_TRACE(bh, "retaking write access");
+-			ext3_journal_get_write_access(handle, bh);
++			if (ext3_journal_get_write_access(handle, bh))
++				return;
+ 		}
+ 	}
+ 
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index c8415e7..4400b4e 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -1607,7 +1607,9 @@ static int ext3_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 			if (err)
+ 				goto journal_error;
+ 		}
+-		ext3_journal_dirty_metadata(handle, frames[0].bh);
++		err = ext3_journal_dirty_metadata(handle, frames[0].bh);
++		if (err)
++			goto journal_error;
+ 	}
+ 	de = do_split(handle, dir, &bh, frame, &hinfo, &err);
+ 	if (!de)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.0.4
+
