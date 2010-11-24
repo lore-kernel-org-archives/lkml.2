@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab0KXFSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 00:18:24 -0500
-Received: from cantor.suse.de ([195.135.220.2]:50298 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab0KXFSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 00:18:23 -0500
-Date: Wed, 24 Nov 2010 16:18:13 +1100
-From: Neil Brown <neilb@suse.de>
-To: djwong@us.ibm.com
-Cc: linux-raid@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] md: Call blk_queue_flush() to establish flush/fua
- support
-Message-ID: <20101124161813.2f5bc0d6@notabene.brown>
-In-Reply-To: <20101123190103.GW14383@tux1.beaverton.ibm.com>
-References: <20101122232208.GU14383@tux1.beaverton.ibm.com>
-	<20101123105000.331b40f8@notabene.brown>
-	<20101123190103.GW14383@tux1.beaverton.ibm.com>
-X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1751828Ab0KXFYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 00:24:49 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47296 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0KXFYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 00:24:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=f6tWdT1Lc+2L9QSP6+eePqp5K2BqcZtkI5o+VpkT1olByZ+79onQRf4Wz5SgZSPs0q
+         j+XzIXPHYvNbFlBZDfdImVifmDEWyYfeAa981+kM/3Nl5+/HvokCLbOp0IlaEcAax984
+         YxLL5ZrcNmB+vkXHYpfAQK20AJvfs3X+or+QA=
+Subject: Re: [PATCH] generic-ipi: add lock context annotations
+From: Namhyung Kim <namhyung@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101123094016.GC8882@bicker>
+References: <1290411232-11439-1-git-send-email-namhyung@gmail.com>
+	 <1290430003.2072.101.camel@laptop> <1290482390.1857.26.camel@leonhard>
+	 <4CEB8034.80400@fusionio.com>  <20101123094016.GC8882@bicker>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 14:24:40 +0900
+Message-ID: <1290576280.1690.13.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010 11:01:03 -0800
-"Darrick J. Wong" <djwong@us.ibm.com> wrote:
-
-> Here's a shorter version that sets up flush/fua unconditionally.
-> ---
-> Before 2.6.37, the md layer had a mechanism for catching I/Os with the barrier
-> flag set, and translating the barrier into barriers for all the underlying
-> devices.  With 2.6.37, I/O barriers have become plain old flushes, and the md
-> code was updated to reflect this.  However, one piece was left out -- the md
-> layer does not tell the block layer that it supports flushes or FUA access at
-> all, which results in md silently dropping flush requests.
+2010-11-23 (화), 12:40 +0300, Dan Carpenter: 
+> On Tue, Nov 23, 2010 at 09:49:56AM +0100, Jens Axboe wrote:
+> > I guess what Peter means is that the fact that the function grabs the
+> > lock is apparent in the code, if sparse was a bit "smarter", it would
+> > see and note this itself.
 > 
-> Since the support already seems there, just add this one piece of bookkeeping.
+> The sparse warning messages should have been included in the commit
+> message.  Here they are:
 > 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
+> kernel/smp.c:513:6: warning: context imbalance in 'ipi_call_lock' - wrong count at exit
+> kernel/smp.c:518:6: warning: context imbalance in 'ipi_call_unlock' - unexpected unlock
+> kernel/smp.c:523:6: warning: context imbalance in 'ipi_call_lock_irq' - wrong count at exit
+> kernel/smp.c:528:6: warning: context imbalance in 'ipi_call_unlock_irq' - unexpected unlock
 > 
->  drivers/md/md.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> What happens is that sparse *does* see that the locks are unlocked and
+> that's what it complains about.
 > 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index 324a366..43243a4 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -4338,6 +4338,8 @@ static int md_alloc(dev_t dev, char *name)
->  	if (mddev->kobj.sd &&
->  	    sysfs_create_group(&mddev->kobj, &md_bitmap_group))
->  		printk(KERN_DEBUG "pointless warning\n");
-> +
-> +	blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
->   abort:
->  	mutex_unlock(&disks_mutex);
->  	if (!error && mddev->kobj.sd) {
+> Sparse works before the code is linked so this change doesn't affect
+> anything outside kernel/smp.c.  If we added these annotations to
+> include/linux/smp.h then they would be used for checking
+> kernel/smpboot.c
+> 
+> regards,
+> dan carpenter
+> 
+
+I tried to annotate declations in include/linux/smp.h but it didn't work
+well. Maybe that's what we need to fix the sparse?
+
+Anyway, Jens, do you want new patch which includes above warnings?
+
+Thanks.
+
+-- 
+Regards,
+Namhyung Kim
 
 
-Applied, thanks.
-
-NeilBrown
 
