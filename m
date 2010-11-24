@@ -1,100 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab0KXUfX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 15:35:23 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58920 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab0KXUfW (ORCPT
+	id S1756529Ab0KXUhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 15:37:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:51343 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756118Ab0KXUhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 15:35:22 -0500
-Subject: Re: [RFC] persistent store
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=MM-GVGcswHfLXE-6JFHiXUT4k-wt61rqwkjAf@mail.gmail.com>
-References: <1290470763.3008.252.camel@localhost>
-	 <AANLkTi=MM-GVGcswHfLXE-6JFHiXUT4k-wt61rqwkjAf@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Nov 2010 12:35:20 -0800
-Message-ID: <1290630920.3058.205.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Wed, 24 Nov 2010 15:37:04 -0500
+Message-ID: <4CED7721.6040209@vlnb.net>
+Date: Wed, 24 Nov 2010 23:35:45 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Richard Williams <richard@etechsoft.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com> <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com> <4CE2846C.6070501@vlnb.net> <4CE59482.3050002@gmail.com> <20101118214619.GA29097@kroah.com> <4CE6BB4A.5060606@gmail.com> <20101119202202.GB6323@core.coreip.homeip.net> <4CE6E323.8080703@gmail.com> <20101119211649.GA28606@kroah.com>
+In-Reply-To: <20101119211649.GA28606@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:Mv5GRC5/gTBgtZRkDe9d3dsXtTenXiNSyDkpesxDf2b
+ fapQ2tOtjDe+bHj2b5EtsmGTCMay2ctndqS9TI6S2gp2Y22bAF
+ H22FeNq67IVpT4HzlW60kHkxx5z1H8Q0JZOCBs7Xhfaflw801q
+ SDJiTHFMPGOsBrUuX07Bie2qVQuMcOQb2AVq3Mcuz0I/SjIz1N
+ vPZqzohJOaL5osijwZ6EQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-22 at 17:37 -0800, Tony Luck wrote: 
-> On Mon, Nov 22, 2010 at 4:06 PM, Jim Keniston
-> <jkenisto@linux.vnet.ibm.com> wrote:
-> >> + /* Don't dump oopses to persistent store */
-> >
-> > Why not?  In our case, we capture every oops and panic report, but keep
-> > only the most recent.  Seems like catching the last oops could be useful
-> > if your system hangs thereafter and can't be made to panic.  I suggest
-> > you pass along the reason (KMSG_DUMP_OOPS or whatever) and let the
-> > callback decide.
+Greg KH, on 11/20/2010 12:16 AM wrote:
+>>>> None of the SCST objects are Linux devices. None of them has entries in
+>>>> /dev, none of them needs to send any events to udev and none of them
+>>>> sends or receives data from DMA, hence has any DMA parameters or
+>>>> restrictions. So, how can them fit into the driver/bus/device model you
+>>>> are enforcing?
+>>>
+>>> Note that the entities in /sys/devices/... tree and not necessarily
+>>> physical devices bit rather interface abstractionss. Consider, for
+>>> example, /sys/class/input/*. None of the "devices" there talk directly
+>>> to hardware, do DMA or other things. Some of them don't even talk to
+>>> usrespace directly but rather through additional interfaces (evdev.
+>>> mousedev, ect). Still they are represented there and even have suspend
+>>> and resume methods (because even for logical devices it makes sense to
+>>> save and restore some state).
 > 
-> My thoughts were that Oops were non-fatal and ended up in /var/log/messages,
-> so this would be unneeded (this bit of code was copied from one of mtdoops
-> or ramoops - which does almost the same ... they do have an option to
-> allow the copy - perhaps I should have copied that bit too?).
-
-Yes, I'd still vote for that, because:
-1) it provides flexibility at very low cost;
-2) it could be useful if syslogd and/or klogd and/or the filesystem
-holding /var/log are in trouble; and
-3) it's helpful because I want to be sure -- even in the face of limited
-NVRAM -- to capture the start of an oops that causes a panic.
-
-(3) requires a little more explanation: As far as I can tell, by the
-time you're in panic(), there's no way to know that you're panicking
-because of an oops.  (The oops_in_progress flag doesn't seem to be
-intended for this.)  But if I get notified at the time of the oops, I
-can check the panic_on_oops flag and know that we're GOING to panic, and
-set a panicking_on_oops flag for use when I get called back again during
-the panic.  (No, my patch set doesn't do that yet, because I didn't
-figure it out 'til recently.)  There's perhaps a more generic solution
-to this particular problem, but I may be your only client with such
-space constraints.
-
+> This is correct.
 > 
-> > You'd have to serialize the oops handling, I guess, in case multiple
-> > CPUs oops simultaneously.  (Gotta fix that in my code.)
-> Yup - I need to do this too (I only allocate one buffer).
+>> SCST devices are not even logical devices. As I wrote, "devices" word is
+>> misleading. SCST devices are converse of what Linux means under this
+>> word. SCST devices are like NFS exports: a place where those events
+>> generated and those requests received.
 > 
-> >> + psinfo->writer(PSTORE_DMESG, pstore_buf, l1_cpy + l2_cpy);
-> >
-> > This assumes that you always want to capture the last psinfo->data_size
-> > bytes of the printk buffer.  Given the small capacity of our NVRAM
-> > partition, I handle the case where the whole oops report doesn't fit.
-> > In that case, I sacrifice the end of the oops report to capture the
-> > beginning.  Patch #3 in my set is about this.
+> No, that's fine.
+
+I'm surprised you would make NFS exports devices
+
+>> Think of SCST device as if it sits on the opposite side of the PCI bus
+>> of the corresponding SCSI device Linux sees in /sys/class and /sys/bus.
 > 
-> Yes - I assume here that the last "data_size" bytes will be enough
-> to be useful. But in your case it most likely won't be.  You could
-> lie about how much space you allow and then include some oops
-> parsing code to get the vital bits out of what is passed to you. Not
-> pretty - but it would work.
+> Again, that's fine, look at usb gadgets, it's the same thing.
 
-Yeah, in the case of powerpc, a psinfo->data_size value of (say) 8K
-would almost certainly include the start of the oops.  And then I could
-simplify my code quite a bit.
+USB gadgets are a good example, but not quite.
 
+I'm objecting not the possibility to implement SCST objects as devices.
+We are creating software, so all what hardware allows can be implemented.
+
+I'm arguing usage of devices view for something which fundamentally not
+devices.
+
+USB gadgets are subset of what SCST allows. On the external side they
+are tightly coupled to hardware, on the backend side they don't need any
+management interface, because (at least for storage) all devices
+configuration they have is static via module parameters. The only
+attributes file_storage has are to change FUA and file path, which can
+be placed anywhere, including /sys/module/g_file_storage/parameters.
+
+So, for USB gadgets the config interface and place in /sys doesn't
+matter much. I guess, making its LUNs as Linux devices were just part of
+the ritual to get accepted into the kernel. On the USB gadgets
+developers place I wouldn't mind too to go this way.
+
+But SCST is a _big_, _complete_, _new_ Linux subsystem. Actually, USB
+storage gadgets should be SCST targets to use full power of all possible
+virtual and real backends SCST provides, hence stay inside SCST subtree.
+
+For SCST it is very important that all its functionality concentrated in
+one place and not confused with other client side devices Linux has.
+Important for clearness, easy to use, easy to understand, flexibility,
+maintainability, etc.
+
+It's like as you created rules to keep and train dogs. Then you need to
+keep and train cats as well. Would it be wise to keep cats in the same
+place together with dogs and train them the same tricks using the same
+rules as dogs?
+
+>> > None of the SCST objects are Linux devices. None of them has entries in
+>> > /dev, none of them needs to send any events to udev and none of them
+>> > sends or receives data from DMA, hence has any DMA parameters or
+>> > restrictions. So, how can them fit into the driver/bus/device model you
+>> > are enforcing?
+>
+> That doesn't matter.  They are still "devices" that the kernel knows
+> about and as such, fit into the device tree of everything in the kernel.
+
+If you have such wide devices definition, why file systems have separate
+/sys/fs namespace? Or ksm place in /sys/kernel/mm/ksm? Or hugepages in
+/sys/kernel/mm/hugepages?
+
+If NFS exports are devices, file systems must also be devices, correct?
+
+Like /sys/fs/ext4/sda11. Isn't it a full analogy to NFS export
+/home/user/shared_dir?
+
+>> > Sorry, but we have an impression that you are judging without seeing the
+>> > full picture. Isn't it a duty of a subsystem's maintainer to see full
+>> > picture before deciding if it's good or bad?
+> It's the duty of a subsystem's maintainer to enforce the correct model
+> of the kernel, and that is what I am doing.
 > 
-> >> + new_pstore->attr.attr.mode = 0444;
-> >
-> > /var/log/messages is typically not readable by everybody.  This
-> > appears to circumvent that.
-> 
-> But "dmesg(8)" typically *does* allow any user to see the most recent
-> part of the console log - so we are not consistent about this.
+> Again, this is the last email I'm writing on this topic, as none of the
+> previous ones seem to be sinking in.
 
-You're right, of course.  It's the user-mode syslog messages that are
-being hidden.
+Well, if I don't agree with you it doesn't mean I'm not listening to
+you. I do. Very carefully.
 
-> 
-> -Tony
-
-Jim
+Thanks,
+Vlad
 
