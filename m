@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab0KXN4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 08:56:15 -0500
-Received: from www.tglx.de ([62.245.132.106]:41262 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755279Ab0KXN4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 08:56:14 -0500
-Date: Wed, 24 Nov 2010 14:56:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paul Mundt <lethal@linux-sh.org>
-cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [question] NR_IRQS in genirq
-In-Reply-To: <20101124084653.GG2212@linux-sh.org>
-Message-ID: <alpine.LFD.2.00.1011241455130.2900@localhost6.localdomain6>
-References: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com> <20101124084653.GG2212@linux-sh.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751307Ab0KXOAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:00:49 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17967 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0KXOAs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 09:00:48 -0500
+Date: Wed, 24 Nov 2010 14:53:05 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Rakib Mullick <rakib.mullick@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: [PATCH] x86, dumpstack: Fix unused variable warning.
+In-Reply-To: <AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1011241452040.23994@swampdragon.chaosbits.net>
+References: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com> <alpine.LNX.2.00.1011241051370.23994@swampdragon.chaosbits.net> <AANLkTinOAdDqmVo+zrEk=-EUri-CXBY1kukd96-ocHhL@mail.gmail.com>
+ <AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1257869183-1290606785=:23994"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010, Paul Mundt wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Wed, Nov 24, 2010 at 03:28:37PM +0800, Haojian Zhuang wrote:
-> > Hi all,
-> > 
-> > I'm using the latest kernel 2.6.37-rc1. Now I met some issues on genirq.
-> > 
-> > 1. While SPARSE IRQ is enabled, nr_irqs may be larger than NR_IRQS.
-> > But the allocated_irqs bitmap (kernel/irq/irqdesc.c) is restricted in
-> > NR_IRQS. Is it an issue?
-> > 
-> > 2. irqs_resend bitmap of kernel/irq/resend.c is also restricted in
-> > NR_IRQS. Is it an issue, too?
-> > 
-> Perhaps something like:
+--8323328-1257869183-1290606785=:23994
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 24 Nov 2010, Frederic Weisbecker wrote:
+
+> On Wed, Nov 24, 2010 at 04:26:01PM +0600, Rakib Mullick wrote:
+> > On Wed, Nov 24, 2010 at 3:57 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > > On Wed, 24 Nov 2010, Rakib Mullick wrote:
+> > >
+> > >
+> > > So, now the bp variable does not exist at all if CONFIG_FRAME_POINTER is
+> > > not defined.
+> >
+> > Yes - right. And its not used outside CONFIG_FRAME_POINTER.
+> >
+> > > That's going to make this line :
+> > >
+> > >          show_trace(NULL, NULL, &stack, bp);
+> > >
+> > Not clear what are you trying to say. Would you please, clear it up a bit?
 > 
-> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-> index 9988d03..11bd76c 100644
-> --- a/kernel/irq/irqdesc.c
-> +++ b/kernel/irq/irqdesc.c
-> @@ -215,6 +215,11 @@ int __init early_irq_init(void)
->  	initcnt = arch_probe_nr_irqs();
->  	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
->  
-> +	if (unlikely(nr_irqs > NR_IRQS)) {
-> +		WARN(1, "Probed more than NR_IRQS, chomping.\n");
-> +		nr_irqs = NR_IRQS;
-> +	}
+> 
+> I think Jesper is confused because your patch applies on -tip (tip/master or
+> tip/perf/core) where we have zapped the bp argument from show_trace() lately.
+> 
+> But in the mainline, show_trace() still has the bp argument.
 
-Yep, we need that sanity check, but the WARN() is overkill as we
-already know the call chain :)
 
-Thanks,
+Ahh yes, my mistake. I checked the code in mainline.
+Sorry about the confusion.
 
-	tglx
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-1257869183-1290606785=:23994--
