@@ -1,120 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab0KXOBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:01:34 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37248 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab0KXOBd (ORCPT
+	id S1750897Ab0KXOCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:02:35 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:60633 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab0KXOCe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:01:33 -0500
-Message-ID: <4CED1AB8.80305@retis.net.pl>
-Date: Wed, 24 Nov 2010 15:01:28 +0100
-From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100703 Lightning/1.0b2pre Thunderbird/3.0.5
+	Wed, 24 Nov 2010 09:02:34 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com,
-        jbarnes@virtuousgeek.org
-Subject: [regression] 2.6.37-rc1: Freeze while booting on HP nx6325
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1290529171.2390.7994.camel@nimitz>
+References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+	<20101122161158.02699d10.akpm@linux-foundation.org>
+	<1290501502.2390.7029.camel@nimitz>
+	<AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com>
+	<1290529171.2390.7994.camel@nimitz>
+Date: Wed, 24 Nov 2010 15:02:32 +0100
+Message-ID: <AANLkTikCn-YvORocXSJ1Z+ovYNMhKF7TaX=BHWKwrQup@mail.gmail.com>
+Subject: Re: Sudden and massive page cache eviction
+From: =?UTF-8?Q?Peter_Sch=C3=BCller?= <scode@spotify.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Mattias de Zalenski <zalenski@spotify.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I have a problem with 2.6.37-rc1. My HP nx6325 freezes during boot.
-It happens after printing lines:
+Hello,
 
-[    0.298457] atiixp 0000:00:14.1: not 100% native mode: will probe
-irqs later
-[    0.298515]     ide0: BM-DMA at 0x7040-0x7047
-[    0.298573] atiixp 0000:00:14.1: simplex device: DMA disabled
-[    0.298625] ide1: DMA disabled
-<Freeze>
+first of all, thank you very much for taking the time to analyze the situation!
 
-This didn't happen in 2.6.36. I bisected between 2.6.36 and 2.6.37-rc1:
+> Yeah, drop_caches doesn't seem very likely.
+>
+> Your postgres data looks the cleanest and is probably the easiest to
+> analyze.  Might as well start there:
+>
+>        http://files.spotify.com/memcut/postgresql_weekly.png
 
-1af3c2e45e7a641e774bbb84fa428f2f0bf2d9c9 is the first bad commit
-commit 1af3c2e45e7a641e774bbb84fa428f2f0bf2d9c9
-Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Date:   Tue Oct 26 15:41:54 2010 -0600
+Since you wanted to look at that primarily I re-visited that
+particular case to confirm what was really happening. Unfortunately I
+have to retract my claim here, because it turns out that we have
+backups running locally on the machine before shipping them away, and
+it seems that indeed the cache evictions on that machine are
+correlated with the removal of said backup after it was shipped away
+(and testing confirms the behavior).
 
-    x86: allocate space within a region top-down
+Of course that is entirely expected (that removal of a recently
+written file will cause a sudden spike in free memory) so the
+PostgreSQL graph is a red herring.
 
-    Request that allocate_resource() use available space from high addresses
-    first, rather than the default of using low addresses first.
+This was unfortunate, and a result of me picking this guy fairly
+ad-hoc for the purpose of summarizing the situation in my post to the
+list. We have spent considerable time trying to make sure that the
+evictions are indeed anomalous and not e.g. due to a file removal in
+the case of the actual service where we are negatively affected, but I
+was not sufficiently careful before proclaiming that we seem to see a
+similar effects on other hosts.
 
-    The most common place this makes a difference is when we move or assign
-    new PCI device resources.  Low addresses are generally scarce, so it's
-    better to use high addresses when possible.  This follows Windows
-practice
-    for PCI allocation.
+It may still be the case, but I am not finding a case which is
+sufficiently clear at this time (being sure requires really looking at
+what is going on with each class of machine and eliminating various
+forms of backups, log rotation and other behavior exhibited). This
+also means that in general it's not certain that we are in fact seeing
+this behavior on others at all.
 
-    Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c42
-    Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+However it does leave all other observations, including the very
+direct correlation in time with load spikes and a lack of correlation
+with backups jobs, and the fact that the eviction seems to be of
+actively used data given the resulting I/O storm. So I feel confident
+in saying that we definitely do have an actual issue (although as
+previously indicated we have not proven conclusively that there is
+absolutely no userspace application allocating and touching lots of
+pages suddenly, but it seems very unlikely).
 
-Reverting above patch from latest linus-tree resolves problem.
+> Just eyeballing it, _most_ of the evictions seem to happen after some
+> movement in the active/inactive lists.  We see an "inactive" uptick as
+> we start to launder pages, and the page activation doesn't keep up with
+> it.  This is a _bit_ weird since we don't see any slab cache or other
+> users coming to fill the new space.  Something _wanted_ the memory, so
+> why isn't it being used?
 
-My lspci:
+In this case we have the writing of a backup file (with corresponding
+page touching for reading data). This is followed by a period of
+reading the recently written file, followed by it being removed.
 
-00:00.0 Host bridge: ATI Technologies Inc RS480 Host Bridge (rev 10)
-00:01.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
-00:04.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
-00:05.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
-00:06.0 PCI bridge: ATI Technologies Inc RS480 PCI Bridge
-00:12.0 IDE interface: ATI Technologies Inc IXP SB400 Serial ATA
-Controller (rev 80)
-00:13.0 USB Controller: ATI Technologies Inc IXP SB400 USB Host
-Controller (rev 80)
-00:13.1 USB Controller: ATI Technologies Inc IXP SB400 USB Host
-Controller (rev 80)
-00:13.2 USB Controller: ATI Technologies Inc IXP SB400 USB2 Host
-Controller (rev 80)
-00:14.0 SMBus: ATI Technologies Inc IXP SB400 SMBus Controller (rev 82)
-00:14.1 IDE interface: ATI Technologies Inc IXP SB400 IDE Controller
-(rev 80)
-00:14.2 Audio device: ATI Technologies Inc IXP SB4x0 High Definition
-Audio Controller (rev 01)
-00:14.3 ISA bridge: ATI Technologies Inc IXP SB400 PCI-ISA Bridge (rev 80)
-00:14.4 PCI bridge: ATI Technologies Inc IXP SB400 PCI-PCI Bridge (rev 80)
-00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
-HyperTransport Technology Configuration
-00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
-Address Map
-00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
-DRAM Controller
+> Do you have any large page (hugetlbfs) or other multi-order (> 1 page)
+> allocations happening in the kernel?
 
-00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron]
-Miscellaneous Control
+No; we're not using huge pages at all (not consciously). Looking at
+/proc/meminfo I can confirm that we just see this:
 
-01:05.0 VGA compatible controller: ATI Technologies Inc RS482 [Radeon
-Xpress 200M]
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
 
-02:01.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5788
-Gigabit Ethernet (rev 03)
+So hopefully that should not be a factor.
 
-02:04.0 CardBus bridge: Texas Instruments PCIxx12 Cardbus Controller
+> If you could start recording /proc/{vmstat,buddystat,meminfo,slabinfo},
+> it would be immensely useful.  The munin graphs are really great, but
+> they don't have the detail which you can get from stuff like vmstat.
 
+Absolutely. I'll get some recording of those going and run for
+sufficient duration to correlate with page evictions.
 
-02:04.1 FireWire (IEEE 1394): Texas Instruments PCIxx12 OHCI Compliant
-IEEE 1394 Host Controller
+> For a page-cache-heavy workload where you care a lot more about things
+> being _in_ cache rather than having good NUMA locality, you probably
+> want "zone_reclaim_mode" set to 0:
+>
+>        http://www.kernel.org/doc/Documentation/sysctl/vm.txt
+>
+> That'll be a bit more comprehensive than messing with numactl.  It
+> really is the best thing if you just don't care about NUMA latencies all
+> that much.
 
-02:04.2 Mass storage controller: Texas Instruments 5-in-1 Multimedia
-Card Reader (SD/MMC/MS/MS PRO/xD)
+Thanks! That looks to be exactly what we would like in this case and,
+if Interpret you and the documentation correctly, obviates the need to
+ask for interleaved allocation.
 
-02:04.3 SD Host controller: Texas Instruments PCIxx12 SDA Standard
-Compliant SD Host Controller
+>  What kind of hardware is this, btw?
 
-03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8169
-Gigabit Ethernet (rev 10)
+It varies somewhat in age, but all of them are Intel. The oldest ones
+have 16 GB of memory and are of this CPU type:
 
-30:00.0 Network controller: Broadcom Corporation BCM4312 802.11a/b/g
-(rev 01)
+cpu family	: 6
+model		: 23
+model name	: Intel(R) Xeon(R) CPU           L5420  @ 2.50GHz
+stepping	: 6
+cpu MHz		: 2494.168
+cache size	: 6144 KB
 
-Please CC to me, as I'm not subscribed to the list.
+While newer ones have ~36 GB memory and are of this CPU type:
+
+cpu family	: 6
+model		: 26
+model name	: Intel(R) Xeon(R) CPU           E5504  @ 2.00GHz
+stepping	: 5
+cpu MHz		: 2000.049
+cache size	: 4096 KB
+
+Some variation beyond that may exist, but that is the span (and all
+are Intel, 8 cores or more).
+
+numactl --show on older machines:
+
+policy: default
+preferred node: current
+physcpubind: 0 1 2 3 4 5 6 7
+cpubind: 0
+nodebind: 0
+membind: 0
+
+And on newer machines:
+
+policy: default
+preferred node: current
+physcpubind: 0 1 2 3 4 5 6 7
+cpubind: 0 1
+nodebind: 0 1
+membind: 0 1
 
 -- 
-Greetings
-Grzegorz Chwesewicz
-mailto:grzegorz.chwesewicz@retis.net.pl
+/ Peter Schuller aka scode
