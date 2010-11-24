@@ -1,45 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab0KXTUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:20:18 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41608
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753021Ab0KXTUQ (ORCPT
+	id S1756255Ab0KXTWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:22:14 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:62031 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab0KXTWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:20:16 -0500
-Date: Wed, 24 Nov 2010 11:20:42 -0800 (PST)
-Message-Id: <20101124.112042.179943893.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] isdn: icn: Fix stack overflow bug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290573987.30543.462.camel@gandalf.stny.rr.com>
-References: <1290573578.30543.461.camel@gandalf.stny.rr.com>
-	<1290573987.30543.462.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Nov 2010 14:22:13 -0500
+X-IronPort-AV: E=Sophos;i="4.59,249,1288569600"; 
+   d="scan'208";a="3032088"
+Date: Wed, 24 Nov 2010 19:22:14 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: linux-kernel@vger.kernel.org
+CC: xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: [PATCH v2] Use PHYSDEVOP_get_free_pirq to implement
+ find_unbound_pirq
+Message-ID: <alpine.DEB.2.00.1011241918290.2373@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 23 Nov 2010 23:46:27 -0500
+Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
 
-> 
-> Note, the subject should really be:
-> 
-> [PATCH] isdn: icn: Fix stack corruption bug.
+Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
+pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
+amount of pirq available.
 
-Applied.
+Changes since v1:
 
-Please CC: isdn patches to netdev@vger.kernel.org in the future as per
-"ISDN SUBSYSTEM" in MAINTAINERS.  Patches sent only to the ISDN list
-and Karsten are likely to not get looked at for weeks if not longer.
+- if PHYSDEVOP_get_free_pirq is not implemented, start pirq allocation
+from 0 instead of 16. The pirq number 16 is not actually meaningful for
+Xen.
 
-Also, printing out the driver version is not only a waste of text and
-data, it's unnecessary (MODULE_VERSION).  So it should be killed off
-at some point.
+- Remove nr_pirqs, it is not needed anymore. Add a comment to specify
+that we don't actually know the upper limit of the pirq number range.
 
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 2811bb9..072af50 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -105,7 +105,6 @@ struct irq_info
+ 
+ static struct irq_info *irq_info;
+ static int *pirq_to_irq;
+-static int nr_pirqs;
+ 
+ static int *evtchn_to_irq;
+ struct cpu_evtchn_s {
+@@ -385,12 +384,17 @@ static int get_nr_hw_irqs(void)
+ 	return ret;
+ }
+ 
+-/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
+- * succeeded otherwise nr_pirqs won't hold the right value */
+-static int find_unbound_pirq(void)
++static int find_unbound_pirq(int type)
+ {
+-	int i;
+-	for (i = nr_pirqs-1; i >= 0; i--) {
++	int rc, i;
++	struct physdev_get_free_pirq op_get_free_pirq;
++	op_get_free_pirq.type = type;
++
++	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
++	if (!rc)
++		return op_get_free_pirq.pirq;
++
++	for (i = 0; i <= nr_irqs-1; i++) {
+ 		if (pirq_to_irq[i] < 0)
+ 			return i;
+ 	}
+@@ -611,9 +615,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
+ 
+ 	spin_lock(&irq_mapping_update_lock);
+ 
+-	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
++	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
+ 		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
+-			pirq > nr_pirqs ? "nr_pirqs" :"",
++			pirq > nr_irqs ? "nr_pirqs" :"",
+ 			gsi > nr_irqs ? "nr_irqs" : "");
+ 		goto out;
+ 	}
+@@ -672,7 +676,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
+ 	if (*irq == -1)
+ 		goto out;
+ 
+-	*pirq = find_unbound_pirq();
++	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
+ 	if (*pirq == -1)
+ 		goto out;
+ 
+@@ -1506,26 +1510,17 @@ void xen_callback_vector(void) {}
+ 
+ void __init xen_init_IRQ(void)
+ {
+-	int i, rc;
+-	struct physdev_nr_pirqs op_nr_pirqs;
++	int i;
+ 
+ 	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
+ 				    GFP_KERNEL);
+ 	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
+ 
+-	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
+-	if (rc < 0) {
+-		nr_pirqs = nr_irqs;
+-		if (rc != -ENOSYS)
+-			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
+-	} else {
+-		if (xen_pv_domain() && !xen_initial_domain())
+-			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
+-		else
+-			nr_pirqs = op_nr_pirqs.nr_pirqs;
+-	}
+-	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
+-	for (i = 0; i < nr_pirqs; i++)
++	/* We are using nr_irqs as the maximum number of pirq available but
++	 * that number is actually chosen by Xen and we don't know exactly
++	 * what it is. Be careful choosing high pirq numbers. */
++	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
++	for (i = 0; i < nr_irqs; i++)
+ 		pirq_to_irq[i] = -1;
+ 
+ 	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
+diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+index 2b2c66c..534cac8 100644
+--- a/include/xen/interface/physdev.h
++++ b/include/xen/interface/physdev.h
+@@ -188,6 +188,16 @@ struct physdev_nr_pirqs {
+     uint32_t nr_pirqs;
+ };
+ 
++/* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
++ * the hypercall returns a free pirq */
++#define PHYSDEVOP_get_free_pirq    23
++struct physdev_get_free_pirq {
++    /* IN */ 
++    int type;
++    /* OUT */
++    uint32_t pirq;
++};
++
+ /*
+  * Notify that some PIRQ-bound event channels have been unmasked.
+  * ** This command is obsolete since interface version 0x00030202 and is **
