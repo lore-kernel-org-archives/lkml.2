@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab0KXMuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:50:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56714 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754131Ab0KXMub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:50:31 -0500
-Date: Wed, 24 Nov 2010 13:50:29 +0100
-From: Jan Kara <jack@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] quota: Use %pV and __attribute__((format (printf in
- __quota_error and fix fallout
-Message-ID: <20101124125029.GO6113@quack.suse.cz>
-References: <1290566994.11971.26.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290566994.11971.26.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754985Ab0KXMu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:50:58 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:53146 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754750Ab0KXMu5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 07:50:57 -0500
+Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101124121046.GA8333@localhost>
+References: <20101117042720.033773013@intel.com>
+	 <20101117042850.002299964@intel.com> <1290596732.2072.450.camel@laptop>
+	 <20101124121046.GA8333@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 13:50:47 +0100
+Message-ID: <1290603047.2072.465.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-11-10 18:49:54, Joe Perches wrote:
-> Use %pV in __quota_error so a single printk can not be
-> interleaved with other logging messages.
-> Add __attribute__((format (printf, 3, 4))) so format
-> and arguments can be verified by compiler.
-> Make sure printk formats and arguments match.
+On Wed, 2010-11-24 at 20:10 +0800, Wu Fengguang wrote:
+> > > +       /*
+> > > +        * When there lots of tasks throttled in balance_dirty_pages(), they
+> > > +        * will each try to update the bandwidth for the same period, making
+> > > +        * the bandwidth drift much faster than the desired rate (as in the
+> > > +        * single dirtier case). So do some rate limiting.
+> > > +        */
+> > > +       if (jiffies - bdi->write_bandwidth_update_time < elapsed)
+> > > +               goto snapshot;
+> >
+> > Why this goto snapshot and not simply return? This is the second call
+> > (bdi_update_bandwidth equivalent).
 > 
-> Block # needed a pointer dereference.
-  I already had a similar patch from you in my tree. So I've replaced it.
+> Good question. The loop inside balance_dirty_pages() normally run only
+> once, however wb_writeback() may loop over and over again. If we just
+> return here, the condition
+> 
+>         (jiffies - bdi->write_bandwidth_update_time < elapsed)
+> 
+> cannot be reset, then future bdi_update_bandwidth() calls in the same
+> wb_writeback() loop will never find it OK to update the bandwidth.
 
-								Honza
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  fs/quota/dquot.c         |   18 +++++++++++-------
->  fs/quota/quota_tree.c    |    9 +++++----
->  include/linux/quotaops.h |    5 +++--
->  3 files changed, 19 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-> index 0fed41e..84becd3 100644
-> --- a/fs/quota/dquot.c
-> +++ b/fs/quota/dquot.c
-> @@ -133,16 +133,20 @@ __cacheline_aligned_in_smp DEFINE_SPINLOCK(dq_data_lock);
->  EXPORT_SYMBOL(dq_data_lock);
->  
->  void __quota_error(struct super_block *sb, const char *func,
-> -		  const char *fmt, ...)
-> +		   const char *fmt, ...)
->  {
-> -	va_list args;
-> -
->  	if (printk_ratelimit()) {
-> +		va_list args;
-> +		struct va_format vaf;
-> +
->  		va_start(args, fmt);
-> -		printk(KERN_ERR "Quota error (device %s): %s: ",
-> -		       sb->s_id, func);
-> -		vprintk(fmt, args);
-> -		printk("\n");
-> +
-> +		vaf.fmt = fmt;
-> +		vaf.va = &args;
-> +
-> +		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
-> +		       sb->s_id, func, &vaf);
-> +
->  		va_end(args);
->  	}
->  }
-> diff --git a/fs/quota/quota_tree.c b/fs/quota/quota_tree.c
-> index 9e48874..e41c1becf 100644
-> --- a/fs/quota/quota_tree.c
-> +++ b/fs/quota/quota_tree.c
-> @@ -468,8 +468,8 @@ static int remove_tree(struct qtree_mem_dqinfo *info, struct dquot *dquot,
->  		return -ENOMEM;
->  	ret = read_blk(info, *blk, buf);
->  	if (ret < 0) {
-> -		quota_error(dquot->dq_sb, "Can't read quota data "
-> -			    "block %u", blk);
-> +		quota_error(dquot->dq_sb, "Can't read quota data block %u",
-> +			    *blk);
->  		goto out_buf;
->  	}
->  	newblk = le32_to_cpu(ref[get_index(info, dquot->dq_id, depth)]);
-> @@ -493,8 +493,9 @@ static int remove_tree(struct qtree_mem_dqinfo *info, struct dquot *dquot,
->  		} else {
->  			ret = write_blk(info, *blk, buf);
->  			if (ret < 0)
-> -				quota_error(dquot->dq_sb, "Can't write quota "
-> -					    "tree block %u", blk);
-> +				quota_error(dquot->dq_sb,
-> +					    "Can't write quota tree block %u",
-> +					    *blk);
->  		}
->  	}
->  out_buf:
-> diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
-> index d1a9193..223b14c 100644
-> --- a/include/linux/quotaops.h
-> +++ b/include/linux/quotaops.h
-> @@ -31,8 +31,9 @@ static inline bool is_quota_modification(struct inode *inode, struct iattr *ia)
->  #define quota_error(sb, fmt, args...) \
->  	__quota_error((sb), __func__, fmt , ## args)
->  
-> -extern void __quota_error(struct super_block *sb, const char *func,
-> -			 const char *fmt, ...);
-> +extern __attribute__((format (printf, 3, 4)))
-> +void __quota_error(struct super_block *sb, const char *func,
-> +		   const char *fmt, ...);
->  
->  /*
->   * declaration of quota_function calls in kernel.
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+But the thing is, you don't want to reset that, it might loop so fast
+you'll throttle all of them, if you keep the pre-throttle value you'll
+eventually pass, no?
+
+> It does assume no races between CPUs.. We may need some per-cpu based
+> estimation. 
+
+But that multi-writer race is valid even for the balance_dirty_pages()
+call, two or more could interleave on the bw_time and bw_written
+variables.
