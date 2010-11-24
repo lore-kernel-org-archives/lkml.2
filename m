@@ -1,249 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0KXApj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:45:39 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45319 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753745Ab0KXApi (ORCPT
+	id S1754833Ab0KXAvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:51:13 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63822 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab0KXAvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:45:38 -0500
-Message-Id: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-Subject: mmotm 2010-11-23-16-12 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Tue, 23 Nov 2010 16:13:06 -0800
+	Tue, 23 Nov 2010 19:51:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=nwFpEsAMrlxrKAZ8Dt+ddEE+pTLSdEDRbu7vfruigbua3UO6Ha4dNvYIprmL2CGMzK
+         jMhljTzgDlcYfURbKN4wicf/PN8A+iMReT1n7qZP9KUxW4VhCzWD0RZ0q+r95nMLcONY
+         XrtmyEK20pBP121zBvZRXU8KZ5odqpVm39Dio=
+MIME-Version: 1.0
+In-Reply-To: <20101124003832.GA27368@core.coreip.homeip.net>
+References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+	<20101122075554.GA27300@core.coreip.homeip.net>
+	<AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+	<20101123222458.GB20283@core.coreip.homeip.net>
+	<AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
+	<20101124003832.GA27368@core.coreip.homeip.net>
+Date: Tue, 23 Nov 2010 16:51:10 -0800
+Message-ID: <AANLkTinJZyDcORj5DBGNr6Ss8penFyLxw4YDBFaTNLSK@mail.gmail.com>
+Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
+From: Ping Cheng <pinglinux@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+On Tue, Nov 23, 2010 at 4:38 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tue, Nov 23, 2010 at 04:12:13PM -0800, Ping Cheng wrote:
+>> On Tue, Nov 23, 2010 at 2:24 PM, Dmitry Torokhov
+>> <dmitry.torokhov@gmail.com> wrote:
+>> >
+>> >> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
+>> >> > currently touching the surface of the device. Buttons are expected to be
+>> >> > always present and can change their state regardless of what tool is
+>> >> > being used at the moment. I.e. The full hardware state (between
+>> >> > EV_SYN/SYN_REPORT) could be, for example,
+>> >> >
+>> >> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
+>> >> > BTN_2) or
+>> >> >
+>> >> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
+>> >> >
+>> >> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
+>> >> > BTN_TOOL_PEN or any other BTN_TOOL_*.
+>> >>
+>> >> You are right. The tablet buttons can go with one of those other
+>> >> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
+>> >> tablet buttons.
+>> >>
+>> >> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
+>> >> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
+>> >> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
+>> >> (refer to wacom_wac.c line 622 to 665).
+>> >>
+>> >> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
+>> >> it, the two LEFT and RIGHT buttons will have a hard time to tell the
+>> >> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
+>> >> worst case could be the LEFT/RIGHT sent later overwrites the earlier
+>> >> ones.
+>> >>
+>> >> We could do some guesswork in the user land to figure out which
+>> >> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
+>> >> happen. But, it would be much cheaper and more reliable if we can tell
+>> >> the user land where those LEFT and RIGHT come from. This is the whole
+>> >> purpose of the kernel driver, isn't it?
+>> >
+>> > What would userspace want to figure what physical button was pressed?
+>> > Input events convey _actions_, i.e. BTN_LEFT means that user pressed
+>> > primary button on the device. It does not matter if it was pressed on
+>> > tablet or the mouse/lens; the response should be the same.
+>>
+>> You're right, if the user wants a LEFT click. In a lot of cases, they
+>> want to translate it into something else. LEFT is only a default value
+>> that we give them if they do nothing.
+>>
+>> > If you expect different response, depending on which physical button is
+>> > pressed, then they should emit different BTN_* events. If you are
+>> > concerned that some users might want to have the same actions while
+>> > others want different actions - then please implement key remapping in
+>> > the driver.
+>>
+>> That is exactly what I am trying to convince you. Without being able
+>> to tell one button event from the other, even just logically, how can
+>> I and other clients remap them?
+>
+> EVIOCSKEYCODE. You just need to wire wacom driver to support this ioctl.
+>
+>>
+>> > If you want to treat touch and pen as completely independent devices -
+>> > we can do that too but as you remember there are some issues with
+>> > "pairing" of the devices.
+>>
+>> No, this issue has nothing to do with separating pen and touch
+>> devices. This is for BUTTONS only. Those button events can come from
+>> the physical tools (pen, mouse, lens, etc.) or the tablet itself.
+>> Without knowing that the button events are from the ones that
+>> physically sit on the tablet, it may mess up with the buttons that are
+>> from the physical tools.
+>>
+>> You might have mixed my BTN_TOOL_TOUCH request with this patch.
+>
+> No, I have not. Again, if actions are different then physical buttons
+> should emit different events. If actions are the same then events are
+> the same and it does not matter whether user pushed button on the
+> touchpad or the mouse.
 
-   http://userweb.kernel.org/~akpm/mmotm/
+All right. I'll submit a patch to close this request. The
+BTN_TOOL_TOUCH request is still open though.
 
-and will soon be available at
+Thank you,
 
-   git://zen-kernel.org/kernel/mmotm.git
-
-It contains the following patches against 2.6.37-rc3:
-
-leds-fix-bug-with-reading-nas-ss4200-dmi-code.patch
-include-linux-fsh-fix-userspace-build.patch
-nommu-yield-cpu-while-disposing-vm.patch
-uml-disable-winch-irq-before-freeing-handler-data.patch
-arch-x86-kernel-entry_64s-fix-build-with-gas-2161.patch
-memcg-fix-false-positive-vm_bug-on-non-smp.patch
-memcg-fix-false-positive-vm_bug-on-non-smp-fix.patch
-linux-next.patch
-next-remove-localversion.patch
-i-need-old-gcc.patch
-aesni-nfg.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-sgi-xpc-xpc-fails-to-discover-partitions-with-all-nasids-above-128.patch
-fuse-fix-attributes-after-openo_trunc.patch
-drivers-leds-leds-lp5521c-change-some-macros-to-functions.patch
-drivers-leds-leds-lp5523c-change-some-macros-to-functions.patch
-drivers-leds-leds-lp5521c-adjust-delays-and-add-comments-to-them.patch
-drivers-leds-leds-lp5523c-adjust-delays-and-add-comments-to-them.patch
-drivers-leds-leds-lp5521c-perform-sw-reset-before-detection.patch
-drivers-leds-leds-lp5523c-perform-sw-reset-before-detection.patch
-memcg-avoid-deadlock-between-move-charge-and-try_charge.patch
-cgroups-make-swap-accounting-default-behavior-configurable.patch
-cgroups-make-swap-accounting-default-behavior-configurable-update.patch
-mm-page_allocc-fix-build_all_zonelist-where-percpu_alloc-is-wrongly-called-under-stop_machine_run.patch
-mm-page_allocc-fix-build_all_zonelist-where-percpu_alloc-is-wrongly-called-under-stop_machine_run-cleanup.patch
-mm-remove-call-to-find_vma-in-pagewalk-for-non-hugetlbfs.patch
-pagemap-set-pagemap-walk-limit-to-pmd-boundary.patch
-drivers-misc-isl29020c-remove-incorrect-kfree-in-isl29020_remove.patch
-backlight-grab-ops_lock-before-testing-bd-ops.patch
-reiserfs-fix-inode-mutex-reiserfs-lock-misordering.patch
-scripts-fix-gfp-translate-for-recent-changes-to-gfph.patch
-scripts-fix-gfp-translate-for-recent-changes-to-gfph-fix.patch
-mm-vmap-area-cache.patch
-arch-arm-plat-omap-iovmmc-fix-end-address-of-vm-area-comparation-in-alloc_iovm_area.patch
-backlight-fix-88pm860x_bl-macro-collision.patch
-cciss-fix-botched-tag-masking-for-scsi-tape-commands.patch
-arch-x86-kernel-entry_32s-i386-too.patch
-arch-x86-include-asm-fixmaph-mark-__set_fixmap_offset-as-__always_inline.patch
-ibm_rtl-fix-printk-format-warning.patch
-acerhdf-add-support-for-aspire-1410-bios-v13314.patch
-arch-x86-kernel-apic-io_apicc-fix-warning.patch
-x86-olpc-add-xo-1-suspend-resume-support.patch
-fs-btrfs-inodec-eliminate-memory-leak.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-cifs-dont-overwrite-dentry-name-in-d_revalidate.patch
-cpufreq-fix-ondemand-governor-powersave_bias-execution-time-misuse.patch
-drivers-dma-use-the-ccflag-y-instead-of-extra_cflags.patch
-drivers-dma-ioat-use-the-ccflag-y-instead-of-extra_cflags.patch
-jfs-dont-overwrite-dentry-name-in-d_revalidate.patch
-powerpc-enable-arch_dma_addr_t_64bit-with-arch_phys_addr_t_64bit.patch
-debugfs-remove-module_exit.patch
-drivers-gpu-drm-radeon-atomc-fix-warning.patch
-irq-use-per_cpu-kstat_irqs.patch
-irq-use-per_cpu-kstat_irqs-checkpatch-fixes.patch
-drivers-leds-leds-lp5521c-fix-potential-buffer-overflow.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-mips-enable-arch_dma_addr_t_64bit-with-highmem-64bit_phys_addr-64bit.patch
-isdn-capi-unregister-capictr-notifier-after-init-failure.patch
-isdn-capi-make-kcapi-use-a-separate-workqueue.patch
-drivers-video-backlight-l4f00242t03c-make-1-bit-signed-field-unsigned.patch
-drivers-video-backlight-l4f00242t03c-full-implement-fb-power-states-for-this-lcd.patch
-btusb-patch-add_apple_macbookpro62.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode-fix.patch
-drivers-message-fusion-mptsasc-fix-warning.patch
-hpsa-remove-incorrect-redefinition-of-pci_device_id_hp_cissf.patch
-drivers-block-makefile-replace-the-use-of-module-objs-with-module-y.patch
-drivers-block-aoe-makefile-replace-the-use-of-module-objs-with-module-y.patch
-vfs-remove-a-warning-on-open_fmode.patch
-vfs-add-__fmode_exec.patch
-n_hdlc-fix-read-and-write-locking.patch
-n_hdlc-fix-read-and-write-locking-update.patch
-mm.patch
-mm-page-allocator-adjust-the-per-cpu-counter-threshold-when-memory-is-low.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-update.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix-set_pgdat_percpu_threshold-dont-use-for_each_online_cpu.patch
-mm-mempolicyc-add-rcu-read-lock-to-protect-pid-structure.patch
-writeback-integrated-background-writeback-work.patch
-writeback-trace-wakeup-event-for-background-writeback.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works-update.patch
-writeback-avoid-livelocking-wb_sync_all-writeback.patch
-writeback-avoid-livelocking-wb_sync_all-writeback-update.patch
-writeback-check-skipped-pages-on-wb_sync_all.patch
-writeback-check-skipped-pages-on-wb_sync_all-update.patch
-writeback-check-skipped-pages-on-wb_sync_all-update-fix.patch
-writeback-io-less-balance_dirty_pages.patch
-writeback-consolidate-variable-names-in-balance_dirty_pages.patch
-writeback-per-task-rate-limit-on-balance_dirty_pages.patch
-writeback-per-task-rate-limit-on-balance_dirty_pages-fix.patch
-writeback-prevent-duplicate-balance_dirty_pages_ratelimited-calls.patch
-writeback-account-per-bdi-accumulated-written-pages.patch
-writeback-bdi-write-bandwidth-estimation.patch
-writeback-bdi-write-bandwidth-estimation-fix.patch
-writeback-show-bdi-write-bandwidth-in-debugfs.patch
-writeback-quit-throttling-when-bdi-dirty-pages-dropped-low.patch
-writeback-reduce-per-bdi-dirty-threshold-ramp-up-time.patch
-writeback-make-reasonable-gap-between-the-dirty-background-thresholds.patch
-writeback-scale-down-max-throttle-bandwidth-on-concurrent-dirtiers.patch
-writeback-add-trace-event-for-balance_dirty_pages.patch
-writeback-make-nr_to_write-a-per-file-limit.patch
-writeback-make-nr_to_write-a-per-file-limit-fix.patch
-sync_inode_metadata-fix-comment.patch
-mm-page-writebackc-fix-__set_page_dirty_no_writeback-return-value.patch
-vmscan-factor-out-kswapd-sleeping-logic-from-kswapd.patch
-mm-find_get_pages_contig-fixlet.patch
-fs-mpagec-consolidate-code.patch
-fs-mpagec-consolidate-code-checkpatch-fixes.patch
-mm-convert-sprintf_symbol-to-%ps.patch
-mm-smaps-export-mlock-information.patch
-mm-compaction-add-trace-events-for-memory-compaction-activity.patch
-mm-vmscan-convert-lumpy_mode-into-a-bitmask.patch
-mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim.patch
-mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-fix.patch
-mm-migration-allow-migration-to-operate-asynchronously-and-avoid-synchronous-compaction-in-the-faster-path.patch
-mm-migration-allow-migration-to-operate-asynchronously-and-avoid-synchronous-compaction-in-the-faster-path-fix.patch
-mm-migration-cleanup-migrate_pages-api-by-matching-types-for-offlining-and-sync.patch
-mm-compaction-perform-a-faster-migration-scan-when-migrating-asynchronously.patch
-mm-vmscan-rename-lumpy_mode-to-reclaim_mode.patch
-mm-deactivate-invalidated-pages.patch
-mm-deactivate-invalidated-pages-fix.patch
-mm-remove-unused-get_vm_area_node.patch
-mm-remove-gfp-mask-from-pcpu_get_vm_areas.patch
-mm-unify-module_alloc-code-for-vmalloc.patch
-oom-allow-a-non-cap_sys_resource-proces-to-oom_score_adj-down.patch
-mm-clear-pageerror-bit-in-msync-fsync.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-hpet-factor-timer-allocate-from-open.patch
-kernel-power-changed-makefile-to-use-proper-ccflag-flag.patch
-um-mark-config_highmem-as-broken.patch
-arch-um-drivers-linec-safely-iterate-over-list-of-winch-handlers.patch
-kmsg_dump-constrain-mtdoops-and-ramoops-to-perform-their-actions-only-for-kmsg_dump_panic.patch
-kmsg_dump-add-kmsg_dump-calls-to-the-reboot-halt-poweroff-and-emergency_restart-paths.patch
-set_rtc_mmss-show-warning-message-only-once.patch
-include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit.patch
-include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix.patch
-add-the-common-dma_addr_t-typedef-to-include-linux-typesh.patch
-dca-remove-unneeded-null-check.patch
-scripts-get_maintainerpl-make-rolestats-the-default.patch
-scripts-get_maintainerpl-use-git-fallback-more-often.patch
-maintainers-intel-gfx-is-a-subscribers-only-mailing-list.patch
-percpucounter-optimize-__percpu_counter_add-a-bit-through-the-use-of-this_cpu-operations.patch
-drivers-mmc-host-omapc-use-resource_size.patch
-drivers-mmc-host-omap_hsmmcc-use-resource_size.patch
-scripts-checkpatchpl-add-check-for-multiple-terminating-semicolons-and-casts-of-vmalloc.patch
-checkpatchpl-fix-cast-detection.patch
-fs-select-fix-information-leak-to-userspace.patch
-fs-select-fix-information-leak-to-userspace-fix.patch
-epoll-convert-max_user_watches-to-long.patch
-binfmt_elf-cleanups.patch
-drivers-rtc-rtc-omapc-fix-a-memory-leak.patch
-rtc-add-real-time-clock-driver-for-nvidia-tegra.patch
-drivers-gpio-cs5535-gpioc-add-some-additional-cs5535-specific-gpio-functionality.patch
-drivers-staging-olpc_dcon-convert-to-new-cs5535-gpio-api.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-jbd-remove-dependency-on-__gfp_nofail.patch
-memcg-add-page_cgroup-flags-for-dirty-page-tracking.patch
-memcg-document-cgroup-dirty-memory-interfaces.patch
-memcg-document-cgroup-dirty-memory-interfaces-fix.patch
-memcg-create-extensible-page-stat-update-routines.patch
-memcg-add-lock-to-synchronize-page-accounting-and-migration.patch
-memcg-use-zalloc-rather-than-mallocmemset.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps-checkpatch-fixes.patch
-proc-use-unsigned-long-inside-proc-statm.patch
-exec_domain-establish-a-linux32-domain-on-config_compat-systems.patch
-rapidio-use-common-destid-storage-for-endpoints-and-switches.patch
-rapidio-integrate-rio_switch-into-rio_dev.patch
-fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip-update.patch
-remove-dma64_addr_t.patch
-pps-trivial-fixes.patch
-pps-declare-variables-where-they-are-used-in-switch.patch
-pps-fix-race-in-pps_fetch-handler.patch
-pps-unify-timestamp-gathering.patch
-pps-access-pps-device-by-direct-pointer.patch
-pps-convert-printk-pr_-to-dev_.patch
-pps-move-idr-stuff-to-ppsc.patch
-pps-add-async-pps-event-handler.patch
-pps-add-async-pps-event-handler-fix.patch
-pps-dont-disable-interrupts-when-using-spin-locks.patch
-pps-use-bug_on-for-kernel-api-safety-checks.patch
-pps-simplify-conditions-a-bit.patch
-ntp-add-hardpps-implementation.patch
-pps-capture-monotonic_raw-timestamps-as-well.patch
-pps-add-kernel-consumer-support.patch
-pps-add-parallel-port-pps-client.patch
-pps-add-parallel-port-pps-signal-generator.patch
-memstick-a-few-changes-to-core.patch
-memstick-add-support-for-legacy-memorysticks.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader-fix.patch
-memstick-core-fix-device_register-error-handling.patch
-w1-ds2423-counter-driver-and-documentation.patch
-w1-ds2423-counter-driver-and-documentation-fix.patch
-romfs-have-romfs_fsh-pull-in-necessary-headers.patch
-decompressors-add-missing-init-ie-__init.patch
-decompressors-get-rid-of-set_error_fn-macro.patch
-decompressors-include-linux-slabh-in-linux-decompress-mmh.patch
-decompressors-remove-unused-function-from-lib-decompress_unlzmac.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-add-missing-header-file.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-getblk-handle-2tb-devices.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+Ping
