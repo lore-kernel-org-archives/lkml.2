@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab0KXXzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 18:55:05 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:37007 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751191Ab0KXXzB (ORCPT
+	id S1752137Ab0KXXzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:55:13 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:24845 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab0KXXzJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 18:55:01 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, slapin@ossfans.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Andrew Hendry <andrew.hendry@gmail.com>
-Subject: [PATCH 1/1] NET: wan/x25_asy, move lapb_unregister to x25_asy_close_tty
-Date: Thu, 25 Nov 2010 00:54:54 +0100
-Message-Id: <1290642894-4577-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
+	Wed, 24 Nov 2010 18:55:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cNNd82c6mKzicNhwyn8hH2NGYhDqpLpfgKAHVeDD7eD4ehN4xjZs41s6gAtGu1PLLv
+         OKH0NyiKKIRDGaX9LWow==
+MIME-Version: 1.0
+In-Reply-To: <1290577024-12347-1-git-send-email-ccross@android.com>
+References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com> <1290577024-12347-1-git-send-email-ccross@android.com>
+From: Paul Menage <menage@google.com>
+Date: Wed, 24 Nov 2010 15:54:38 -0800
+Message-ID: <AANLkTimFqJ+qPidS_81DKd7ExSxDG7GNi0gjcUEEq_7j@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
+To: Colin Cross <ccross@android.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We register lapb when tty is created, but unregister it only when the
-device is UP. So move the lapb_unregister to x25_asy_close_tty after
-the device is down.
+On Tue, Nov 23, 2010 at 9:37 PM, Colin Cross <ccross@android.com> wrote:
+> @@ -364,12 +372,8 @@ static void __put_css_set(struct css_set *cg, int taskexit)
+>                struct cgroup *cgrp = link->cgrp;
+>                list_del(&link->cg_link_list);
+>                list_del(&link->cgrp_link_list);
+> -               if (atomic_dec_and_test(&cgrp->count) &&
+> -                   notify_on_release(cgrp)) {
+> -                       if (taskexit)
+> -                               set_bit(CGRP_RELEASABLE, &cgrp->flags);
+> +               if (atomic_dec_and_test(&cgrp->count))
+>                        check_for_release(cgrp);
+> -               }
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: Sergey Lapin <slapin@ossfans.org>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
----
- drivers/net/wan/x25_asy.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+We seem to have lost some notify_on_release() checks - maybe move that
+to check_for_release()?
+>  /* Caller must verify that the css is not for root cgroup */
+> +void __css_get(struct cgroup_subsys_state *css, int count)
+> +{
+> +       atomic_add(count, &css->refcnt);
+> +       set_bit(CGRP_RELEASABLE, &css->cgroup->flags);
+> +}
 
-diff --git a/drivers/net/wan/x25_asy.c b/drivers/net/wan/x25_asy.c
-index 66cda25..24297b2 100644
---- a/drivers/net/wan/x25_asy.c
-+++ b/drivers/net/wan/x25_asy.c
-@@ -498,7 +498,6 @@ norbuff:
- static int x25_asy_close(struct net_device *dev)
- {
- 	struct x25_asy *sl = netdev_priv(dev);
--	int err;
- 
- 	spin_lock(&sl->lock);
- 	if (sl->tty)
-@@ -507,10 +506,6 @@ static int x25_asy_close(struct net_device *dev)
- 	netif_stop_queue(dev);
- 	sl->rcount = 0;
- 	sl->xleft  = 0;
--	err = lapb_unregister(dev);
--	if (err != LAPB_OK)
--		printk(KERN_ERR "x25_asy_close: lapb_unregister error -%d\n",
--			err);
- 	spin_unlock(&sl->lock);
- 	return 0;
- }
-@@ -595,6 +590,7 @@ static int x25_asy_open_tty(struct tty_struct *tty)
- static void x25_asy_close_tty(struct tty_struct *tty)
- {
- 	struct x25_asy *sl = tty->disc_data;
-+	int err;
- 
- 	/* First make sure we're connected. */
- 	if (!sl || sl->magic != X25_ASY_MAGIC)
-@@ -605,6 +601,11 @@ static void x25_asy_close_tty(struct tty_struct *tty)
- 		dev_close(sl->dev);
- 	rtnl_unlock();
- 
-+	err = lapb_unregister(sl->dev);
-+	if (err != LAPB_OK)
-+		printk(KERN_ERR "x25_asy_close: lapb_unregister error -%d\n",
-+			err);
-+
- 	tty->disc_data = NULL;
- 	sl->tty = NULL;
- 	x25_asy_free(sl);
--- 
-1.7.3.1
+Is css_get() the right place to be putting this? It's not clear to me
+why a subsystem taking a refcount on a cgroup's state should render it
+releasable when it drops that refcount.
 
+Should we maybe clear the CGRP_RELEASABLE flag right before doing the
+userspace callback?
 
+Paul
