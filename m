@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab0KWX6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 18:58:00 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49421 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab0KWX57 (ORCPT
+	id S1755301Ab0KXAAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:00:35 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37283 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab0KXAAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 18:57:59 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Michel Lespinasse <walken@google.com>
-Subject: Re: [RFC] mlock: release mmap_sem every 256 faulted pages
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>
-In-Reply-To: <AANLkTi=dK9wQaHm=tXOCqN2BDw5jEtH5qfs9zRHbE0qT@mail.gmail.com>
-References: <20101122215746.e847742d.akpm@linux-foundation.org> <AANLkTi=dK9wQaHm=tXOCqN2BDw5jEtH5qfs9zRHbE0qT@mail.gmail.com>
-Message-Id: <20101124085451.7BE5.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 23 Nov 2010 19:00:34 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=UaNWXry1k3EA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=NLwZnATxghb4xyrAVV8A:9 a=0kpbyiTMGpHQedcnu3UA:7 a=z84xeTM9nBZ-mSswjy9mMQkbqDkA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=g2S-Y9ntAuOr0qc0:21 a=F_sjLIc0uwHTlX4L:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
+ label key entries
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101123234355.GA21549@Krystal>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com>
+	 <20101123234355.GA21549@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 23 Nov 2010 19:00:30 -0500
+Message-ID: <1290556830.30543.415.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 24 Nov 2010 08:57:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > A more compelling description of why this problem needs addressing
-> > would help things along.
+On Tue, 2010-11-23 at 18:43 -0500, Mathieu Desnoyers wrote:
+> * Jason Baron (jbaron@redhat.com) wrote:
+> [...]
+> > +static void update_jump_label_module(struct module *mod)
+> > +{
+> > +	struct hlist_head *head;
+> > +	struct hlist_node *node, *node_next, *module_node, *module_node_next;
+> > +	struct jump_label_entry *e;
+> > +	struct jump_label_module_entry *e_module;
+> > +	struct jump_entry *iter;
+> > +	int i, count;
+> > +
+> > +	/* if the module doesn't have jump label entries, just return */
+> > +	if (!mod->num_jump_entries)
+> > +		return;
+> > +
+> > +	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
+> > +		head = &jump_label_table[i];
+> > +		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
+> > +			if (!e->enabled)
+> > +				continue;
+> > +			hlist_for_each_entry_safe(e_module, module_node,
+> > +						  module_node_next,
+> > +						  &(e->modules), hlist) {
+> > +				if (e_module->mod != mod)
+> > +					continue;
 > 
-> Oh my. It's probably not too useful for desktops, where such large
-> mlocks are hopefully uncommon.
+> Ouch.
 > 
-> At google we have many applications that serve data from memory and
-> don't want to allow for disk latencies. Some of the simpler ones use
-> mlock (though there are other ways - anon memory running with swap
-> disabled is a surprisingly popular choice).
-> 
-> Kosaki is also showing interest in mlock, though I'm not sure what his
-> use case is.
+> Could you iterate on the loaded/unloaded module jump labels and do hash
+> table lookups rather than doing this O(n^3) iteration ?
 
-I don't have any solid use case. Usually server app only do mlock anonymous memory.
-But, I haven't found any negative effect in your proposal, therefore I hope to help
-your effort as I always do when the proposal don't have negative impact.
+This does not look O(n^3) to me.
 
+It's a hash table, thus the first two loops is just iterating O(n) items
+in the hash.
+
+And the third loop is all the modules that use a particular event.
+
+So it is O(n*m)  where n is the number of events, and m is the number of
+modules attached to the events. And that's only if all events are used
+by those modules. The actual case is much smaller.
+
+-- Steve
 
 
