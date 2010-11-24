@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab0KXAEM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:04:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42101 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab0KXAEL (ORCPT
+	id S1755460Ab0KXAJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:09:24 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44063 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab0KXAJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:04:11 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=fIAfbhESzNEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=6YOI96l4G83usf4b_DAA:9 a=GZVc01_FfxH0Qz1qQJIA:7 a=J_3dA8Ufw0C3biMEjoqgfPWWGDwA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/3] jump label: move jump table to r/w section
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101123235519.GB21549@Krystal>
-References: <cover.1290546539.git.jbaron@redhat.com>
-	 <bbc34a86a4cf4addcde1b85d7fa7faecc0966c03.1290546539.git.jbaron@redhat.com>
-	 <20101123235519.GB21549@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 23 Nov 2010 19:04:09 -0500
-Message-ID: <1290557049.30543.417.camel@gandalf.stny.rr.com>
+	Tue, 23 Nov 2010 19:09:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OB0D15gnhmVA0B+Bp4H5cBseotXPTJ41ktPZgizt0UyZMDEE4jlPTkKkrlvpDVRplq
+         kylfPAbt0/SjmtBG17GbiALCCuZePKcSckV8WQp/Koi4IJiU2C4zETLet+T7ydhJfjzl
+         t1R5/NM7n0E7b9ObCRgpG3o46nBMxJGkpWkgc=
+Subject: [PATCH net-next-2.6] scm: lower SCM_MAX_FD
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Vegard Nossum <vegard.nossum@gmail.com>,
+        David Miller <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eugene Teo <eugene@redhat.com>, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1290553918.2866.80.camel@edumazet-laptop>
+References: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
+	 <1290553918.2866.80.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 01:09:15 +0100
+Message-ID: <1290557355.2866.117.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -33,59 +34,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 18:55 -0500, Mathieu Desnoyers wrote:
-> * Jason Baron (jbaron@redhat.com) wrote:
-> > Since we writing the jump table it should be be in R/W kernel
-> > section. Move it to DATA_DATA
-> > 
-> > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> > ---
-> >  include/asm-generic/vmlinux.lds.h |   14 ++++----------
-> >  1 files changed, 4 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> > index bd69d79..9ca894d 100644
-> > --- a/include/asm-generic/vmlinux.lds.h
-> > +++ b/include/asm-generic/vmlinux.lds.h
-> > @@ -161,6 +161,10 @@
-> >  	VMLINUX_SYMBOL(__start___tracepoints) = .;			\
-> >  	*(__tracepoints)						\
-> >  	VMLINUX_SYMBOL(__stop___tracepoints) = .;			\
-> > +	. = ALIGN(8);							\
-> 
-> Past churn with various architectures and compiler with tracepoints,
-> markers and immediate values lead me to hint at the following approach
-> for jump label structure alignment:
-> 
-> . = ALIGN(32);
-> 
-> and to modify jump_label.h to have:
-> 
-> struct jump_entry {
-> 	jump_label_t code;
-> 	jump_label_t target;
-> 	jump_label_t key;
-> } __attribute__((aligned(32)));
-> 
-> Otherwise, the compiler is free to choose on which value it prefers to
-> align the jump_entry structures, which might not match the address at
-> which the linker scripts puts the beginning of the jump table.
-> 
-> In this case, given that we put put the jump label table after the
-> tracepoint table, we should be already aligned on 32 bytes. But I would
-> recommend to put the . = ALIGN(32) in the linker script anyway, just for
-> documentation purpose (and it should not add any padding in this case).
-> 
-> This is not a problem introduced by this patch, it also applies to the
-> current jump label code.
 
-Agreed, but this change could probably wait for 2.6.38.
+> David, commit f8d570a4 added one "struct list_head list;" to struct
+> scm_fp_list, enlarging it by a two factor because of power of two
+> kmalloc() sizes.  (2048 bytes on 64bit arches instead of 1024
+> previously)
+> 
+> We might lower SCM_MAX_FD from 255 to 253 ?
+> 
+> 
 
-Also, if this is done, then an it should be wrapped in a
-#ifdef CONFIG_JUMP_LABEL and only inserted if we are using jump labels.
-Otherwise we may add a 32 byte hole for nothing. I know it's small, but
-why waste it if you don't need to.
+This wont correct Vegard reported problem yet, but following patch
+should reduce ram usage a lot (32 bytes instead of 2048 bytes per scm in
+Vegard test program)
 
--- Steve
+Thanks
+
+[PATCH net-next-2.6] net: scm: lower SCM_MAX_FD
+
+Lower SCM_MAX_FD from 255 to 253 so that allocations for scm_fp_list are
+halved. (commit f8d570a4 added two pointers in this structure)
+
+scm_fp_dup() should not copy whole structure (and trigger kmemcheck
+warnings), but only the used part. While we are at it, only allocate
+needed size.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ include/net/scm.h |    5 +++--
+ net/core/scm.c    |   10 ++++++----
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/include/net/scm.h b/include/net/scm.h
+index 3165650..745460f 100644
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -10,11 +10,12 @@
+ /* Well, we should have at least one descriptor open
+  * to accept passed FDs 8)
+  */
+-#define SCM_MAX_FD	255
++#define SCM_MAX_FD	253
+ 
+ struct scm_fp_list {
+ 	struct list_head	list;
+-	int			count;
++	short			count;
++	short			max;
+ 	struct file		*fp[SCM_MAX_FD];
+ };
+ 
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 413cab8..bbe4544 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -79,10 +79,11 @@ static int scm_fp_copy(struct cmsghdr *cmsg, struct scm_fp_list **fplp)
+ 			return -ENOMEM;
+ 		*fplp = fpl;
+ 		fpl->count = 0;
++		fpl->max = SCM_MAX_FD;
+ 	}
+ 	fpp = &fpl->fp[fpl->count];
+ 
+-	if (fpl->count + num > SCM_MAX_FD)
++	if (fpl->count + num > fpl->max)
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -331,11 +332,12 @@ struct scm_fp_list *scm_fp_dup(struct scm_fp_list *fpl)
+ 	if (!fpl)
+ 		return NULL;
+ 
+-	new_fpl = kmalloc(sizeof(*fpl), GFP_KERNEL);
++	new_fpl = kmemdup(fpl, offsetof(struct scm_fp_list, fp[fpl->count]),
++			  GFP_KERNEL);
+ 	if (new_fpl) {
+-		for (i=fpl->count-1; i>=0; i--)
++		for (i = 0; i < fpl->count; i++)
+ 			get_file(fpl->fp[i]);
+-		memcpy(new_fpl, fpl, sizeof(*fpl));
++		new_fpl->max = new_fpl->count;
+ 	}
+ 	return new_fpl;
+ }
 
 
