@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab0KXRDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 12:03:30 -0500
-Received: from build.ihdev.net ([178.63.197.118]:58093 "EHLO build.ossfans.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab0KXRD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 12:03:29 -0500
-Date: Wed, 24 Nov 2010 12:03:26 -0500
-From: Sergey Lapin <slapin@ossfans.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ldisc problems with 2.6.32-2.6.37-rc2 (at least)
-Message-ID: <20101124170326.GB7282@build.ihdev.net>
-References: <20101124135249.GA7282@build.ihdev.net>
- <4CED2251.3020708@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CED2251.3020708@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755959Ab0KXRHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 12:07:08 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57708
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755222Ab0KXRHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 12:07:06 -0500
+Date: Wed, 24 Nov 2010 09:07:30 -0800 (PST)
+Message-Id: <20101124.090730.71102037.davem@davemloft.net>
+To: mkl@pengutronix.de
+Cc: tomoya-linux@dsn.okisemi.com, wg@grandegger.com, w.sang@pengutronix.de,
+        chripell@fsfe.org, 21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
+        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
+        kok.howg.ewe@intel.com, joel.clark@intel.com
+Subject: Re: [PATCH net-next-2.6 8/17 v3] can: EG20T PCH: Change Copyright
+ and module description
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CED14B0.9060208@pengutronix.de>
+References: <4CED02C5.4080504@dsn.okisemi.com>
+	<4CED14B0.9060208@pengutronix.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Date: Wed, 24 Nov 2010 14:35:44 +0100
 
-Sorry, I was wrong.
+> On 11/24/2010 01:19 PM, Tomoya MORINAGA wrote:
+>> Currently, Copyright and module description are not formal.
+> 
+> As David pointed out in an older version of this series, this patch does
+> more than the subject indicates. Please fix.
 
-> Hi, I don't think you get similar backtraces in .37-rc2. Could you grab one?
+Many patches still have this problem.
 
-Yeah, they are different definitely.
+I'm getting really upset about this.
 
-------------[ cut here ]------------
-WARNING: at drivers/tty/tty_ldisc.c:451 tty_ldisc_open+0x3c/0x9c()
-Modules linked in:
-[<c002c694>] (unwind_backtrace+0x0/0xe4) from [<c0037ad4>] (warn_slowpath_common+0x4c/0x64)
-[<c0037ad4>] (warn_slowpath_common+0x4c/0x64) from [<c0037b04>] (warn_slowpath_null+0x18/0x1c)
-[<c0037b04>] (warn_slowpath_null+0x18/0x1c) from [<c01bb88c>] (tty_ldisc_open+0x3c/0x9c)
-[<c01bb88c>] (tty_ldisc_open+0x3c/0x9c) from [<c01bc110>] (tty_set_ldisc+0x328/0x454)
-[<c01bc110>] (tty_set_ldisc+0x328/0x454) from [<c01b6624>] (tty_ioctl+0x83c/0xac4)
-[<c01b6624>] (tty_ioctl+0x83c/0xac4) from [<c00b383c>] (vfs_ioctl+0x20/0x3c)
-[<c00b383c>] (vfs_ioctl+0x20/0x3c) from [<c00b3f9c>] (do_vfs_ioctl+0x540/0x598)
-[<c00b3f9c>] (do_vfs_ioctl+0x540/0x598) from [<c00b4028>] (sys_ioctl+0x34/0x54)
-[<c00b4028>] (sys_ioctl+0x34/0x54) from [<c0027a80>] (ret_fast_syscall+0x0/0x2c)
----[ end trace 7979e0da5684d2cf ]---
+Look, it's simple.  Make sure your patch commit message describes
+everything the patch is doing.
 
-All the best,
-S.
+And in many of the cases where the commit message is not accurate, it
+is actually the cases that the changes not documented are totally
+unrelated and need to be split up into a different change.
 
+I strongly suspect that the pch_can folks became extremely frustrated
+doing these patch split-ups.  They find them pointless and they feel
+that we're putting an unnecessary burdon upon them, and are having
+trouble understanding why we require this and why it's so incredibly
+important.
+
+So they worked on this task with the most minimum of effort and care,
+which is extremely unfortunate.
+
+We will continue to push back until they get things correct, so all
+they do by being lazy and careless is make more work for everyone,
+including themselves.
