@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab0KXJ7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 04:59:46 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34794 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab0KXJ7p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 04:59:45 -0500
-Date: Wed, 24 Nov 2010 10:59:35 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aries Lee <arieslee@jmicron.com>
-Subject: Re: [PATCH 1/2] mmc: Add support for JMicron 388 SD/MMC controller
-Message-ID: <20101124095935.GA6812@pengutronix.de>
-References: <1290579674-4616-1-git-send-email-tiwai@suse.de>
- <1290579674-4616-2-git-send-email-tiwai@suse.de>
+	id S1752723Ab0KXKDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 05:03:00 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47524 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab0KXKC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 05:02:58 -0500
+Date: Wed, 24 Nov 2010 10:02:42 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [RFC 1/2] deactive invalidated pages
+Message-ID: <20101124100242.GW19571@csn.ul.ie>
+References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <20101123092826.GD19571@csn.ul.ie> <AANLkTi=KunDRwVd73vtbng0F+a=QBgJeV5BXrewYJa3R@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1290579674-4616-2-git-send-email-tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=KunDRwVd73vtbng0F+a=QBgJeV5BXrewYJa3R@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 24, 2010 at 08:24:35AM +0900, Minchan Kim wrote:
+> >> <SNIP>
+> >>
+> >> +static void __pagevec_lru_deactive(struct pagevec *pvec)
+> >> +{
+> >
+> > Might be worth commenting that this function must be called with pre-emption
+> > disabled. FWIW, I am reasonably sure your implementation is prefectly safe
+> > but a note wouldn't hurt.
+> 
+> Will fix.
+> 
 
---CE+1k2dSO48ffgeK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks
 
-On Wed, Nov 24, 2010 at 07:21:13AM +0100, Takashi Iwai wrote:
+> >
+> >> +     int i, lru, file;
+> >> +
+> >> +     struct zone *zone = NULL;
+> >> +
+> >> +     for (i = 0; i < pagevec_count(pvec); i++) {
+> >> +             struct page *page = pvec->pages[i];
+> >> +             struct zone *pagezone = page_zone(page);
+> >> +
+> >> +             if (pagezone != zone) {
+> >> +                     if (zone)
+> >> +                             spin_unlock_irq(&zone->lru_lock);
+> >> +                     zone = pagezone;
+> >> +                     spin_lock_irq(&zone->lru_lock);
+> >> +             }
+> >> +
+> >> +             if (PageLRU(page)) {
+> >> +                     if (PageActive(page)) {
+> >> +                             file = page_is_file_cache(page);
+> >> +                             lru = page_lru_base_type(page);
+> >> +                             del_page_from_lru_list(zone, page,
+> >> +                                             lru + LRU_ACTIVE);
+> >> +                             ClearPageActive(page);
+> >> +                             ClearPageReferenced(page);
+> >> +                             add_page_to_lru_list(zone, page, lru);
+> >> +                             __count_vm_event(PGDEACTIVATE);
+> >> +
+> >
+> > What about memcg, do we not need to be calling mem_cgroup_add_lru_list() here
+> > as well? I'm looking at the differences between what move_active_pages_to_lru()
+> 
+> Recently, add_page_to_lru_list contains mem_cgroup_add_lru_list.
+> 
 
-> +/* Controller doesn't support VDD 180 for MMC (for SD/MMC combo chips) */
-> +#define SDHCI_QUIRK_MMC_VDD_180				(1<<30)
+My bad, you're right. I was thrown by move_active_pages_to_lru() needing to
+do memcg stuff manually and didn't spot why it ok to miss it here.
 
-Can't we handle this more generic? Like setting ocr_avail_* from
-sdhci-pci.c somehow (just brainstorming, didn't have a deeper look)? I'd
-like to avoid new quirks as much as possible.
+> > is doing and this. I'm wondering if it'd be worth your whole building a list
+> > of active pages that are to be moved to the inactive list and passing them
+> > to move_active_pages_to_lru() ? I confuess I have not thought about it deeply
+> > so it might be a terrible suggestion but it might reduce duplication of code.
+> 
+> Firstly I tried it so I sent a patch about making
+> move_to_active_pages_to_lru more generic.
+> move_to_active_pages_to_lru needs zone argument so I need gathering
+> pages per zone in truncate.
+> I don't want for user of the function to consider even zone and
+> zone->lru_lock handling.
+> 
+> I think the lru_demote_pages could be used elsewhere(ex, readahead max
+> size heuristic).
+> So it's generic and easy to use. :)
+> 
 
-Regards,
+Ok, that's fair enough.
 
-   Wolfram
+> >
+> >> +                             update_page_reclaim_stat(zone, page, file, 0);
+> >> +                     }
+> >> +             }
+> >> +     }
+> >> +     if (zone)
+> >> +             spin_unlock_irq(&zone->lru_lock);
+> >> +
+> >> +     release_pages(pvec->pages, pvec->nr, pvec->cold);
+> >> +     pagevec_reinit(pvec);
+> >> +}
+> >> +
+> >>  /*
+> >>   * Drain pages out of the cpu's pagevecs.
+> >>   * Either "cpu" is the current CPU, and preemption has already been
+> >> @@ -292,8 +333,28 @@ static void drain_cpu_pagevecs(int cpu)
+> >>               pagevec_move_tail(pvec);
+> >>               local_irq_restore(flags);
+> >>       }
+> >> +
+> >> +     pvec = &per_cpu(lru_deactive_pvecs, cpu);
+> >> +     if (pagevec_count(pvec))
+> >> +             __pagevec_lru_deactive(pvec);
+> >> +}
+> >> +
+> >> +/*
+> >> + * Function used to forecefully demote a page to the head of the inactive
+> >> + * list.
+> >
+> > s/forecefully/forcefully/
+> >
+> > The comment should also state *why* and under what circumstances we move
+> > pages to the inactive list like this. Also based on the discussions
+> > elsewhere in this thread, it'd be nice to include a comment why it's the
+> > head of the inactive list and not the tail.
+> 
+> Fair enough.
+> 
+> Thanks for the comment, Mel.
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---CE+1k2dSO48ffgeK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkzs4gcACgkQD27XaX1/VRtsjwCgt6BwCmPPMwLKQsmPEJmGDrrv
-fwsAoKWVt4A4trvU3X/VMWbeuAwupG4+
-=ALgW
------END PGP SIGNATURE-----
-
---CE+1k2dSO48ffgeK--
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
