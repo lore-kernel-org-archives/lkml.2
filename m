@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab0KXSIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:08:30 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:10958
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751409Ab0KXSI3 (ORCPT
+	id S1753200Ab0KXSJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 13:09:04 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:22213 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752190Ab0KXSJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:08:29 -0500
-X-SpamScore: -21
-X-BigFish: VS-21(zz936eK1432N98dN179dNzz1202hzzz2dh2a8h691h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw02.freescale.net;RD:az33egw02.freescale.net;EFVD:NLI
-Date: Wed, 24 Nov 2010 12:08:18 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: <michael@ellerman.id.au>
-CC: Timur Tabi <timur@freescale.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        <devicetree-discuss@vger.kernel.org>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101124120818.7951bcb4@udp111988uds.am.freescale.net>
-In-Reply-To: <1290594227.4446.12.camel@concordia>
-References: <4CE44B1B.9040709@freescale.com>
-	<20101117215147.GA26792@suse.de>
-	<4CE452CD.3050001@freescale.com>
-	<20101117221903.GA4066@suse.de>
-	<4CE45A4E.70308@freescale.com>
-	<20101118022434.GA9833@suse.de>
-	<4CE546C5.8060401@freescale.com>
-	<20101118153912.GA1443@suse.de>
-	<4CE54E40.9040503@freescale.com>
-	<20101118112146.3275eb08@udp111988uds.am.freescale.net>
-	<4CE5657D.8060105@freescale.com>
-	<20101118121356.3491da72@udp111988uds.am.freescale.net>
-	<1290594227.4446.12.camel@concordia>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 24 Nov 2010 13:09:03 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: mmtbEOAVM1myFW.0kA43SvnL_BCfcRkl1aMJHR.G.i4cksS
+ LN5fZ4JBTZFUq.PKLS5FvSOeehWfkbARaO4mUdnp.LHwqCPCKW4XuihKg642
+ 1FTAhN4u2j9x3QwWIjD94PQ85Kss4gWP4MrYJKncBfEc5NqMcychedDUKe.F
+ bmzAK8WSV3bpUxa8SQTOXd.84m.vYMhDvsh0BUUsqdSx.Q6tIN8TDCIn26ig
+ MHnjBrhT9xcX9z8am_bkAgEuQe.dMnWrtZW.Mf2U-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 24 Nov 2010 12:08:59 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless) fastpaths
+ for slub
+In-Reply-To: <1290619610.2072.500.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1011241204440.20545@router.home>
+References: <20101123235139.908255844@linux.com>  <20101123235201.758191189@linux.com> <1290586512.2072.423.camel@laptop>  <alpine.DEB.2.00.1011241013240.14268@router.home> <1290619610.2072.500.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Nov 2010 18:09:31.0261 (UTC) FILETIME=[BDD112D0:01CB8C02]
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010 21:23:47 +1100
-Michael Ellerman <michael@ellerman.id.au> wrote:
+On Wed, 24 Nov 2010, Peter Zijlstra wrote:
 
-> On Thu, 2010-11-18 at 12:13 -0600, Scott Wood wrote:
-> > Unfortunately, it's not an exact match, and the fact that reg doesn't
-> > translate to a physical address means that AFAICT you'll currently get
-> > something like "byte-channel.nnn", where "nnn" is an arbitrary
-> > kernel-assigned number.
-> 
-> Can you not use device_rename() ?
+> On Wed, 2010-11-24 at 10:14 -0600, Christoph Lameter wrote:
+> > On Wed, 24 Nov 2010, Peter Zijlstra wrote:
+> >
+> > > This thing still relies on disabling IRQs in the slow path, which means
+> > > its still going to be a lot of work to make it work on -rt.
+> >
+> > The disabling of irqs is because slab operations are used from interrupt
+> > context. If we can avoid slab operations from interrupt contexts then we
+> > can drop the interrupt disable in the slab allocators.
+>
+> That's not so much the point, there's per-cpu assumptions due to that.
 
-Ah, didn't know about that.  Still, might be nice to add support for
-"handle" nodes at the infrastructure level rather than in each driver.
+Sure the exclusive access to per cpu area is exploited during
+irq off sections. That would have to change.
 
-> > It would be nice if platform devices that are created from device tree
-> > nodes included a link to the corresponding /proc/device-tree node in
-> > their sysfs node.
-> 
-> It's not a link, but the OF path is in devspec, so you can work it out
-> fairly easily.
+> Not everything is under a proper lock, see for example this bit:
+>
+>         new = new_slab(s, gfpflags, node);
+>
+>         if (gfpflags & __GFP_WAIT)
+>                 local_irq_disable();
+>
+>         if (new) {
+>                 c = __this_cpu_ptr(s->cpu_slab);
+>                 stat(s, ALLOC_SLAB);
+>                 if (c->page)
+>                         flush_slab(s, c);
+>                 slab_lock(new);
+>                 __SetPageSlubFrozen(new);
+>                 c->page = new;
+>                 goto load_freelist;
+>         }
+>
+> There we have the __this_cpu_ptr, c->page deref and flush_slab()->stat()
+> call all before we take a lock.
 
-Hmm, I see a "devspec" in PCI devices, but not in devtree-probed
-platform devices.  of_bus_type_init isn't being called from anywhere
-but the ibmebus code.  It looks like this was a casualty of merging
-of_platform with platform (commit eca3930163ba8884060ce9d9ff5ef0d9b7c7b00f).
+All per cpu data and therefore would have get different treatment
+if we wanted to drop the processing in interrupt off mode.
 
--Scott
+Disabling preempt may be initially sufficient there.
+
+
 
