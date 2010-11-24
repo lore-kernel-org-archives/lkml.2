@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab0KXOto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:49:44 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:43552 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750894Ab0KXOtm (ORCPT
+	id S1752726Ab0KXOxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:53:00 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59372 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab0KXOw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:49:42 -0500
-Date: Wed, 24 Nov 2010 09:49:42 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@suse.de>
-cc: ltuikov@yahoo.com, Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-In-Reply-To: <1290593429.14652.33.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.44L0.1011240945260.1513-100000@iolanthe.rowland.org>
+	Wed, 24 Nov 2010 09:52:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=hzfnr/ISnJZhEAJW8d9uwFtTu/E56GtY5edNjeX9X58QAaQqwFk8D3ky5JTm41lE23
+         2faU9K3/pJ7HTPBdWb0hc6Uw6P1Njhw0yI/FUDyG2uek574rcUMCp3xHrKwTRjA9lUjw
+         tL/wSbjxGpR8/xqU7aBPrjnxwsbrpaDQVPFU4=
+Date: Wed, 24 Nov 2010 08:52:47 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hrtimer: make epoll_wait() use the hrtimer range feature
+Message-ID: <20101124145247.GA2860@BohrerMBP.rgmadvisors.com>
+References: <1281307532-3235-1-git-send-email-shawn.bohrer@gmail.com>
+ <AANLkTinLCN3ojoRqcAwRsA=JJ=0=R6TWv2dmyUvbMMTC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinLCN3ojoRqcAwRsA=JJ=0=R6TWv2dmyUvbMMTC@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010, James Bottomley wrote:
-
-> On Wed, 2010-11-24 at 01:02 -0800, Luben Tuikov wrote:
-> > I doubt this as very unlikely. Has anyone actually seen a device that
-> > sends mode parameter data with faux Caching mode page or corrupted
-> > data that is in fact interpreted as a Caching mode page? Is such a
-> > device fully operational sans the faux Caching mode page, or does it
-> > just not work? Is it common to have devices having a faux Caching mode
-> > page or corrupted mode parameter data resulting in a Caching mode page
-> > with random data?
-> > 
-> > Undoubtedly, as the usb-storage maintainer, you must have variety of
-> > devices, some broken some not. Could you apply this patch to your tree
-> > and test some of the devices you have? My tests indicate a stable
-> > behavior.
+On Wed, Nov 24, 2010 at 03:33:02AM -0500, Mike Frysinger wrote:
+> On Sun, Aug 8, 2010 at 18:45, Shawn Bohrer wrote:
+> > @@ -1116,18 +1113,22 @@ static int ep_send_events(struct eventpoll *ep,
+> >  static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+> >                   int maxevents, long timeout)
+> >  {
+> > -       int res, eavail;
+> > +       int res, eavail, timed_out = 0;
+> >        unsigned long flags;
+> > -       long jtimeout;
+> > +       long slack;
+> >        wait_queue_t wait;
+> > -
+> > -       /*
+> > -        * Calculate the timeout by checking for the "infinite" value (-1)
+> > -        * and the overflow condition. The passed timeout is in milliseconds,
+> > -        * that why (t * HZ) / 1000.
+> > -        */
+> > -       jtimeout = (timeout < 0 || timeout >= EP_MAX_MSTIMEO) ?
+> > -               MAX_SCHEDULE_TIMEOUT : (timeout * HZ + 999) / 1000;
+> > +       struct timespec end_time;
+> > +       ktime_t expires, *to = NULL;
+> > +
+> > +       if (timeout > 0) {
+> > +               ktime_get_ts(&end_time);
+> > +               timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
+> > +               slack = estimate_accuracy(&end_time);
+> > +               to = &expires;
+> > +               *to = timespec_to_ktime(end_time);
+> > +       } else if (timeout == 0) {
+> > +               timed_out = 1;
+> > +       }
+> >
+> >  retry:
+> >        spin_lock_irqsave(&ep->lock, flags);
+> > @@ -1149,7 +1150,7 @@ retry:
+> >                         * to TASK_INTERRUPTIBLE before doing the checks.
+> >                         */
+> >                        set_current_state(TASK_INTERRUPTIBLE);
+> > -                       if (!list_empty(&ep->rdllist) || !jtimeout)
+> > +                       if (!list_empty(&ep->rdllist) || timed_out)
+> >                                break;
+> >                        if (signal_pending(current)) {
+> >                                res = -EINTR;
+> > @@ -1157,7 +1158,9 @@ retry:
+> >                        }
+> >
+> >                        spin_unlock_irqrestore(&ep->lock, flags);
+> > -                       jtimeout = schedule_timeout(jtimeout);
+> > +                       if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
+> > +                               timed_out = 1;
+> > +
+> >                        spin_lock_irqsave(&ep->lock, flags);
+> >                }
+> >                __remove_wait_queue(&ep->wq, &wait);
 > 
-> The basic problem isn't devices lying ... the worst we'll do is current
-> behaviour (not SYNC when we should).  The problem is devices that get
-> confused (or worse simply crash the firmware).  The best way to avoid
-> the crashing firmware problem ... if we can assume that modern USB
-> devices are better is to key off the SCSI version.  Unfortunately, in
-> spite of several attempts, we've never managed to stop usbstorage lying
-> about this:
+> this code introduces a warning:
+> fs/eventpoll.c: In function ‘ep_poll’:
+> fs/eventpoll.c:1119: warning: ‘slack’ may be used uninitialized in this function
 > 
-> 		/* Some devices report a SCSI revision level above 2 but are
-> 		 * unable to handle the REPORT LUNS command (for which
-> 		 * support is mandatory at level 3).  Since we already have
-> 		 * a Get-Max-LUN request, we won't lose much by setting the
-> 		 * revision level down to 2.  The only devices that would be
-> 		 * affected are those with sparse LUNs. */
-> 		if (sdev->scsi_level > SCSI_2)
-> 			sdev->sdev_target->scsi_level =
-> 					sdev->scsi_level = SCSI_2;
-> 
-> Untangling all of this would be rather complex, I fear.
+> looks to me like you arent properly handling negative timeouts.
+> certainly epoll_wait() passes the timeout value straight from
+> userspace to ep_poll() without any error checking, so if userspace
+> passes a negative timeout value, it looks like "slack" will be used
+> uninitialized.
 
-Quite likely.
+If a negative timeout is passed in then 'to' remains NULL.  When 'to
+is NULL schedule_hrtimeout_range() has an infinite timeout and the
+'slack' parameter is never used.  So technically everything should be
+fine here.
 
-> The final question is is it worth it?  Since USB devices are supposed to
-> be hot unpluggable, surely a USB device with a write back cache would be
-> a disaster: no-one will SYNC the cache on a surprise unplug anyway ...
-> therefore there shouldn't really be any of them surviving in the wild
-> (famous last words, I suppose).
+Of course it would be safest and best to simply initialize slack to 0.
+I can send a patch this evening with the fix.
 
-Well, hot unpluggable doesn't mean it's okay to unplug the device at 
-any time.  For example, under Windows you're not supposed to unplug a 
-USB drive without first going through the "Safely remove hardware" 
-applet.  And of course, you can easily guess what command that applet 
-sends to the device...
-
-On the whole, I'm with Luben on this.  The likelihood of introducing
-bad behavior because of devices sending incorrect cache-page
-information seems very small.
-
-Alan Stern
-
+--
+Shawn
