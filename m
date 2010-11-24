@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab0KXIyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:54:12 -0500
-Received: from darkcity.gna.ch ([195.226.6.51]:34222 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752150Ab0KXIyL convert rfc822-to-8bit (ORCPT
+	id S1752755Ab0KXIyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 03:54:31 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49198 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0KXIy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:54:11 -0500
-X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
-	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
-	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
-Subject: Re: [PATCH] MAINTAINERS: INTEL DRM DRIVERS list (intel-gfx) is
- subscribers-only
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-In-Reply-To: <c6d829$pl04gp@fmsmga001.fm.intel.com>
-References: <1290580602.11971.44.camel@Joe-Laptop>
-	 <c6d829$pl04gp@fmsmga001.fm.intel.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Nov 2010 09:53:46 +0100
-Message-ID: <1290588826.4130.277.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 24 Nov 2010 03:54:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=O+6ddInExaC4I5YfIQroV60hG8qqD8KybZjNSTX9oh0ms2Ql3I4aQkaebsqFKWXvc+
+         0WVF2pb7TfId5/kGkJiU9GWs5wDmBFyJ+PfPN8QDRiSs2+BTXR13E2xNnhn9tFu9fPuG
+         AImcWZQuUkWzoX81wzzDwigcLYyE4s+8sPOdI=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1290579285.3790.1.camel@jlt3.sipsolutions.net>
+References: <AANLkTinVUkgZKbAkQ3_27Jw3cXJ7qySxm1UMFSReujfp@mail.gmail.com>
+	<1290579285.3790.1.camel@jlt3.sipsolutions.net>
+Date: Wed, 24 Nov 2010 09:54:23 +0100
+Message-ID: <AANLkTi=Bf3avTORbP23K7LJfR_T8i5hRm9xVvKGyDRPp@mail.gmail.com>
+Subject: Re: linux-next: Tree for November 24 (iwlwifi-fix)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>, sfr@canb.auug.org.au,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        John Linville <linville@tuxdriver.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2010-11-24 at 08:46 +0000, Chris Wilson wrote: 
-> On Tue, 23 Nov 2010 22:36:42 -0800, Joe Perches <joe@perches.com> wrote:
-> > Mark it so.
-> 
-> It was my mistake so I've applied this patch and will send upwards.
+On Wed, Nov 24, 2010 at 7:14 AM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Wed, 2010-11-24 at 07:09 +0100, Sedat Dilek wrote:
+>
+>> Is that fix still required? Fixed in wireless-next-2.6?
+>
+> That patch was causing that problem, but I fixed the original problem
+> since.
+>
+> johannes
+>
 
-It would be better to fix the mailing list not to automatically reject
-posts from non-subscribers but to just make them go through a moderation
-queue. That would get you from 'subscribers-only' to 'moderated for
-non-subscribers'. To make that unnecessary as well, disable the bounce
-about the moderation in the mailman configuration, as is the case with
-the dri-devel list.
+Thanks for the quick reply.
 
+I dropped that patch in my series and it looks good now (compile-tested):
 
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+$ grep iwl build_linux-next_next20101124.dileks.1.log
+  LD      drivers/net/wireless/iwlwifi/built-in.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl3945-base.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-3945.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-3945-rs.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-3945-led.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-rs.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-led.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-ucode.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-tx.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-lib.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-rx.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-calib.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-tt.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-sta.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-eeprom.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-4965.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-rxon.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-hcmd.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-agn-ict.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-5000.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-6000.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-1000.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-core.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-eeprom.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-hcmd.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-power.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-rx.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-tx.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-sta.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-scan.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-led.o
+  CC [M]  drivers/net/wireless/iwlwifi/iwl-legacy.o
+  LD [M]  drivers/net/wireless/iwlwifi/iwlcore.o
+  LD [M]  drivers/net/wireless/iwlwifi/iwlagn.o
+  LD [M]  drivers/net/wireless/iwlwifi/iwl3945.o
+  CC      drivers/net/wireless/iwlwifi/iwl3945.mod.o
+  CC      drivers/net/wireless/iwlwifi/iwlagn.mod.o
+  CC      drivers/net/wireless/iwlwifi/iwlcore.mod.o
+  LD [M]  drivers/net/wireless/iwlwifi/iwl3945.ko
+  LD [M]  drivers/net/wireless/iwlwifi/iwlagn.ko
+  LD [M]  drivers/net/wireless/iwlwifi/iwlcore.ko
+  INSTALL drivers/net/wireless/iwlwifi/iwl3945.ko
+  INSTALL drivers/net/wireless/iwlwifi/iwlagn.ko
+  INSTALL drivers/net/wireless/iwlwifi/iwlcore.ko
+
+- Sedat -
