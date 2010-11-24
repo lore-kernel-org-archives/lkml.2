@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab0KXIO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:14:56 -0500
-Received: from cpanel.palnet.com ([217.66.226.39]:41319 "EHLO
-	cpanel.palnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab0KXIOz (ORCPT
+	id S1752038Ab0KXIPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 03:15:23 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:43527 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab0KXIPV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:14:55 -0500
-Message-ID: <20101124101051.14275om2fshd966j@webmail.mofa-gov.ps>
-Date: Wed, 24 Nov 2010 10:10:51 +0200
-From: Western Union Money Transfer <info@yahoo.com>
-Reply-to: transferwnunion1@live.com
-To: undisclosed-recipients:;
-Subject: You've earned 1,000,000.00 USD
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel.palnet.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - yahoo.com
+	Wed, 24 Nov 2010 03:15:21 -0500
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless)
+ fastpaths for slub
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101123235201.758191189@linux.com>
+References: <20101123235139.908255844@linux.com>
+	 <20101123235201.758191189@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 09:15:12 +0100
+Message-ID: <1290586512.2072.423.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-11-23 at 17:51 -0600, Christoph Lameter wrote:
+> So there is no need even to disable preemption which will make the allocations
+> scale well in a RT environment. 
 
-You have earned 1,000,000.00 USD,Send info:Names,Age,Country,phone number
-To:(transferwnunion1@live.com)
+The RT thing isn't particularly about scaling per-se, its mostly about
+working at all.
 
+This thing still relies on disabling IRQs in the slow path, which means
+its still going to be a lot of work to make it work on -rt.
 
+It also heavily relies on bit-spinlocks, which again is going to need
+changes for -rt.
 
-
-
+But yes, the lockless fast path is nice, I'll try and get around to
+reading it.
