@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab0KXRAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 12:00:54 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:15861 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab0KXRAw (ORCPT
+	id S1755728Ab0KXRDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 12:03:31 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:17428
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753690Ab0KXRD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 12:00:52 -0500
-Message-ID: <4CED44BE.1030405@caviumnetworks.com>
-Date: Wed, 24 Nov 2010 09:00:46 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 24 Nov 2010 12:03:29 -0500
+X-SpamScore: -27
+X-BigFish: VPS-27(zz542N1432N14ffO9371Pzz1202hzz8275dhz2dh95h691h668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-To: michael@ellerman.id.au
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-        linux-mips <linux-mips@linux-mips.org>,
-        microblaze-uclinux@itee.uq.edu.au,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: RFC: Mega rename of device tree routines from of_*() to dt_*()
-References: <1290607413.12457.44.camel@concordia>
+Content-Type: text/plain; charset="UTF-8"
+Subject: RE: Mega rename of device tree routines from of_*() to dt_*()
+Date: Wed, 24 Nov 2010 09:02:18 -0800
 In-Reply-To: <1290607413.12457.44.camel@concordia>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Nov 2010 17:01:47.0505 (UTC) FILETIME=[47A11E10:01CB8BF9]
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Mega rename of device tree routines from of_*() to dt_*()
+Thread-Index: AcuL4IxPnEXiFsmISpat6zMuVNPGJgAGC53g
+References: <1290607413.12457.44.camel@concordia>
+From: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+To: <michael@ellerman.id.au>, LKML <linux-kernel@vger.kernel.org>
+CC: linux-mips <linux-mips@linux-mips.org>,
+        <microblaze-uclinux@itee.uq.edu.au>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        <sparclinux@vger.kernel.org>
+X-OriginalArrivalTime: 24 Nov 2010 17:03:22.0310 (UTC) FILETIME=[80233660:01CB8BF9]
+X-RCIS-Action: ALLOW
+Message-ID: <fa44e045-9600-4c46-939a-af246afab4f6@VA3EHSMHS019.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAOH3eGX013652
 
-On 11/24/2010 06:03 AM, Michael Ellerman wrote:
+
+
+> -----Original Message-----
+> From: linuxppc-dev-bounces+stephen=neuendorffer.name@lists.ozlabs.org [mailto:linuxppc-dev-
+> bounces+stephen=neuendorffer.name@lists.ozlabs.org] On Behalf Of Michael Ellerman
+> Sent: Wednesday, November 24, 2010 6:04 AM
+> To: LKML
+> Cc: linux-mips; microblaze-uclinux@itee.uq.edu.au; devicetree-discuss@lists.ozlabs.org; linuxppc-dev
+> list; sparclinux@vger.kernel.org
+> Subject: RFC: Mega rename of device tree routines from of_*() to dt_*()
+> 
 > Hi all,
->
+> 
 > There were some murmurings on IRC last week about renaming the of_*()
 > routines. I was procrastinating at the time and said I'd have a look at
 > it, so here I am.
->
+> 
 > The thinking is that on many platforms that use the of_() routines
 > OpenFirmware is not involved at all, this is true even on many powerpc
 > platforms. Also for folks who don't know the OpenFirmware connection it
 > reads as "of", as in "a can of worms".
->
+> 
 > Personally I'm a bit ambivalent about it, the OF name is a bit wrong so
 > it would be nice to get rid of, but it's a lot of churn.
->
+> 
 > So I'm hoping people with either say "YES this is a great idea", or "NO
 > this is stupid".
->
-> As step one I've just renamed as many routines as I could find to see
-> what the resulting patch looks like, so we can quantify the churn. I
-> also did device.of_node, which is used quite a bit.
->
-> Thoughts?
->
-> of ->  dt most places I could think of (done mechanically):
->
-[...]
->   drivers/of/address.c                               |  114 ++++++------
->   drivers/of/base.c                                  |   14 +-
->   drivers/of/device.c                                |   36 ++--
->   drivers/of/fdt.c                                   |    4 +-
->   drivers/of/gpio.c                                  |   32 ++--
->   drivers/of/irq.c                                   |    4 +-
->   drivers/of/of_i2c.c                                |   18 +-
->   drivers/of/of_mdio.c                               |   16 +-
->   drivers/of/of_spi.c                                |   12 +-
->   drivers/of/pdt.c                                   |    4 +-
->   drivers/of/platform.c                              |  212 ++++++++++----------
 
-Well, not that I care one way or the other, but for consistency you 
-should change all these directory and file names as well.
+Personally, I think it's a great idea, if only because I stared long and hard
+at the code once upon a time trying to figure out what is really OF-related
+and what isn't.  It's somewhat clearer now that drivers/of has been factored
+out (although, shouldn't it be drivers/dt???)
 
-David Daney
+That said, it *is* alot of code churn.  If it's going to be done, I think it should be
+done in concert with fixing a bunch of the function names which don't really follow any
+sane naming convention, so that the backporting discontinuity only happens once.
 
+Steve
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
