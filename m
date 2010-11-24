@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab0KXQWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:22:42 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44249 "EHLO
+	id S1754677Ab0KXQWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:22:50 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44260 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab0KXQWk (ORCPT
+	with ESMTP id S1754586Ab0KXQWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:22:40 -0500
+	Wed, 24 Nov 2010 11:22:48 -0500
+X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tilman Schmidt <tilman@imap.cc>, linux-doc@vger.kernel.org
-Subject: [PATCHv5 12/17] pps: timestamp is always passed to dcd_change()
-Date: Wed, 24 Nov 2010 19:15:50 +0300
-Message-Id: <b69d6d25befe5fd5e211452f62df1e1f2b54ece0.1290599845.git.lasaine@lvk.cs.msu.su>
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>, "H\. Peter Anvin" <hpa@zytor.com>,
+        Magnus Damm <damm@opensource.se>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv5 14/17] pps: capture MONOTONIC_RAW timestamps as well
+Date: Wed, 24 Nov 2010 19:15:52 +0300
+Message-Id: <5192d173ed6e6d392a76790b771be94f548d8ac8.1290599845.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
 References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
@@ -27,63 +30,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the code that gatheres timestamp in pps_tty_dcd_change() in case
-passed ts parameter is NULL because it never happens in the current
-code. Fix comments as well.
+MONOTONIC_RAW clock timestamps are ideally suited for frequency
+calculation and also fit well into the original NTP hardpps design. Now
+phase and frequency can be adjusted separately: the former based on
+REALTIME clock and the latter based on MONOTONIC_RAW clock.
+A new function getnstime_raw_and_real is added to timekeeping subsystem
+to capture both timestamps at the same time and atomically.
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
+Acked-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- Documentation/serial/tty.txt    |    2 +-
- drivers/pps/clients/pps-ldisc.c |    8 --------
- include/linux/tty_ldisc.h       |    2 +-
- 3 files changed, 2 insertions(+), 10 deletions(-)
+ include/linux/pps_kernel.h |    3 ++-
+ include/linux/time.h       |    2 ++
+ kernel/time/timekeeping.c  |   38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 42 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/serial/tty.txt b/Documentation/serial/tty.txt
-index 7c90050..540db41 100644
---- a/Documentation/serial/tty.txt
-+++ b/Documentation/serial/tty.txt
-@@ -107,7 +107,7 @@ write_wakeup()	-	May be called at any point between open and close.
+diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
+index 1aedf50..6ae8898 100644
+--- a/include/linux/pps_kernel.h
++++ b/include/linux/pps_kernel.h
+@@ -47,6 +47,7 @@ struct pps_source_info {
+ };
  
- dcd_change()	-	Report to the tty line the current DCD pin status
- 			changes and the relative timestamp. The timestamp
--			can be NULL.
-+			cannot be NULL.
+ struct pps_event_time {
++	struct timespec ts_raw;
+ 	struct timespec ts_real;
+ };
  
+@@ -99,7 +100,7 @@ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
  
- Driver Access
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 199a83b..19b3477 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -32,14 +32,6 @@ static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
- 				struct pps_event_time *ts)
+ static inline void pps_get_ts(struct pps_event_time *ts)
  {
- 	struct pps_device *pps = (struct pps_device *)tty->disc_data;
--	struct pps_event_time __ts;
--
--	/* First of all we get the time stamp... */
--	pps_get_ts(&__ts);
--
--	/* Does caller give us a timestamp? */
--	if (!ts)	/* No. Do it ourself! */
--		ts = &__ts;
+-	getnstimeofday(&ts->ts_real);
++	getnstime_raw_and_real(&ts->ts_raw, &ts->ts_real);
+ }
  
- 	BUG_ON(pps == NULL);
+ #endif /* LINUX_PPS_KERNEL_H */
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 9f15ac7..1e6d3b5 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -158,6 +158,8 @@ extern unsigned int alarm_setitimer(unsigned int seconds);
+ extern int do_getitimer(int which, struct itimerval *value);
+ extern void getnstimeofday(struct timespec *tv);
+ extern void getrawmonotonic(struct timespec *ts);
++extern void getnstime_raw_and_real(struct timespec *ts_raw,
++		struct timespec *ts_real);
+ extern void getboottime(struct timespec *ts);
+ extern void monotonic_to_bootbased(struct timespec *ts);
  
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index 763e061..ff7dc08 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -104,7 +104,7 @@
-  *			struct pps_event_time *ts)
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 49010d8..947c7dc 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -285,6 +285,44 @@ void ktime_get_ts(struct timespec *ts)
+ EXPORT_SYMBOL_GPL(ktime_get_ts);
+ 
+ /**
++ * getnstime_raw_and_real - Returns both the time of day an raw
++ * monotonic time in a timespec format
++ * @ts_mono_raw:	pointer to the timespec to be set to raw
++ *			monotonic time
++ * @ts_real:		pointer to the timespec to be set to the time
++ *			of day
++ */
++void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
++{
++	unsigned long seq;
++	s64 nsecs_raw, nsecs_real;
++
++	WARN_ON_ONCE(timekeeping_suspended);
++
++	do {
++		u32 arch_offset;
++
++		seq = read_seqbegin(&xtime_lock);
++
++		*ts_raw = raw_time;
++		*ts_real = xtime;
++
++		nsecs_raw = timekeeping_get_ns_raw();
++		nsecs_real = timekeeping_get_ns();
++
++		/* If arch requires, add in gettimeoffset() */
++		arch_offset = arch_gettimeoffset();
++		nsecs_raw += arch_offset;
++		nsecs_real += arch_offset;
++
++	} while (read_seqretry(&xtime_lock, seq));
++
++	timespec_add_ns(ts_raw, nsecs_raw);
++	timespec_add_ns(ts_real, nsecs_real);
++}
++EXPORT_SYMBOL(getnstime_raw_and_real);
++
++/**
+  * do_gettimeofday - Returns the time of day in a timeval
+  * @tv:		pointer to the timeval to be set
   *
-  *	Tells the discipline that the DCD pin has changed its status and
-- *	the relative timestamp. Pointer ts can be NULL.
-+ *	the relative timestamp. Pointer ts cannot be NULL.
-  */
- 
- #include <linux/fs.h>
 -- 
 1.7.2.3
 
