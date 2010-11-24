@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab0KXAWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:22:31 -0500
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:39641 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab0KXAWa convert rfc822-to-8bit (ORCPT
+	id S1755617Ab0KXAWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:22:32 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:38279 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab0KXAWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Nov 2010 19:22:30 -0500
-Date: Wed, 24 Nov 2010 00:20:32 +0000
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-To: Pauli Nieminen <pauli.nieminen@collabora.co.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rainer Weikusat <rweikusat@mssgmbh.com>
-Subject: Re: [PATCH] af_unix: unix_write_space() use keyed wakeups
-Message-ID: <20101124002032.572b7292@chocolatine.cbg.collabora.co.uk>
-In-Reply-To: <1290554876.2158.5.camel@Nokia-N900-51-1>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
-	<1288380431.2680.3.camel@edumazet-laptop>
-	<1288421084.2680.717.camel@edumazet-laptop>
-	<20101030223609.2faa4eae@chocolatine.cbg.collabora.co.uk>
-	<1290554876.2158.5.camel@Nokia-N900-51-1>
-Organization: Collabora
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WdL0rjxNcprlzsKexYNqNsGxpBraI/TW21+ODTf1t4oP7RxpTXlDOgb4Kb7zMFh1Nc
+         B96IwHQKweW+sIxaF7uKtA6FavD1EbY859S8P3/ducxd71vJuUm8AIWQGVo/T8e1ryRN
+         mFBXC48EltafC168COccjrMqQynxIpykhTOa4=
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless)
+ fastpaths for slub
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101123235201.758191189@linux.com>
+References: <20101123235139.908255844@linux.com>
+	 <20101123235201.758191189@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 01:22:24 +0100
+Message-ID: <1290558144.2866.122.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Wed, 24 Nov 2010 01:27:56 +0200,
-Pauli Nieminen <pauli.nieminen@collabora.co.uk> a écrit :
-
-> ----- Original message -----
-> > Le Sat, 30 Oct 2010 08:44:44 +0200,
-> > Eric Dumazet <eric.dumazet@gmail.com> a écrit :
-> > 
-> > > We still loop on 800 items, on each
-> > > wake_up_interruptible_sync_poll() call, so maybe we want to
-> > > optimize this later, adding a global key, ORing all items keys. I
-> > > dont think its worth the added complexity, given the biased usage
-> > > of your program (800 'listeners' to one event). Is it a real life
-> > > scenario ?
-> > 
-> > Pauli Nieminen told me about his performance problem in select() so
-> > I wrote the test program but I don't know what exactly is the real
-> > life scenario.
-> > 
+Le mardi 23 novembre 2010 à 17:51 -0600, Christoph Lameter a écrit :
+> pièce jointe document texte brut (slub_generation)
+> Use the this_cpu_cmpxchg_double functionality to implement a lockless
+> allocation algorith.
 > 
-> Real world scenario is xsever that has tens client connections to
-> manage. When xserver is happily sleeping at seclect call some client
-> reading events/replies from server triggers in kernel looping over
-> all xserver fds. xserver isn't waiting for socket to became writeable
-> in ussual cases so kernel schedules back to client.
+> Each of the per cpu pointers is paired with a transaction id that ensures
+> that updates of the per cpu information can only occur in sequence on
+> a certain cpu.
+> 
+> A transaction id is a "long" integer that is comprised of an event number
+> and the cpu number. The event number is incremented for every change to the
+> per cpu state. This means that the cmpxchg instruction can verify for an
+> update that nothing interfered and that we are updating the percpu structure
+> for the processor where we picked up the information and that we are also
+> currently on that processor when we update the information.
+> 
+> This results in a significant decrease of the overhead in the fastpaths. It
+> also makes it easy to adopt the fast path for realtime kernels since this
+> is lockless and does not require that the use of the current per cpu area
+> over the critical section. It is only important that the per cpu area is
+> current at the beginning of the critical section and at that end.
+> 
+> So there is no need even to disable preemption which will make the allocations
+> scale well in a RT environment.
+> 
+> [Beware: There have been previous attempts at lockless fastpaths that
+> did not succeed. We hope to have learned from these experiences but
+> review certainly is necessary.]
+> 
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
 
-But are they SOCK_STREAM or SOCK_DGRAM sockets? The patches fix
-performances with SOCK_DGRAM. If the xserver scenario is with
-SOCK_STREAM sockets, your problem is probably still unfixed.
+>  
+>  /*
+> + * Calculate the next globally unique transaction for disambiguiation
+> + * during cmpxchg. The transactions start with the cpu number and are then
+> + * incremented by CONFIG_NR_CPUS.
+> + */
+> +static inline unsigned long next_tid(unsigned long tid)
+> +{
+> +	return tid + CONFIG_NR_CPUS;
+> +}
+
+
+Hmm, this only works for power of two NR_CPUS, or else one cpu 'tid'
+could wrap on another cpu tid.
+
+I suggest using 4096  (or roundup_pow_of_two(CONFIG_NR_CPUS))
+
+
 
