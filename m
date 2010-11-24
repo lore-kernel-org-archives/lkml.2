@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab0KXP6E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 10:58:04 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41444 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab0KXP6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 10:58:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=bv12UCVUY4ANtuDDGICfMgGziRVZz+WC+bPqQD+pRQrEomGKUTjkgjWc0NgLX2FG73
-         pR3HlZTsLdKJRxxFvp5RJUvY6h94c849YXkhoBKypD9c21piRNKUv2oDSrCDGrsbRrQL
-         jr+FMHQ9BLXODtVyGoE7FVGvTU8zfoLi6mFi4=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Carpenter <error27@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] generic-ipi: add lock context annotations
-Date: Thu, 25 Nov 2010 00:57:52 +0900
-Message-Id: <1290614272-3213-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753289Ab0KXQG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:06:57 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:60775 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894Ab0KXQGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 11:06:55 -0500
+Message-ID: <4CED381A.5060100@bfs.de>
+Date: Wed, 24 Nov 2010 17:06:50 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andreas Dilger <adilger.kernel@dilger.ca>,
+        =?ISO-8859-1?Q?Am=E9rico_?= =?ISO-8859-1?Q?Wang?= 
+	<xiyou.wangcong@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>	<20101112120834.33062900.akpm@linux-foundation.org>	<8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>	<20101114092533.GB5323@albatros>	<20101114180643.593d19ac.akpm@linux-foundation.org>	<1289848341.2607.125.camel@edumazet-laptop>	<20101123140111.GA3816@hack>	<4CEBD37E.5060107@bfs.de>	<203E1F2A-2D04-4B7F-8D1B-9DC24522CB5E@dilger.ca> <20101123121840.e9d17d91.akpm@linux-foundation.org>
+In-Reply-To: <20101123121840.e9d17d91.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ipi_call_[un]lock[_irq] functions grab/release a spin lock
-but were missing proper annotations. Add them. This fixes
-following sparse warnings:
 
- kernel/smp.c:513:6: warning: context imbalance in 'ipi_call_lock' - wrong count at exit
- kernel/smp.c:518:6: warning: context imbalance in 'ipi_call_unlock' - unexpected unlock
- kernel/smp.c:523:6: warning: context imbalance in 'ipi_call_lock_irq' - wrong count at exit
- kernel/smp.c:528:6: warning: context imbalance in 'ipi_call_unlock_irq' - unexpected unlock
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- include/linux/smp.h |    8 ++++----
- kernel/smp.c        |    4 ++++
- 2 files changed, 8 insertions(+), 4 deletions(-)
+Am 23.11.2010 21:18, schrieb Andrew Morton:
+> On Tue, 23 Nov 2010 11:02:44 -0700
+> Andreas Dilger <adilger.kernel@dilger.ca> wrote:
+> 
+>> On 2010-11-23, at 07:45, walter harms wrote:
+>>> Maybe we can convince the gcc people to make 0 padding default. That will not solve the problems for other compilers but when they claim "works like gcc" we can press then to support this also. I can imagine that this will close some other subtle leaks also.
+>>
+>> It makes the most sense to tackle this at the GCC level, since the added overhead of doing memset(0) on the whole struct may be non-trivial for commonly-used and/or large structures.
+> 
+> (My, what long lines you have!)
+> 
+> We can't reasonably address this with gcc changes.  If gcc starts doing
+> what we want in the next release, how long will it be until that
+> release is the *oldest* version of gcc which the kernel may be compiled
+> with?  Five years?
+> 
+> 
+agreed, but it does not mean not to talk to the gcc people that there is
+an interesse to change.
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 6dc95ca..f969345 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -86,10 +86,10 @@ int smp_call_function_any(const struct cpumask *mask,
- #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
- void generic_smp_call_function_single_interrupt(void);
- void generic_smp_call_function_interrupt(void);
--void ipi_call_lock(void);
--void ipi_call_unlock(void);
--void ipi_call_lock_irq(void);
--void ipi_call_unlock_irq(void);
-+void ipi_call_lock(void) __acquires(call_function.lock);
-+void ipi_call_unlock(void) __releases(call_function.lock);
-+void ipi_call_lock_irq(void) __acquires(call_function.lock);
-+void ipi_call_unlock_irq(void) __releases(call_function.lock);
- #endif
- 
- /*
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 12ed8b0..5a62f1f 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -511,21 +511,25 @@ int smp_call_function(smp_call_func_t func, void *info, int wait)
- EXPORT_SYMBOL(smp_call_function);
- 
- void ipi_call_lock(void)
-+	__acquires(call_function.lock)
- {
- 	raw_spin_lock(&call_function.lock);
- }
- 
- void ipi_call_unlock(void)
-+	__releases(call_function.lock)
- {
- 	raw_spin_unlock(&call_function.lock);
- }
- 
- void ipi_call_lock_irq(void)
-+	__acquires(call_function.lock)
- {
- 	raw_spin_lock_irq(&call_function.lock);
- }
- 
- void ipi_call_unlock_irq(void)
-+	__releases(call_function.lock)
- {
- 	raw_spin_unlock_irq(&call_function.lock);
- }
--- 
-1.7.0.4
-
+re,
+ wh
