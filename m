@@ -1,105 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab0KXMLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:11:04 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45808 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985Ab0KXMLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:11:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,247,1288594800"; 
-   d="scan'208";a="680614944"
-Date: Wed, 24 Nov 2010 20:10:46 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
-Message-ID: <20101124121046.GA8333@localhost>
-References: <20101117042720.033773013@intel.com>
- <20101117042850.002299964@intel.com>
- <1290596732.2072.450.camel@laptop>
+	id S1754083Ab0KXMLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:11:41 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:34873 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753862Ab0KXMLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 07:11:39 -0500
+Message-ID: <4CED00F1.6050004@stericsson.com>
+Date: Wed, 24 Nov 2010 13:11:29 +0100
+From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Lightning/1.0b1 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290596732.2072.450.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 2/3] regulators: Update of ab8500 driver
+References: <1290536754-21775-1-git-send-email-bengt.g.jonsson@stericsson.com> <1290536754-21775-3-git-send-email-bengt.g.jonsson@stericsson.com> <20101123183833.GB19212@rakim.wolfsonmicro.main> <4CECC555.8060408@stericsson.com> <20101124104851.GA24970@rakim.wolfsonmicro.main>
+In-Reply-To: <20101124104851.GA24970@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 07:05:32PM +0800, Peter Zijlstra wrote:
-> On Wed, 2010-11-17 at 12:27 +0800, Wu Fengguang wrote:
-> > +void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
-> > +                               unsigned long *bw_time,
-> > +                               s64 *bw_written)
-> > +{
-> > +       unsigned long written;
-> > +       unsigned long elapsed;
-> > +       unsigned long bw;
-> > +       unsigned long w;
-> > +
-> > +       if (*bw_written == 0)
-> > +               goto snapshot;
-> > +
-> > +       elapsed = jiffies - *bw_time;
-> > +       if (elapsed < HZ/100)
-> > +               return;
-> > +
-> > +       /*
-> > +        * When there lots of tasks throttled in balance_dirty_pages(), they
-> > +        * will each try to update the bandwidth for the same period, making
-> > +        * the bandwidth drift much faster than the desired rate (as in the
-> > +        * single dirtier case). So do some rate limiting.
-> > +        */
-> > +       if (jiffies - bdi->write_bandwidth_update_time < elapsed)
-> > +               goto snapshot;
+On 2010-11-24 11:48, Mark Brown wrote:
+> On Wed, Nov 24, 2010 at 08:57:09AM +0100, Bengt Jonsson wrote:
 >
-> Why this goto snapshot and not simply return? This is the second call
-> (bdi_update_bandwidth equivalent).
-
-Good question. The loop inside balance_dirty_pages() normally run only
-once, however wb_writeback() may loop over and over again. If we just
-return here, the condition
-
-        (jiffies - bdi->write_bandwidth_update_time < elapsed)
-
-cannot be reset, then future bdi_update_bandwidth() calls in the same
-wb_writeback() loop will never find it OK to update the bandwidth.
-
-It does assume no races between CPUs.. We may need some per-cpu based
-estimation.
-
-> If you were to leave the old bw_written/bw_time in place the next loop
-> around in wb_writeback() would see a larger delta..
+>> Removing the macros is just my suggestion. The disadvantage I see
+>> with macros is that I need to read both the macro and the listing to
+>> see what it really does. On the other hand, macros are probably more
 >
-> I guess this funny loop in wb_writeback() is also the reason you've got
-> a single function and not the get/update like separation
+> A line of comment at the top of the macro table would probably address
+> that?
+I will make sure to have a comment at the top.
 
-I do the single function mainly for wb_writeback(), where it
-continuously updates bandwidth inside the loop. The function can be
-called in such way:
+Still, I would like to provide a patch which removes the macros just to 
+show the difference. Then you can decide to drop it or propose another 
+change.
 
-loop {
-        take snapshot on first call
-
-        no action if recalled within 10ms
-        ...
-        no action if recalled within 10ms
-        ...
-
-        update bandwidth and prepare for next update by taking the snapshot
-
-        no action if recalled within 10ms
-        ...
-}
-
-Thanks,
-Fengguang
