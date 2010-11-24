@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab0KXXzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 18:55:13 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:24845 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab0KXXzJ convert rfc822-to-8bit (ORCPT
+	id S1752367Ab0KXX5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:57:07 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49098 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab0KXX5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 18:55:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cNNd82c6mKzicNhwyn8hH2NGYhDqpLpfgKAHVeDD7eD4ehN4xjZs41s6gAtGu1PLLv
-         OKH0NyiKKIRDGaX9LWow==
-MIME-Version: 1.0
-In-Reply-To: <1290577024-12347-1-git-send-email-ccross@android.com>
-References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com> <1290577024-12347-1-git-send-email-ccross@android.com>
-From: Paul Menage <menage@google.com>
-Date: Wed, 24 Nov 2010 15:54:38 -0800
-Message-ID: <AANLkTimFqJ+qPidS_81DKd7ExSxDG7GNi0gjcUEEq_7j@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
-To: Colin Cross <ccross@android.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 24 Nov 2010 18:57:06 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6177"; a="64054567"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/2] Optimized inlining for ARM
+Date: Wed, 24 Nov 2010 15:56:58 -0800
+Message-Id: <1290643020-24558-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.2.245.g03276
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 9:37 PM, Colin Cross <ccross@android.com> wrote:
-> @@ -364,12 +372,8 @@ static void __put_css_set(struct css_set *cg, int taskexit)
->                struct cgroup *cgrp = link->cgrp;
->                list_del(&link->cg_link_list);
->                list_del(&link->cgrp_link_list);
-> -               if (atomic_dec_and_test(&cgrp->count) &&
-> -                   notify_on_release(cgrp)) {
-> -                       if (taskexit)
-> -                               set_bit(CGRP_RELEASABLE, &cgrp->flags);
-> +               if (atomic_dec_and_test(&cgrp->count))
->                        check_for_release(cgrp);
-> -               }
+I know that Ingo deliberately introduced this option as x86
+specific, but I'd like to introduce this for ARM as well. To
+avoid useless copy paste, I've made the option generic so
+any arch can support it.
 
-We seem to have lost some notify_on_release() checks - maybe move that
-to check_for_release()?
->  /* Caller must verify that the css is not for root cgroup */
-> +void __css_get(struct cgroup_subsys_state *css, int count)
-> +{
-> +       atomic_add(count, &css->refcnt);
-> +       set_bit(CGRP_RELEASABLE, &css->cgroup->flags);
-> +}
+In an effort to make a tiny crash kernel this option can shave a
+few kb off the crash kernel size. It also helps a regular kernel
+have a smaller icache footprint which should be benficial.
+This option isn't on by default so there is no harm in adding it
+besides giving the user a potentially dangerous option to enable.
+If it's really experimental we can add an "if EXPERIMENTAL" in the
+second patch. In the end, I'd like to get a wider range of testing with
+this feature enabled on ARM so I'm posting it here in hopes that
+people can respond back with Tested-by tags (or Naks if it crashes their
+system).
 
-Is css_get() the right place to be putting this? It's not clear to me
-why a subsystem taking a refcount on a cgroup's state should render it
-releasable when it drops that refcount.
+Stephen Boyd (2):
+  Make OPTIMIZE_INLINING a generic option
+  arm: add optimized inlining
 
-Should we maybe clear the CGRP_RELEASABLE flag right before doing the
-userspace callback?
+ arch/arm/Kconfig       |    1 +
+ arch/x86/Kconfig       |    4 +---
+ arch/x86/Kconfig.debug |   14 --------------
+ init/Kconfig           |   18 ++++++++++++++++++
+ 4 files changed, 20 insertions(+), 17 deletions(-)
 
-Paul
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
