@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0KXAod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:44:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62997 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab0KXAoc (ORCPT
+	id S1755474Ab0KXAor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:44:47 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:33413 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754840Ab0KXAop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:44:32 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6176"; a="64098677"
-Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1011231456380.17082@gbean-linux.qualcomm.com>
-References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
-	 <1290109970-26752-2-git-send-email-gbean@codeaurora.org>
-	 <1290534717.4165.43.camel@m0nster>
-	 <alpine.DEB.2.00.1011231456380.17082@gbean-linux.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 16:44:31 -0800
-Message-ID: <1290559471.4165.85.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 19:44:45 -0500
+Date: Tue, 23 Nov 2010 19:44:41 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thiscpuops upgrade 09/10] x86: this_cpu_cmpxchg and
+	this_cpu_cmpxchg_double operations
+Message-ID: <20101124004441.GA8264@Krystal>
+References: <20101123235139.908255844@linux.com> <20101123235201.146063796@linux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101123235201.146063796@linux.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 19:43:33 up  5:46,  1 user,  load average: 0.03, 0.02, 0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 15:08 -0800, Gregory Bean wrote:
-> >> +static inline void set_gpio_bits(unsigned n, void __iomem *reg)
-> >> +{
-> >> +	writel(readl(reg) | n, reg);
-> >> +}
-> >> +
-> >> +static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
-> >> +{
-> >> +	writel(readl(reg) & ~n, reg);
-> >> +}
-> >
-> > It seems these functions actually accept output from BIT(). It would be
-> > safer to force these to accept the bit number then use BIT() inside this
-> > function to translate. That way you wouldn't use "unsigned n" for the
-> > argument you would use a named enum for the argument.
+* Christoph Lameter (cl@linux.com) wrote:
+> Provide support as far as the hardware capabilities of the x86 cpus
+> allow.
 > 
-> I don't think that will work well, because there are cases where we want
-> to set or clear more than one bit at a time.  Making these functions
-> take a bit number as an argument would restrict them to setting or clearing
-> only one bit at a time, forcing users to call them multiple times to set
-> or clear more than one bit, meaning lots of readl & writel calls for
-> compount bit-changes.
-
-How often will you do the multiple bit changes tho?
-
-> >> +static struct msm_gpio_dev msm_gpio = {
-> >> +	.gpio_chip = {
-> >> +		.base             = 0,
-> >
-> > I guess it's fine to do "offset - chip->base" if base is always zero,
-> > but why do subtraction at all.
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 > 
-> If the chip is ever moved, not accounting for the base would produce an error.
-> I know that 'speculative coding' is frowned upon, but isn't removing an 
-> addition (as you pointed out, the subtraction is a bug) because this instance
-> of the chip is at offset zero a little over the top?
 
-Up to you what to do here ..  I don't care if you have it be redundant
-addition, you might want to comment on it tho.
+[...]
+> +#define percpu_cmpxchg16b(pcp, o1, o2, n1, n2)				\
+> +({									\
+> +	char __ret;							\
+> +	typeof(o1) __o1 = o1;						\
+> +	typeof(o1) __n1 = n1;						\
+> +	typeof(o2) __o2 = o2;						\
+> +	typeof(o2) __n2 = n2;						\
+> +	asm("cmpxchg16b "__percpu_arg(1)"\n\tsetz %0\n\t"		\
+> +		    : "=a"(__ret), "=m" (*pcp)				\
+> +		    :  "b"(__n1), "c"(__n2), "a"(__o1), "d"(__o2));	\
+> +	__ret;								\
+> +})
 
-> >> +	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-> >
-> > I's just break this into two calls, or make another helper that to set
-> > that accepts the mask and have set_gpio_bits call that. This here you
-> > would just use the other helper. like set_gpio_bits calls
-> > set_gpio_bits_mask() and you call the mask version here.
+Can we add a check to ensure that the target memory location is 16-byte aligned?
+This is a documented limitation of cmpxchg16b.
+
+Thanks,
+
+Mathieu
+
+> +
+> +#define __this_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2) percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
+> +#define this_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2)	percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
+> +#define irqsafe_cmpxchg_double_8(pcp, o1, o2, n1, n2)	percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
+> +
+>  #endif
+>  
+>  /* This is not atomic against other CPUs -- CPU preemption needs to be off */
 > 
-> Why make two readl/writel call pairs, or have one version of a helper which
-> can set a single bit and another version which can set more than one
-> at a time?  That seems really complicated.
-
-The benefit is that you would have type checking on the values sent in.
-You would get that from using the enum to define the argument. With just
-using unsigned int you can send in any value you want (even invalid
-ones).
-
-Daniel
 
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
