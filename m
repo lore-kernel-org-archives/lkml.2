@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0KXSCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:02:03 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40846 "EHLO
+	id S1756042Ab0KXSCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 13:02:49 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40855 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753305Ab0KXSCB (ORCPT
+	by vger.kernel.org with ESMTP id S1754420Ab0KXSCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:02:01 -0500
+	Wed, 24 Nov 2010 13:02:02 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, stable@kernel.org
-Subject: [PATCH 2.6.37 1/7] mfd: Supply IRQ base for WM832x devices
-Date: Wed, 24 Nov 2010 18:01:39 +0000
-Message-Id: <1290621705-6926-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 5/7] mfd: Convert WM835x to new irq_ interrupt methods
+Date: Wed, 24 Nov 2010 18:01:43 +0000
+Message-Id: <1290621705-6926-5-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101124180055.GO24970@rakim.wolfsonmicro.main>
 References: <20101124180055.GO24970@rakim.wolfsonmicro.main>
@@ -21,28 +21,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this the IRQ base will not be correctly configured for the
-subdevices.
+Kernel 2.6.37 adds new interrupt methods which take a struct irq_data
+rather than an irq number. Convert over to these as they will become
+mandatory in future.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: stable@kernel.org
 ---
- drivers/mfd/wm831x-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/wm8350-irq.c |   32 +++++++++++++++++---------------
+ 1 files changed, 17 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 7d2563f..e1a2f4b 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -1620,7 +1620,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	case WM8325:
- 		ret = mfd_add_devices(wm831x->dev, -1,
- 				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
--				      NULL, 0);
-+				      NULL, wm831x->irq_base);
- 		break;
+diff --git a/drivers/mfd/wm8350-irq.c b/drivers/mfd/wm8350-irq.c
+index f56c9ad..ba966ae 100644
+--- a/drivers/mfd/wm8350-irq.c
++++ b/drivers/mfd/wm8350-irq.c
+@@ -417,16 +417,16 @@ static irqreturn_t wm8350_irq(int irq, void *irq_data)
+ 	return IRQ_HANDLED;
+ }
  
- 	default:
+-static void wm8350_irq_lock(unsigned int irq)
++static void wm8350_irq_lock(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
++	struct wm8350 *wm8350 = data->chip_data;
+ 
+ 	mutex_lock(&wm8350->irq_lock);
+ }
+ 
+-static void wm8350_irq_sync_unlock(unsigned int irq)
++static void wm8350_irq_sync_unlock(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
++	struct wm8350 *wm8350 = data->chip_data;
+ 	int i;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(wm8350->irq_masks); i++) {
+@@ -442,28 +442,30 @@ static void wm8350_irq_sync_unlock(unsigned int irq)
+ 	mutex_unlock(&wm8350->irq_lock);
+ }
+ 
+-static void wm8350_irq_enable(unsigned int irq)
++static void wm8350_irq_enable(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
+-	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350, irq);
++	struct wm8350 *wm8350 = data->chip_data;
++	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350,
++							     data->irq);
+ 
+ 	wm8350->irq_masks[irq_data->reg] &= ~irq_data->mask;
+ }
+ 
+-static void wm8350_irq_disable(unsigned int irq)
++static void wm8350_irq_disable(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
+-	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350, irq);
++	struct wm8350 *wm8350 = data->chip_data;
++	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350,
++							     data->irq);
+ 
+ 	wm8350->irq_masks[irq_data->reg] |= irq_data->mask;
+ }
+ 
+ static struct irq_chip wm8350_irq_chip = {
+-	.name = "wm8350",
+-	.bus_lock = wm8350_irq_lock,
+-	.bus_sync_unlock = wm8350_irq_sync_unlock,
+-	.disable = wm8350_irq_disable,
+-	.enable = wm8350_irq_enable,
++	.name			= "wm8350",
++	.irq_bus_lock		= wm8350_irq_lock,
++	.irq_bus_sync_unlock	= wm8350_irq_sync_unlock,
++	.irq_disable		= wm8350_irq_disable,
++	.irq_enable		= wm8350_irq_enable,
+ };
+ 
+ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
 -- 
 1.7.1
 
