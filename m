@@ -1,483 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab0KXT7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:59:50 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47202 "EHLO deliverator"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932087Ab0KXT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:59:38 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 12/12] sep: Fix crash if a device is not found
-To: greg@kroah.com, mark.a.allyn@intel.com, linux-kernel@vger.kernel.org
-Date: Wed, 24 Nov 2010 19:39:20 +0000
-Message-ID: <20101124193917.16425.76966.stgit@bob.linux.org.uk>
-In-Reply-To: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
-References: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932228Ab0KXT7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:59:39 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36270 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab0KXT7h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:59:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.172.224.233]
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB59302479315FB@dbde02.ent.ti.com>
+References: <1290526740-27624-1-git-send-email-ohad@wizery.com>
+ <1290526740-27624-2-git-send-email-ohad@wizery.com> <B85A65D85D7EB246BE421B3FB0FBB59302479315FB@dbde02.ent.ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 24 Nov 2010 21:59:15 +0200
+Message-ID: <AANLkTi=JSuJCqceJ3iw3TnV5OeJd+e5T3CyHtWVzBRu_@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
+To: "Kamoolkar, Mugdha" <mugdha@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>, "Anna, Suman" <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Hi Mugdha,
 
-The existing code works mostly by luck. The PCI probe is done by the
-register and completes before the register returns thus allowing the other
-init code to run in time. Without a SEP or if unlucky this doesn't occur
-and you get an OOPS which for some reason causes grumpiness.
+On Wed, Nov 24, 2010 at 9:44 AM, Kamoolkar, Mugdha <mugdha@ti.com> wrote:
+> How do multiple clients get a handle that they can use? Are they expected to
+> share the handle they get from the call above?
 
-As the season of good b^Hcheer is supposed to be approaching we should
-probably fix it.
+Currently, yes.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+> What if they are independent
+> clients with no means of communication between them? There may be a need of
+> an API that returns the handle for a specific ID. For example, a module over
+> the hwspinlock driver that does some level of management of IDs (e.g. name
+> to ID mapping) and enables users to get multi-core as well as multi-client
+> protection on Linux.
 
- drivers/staging/sep/sep_driver.c |  363 +++++++++++++++++---------------------
- 1 files changed, 167 insertions(+), 196 deletions(-)
+I'm not sure I understand the use case. Can you please elaborate ?
 
+> For example:
+> struct hwspinlock *hwspinlock_get_handle(unsigned int id);
 
-diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index 5e27b5a..7633111 100644
---- a/drivers/staging/sep/sep_driver.c
-+++ b/drivers/staging/sep/sep_driver.c
-@@ -256,8 +256,7 @@ static int sep_singleton_open(struct inode *inode_ptr, struct file *file_ptr)
- 
- 	file_ptr->private_data = sep;
- 
--	dev_dbg(&sep->pdev->dev, "Singleton open for pid %d\n",
--		current->pid);
-+	dev_dbg(&sep->pdev->dev, "Singleton open for pid %d\n", current->pid);
- 
- 	dev_dbg(&sep->pdev->dev, "calling test and set for singleton 0\n");
- 	if (test_and_set_bit(0, &sep->singleton_access_flag)) {
-@@ -265,10 +264,8 @@ static int sep_singleton_open(struct inode *inode_ptr, struct file *file_ptr)
- 		goto end_function;
- 	}
- 
--	dev_dbg(&sep->pdev->dev,
--		"sep_singleton_open end\n");
-+	dev_dbg(&sep->pdev->dev, "sep_singleton_open end\n");
- end_function:
--
- 	return error;
- }
- 
-@@ -386,9 +383,7 @@ static int sep_req_daemon_send_reply_command_handler(struct sep_device *sep)
- 	sep->reply_ct++;
- 
- 	/* Send the interrupt to SEP */
--	sep_write_reg(sep, HW_HOST_HOST_SEP_GPR2_REG_ADDR,
--		sep->send_ct);
--
-+	sep_write_reg(sep, HW_HOST_HOST_SEP_GPR2_REG_ADDR, sep->send_ct);
- 	sep->send_ct++;
- 
- 	spin_unlock_irqrestore(&sep->snd_rply_lck, lck_flags);
-@@ -3305,6 +3300,125 @@ end_function:
- }
- 
- /**
-+ *	sep_reconfig_shared_area - reconfigure shared area
-+ *	@sep: pointer to struct sep_device
-+ *
-+ *	Reconfig the shared area between HOST and SEP - needed in case
-+ *	the DX_CC_Init function was called before OS loading.
-+ */
-+static int sep_reconfig_shared_area(struct sep_device *sep)
-+{
-+	int ret_val;
-+
-+	dev_dbg(&sep->pdev->dev, "reconfig shared area start\n");
-+
-+	/* Send the new SHARED MESSAGE AREA to the SEP */
-+	dev_dbg(&sep->pdev->dev, "sending %08llx to sep\n",
-+				(unsigned long long)sep->shared_bus);
-+
-+	sep_write_reg(sep, HW_HOST_HOST_SEP_GPR1_REG_ADDR, sep->shared_bus);
-+
-+	/* Poll for SEP response */
-+	ret_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR1_REG_ADDR);
-+
-+	while (ret_val != 0xffffffff && ret_val != sep->shared_bus)
-+		ret_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR1_REG_ADDR);
-+
-+	/* Check the return value (register) */
-+	if (ret_val != sep->shared_bus) {
-+		dev_warn(&sep->pdev->dev, "could not reconfig shared area\n");
-+		dev_warn(&sep->pdev->dev, "result was %x\n", ret_val);
-+		ret_val = -ENOMEM;
-+	} else
-+		ret_val = 0;
-+
-+	dev_dbg(&sep->pdev->dev, "reconfig shared area end\n");
-+	return ret_val;
-+}
-+
-+/* File operation for singleton SEP operations */
-+static const struct file_operations singleton_file_operations = {
-+	.owner = THIS_MODULE,
-+	.unlocked_ioctl = sep_singleton_ioctl,
-+	.poll = sep_poll,
-+	.open = sep_singleton_open,
-+	.release = sep_singleton_release,
-+	.mmap = sep_mmap,
-+};
-+
-+/* File operation for daemon operations */
-+static const struct file_operations daemon_file_operations = {
-+	.owner = THIS_MODULE,
-+	.unlocked_ioctl = sep_request_daemon_ioctl,
-+	.poll = sep_request_daemon_poll,
-+	.open = sep_request_daemon_open,
-+	.release = sep_request_daemon_release,
-+	.mmap = sep_request_daemon_mmap,
-+};
-+
-+/* The files operations structure of the driver */
-+static const struct file_operations sep_file_operations = {
-+	.owner = THIS_MODULE,
-+	.unlocked_ioctl = sep_ioctl,
-+	.poll = sep_poll,
-+	.open = sep_open,
-+	.release = sep_release,
-+	.mmap = sep_mmap,
-+};
-+
-+/**
-+ *	sep_register_driver_with_fs - register misc devices
-+ *	@sep: pointer to struct sep_device
-+ *
-+ *	This function registers the driver with the file system
-+ */
-+static int sep_register_driver_with_fs(struct sep_device *sep)
-+{
-+	int ret_val;
-+
-+	sep->miscdev_sep.minor = MISC_DYNAMIC_MINOR;
-+	sep->miscdev_sep.name = SEP_DEV_NAME;
-+	sep->miscdev_sep.fops = &sep_file_operations;
-+
-+	sep->miscdev_singleton.minor = MISC_DYNAMIC_MINOR;
-+	sep->miscdev_singleton.name = SEP_DEV_SINGLETON;
-+	sep->miscdev_singleton.fops = &singleton_file_operations;
-+
-+	sep->miscdev_daemon.minor = MISC_DYNAMIC_MINOR;
-+	sep->miscdev_daemon.name = SEP_DEV_DAEMON;
-+	sep->miscdev_daemon.fops = &daemon_file_operations;
-+
-+	ret_val = misc_register(&sep->miscdev_sep);
-+	if (ret_val) {
-+		dev_warn(&sep->pdev->dev, "misc reg fails for SEP %x\n",
-+			ret_val);
-+		return ret_val;
-+	}
-+
-+	ret_val = misc_register(&sep->miscdev_singleton);
-+	if (ret_val) {
-+		dev_warn(&sep->pdev->dev, "misc reg fails for sing %x\n",
-+			ret_val);
-+		misc_deregister(&sep->miscdev_sep);
-+		return ret_val;
-+	}
-+
-+	if (!sep->mrst) {
-+		ret_val = misc_register(&sep->miscdev_daemon);
-+		if (ret_val) {
-+			dev_warn(&sep->pdev->dev, "misc reg fails for dmn %x\n",
-+				ret_val);
-+			misc_deregister(&sep->miscdev_sep);
-+			misc_deregister(&sep->miscdev_singleton);
-+
-+			return ret_val;
-+		}
-+	}
-+	return ret_val;
-+}
-+
-+
-+/**
-  *	sep_probe - probe a matching PCI device
-  *	@pdev: pci_device
-  *	@end: pci_device_id
-@@ -3349,6 +3463,12 @@ static int __devinit sep_probe(struct pci_dev *pdev,
- 
- 	sep->pdev = pdev;
- 
-+	init_waitqueue_head(&sep->event);
-+	init_waitqueue_head(&sep->event_request_daemon);
-+	spin_lock_init(&sep->snd_rply_lck);
-+	mutex_init(&sep->sep_mutex);
-+	mutex_init(&sep->ioctl_mutex);
-+
- 	if (pdev->device == MRST_PCI_DEVICE_ID)
- 		sep->mrst = 1;
- 
-@@ -3435,9 +3555,26 @@ static int __devinit sep_probe(struct pci_dev *pdev,
- 	error = request_irq(pdev->irq, sep_inthandler, IRQF_SHARED,
- 		"sep_driver", sep);
- 
--	if (!error)
--		goto end_function;
-+	if (error)
-+		goto end_function_dealloc_rar;
- 
-+	/* The new chip requires ashared area reconfigure */
-+	if (sep->pdev->revision == 4) { /* Only for new chip */
-+		error = sep_reconfig_shared_area(sep);
-+		if (error)
-+			goto end_function_free_irq;
-+	}
-+	/* Finally magic up the device nodes */
-+	/* Register driver with the fs */
-+	error = sep_register_driver_with_fs(sep);
-+	if (error == 0)
-+		/* Success */
-+		return 0;
-+		
-+end_function_free_irq:
-+	free_irq(pdev->irq, sep);
-+
-+end_function_dealloc_rar:
- 	if (sep->rar_addr)
- 		dma_free_coherent(&sep->pdev->dev, sep->rar_size,
- 			sep->rar_addr, sep->rar_bus);
-@@ -3456,6 +3593,23 @@ end_function:
- 	return error;
- }
- 
-+static void sep_remove(struct pci_dev *pdev)
-+{
-+	struct sep_device *sep = sep_dev;
-+
-+	/* Unregister from fs */
-+	misc_deregister(&sep->miscdev_sep);
-+	misc_deregister(&sep->miscdev_singleton);
-+	misc_deregister(&sep->miscdev_daemon);
-+
-+	/* Free the irq */
-+	free_irq(sep->pdev->irq, sep);
-+
-+	/* Free the shared area  */
-+	sep_unmap_and_free_shared_area(sep_dev);
-+	iounmap((void *) sep_dev->reg_addr);
-+}
-+
- static DEFINE_PCI_DEVICE_TABLE(sep_pci_id_tbl) = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MRST_PCI_DEVICE_ID)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MFLD_PCI_DEVICE_ID)},
-@@ -3468,127 +3622,10 @@ MODULE_DEVICE_TABLE(pci, sep_pci_id_tbl);
- static struct pci_driver sep_pci_driver = {
- 	.name = "sep_sec_driver",
- 	.id_table = sep_pci_id_tbl,
--	.probe = sep_probe
--	/* FIXME: remove handler */
-+	.probe = sep_probe,
-+	.remove = sep_remove
- };
- 
--/* File operation for singleton SEP operations */
--static const struct file_operations singleton_file_operations = {
--	.owner = THIS_MODULE,
--	.unlocked_ioctl = sep_singleton_ioctl,
--	.poll = sep_poll,
--	.open = sep_singleton_open,
--	.release = sep_singleton_release,
--	.mmap = sep_mmap,
--};
--
--/* File operation for daemon operations */
--static const struct file_operations daemon_file_operations = {
--	.owner = THIS_MODULE,
--	.unlocked_ioctl = sep_request_daemon_ioctl,
--	.poll = sep_request_daemon_poll,
--	.open = sep_request_daemon_open,
--	.release = sep_request_daemon_release,
--	.mmap = sep_request_daemon_mmap,
--};
--
--/* The files operations structure of the driver */
--static const struct file_operations sep_file_operations = {
--	.owner = THIS_MODULE,
--	.unlocked_ioctl = sep_ioctl,
--	.poll = sep_poll,
--	.open = sep_open,
--	.release = sep_release,
--	.mmap = sep_mmap,
--};
--
--/**
-- *	sep_reconfig_shared_area - reconfigure shared area
-- *	@sep: pointer to struct sep_device
-- *
-- *	Reconfig the shared area between HOST and SEP - needed in case
-- *	the DX_CC_Init function was called before OS loading.
-- */
--static int sep_reconfig_shared_area(struct sep_device *sep)
--{
--	int ret_val;
--
--	dev_dbg(&sep->pdev->dev, "reconfig shared area start\n");
--
--	/* Send the new SHARED MESSAGE AREA to the SEP */
--	dev_dbg(&sep->pdev->dev, "sending %08llx to sep\n",
--				(unsigned long long)sep->shared_bus);
--
--	sep_write_reg(sep, HW_HOST_HOST_SEP_GPR1_REG_ADDR, sep->shared_bus);
--
--	/* Poll for SEP response */
--	ret_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR1_REG_ADDR);
--
--	while (ret_val != 0xffffffff && ret_val != sep->shared_bus)
--		ret_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR1_REG_ADDR);
--
--	/* Check the return value (register) */
--	if (ret_val != sep->shared_bus) {
--		dev_warn(&sep->pdev->dev, "could not reconfig shared area\n");
--		dev_warn(&sep->pdev->dev, "result was %x\n", ret_val);
--		ret_val = -ENOMEM;
--	} else
--		ret_val = 0;
--
--	dev_dbg(&sep->pdev->dev, "reconfig shared area end\n");
--	return ret_val;
--}
--
--/**
-- *	sep_register_driver_to_fs - register misc devices
-- *	@sep: pointer to struct sep_device
-- *
-- *	This function registers the driver to the file system
-- */
--static int sep_register_driver_to_fs(struct sep_device *sep)
--{
--	int ret_val;
--
--	sep->miscdev_sep.minor = MISC_DYNAMIC_MINOR;
--	sep->miscdev_sep.name = SEP_DEV_NAME;
--	sep->miscdev_sep.fops = &sep_file_operations;
--
--	sep->miscdev_singleton.minor = MISC_DYNAMIC_MINOR;
--	sep->miscdev_singleton.name = SEP_DEV_SINGLETON;
--	sep->miscdev_singleton.fops = &singleton_file_operations;
--
--	sep->miscdev_daemon.minor = MISC_DYNAMIC_MINOR;
--	sep->miscdev_daemon.name = SEP_DEV_DAEMON;
--	sep->miscdev_daemon.fops = &daemon_file_operations;
--
--	ret_val = misc_register(&sep->miscdev_sep);
--	if (ret_val) {
--		dev_warn(&sep->pdev->dev, "misc reg fails for SEP %x\n",
--			ret_val);
--		return ret_val;
--	}
--
--	ret_val = misc_register(&sep->miscdev_singleton);
--	if (ret_val) {
--		dev_warn(&sep->pdev->dev, "misc reg fails for sing %x\n",
--			ret_val);
--		misc_deregister(&sep->miscdev_sep);
--		return ret_val;
--	}
--
--	if (!sep->mrst) {
--		ret_val = misc_register(&sep->miscdev_daemon);
--		if (ret_val) {
--			dev_warn(&sep->pdev->dev, "misc reg fails for dmn %x\n",
--				ret_val);
--			misc_deregister(&sep->miscdev_sep);
--			misc_deregister(&sep->miscdev_singleton);
--
--			return ret_val;
--		}
--	}
--	return ret_val;
--}
- 
- /**
-  *	sep_init - init function
-@@ -3597,47 +3634,7 @@ static int sep_register_driver_to_fs(struct sep_device *sep)
-  */
- static int __init sep_init(void)
- {
--	int ret_val = 0;
--	struct sep_device *sep = NULL;
--
--	pr_debug("SEP driver: Init start\n");
--
--	ret_val = pci_register_driver(&sep_pci_driver);
--	if (ret_val) {
--		pr_debug("sep_driver:sep_driver_to_device failed, ret_val is %d\n",
--								ret_val);
--		goto end_function;
--	}
--
--	sep = sep_dev;
--
--	init_waitqueue_head(&sep->event);
--	init_waitqueue_head(&sep->event_request_daemon);
--	spin_lock_init(&sep->snd_rply_lck);
--	mutex_init(&sep->sep_mutex);
--	mutex_init(&sep->ioctl_mutex);
--
--	/* The new chip requires ashared area reconfigure */
--	if (sep->pdev->revision == 4) { /* Only for new chip */
--		ret_val = sep_reconfig_shared_area(sep);
--		if (ret_val)
--			goto end_function_unregister_pci;
--	}
--
--	/* Register driver to fs */
--	ret_val = sep_register_driver_to_fs(sep);
--	if (ret_val) {
--		dev_warn(&sep->pdev->dev, "error registering device to file\n");
--		goto end_function_unregister_pci;
--	}
--	goto end_function;
--
--end_function_unregister_pci:
--	pci_unregister_driver(&sep_pci_driver);
--
--end_function:
--	dev_dbg(&sep->pdev->dev, "Init end\n");
--	return ret_val;
-+	return pci_register_driver(&sep_pci_driver);
- }
- 
- 
-@@ -3649,33 +3646,7 @@ end_function:
-  */
- static void __exit sep_exit(void)
- {
--	struct sep_device *sep;
--
--	sep = sep_dev;
--	pr_debug("Exit start\n");
--
--	/* Unregister from fs */
--	misc_deregister(&sep->miscdev_sep);
--	misc_deregister(&sep->miscdev_singleton);
--	misc_deregister(&sep->miscdev_daemon);
--
--	/* Free the irq */
--	free_irq(sep->pdev->irq, sep);
--
--	/* Unregister the driver */
- 	pci_unregister_driver(&sep_pci_driver);
--
--	/* Free the shared area  */
--	if (sep_dev) {
--		sep_unmap_and_free_shared_area(sep_dev);
--		dev_dbg(&sep->pdev->dev,
--			"free pages SEP SHARED AREA\n");
--		iounmap((void *) sep_dev->reg_addr);
--		dev_dbg(&sep->pdev->dev,
--			"iounmap\n");
--	}
--	pr_debug("release_mem_region\n");
--	pr_debug("Exit end\n");
- }
- 
- 
+I'm afraid such an API will be easily abused, e.g., drivers that will
+try to use a predefined hwspinlock id without taking care of reserving
+it early enough will probably use it to overcome an "oops this
+hwspinlock has already been assigned to someone else".
 
+So let me suggest we should first understand the use case for the API
+you propose, and then see how we solve it ?
+
+> Why are some of the APIs hwspinlock_ and others hwspin_?
+
+I'm following the regular spinlock naming, which nicely avoids having
+the word 'lock' twice in the API. So you get APIs like hwspin_lock,
+hwspin_unlock, hwspin_trylock. In our case we still have stuff like
+hwspinlock_request and hwspinlock_free. I can probably make it
+hwspin_lock_request, does that look nicer ?
+
+>> +  int hwspin_lock_timeout(struct hwspinlock *hwlock, unsigned long timeout);
+>> +   - lock a previously-assigned hwspinlock with a timeout limit (specified in
+>> +     jiffies). If the hwspinlock is already taken, the function will busy
+>> loop
+>> +     waiting for it to be released, but give up when the timeout meets
+>> jiffies.
+>> +     If timeout is 0, the function will never give up (therefore if a faulty
+>> +     remote core never releases the hwspinlock, it will deadlock).
+> If timeout is 0, shouldn't it rather behave as a trylock? If timeout is
+> MAX_SCHEDULE_TIMEOUT, then it should behave as a wait-forever.
+
+Good point, thanks!
+
+>> +  int hwspin_trylock(struct hwspinlock *hwlock);
+>> +   - attempt to lock a previously-assigned hwspinlock, but immediately fail
+>> if
+>> +     it is already taken.
+>> +     Upon a successful return from this function, preemption is disabled so
+>> +     caller must not sleep, and is advised to release the hwspinlock as soon
+>> as
+>> +     possible, in order to minimize remote cores polling on the hardware
+>> +     interconnect.
+>> +     Returns 0 on success and an appropriate error code otherwise (most
+>> +     notably -EBUSY if the hwspinlock was already taken).
+>> +     The function will never sleep.
+> Is this function needed at all if timeout 0 behaves similar to trylock?
+
+Yeah. Drivers should use the _trylock version when applicable because
+it'd make the code more readable, and it's more intuitive (just like
+the spin_trylock API).
+
+>> +  struct hwspinlock *hwspinlock_unregister(unsigned int id);
+>> +   - to be called from the underlying vendor-specific implementation, in
+>> order
+>> +     to unregister an existing (and unused) hwspinlock instance.
+>> +     Can be called from an atomic context (will not sleep) but not from
+>> +     within interrupt context.
+>> +     Returns the address of hwspinlock on success, or NULL on error (e.g.
+>> +     if the hwspinlock is sill in use).
+> Does this need to be called for all hwspinlocks?
+
+Currently, yes.
+
+I actually am planning an improvement that would allow registering a
+block of hwspinlocks; I don't think that the multiple calls of
+register/unregister is that bad (it happens only once at boot), but I
+want to allow sharing of the owner, ops and dev members of the
+hwspinlock instances (to save some memory).
+
+Anyway, it's not a big improvement, so I planned first to get things
+merged and then look into stuff like that.
+
+>> +int __hwspin_lock_timeout(struct hwspinlock *hwlock, unsigned long to,
+>> +                                     int mode, unsigned long *flags)
+>> +{
+>> +     int ret;
+>> +
+>> +     for (;;) {
+>> +             /* Try to take the hwspinlock */
+>> +             ret = __hwspin_trylock(hwlock, mode, flags);
+>> +             if (ret != -EBUSY)
+>> +                     break;
+>> +
+>> +             /*
+>> +              * The lock is already taken, let's check if the user wants
+>> +              * us to try again
+>> +              */
+>> +             if (to && time_is_before_eq_jiffies(to))
+>> +                     return -ETIMEDOUT;
+>> +
+>> +             /*
+>> +              * Allow platform-specific relax handlers to prevent
+>> +              * hogging the interconnect (no sleeping, though)
+>> +              */
+>> +             if (hwlock->ops->relax)
+>> +                     hwlock->ops->relax(hwlock);
+> There should be a way to have an escape mechanism for the case where a deadlock
+> has occurred due to remote side taking the spinlock and crashing.
+
+This is exactly what the timeout parameter is for..
+
+Thanks,
+Ohad.
