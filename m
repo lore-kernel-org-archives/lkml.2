@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0KXMrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:47:24 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42097 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab0KXMrW convert rfc822-to-8bit (ORCPT
+	id S1754904Ab0KXMrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:47:42 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60634 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab0KXMrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:47:22 -0500
-Subject: Re: [PATCH 08/13] writeback: quit throttling when bdi dirty pages
- dropped low
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101124123023.GA10413@localhost>
-References: <20101117042720.033773013@intel.com>
-	 <20101117042850.245782303@intel.com> <1290597233.2072.454.camel@laptop>
-	 <20101124123023.GA10413@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Nov 2010 13:46:51 +0100
-Message-ID: <1290602811.2072.462.camel@laptop>
+	Wed, 24 Nov 2010 07:47:40 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=dloADZ4KP7gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2NBdsOTBWeKKZg1EIqkA:9 a=gz64nLcHZ_JPiqfHr06T4UU52gUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/3] jump label: updates for 2.6.37
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <1290587362.2072.429.camel@laptop>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <1290548527.30543.401.camel@gandalf.stny.rr.com>
+	 <20101123215604.GC4715@redhat.com>
+	 <1290553854.30543.406.camel@gandalf.stny.rr.com>
+	 <1290587362.2072.429.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 24 Nov 2010 07:47:36 -0500
+Message-ID: <1290602856.30543.465.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 20:30 +0800, Wu Fengguang wrote:
+On Wed, 2010-11-24 at 09:29 +0100, Peter Zijlstra wrote:
+> On Tue, 2010-11-23 at 18:10 -0500, Steven Rostedt wrote:
 > 
-> For the 1-dd case, it looks better to lower the break threshold to
-> 125ms. After all, it's not easy for the dirty pages to drop by 250ms
-> worth of data when you only slept 200ms (note: the max pause time has
-> been doubled mainly for servers).
+> > Anyway, I just tried what you explained with the current kernel, with
+> > and without jump labels and, without jump labels, the module has its
+> > kmalloc tracepoint traced, but with jump labels it does not. So we can
+> > treat this as a regression, which is something that can go into an -rc.
+> > 
+> > The change log must state that this _is_ a regression, or Linus may not
+> > accept it.
 > 
-> -               if (nr_dirty < dirty_thresh &&
-> -                   bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 4)
-> +               if (nr_dirty <= dirty_thresh &&
-> +                   bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 8)
->                         break;
+> I really dislike the first patch... Preferably I'd simply fully revert
+> all the jump-label stuff and try again next round with a saner
+> interface.
 
-Hrm, but 125ms worth in 200ms is rather easy, you'd want to keep that
-limit above what the pause should give you, right?
+Well, it is configurable and default off. Lets leave it as is for 37
+then, and we can rework it for 38.
+
+> 
+> There's a really good simple fix for this, simply disable the gcc
+> trickery for .37 and use the fallback.
+
+Again, its default off. Unless you specifically enable it, it does the
+old style tracepoints.
+
+> 
+> Then for .38, mandate the key type to be atomic_t * and switch to the
+> SWITCH_POINT() interface from hpa.
+
+I agree about the SWITCH_POINT() type interface, but I'm still not sure
+about forcing atomic_t. I'll have to think about that one.
+
+-- Steve
+
 
