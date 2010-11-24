@@ -1,267 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab0KXRis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 12:38:48 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41365 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229Ab0KXRir convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 12:38:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JBr4oPEFErecMTKjSDPOTvKlAT0Oelyxx79+12Ks2TYDRpnjhH3jeFkarmKTB5sp0l
-         C2iX6hdlniwPqEDQqTGZXt3l8o2DqqQ1InMMFnU9OvUTUjM+zrKgZFjHV+0gHXjyIym3
-         VaQwOzgpacyk9iTSzF8qyWoeE4CrjkTW0Mp24=
+	id S1756003Ab0KXRk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 12:40:58 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60902 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab0KXRk4 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 24 Nov 2010 12:40:56 -0500
+Date: Wed, 24 Nov 2010 12:39:48 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: weiyi.huang@gmail.com, ian.campbell@citrix.com, bp@alien8.de,
+        pa@linux.intel.com, jeremy@goop.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] 2.6.37-rc3 regression and a bug-fix for Xen subsystem.
+Message-ID: <20101124173948.GA13253@dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <20101124161513.GA2207@linux.vnet.ibm.com>
-References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
-	<1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
-	<20101124005820.GH8056@linux.vnet.ibm.com>
-	<AANLkTikhGErGQrFB-QNiYjWt2PqRGdF+m3kOkt2tmnER@mail.gmail.com>
-	<AANLkTinFhEf1XVSRYuL+JL=JETLZ6cz3GYCR8CL3ex8X@mail.gmail.com>
-	<20101124062212.GA2165@linux.vnet.ibm.com>
-	<AANLkTimjZnAfeuAXU7oXPRG5=qJ2d7aZVoozSm88kXMT@mail.gmail.com>
-	<20101124144240.GC2165@linux.vnet.ibm.com>
-	<AANLkTi=EA09DACMNLUpTU8qH5wFPdXvOMQzJeejXX170@mail.gmail.com>
-	<20101124161513.GA2207@linux.vnet.ibm.com>
-Date: Wed, 24 Nov 2010 18:38:45 +0100
-Message-ID: <AANLkTikbZUO6MbSC=uWYp4JRCdHPHrr5Z2_=to1YsC1X@mail.gmail.com>
-Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states after
- extended grace periods
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/24 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> On Wed, Nov 24, 2010 at 04:45:11PM +0100, Frederic Weisbecker wrote:
->> 2010/11/24 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
->> > On Wed, Nov 24, 2010 at 02:48:46PM +0100, Frederic Weisbecker wrote:
->> CPU 1, the one that was idle :-D
->>
->> So CPU 1 rdp did catch up with node and state for its completed field.
->> But not its pgnum yet.
->
-> OK, I will need to take a closer look at the rdp->gpnum setting.
+Dear Linus,
 
-Ok, do you want me to resend the patch with the changelog changed accordingly
-to our discussion or?
+Please pull the following git tree:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git for-linus
 
->> >> >> > Now we call rcu_check_quiescent_state() -> check_for_new_grace_period()
->> >> >> > -> note_new_gpnum() and then we end up a requested quiescent state while
->> >> >> > every grace periods are completed.
->> >> >>
->> >> >> Sorry I should have described that in the changelogs but my ideas
->> >> >> weren't as clear as they
->> >> >> are now (at least I feel they are, doesn't mean they actually are ;)
->> >> >> Chasing these RCU bugs for too much hours has toasted my brain..
->> >> >
->> >> > Welcome to my world!!!  But keep in mind that an extra timer tick
->> >> > or two is much preferable to a potential hang!  And you only get
->> >> > the extra timer tick if there was some other reason that the
->> >> > CPU came out of nohz mode, correct?
->> >>
->> >> Yeah, either because of a timer, hrtimer, or a reschedule.
->> >> But you still generate a spurious softirq in this scheme.
->> >
->> > Eliminating spurious softirqs is a good thing, but let's review the
->> > overall priorities (probably missing a few, but this should give you
->> > an overall view):
->> >
->> > 1.      No too-short grace periods!!!
->>
->> Oh, I did not know that. Is it to avoid too much
->> short series of callbacks execution or?
->
-> To avoid breaking RCU's fundamental guarantee.  ;-)
->
-> It is easy to create bugs where a CPU thinks that it needs to respond
-> to the grace period based on a prior quiescent state, but unknown to
-> it that grace period has finished and a new one has started.  This
-> CPU might then wrongly report a quiescent state against the new grace
-> period.  Needless to say, this is very very very very very very bad.
+which has changes since git commit e53beacd23d9cb47590da6a7a7f6d417b941a994:
 
-Aaah ok. I thought you were talking about the time of a correct grace period,
-not a bug that would make it seem shorter than it actually is.
+ Linus Torvalds (1):
+    Linux 2.6.37-rc2
 
-Ok. Of course, priority number 1.
+The tree has two patches: one of them is innocuous removal of
+a #include, while the other fixes a regression. Right after the merge window
+opened for 2.6.37, 32-bit PAE Xen PV guests were not able to boot. Ian Campbell
+came up with a nice fix that had been posted way back in October but we
+completely forgot about the fix until about a week ago.
 
+Huang Weiyi (1):
+      xen: remove duplicated #include
 
->> > 7.      Let CPUs that can do so go to sleep immediately (as opposed to
->> >        waiting a few milliseconds).
->> >
->> > 8.      Avoid spurious softirqs.
->>
->> Avoiding spurious softirqs bring us back to 7, even though it's not a matter
->> of ms but rather us.
->
-> Microseconds should not be a problem as long as they are rare.  Milliseconds
-> are a problem for the battery-powered folks as well as for people who care
-> about OS jitter.
+Ian Campbell (1):
+      xen: x86/32: perform initial startup on initial_page_table
 
-Right.
+ arch/x86/xen/enlighten.c |    2 -
+ arch/x86/xen/mmu.c       |   69 +++++++++++++++++++++++++++++++++++++--------
+ arch/x86/xen/setup.c     |    1 -
+ 3 files changed, 56 insertions(+), 16 deletions(-)
 
+And the two patchs together:
 
->> >> Two in fact: one because of the rnp->completed != rsp->completed condition
->> >> in rcu_pending(), another one because when we update the pgnum, we
->> >> always start chasing QS, regardless of the last GP beeing completed or not.
->> >
->> > OK -- is this an example of #8 above, or is it really #7?  I am absolutely
->> > not worried about a pair of back-to-back softirqs, and I don't believe
->> > that you should be, either.  ;-)
->>
->> This seems to be 8 and 7.
->>
->> A pair of back-to-back softirqs is no huge deal, but still time
->> consuming, spurious, etc...
->> if we can easily spott they are useless, why not get rid of them. At
->> least we can easily
->> and reliably avoid the second one from note_new_gpnum().
->
-> As long as I can prove to myself that the patch that gets rid of them
-> does not cause other problems.  ;-)
-
-:)
-
->> >> > Which is why checking the rnp fields makes more sense to me, actually.
->> >> > Acquiring rnp->lock is much less painful than pinning down the rsp state.
->> >>
->> >> Right.
->> >>
->> >> Another thing, we  already have the (rnp->gpnum) != rdp->gpnu check in
->> >> rcu_pending(),
->> >> why also checking (rnp->completed) != rdp->completed) ?
->> >
->> > Because if (rnp->completed != rdp->completed), we might need to process
->> > some callbacks, either advancing them or invoking them.
->>
->> The rdp->nxttail in rcu is still an obscur part for me, so I just believe you :)
->
-> It is just the place that the pending rcu_head callbacks are stored.
-
-Yeah. I mean, I need to read how the code manages the different queues.
-But __rcu_process_gp_end() seems to sum it up quite well.
-
->> > By the way, have you introduced a config variable for your HPC dynticks
->> > changes?
->>
->> I will, because I'll have to touch some fast path and I would prefer to do
->> that compile-conditional.
->>
->> But for now I don't care and experiment drafts :)
->
-> Well, if any of the softirq/tick streamlining in RCU is risky, it needs
-> to go under that same #ifdef!  ;-)
-
-Sure, if something needs a reorg or a change even in the dyntick-hpc
-off-case code,
-I'll propose that to you, like I did for these two patches.
-
-But I'll try to keep the invasive changes that are only for
-dyntick-hpc only under that config.
-
->> I'm quite close to something that seems to work well BTW, those series of
->> softirq were my latest problem as it made rcu_pending() returning 1 for
->> a good while and I coudn't stop the tick. After the 2nd patch it should be
->> fine now, I hope.
->
-> By "couldn't stop the tick" you mean "the tick went on a few times more
-> than you like" or do you really mean "couldn't ever stop the tick"?
-> My guess is the former.  If there were problems like the latter, Arjan
-> would probably have beat me up about it long ago!
-
-It's more like couldn't ever stop the tick. But that doesn't concern mainline.
-This is because I have a hook that prevents the tick from beeing stopped
-until rcu_pending() == 0.
-
-In mainline it doesn't prevent the CPU from going nohz idle though, because
-the softirq is armed from the tick. Once the softirq is processed, the CPU
-can go to sleep. On the next timer tick it would again raise the softirq and
-then could again go to sleep, etc..
-
-I still have a trace of that, with my rcu_pending() hook, in
-dyntick-hpc, that kept
-returning 1 during at least 100 seconds and on each tick.
-I did not go really further into this from my code as I immediately
-switched to tip:master
-to check if the problem came from my code or not.
-And then I discovered that rcu_pending() indeed kept returning 1 for some while
-in mainline (don't remember how much could be "some while" though), I
-saw all these
-spurious rcu softirq at each ticks caused by rcu_pending() and for
-random time slices:
-probably between a wake up from idle and the next grace period, if my
-theory is right, and I
-think that happened likely with bh flavour probably because it's
-subject to less grace periods.
-
-And this is what the second patch fixes in mainline and that also
-seems to fix my issue in
-dyntick-hpc.
-
-Probably it happened more easily on dynctick-hpc as I was calling
-rcu_pending() after
-calling rcu_enter_nohz() (some buggy part of mine).
-
->> >  Longer term, __rcu_pending() for your HPC dynticks case
->> > could check for the current CPU having any callbacks before the call to
->> > check_cpu_stalls(), as in rcu_needs_cpu_quick_check().  That way, the
->> > CPUs with callbacks would drive the RCU core state machine.
->>
->> Ah, because currently every CPUs calling rcu_pending() can be pulled into
->> handling the state machine because of this check, right?
->>
->>         /* Has an RCU GP gone long enough to send resched IPIs &c? */
->>       if (rcu_gp_in_progress(rsp) &&
->>           ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs), jiffies)) {
->>               rdp->n_rp_need_fqs++;
->>               return 1;
->>
->> So the goal would be to let this job to CPUs that have callbacks, right?
->
-> In the dynticks-HPC case, yes.
->
->> > We don't
->> > necessarily want this in the common case because it can increase
->> > grace-period latency
->>
->> Because it makes less CPUs to handle the grace period state machine?
->
-> Not quite.  Here I am not worried about the dyntick-HPC case, but rather
-> the usual more-runnable-tasks-than-CPUs case.  Here, CPUs are context
-> switching frequently, so if they report their own quiescent states (even
-> when they don't happen to have any callbacks queued) the grace period will
-> complete more quickly.  After all, force_quiescent_state() doesn't even
-> get started until the third tick following the start of the grace period.
-
-
-Ah, I see what you mean. So you would suggest to even ignore those
-explicit QS report when in dynticj-hpc mode for CPUs that don't have callbacks?
-
-Why not keeping them?
-
-
->> > but it could be very useful in the HPC-dyntick
->> > case -- eliminate any number of sources of spurious ticks with low
->> > risk to the high-priority RCU properties.  There are some corresponding
->> > changes required on the force_quiescent_state() path, but these are
->> > reasonably straightforward.
->>
->> Ok, I may have a try at it (if I completely understand what you suggest :-)
->> But first I'll try to get that dyntick mode with the current state, which seems
->> to be enough for the basic desired functionality.
->
-> If the two changes you have posted thus far are all you need, this does
-> sound like a good starting point.
-
-For now yeah, it seems to work well. I may run into further surpises though :)
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 235c0f4..ff82909 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1191,8 +1191,6 @@ asmlinkage void __init xen_start_kernel(void)
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
+ 
+-	init_mm.pgd = pgd;
+-
+ 	/* keep using Xen gdt for now; no urgent need to change it */
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 21ed8d7..c9cf23e 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2119,44 +2119,83 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ 	return pgd;
+ }
+ #else	/* !CONFIG_X86_64 */
+-static RESERVE_BRK_ARRAY(pmd_t, level2_kernel_pgt, PTRS_PER_PMD);
++static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
++static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
++
++static __init void xen_write_cr3_init(unsigned long cr3)
++{
++	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
++
++	BUG_ON(read_cr3() != __pa(initial_page_table));
++	BUG_ON(cr3 != __pa(swapper_pg_dir));
++
++	/*
++	 * We are switching to swapper_pg_dir for the first time (from
++	 * initial_page_table) and therefore need to mark that page
++	 * read-only and then pin it.
++	 *
++	 * Xen disallows sharing of kernel PMDs for PAE
++	 * guests. Therefore we must copy the kernel PMD from
++	 * initial_page_table into a new kernel PMD to be used in
++	 * swapper_pg_dir.
++	 */
++	swapper_kernel_pmd =
++		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
++	memcpy(swapper_kernel_pmd, initial_kernel_pmd,
++	       sizeof(pmd_t) * PTRS_PER_PMD);
++	swapper_pg_dir[KERNEL_PGD_BOUNDARY] =
++		__pgd(__pa(swapper_kernel_pmd) | _PAGE_PRESENT);
++	set_page_prot(swapper_kernel_pmd, PAGE_KERNEL_RO);
++
++	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
++	xen_write_cr3(cr3);
++	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
++
++	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
++			  PFN_DOWN(__pa(initial_page_table)));
++	set_page_prot(initial_page_table, PAGE_KERNEL);
++	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
++
++	pv_mmu_ops.write_cr3 = &xen_write_cr3;
++}
+ 
+ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ 					 unsigned long max_pfn)
+ {
+ 	pmd_t *kernel_pmd;
+ 
+-	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
++	initial_kernel_pmd =
++		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+ 
+ 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+ 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
+ 				  512*1024);
+ 
+ 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+-	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
++	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
+ 
+-	xen_map_identity_early(level2_kernel_pgt, max_pfn);
++	xen_map_identity_early(initial_kernel_pmd, max_pfn);
+ 
+-	memcpy(swapper_pg_dir, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
+-	set_pgd(&swapper_pg_dir[KERNEL_PGD_BOUNDARY],
+-			__pgd(__pa(level2_kernel_pgt) | _PAGE_PRESENT));
++	memcpy(initial_page_table, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
++	initial_page_table[KERNEL_PGD_BOUNDARY] =
++		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
+ 
+-	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
+-	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
++	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
++	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
+ 	set_page_prot(empty_zero_page, PAGE_KERNEL_RO);
+ 
+ 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+ 
+-	xen_write_cr3(__pa(swapper_pg_dir));
+-
+-	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
++	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
++			  PFN_DOWN(__pa(initial_page_table)));
++	xen_write_cr3(__pa(initial_page_table));
+ 
+ 	memblock_x86_reserve_range(__pa(xen_start_info->pt_base),
+ 		      __pa(xen_start_info->pt_base +
+ 			   xen_start_info->nr_pt_frames * PAGE_SIZE),
+ 		      "XEN PAGETABLES");
+ 
+-	return swapper_pg_dir;
++	return initial_page_table;
+ }
+ #endif	/* CONFIG_X86_64 */
+ 
+@@ -2290,7 +2329,11 @@ static const struct pv_mmu_ops xen_mmu_ops __initdata = {
+ 	.write_cr2 = xen_write_cr2,
+ 
+ 	.read_cr3 = xen_read_cr3,
++#ifdef CONFIG_X86_32
++	.write_cr3 = xen_write_cr3_init,
++#else
+ 	.write_cr3 = xen_write_cr3,
++#endif
+ 
+ 	.flush_tlb_user = xen_flush_tlb,
+ 	.flush_tlb_kernel = xen_flush_tlb,
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 769c4b0..d392486 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -23,7 +23,6 @@
+ #include <xen/interface/callback.h>
+ #include <xen/interface/memory.h>
+ #include <xen/interface/physdev.h>
+-#include <xen/interface/memory.h>
+ #include <xen/features.h>
+ 
+ #include "xen-ops.h"
