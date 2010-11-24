@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab0KXQXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:23:31 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44301 "EHLO
+	id S1755070Ab0KXQYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:24:19 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:44296 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab0KXQX2 (ORCPT
+	with ESMTP id S1753388Ab0KXQX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:23:28 -0500
+	Wed, 24 Nov 2010 11:23:27 -0500
 X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>, Tejun Heo <tj@kernel.org>
-Subject: [PATCHv5 10/17] pps: use BUG_ON for kernel API safety checks
-Date: Wed, 24 Nov 2010 19:15:48 +0300
-Message-Id: <ca6970f9e0dfd5080e5f3307b55a097c2285f25e.1290599845.git.lasaine@lvk.cs.msu.su>
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Subject: [PATCHv5 02/17] pps: declare variables where they are used in switch
+Date: Wed, 24 Nov 2010 19:15:40 +0300
+Message-Id: <035bc7cbf912350fa817c1328f4dcbc33e01b592.1290599844.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
 References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
@@ -24,33 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way less overhead is involved when running production kernel.
-If you want to debug a pps client module please define DEBUG to enable
-the checks.
+Move variable declarations where they are used in pps_cdev_ioctl.
 
 Acked-by: Rodolfo Giometti <giometti@linux.it>
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- drivers/pps/kapi.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/pps/pps.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index c42d3cb..3e8eb3f 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -166,10 +166,8 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
- 	int captured = 0;
- 	struct pps_ktime ts_real;
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index ca5183b..c76afb9 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -61,8 +61,6 @@ static long pps_cdev_ioctl(struct file *file,
+ {
+ 	struct pps_device *pps = file->private_data;
+ 	struct pps_kparams params;
+-	struct pps_fdata fdata;
+-	unsigned long ticks;
+ 	void __user *uarg = (void __user *) arg;
+ 	int __user *iuarg = (int __user *) arg;
+ 	int err;
+@@ -136,7 +134,9 @@ static long pps_cdev_ioctl(struct file *file,
  
--	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
--		dev_err(pps->dev, "unknown event (%x)\n", event);
--		return;
--	}
-+	/* check event type */
-+	BUG_ON((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0);
+ 		break;
  
- 	dev_dbg(pps->dev, "PPS event at %ld.%09ld\n",
- 			ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
+-	case PPS_FETCH:
++	case PPS_FETCH: {
++		struct pps_fdata fdata;
++
+ 		pr_debug("PPS_FETCH: source %d\n", pps->id);
+ 
+ 		err = copy_from_user(&fdata, uarg, sizeof(struct pps_fdata));
+@@ -149,6 +149,8 @@ static long pps_cdev_ioctl(struct file *file,
+ 		if (fdata.timeout.flags & PPS_TIME_INVALID)
+ 			err = wait_event_interruptible(pps->queue, pps->go);
+ 		else {
++			unsigned long ticks;
++
+ 			pr_debug("timeout %lld.%09d\n",
+ 					(long long) fdata.timeout.sec,
+ 					fdata.timeout.nsec);
+@@ -185,7 +187,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 			return -EFAULT;
+ 
+ 		break;
+-
++	}
+ 	default:
+ 		return -ENOTTY;
+ 		break;
 -- 
 1.7.2.3
 
