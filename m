@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab0KXGgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 01:36:45 -0500
-Received: from mail.perches.com ([173.55.12.10]:1844 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab0KXGgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 01:36:44 -0500
-Subject: [PATCH] MAINTAINERS: INTEL DRM DRIVERS list (intel-gfx) is
- subscribers-only
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 22:36:42 -0800
-Message-ID: <1290580602.11971.44.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752747Ab0KXGne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 01:43:34 -0500
+Received: from netnation.com ([204.174.223.2]:41613 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab0KXGnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 01:43:33 -0500
+Date: Tue, 23 Nov 2010 22:43:29 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Free memory never fully used, swapping
+Message-ID: <20101124064329.GB25170@hostway.ca>
+References: <20101115195246.GB17387@hostway.ca> <20101122154419.ee0e09d2.akpm@linux-foundation.org> <20101123100402.GH19571@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101123100402.GH19571@csn.ul.ie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark it so.
+On Tue, Nov 23, 2010 at 10:04:03AM +0000, Mel Gorman wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Mon, Nov 22, 2010 at 03:44:19PM -0800, Andrew Morton wrote:
+> > On Mon, 15 Nov 2010 11:52:46 -0800
+> > Simon Kirby <sim@hostway.ca> wrote:
+> > 
+> > > I noticed that CONFIG_NUMA seems to enable some more complicated
+> > > reclaiming bits and figured it might help since most stock kernels seem
+> > > to ship with it now.  This seems to have helped, but it may just be
+> > > wishful thinking.  We still see this happening, though maybe to a lesser
+> > > degree.  (The following observations are with CONFIG_NUMA enabled.)
+> > > 
+> 
+> Hi,
+> 
+> As this is a NUMA machine, what is the value of
+> /proc/sys/vm/zone_reclaim_mode ? When enabled, this reclaims memory
+> local to the node in preference to using remote nodes. For certain
+> workloads this performs better but for users that expect all of memory
+> to be used, it has surprising results.
+> 
+> If set to 1, try testing with it set to 0 and see if it makes a
+> difference. Thanks
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 9ac6540..07aa850 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2080,7 +2080,7 @@ F:	include/drm/
- 
- INTEL DRM DRIVERS (excluding Poulsbo, Moorestown and derivative chipsets)
- M:	Chris Wilson <chris@chris-wilson.co.uk>
--L:	intel-gfx@lists.freedesktop.org
-+L:	intel-gfx@lists.freedesktop.org (subscribers-only)
- L:	dri-devel@lists.freedesktop.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git
- S:	Supported
+Hi Mel,
 
+It is set to 0.  It's an Intel EM64T...I only enabled CONFIG_NUMA since
+it seemed to enable some more complicated handling, and I figured it
+might help, but it didn't seem to.  It's also required for
+CONFIG_COMPACTION, but that is still marked experimental.
 
+Simon-
