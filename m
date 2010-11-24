@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab0KXMZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:25:58 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3156 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754429Ab0KXMZ5 (ORCPT
+	id S1754541Ab0KXM3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:29:00 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47345 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab0KXM27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:25:57 -0500
-Message-ID: <4CED043A.3060907@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 21:25:30 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Wed, 24 Nov 2010 07:28:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=an1nO6xKWAFQkMPSW+ZvQEUxAAouQUl8l5zwEriCRpylQ1Xz5nTvTHc0l+804u02Bf
+         3DnxV0xXHUL7vB6b7FmWtsrCVIC+fSm6wN1rNbmCCFl7TqxQA/DrXgKSJiNjq3SCFlmZ
+         vNz5PJmjQQ2Y7C398nXK2fNJRF22yAWYU+UAU=
+Date: Wed, 24 Nov 2010 20:32:13 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: =?utf-8?Q?P=C3=A1draig?= Brady <P@draigBrady.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, wharms@bfs.de,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+Message-ID: <20101124123213.GB2922@hack>
+References: <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca> <20101114092533.GB5323@albatros> <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop> <20101123140111.GA3816@hack> <4CEBD37E.5060107@bfs.de> <203E1F2A-2D04-4B7F-8D1B-9DC24522CB5E@dilger.ca> <4CECECA2.6070301@draigBrady.com> <20101124110535.GD5139@cr0.nay.redhat.com> <4CECFB19.1090003@draigBrady.com>
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 17/17 v3] can: EG20T PCH: Optimize "if" condition
- in rx/tx processing
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CECFB19.1090003@draigBrady.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For reduce "if" condition, easy to read/understand the code,
-optimize "if" condition in rx/tx processing.
+On Wed, Nov 24, 2010 at 11:46:33AM +0000, Pádraig Brady wrote:
+>On 24/11/10 11:05, Américo Wang wrote:
+>> On Wed, Nov 24, 2010 at 10:44:50AM +0000, Pádraig Brady wrote:
+>>> On 23/11/10 18:02, Andreas Dilger wrote:
+>>>> On 2010-11-23, at 07:45, walter harms wrote:
+>>>>> Maybe we can convince the gcc people to make 0 padding default. That will not solve the problems for other compilers but when they claim "works like gcc" we can press then to support this also. I can imagine that this will close some other subtle leaks also.
+>>>>
+>>>> It makes the most sense to tackle this at the GCC level, since the added overhead of doing memset(0) on the whole struct may be non-trivial for commonly-used and/or large structures.  Since GCC is already explicitly zeroing the _used_ fields in the struct, it can much more easily determine whether there is padding in the structure, and zero those few bytes as needed.
+>>>
+>>> Zero padding structs is part of C90. Details here:
+>>> http://www.pixelbeat.org/programming/gcc/auto_init.html
+>> 
+>> Nope.
+>> 
+>>>
+>>> gcc doesn't zero pad when _all_ elements are specified.
+>>>
+>> 
+>> That is what gcc does, not what C standard specifies.
+>
+>Looks like gcc is following the standard exactly.
+>
+>C90 - 6.5.7
+>C99 - 6.7.8
+>
+>  If there are fewer initializers in a brace-enclosed list than
+>  there are elements or members of an aggregate ... the remainder
+>  of the aggregate shall be initialized implicitly the same as
+>  objects that have static storage duration.
+>
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   26 ++++++++++----------------
- 1 files changed, 10 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 48f4a2e..0ecb0d5 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -758,19 +758,16 @@ static int pch_can_poll(struct napi_struct *napi,
-int quota)
-
- 	if (int_stat == PCH_STATUS_INT) {
- 		reg_stat = ioread32(&priv->regs->stat);
--		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
--			if (reg_stat & PCH_BUS_OFF ||
--			   (reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL) {
--				pch_can_error(ndev, reg_stat);
--				quota--;
--			}
--		}
-
--		if (reg_stat & PCH_TX_OK)
--			pch_can_bit_clear(&priv->regs->stat, PCH_TX_OK);
-+		if ((reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) &&
-+		   ((reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL)) {
-+			pch_can_error(ndev, reg_stat);
-+			quota--;
-+		}
-
--		if (reg_stat & PCH_RX_OK)
--			pch_can_bit_clear(&priv->regs->stat, PCH_RX_OK);
-+		if (reg_stat & (PCH_TX_OK | PCH_RX_OK))
-+			pch_can_bit_clear(&priv->regs->stat,
-+					  reg_stat & (PCH_TX_OK | PCH_RX_OK));
-
- 		int_stat = pch_can_int_pending(priv);
- 	}
-@@ -917,14 +914,13 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb,
-struct net_device *ndev)
- 	if (can_dropped_invalid_skb(ndev, skb))
- 		return NETDEV_TX_OK;
-
-+	tx_obj_no = priv->tx_obj;
- 	if (priv->tx_obj == PCH_TX_OBJ_END) {
- 		if (ioread32(&priv->regs->treq2) & PCH_TREQ2_TX_MASK)
- 			netif_stop_queue(ndev);
-
--		tx_obj_no = priv->tx_obj;
- 		priv->tx_obj = PCH_TX_OBJ_START;
- 	} else {
--		tx_obj_no = priv->tx_obj;
- 		priv->tx_obj++;
- 	}
-
-@@ -947,9 +943,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb,
-struct net_device *ndev)
- 	id2 |= PCH_ID_MSGVAL;
-
- 	/* If remote frame has to be transmitted.. */
--	if (cf->can_id & CAN_RTR_FLAG)
--		id2 &= ~PCH_ID2_DIR;
--	else
-+	if (!(cf->can_id & CAN_RTR_FLAG))
- 		id2 |= PCH_ID2_DIR;
-
- 	iowrite32(id2, &priv->regs->ifregs[1].id2);
--- 
-1.6.0.6
-
+Depends on if "the remainder of the aggregate" includes padding bytes
+or not.
