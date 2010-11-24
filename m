@@ -1,189 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab0KXMKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:10:45 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45787 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753376Ab0KXMKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:10:43 -0500
-Message-ID: <4CED00A9.50006@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 21:10:17 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	id S1754051Ab0KXMLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:11:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45808 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753985Ab0KXMLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 07:11:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,247,1288594800"; 
+   d="scan'208";a="680614944"
+Date: Wed, 24 Nov 2010 20:10:46 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
+Message-ID: <20101124121046.GA8333@localhost>
+References: <20101117042720.033773013@intel.com>
+ <20101117042850.002299964@intel.com>
+ <1290596732.2072.450.camel@laptop>
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 3/17 v3] can: EG20T PCH: Enumerate some macros
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290596732.2072.450.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For easy to readable, LEC and interface register number macros are
-replaced to enums.
+On Wed, Nov 24, 2010 at 07:05:32PM +0800, Peter Zijlstra wrote:
+> On Wed, 2010-11-17 at 12:27 +0800, Wu Fengguang wrote:
+> > +void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+> > +                               unsigned long *bw_time,
+> > +                               s64 *bw_written)
+> > +{
+> > +       unsigned long written;
+> > +       unsigned long elapsed;
+> > +       unsigned long bw;
+> > +       unsigned long w;
+> > +
+> > +       if (*bw_written == 0)
+> > +               goto snapshot;
+> > +
+> > +       elapsed = jiffies - *bw_time;
+> > +       if (elapsed < HZ/100)
+> > +               return;
+> > +
+> > +       /*
+> > +        * When there lots of tasks throttled in balance_dirty_pages(), they
+> > +        * will each try to update the bandwidth for the same period, making
+> > +        * the bandwidth drift much faster than the desired rate (as in the
+> > +        * single dirtier case). So do some rate limiting.
+> > +        */
+> > +       if (jiffies - bdi->write_bandwidth_update_time < elapsed)
+> > +               goto snapshot;
+>
+> Why this goto snapshot and not simply return? This is the second call
+> (bdi_update_bandwidth equivalent).
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   90
-+++++++++++++++++++++++++--------------------
- 1 files changed, 50 insertions(+), 40 deletions(-)
+Good question. The loop inside balance_dirty_pages() normally run only
+once, however wb_writeback() may loop over and over again. If we just
+return here, the condition
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index b028ae4..5c21f5c 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -69,21 +69,12 @@
- #define PCH_REC			0x00007f00
- #define PCH_TEC			0x000000ff
+        (jiffies - bdi->write_bandwidth_update_time < elapsed)
 
-+
- #define PCH_TX_OK		BIT(3)
- #define PCH_RX_OK		BIT(4)
- #define PCH_EPASSIV		BIT(5)
- #define PCH_EWARN		BIT(6)
- #define PCH_BUS_OFF		BIT(7)
--#define PCH_LEC0		BIT(0)
--#define PCH_LEC1		BIT(1)
--#define PCH_LEC2		BIT(2)
--#define PCH_LEC_ALL		(PCH_LEC0 | PCH_LEC1 | PCH_LEC2)
--#define PCH_STUF_ERR		PCH_LEC0
--#define PCH_FORM_ERR		PCH_LEC1
--#define PCH_ACK_ERR		(PCH_LEC0 | PCH_LEC1)
--#define PCH_BIT1_ERR		PCH_LEC2
--#define PCH_BIT0_ERR		(PCH_LEC0 | PCH_LEC2)
--#define PCH_CRC_ERR		(PCH_LEC1 | PCH_LEC2)
+cannot be reset, then future bdi_update_bandwidth() calls in the same
+wb_writeback() loop will never find it OK to update the bandwidth.
 
- /* bit position of certain controller bits. */
- #define PCH_BIT_BRP		0
-@@ -96,9 +87,6 @@
- #define PCH_MSK_CTRL_IE_SIE_EIE	0x07
- #define PCH_COUNTER_LIMIT	10
+It does assume no races between CPUs.. We may need some per-cpu based
+estimation.
 
--#define PCH_RX_IFREG			0
--#define PCH_TX_IFREG			1
--
- #define PCH_CAN_CLK		50000000	/* 50MHz */
+> If you were to leave the old bw_written/bw_time in place the next loop
+> around in wb_writeback() would see a larger delta..
+>
+> I guess this funny loop in wb_writeback() is also the reason you've got
+> a single function and not the get/update like separation
 
- /* Define the number of message object.
-@@ -113,6 +101,21 @@
+I do the single function mainly for wb_writeback(), where it
+continuously updates bandwidth inside the loop. The function can be
+called in such way:
 
- #define PCH_FIFO_THRESH		16
+loop {
+        take snapshot on first call
 
-+enum pch_ifreg {
-+	PCH_RX_IFREG,
-+	PCH_TX_IFREG,
-+};
-+
-+enum pch_can_err {
-+	PCH_STUF_ERR = 1,
-+	PCH_FORM_ERR,
-+	PCH_ACK_ERR,
-+	PCH_BIT1_ERR,
-+	PCH_BIT0_ERR,
-+	PCH_CRC_ERR,
-+	PCH_LEC_ALL,
-+};
-+
- enum pch_can_mode {
- 	PCH_CAN_ENABLE,
- 	PCH_CAN_DISABLE,
-@@ -302,7 +305,7 @@ static void pch_can_check_if_busy(u32 __iomem
-*creq_addr, u32 num)
- }
+        no action if recalled within 10ms
+        ...
+        no action if recalled within 10ms
+        ...
 
- static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
--				  int set, u32 dir)
-+			     int set, enum pch_ifreg dir)
- {
- 	unsigned long flags;
- 	u32 ie;
-@@ -616,7 +619,7 @@ static void pch_can_error(struct net_device *ndev,
-u32 status)
- 	struct sk_buff *skb;
- 	struct pch_can_priv *priv = netdev_priv(ndev);
- 	struct can_frame *cf;
--	u32 errc;
-+	u32 errc, lec;
- 	struct net_device_stats *stats = &(priv->ndev->stats);
- 	enum can_state state = priv->can.state;
+        update bandwidth and prepare for next update by taking the snapshot
 
-@@ -661,35 +664,42 @@ static void pch_can_error(struct net_device *ndev,
-u32 status)
- 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
- 	}
+        no action if recalled within 10ms
+        ...
+}
 
--	if (status & PCH_LEC_ALL) {
-+	lec = status & PCH_LEC_ALL;
-+	switch (lec) {
-+	case PCH_STUF_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_STUFF;
- 		priv->can.can_stats.bus_error++;
- 		stats->rx_errors++;
--		switch (status & PCH_LEC_ALL) {
--		case PCH_STUF_ERR:
--			cf->data[2] |= CAN_ERR_PROT_STUFF;
--			break;
--		case PCH_FORM_ERR:
--			cf->data[2] |= CAN_ERR_PROT_FORM;
--			break;
--		case PCH_ACK_ERR:
--			cf->data[2] |= CAN_ERR_PROT_LOC_ACK |
--				       CAN_ERR_PROT_LOC_ACK_DEL;
--			break;
--		case PCH_BIT1_ERR:
--		case PCH_BIT0_ERR:
--			cf->data[2] |= CAN_ERR_PROT_BIT;
--			break;
--		case PCH_CRC_ERR:
--			cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
--				       CAN_ERR_PROT_LOC_CRC_DEL;
--			break;
--		default:
--			iowrite32(status | PCH_LEC_ALL, &priv->regs->stat);
--			break;
--		}
--
-+		break;
-+	case PCH_FORM_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_FORM;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_ACK_ERR:
-+		cf->can_id |= CAN_ERR_ACK;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_BIT1_ERR:
-+	case PCH_BIT0_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_BIT;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_CRC_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-+			       CAN_ERR_PROT_LOC_CRC_DEL;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_LEC_ALL: /* Written by CPU. No error status */
-+		break;
- 	}
-
-+	cf->data[6] = errc & PCH_TEC;
-+	cf->data[7] = (errc & PCH_REC) >> 8;
-+
- 	priv->can.state = state;
- 	netif_rx(skb);
-
--- 
-1.6.0.6
-
+Thanks,
+Fengguang
