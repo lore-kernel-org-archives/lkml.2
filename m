@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab0KXCt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 21:49:57 -0500
-Received: from mail.perches.com ([173.55.12.10]:1831 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab0KXCt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 21:49:56 -0500
-Subject: [PATCH] quota: Use %pV and __attribute__((format (printf in
- __quota_error and fix fallout
-From: Joe Perches <joe@perches.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 18:49:54 -0800
-Message-ID: <1290566994.11971.26.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751766Ab0KXCxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 21:53:20 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:63158 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab0KXCxS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 21:53:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=AIudco0MhgIwUrh70KWrdF+2q5XyMF+d75gZq8VLI8aCmLwZXJznoMG/M+SD87UNb/
+         e5A7u5rcRkQwGJxxWj4UZv6ksho9ZKxc/4hHxrdbRCquF64ZPuiFB5p1xpcip2WdiR0d
+         KoJwe1EQmxWQwK0awNN4x4eh+fJhX8CLhYQK0=
+MIME-Version: 1.0
+In-Reply-To: <4CEC2BE7.4060205@tilera.com>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+	<1289489007.17691.1310.camel@edumazet-laptop>
+	<AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
+	<ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
+	<4CDF1945.8090101@tilera.com>
+	<AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>
+	<201011151425.oAFEPU3W005682@farm-0010.internal.tilera.com>
+	<AANLkTikGj+zG9OqVJseKh4fGqQNnqnJpHgcaaXOL8nNi@mail.gmail.com>
+	<4CEA71AD.5010606@tilera.com>
+	<AANLkTim1YyujwGZfenU_m52HEJJSFmTg3Wswn2DkqA3a@mail.gmail.com>
+	<4CEC2BE7.4060205@tilera.com>
+Date: Wed, 24 Nov 2010 10:53:17 +0800
+Message-ID: <AANLkTinx3pcJHGrQq_C-Rgk5g7SxjmpTcD0A50d8d48b@mail.gmail.com>
+Subject: Re: [PATCH] arch/tile: fix rwlock so would-be write lockers don't
+ block new readers
+From: Cypher Wu <cypher.w@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use %pV in __quota_error so a single printk can not be
-interleaved with other logging messages.
-Add __attribute__((format (printf, 3, 4))) so format
-and arguments can be verified by compiler.
-Make sure printk formats and arguments match.
+2010/11/24 Chris Metcalf <cmetcalf@tilera.com>:
+> On 11/22/2010 8:36 PM, Cypher Wu wrote:
+>> Say, if core A try to write_lock() rwlock and current_ticket_ is 0 and
+>> it write next_ticket_ to 1, when it processing the lock, core B try to
+>> write_lock() again and write next_ticket_ to 2, then when A
+>> write_unlock() it seen that (current_ticket_+1) is not equal to
+>> next_ticket_, so it increment current_ticket_, and core B get the
+>> lock. If core A try write_lock again before core B write_unlock, it
+>> will increment next_ticket_ to 3. And so on.
+>> This may rarely happened, I've tested it yesterday for several hours
+>> it goes very well under pressure.
+>
+> This should be OK when it happens (other than starving out the readers, but
+> that was the decision made by doing a ticket lock in the first place).
+> Even if we wrap around 255 back to zero on the tickets, the ticket queue
+> will work correctly.  The key is not to need more than 256 concurrent write
+> lock waiters, which we don't.
+>
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
+>
 
-Block # needed a pointer dereference.
+If we count on that, should we make 'my_ticket_ = (val >>
+WR_NEXT_SHIFT) & WR_MASK;'?
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/quota/dquot.c         |   18 +++++++++++-------
- fs/quota/quota_tree.c    |    9 +++++----
- include/linux/quotaops.h |    5 +++--
- 3 files changed, 19 insertions(+), 13 deletions(-)
-
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index 0fed41e..84becd3 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -133,16 +133,20 @@ __cacheline_aligned_in_smp DEFINE_SPINLOCK(dq_data_lock);
- EXPORT_SYMBOL(dq_data_lock);
- 
- void __quota_error(struct super_block *sb, const char *func,
--		  const char *fmt, ...)
-+		   const char *fmt, ...)
- {
--	va_list args;
--
- 	if (printk_ratelimit()) {
-+		va_list args;
-+		struct va_format vaf;
-+
- 		va_start(args, fmt);
--		printk(KERN_ERR "Quota error (device %s): %s: ",
--		       sb->s_id, func);
--		vprintk(fmt, args);
--		printk("\n");
-+
-+		vaf.fmt = fmt;
-+		vaf.va = &args;
-+
-+		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
-+		       sb->s_id, func, &vaf);
-+
- 		va_end(args);
- 	}
- }
-diff --git a/fs/quota/quota_tree.c b/fs/quota/quota_tree.c
-index 9e48874..e41c1becf 100644
---- a/fs/quota/quota_tree.c
-+++ b/fs/quota/quota_tree.c
-@@ -468,8 +468,8 @@ static int remove_tree(struct qtree_mem_dqinfo *info, struct dquot *dquot,
- 		return -ENOMEM;
- 	ret = read_blk(info, *blk, buf);
- 	if (ret < 0) {
--		quota_error(dquot->dq_sb, "Can't read quota data "
--			    "block %u", blk);
-+		quota_error(dquot->dq_sb, "Can't read quota data block %u",
-+			    *blk);
- 		goto out_buf;
- 	}
- 	newblk = le32_to_cpu(ref[get_index(info, dquot->dq_id, depth)]);
-@@ -493,8 +493,9 @@ static int remove_tree(struct qtree_mem_dqinfo *info, struct dquot *dquot,
- 		} else {
- 			ret = write_blk(info, *blk, buf);
- 			if (ret < 0)
--				quota_error(dquot->dq_sb, "Can't write quota "
--					    "tree block %u", blk);
-+				quota_error(dquot->dq_sb,
-+					    "Can't write quota tree block %u",
-+					    *blk);
- 		}
- 	}
- out_buf:
-diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
-index d1a9193..223b14c 100644
---- a/include/linux/quotaops.h
-+++ b/include/linux/quotaops.h
-@@ -31,8 +31,9 @@ static inline bool is_quota_modification(struct inode *inode, struct iattr *ia)
- #define quota_error(sb, fmt, args...) \
- 	__quota_error((sb), __func__, fmt , ## args)
- 
--extern void __quota_error(struct super_block *sb, const char *func,
--			 const char *fmt, ...);
-+extern __attribute__((format (printf, 3, 4)))
-+void __quota_error(struct super_block *sb, const char *func,
-+		   const char *fmt, ...);
- 
- /*
-  * declaration of quota_function calls in kernel.
-
-
+-- 
+Cyberman Wu
+http://www.meganovo.com
