@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0KXTN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:13:58 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:55551 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab0KXTN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:13:57 -0500
-Date: Wed, 24 Nov 2010 11:13:43 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: akpm@linux-foundation.org, Daniel Drake <dsd@laptop.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2010-11-23-16-12 uploaded (olpc)
-Message-ID: <20101124111343.70019b5c@debxo>
-In-Reply-To: <20101124105126.8248fc1f.randy.dunlap@oracle.com>
-References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-	<20101124105126.8248fc1f.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756160Ab0KXTP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:15:28 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35388 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab0KXTP1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:15:27 -0500
+Date: Wed, 24 Nov 2010 19:15:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: James Jones <jajones@nvidia.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Fix find_next_zero_bit and related assembly
+Message-ID: <20101124191504.GC13934@n2100.arm.linux.org.uk>
+References: <1289524615-22484-1-git-send-email-jajones@nvidia.com> <4CED55A6.5090608@codeaurora.org> <alpine.LFD.2.00.1011241357520.9313@xanadu.home> <201011241108.47776.jajones@nvidia.com> <alpine.LFD.2.00.1011241412250.9313@xanadu.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011241412250.9313@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010 10:51:26 -0800
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
-
-> On Tue, 23 Nov 2010 16:13:06 -0800 akpm@linux-foundation.org wrote:
+On Wed, Nov 24, 2010 at 02:13:05PM -0500, Nicolas Pitre wrote:
+> On Wed, 24 Nov 2010, James Jones wrote:
 > 
-> > The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+> > On Wednesday 24 November 2010 11:00:12 am Nicolas Pitre wrote:
+> > > On Wed, 24 Nov 2010, Stephen Boyd wrote:
+> > > > On 11/23/2010 03:28 PM, James Jones wrote:
+> > > > > On Tuesday 23 November 2010 13:26:47 Nicolas Pitre wrote:
+> > > > >> On Thu, 11 Nov 2010, James Jones wrote:
+> > > > >>> The find_next_bit, find_first_bit, find_next_zero_bit
+> > > > >>> and find_first_zero_bit functions were not properly
+> > > > >>> clamping to the maxbit argument at the bit level. They
+> > > > >>> were instead only checking maxbit at the byte level.
+> > > > >>> To fix this, add a compare and a conditional move
+> > > > >>> instruction to the end of the common bit-within-the-
+> > > > >>> byte code used by all the functions and be sure not to
+> > > > >>> clobber the maxbit argument before it is used.
+> > > > >>> 
+> > > > >>> Signed-off-by: James Jones <jajones@nvidia.com>
+> > > > >>> Tested-by: Stephen Warren <swarren@nvidia.com>
+> > > > >> 
+> > > > >> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> > > > >> 
+> > > > >> Please send to RMK's patch system.
+> > > > > 
+> > > > > Thanks for the review.  It's already in the patch system, but I updated
+> > > > > the entry to include your reviewed-by line.
+> > > > 
+> > > > Should this be sent to the stable tree too?
+> > > 
+> > > It could, yes.  This is hardly an urgent fix though, as the bug has been
+> > > there virtually forever.
+> > > 
+> > > 
+> > > Nicolas
 > > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
-> > 
-> > and will soon be available at
-> > 
-> >    git://zen-kernel.org/kernel/mmotm.git=
+> > While ancient, it does cause per-cpu allocations to fail in some situations, 
+> > which generally causes panics.
 > 
-> 
-> make[4]: *** No rule to make target
-> `arch/x86/platform/olpc/olpc-xo1-wakeup.c', needed by
-> `arch/x86/platform/olpc/olpc-xo1-wakeup.o'.
-> 
-> 
-> It's olpc-xo1-wakeup.S, so I guess it needs a special makefile rule ??
-> 
+> That would be a good justification for the stable tree then.
 
-I had trouble with this as well (and after flailing at it a bit, ended
-up just dropping the olpc pm stuff from my tree for now).  The build
-failure is definitely config-specific.  I suspected that it needs
-something like the following, but failed to figure it out:
+And the best way to do that is _not_ to send it to stable@kernel.org,
+but when you submit the patch to the patch system, add a line in
+the sign-off area:
 
-foo-y := olpc-xo1-wakeup.o
-obj-$(CONFIG_OLPC_XO1) += olpc-xo1.o foo.o
+CC: <stable@kernel.org>
 
-
+and when it goes into mainline (which is a requirement for stable
+patches) the stable team will automatically pick it up - without anyone
+needing to do any additional work.
