@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab0KXRYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 12:24:05 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56383 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755988Ab0KXRYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 12:24:03 -0500
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX18yS5MIhJgyB1VFbHcC5T2b0bj54gOoc7UdBmbnw4
-	ip0k8cQsl7v8E2
-Date: Wed, 24 Nov 2010 18:22:09 +0100
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/2] fanotify: Introduce FAN_NOFD
-Message-ID: <20101124172209.GB18135@lsanfilippo.unix.rd.tt.avira.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+	id S1756121Ab0KXR0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 12:26:53 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56723 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756014Ab0KXR0w convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 12:26:52 -0500
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless)
+ fastpaths for slub
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1011241013240.14268@router.home>
+References: <20101123235139.908255844@linux.com>
+	 <20101123235201.758191189@linux.com> <1290586512.2072.423.camel@laptop>
+	 <alpine.DEB.2.00.1011241013240.14268@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 18:26:50 +0100
+Message-ID: <1290619610.2072.500.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-11-24 at 10:14 -0600, Christoph Lameter wrote:
+> On Wed, 24 Nov 2010, Peter Zijlstra wrote:
+> 
+> > This thing still relies on disabling IRQs in the slow path, which means
+> > its still going to be a lot of work to make it work on -rt.
+> 
+> The disabling of irqs is because slab operations are used from interrupt
+> context. If we can avoid slab operations from interrupt contexts then we
+> can drop the interrupt disable in the slab allocators.
 
-FAN_NOFD is used in fanotify events that do not provide an open file
-descriptor (like the overflow_event).
+That's not so much the point, there's per-cpu assumptions due to that.
+Not everything is under a proper lock, see for example this bit:
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
----
- include/linux/fanotify.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+        new = new_slab(s, gfpflags, node);
 
-Please apply this against commit 9df291342d1330d4d2ddf389820f58dda975f8dd
-of branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
+        if (gfpflags & __GFP_WAIT)
+                local_irq_disable();
 
-diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-index 3db66ef..d6ec57a 100644
---- a/include/linux/fanotify.h
-+++ b/include/linux/fanotify.h
-@@ -104,6 +104,8 @@ struct fanotify_response {
- /* Legit userspace responses to a _PERM event */
- #define FAN_ALLOW	0x01
- #define FAN_DENY	0x02
-+/* No fd set in event */
-+#define FAN_NOFD	-1
- 
- /* Helper functions to deal with fanotify_event_metadata buffers */
- #define FAN_EVENT_METADATA_LEN (sizeof(struct fanotify_event_metadata))
--- 
-1.5.6.5
+        if (new) {
+                c = __this_cpu_ptr(s->cpu_slab);
+                stat(s, ALLOC_SLAB);
+                if (c->page)
+                        flush_slab(s, c);
+                slab_lock(new);
+                __SetPageSlubFrozen(new);
+                c->page = new;
+                goto load_freelist;
+        }
+
+There we have the __this_cpu_ptr, c->page deref and flush_slab()->stat()
+call all before we take a lock.
+
 
