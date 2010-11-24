@@ -1,345 +1,692 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab0KXBn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 20:43:59 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:29630 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab0KXBn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 20:43:58 -0500
-From: Colin Cross <ccross@android.com>
-To: Paul Menage <menage@google.com>
-Cc: Colin Cross <ccross@android.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cgroup: Remove call to synchronize_rcu in cgroup_attach_task
-Date: Tue, 23 Nov 2010 17:43:38 -0800
-Message-Id: <1290563018-2804-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <AANLkTi=4-OgPUugnUBaqSU3oC=3wxTjAsOB_Ais3Or+i@mail.gmail.com>
-References: <AANLkTi=4-OgPUugnUBaqSU3oC=3wxTjAsOB_Ais3Or+i@mail.gmail.com>
-X-System-Of-Record: true
+	id S932077Ab0KXBqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 20:46:54 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49617 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754443Ab0KXBqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 20:46:52 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [Regression, post-2.6.37-rc2] Unable to start KDE with 2.6.37-rc3 on Acer Ferrari One
+Date: Wed, 24 Nov 2010 02:45:55 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        DRI <dri-devel@lists.freedesktop.org>
+References: <201011240122.33174.rjw@sisk.pl> <201011240157.00726.rjw@sisk.pl> <AANLkTinRvXC9qDi9rkg1OeQ9FXrBwVJU0Y=9bUwrv8T4@mail.gmail.com>
+In-Reply-To: <AANLkTinRvXC9qDi9rkg1OeQ9FXrBwVJU0Y=9bUwrv8T4@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_T5G7MuddZyFUcQQ"
+Message-Id: <201011240245.55786.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-synchronize_rcu can be very expensive, averaging 100 ms in
-some cases.  In cgroup_attach_task, it is used to prevent
-a task->cgroups pointer dereferenced in an RCU read side
-critical section from being invalidated by delaying the call
-to put_css_set until after an RCU grace period.
+--Boundary-00=_T5G7MuddZyFUcQQ
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 
-To avoid the call to synchronize_rcu, make the put_css_set
-call rcu-safe by moving the deletion of the css_set links
-into rcu-protected free_css_set_rcu.
+On Wednesday, November 24, 2010, Alex Deucher wrote:
+> 2010/11/23 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Wednesday, November 24, 2010, Rafael J. Wysocki wrote:
+> >> Hi,
+> >>
+> >> I cannot start KDE with the 2.6.37-rc3 kernel.  The X server and display
+> >> manager start normally, but when I attempt to log into KDE, it attempts to
+> >> start, but then the X apparently crashes and this appears in the dmesg output:
+> >>
+> >> [   24.342287] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> >> [   24.342298] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> >> [   24.342304] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> >> [   24.694106] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> >> [   93.938946] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> >> [   93.938956] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> >> [   93.938962] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> >> [   94.278050] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> >> [  114.898043] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> >> [  114.898053] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> >> [  114.898058] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> >> [  115.266113] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> >> [  129.722472] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> >> [  142.984314] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
+> >> [  142.984324] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
+> >> [  142.984330] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+> >> [  143.370083] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> >>
+> >> This doesn't happen with 2.6.37-rc2.
+> >
+> > Reverting the following commit:
+> >
+> > commit 16790569eddf4d406a16a65f4750f405fa669c52
+> > Author: Alex Deucher <alexdeucher@gmail.com>
+> > Date:   Sun Nov 14 20:24:35 2010 -0500
+> >
+> >    drm/radeon/kms: fix and unify tiled buffer alignment checking for r6xx/7xx
+> >
+> > fixes the issue for me (so everyone involved is already in the Cc list ;-)).
+> >
+> 
+> Are you sure you've got the right commit?
 
-The calls to check_for_release in free_css_set_rcu now occur
-in softirq context, so convert all uses of the
-release_list_lock spinlock to irq safe versions.
+Well, as I said, I reverted that particular commit and things started to work.
 
-The decrement of the cgroup refcount is no longer
-synchronous with the call to put_css_set, which can result
-in the cgroup refcount staying positive after the last call
-to cgroup_attach_task returns.  To allow the cgroup to be
-deleted with cgroup_rmdir synchronously after
-cgroup_attach_task, introduce a second refcount,
-rmdir_count, that is decremented synchronously in
-put_css_set.  If cgroup_rmdir is called on a cgroup for
-hich rmdir_count is zero but count is nonzero, reuse the
-rmdir waitqueue to block the rmdir until the rcu callback
-is called.
+> That shouldn't change the calculation that's failing at all.  I'd guess it's
+> probably one of these:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d33ef52d9db8a36900dd53f2e32db9a521ace259
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f30df2fad0c901e74ac9a52a488a54c69a373a41
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
+I don't know.  Perhaps there are some interactions between the two and the
+reverted one.  I can try reverting these tomorrow if you want me to.
 
-This patch is similar to what you described.  The main differences are
-that I used a new atomic to handle the rmdir case, and I converted
-check_for_release to be callable in softirq context rather than schedule
-work in free_css_set_rcu.  Your css_set scanning in rmdir sounds better,
-I'll take another look at that.  Is there any problem with disabling irqs
-with spin_lock_irqsave in check_for_release?
+> Can you attach your xorg log as well?
 
- include/linux/cgroup.h |    6 ++
- kernel/cgroup.c        |  124 ++++++++++++++++++++++++++++--------------------
- 2 files changed, 78 insertions(+), 52 deletions(-)
+Sure, attached (the working case).
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ed4ba11..3b6e73d 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -202,6 +202,12 @@ struct cgroup {
- 	atomic_t count;
- 
- 	/*
-+	 * separate refcount for rmdir on a cgroup.  When rmdir_count is 0,
-+	 * rmdir should block until count is 0.
-+	 */
-+	atomic_t rmdir_count;
-+
-+	/*
- 	 * We link our 'sibling' struct into our parent's 'children'.
- 	 * Our children link their 'sibling' into our 'children'.
- 	 */
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 66a416b..fa3c0ac 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -267,6 +267,33 @@ static void cgroup_release_agent(struct work_struct *work);
- static DECLARE_WORK(release_agent_work, cgroup_release_agent);
- static void check_for_release(struct cgroup *cgrp);
- 
-+/*
-+ * A queue for waiters to do rmdir() cgroup. A tasks will sleep when
-+ * cgroup->count == 0 && list_empty(&cgroup->children) && subsys has some
-+ * reference to css->refcnt. In general, this refcnt is expected to goes down
-+ * to zero, soon.
-+ *
-+ * CGRP_WAIT_ON_RMDIR flag is set under cgroup's inode->i_mutex;
-+ */
-+DECLARE_WAIT_QUEUE_HEAD(cgroup_rmdir_waitq);
-+
-+static void cgroup_wakeup_rmdir_waiter(struct cgroup *cgrp)
-+{
-+	if (unlikely(test_and_clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags)))
-+		wake_up_all(&cgroup_rmdir_waitq);
-+}
-+
-+void cgroup_exclude_rmdir(struct cgroup_subsys_state *css)
-+{
-+	css_get(css);
-+}
-+
-+void cgroup_release_and_wakeup_rmdir(struct cgroup_subsys_state *css)
-+{
-+	cgroup_wakeup_rmdir_waiter(css->cgroup);
-+	css_put(css);
-+}
-+
- /* Link structure for associating css_set objects with cgroups */
- struct cg_cgroup_link {
- 	/*
-@@ -329,6 +356,22 @@ static struct hlist_head *css_set_hash(struct cgroup_subsys_state *css[])
- static void free_css_set_rcu(struct rcu_head *obj)
- {
- 	struct css_set *cg = container_of(obj, struct css_set, rcu_head);
-+	struct cg_cgroup_link *link;
-+	struct cg_cgroup_link *saved_link;
-+
-+	/* Nothing else can have a reference to cg, no need for css_set_lock */
-+	list_for_each_entry_safe(link, saved_link, &cg->cg_links,
-+				 cg_link_list) {
-+		struct cgroup *cgrp = link->cgrp;
-+		list_del(&link->cg_link_list);
-+		list_del(&link->cgrp_link_list);
-+		if (atomic_dec_and_test(&cgrp->count)) {
-+			check_for_release(cgrp);
-+			cgroup_wakeup_rmdir_waiter(cgrp);
-+		}
-+		kfree(link);
-+	}
-+
- 	kfree(cg);
- }
- 
-@@ -355,23 +398,20 @@ static void __put_css_set(struct css_set *cg, int taskexit)
- 		return;
- 	}
- 
--	/* This css_set is dead. unlink it and release cgroup refcounts */
- 	hlist_del(&cg->hlist);
- 	css_set_count--;
- 
-+	/* This css_set is now unreachable from the css_set_table, but RCU
-+	 * read-side critical sections may still have a reference to it.
-+	 * Decrement the cgroup rmdir_count so that rmdir's on an empty
-+	 * cgroup can block until the free_css_set_rcu callback */
- 	list_for_each_entry_safe(link, saved_link, &cg->cg_links,
- 				 cg_link_list) {
- 		struct cgroup *cgrp = link->cgrp;
--		list_del(&link->cg_link_list);
--		list_del(&link->cgrp_link_list);
--		if (atomic_dec_and_test(&cgrp->count) &&
--		    notify_on_release(cgrp)) {
--			if (taskexit)
--				set_bit(CGRP_RELEASABLE, &cgrp->flags);
--			check_for_release(cgrp);
--		}
--
--		kfree(link);
-+		if (taskexit)
-+			set_bit(CGRP_RELEASABLE, &cgrp->flags);
-+		atomic_dec(&cgrp->rmdir_count);
-+		smp_mb();
- 	}
- 
- 	write_unlock(&css_set_lock);
-@@ -571,6 +611,8 @@ static void link_css_set(struct list_head *tmp_cg_links,
- 				cgrp_link_list);
- 	link->cg = cg;
- 	link->cgrp = cgrp;
-+	atomic_inc(&cgrp->rmdir_count);
-+	smp_mb(); /* make sure rmdir_count increments first */
- 	atomic_inc(&cgrp->count);
- 	list_move(&link->cgrp_link_list, &cgrp->css_sets);
- 	/*
-@@ -725,9 +767,9 @@ static struct cgroup *task_cgroup_from_root(struct task_struct *task,
-  * cgroup_attach_task(), which overwrites one tasks cgroup pointer with
-  * another.  It does so using cgroup_mutex, however there are
-  * several performance critical places that need to reference
-- * task->cgroup without the expense of grabbing a system global
-+ * task->cgroups without the expense of grabbing a system global
-  * mutex.  Therefore except as noted below, when dereferencing or, as
-- * in cgroup_attach_task(), modifying a task'ss cgroup pointer we use
-+ * in cgroup_attach_task(), modifying a task's cgroups pointer we use
-  * task_lock(), which acts on a spinlock (task->alloc_lock) already in
-  * the task_struct routinely used for such matters.
-  *
-@@ -909,33 +951,6 @@ static void cgroup_d_remove_dir(struct dentry *dentry)
- }
- 
- /*
-- * A queue for waiters to do rmdir() cgroup. A tasks will sleep when
-- * cgroup->count == 0 && list_empty(&cgroup->children) && subsys has some
-- * reference to css->refcnt. In general, this refcnt is expected to goes down
-- * to zero, soon.
-- *
-- * CGRP_WAIT_ON_RMDIR flag is set under cgroup's inode->i_mutex;
-- */
--DECLARE_WAIT_QUEUE_HEAD(cgroup_rmdir_waitq);
--
--static void cgroup_wakeup_rmdir_waiter(struct cgroup *cgrp)
--{
--	if (unlikely(test_and_clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags)))
--		wake_up_all(&cgroup_rmdir_waitq);
--}
--
--void cgroup_exclude_rmdir(struct cgroup_subsys_state *css)
--{
--	css_get(css);
--}
--
--void cgroup_release_and_wakeup_rmdir(struct cgroup_subsys_state *css)
--{
--	cgroup_wakeup_rmdir_waiter(css->cgroup);
--	css_put(css);
--}
--
--/*
-  * Call with cgroup_mutex held. Drops reference counts on modules, including
-  * any duplicate ones that parse_cgroupfs_options took. If this function
-  * returns an error, no reference counts are touched.
-@@ -1802,7 +1817,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 			ss->attach(ss, cgrp, oldcgrp, tsk, false);
- 	}
- 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
--	synchronize_rcu();
-+	/* put_css_set will not destroy cg until after an RCU grace period */
- 	put_css_set(cg);
- 
- 	/*
-@@ -3566,11 +3581,12 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	DEFINE_WAIT(wait);
- 	struct cgroup_event *event, *tmp;
- 	int ret;
-+	unsigned long flags;
- 
- 	/* the vfs holds both inode->i_mutex already */
- again:
- 	mutex_lock(&cgroup_mutex);
--	if (atomic_read(&cgrp->count) != 0) {
-+	if (atomic_read(&cgrp->rmdir_count) != 0) {
- 		mutex_unlock(&cgroup_mutex);
- 		return -EBUSY;
- 	}
-@@ -3603,13 +3619,13 @@ again:
- 
- 	mutex_lock(&cgroup_mutex);
- 	parent = cgrp->parent;
--	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
-+	if (atomic_read(&cgrp->rmdir_count) || !list_empty(&cgrp->children)) {
- 		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 		mutex_unlock(&cgroup_mutex);
- 		return -EBUSY;
- 	}
- 	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
--	if (!cgroup_clear_css_refs(cgrp)) {
-+	if (atomic_read(&cgrp->count) != 0 || !cgroup_clear_css_refs(cgrp)) {
- 		mutex_unlock(&cgroup_mutex);
- 		/*
- 		 * Because someone may call cgroup_wakeup_rmdir_waiter() before
-@@ -3627,11 +3643,11 @@ again:
- 	finish_wait(&cgroup_rmdir_waitq, &wait);
- 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 
--	spin_lock(&release_list_lock);
-+	spin_lock_irqsave(&release_list_lock, flags);
- 	set_bit(CGRP_REMOVED, &cgrp->flags);
- 	if (!list_empty(&cgrp->release_list))
- 		list_del(&cgrp->release_list);
--	spin_unlock(&release_list_lock);
-+	spin_unlock_irqrestore(&release_list_lock, flags);
- 
- 	cgroup_lock_hierarchy(cgrp->root);
- 	/* delete this cgroup from parent->children */
-@@ -4389,6 +4405,8 @@ int cgroup_is_descendant(const struct cgroup *cgrp, struct task_struct *task)
- 
- static void check_for_release(struct cgroup *cgrp)
- {
-+	unsigned long flags;
-+
- 	/* All of these checks rely on RCU to keep the cgroup
- 	 * structure alive */
- 	if (cgroup_is_releasable(cgrp) && !atomic_read(&cgrp->count)
-@@ -4397,13 +4415,13 @@ static void check_for_release(struct cgroup *cgrp)
- 		 * already queued for a userspace notification, queue
- 		 * it now */
- 		int need_schedule_work = 0;
--		spin_lock(&release_list_lock);
-+		spin_lock_irqsave(&release_list_lock, flags);
- 		if (!cgroup_is_removed(cgrp) &&
- 		    list_empty(&cgrp->release_list)) {
- 			list_add(&cgrp->release_list, &release_list);
- 			need_schedule_work = 1;
- 		}
--		spin_unlock(&release_list_lock);
-+		spin_unlock_irqrestore(&release_list_lock, flags);
- 		if (need_schedule_work)
- 			schedule_work(&release_agent_work);
- 	}
-@@ -4453,9 +4471,11 @@ EXPORT_SYMBOL_GPL(__css_put);
-  */
- static void cgroup_release_agent(struct work_struct *work)
- {
-+	unsigned long flags;
-+
- 	BUG_ON(work != &release_agent_work);
- 	mutex_lock(&cgroup_mutex);
--	spin_lock(&release_list_lock);
-+	spin_lock_irqsave(&release_list_lock, flags);
- 	while (!list_empty(&release_list)) {
- 		char *argv[3], *envp[3];
- 		int i;
-@@ -4464,7 +4484,7 @@ static void cgroup_release_agent(struct work_struct *work)
- 						    struct cgroup,
- 						    release_list);
- 		list_del_init(&cgrp->release_list);
--		spin_unlock(&release_list_lock);
-+		spin_unlock_irqrestore(&release_list_lock, flags);
- 		pathbuf = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 		if (!pathbuf)
- 			goto continue_free;
-@@ -4494,9 +4514,9 @@ static void cgroup_release_agent(struct work_struct *work)
-  continue_free:
- 		kfree(pathbuf);
- 		kfree(agentbuf);
--		spin_lock(&release_list_lock);
-+		spin_lock_irqsave(&release_list_lock, flags);
- 	}
--	spin_unlock(&release_list_lock);
-+	spin_unlock_irqrestore(&release_list_lock, flags);
- 	mutex_unlock(&cgroup_mutex);
- }
- 
--- 
-1.7.3.1
+Thanks,
+Rafael
 
+--Boundary-00=_T5G7MuddZyFUcQQ
+Content-Type: text/x-log;
+  charset="UTF-8";
+  name="Xorg.0.log"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="Xorg.0.log"
+
+[    11.926] 
+X.Org X Server 1.8.0
+Release Date: 2010-04-02
+[    11.927] X Protocol Version 11, Revision 0
+[    11.927] Build Operating System: openSUSE SUSE LINUX
+[    11.927] Current Operating System: Linux ferrari 2.6.37-rc2-rjw+ #162 SMP PREEMPT Tue Nov 16 23:33:09 CET 2010 x86_64
+[    11.927] Kernel command line: root=/dev/sda3 resume=/dev/sda2
+[    11.927] Build Date: 19 August 2010  03:34:22PM
+[    11.927]  
+[    11.927] Current version of pixman: 0.18.0
+[    11.927] 	Before reporting problems, check http://wiki.x.org
+	to make sure that you have the latest version.
+[    11.927] Markers: (--) probed, (**) from config file, (==) default setting,
+	(++) from command line, (!!) notice, (II) informational,
+	(WW) warning, (EE) error, (NI) not implemented, (??) unknown.
+[    11.928] (==) Log file: "/var/log/Xorg.0.log", Time: Wed Nov 24 01:44:11 2010
+[    11.928] (==) Using config directory: "/etc/X11/xorg.conf.d"
+[    11.929] (==) No Layout section.  Using the first Screen section.
+[    11.929] (**) |-->Screen "Default Screen" (0)
+[    11.929] (**) |   |-->Monitor "Default Monitor"
+[    11.929] (**) |   |-->Device "Default Device"
+[    11.929] (==) Automatically adding devices
+[    11.929] (==) Automatically enabling devices
+[    11.930] (WW) The directory "/usr/share/fonts/TTF/" does not exist.
+[    11.930] 	Entry deleted from font path.
+[    11.930] (WW) The directory "/usr/share/fonts/OTF/" does not exist.
+[    11.930] 	Entry deleted from font path.
+[    11.930] (WW) The directory "/usr/share/fonts/misc/sgi" does not exist.
+[    11.930] 	Entry deleted from font path.
+[    11.930] (==) FontPath set to:
+	/usr/share/fonts/misc:unscaled,
+	/usr/share/fonts/Type1/,
+	/usr/share/fonts/100dpi:unscaled,
+	/usr/share/fonts/75dpi:unscaled,
+	/usr/share/fonts/URW/,
+	/usr/share/fonts/cyrillic:unscaled,
+	/usr/share/fonts/truetype/
+[    11.930] (==) ModulePath set to "/usr/lib64/xorg/modules/updates,/usr/lib64/xorg/modules"
+[    11.930] (II) The server relies on udev to provide the list of input devices.
+	If no devices become available, reconfigure udev or disable AutoAddDevices.
+[    11.930] (II) Loader magic: 0x7d5ba0
+[    11.930] (II) Module ABI versions:
+[    11.930] 	X.Org ANSI C Emulation: 0.4
+[    11.930] 	X.Org Video Driver: 7.0
+[    11.930] 	X.Org XInput driver : 9.0
+[    11.930] 	X.Org Server Extension : 3.0
+[    11.941] (--) PCI:*(0:1:5:0) 1002:9612:1025:029e ATI Technologies Inc RS780M/RS780MN [Radeon HD 3200 Graphics] rev 0, Mem @ 0xa0000000/268435456, 0x9fdf0000/65536, 0x9fe00000/1048576, I/O @ 0x00009000/256
+[    11.942] (II) Open ACPI successful (/var/run/acpid.socket)
+[    11.942] (II) LoadModule: "extmod"
+[    11.964] (II) Loading /usr/lib64/xorg/modules/extensions/libextmod.so
+[    11.964] (II) Module extmod: vendor="X.Org Foundation"
+[    11.964] 	compiled for 1.8.0, module version = 1.0.0
+[    11.964] 	Module class: X.Org Server Extension
+[    11.964] 	ABI class: X.Org Server Extension, version 3.0
+[    11.964] (II) Loading extension MIT-SCREEN-SAVER
+[    11.964] (II) Loading extension XFree86-VidModeExtension
+[    11.964] (II) Loading extension XFree86-DGA
+[    11.964] (II) Loading extension DPMS
+[    11.964] (II) Loading extension XVideo
+[    11.964] (II) Loading extension XVideo-MotionCompensation
+[    11.964] (II) Loading extension X-Resource
+[    11.964] (II) LoadModule: "dbe"
+[    11.965] (II) Loading /usr/lib64/xorg/modules/extensions/libdbe.so
+[    11.965] (II) Module dbe: vendor="X.Org Foundation"
+[    11.965] 	compiled for 1.8.0, module version = 1.0.0
+[    11.965] 	Module class: X.Org Server Extension
+[    11.965] 	ABI class: X.Org Server Extension, version 3.0
+[    11.965] (II) Loading extension DOUBLE-BUFFER
+[    11.966] (II) LoadModule: "glx"
+[    11.966] (II) Loading /usr/lib64/xorg/modules/extensions/libglx.so
+[    11.967] (II) Module glx: vendor="X.Org Foundation"
+[    11.967] 	compiled for 1.8.0, module version = 1.0.0
+[    11.967] 	ABI class: X.Org Server Extension, version 3.0
+[    11.967] (==) AIGLX enabled
+[    11.967] (II) Loading extension GLX
+[    11.967] (II) LoadModule: "record"
+[    11.971] (II) Loading /usr/lib64/xorg/modules/extensions/librecord.so
+[    11.971] (II) Module record: vendor="X.Org Foundation"
+[    11.971] 	compiled for 1.8.0, module version = 1.13.0
+[    11.971] 	Module class: X.Org Server Extension
+[    11.971] 	ABI class: X.Org Server Extension, version 3.0
+[    11.971] (II) Loading extension RECORD
+[    11.971] (II) LoadModule: "dri"
+[    11.972] (II) Loading /usr/lib64/xorg/modules/extensions/libdri.so
+[    11.973] (II) Module dri: vendor="X.Org Foundation"
+[    11.973] 	compiled for 1.8.0, module version = 1.0.0
+[    11.973] 	ABI class: X.Org Server Extension, version 3.0
+[    11.973] (II) Loading extension XFree86-DRI
+[    11.973] (II) LoadModule: "dri2"
+[    11.973] (II) Loading /usr/lib64/xorg/modules/extensions/libdri2.so
+[    11.974] (II) Module dri2: vendor="X.Org Foundation"
+[    11.974] 	compiled for 1.8.0, module version = 1.2.0
+[    11.974] 	ABI class: X.Org Server Extension, version 3.0
+[    11.974] (II) Loading extension DRI2
+[    11.974] (II) LoadModule: "radeon"
+[    11.975] (II) Loading /usr/lib64/xorg/modules/drivers/radeon_drv.so
+[    11.977] (II) Module radeon: vendor="X.Org Foundation"
+[    11.977] 	compiled for 1.8.0, module version = 6.13.0
+[    11.977] 	Module class: X.Org Video Driver
+[    11.977] 	ABI class: X.Org Video Driver, version 7.0
+[    11.977] (II) RADEON: Driver for ATI Radeon chipsets:
+	ATI Radeon Mobility X600 (M24) 3150 (PCIE), ATI FireMV 2400 (PCI),
+	ATI Radeon Mobility X300 (M24) 3152 (PCIE),
+	ATI FireGL M24 GL 3154 (PCIE), ATI Radeon X600 (RV380) 3E50 (PCIE),
+	ATI FireGL V3200 (RV380) 3E54 (PCIE), ATI Radeon IGP320 (A3) 4136,
+	ATI Radeon IGP330/340/350 (A4) 4137, ATI Radeon 9500 AD (AGP),
+	ATI Radeon 9500 AE (AGP), ATI Radeon 9600TX AF (AGP),
+	ATI FireGL Z1 AG (AGP), ATI Radeon 9800SE AH (AGP),
+	ATI Radeon 9800 AI (AGP), ATI Radeon 9800 AJ (AGP),
+	ATI FireGL X2 AK (AGP), ATI Radeon 9600 AP (AGP),
+	ATI Radeon 9600SE AQ (AGP), ATI Radeon 9600XT AR (AGP),
+	ATI Radeon 9600 AS (AGP), ATI FireGL T2 AT (AGP), ATI Radeon 9650,
+	ATI FireGL RV360 AV (AGP), ATI Radeon 7000 IGP (A4+) 4237,
+	ATI Radeon 8500 AIW BB (AGP), ATI Radeon 8500 AIW BC (AGP),
+	ATI Radeon IGP320M (U1) 4336, ATI Radeon IGP330M/340M/350M (U2) 4337,
+	ATI Radeon Mobility 7000 IGP 4437, ATI Radeon 9000/PRO If (AGP/PCI),
+	ATI Radeon 9000 Ig (AGP/PCI), ATI Radeon X800 (R420) JH (AGP),
+	ATI Radeon X800PRO (R420) JI (AGP),
+	ATI Radeon X800SE (R420) JJ (AGP), ATI Radeon X800 (R420) JK (AGP),
+	ATI Radeon X800 (R420) JL (AGP), ATI FireGL X3 (R420) JM (AGP),
+	ATI Radeon Mobility 9800 (M18) JN (AGP),
+	ATI Radeon X800 SE (R420) (AGP), ATI Radeon X800XT (R420) JP (AGP),
+	ATI Radeon X800 VE (R420) JT (AGP), ATI Radeon X850 (R480) (AGP),
+	ATI Radeon X850 XT (R480) (AGP), ATI Radeon X850 SE (R480) (AGP),
+	ATI Radeon X850 PRO (R480) (AGP), ATI Radeon X850 XT PE (R480) (AGP),
+	ATI Radeon Mobility M7 LW (AGP),
+	ATI Mobility FireGL 7800 M7 LX (AGP),
+	ATI Radeon Mobility M6 LY (AGP), ATI Radeon Mobility M6 LZ (AGP),
+	ATI FireGL Mobility 9000 (M9) Ld (AGP),
+	ATI Radeon Mobility 9000 (M9) Lf (AGP),
+	ATI Radeon Mobility 9000 (M9) Lg (AGP), ATI Radeon 9700 Pro ND (AGP),
+	ATI Radeon 9700/9500Pro NE (AGP), ATI Radeon 9600TX NF (AGP),
+	ATI FireGL X1 NG (AGP), ATI Radeon 9800PRO NH (AGP),
+	ATI Radeon 9800 NI (AGP), ATI FireGL X2 NK (AGP),
+	ATI Radeon 9800XT NJ (AGP),
+	ATI Radeon Mobility 9600/9700 (M10/M11) NP (AGP),
+	ATI Radeon Mobility 9600 (M10) NQ (AGP),
+	ATI Radeon Mobility 9600 (M11) NR (AGP),
+	ATI Radeon Mobility 9600 (M10) NS (AGP),
+	ATI FireGL Mobility T2 (M10) NT (AGP),
+	ATI FireGL Mobility T2e (M11) NV (AGP), ATI Radeon QD (AGP),
+	ATI Radeon QE (AGP), ATI Radeon QF (AGP), ATI Radeon QG (AGP),
+	ATI FireGL 8700/8800 QH (AGP), ATI Radeon 8500 QL (AGP),
+	ATI Radeon 9100 QM (AGP), ATI Radeon 7500 QW (AGP/PCI),
+	ATI Radeon 7500 QX (AGP/PCI), ATI Radeon VE/7000 QY (AGP/PCI),
+	ATI Radeon VE/7000 QZ (AGP/PCI), ATI ES1000 515E (PCI),
+	ATI Radeon Mobility X300 (M22) 5460 (PCIE),
+	ATI Radeon Mobility X600 SE (M24C) 5462 (PCIE),
+	ATI FireGL M22 GL 5464 (PCIE), ATI Radeon X800 (R423) UH (PCIE),
+	ATI Radeon X800PRO (R423) UI (PCIE),
+	ATI Radeon X800LE (R423) UJ (PCIE),
+	ATI Radeon X800SE (R423) UK (PCIE),
+	ATI Radeon X800 XTP (R430) (PCIE), ATI Radeon X800 XL (R430) (PCIE),
+	ATI Radeon X800 SE (R430) (PCIE), ATI Radeon X800 (R430) (PCIE),
+	ATI FireGL V7100 (R423) (PCIE), ATI FireGL V5100 (R423) UQ (PCIE),
+	ATI FireGL unknown (R423) UR (PCIE),
+	ATI FireGL unknown (R423) UT (PCIE),
+	ATI Mobility FireGL V5000 (M26) (PCIE),
+	ATI Mobility FireGL V5000 (M26) (PCIE),
+	ATI Mobility Radeon X700 XL (M26) (PCIE),
+	ATI Mobility Radeon X700 (M26) (PCIE),
+	ATI Mobility Radeon X700 (M26) (PCIE),
+	ATI Radeon X550XTX 5657 (PCIE), ATI Radeon 9100 IGP (A5) 5834,
+	ATI Radeon Mobility 9100 IGP (U3) 5835,
+	ATI Radeon XPRESS 200 5954 (PCIE),
+	ATI Radeon XPRESS 200M 5955 (PCIE), ATI Radeon 9250 5960 (AGP),
+	ATI Radeon 9200 5961 (AGP), ATI Radeon 9200 5962 (AGP),
+	ATI Radeon 9200SE 5964 (AGP), ATI FireMV 2200 (PCI),
+	ATI ES1000 5969 (PCI), ATI Radeon XPRESS 200 5974 (PCIE),
+	ATI Radeon XPRESS 200M 5975 (PCIE),
+	ATI Radeon XPRESS 200 5A41 (PCIE),
+	ATI Radeon XPRESS 200M 5A42 (PCIE),
+	ATI Radeon XPRESS 200 5A61 (PCIE),
+	ATI Radeon XPRESS 200M 5A62 (PCIE),
+	ATI Radeon X300 (RV370) 5B60 (PCIE),
+	ATI Radeon X600 (RV370) 5B62 (PCIE),
+	ATI Radeon X550 (RV370) 5B63 (PCIE),
+	ATI FireGL V3100 (RV370) 5B64 (PCIE),
+	ATI FireMV 2200 PCIE (RV370) 5B65 (PCIE),
+	ATI Radeon Mobility 9200 (M9+) 5C61 (AGP),
+	ATI Radeon Mobility 9200 (M9+) 5C63 (AGP),
+	ATI Mobility Radeon X800 XT (M28) (PCIE),
+	ATI Mobility FireGL V5100 (M28) (PCIE),
+	ATI Mobility Radeon X800 (M28) (PCIE), ATI Radeon X850 5D4C (PCIE),
+	ATI Radeon X850 XT PE (R480) (PCIE),
+	ATI Radeon X850 SE (R480) (PCIE), ATI Radeon X850 PRO (R480) (PCIE),
+	ATI unknown Radeon / FireGL (R480) 5D50 (PCIE),
+	ATI Radeon X850 XT (R480) (PCIE),
+	ATI Radeon X800XT (R423) 5D57 (PCIE),
+	ATI FireGL V5000 (RV410) (PCIE), ATI Radeon X700 XT (RV410) (PCIE),
+	ATI Radeon X700 PRO (RV410) (PCIE),
+	ATI Radeon X700 SE (RV410) (PCIE), ATI Radeon X700 (RV410) (PCIE),
+	ATI Radeon X700 SE (RV410) (PCIE), ATI Radeon X1800,
+	ATI Mobility Radeon X1800 XT, ATI Mobility Radeon X1800,
+	ATI Mobility FireGL V7200, ATI FireGL V7200, ATI FireGL V5300,
+	ATI Mobility FireGL V7100, ATI Radeon X1800, ATI Radeon X1800,
+	ATI Radeon X1800, ATI Radeon X1800, ATI Radeon X1800,
+	ATI FireGL V7300, ATI FireGL V7350, ATI Radeon X1600, ATI RV505,
+	ATI Radeon X1300/X1550, ATI Radeon X1550, ATI M54-GL,
+	ATI Mobility Radeon X1400, ATI Radeon X1300/X1550,
+	ATI Radeon X1550 64-bit, ATI Mobility Radeon X1300,
+	ATI Mobility Radeon X1300, ATI Mobility Radeon X1300,
+	ATI Mobility Radeon X1300, ATI Radeon X1300, ATI Radeon X1300,
+	ATI RV505, ATI RV505, ATI FireGL V3300, ATI FireGL V3350,
+	ATI Radeon X1300, ATI Radeon X1550 64-bit, ATI Radeon X1300/X1550,
+	ATI Radeon X1600, ATI Radeon X1300/X1550, ATI Mobility Radeon X1450,
+	ATI Radeon X1300/X1550, ATI Mobility Radeon X2300,
+	ATI Mobility Radeon X2300, ATI Mobility Radeon X1350,
+	ATI Mobility Radeon X1350, ATI Mobility Radeon X1450,
+	ATI Radeon X1300, ATI Radeon X1550, ATI Mobility Radeon X1350,
+	ATI FireMV 2250, ATI Radeon X1550 64-bit, ATI Radeon X1600,
+	ATI Radeon X1650, ATI Radeon X1600, ATI Radeon X1600,
+	ATI Mobility FireGL V5200, ATI Mobility Radeon X1600,
+	ATI Radeon X1650, ATI Radeon X1650, ATI Radeon X1600,
+	ATI Radeon X1300 XT/X1600 Pro, ATI FireGL V3400,
+	ATI Mobility FireGL V5250, ATI Mobility Radeon X1700,
+	ATI Mobility Radeon X1700 XT, ATI FireGL V5200,
+	ATI Mobility Radeon X1700, ATI Radeon X2300HD,
+	ATI Mobility Radeon HD 2300, ATI Mobility Radeon HD 2300,
+	ATI Radeon X1950, ATI Radeon X1900, ATI Radeon X1950,
+	ATI Radeon X1900, ATI Radeon X1900, ATI Radeon X1900,
+	ATI Radeon X1900, ATI Radeon X1900, ATI Radeon X1900,
+	ATI Radeon X1900, ATI Radeon X1900, ATI Radeon X1900,
+	ATI AMD Stream Processor, ATI Radeon X1900, ATI Radeon X1950,
+	ATI RV560, ATI RV560, ATI Mobility Radeon X1900, ATI RV560,
+	ATI Radeon X1950 GT, ATI RV570, ATI RV570, ATI FireGL V7400,
+	ATI RV560, ATI Radeon X1650, ATI Radeon X1650, ATI RV560,
+	ATI Radeon 9100 PRO IGP 7834, ATI Radeon Mobility 9200 IGP 7835,
+	ATI Radeon X1200, ATI Radeon X1200, ATI Radeon X1200,
+	ATI Radeon X1200, ATI Radeon X1200, ATI RS740, ATI RS740M, ATI RS740,
+	ATI RS740M, ATI Radeon HD 2900 XT, ATI Radeon HD 2900 XT,
+	ATI Radeon HD 2900 XT, ATI Radeon HD 2900 Pro, ATI Radeon HD 2900 GT,
+	ATI FireGL V8650, ATI FireGL V8600, ATI FireGL V7600,
+	ATI Radeon 4800 Series, ATI Radeon HD 4870 x2,
+	ATI Radeon 4800 Series, ATI Radeon HD 4850 x2,
+	ATI FirePro V8750 (FireGL), ATI FirePro V7760 (FireGL),
+	ATI Mobility RADEON HD 4850, ATI Mobility RADEON HD 4850 X2,
+	ATI Radeon 4800 Series, ATI FirePro RV770, AMD FireStream 9270,
+	AMD FireStream 9250, ATI FirePro V8700 (FireGL),
+	ATI Mobility RADEON HD 4870, ATI Mobility RADEON M98,
+	ATI Radeon 4800 Series, ATI Radeon 4800 Series, ATI FirePro M7750,
+	ATI M98, ATI M98, ATI M98, ATI Mobility Radeon HD 4650,
+	ATI Radeon RV730 (AGP), ATI Mobility Radeon HD 4670,
+	ATI FirePro M5750, ATI Radeon RV730 (AGP),
+	ATI RV730XT [Radeon HD 4670], ATI RADEON E4600,
+	ATI Radeon HD 4600 Series, ATI RV730 PRO [Radeon HD 4650],
+	ATI FirePro V7750 (FireGL), ATI FirePro V5700 (FireGL),
+	ATI FirePro V3750 (FireGL), ATI Mobility Radeon HD 4830,
+	ATI Mobility Radeon HD 4850, ATI FirePro M7740, ATI RV740,
+	ATI Radeon HD 4770, ATI Radeon HD 4700 Series, ATI Radeon HD 4770,
+	ATI FirePro M5750, ATI RV610, ATI Radeon HD 2400 XT,
+	ATI Radeon HD 2400 Pro, ATI Radeon HD 2400 PRO AGP, ATI FireGL V4000,
+	ATI RV610, ATI Radeon HD 2350, ATI Mobility Radeon HD 2400 XT,
+	ATI Mobility Radeon HD 2400, ATI RADEON E2400, ATI RV610,
+	ATI FireMV 2260, ATI RV670, ATI Radeon HD3870,
+	ATI Mobility Radeon HD 3850, ATI Radeon HD3850,
+	ATI Mobility Radeon HD 3850 X2, ATI RV670,
+	ATI Mobility Radeon HD 3870, ATI Mobility Radeon HD 3870 X2,
+	ATI Radeon HD3870 X2, ATI FireGL V7700, ATI Radeon HD3850,
+	ATI Radeon HD3690, AMD Firestream 9170, ATI Radeon HD 4550,
+	ATI Radeon RV710, ATI Radeon RV710, ATI Radeon HD 4350,
+	ATI Mobility Radeon 4300 Series, ATI Mobility Radeon 4500 Series,
+	ATI Mobility Radeon 4500 Series, ATI FirePro RG220, ATI RV630,
+	ATI Mobility Radeon HD 2600, ATI Mobility Radeon HD 2600 XT,
+	ATI Radeon HD 2600 XT AGP, ATI Radeon HD 2600 Pro AGP,
+	ATI Radeon HD 2600 XT, ATI Radeon HD 2600 Pro, ATI Gemini RV630,
+	ATI Gemini Mobility Radeon HD 2600 XT, ATI FireGL V5600,
+	ATI FireGL V3600, ATI Radeon HD 2600 LE,
+	ATI Mobility FireGL Graphics Processor, ATI Radeon RV710,
+	ATI Radeon HD 3470, ATI Mobility Radeon HD 3430,
+	ATI Mobility Radeon HD 3400 Series, ATI Radeon HD 3450,
+	ATI Radeon HD 3450, ATI Radeon HD 3430, ATI Radeon HD 3450,
+	ATI FirePro V3700, ATI FireMV 2450, ATI FireMV 2260, ATI FireMV 2260,
+	ATI Radeon HD 3600 Series, ATI Radeon HD 3650 AGP,
+	ATI Radeon HD 3600 PRO, ATI Radeon HD 3600 XT,
+	ATI Radeon HD 3600 PRO, ATI Mobility Radeon HD 3650,
+	ATI Mobility Radeon HD 3670, ATI Mobility FireGL V5700,
+	ATI Mobility FireGL V5725, ATI Radeon HD 3200 Graphics,
+	ATI Radeon 3100 Graphics, ATI Radeon HD 3200 Graphics,
+	ATI Radeon 3100 Graphics, ATI Radeon HD 3300 Graphics,
+	ATI Radeon HD 3200 Graphics, ATI Radeon 3000 Graphics,
+	ATI Radeon HD 4200, ATI Radeon 4100, ATI Mobility Radeon HD 4200,
+	ATI Mobility Radeon 4100, ATI Radeon HD 4290, ATI Radeon HD 4290,
+	CYPRESS, ATI FirePro (FireGL) Graphics Adapter,
+	ATI FirePro (FireGL) Graphics Adapter,
+	ATI FirePro (FireGL) Graphics Adapter, ATI Radeon HD 5800 Series,
+	ATI Radeon HD 5800 Series, ATI Radeon HD 5800 Series,
+	ATI Radeon HD 5900 Series, ATI Radeon HD 5900 Series,
+	ATI Mobility Radeon HD 5800 Series,
+	ATI Mobility Radeon HD 5800 Series,
+	ATI FirePro (FireGL) Graphics Adapter,
+	ATI FirePro (FireGL) Graphics Adapter,
+	ATI Mobility Radeon HD 5800 Series, ATI Radeon HD 5700 Series,
+	ATI Radeon HD 5700 Series, ATI Radeon HD 5700 Series,
+	ATI Mobility Radeon HD 5000 Series,
+	ATI Mobility Radeon HD 5000 Series,
+	ATI FirePro (FireGL) Graphics Adapter,
+	ATI FirePro (FireGL) Graphics Adapter, ATI Radeon HD 5670,
+	ATI Radeon HD 5570, ATI Radeon HD 5500 Series, REDWOOD,
+	ATI Mobility Radeon HD 5000 Series,
+	ATI Mobility Radeon HD 5000 Series, CEDAR, CEDAR, CEDAR,
+	ATI FirePro (FireGL) Graphics Adapter,
+	ATI FirePro (FireGL) Graphics Adapter, CEDAR, ATI Radeon HD 5450,
+	CEDAR
+[    11.991] (++) using VT number 7
+
+[    12.014] (II) Primary Device is: PCI 01@00:05:0
+[    12.015] (II) [KMS] Kernel modesetting enabled.
+[    12.015] (II) RADEON(0): Creating default Display subsection in Screen section
+	"Default Screen" for depth/fbbpp 24/32
+[    12.016] (==) RADEON(0): Depth 24, (--) framebuffer bpp 32
+[    12.016] (II) RADEON(0): Pixel depth = 24 bits stored in 4 bytes (32 bpp pixmaps)
+[    12.016] (==) RADEON(0): Default visual is TrueColor
+[    12.016] (==) RADEON(0): RGB weight 888
+[    12.016] (II) RADEON(0): Using 8 bits per RGB (8 bit DAC)
+[    12.016] (--) RADEON(0): Chipset: "ATI Radeon HD 3200 Graphics" (ChipID = 0x9612)
+[    12.016] (II) RADEON(0): PCI card detected
+[    12.016] (WW) RADEON(0): Color tiling is not yet supported on R600/R700
+[    12.016] (II) RADEON(0): KMS Color Tiling: disabled
+[    12.016] drmOpenDevice: node name is /dev/dri/card0
+[    12.016] drmOpenDevice: open result is 10, (OK)
+[    12.016] drmOpenByBusid: Searching for BusID pci:0000:01:05.0
+[    12.016] drmOpenDevice: node name is /dev/dri/card0
+[    12.017] drmOpenDevice: open result is 10, (OK)
+[    12.017] drmOpenByBusid: drmOpenMinor returns 10
+[    12.017] drmOpenByBusid: drmGetBusid reports pci:0000:01:05.0
+[    12.017] (II) RADEON(0): Output LVDS using monitor section Default Monitor
+[    12.036] (II) RADEON(0): Output VGA-0 has no monitor section
+[    12.036] (II) RADEON(0): EDID for output LVDS
+[    12.036] (II) RADEON(0): Manufacturer: AUO  Model: 205c  Serial#: 0
+[    12.036] (II) RADEON(0): Year: 2008  Week: 1
+[    12.036] (II) RADEON(0): EDID Version: 1.3
+[    12.036] (II) RADEON(0): Digital Display Input
+[    12.036] (II) RADEON(0): Max Image Size [cm]: horiz.: 26  vert.: 14
+[    12.036] (II) RADEON(0): Gamma: 2.20
+[    12.036] (II) RADEON(0): No DPMS capabilities specified
+[    12.037] (II) RADEON(0): Supported color encodings: RGB 4:4:4 YCrCb 4:4:4 
+[    12.037] (II) RADEON(0): First detailed timing is preferred mode
+[    12.037] (II) RADEON(0): redX: 0.584 redY: 0.333   greenX: 0.338 greenY: 0.571
+[    12.037] (II) RADEON(0): blueX: 0.158 blueY: 0.133   whiteX: 0.313 whiteY: 0.329
+[    12.037] (II) RADEON(0): Manufacturer's mask: 0
+[    12.037] (II) RADEON(0): Supported detailed timing:
+[    12.037] (II) RADEON(0): clock: 65.5 MHz   Image Size:  256 x 144 mm
+[    12.037] (II) RADEON(0): h_active: 1366  h_sync: 1390  h_sync_end 1406 h_blank_end 1406 h_border: 0
+[    12.037] (II) RADEON(0): v_active: 768  v_sync: 770  v_sync_end 774 v_blanking: 776 v_border: 0
+[    12.037] (II) RADEON(0): Unknown vendor-specific block f
+[    12.037] (II) RADEON(0):  AUO
+[    12.037] (II) RADEON(0):  B116XW02 V0
+[    12.037] (II) RADEON(0): EDID (in hex):
+[    12.037] (II) RADEON(0): 	00ffffffffffff0006af5c2000000000
+[    12.037] (II) RADEON(0): 	01120103801a0e780a99859555569228
+[    12.037] (II) RADEON(0): 	22505400000001010101010101010101
+[    12.037] (II) RADEON(0): 	01010101010196195628500008301810
+[    12.037] (II) RADEON(0): 	24000090100000180000000f00000000
+[    12.037] (II) RADEON(0): 	00000000000000000020000000fe0041
+[    12.037] (II) RADEON(0): 	554f0a202020202020202020000000fe
+[    12.037] (II) RADEON(0): 	004231313658573032205630200a00f8
+[    12.037] (II) RADEON(0): EDID vendor "AUO", prod id 8284
+[    12.037] (II) RADEON(0): Printing DDC gathered Modelines:
+[    12.037] (II) RADEON(0): Modeline "1366x768"x0.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+[    12.037] (II) RADEON(0): Printing probed modes for output LVDS
+[    12.037] (II) RADEON(0): Modeline "1366x768"x60.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+[    12.037] (II) RADEON(0): Modeline "1280x720"x59.9   74.50  1280 1344 1472 1664  720 723 728 748 -hsync +vsync (44.8 kHz)
+[    12.037] (II) RADEON(0): Modeline "1152x768"x59.8   71.75  1152 1216 1328 1504  768 771 781 798 -hsync +vsync (47.7 kHz)
+[    12.037] (II) RADEON(0): Modeline "1024x768"x59.9   63.50  1024 1072 1176 1328  768 771 775 798 -hsync +vsync (47.8 kHz)
+[    12.037] (II) RADEON(0): Modeline "800x600"x59.9   38.25  800 832 912 1024  600 603 607 624 -hsync +vsync (37.4 kHz)
+[    12.037] (II) RADEON(0): Modeline "848x480"x59.7   31.50  848 872 952 1056  480 483 493 500 -hsync +vsync (29.8 kHz)
+[    12.038] (II) RADEON(0): Modeline "720x480"x59.7   26.75  720 744 808 896  480 483 493 500 -hsync +vsync (29.9 kHz)
+[    12.038] (II) RADEON(0): Modeline "640x480"x59.4   23.75  640 664 720 800  480 483 487 500 -hsync +vsync (29.7 kHz)
+[    12.056] (II) RADEON(0): EDID for output VGA-0
+[    12.056] (II) RADEON(0): Output LVDS connected
+[    12.056] (II) RADEON(0): Output VGA-0 disconnected
+[    12.056] (II) RADEON(0): Using exact sizes for initial modes
+[    12.056] (II) RADEON(0): Output LVDS using initial mode 1366x768
+[    12.056] (II) RADEON(0): Using default gamma of (1.0, 1.0, 1.0) unless otherwise stated.
+[    12.056] (II) RADEON(0): mem size init: gart size :1fdff000 vram size: s:15000000 visible:14ba0000
+[    12.056] (II) RADEON(0): EXA: Driver will allow EXA pixmaps in VRAM
+[    12.056] (**) RADEON(0): Display dimensions: (260, 140) mm
+[    12.056] (**) RADEON(0): DPI set to (133, 139)
+[    12.056] (II) Loading sub module "fb"
+[    12.056] (II) LoadModule: "fb"
+[    12.057] (II) Loading /usr/lib64/xorg/modules/libfb.so
+[    12.058] (II) Module fb: vendor="X.Org Foundation"
+[    12.058] 	compiled for 1.8.0, module version = 1.0.0
+[    12.058] 	ABI class: X.Org ANSI C Emulation, version 0.4
+[    12.058] (II) Loading sub module "ramdac"
+[    12.058] (II) LoadModule: "ramdac"
+[    12.058] (II) Module "ramdac" already built-in
+[    12.058] (II) Loading sub module "exa"
+[    12.058] (II) LoadModule: "exa"
+[    12.060] (II) Loading /usr/lib64/xorg/modules/libexa.so
+[    12.060] (II) Module exa: vendor="X.Org Foundation"
+[    12.060] 	compiled for 1.8.0, module version = 2.5.0
+[    12.060] 	ABI class: X.Org Video Driver, version 7.0
+[    12.060] (--) Depth 24 pixmap format is 32 bpp
+[    12.060] (II) RADEON(0): [DRI2] Setup complete
+[    12.060] (II) RADEON(0): [DRI2]   DRI driver: r600
+[    12.061] (II) RADEON(0): Front buffer size: 4608K
+[    12.061] (II) RADEON(0): VRAM usage limit set to 301478K
+[    12.061] (==) RADEON(0): Backing store disabled
+[    12.061] (II) RADEON(0): Direct rendering enabled
+[    12.061] (II) RADEON(0): Setting EXA maxPitchBytes
+[    12.061] (II) EXA(0): Driver allocated offscreen pixmaps
+[    12.061] (II) EXA(0): Driver registered support for the following operations:
+[    12.061] (II)         Solid
+[    12.061] (II)         Copy
+[    12.061] (II)         Composite (RENDER acceleration)
+[    12.061] (II)         UploadToScreen
+[    12.061] (II)         DownloadFromScreen
+[    12.061] (II) RADEON(0): Acceleration enabled
+[    12.061] (==) RADEON(0): DPMS enabled
+[    12.061] (==) RADEON(0): Silken mouse enabled
+[    12.062] (II) RADEON(0): Set up textured video
+[    12.062] (II) RADEON(0): RandR 1.2 enabled, ignore the following RandR disabled message.
+[    12.063] (--) RandR disabled
+[    12.063] (II) Initializing built-in extension Generic Event Extension
+[    12.063] (II) Initializing built-in extension SHAPE
+[    12.063] (II) Initializing built-in extension MIT-SHM
+[    12.063] (II) Initializing built-in extension XInputExtension
+[    12.063] (II) Initializing built-in extension XTEST
+[    12.063] (II) Initializing built-in extension BIG-REQUESTS
+[    12.063] (II) Initializing built-in extension SYNC
+[    12.063] (II) Initializing built-in extension XKEYBOARD
+[    12.063] (II) Initializing built-in extension XC-MISC
+[    12.063] (II) Initializing built-in extension SECURITY
+[    12.063] (II) Initializing built-in extension XINERAMA
+[    12.063] (II) Initializing built-in extension XFIXES
+[    12.063] (II) Initializing built-in extension RENDER
+[    12.063] (II) Initializing built-in extension RANDR
+[    12.063] (II) Initializing built-in extension COMPOSITE
+[    12.063] (II) Initializing built-in extension DAMAGE
+[    12.099] (II) AIGLX: enabled GLX_MESA_copy_sub_buffer
+[    12.099] (II) AIGLX: enabled GLX_INTEL_swap_event
+[    12.099] (II) AIGLX: enabled GLX_SGI_make_current_read
+[    12.099] (II) AIGLX: GLX_EXT_texture_from_pixmap backed by buffer objects
+[    12.099] (II) AIGLX: Loaded and initialized /usr/lib64/dri/r600_dri.so
+[    12.099] (II) GLX: Initialized DRI2 GL provider for screen 0
+[    12.100] (II) RADEON(0): Setting screen physical size to 361 x 203
+[    12.267] (II) XKB: reuse xkmfile /var/lib/xkb/compiled/server-8AA988DD479FAABEC4FC3CCCF4CC29B4948840B4.xkm
+[    12.339] (II) config/udev: Adding input device Power Button (/dev/input/event6)
+[    12.339] (**) Power Button: Applying InputClass "evdev keyboard catchall"
+[    12.339] (**) Power Button: Applying InputClass "LocalKeyboard"
+[    12.339] (II) LoadModule: "evdev"
+[    12.340] (II) Loading /usr/lib64/xorg/modules/input/evdev_drv.so
+[    12.340] (II) Module evdev: vendor="X.Org Foundation"
+[    12.341] 	compiled for 1.8.0, module version = 2.4.0
+[    12.341] 	Module class: X.Org XInput Driver
+[    12.341] 	ABI class: X.Org XInput driver, version 9.0
+[    12.341] (**) Power Button: always reports core events
+[    12.341] (**) Power Button: Device: "/dev/input/event6"
+[    12.348] (II) Power Button: Found keys
+[    12.348] (II) Power Button: Configuring as keyboard
+[    12.348] (II) XINPUT: Adding extended input device "Power Button" (type: KEYBOARD)
+[    12.348] (**) Option "xkb_rules" "evdev"
+[    12.348] (**) Option "xkb_model" "evdev"
+[    12.348] (**) Option "xkb_layout" "pl"
+[    12.348] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.352] (II) XKB: reuse xkmfile /var/lib/xkb/compiled/server-35F2FF34338040D067AEC80497D56D83D2A286EF.xkm
+[    12.360] (II) config/udev: Adding input device Video Bus (/dev/input/event7)
+[    12.361] (**) Video Bus: Applying InputClass "evdev keyboard catchall"
+[    12.361] (**) Video Bus: Applying InputClass "LocalKeyboard"
+[    12.361] (**) Video Bus: always reports core events
+[    12.361] (**) Video Bus: Device: "/dev/input/event7"
+[    12.372] (II) Video Bus: Found keys
+[    12.372] (II) Video Bus: Configuring as keyboard
+[    12.372] (II) XINPUT: Adding extended input device "Video Bus" (type: KEYBOARD)
+[    12.372] (**) Option "xkb_rules" "evdev"
+[    12.372] (**) Option "xkb_model" "evdev"
+[    12.372] (**) Option "xkb_layout" "pl"
+[    12.372] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.373] (II) config/udev: Adding input device Power Button (/dev/input/event4)
+[    12.374] (**) Power Button: Applying InputClass "evdev keyboard catchall"
+[    12.374] (**) Power Button: Applying InputClass "LocalKeyboard"
+[    12.374] (**) Power Button: always reports core events
+[    12.374] (**) Power Button: Device: "/dev/input/event4"
+[    12.380] (II) Power Button: Found keys
+[    12.380] (II) Power Button: Configuring as keyboard
+[    12.380] (II) XINPUT: Adding extended input device "Power Button" (type: KEYBOARD)
+[    12.380] (**) Option "xkb_rules" "evdev"
+[    12.380] (**) Option "xkb_model" "evdev"
+[    12.380] (**) Option "xkb_layout" "pl"
+[    12.380] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.381] (II) config/udev: Adding input device Lid Switch (/dev/input/event5)
+[    12.381] (EE) No input driver/identifier specified (ignoring)
+[    12.382] (II) config/udev: Adding input device Sleep Button (/dev/input/event3)
+[    12.382] (**) Sleep Button: Applying InputClass "evdev keyboard catchall"
+[    12.382] (**) Sleep Button: Applying InputClass "LocalKeyboard"
+[    12.382] (**) Sleep Button: always reports core events
+[    12.382] (**) Sleep Button: Device: "/dev/input/event3"
+[    12.392] (II) Sleep Button: Found keys
+[    12.392] (II) Sleep Button: Configuring as keyboard
+[    12.392] (II) XINPUT: Adding extended input device "Sleep Button" (type: KEYBOARD)
+[    12.392] (**) Option "xkb_rules" "evdev"
+[    12.392] (**) Option "xkb_model" "evdev"
+[    12.392] (**) Option "xkb_layout" "pl"
+[    12.392] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.401] (II) config/udev: Adding input device Logitech USB Receiver (/dev/input/event1)
+[    12.401] (**) Logitech USB Receiver: Applying InputClass "evdev keyboard catchall"
+[    12.401] (**) Logitech USB Receiver: Applying InputClass "LocalKeyboard"
+[    12.401] (**) Logitech USB Receiver: always reports core events
+[    12.401] (**) Logitech USB Receiver: Device: "/dev/input/event1"
+[    12.408] (II) Logitech USB Receiver: Found keys
+[    12.408] (II) Logitech USB Receiver: Configuring as keyboard
+[    12.408] (II) XINPUT: Adding extended input device "Logitech USB Receiver" (type: KEYBOARD)
+[    12.408] (**) Option "xkb_rules" "evdev"
+[    12.408] (**) Option "xkb_model" "evdev"
+[    12.408] (**) Option "xkb_layout" "pl"
+[    12.408] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.409] (II) config/udev: Adding input device Logitech USB Receiver (/dev/input/event2)
+[    12.409] (**) Logitech USB Receiver: Applying InputClass "evdev pointer catchall"
+[    12.409] (**) Logitech USB Receiver: Applying InputClass "evdev keyboard catchall"
+[    12.409] (**) Logitech USB Receiver: Applying InputClass "LocalKeyboard"
+[    12.409] (**) Logitech USB Receiver: always reports core events
+[    12.409] (**) Logitech USB Receiver: Device: "/dev/input/event2"
+[    12.416] (II) Logitech USB Receiver: Found 20 mouse buttons
+[    12.416] (II) Logitech USB Receiver: Found scroll wheel(s)
+[    12.416] (II) Logitech USB Receiver: Found relative axes
+[    12.416] (II) Logitech USB Receiver: Found x and y relative axes
+[    12.416] (II) Logitech USB Receiver: Found absolute axes
+[    12.416] (II) Logitech USB Receiver: Found keys
+[    12.416] (II) Logitech USB Receiver: Configuring as mouse
+[    12.416] (II) Logitech USB Receiver: Configuring as keyboard
+[    12.416] (**) Logitech USB Receiver: YAxisMapping: buttons 4 and 5
+[    12.416] (**) Logitech USB Receiver: EmulateWheelButton: 4, EmulateWheelInertia: 10, EmulateWheelTimeout: 200
+[    12.416] (II) XINPUT: Adding extended input device "Logitech USB Receiver" (type: KEYBOARD)
+[    12.416] (**) Option "xkb_rules" "evdev"
+[    12.416] (**) Option "xkb_model" "evdev"
+[    12.416] (**) Option "xkb_layout" "pl"
+[    12.416] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.417] (**) Logitech USB Receiver: (accel) keeping acceleration scheme 1
+[    12.417] (**) Logitech USB Receiver: (accel) acceleration profile 0
+[    12.417] (**) Logitech USB Receiver: (accel) acceleration factor: 2.000
+[    12.417] (**) Logitech USB Receiver: (accel) acceleration threshold: 4
+[    12.417] (II) Logitech USB Receiver: initialized for relative axes.
+[    12.417] (WW) Logitech USB Receiver: ignoring absolute axes.
+[    12.417] (II) config/udev: Adding input device Logitech USB Receiver (/dev/input/mouse0)
+[    12.417] (**) Logitech USB Receiver: Applying InputClass "LocalKeyboard"
+[    12.417] (EE) No input driver/identifier specified (ignoring)
+[    12.422] (II) config/udev: Adding input device HDA Digital PCBeep (/dev/input/event8)
+[    12.422] (EE) No input driver/identifier specified (ignoring)
+[    12.423] (II) config/udev: Adding input device HDA ATI SB Headphone (/dev/input/event10)
+[    12.423] (EE) No input driver/identifier specified (ignoring)
+[    12.423] (II) config/udev: Adding input device HDA ATI SB Mic (/dev/input/event9)
+[    12.423] (EE) No input driver/identifier specified (ignoring)
+[    12.425] (II) config/udev: Adding input device AT Translated Set 2 keyboard (/dev/input/event0)
+[    12.426] (**) AT Translated Set 2 keyboard: Applying InputClass "evdev keyboard catchall"
+[    12.426] (**) AT Translated Set 2 keyboard: Applying InputClass "LocalKeyboard"
+[    12.426] (**) AT Translated Set 2 keyboard: always reports core events
+[    12.426] (**) AT Translated Set 2 keyboard: Device: "/dev/input/event0"
+[    12.432] (II) AT Translated Set 2 keyboard: Found keys
+[    12.432] (II) AT Translated Set 2 keyboard: Configuring as keyboard
+[    12.432] (II) XINPUT: Adding extended input device "AT Translated Set 2 keyboard" (type: KEYBOARD)
+[    12.432] (**) Option "xkb_rules" "evdev"
+[    12.432] (**) Option "xkb_model" "evdev"
+[    12.432] (**) Option "xkb_layout" "pl"
+[    12.432] (**) Option "xkb_options" "terminate:ctrl_alt_bksp"
+[    12.433] (II) config/udev: Adding input device ImPS/2 Generic Wheel Mouse (/dev/input/event11)
+[    12.433] (**) ImPS/2 Generic Wheel Mouse: Applying InputClass "evdev pointer catchall"
+[    12.433] (**) ImPS/2 Generic Wheel Mouse: always reports core events
+[    12.433] (**) ImPS/2 Generic Wheel Mouse: Device: "/dev/input/event11"
+[    12.440] (II) ImPS/2 Generic Wheel Mouse: Found 3 mouse buttons
+[    12.440] (II) ImPS/2 Generic Wheel Mouse: Found scroll wheel(s)
+[    12.440] (II) ImPS/2 Generic Wheel Mouse: Found relative axes
+[    12.440] (II) ImPS/2 Generic Wheel Mouse: Found x and y relative axes
+[    12.440] (II) ImPS/2 Generic Wheel Mouse: Configuring as mouse
+[    12.440] (**) ImPS/2 Generic Wheel Mouse: YAxisMapping: buttons 4 and 5
+[    12.440] (**) ImPS/2 Generic Wheel Mouse: EmulateWheelButton: 4, EmulateWheelInertia: 10, EmulateWheelTimeout: 200
+[    12.440] (II) XINPUT: Adding extended input device "ImPS/2 Generic Wheel Mouse" (type: MOUSE)
+[    12.440] (**) ImPS/2 Generic Wheel Mouse: (accel) keeping acceleration scheme 1
+[    12.440] (**) ImPS/2 Generic Wheel Mouse: (accel) acceleration profile 0
+[    12.440] (**) ImPS/2 Generic Wheel Mouse: (accel) acceleration factor: 2.000
+[    12.440] (**) ImPS/2 Generic Wheel Mouse: (accel) acceleration threshold: 4
+[    12.440] (II) ImPS/2 Generic Wheel Mouse: initialized for relative axes.
+[    12.441] (II) config/udev: Adding input device ImPS/2 Generic Wheel Mouse (/dev/input/mouse1)
+[    12.441] (EE) No input driver/identifier specified (ignoring)
+[    13.288] (II) RADEON(0): EDID vendor "AUO", prod id 8284
+[    13.288] (II) RADEON(0): Printing DDC gathered Modelines:
+[    13.288] (II) RADEON(0): Modeline "1366x768"x0.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+[    25.774] (II) RADEON(0): EDID vendor "AUO", prod id 8284
+[    25.774] (II) RADEON(0): Printing DDC gathered Modelines:
+[    25.774] (II) RADEON(0): Modeline "1366x768"x0.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+[    25.898] (II) RADEON(0): EDID vendor "AUO", prod id 8284
+[    25.898] (II) RADEON(0): Printing DDC gathered Modelines:
+[    25.898] (II) RADEON(0): Modeline "1366x768"x0.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+[    41.059] (II) RADEON(0): EDID vendor "AUO", prod id 8284
+[    41.059] (II) RADEON(0): Printing DDC gathered Modelines:
+[    41.059] (II) RADEON(0): Modeline "1366x768"x0.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+[    91.756] (II) AIGLX: Suspending AIGLX clients for VT switch
+[   100.514] (II) Open ACPI successful (/var/run/acpid.socket)
+[   100.515] (II) AIGLX: Resuming AIGLX clients after VT switch
+[   100.515] (II) RADEON(0): EDID vendor "AUO", prod id 8284
+[   100.516] (II) RADEON(0): Printing DDC gathered Modelines:
+[   100.516] (II) RADEON(0): Modeline "1366x768"x0.0   65.50  1366 1390 1406 1406  768 770 774 776 -hsync -vsync (46.6 kHz)
+
+--Boundary-00=_T5G7MuddZyFUcQQ--
