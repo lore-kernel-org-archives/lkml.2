@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0KXUja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 15:39:30 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:33685 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754587Ab0KXUj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 15:39:29 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+MPlMeKkOMhiIyVOxdjPhtHr+USZT0Lbs0waWnFU
-	FjLx4RPKnHDoX+
-Subject: Re: mmotm 2010-11-23 + autogroups -> inconsistent lock state
-From: Mike Galbraith <efault@gmx.de>
-To: Valdis.Kletnieks@vt.edu
-Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1290630325.4050.12.camel@maggy.simson.net>
-References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-	 <6003.1290574869@localhost>  <1290630325.4050.12.camel@maggy.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Nov 2010 13:39:11 -0700
-Message-ID: <1290631151.4050.19.camel@maggy.simson.net>
+	id S1756538Ab0KXUo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 15:44:28 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40738
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753172Ab0KXUo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 15:44:27 -0500
+Date: Wed, 24 Nov 2010 12:44:52 -0800 (PST)
+Message-Id: <20101124.124452.212692883.davem@davemloft.net>
+To: caoco2002@yahoo.com
+Cc: shemminger@vyatta.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Unplug ethernet cable, the route persists. Why?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <144174.46619.qm@web63401.mail.re1.yahoo.com>
+References: <20101124121826.39dd6ed1@nehalam>
+	<144174.46619.qm@web63401.mail.re1.yahoo.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 13:25 -0700, Mike Galbraith wrote:
+From: Mike Caoco <caoco2002@yahoo.com>
+Date: Wed, 24 Nov 2010 12:29:43 -0800 (PST)
 
-> The below should run gripe free.
+> Even when no NetworkManager/Quagga is present, I think it is a
+> legitimate reason to recompute the route when a cable is unplugged,
+> which should not be a frequent event unless when under error
+> conditions.
 
-In <= 2.6.37-rc3 kernel I mean.  The tip version is still explosive.
+Cards periodically reset themselves, faulty switchs flap occaisionally,
+this is life and it shouldn't cause route table recomputations across
+your entire region.
 
-	-Mike
-
+Also Stephen listed places where such policy should be employed in
+userspace, he absolutely did not say they should act that way by
+default.
