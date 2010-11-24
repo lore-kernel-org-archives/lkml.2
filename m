@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab0KXAfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:35:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59669 "EHLO
+	id S1756116Ab0KXAgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:36:35 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63132 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab0KXAfm (ORCPT
+	with ESMTP id S1755203Ab0KXAge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:35:42 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=fIAfbhESzNEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=Yj3xZIQRpWuvJPA9bdoA:9 a=WVX5W1_AfFtbkA2vsWXQk4R88tIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 23 Nov 2010 19:36:34 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=dloADZ4KP7gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=fw9oxepunfSf3KicNw0A:9 a=n793RStf4hkp7UPiXo3XyxH9QPMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/3] jump label: move jump table to r/w section
+Subject: Re: [PATCH 0/3] jump label: updates for 2.6.37
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
         roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20101124002703.GB29158@Krystal>
+In-Reply-To: <1290557416.30543.420.camel@gandalf.stny.rr.com>
 References: <cover.1290546539.git.jbaron@redhat.com>
-	 <bbc34a86a4cf4addcde1b85d7fa7faecc0966c03.1290546539.git.jbaron@redhat.com>
-	 <20101123235519.GB21549@Krystal>
-	 <1290557049.30543.417.camel@gandalf.stny.rr.com>
-	 <20101124002703.GB29158@Krystal>
+	 <4CEC33F6.9090808@zytor.com>
+	 <1290553914.30543.408.camel@gandalf.stny.rr.com>
+	 <4CEC4EF3.4000304@zytor.com>
+	 <1290557416.30543.420.camel@gandalf.stny.rr.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 23 Nov 2010 19:35:39 -0500
-Message-ID: <1290558939.30543.421.camel@gandalf.stny.rr.com>
+Date: Tue, 23 Nov 2010 19:36:31 -0500
+Message-ID: <1290558991.30543.422.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -35,14 +35,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 19:27 -0500, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
+On Tue, 2010-11-23 at 19:10 -0500, Steven Rostedt wrote:
 
-> The lack of proper alignment did cause nasty hard-to-identify/reproduce
-> regressions based on the compiler used, target platform and data layout.
-> It's up to you, but I'd be much more comfortable merging this in 2.6.37.
+> So you would rather have it as an if statement? Something like this:
+> 
+> 	if (unlikely(JUMP_LABEL(key)))
+> 		__DO_TRACE(....);
+> 
+> (Note, I like the above better too)
+> 
 
-Hmm, I may add a patch on top to apply it.
+I do like this better, but this change should wait till 2.6.38.
 
 -- Steve
 
