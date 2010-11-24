@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab0KXN4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 08:56:08 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50107 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab0KXN4G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 08:56:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Rmgpil6ACIkJO7dPZkHwx7VCzAuD8T+lZyamX6wP4FvxDucYTOWNRP6SOvxK12bheY
-         eyO0IG4XkZ9kxToAKY5a6jmajfdfBWcmwNHk/OpDaYyPOMV1DR4meWTsQevu/6jvGAAt
-         0x/ZDZNs6Ci2hG1bZMeolKzXw3jsoo6DNTXh4=
+	id S1755327Ab0KXN4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 08:56:15 -0500
+Received: from www.tglx.de ([62.245.132.106]:41262 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755279Ab0KXN4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 08:56:14 -0500
+Date: Wed, 24 Nov 2010 14:56:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paul Mundt <lethal@linux-sh.org>
+cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [question] NR_IRQS in genirq
+In-Reply-To: <20101124084653.GG2212@linux-sh.org>
+Message-ID: <alpine.LFD.2.00.1011241455130.2900@localhost6.localdomain6>
+References: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com> <20101124084653.GG2212@linux-sh.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-Date: Wed, 24 Nov 2010 14:56:04 +0100
-Message-ID: <AANLkTi=GvVx76w=kbC_E1wunAe3VSYZDEopMH27aoBX5@mail.gmail.com>
-Subject: Re: mmotm 2010-11-23-16-12 uploaded
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ave
+On Wed, 24 Nov 2010, Paul Mundt wrote:
 
-2010/11/24  <akpm@linux-foundation.org>:
-> The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+> On Wed, Nov 24, 2010 at 03:28:37PM +0800, Haojian Zhuang wrote:
+> > Hi all,
+> > 
+> > I'm using the latest kernel 2.6.37-rc1. Now I met some issues on genirq.
+> > 
+> > 1. While SPARSE IRQ is enabled, nr_irqs may be larger than NR_IRQS.
+> > But the allocated_irqs bitmap (kernel/irq/irqdesc.c) is restricted in
+> > NR_IRQS. Is it an issue?
+> > 
+> > 2. irqs_resend bitmap of kernel/irq/resend.c is also restricted in
+> > NR_IRQS. Is it an issue, too?
+> > 
+> Perhaps something like:
+> 
+> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+> index 9988d03..11bd76c 100644
+> --- a/kernel/irq/irqdesc.c
+> +++ b/kernel/irq/irqdesc.c
+> @@ -215,6 +215,11 @@ int __init early_irq_init(void)
+>  	initcnt = arch_probe_nr_irqs();
+>  	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
+>  
+> +	if (unlikely(nr_irqs > NR_IRQS)) {
+> +		WARN(1, "Probed more than NR_IRQS, chomping.\n");
+> +		nr_irqs = NR_IRQS;
+> +	}
 
-So far, so good - eight builds and one error (AFAICS known issue)
+Yep, we need that sanity check, but the WARN() is overkill as we
+already know the call chain :)
 
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-drivers/built-in.o: In function `timblogiw_close':
-/home/test/linux-2.6-mm/drivers/media/video/timblogiw.c:704: undefined
-reference to `dma_release_channel'
-drivers/built-in.o: In function `buffer_release':
-/home/test/linux-2.6-mm/drivers/media/video/timblogiw.c:595: undefined
-reference to `dma_sync_wait'
-drivers/built-in.o: In function `timblogiw_open':
-/home/test/linux-2.6-mm/drivers/media/video/timblogiw.c:671: undefined
-reference to `__dma_request_channel'
-make[1]: *** [.tmp_vmlinux1] Error 1
-make: *** [sub-make] Error 2
+Thanks,
 
-
-
-
-
-
--- 
-Slawa!
-N.P.S.
-
-Chwa³a tobie, Szatanie, cze¶æ na wysoko¶ciach
-Nieba, gdzie królowa³e¶, chwa³a w g³êboko¶ciach
-Piek³a, gdzie zwyciê¿ony, trwasz w dumnym milczeniu!
-Uczyñ, niechaj ma dusza spocznie z Tob± w cieniu
-Drzewa Wiedzy, gdy swoje konary rozwinie,
-Jak sklepienie ko¶cio³a, który nie przeminie!
+	tglx
