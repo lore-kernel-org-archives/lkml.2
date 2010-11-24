@@ -1,173 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0KXALi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:11:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:57571 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755288Ab0KXALh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:11:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,245,1288594800"; 
-   d="scan'208";a="629719867"
-Subject: Re: [patch] x86: avoid unnecessary smp alternatives switch during
- suspend/resume
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Nigel Cunningham <lkml@nigelcunningham.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ben Gamari <bgamari@gmail.com>, xiyou.wangcong@gmail.com,
-        Borislav Petkov <bp@alien8.de>
-In-Reply-To: <4CE8E60D.9000303@nigelcunningham.com.au>
-References: <1290211764.2637.8.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <4CE8E60D.9000303@nigelcunningham.com.au>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 23 Nov 2010 16:11:40 -0800
-Message-Id: <1290557500.4946.8.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1755479Ab0KXAMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:12:16 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60484 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab0KXAMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 19:12:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bx3JPeHaQjUbZ330MGCEv0sZyMDIj9jyeqImOtfDdhLTlzZ/XClYaR9oH4T51wcmeK
+         09EULXy9y7qHxhf5bqhzzO1c4AIKKN3JjEYA8SO7kpN1xxcL8w0WGpVBv4PJY9EO62Wk
+         5I9WfNBH0QSS/vpvfdRXzD68q1MqEOzYR3JG4=
+MIME-Version: 1.0
+In-Reply-To: <20101123222458.GB20283@core.coreip.homeip.net>
+References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+	<20101122075554.GA27300@core.coreip.homeip.net>
+	<AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+	<20101123222458.GB20283@core.coreip.homeip.net>
+Date: Tue, 23 Nov 2010 16:12:13 -0800
+Message-ID: <AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
+Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
+From: Ping Cheng <pinglinux@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-21 at 01:27 -0800, Nigel Cunningham wrote:
-> We have a few others things that want to modify their behaviour 
-> according to whether we're doing the atomic copy/restore.
+On Tue, Nov 23, 2010 at 2:24 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+>> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
+>> > currently touching the surface of the device. Buttons are expected to be
+>> > always present and can change their state regardless of what tool is
+>> > being used at the moment. I.e. The full hardware state (between
+>> > EV_SYN/SYN_REPORT) could be, for example,
+>> >
+>> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
+>> > BTN_2) or
+>> >
+>> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
+>> >
+>> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
+>> > BTN_TOOL_PEN or any other BTN_TOOL_*.
+>>
+>> You are right. The tablet buttons can go with one of those other
+>> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
+>> tablet buttons.
+>>
+>> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
+>> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
+>> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
+>> (refer to wacom_wac.c line 622 to 665).
+>>
+>> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
+>> it, the two LEFT and RIGHT buttons will have a hard time to tell the
+>> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
+>> worst case could be the LEFT/RIGHT sent later overwrites the earlier
+>> ones.
+>>
+>> We could do some guesswork in the user land to figure out which
+>> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
+>> happen. But, it would be much cheaper and more reliable if we can tell
+>> the user land where those LEFT and RIGHT come from. This is the whole
+>> purpose of the kernel driver, isn't it?
+>
+> What would userspace want to figure what physical button was pressed?
+> Input events convey _actions_, i.e. BTN_LEFT means that user pressed
+> primary button on the device. It does not matter if it was pressed on
+> tablet or the mouse/lens; the response should be the same.
 
-What are these other things and shouldn't they be using the smp_mode in
-arch/x86/kernel/alternative.c ? Perhaps we need an API to export this
-for others to use?
+You're right, if the user wants a LEFT click. In a lot of cases, they
+want to translate it into something else. LEFT is only a default value
+that we give them if they do nothing.
 
->  Perhaps it 
-> would be an idea to just use a single flag, perhaps a value for 
-> system_state?
+> If you expect different response, depending on which physical button is
+> pressed, then they should emit different BTN_* events. If you are
+> concerned that some users might want to have the same actions while
+> others want different actions - then please implement key remapping in
+> the driver.
 
-I initially thought of system_state but as Peter mentioned, I was
-worried that the system_state modification in this path might break some
-suspend/resume code flow.
+That is exactly what I am trying to convince you. Without being able
+to tell one button event from the other, even just logically, how can
+I and other clients remap them?
 
-Anyways appended a slightly modified patch that uses similar flow like
-the existing arch_enable_nonboot_cpus_{begin, end}
+> If you want to treat touch and pen as completely independent devices -
+> we can do that too but as you remember there are some issues with
+> "pairing" of the devices.
 
-thanks,
-suresh
----
+No, this issue has nothing to do with separating pen and touch
+devices. This is for BUTTONS only. Those button events can come from
+the physical tools (pen, mouse, lens, etc.) or the tablet itself.
+Without knowing that the button events are from the ones that
+physically sit on the tablet, it may mess up with the buttons that are
+from the physical tools.
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: x86: avoid unnecessary smp alternatives switch during suspend/resume
+You might have mixed my BTN_TOOL_TOUCH request with this patch.
 
-During suspend, we disable all the non boot cpus. And during resume we bring
-them all back again. So no need to do alternatives_smp_switch() in between.
-
-On my core 2 based laptop, this speeds up the suspend path by 15msec and the
-resume path by 5 msec (suspend/resume speed up differences can be attributed
-to the different P-states that the cpu is in during suspend/resume).
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/alternative.h |    1 +
- arch/x86/kernel/alternative.c      |    3 ++-
- arch/x86/kernel/smpboot.c          |   14 ++++++++++++++
- kernel/cpu.c                       |   11 +++++++++++
- 4 files changed, 28 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 76561d2..01171f6 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -66,6 +66,7 @@ extern void alternatives_smp_module_add(struct module *mod, char *name,
- extern void alternatives_smp_module_del(struct module *mod);
- extern void alternatives_smp_switch(int smp);
- extern int alternatives_text_reserved(void *start, void *end);
-+extern bool skip_smp_alternatives;
- #else
- static inline void alternatives_smp_module_add(struct module *mod, char *name,
- 					       void *locks, void *locks_end,
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 5079f24..9f98eb4 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -353,6 +353,7 @@ void __init_or_module alternatives_smp_module_del(struct module *mod)
- 	mutex_unlock(&smp_alt);
- }
- 
-+bool skip_smp_alternatives;
- void alternatives_smp_switch(int smp)
- {
- 	struct smp_alt_module *mod;
-@@ -368,7 +369,7 @@ void alternatives_smp_switch(int smp)
- 	printk("lockdep: fixing up alternatives.\n");
- #endif
- 
--	if (noreplace_smp || smp_alt_once)
-+	if (noreplace_smp || smp_alt_once || skip_smp_alternatives)
- 		return;
- 	BUG_ON(!smp && (num_online_cpus() > 1));
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index f0a0624..589db1d 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1158,6 +1158,20 @@ out:
- 	preempt_enable();
- }
- 
-+void arch_disable_nonboot_cpus_begin(void)
-+{
-+	/*
-+	 * Avoid the smp alternatives switch during the disable_nonboot_cpus().
-+	 * In the suspend path, we will be back in the SMP mode shortly anyways.
-+	 */
-+	skip_smp_alternatives = true;
-+}
-+
-+void arch_disable_nonboot_cpus_end(void)
-+{
-+	skip_smp_alternatives = false;
-+}
-+
- void arch_enable_nonboot_cpus_begin(void)
- {
- 	set_mtrr_aps_delayed_init();
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index cb7a1ef..156cc55 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -384,6 +384,14 @@ out:
- #ifdef CONFIG_PM_SLEEP_SMP
- static cpumask_var_t frozen_cpus;
- 
-+void __weak arch_disable_nonboot_cpus_begin(void)
-+{
-+}
-+
-+void __weak arch_disable_nonboot_cpus_end(void)
-+{
-+}
-+
- int disable_nonboot_cpus(void)
- {
- 	int cpu, first_cpu, error = 0;
-@@ -395,6 +403,7 @@ int disable_nonboot_cpus(void)
- 	 * with the userspace trying to use the CPU hotplug at the same time
- 	 */
- 	cpumask_clear(frozen_cpus);
-+	arch_disable_nonboot_cpus_begin();
- 
- 	printk("Disabling non-boot CPUs ...\n");
- 	for_each_online_cpu(cpu) {
-@@ -410,6 +419,8 @@ int disable_nonboot_cpus(void)
- 		}
- 	}
- 
-+	arch_disable_nonboot_cpus_end();
-+
- 	if (!error) {
- 		BUG_ON(num_online_cpus() > 1);
- 		/* Make sure the CPUs won't be enabled by someone else */
-
-
+Ping
