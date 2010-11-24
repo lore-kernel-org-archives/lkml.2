@@ -1,101 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab0KXA60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:58:26 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50952 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab0KXA6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:58:24 -0500
-Date: Tue, 23 Nov 2010 16:58:20 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states
- after extended grace periods
-Message-ID: <20101124005820.GH8056@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
- <1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
+	id S1755730Ab0KXBC4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 20:02:56 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:58777 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755421Ab0KXBCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 20:02:55 -0500
+Date: Tue, 23 Nov 2010 20:02:53 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless)
+	fastpaths for slub
+Message-ID: <20101124010252.GB8264@Krystal>
+References: <20101123235139.908255844@linux.com> <20101123235201.758191189@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <20101123235201.758191189@linux.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 19:54:31 up  5:57,  3 users,  load average: 0.10, 0.05, 0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 01:31:12AM +0100, Frederic Weisbecker wrote:
-> When a cpu is in an extended quiescent state, which includes idle
-> nohz or CPU offline, others CPUs will take care of the grace periods
-> on its behalf.
-> 
-> When this CPU exits its extended quiescent state, it will catch up
-> with the last started grace period and start chasing its own
-> quiescent states to end the current grace period.
-> 
-> However in this case we always start to track quiescent states if the
-> grace period number has changed since we started our extended
-> quiescent state. And we do this because we always assume that the last
-> grace period is not finished and needs us to complete it, which is
-> sometimes wrong.
-> 
-> This patch verifies if the last grace period has been completed and
-> if so, start hunting local quiescent states like we always did.
-> Otherwise don't do anything, this economizes us some work and
-> an unnecessary softirq.
+* Christoph Lameter (cl@linux.com) wrote:
 
-Interesting approach!  I can see how this helps in the case where the
-CPU just came online, but I don't see it in the nohz case, because the
-nohz case does not update the rdp->completed variable.  In contrast,
-the online path calls rcu_init_percpu_data() which sets up this variable.
+[...]
 
-So, what am I missing here?
-
-							Thanx, Paul
-
-PS.  It might well be worthwhile for the online case alone, but
-     the commit message does need to be accurate.
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/rcutree.c |   13 +++++++++++--
->  1 files changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index ccdc04c..5f038a1 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -620,8 +620,17 @@ static void __init check_cpu_stall_init(void)
->  static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
+> @@ -1737,23 +1770,53 @@ static __always_inline void *slab_alloc(
 >  {
->  	if (rdp->gpnum != rnp->gpnum) {
-> -		rdp->qs_pending = 1;
-> -		rdp->passed_quiesc = 0;
-> +		/*
-> +		 * Another CPU might have taken take of this new grace period
-> +		 * while we were idle and handled us as in an extended quiescent
-> +		 * state. In that case, we don't need to chase a local quiescent
-> +		 * state, otherwise:
-> +		 */
-> +		if (rdp->completed != rnp->gpnum) {
-> +			rdp->qs_pending = 1;
-> +			rdp->passed_quiesc = 0;
-> +		}
+>  	void **object;
+>  	struct kmem_cache_cpu *c;
+> -	unsigned long flags;
+> +	unsigned long tid;
+>  
+>  	if (slab_pre_alloc_hook(s, gfpflags))
+>  		return NULL;
+>  
+> -	local_irq_save(flags);
+> +redo:
+> +	/*
+> +	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
+> +	 * enabled. We may switch back and forth between cpus while
+> +	 * reading from one cpu area. That does not matter as long
+> +	 * as we end up on the original cpu again when doing the cmpxchg.
+> +	 */
+>  	c = __this_cpu_ptr(s->cpu_slab);
 > +
->  		rdp->gpnum = rnp->gpnum;
->  	}
->  }
-> -- 
-> 1.7.1
-> 
+> +	/*
+> +	 * The transaction ids are globally unique per cpu and per operation on
+> +	 * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
+> +	 * occurs on the right processor and that there was no operation on the
+> +	 * linked list in between.
+> +	 */
+
+There seems to be some voodoo magic I don't understand here. I'm curious to see
+what happens if we have:
+
+CPU A                                                  CPU B
+slab_alloc()
+  c = __this_cpu_ptr(s->cpu_slab);
+  tid = c->tid
+  thread migrated to CPU B
+
+slab_alloc()
+  c = __this_cpu_ptr(s->cpu_slab);
+  tid = c->tid
+  ...                                                  ...
+  irqsafe_cmpxchg_double
+    - expect tid, on CPU A, success
+                                                       migrate back to CPU A
+  irqsafe_cmpxchg_double
+    - expect (same) tid, on CPU A, success
+
+So either there is a crucially important point I am missing, or the transaction
+ID does not seem to be truly unique due to migration.
+
+Thanks,
+
+Mathieu
+
+
+> +	tid = c->tid;
+> +	barrier();
+> +
+>  	object = c->freelist;
+> -	if (unlikely(!object || !node_match(c, node)))
+> +	if (unlikely(!object || !node_match(c, c->node)))
+>  
+> -		object = __slab_alloc(s, gfpflags, node, addr, c);
+> +		object = __slab_alloc(s, gfpflags, c->node, addr);
+>  
+>  	else {
+> -		c->freelist = get_freepointer(s, object);
+> +		/*
+> +		 * The cmpxchg will only match if there was not additonal
+> +		 * operation and if we are on the right processor.
+> +		 */
+> +		if (unlikely(!irqsafe_cmpxchg_double(&s->cpu_slab->freelist, object, tid,
+> +				get_freepointer(s, object), next_tid(tid)))) {
+
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
