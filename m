@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0KXKqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 05:46:08 -0500
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:19722 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753181Ab0KXKqG (ORCPT
+	id S1753312Ab0KXKsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 05:48:38 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64936 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab0KXKsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 05:46:06 -0500
-Message-ID: <4CECECA2.6070301@draigBrady.com>
-Date: Wed, 24 Nov 2010 10:44:50 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-CC: wharms@bfs.de, =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com> <20101112120834.33062900.akpm@linux-foundation.org> <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca> <20101114092533.GB5323@albatros> <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop> <20101123140111.GA3816@hack> <4CEBD37E.5060107@bfs.de> <203E1F2A-2D04-4B7F-8D1B-9DC24522CB5E@dilger.ca>
-In-Reply-To: <203E1F2A-2D04-4B7F-8D1B-9DC24522CB5E@dilger.ca>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Wed, 24 Nov 2010 05:48:37 -0500
+Subject: Re: [PATCH 1/2] ASoC: wm8961 - clear WM8961_DACSLOPE bit for
+ normal mode
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1290565233.5506.2.camel@mola>
+References: <1290565233.5506.2.camel@mola>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 10:48:32 +0000
+Message-ID: <1290595712.3332.4.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/11/10 18:02, Andreas Dilger wrote:
-> On 2010-11-23, at 07:45, walter harms wrote:
->> Maybe we can convince the gcc people to make 0 padding default. That will not solve the problems for other compilers but when they claim "works like gcc" we can press then to support this also. I can imagine that this will close some other subtle leaks also.
+On Wed, 2010-11-24 at 10:20 +0800, Axel Lin wrote:
+> DACSLOPE bit of Register 06h ADC and DAC Control 2:
+>         0: Normal mode
+>         1: Sloping stop-band mode
 > 
-> It makes the most sense to tackle this at the GCC level, since the added overhead of doing memset(0) on the whole struct may be non-trivial for commonly-used and/or large structures.  Since GCC is already explicitly zeroing the _used_ fields in the struct, it can much more easily determine whether there is padding in the structure, and zero those few bytes as needed.
+> Thus in the case of normal mode, we should clear DACSLOPE bit.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Zero padding structs is part of C90. Details here:
-http://www.pixelbeat.org/programming/gcc/auto_init.html
+Both
 
-gcc doesn't zero pad when _all_ elements are specified.
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-So perhaps just:
-
--        struct timespec rts;
--        struct timeval rtv;
-+        struct timespec rts = {0,};
-+        struct timeval rtv = {0,};
-
-One could also move the rtv declaration
-to the scope where it's used.
-
-cheers,
-Pádraig.
