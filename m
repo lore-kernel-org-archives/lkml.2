@@ -1,215 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab0KXUBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 15:01:36 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:54915 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab0KXUBe (ORCPT
+	id S1756347Ab0KXUN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 15:13:56 -0500
+Received: from [71.74.56.122] ([71.74.56.122]:62900 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751389Ab0KXUNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 15:01:34 -0500
-X-IronPort-AV: E=Sophos;i="4.59,249,1288584000"; 
-   d="scan'208";a="123988851"
-Subject: Re: [PATCH] xen: x86/32: perform initial startup on
- initial_page_table
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-In-Reply-To: <4CED5736.2050000@goop.org>
-References: <1290600581-8392-1-git-send-email-ian.campbell@citrix.com>
-	 <4CED5736.2050000@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Wed, 24 Nov 2010 20:01:36 +0000
-Message-ID: <1290628896.3144.9.camel@cthulhu.hellion.org.uk>
-MIME-Version: 1.0
+	Wed, 24 Nov 2010 15:13:55 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=yZSwoSqacEEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=Rxjk4AdAKUsRu0J1G1oA:9 a=hwGcHegxw6uK3kaGS4AA:7 a=4CvYJ8z69y7-rkTnFZuChDN3XAwA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] isdn: icn: Fix stack overflow bug
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
+        akpm@linux-foundation.org
+In-Reply-To: <20101124.112042.179943893.davem@davemloft.net>
+References: <1290573578.30543.461.camel@gandalf.stny.rr.com>
+	 <1290573987.30543.462.camel@gandalf.stny.rr.com>
+	 <20101124.112042.179943893.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 24 Nov 2010 15:13:31 -0500
+Message-ID: <1290629611.30543.704.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 18:19 +0000, Jeremy Fitzhardinge wrote:
-> On 11/24/2010 04:09 AM, Ian Campbell wrote:
-> > Only make swapper_pg_dir readonly and pinned when generic x86 architecture code
-> > (which also starts on initial_page_table) switches to it.  This helps ensure
-> > that the generic setup paths work on Xen unmodified. In particular
-> > clone_pgd_range writes directly to the destination pgd entries and is used to
-> > initialise swapper_pg_dir so we need to ensure that it remains writeable until
-> > the last possible moment during bring up.
-> >
-> > This is complicated slightly by the need to avoid sharing kernel PMD entries
-> > when running under Xen, therefore the Xen implementation must make a copy of
-> > the kernel PMD (which is otherwise referred to by both intial_page_table and
-> > swapper_pg_dir) before switching to swapper_pg_dir.
+On Wed, 2010-11-24 at 11:20 -0800, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Tue, 23 Nov 2010 23:46:27 -0500
 > 
-> The one thing I'd add is the commit ID of the change which made this
-> necessary.
+> > 
+> > Note, the subject should really be:
+> > 
+> > [PATCH] isdn: icn: Fix stack corruption bug.
+> 
+> Applied.
 
-Yes, I thought I had but didn't guilt refresh the patch so it didn't
-show up.
+Thanks,
 
-8<------------------
+> 
+> Please CC: isdn patches to netdev@vger.kernel.org in the future as per
+> "ISDN SUBSYSTEM" in MAINTAINERS.  Patches sent only to the ISDN list
+> and Karsten are likely to not get looked at for weeks if not longer.
 
->From 18ccc13b574dd0d5eb61398ea0da8999638e0d67 Mon Sep 17 00:00:00 2001
-From: Ian Campbell <ian.campbell@citrix.com>
-Date: Wed, 24 Nov 2010 09:14:51 +0000
-Subject: [PATCH] xen: x86/32: perform initial startup on initial_page_table
+OK, will do.
 
-Only make swapper_pg_dir readonly and pinned when generic x86
-architecture code (which, since b40827fa7268, also initially starts on
-initial_page_table) switches to it.
+That's what I get for sending patches when I'm tired. I only saw the
+first mailing list. I didn't even notice the netdev one. And I also
+forgot to add the [PATCH] to the original subject.
 
-This helps ensure that the generic setup paths work on Xen
-unmodified. In particular clone_pgd_range writes directly to the
-destination pgd entries and is used to initialise swapper_pg_dir so we
-need to ensure that it remains writeable until the last possible
-moment during bring up.
+I wrote the patch while still awake, but ran it through a few more tests
+just to make sure it worked. Forgot about it, and then when I was done
+with my normal job, I decided to send it out (making change log and
+everything).
 
-This is complicated slightly by the need to avoid sharing kernel PMD entries
-when running under Xen, therefore the Xen implementation must make a copy of
-the kernel PMD (which is otherwise referred to by both intial_page_table and
-swapper_pg_dir) before switching to swapper_pg_dir.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
----
- arch/x86/xen/enlighten.c |    2 -
- arch/x86/xen/mmu.c       |   69 +++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 56 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 7250bef..02c710b 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1200,8 +1200,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* Allocate and initialize top and mid mfn levels for p2m structure */
- 	xen_build_mfn_list_list();
- 
--	init_mm.pgd = pgd;
--
- 	/* keep using Xen gdt for now; no urgent need to change it */
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 790af90..a1feff9 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2133,44 +2133,83 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- 	return pgd;
- }
- #else	/* !CONFIG_X86_64 */
--static RESERVE_BRK_ARRAY(pmd_t, level2_kernel_pgt, PTRS_PER_PMD);
-+static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
-+static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
-+
-+static __init void xen_write_cr3_init(unsigned long cr3)
-+{
-+	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
-+
-+	BUG_ON(read_cr3() != __pa(initial_page_table));
-+	BUG_ON(cr3 != __pa(swapper_pg_dir));
-+
-+	/*
-+	 * We are switching to swapper_pg_dir for the first time (from
-+	 * initial_page_table) and therefore need to mark that page
-+	 * read-only and then pin it.
-+	 *
-+	 * Xen disallows sharing of kernel PMDs for PAE
-+	 * guests. Therefore we must copy the kernel PMD from
-+	 * initial_page_table into a new kernel PMD to be used in
-+	 * swapper_pg_dir.
-+	 */
-+	swapper_kernel_pmd =
-+		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
-+	memcpy(swapper_kernel_pmd, initial_kernel_pmd,
-+	       sizeof(pmd_t) * PTRS_PER_PMD);
-+	swapper_pg_dir[KERNEL_PGD_BOUNDARY] =
-+		__pgd(__pa(swapper_kernel_pmd) | _PAGE_PRESENT);
-+	set_page_prot(swapper_kernel_pmd, PAGE_KERNEL_RO);
-+
-+	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
-+	xen_write_cr3(cr3);
-+	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
-+
-+	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
-+			  PFN_DOWN(__pa(initial_page_table)));
-+	set_page_prot(initial_page_table, PAGE_KERNEL);
-+	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
-+
-+	pv_mmu_ops.write_cr3 = &xen_write_cr3;
-+}
- 
- __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- 					 unsigned long max_pfn)
- {
- 	pmd_t *kernel_pmd;
- 
--	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
-+	initial_kernel_pmd =
-+		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
- 
- 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
- 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
- 				  512*1024);
- 
- 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
--	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
-+	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
- 
--	xen_map_identity_early(level2_kernel_pgt, max_pfn);
-+	xen_map_identity_early(initial_kernel_pmd, max_pfn);
- 
--	memcpy(swapper_pg_dir, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
--	set_pgd(&swapper_pg_dir[KERNEL_PGD_BOUNDARY],
--			__pgd(__pa(level2_kernel_pgt) | _PAGE_PRESENT));
-+	memcpy(initial_page_table, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
-+	initial_page_table[KERNEL_PGD_BOUNDARY] =
-+		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
- 
--	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
--	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
-+	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
-+	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
- 	set_page_prot(empty_zero_page, PAGE_KERNEL_RO);
- 
- 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
- 
--	xen_write_cr3(__pa(swapper_pg_dir));
--
--	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
-+	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
-+			  PFN_DOWN(__pa(initial_page_table)));
-+	xen_write_cr3(__pa(initial_page_table));
- 
- 	memblock_x86_reserve_range(__pa(xen_start_info->pt_base),
- 		      __pa(xen_start_info->pt_base +
- 			   xen_start_info->nr_pt_frames * PAGE_SIZE),
- 		      "XEN PAGETABLES");
- 
--	return swapper_pg_dir;
-+	return initial_page_table;
- }
- #endif	/* CONFIG_X86_64 */
- 
-@@ -2304,7 +2343,11 @@ static const struct pv_mmu_ops xen_mmu_ops __initdata = {
- 	.write_cr2 = xen_write_cr2,
- 
- 	.read_cr3 = xen_read_cr3,
-+#ifdef CONFIG_X86_32
-+	.write_cr3 = xen_write_cr3_init,
-+#else
- 	.write_cr3 = xen_write_cr3,
-+#endif
- 
- 	.flush_tlb_user = xen_flush_tlb,
- 	.flush_tlb_kernel = xen_flush_tlb,
--- 
-1.5.6.5
-
+-- Steve
 
 
