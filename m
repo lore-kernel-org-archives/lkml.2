@@ -1,173 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab0KXUQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 15:16:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48820 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0KXUQQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 15:16:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RzEgg/TRmyswf79HrckP1OMi4YcQ5PlcWMGrMHT21oveQoeWfeucStKDMumuQfZvcG
-         1L+xzhe59XUvSU7ygI+7vUZPyU3SKeP/AmQ9nnvupVD6W+QTJ+rw/3ZHOizoMIB617lf
-         LvGVEqXtKIfMTAZJAB2q7MjqFk5U+e1szvx+I=
-Date: Wed, 24 Nov 2010 12:16:09 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
-Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
-Message-ID: <20101124201608.GG27368@core.coreip.homeip.net>
-References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
- <20101122075554.GA27300@core.coreip.homeip.net>
- <AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
- <20101123222458.GB20283@core.coreip.homeip.net>
- <AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
- <20101124003832.GA27368@core.coreip.homeip.net>
- <AANLkTinJZyDcORj5DBGNr6Ss8penFyLxw4YDBFaTNLSK@mail.gmail.com>
- <AANLkTi=_swc-_J+hO-UWYh1sbQj=Lr2gFW-rK88fE6Z6@mail.gmail.com>
- <20101124024425.GC27368@core.coreip.homeip.net>
- <AANLkTimRGdMvpqFz+ZNDE+Jn4Kpi-ta+wKt760_Y93kA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimRGdMvpqFz+ZNDE+Jn4Kpi-ta+wKt760_Y93kA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756245Ab0KXUSa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 15:18:30 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:35082 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752955Ab0KXUS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 15:18:28 -0500
+Date: Wed, 24 Nov 2010 12:18:26 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Mike Caoco <caoco2002@yahoo.com>
+Cc: Netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Unplug ethernet cable, the route persists.  Why?
+Message-ID: <20101124121826.39dd6ed1@nehalam>
+In-Reply-To: <242082.99180.qm@web63407.mail.re1.yahoo.com>
+References: <242082.99180.qm@web63407.mail.re1.yahoo.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 09:46:48AM -0800, Ping Cheng wrote:
-> On Tue, Nov 23, 2010 at 6:44 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> >> >>> That is exactly what I am trying to convince you. Without being able
-> >> >>> to tell one button event from the other, even just logically, how can
-> >> >>> I and other clients remap them?
-> >> >>
-> >> >> EVIOCSKEYCODE. You just need to wire wacom driver to support this ioctl.
-> >>
-> >> Hold on. I was too concentrated on the buttons then. There are touch
-> >> rings (reported as ABS_WHEEL) on the tablet. How do we pass the raw
-> >> ring data to the user land and tell if that ABS_WHEEL is from the ring
-> >> or from a stylus' wheel? Should we add an ABS_RING then?
-> >
-> > May be. Could you please describe exactly what it is?
+On Wed, 24 Nov 2010 11:48:03 -0800 (PST)
+Mike Caoco <caoco2002@yahoo.com> wrote:
+
+> Hello,
 > 
-> Take a look at this page: http://www.wacom.com/intuos/. The ring is
-> the one on the center of the left edge. We also have two strips on
-> both edges of some tablets:
-> http://www.wacom.com/cintiq/cintiq-12wx.php. I was not suggesting to
-> add ABS_RING. Actually, adding ABS_RING is overkilling since we may
-> add other stuff on the tablet which would require a new ABS_something.
-> One BTN_TOOL_ groups everything on the tablet, which is much cleaner
-> than adding more ABS_*.
-
-What if you get 3 sets of rings? 4? 5? And some more buttons? Will we
-need BTN_TOOL_BUTTONS_EXTRA? BTN_TOOL_BUTTONS_EVEN_MORE? This direction
-leads to a dead end, it is not sustainable.
-
+> This may have been discussed, but all search engines couldn't give me a good answer...
 > 
-> > What is the default application? Is it really used for scrolling the work area up
-> > and down?
+> I notice that when an interface is up/running, a local route is in the routing table:
 > 
-> It can be used for scrolling, zooming, or any application specific
-> functions. For example, it can be translated into some painting
-> effect, such shadowing, dimming....
-
-Right. However it is nice to know the default application as we use it
-to provide default mapping.
-
+> $ ifconfig eth1
+> eth1      Link encap:Ethernet  HWaddr 00:13:20:0e:2f:ed  
+>           inet addr:192.168.1.125  Bcast:192.168.1.255  Mask:255.255.255.0
+>           inet6 addr: fe80::213:20ff:fe0e:2fed/64 Scope:Link
+>           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+>           RX packets:35984995 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:7409151 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 txqueuelen:1000 
+>           RX bytes:3252413825 (3.2 GB)  TX bytes:1340077250 (1.3 GB)
 > 
-> >> Also, if there is no tool on the tablet, which BTN_TOOL_* should we
-> >> use to report those buttons and strips/rings? They are not PEN, not
-> >> MOUSE, and not TOUCH. They are in fact an independent tool, like it or
-> >> not.
-> >
-> > No, the buttons on the device are not independent tool but rather fixed
-> > features that are applicable to all tools and none in particular.
+> $ ip route
+> 192.168.20.0/24 dev eth0  proto kernel  scope link  src 192.168.20.120
+> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.125 
+> default via 192.168.20.254 dev eth1  metric 100 
 > 
-> Which tool do you think we can use while no tool is on the tablet? No
-> matter which one we use, it is confusing. The
-> strips/ring/wheel/buttons on the tablet do not belong to those tools
-> at all. They live without any of those tools.
-
-Exactly. They are not a tool (BTN_TOOL_* in input protocol conveys that
-a certain object touches working surface at certain coordinates with
-certain pressure - the pressure is optional), and they do not belong to
-any tool. So you should not try to associate them with any tools.
-
+> After I unplug the cable from eth1, the RUNNING flag disappears, but the route is still there:
 > 
-> Plus, we are not just talking about buttons here. I started the
-> argument with buttons and Bamboo since it is the first one that
-> introduced the BTN_TOOL_FINGER in a different meaning. The need of
-> BTN_TOOL_BUUTONS is not really for Bamboo. It is for the strips and
-> rings on the Intuos and Cintiq (see the URL I refered above).
+> $ ifconfig eth1
+> eth1      Link encap:Ethernet  HWaddr 00:13:20:0e:2f:ed  
+>           inet addr:192.168.1.125  Bcast:192.168.1.255  Mask:255.255.255.0
+>           inet6 addr: fe80::213:20ff:fe0e:2fed/64 Scope:Link
+>           UP BROADCAST MULTICAST  MTU:1500  Metric:1
+>           RX packets:35985023 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:7409151 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 txqueuelen:1000 
+>           RX bytes:3252415633 (3.2 GB)  TX bytes:1340077250 (1.3 GB)
 > 
-> > Considering that proper use of input protocol means that you describe
-> > _entire_ state of the device how would BTN_TOOL_BUTTONS help you do that
-> > if button is presses on both touchpad and mouse?
+> $ ip route
+> 192.168.20.0/24 dev eth0  proto kernel  scope link  src 192.168.20.120 
+> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.125 
+> default via 192.168.20.254 dev eth1  metric 100 
 > 
-> There should be no confusion between pressing a button on a touchpad
-> or a mouse from a driver's perspective. The driver should be able to
-> tell user land which button has been pressed/released. It is up to the
-> user to decide which function they want to assign to the button.
-
-I know. I just asked you to provide the example of event stream for the
-conditions below using your new BTN_TOOL_BUTTONS given the constraints I
-mentioned.
-
+> And that *prevents* from using the default route to reach 192.168.1/24 subnet after eth1 is out.
 > 
-> We assign default values to the buttons just to be friendly to most
-> common apps/users. But, we should not limit user land usability.
-> Reporting raw strips/ring/wheel vaules gives the room for client to
-> develop their own functions. But those raw data do not belong to any
-> of the other tools.
+> I looked at the code, it seems the IFF_RUNNING flag change is ignored in dev_change_flags():
 > 
-> > What about pressed on
-> > the tablet and released on mouse? Note that there should be no
-> > ordering dependencies; userspace is expected to accumulate all data and
-> > maybe cancel out opposites until it gets EV_SYN/SYN_REPORT.
-> >
-> > I was thinking that while having pen and thouch as separate devices
-> > might not be the best idea having mouse and maybe lens as separate
-> > input devices might make more sense. I'll try to find some time and
-> > play with my Graphire...
+> void __dev_notify_flags(struct net_device *dev, unsigned int old_flags)
+> {
+>         .....
+>         if (dev->flags & IFF_UP &&
+>             (changes & ~(IFF_UP | IFF_PROMISC | IFF_ALLMULTI | IFF_VOLATILE)))
+>                 call_netdevice_notifiers(NETDEV_CHANGE, dev);
+> }
 > 
-> Yeah, Graphire may prove my point. Do you have a Graphire 4? How are
-> you going to pass the REL_WHEEL event on the tablet while a mouse,
-> which also has a REL_WHEEL, is on the tablet?
-
-No, it is Graphire 3.
-
+> I searched in the Internet, and saw some people suggest using an application listener (eg, netplug) to remove the route. 
 > 
-> We are complicating a simple problem/request here.
+> My question is why cannot the kernel remove the route automatically when the link becomes down?  Why should this complexity be pushed to the user to find a program to do that?
+> 
 
-No, we are trying to ram something in that might work for wacom driver
-only and only for the short term.
+Because there is no reason for the kernel to not expect the link to come back.
+It is up to user space to do routing policy. For desktop/laptop users this is
+done typically with NetworkManager or Connman; for routers this is done with
+Quagga; and for servers use other tools.
 
-Input protocol is set up so that events of the same type are combined;
-there is only one logical BTN_LEFT with its state, only one horizontal
-and vertical wheels, only one KEY_A and so forth. If several physical
-switches are set up to emit the same event they are by design
-indistinguishable from each other. We did relax this for multi-touch
-devices where it is natural to have several independent contacts being
-present and their number changes over time.
+If the kernel automatically removed the route, it would cause routing daemons
+to recompute the route table (and propagate the change) every time a cable
+got pulled or NIC needed to be reset.
 
-You are trying to devise the scheme to partition device into several
-parts to work around this issue. But if you want to have the buttons
-truly independent then just partition the device explicitly. Do split it
-off into separate button/ring/misc device and it should work just fine
-without need for new "tool" type. And it will continue to work if you
-add more buttons, sliders, rings and so forth.
-
-The only issue with the above is that we need to support more than 32
-event devices. That was on my back burner but if someone were to beat me
-to it - that would be even better.
-
-Thanks.
 
 -- 
-Dmitry
