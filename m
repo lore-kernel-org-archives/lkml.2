@@ -1,155 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab0KXTWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:22:14 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:62031 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab0KXTWN (ORCPT
+	id S1756173Ab0KXTYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:24:19 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:48118 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755297Ab0KXTYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:22:13 -0500
-X-IronPort-AV: E=Sophos;i="4.59,249,1288569600"; 
-   d="scan'208";a="3032088"
-Date: Wed, 24 Nov 2010 19:22:14 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: linux-kernel@vger.kernel.org
-CC: xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: [PATCH v2] Use PHYSDEVOP_get_free_pirq to implement
- find_unbound_pirq
-Message-ID: <alpine.DEB.2.00.1011241918290.2373@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 24 Nov 2010 14:24:18 -0500
+Message-ID: <4CED664B.2070805@metafoo.de>
+Date: Wed, 24 Nov 2010 20:23:55 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Alexey Charkov <alchark@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 5/6 v4] rtc: Add support for the RTC in VIA VT8500 and
+ compatibles
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>	<1289147348-31969-5-git-send-email-alchark@gmail.com>	<4CDE810F.2040400@metafoo.de>	<20101113235632.GA20314@alchark-u3s.lan>	<4CE00557.8020308@metafoo.de>	<20101114170032.GA4094@alchark-u3s.lan> <AANLkTinxWLiOhqTO6y2xEXvnfAK8Fe6qLp-du++z91YY@mail.gmail.com>
+In-Reply-To: <AANLkTinxWLiOhqTO6y2xEXvnfAK8Fe6qLp-du++z91YY@mail.gmail.com>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
+Alexey Charkov wrote:
+> 2010/11/14 Alexey Charkov <alchark@gmail.com>:
+>> This adds a driver for the RTC devices in VIA and WonderMedia
+>> Systems-on-Chip. Alarm, 1Hz interrupts, reading and setting time
+>> are supported.
+>>
+>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+>> ---
+>>
+>> Thanks for the comments, Lars! This version implements the latest
+>> ones as well.
+>>
+>> Best regards,
+>> Alexey
+>>
+>>  drivers/rtc/Kconfig      |    7 +
+>>  drivers/rtc/Makefile     |    1 +
+>>  drivers/rtc/rtc-vt8500.c |  359 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 367 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/rtc/rtc-vt8500.c
+>>
+>> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+>> index 2883428..27ed129 100644
+>> --- a/drivers/rtc/Kconfig
+>> +++ b/drivers/rtc/Kconfig
+>> @@ -865,6 +865,13 @@ config RTC_DRV_PXA
+>>          This RTC driver uses PXA RTC registers available since pxa27x
+>>          series (RDxR, RYxR) instead of legacy RCNR, RTAR.
+>>
+>> +config RTC_DRV_VT8500
+>> +       tristate "VIA/WonderMedia 85xx SoC RTC"
+>> +       depends on ARCH_VT8500
+>> +       help
+>> +         If you say Y here you will get access to the real time clock
+>> +         built into your VIA VT8500 SoC or its relatives.
+>> +
+>>
+>>  config RTC_DRV_SUN4V
+>>        bool "SUN4V Hypervisor RTC"
+>> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+>> index 4c2832d..1a354e1 100644
+>> --- a/drivers/rtc/Makefile
+>> +++ b/drivers/rtc/Makefile
+>> @@ -97,6 +97,7 @@ obj-$(CONFIG_RTC_DRV_TWL4030) += rtc-twl.o
+>>  obj-$(CONFIG_RTC_DRV_TX4939)   += rtc-tx4939.o
+>>  obj-$(CONFIG_RTC_DRV_V3020)    += rtc-v3020.o
+>>  obj-$(CONFIG_RTC_DRV_VR41XX)   += rtc-vr41xx.o
+>> +obj-$(CONFIG_RTC_DRV_VT8500)   += rtc-vt8500.o
+>>  obj-$(CONFIG_RTC_DRV_WM831X)   += rtc-wm831x.o
+>>  obj-$(CONFIG_RTC_DRV_WM8350)   += rtc-wm8350.o
+>>  obj-$(CONFIG_RTC_DRV_X1205)    += rtc-x1205.o
+>> diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
+>> new file mode 100644
+>> index 0000000..cdf4f63
+>> --- /dev/null
+>> +++ b/drivers/rtc/rtc-vt8500.c
+>> @@ -0,0 +1,359 @@
+>> +/*
+>> + * drivers/rtc/rtc-vt8500.c
+>> + *
+>> + *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+>> + *
+>> + * Based on rtc-pxa.c
+>> + *
+>> + * This software is licensed under the terms of the GNU General Public
+>> + * License version 2, as published by the Free Software Foundation, and
+>> + * may be copied, distributed, and modified under those terms.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/rtc.h>
+>> +#include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/io.h>
+>> +#include <linux/bcd.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/slab.h>
+>> +
+>> +/*
+>> + * Register definitions
+>> + */
+>> +#define VT8500_RTC_TS          0x00    /* Time set */
+>> +#define VT8500_RTC_DS          0x04    /* Date set */
+>> +#define VT8500_RTC_AS          0x08    /* Alarm set */
+>> +#define VT8500_RTC_CR          0x0c    /* Control */
+>> +#define VT8500_RTC_TR          0x10    /* Time read */
+>> +#define VT8500_RTC_DR          0x14    /* Date read */
+>> +#define VT8500_RTC_WS          0x18    /* Write status */
+>> +#define VT8500_RTC_CL          0x20    /* Calibration */
+>> +#define VT8500_RTC_IS          0x24    /* Interrupt status */
+>> +#define VT8500_RTC_ST          0x28    /* Status */
+>> +
+>> +#define INVALID_TIME_BIT       (1 << 31)
+>> +
+>> +#define DATE_CENTURY_S         19
+>> +#define DATE_YEAR_S            11
+>> +#define DATE_YEAR_MASK         (0xff << DATE_YEAR_S)
+>> +#define DATE_MONTH_S           6
+>> +#define DATE_MONTH_MASK                (0x1f << DATE_MONTH_S)
+>> +#define DATE_DAY_MASK          0x3f
+>> +
+>> +#define TIME_DOW_S             20
+>> +#define TIME_DOW_MASK          (0x07 << TIME_DOW_S)
+>> +#define TIME_HOUR_S            14
+>> +#define TIME_HOUR_MASK         (0x3f << TIME_HOUR_S)
+>> +#define TIME_MIN_S             7
+>> +#define TIME_MIN_MASK          (0x7f << TIME_MIN_S)
+>> +#define TIME_SEC_MASK          0x7f
+>> +
+>> +#define ALARM_DAY_S            20
+>> +#define ALARM_DAY_MASK         (0x3f << ALARM_DAY_S)
+>> +
+>> +#define ALARM_DAY_BIT          (1 << 29)
+>> +#define ALARM_HOUR_BIT         (1 << 28)
+>> +#define ALARM_MIN_BIT          (1 << 27)
+>> +#define ALARM_SEC_BIT          (1 << 26)
+>> +
+>> +#define ALARM_ENABLE_MASK      (ALARM_DAY_BIT \
+>> +                               | ALARM_HOUR_BIT \
+>> +                               | ALARM_MIN_BIT \
+>> +                               | ALARM_SEC_BIT)
+>> +
+>> +#define VT8500_RTC_CR_ENABLE   (1 << 0)        /* Enable RTC */
+>> +#define VT8500_RTC_CR_24H      (1 << 1)        /* 24h time format */
+>> +#define VT8500_RTC_CR_SM_ENABLE        (1 << 2)        /* Enable periodic irqs */
+>> +#define VT8500_RTC_CR_SM_SEC   (1 << 3)        /* 0: 1Hz/60, 1: 1Hz */
+>> +#define VT8500_RTC_CR_CALIB    (1 << 4)        /* Enable calibration */
+>> +
+>> +struct vt8500_rtc {
+>> +       void __iomem            *regbase;
+>> +       int                     irq_alarm;
+>> +       int                     irq_hz;
+>> +       struct rtc_device       *rtc;
+>> +       spinlock_t              lock;           /* Protects this structure */
+>> +};
+>> +
+>> +static irqreturn_t vt8500_rtc_irq(int irq, void *dev_id)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_id;
+>> +       u32 isr;
+>> +       unsigned long events = 0;
+>> +
+>> +       spin_lock(&vt8500_rtc->lock);
+>> +
+>> +       /* clear interrupt sources */
+>> +       isr = readl(vt8500_rtc->regbase + VT8500_RTC_IS);
+>> +       writel(isr, vt8500_rtc->regbase + VT8500_RTC_IS);
+>> +
+>> +       spin_unlock(&vt8500_rtc->lock);
+>> +
+>> +       if (isr & 1)
+>> +               events |= RTC_AF | RTC_IRQF;
+>> +
+>> +       /* Only second/minute interrupts are supported */
+>> +       if (isr & 2)
+>> +               events |= RTC_UF | RTC_IRQF;
+>> +
+>> +       rtc_update_irq(vt8500_rtc->rtc, 1, events);
+>> +
+>> +       return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int vt8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_get_drvdata(dev);
+>> +       u32 date, time;
+>> +
+>> +       if (!readl(vt8500_rtc->regbase + VT8500_RTC_ST)) {
+>> +               dev_info(dev, "Clock not set!");
+>> +               return -EINVAL;
+>> +       }
+>> +       date = readl(vt8500_rtc->regbase + VT8500_RTC_DR);
+>> +       time = readl(vt8500_rtc->regbase + VT8500_RTC_TR);
+>> +
+>> +       tm->tm_sec = bcd2bin(time & TIME_SEC_MASK);
+>> +       tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
+>> +       tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
+>> +       tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
+>> +       tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
+>> +       tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S);
+>> +       tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
+>> +
+>> +       return rtc_valid_tm(tm);
+>> +}
+>> +
+>> +static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_get_drvdata(dev);
+>> +
+>> +       writel((bin2bcd(tm->tm_year) << DATE_YEAR_S)
+>> +               | (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
+>> +               | (bin2bcd(tm->tm_mday)),
+>> +               vt8500_rtc->regbase + VT8500_RTC_DS);
+>> +       writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
+>> +               | (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
+>> +               | (bin2bcd(tm->tm_min) << TIME_MIN_S)
+>> +               | (bin2bcd(tm->tm_sec)),
+>> +               vt8500_rtc->regbase + VT8500_RTC_TS);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int vt8500_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_get_drvdata(dev);
+>> +       u32 isr, alarm;
+>> +
+>> +       alarm = readl(vt8500_rtc->regbase + VT8500_RTC_AS);
+>> +       isr = readl(vt8500_rtc->regbase + VT8500_RTC_IS);
+>> +
+>> +       alrm->time.tm_mday = bcd2bin((alarm & ALARM_DAY_MASK) >> ALARM_DAY_S);
+>> +       alrm->time.tm_hour = bcd2bin((alarm & TIME_HOUR_MASK) >> TIME_HOUR_S);
+>> +       alrm->time.tm_min = bcd2bin((alarm & TIME_MIN_MASK) >> TIME_MIN_S);
+>> +       alrm->time.tm_sec = bcd2bin((alarm & TIME_SEC_MASK));
+>> +
+>> +       alrm->enabled = (alarm & ALARM_ENABLE_MASK) ? 1 : 0;
+>> +
+>> +       alrm->pending = (isr & 1) ? 1 : 0;
+>> +       return rtc_valid_tm(&alrm->time);
+>> +}
+>> +
+>> +static int vt8500_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_get_drvdata(dev);
+>> +
+>> +       writel((alrm->enabled ? ALARM_ENABLE_MASK : 0)
+>> +               | (bin2bcd(alrm->time.tm_mday) << ALARM_DAY_S)
+>> +               | (bin2bcd(alrm->time.tm_hour) << TIME_HOUR_S)
+>> +               | (bin2bcd(alrm->time.tm_min) << TIME_MIN_S)
+>> +               | (bin2bcd(alrm->time.tm_sec)),
+>> +               vt8500_rtc->regbase + VT8500_RTC_AS);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int vt8500_alarm_irq_enable(struct device *dev, unsigned int enabled)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_get_drvdata(dev);
+>> +       unsigned long tmp = readl(vt8500_rtc->regbase + VT8500_RTC_AS);
+>> +
+>> +       if (enabled)
+>> +               tmp |= ALARM_ENABLE_MASK;
+>> +       else
+>> +               tmp &= ~ALARM_ENABLE_MASK;
+>> +
+>> +       writel(tmp, vt8500_rtc->regbase + VT8500_RTC_AS);
+>> +       return 0;
+>> +}
+>> +
+>> +static int vt8500_update_irq_enable(struct device *dev, unsigned int enabled)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = dev_get_drvdata(dev);
+>> +       unsigned long tmp = readl(vt8500_rtc->regbase + VT8500_RTC_CR);
+>> +
+>> +       if (enabled)
+>> +               tmp |= VT8500_RTC_CR_SM_SEC | VT8500_RTC_CR_SM_ENABLE;
+>> +       else
+>> +               tmp &= ~VT8500_RTC_CR_SM_ENABLE;
+>> +
+>> +       writel(tmp, vt8500_rtc->regbase + VT8500_RTC_CR);
+>> +       return 0;
+>> +}
+>> +
+>> +static const struct rtc_class_ops vt8500_rtc_ops = {
+>> +       .read_time = vt8500_rtc_read_time,
+>> +       .set_time = vt8500_rtc_set_time,
+>> +       .read_alarm = vt8500_rtc_read_alarm,
+>> +       .set_alarm = vt8500_rtc_set_alarm,
+>> +       .alarm_irq_enable = vt8500_alarm_irq_enable,
+>> +       .update_irq_enable = vt8500_update_irq_enable,
+>> +};
+>> +
+>> +static int __devinit vt8500_rtc_probe(struct platform_device *pdev)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc;
+>> +       struct resource *res;
+>> +       int ret;
+>> +
+>> +       vt8500_rtc = kzalloc(sizeof(struct vt8500_rtc), GFP_KERNEL);
+>> +       if (!vt8500_rtc)
+>> +               return -ENOMEM;
+>> +
+>> +       spin_lock_init(&vt8500_rtc->lock);
+>> +       platform_set_drvdata(pdev, vt8500_rtc);
+>> +
+>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +       if (!res) {
+>> +               dev_err(&pdev->dev, "No I/O memory resource defined\n");
+>> +               ret = -ENXIO;
+>> +               goto err_free;
+>> +       }
+>> +
+>> +       vt8500_rtc->irq_alarm = platform_get_irq(pdev, 0);
+>> +       if (vt8500_rtc->irq_alarm < 0) {
+>> +               dev_err(&pdev->dev, "No alarm IRQ resource defined\n");
+>> +               ret = -ENXIO;
+>> +               goto err_free;
+>> +       }
+>> +
+>> +       vt8500_rtc->irq_hz = platform_get_irq(pdev, 1);
+>> +       if (vt8500_rtc->irq_hz < 0) {
+>> +               dev_err(&pdev->dev, "No 1Hz IRQ resource defined\n");
+>> +               ret = -ENXIO;
+>> +               goto err_free;
+>> +       }
+>> +
+>> +       res = request_mem_region(res->start, resource_size(res), "vt8500-rtc");
+>> +       if (res == NULL) {
+>> +               dev_err(&pdev->dev, "failed to request I/O memory\n");
+>> +               ret = -EBUSY;
+>> +               goto err_free;
+>> +       }
+>> +
+>> +       vt8500_rtc->regbase = ioremap(res->start, resource_size(res));
+>> +       if (!vt8500_rtc->regbase) {
+>> +               dev_err(&pdev->dev, "Unable to map RTC I/O memory\n");
+>> +               ret = -EBUSY;
+>> +               goto err_release;
+>> +       }
+>> +
+>> +       /* Enable the second/minute interrupt generation and enable RTC */
+>> +       writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H
+>> +               | VT8500_RTC_CR_SM_ENABLE | VT8500_RTC_CR_SM_SEC,
+>> +              vt8500_rtc->regbase + VT8500_RTC_CR);
+>> +
+>> +       vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
+>> +                                             &vt8500_rtc_ops, THIS_MODULE);
+>> +       if (IS_ERR(vt8500_rtc->rtc)) {
+>> +               ret = PTR_ERR(vt8500_rtc->rtc);
+>> +               dev_err(&pdev->dev,
+>> +                       "Failed to register RTC device -> %d\n", ret);
+>> +               goto err_unmap;
+>> +       }
+>> +
+>> +       ret = request_irq(vt8500_rtc->irq_hz, vt8500_rtc_irq, 0,
+>> +                         "rtc 1Hz", vt8500_rtc);
+>> +       if (ret < 0) {
+>> +               dev_err(&pdev->dev, "can't get irq %i, err %d\n",
+>> +                       vt8500_rtc->irq_hz, ret);
+>> +               goto err_unreg;
+>> +       }
+>> +
+>> +       ret = request_irq(vt8500_rtc->irq_alarm, vt8500_rtc_irq, 0,
+>> +                         "rtc alarm", vt8500_rtc);
+>> +       if (ret < 0) {
+>> +               dev_err(&pdev->dev, "can't get irq %i, err %d\n",
+>> +                       vt8500_rtc->irq_alarm, ret);
+>> +               goto err_free_hz;
+>> +       }
+>> +
+>> +       return 0;
+>> +
+>> +err_free_hz:
+>> +       free_irq(vt8500_rtc->irq_hz, vt8500_rtc);
+>> +err_unreg:
+>> +       rtc_device_unregister(vt8500_rtc->rtc);
+>> +err_unmap:
+>> +       iounmap(vt8500_rtc->regbase);
+>> +err_release:
+>> +       release_mem_region(res->start, resource_size(res));
+>> +err_free:
+>> +       kfree(vt8500_rtc);
+>> +       return ret;
+>> +}
+>> +
+>> +static int __devexit vt8500_rtc_remove(struct platform_device *pdev)
+>> +{
+>> +       struct vt8500_rtc *vt8500_rtc = platform_get_drvdata(pdev);
+>> +       struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +
+>> +       free_irq(vt8500_rtc->irq_alarm, vt8500_rtc);
+>> +       free_irq(vt8500_rtc->irq_hz, vt8500_rtc);
+>> +
+>> +       rtc_device_unregister(vt8500_rtc->rtc);
+>> +
+>> +       /* Disable alarm matching */
+>> +       writel(0, vt8500_rtc->regbase + VT8500_RTC_IS);
+>> +       iounmap(vt8500_rtc->regbase);
+>> +       release_mem_region(res->start, resource_size(res));
+>> +
+>> +       kfree(vt8500_rtc);
+>> +       platform_set_drvdata(pdev, NULL);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static struct platform_driver vt8500_rtc_driver = {
+>> +       .probe          = vt8500_rtc_probe,
+>> +       .remove         = __devexit_p(vt8500_rtc_remove),
+>> +       .driver         = {
+>> +               .name   = "vt8500-rtc",
+>> +               .owner  = THIS_MODULE,
+>> +       },
+>> +};
+>> +
+>> +static int __init vt8500_rtc_init(void)
+>> +{
+>> +       return platform_driver_register(&vt8500_rtc_driver);
+>> +}
+>> +module_init(vt8500_rtc_init);
+>> +
+>> +static void __exit vt8500_rtc_exit(void)
+>> +{
+>> +       platform_driver_unregister(&vt8500_rtc_driver);
+>> +}
+>> +module_exit(vt8500_rtc_exit);
+>> +
+>> +MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
+>> +MODULE_DESCRIPTION("VIA VT8500 SoC Realtime Clock Driver (RTC)");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_ALIAS("platform:vt8500-rtc");
+>> --
+>> 1.7.3.2
+>>
+>>
+> 
+> Any further comments about this code? Could it be merged now?
+> 
+> Lars, sorry for double-posting this (forgot to CC the lists and others
+> last time).
 
-Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
-pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
-amount of pirq available.
+Looks good to me, except one small thing: request_mem_region allocates the resource
+struct it returns. You should pass the same struct to release_mem_region to free it
+again.
+When that is fixed feel free to add a
+Reviewed-By: Lars-Peter Clausen <lars@metafoo.de>
 
-Changes since v1:
+> 
+> Thanks,
+> Alexey
 
-- if PHYSDEVOP_get_free_pirq is not implemented, start pirq allocation
-from 0 instead of 16. The pirq number 16 is not actually meaningful for
-Xen.
-
-- Remove nr_pirqs, it is not needed anymore. Add a comment to specify
-that we don't actually know the upper limit of the pirq number range.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 2811bb9..072af50 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -105,7 +105,6 @@ struct irq_info
- 
- static struct irq_info *irq_info;
- static int *pirq_to_irq;
--static int nr_pirqs;
- 
- static int *evtchn_to_irq;
- struct cpu_evtchn_s {
-@@ -385,12 +384,17 @@ static int get_nr_hw_irqs(void)
- 	return ret;
- }
- 
--/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-- * succeeded otherwise nr_pirqs won't hold the right value */
--static int find_unbound_pirq(void)
-+static int find_unbound_pirq(int type)
- {
--	int i;
--	for (i = nr_pirqs-1; i >= 0; i--) {
-+	int rc, i;
-+	struct physdev_get_free_pirq op_get_free_pirq;
-+	op_get_free_pirq.type = type;
-+
-+	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
-+	if (!rc)
-+		return op_get_free_pirq.pirq;
-+
-+	for (i = 0; i <= nr_irqs-1; i++) {
- 		if (pirq_to_irq[i] < 0)
- 			return i;
- 	}
-@@ -611,9 +615,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
- 
- 	spin_lock(&irq_mapping_update_lock);
- 
--	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
-+	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
- 		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
--			pirq > nr_pirqs ? "nr_pirqs" :"",
-+			pirq > nr_irqs ? "nr_pirqs" :"",
- 			gsi > nr_irqs ? "nr_irqs" : "");
- 		goto out;
- 	}
-@@ -672,7 +676,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
- 	if (*irq == -1)
- 		goto out;
- 
--	*pirq = find_unbound_pirq();
-+	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
- 	if (*pirq == -1)
- 		goto out;
- 
-@@ -1506,26 +1510,17 @@ void xen_callback_vector(void) {}
- 
- void __init xen_init_IRQ(void)
- {
--	int i, rc;
--	struct physdev_nr_pirqs op_nr_pirqs;
-+	int i;
- 
- 	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
- 				    GFP_KERNEL);
- 	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
- 
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
--	if (rc < 0) {
--		nr_pirqs = nr_irqs;
--		if (rc != -ENOSYS)
--			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
--	} else {
--		if (xen_pv_domain() && !xen_initial_domain())
--			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
--		else
--			nr_pirqs = op_nr_pirqs.nr_pirqs;
--	}
--	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
--	for (i = 0; i < nr_pirqs; i++)
-+	/* We are using nr_irqs as the maximum number of pirq available but
-+	 * that number is actually chosen by Xen and we don't know exactly
-+	 * what it is. Be careful choosing high pirq numbers. */
-+	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
-+	for (i = 0; i < nr_irqs; i++)
- 		pirq_to_irq[i] = -1;
- 
- 	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 2b2c66c..534cac8 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -188,6 +188,16 @@ struct physdev_nr_pirqs {
-     uint32_t nr_pirqs;
- };
- 
-+/* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
-+ * the hypercall returns a free pirq */
-+#define PHYSDEVOP_get_free_pirq    23
-+struct physdev_get_free_pirq {
-+    /* IN */ 
-+    int type;
-+    /* OUT */
-+    uint32_t pirq;
-+};
-+
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
