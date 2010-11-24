@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab0KXQzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:55:46 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:21006 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755704Ab0KXQzp (ORCPT
+	id S1755843Ab0KXQ4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:56:11 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15699 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab0KXQ4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:55:45 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: XexvmmYVM1lx4IAa0xQn_HrnNlPV8zwbvqJHFQm7wyCdOSq
- m4xxlkgG8b6fVQFaEegTMu.CMFpMporb5vqDt8PTyC5TosqG2ibxW0boDh8_
- ZWuloj4N7Koc5qHBvPvtHQU3sYXJHWbJfxZH3_3JqdsfzU1VDJubme8AVIEq
- 63FtemARiz_KHDtQx5yRzMJiMTPC1CRvyOErF.pszIWJ632il3WSad0r_kDC
- _SdX0gBNZYf_FceUiC1gSO6wBwhxvfMnzh5AXgQkZ2kAzk2Tdh6axUkb_NXs
- s9eeLGIX6v87P9tj76oiR
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 24 Nov 2010 10:55:40 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless) fastpaths
- for slub
-In-Reply-To: <AANLkTin02TYMurwmGZi2meSmVg6W4a37qmOLJLrFvMCm@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1011241051480.16025@router.home>
-References: <20101123235139.908255844@linux.com> <20101123235201.758191189@linux.com> <AANLkTikVFWYS9UeCP1DJxhzYn9_rMcrovSfbQpNmXsvk@mail.gmail.com> <alpine.DEB.2.00.1011241012180.14268@router.home> <AANLkTikxrvbDJ=rDhj=gC-FJTa1Jeky1uLWjnP6VF_pX@mail.gmail.com>
- <alpine.DEB.2.00.1011241042100.16025@router.home> <AANLkTin02TYMurwmGZi2meSmVg6W4a37qmOLJLrFvMCm@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 24 Nov 2010 11:56:09 -0500
+Message-ID: <4CED43A1.7020402@caviumnetworks.com>
+Date: Wed, 24 Nov 2010 08:56:01 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jason Baron <jbaron@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, rostedt@goodmis.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump	label
+ key entries
+References: <cover.1290546539.git.jbaron@redhat.com> <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com> <1290586809.2072.424.camel@laptop> <20101124145401.GA2815@redhat.com> <1290611478.2072.482.camel@laptop> <20101124151936.GB2815@redhat.com> <1290612245.2072.486.camel@laptop> <20101124154200.GD2815@redhat.com>
+In-Reply-To: <20101124154200.GD2815@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Nov 2010 16:57:01.0855 (UTC) FILETIME=[9D5E62F0:01CB8BF8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010, Pekka Enberg wrote:
-
-> On Wed, 24 Nov 2010, Pekka Enberg wrote:
-> >> > The critical section begins with the retrieval of the tid and it ends with
-> >> > the replacement of the tid with the newly generated one. This means that
-> >> > all state data for the alloc and free operation needs to be retrieved in
-> >> > that critical section. The change must be saved with the final
-> >> > cmpxchg_double of the critical section.
-> >>
-> >> Right and we don't need a *memory barrier* here because we're
-> >> accessing a per-CPU variable which means operations appear in-order.
+On 11/24/2010 07:42 AM, Jason Baron wrote:
+> On Wed, Nov 24, 2010 at 04:24:05PM +0100, Peter Zijlstra wrote:
+>> On Wed, 2010-11-24 at 10:19 -0500, Jason Baron wrote:
+>>> On Wed, Nov 24, 2010 at 04:11:18PM +0100, Peter Zijlstra wrote:
+>>>> On Wed, 2010-11-24 at 09:54 -0500, Jason Baron wrote:
+>>>>> On Wed, Nov 24, 2010 at 09:20:09AM +0100, Peter Zijlstra wrote:
+>>>>>> On Tue, 2010-11-23 at 16:27 -0500, Jason Baron wrote:
+>>>>>>>          struct hlist_head modules;
+>>>>>>>          unsigned long key;
+>>>>>>> +       u32 nr_entries : 31,
+>>>>>>> +              enabled :  1;
+>>>>>>>   };
+>>>>>>
+>>>>>> I still don't see why you do this, why not simply mandate that the key
+>>>>>> is of type atomic_t* and use *key as enabled state?
+>>>>>>
+>>>>>
+>>>>> Because I want to use *key as a pointer directly to 'struct jump_label_entry'.
+>>>>> In this way jump_label_enable(), jump_label_disable(), become O(1) operations.
+>>>>> That way we don't need any hashing.
+>>>>
+>>>> But but but, you're doing a friggin stop_machine to poke text, that's
+>>>> way more expensive than anything else.
+>>>>
+>>>
+>>> Yes, but other arches do not require stop_machine(). Also, there is work
+>>> for x86 to make the code patching happen without stop_machine().
+>>
+>> Even without stop machine you're sending IPIs to all CPUs, that's not
+>> free either.
+>>
+>> And I think the only arch where you can do text pokes without cross-cpu
+>> synchronization is one that doesn't have SMP support.
+>>
+>>
 >
-> On Wed, Nov 24, 2010 at 6:45 PM, Christoph Lameter <cl@linux.com> wrote:
-> > The compiler is still free to rearrange the tid fetch. A possible
-> > optimization that the compiler may do is to move the tid fetch into the
-> > next if statement since that is the only block in which the tid variable
-> > is actually used.
+> is this really true?
 >
-> Yes, which is why we need a *compiler barrier* but not a *memory barrier*.
 
-Exactly. That is the reason there is a compiler barrier there. A memory
-barrier would be smp_mb() or so.
+For MIPS SMP it is.  ICache invalidation is done per CPU.  If you need 
+the change to be visible on all CPUs, you have to do an IPI to get all 
+CPUs to do their own ICache invalidation.
 
+
+> The powerpc implementation uses patch_instruction():
+>
+>
+> arch/powerpc/lib/code-patching.c:
+>
+> void patch_instruction(unsigned int *addr, unsigned int instr)
+> {
+>          *addr = instr;
+>          asm ("dcbst 0, %0; sync; icbi 0,%0; sync; isync" : : "r"
+> (addr));
+> }
+>
+>
+> And sparc does uses flushi():
+>
+>
+> include/asm/system_64.h:
+>
+> #define flushi(addr)    __asm__ __volatile__ ("flush %0" : : "r" (addr)
+> : "memory")
+>
+
+I don't know how SPARC and PPC work, but does that really work on SMP 
+(or even NUMA) machines?
+
+David Daney
