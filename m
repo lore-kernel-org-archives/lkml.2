@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab0KXIrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:47:42 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47966 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab0KXIrl (ORCPT
+	id S1752748Ab0KXIsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 03:48:14 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:39345 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab0KXIsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:47:41 -0500
-Date: Wed, 24 Nov 2010 17:46:53 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [question] NR_IRQS in genirq
-Message-ID: <20101124084653.GG2212@linux-sh.org>
-References: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com>
+	Wed, 24 Nov 2010 03:48:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=wQqDqKIUmWFuaDdBTU0VvHkb9rHrAF59gLQeMNkUp/xzditrI2/i3bHs9g16ugBuK0
+         jRb5sVlHAZoMOn3xx7bKHj5wrXMZCjug0gOH9b6ddNh1QTGxTzjPUqIKrWaijjM4IYnG
+         4TtciIrOvbqqq1Xv9jznxgldCBH7Oe/iTmGng=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <1290587537.2072.430.camel@laptop>
+References: <20101123224601.766827604@openvz.org>
+	<20101123224800.658686382@openvz.org>
+	<1290587537.2072.430.camel@laptop>
+Date: Wed, 24 Nov 2010 11:48:11 +0300
+X-Google-Sender-Auth: IpuOrV0JYBGYOQ7n_hwN6iATSEE
+Message-ID: <AANLkTinac7XwdARsLSeLmbc4Kj6my5MHQ=hAgV+A7o-W@mail.gmail.com>
+Subject: Re: [rfc 3/3] perf, x86: P4 PMU -- export ABI part of event config to userspace
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, eranian@google.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 03:28:37PM +0800, Haojian Zhuang wrote:
-> Hi all,
-> 
-> I'm using the latest kernel 2.6.37-rc1. Now I met some issues on genirq.
-> 
-> 1. While SPARSE IRQ is enabled, nr_irqs may be larger than NR_IRQS.
-> But the allocated_irqs bitmap (kernel/irq/irqdesc.c) is restricted in
-> NR_IRQS. Is it an issue?
-> 
-> 2. irqs_resend bitmap of kernel/irq/resend.c is also restricted in
-> NR_IRQS. Is it an issue, too?
-> 
-Perhaps something like:
+On 11/24/10, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-11-24 at 01:46 +0300, Cyrill Gorcunov wrote:
+>> plain text document attachment (x86-perf-export-abi)
+>> Due to tight 64 bit size of event config field (where we have to track
+>> pretty lot of info during event lifetime) some bits are to be exported
+>> via header into userspace.
+>>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> CC: Lin Ming <ming.m.lin@intel.com>
+>> CC: Stephane Eranian <eranian@google.com>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>
+>> Note that I don't like much the idea to export anything into userspace
+>> but it seems there is no other choise. So there is a minimum which should
+>> be exported.
+>
+>
+> Could you say what exactly is exposed to userspace and why?
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 9988d03..11bd76c 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -215,6 +215,11 @@ int __init early_irq_init(void)
- 	initcnt = arch_probe_nr_irqs();
- 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
- 
-+	if (unlikely(nr_irqs > NR_IRQS)) {
-+		WARN(1, "Probed more than NR_IRQS, chomping.\n");
-+		nr_irqs = NR_IRQS;
-+	}
-+
- 	for (i = 0; i < initcnt; i++) {
- 		desc = alloc_desc(i, node);
- 		set_bit(i, allocated_irqs);
-
-?
+yes, we need two enums to be exported, because we use custom encoding,
+which is described in first patch. peter i'll describe more detailed
+in a couple of hours, ok?
+>
