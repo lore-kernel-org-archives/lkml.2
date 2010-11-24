@@ -1,419 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414Ab0KXTyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:54:00 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:25386 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab0KXTx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:53:57 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6177"; a="64220588"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH v5 2/2] msm: gpio: Add irq support to v2 gpiolib.
-Date: Wed, 24 Nov 2010 11:53:52 -0800
-Message-Id: <1290628432-28765-2-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1290628432-28765-1-git-send-email-gbean@codeaurora.org>
-References: <1290628432-28765-1-git-send-email-gbean@codeaurora.org>
+	id S932082Ab0KXTyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:54:14 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48622 "EHLO deliverator"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756364Ab0KXTyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:54:12 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 03/12] sep: handle the memrar stuff in the headers
+To: greg@kroah.com, mark.a.allyn@intel.com, linux-kernel@vger.kernel.org
+Date: Wed, 24 Nov 2010 19:33:55 +0000
+Message-ID: <20101124193353.16425.26546.stgit@bob.linux.org.uk>
+In-Reply-To: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
+References: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Complete the MSM v2 gpio subsystem by adding irq_chip.
+From: Alan Cox <alan@linux.intel.com>
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
- v5 - miscellaneous cleanup, per dwalker@codeaurora.org
- v4 - miscellaneous cleanup to patch 1/2, per pkondeti@codeaurora.org
- v3 - miscellaneous cleanup to patch 1/2, per baruch@tkos.co.il
- v2 - miscellaneous cleanup to patch 1/2, per baruch@tkos.co.il
 
- arch/arm/mach-msm/gpio-v2.c |  309 +++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 286 insertions(+), 23 deletions(-)
+ drivers/staging/memrar/memrar.h         |   19 ++++
+ drivers/staging/sep/sep_driver.c        |    2 
+ drivers/staging/sep/sep_driver_config.h |  133 -------------------------------
+ 3 files changed, 21 insertions(+), 133 deletions(-)
 
-diff --git a/arch/arm/mach-msm/gpio-v2.c b/arch/arm/mach-msm/gpio-v2.c
-index d907af6..0de19ec 100644
---- a/arch/arm/mach-msm/gpio-v2.c
-+++ b/arch/arm/mach-msm/gpio-v2.c
-@@ -15,7 +15,13 @@
-  * 02110-1301, USA.
-  *
-  */
-+#define pr_fmt(fmt) "%s: " fmt, __func__
-+
-+#include <linux/bitmap.h>
-+#include <linux/bitops.h>
- #include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-@@ -27,29 +33,103 @@
- /* Bits of interest in the GPIO_IN_OUT register.
-  */
- enum {
--	GPIO_IN_BIT  = 0,
--	GPIO_OUT_BIT = 1
-+	GPIO_IN  = 0,
-+	GPIO_OUT = 1
-+};
-+
-+/* Bits of interest in the GPIO_INTR_STATUS register.
-+ */
-+enum {
-+	INTR_STATUS = 0,
+
+diff --git a/drivers/staging/memrar/memrar.h b/drivers/staging/memrar/memrar.h
+index 0b735b8..0feb73b 100644
+--- a/drivers/staging/memrar/memrar.h
++++ b/drivers/staging/memrar/memrar.h
+@@ -95,6 +95,7 @@ struct RAR_buffer {
+ 	dma_addr_t bus_address;
  };
  
- /* Bits of interest in the GPIO_CFG register.
-  */
- enum {
--	GPIO_OE_BIT = 9,
-+	GPIO_OE = 9,
-+};
-+
-+/* Bits of interest in the GPIO_INTR_CFG register.
-+ * When a GPIO triggers, two separate decisions are made, controlled
-+ * by two separate flags.
-+ *
-+ * - First, INTR_RAW_STATUS_EN controls whether or not the GPIO_INTR_STATUS
-+ * register for that GPIO will be updated to reflect the triggering of that
-+ * gpio.  If this bit is 0, this register will not be updated.
-+ * - Second, INTR_ENABLE controls whether an interrupt is triggered.
-+ *
-+ * If INTR_ENABLE is set and INTR_RAW_STATUS_EN is NOT set, an interrupt
-+ * can be triggered but the status register will not reflect it.
-+ */
-+enum {
-+	INTR_ENABLE        = 0,
-+	INTR_POL_CTL       = 1,
-+	INTR_DECT_CTL      = 2,
-+	INTR_RAW_STATUS_EN = 3,
-+};
-+
-+/* Codes of interest in GPIO_INTR_CFG_SU.
-+ */
-+enum {
-+	TARGET_PROC_SCORPION = 4,
-+	TARGET_PROC_NONE     = 7,
- };
++#if defined(CONFIG_MRST_RAR_HANDLER)
+ /**
+  * rar_reserve() - reserve RAR buffers
+  * @buffers:	array of RAR_buffers where type and size of buffers to
+@@ -149,7 +150,25 @@ extern size_t rar_release(struct RAR_buffer *buffers,
+ extern size_t rar_handle_to_bus(struct RAR_buffer *buffers,
+ 				size_t count);
  
-+
-+#define GPIO_INTR_CFG_SU(gpio)    (MSM_TLMM_BASE + 0x0400 + (0x04 * (gpio)))
- #define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
- #define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
-+#define GPIO_INTR_CFG(gpio)       (MSM_TLMM_BASE + 0x1008 + (0x10 * (gpio)))
-+#define GPIO_INTR_STATUS(gpio)    (MSM_TLMM_BASE + 0x100c + (0x10 * (gpio)))
-+
-+/**
-+ * struct msm_gpio_dev: the MSM8660 SoC GPIO device structure
-+ *
-+ * @enabled_irqs: a bitmap used to optimize the summary-irq handler.  By
-+ * keeping track of which gpios are unmasked as irq sources, we avoid
-+ * having to do readl calls on hundreds of iomapped registers each time
-+ * the summary interrupt fires in order to locate the active interrupts.
-+ *
-+ * @wake_irqs: a bitmap for tracking which interrupt lines are enabled
-+ * as wakeup sources.  When the device is suspended, interrupts which are
-+ * not wakeup sources are disabled.
-+ *
-+ * @dual_edge_irqs: a bitmap used to track which irqs are configured
-+ * as dual-edge, as this is not supported by the hardware and requires
-+ * some special handling in the driver.
-+ */
-+struct msm_gpio_dev {
-+	struct gpio_chip gpio_chip;
-+	DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
-+	DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
-+	DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
-+};
++#else
  
- static DEFINE_SPINLOCK(tlmm_lock);
- 
-+static inline struct msm_gpio_dev *to_msm_gpio_dev(struct gpio_chip *chip)
++extern inline size_t rar_reserve(struct RAR_buffer *buffers, size_t count)
 +{
-+	return container_of(chip, struct msm_gpio_dev, gpio_chip);
-+}
-+
-+static inline void set_gpio_bits(unsigned n, void __iomem *reg)
-+{
-+	writel(readl(reg) | n, reg);
-+}
-+
-+static inline void clear_gpio_bits(unsigned n, void __iomem *reg)
-+{
-+	writel(readl(reg) & ~n, reg);
-+}
-+
- static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
- {
--	return readl(GPIO_IN_OUT(offset)) & BIT(GPIO_IN_BIT);
-+	return readl(GPIO_IN_OUT(offset)) & BIT(GPIO_IN);
- }
- 
- static void msm_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
- {
--	writel(val ? BIT(GPIO_OUT_BIT) : 0, GPIO_IN_OUT(offset));
-+	writel(val ? BIT(GPIO_OUT) : 0, GPIO_IN_OUT(offset));
- }
- 
- static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-@@ -57,8 +137,7 @@ static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
- 	unsigned long irq_flags;
- 
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
--	writel(readl(GPIO_CONFIG(offset)) & ~BIT(GPIO_OE_BIT),
--		GPIO_CONFIG(offset));
-+	clear_gpio_bits(BIT(GPIO_OE), GPIO_CONFIG(offset));
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
- 	return 0;
- }
-@@ -71,8 +150,7 @@ static int msm_gpio_direction_output(struct gpio_chip *chip,
- 
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
- 	msm_gpio_set(chip, offset, val);
--	writel(readl(GPIO_CONFIG(offset)) | BIT(GPIO_OE_BIT),
--		GPIO_CONFIG(offset));
-+	set_gpio_bits(BIT(GPIO_OE), GPIO_CONFIG(offset));
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
- 	return 0;
- }
-@@ -87,30 +165,215 @@ static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
- 	msm_gpiomux_put(chip->base + offset);
- }
- 
--static struct gpio_chip msm_gpio = {
--	.base             = 0,
--	.ngpio            = NR_GPIO_IRQS,
--	.direction_input  = msm_gpio_direction_input,
--	.direction_output = msm_gpio_direction_output,
--	.get              = msm_gpio_get,
--	.set              = msm_gpio_set,
--	.request          = msm_gpio_request,
--	.free             = msm_gpio_free,
-+static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	return MSM_GPIO_TO_INT(chip->base + offset);
-+}
-+
-+static inline int msm_irq_to_gpio(struct gpio_chip *chip, unsigned irq)
-+{
-+	return irq - MSM_GPIO_TO_INT(chip->base);
-+}
-+
-+static struct msm_gpio_dev msm_gpio = {
-+	.gpio_chip = {
-+		.base             = 0,
-+		.ngpio            = NR_GPIO_IRQS,
-+		.direction_input  = msm_gpio_direction_input,
-+		.direction_output = msm_gpio_direction_output,
-+		.get              = msm_gpio_get,
-+		.set              = msm_gpio_set,
-+		.to_irq           = msm_gpio_to_irq,
-+		.request          = msm_gpio_request,
-+		.free             = msm_gpio_free,
-+	},
-+};
-+
-+/* For dual-edge interrupts in software, since the hardware has no
-+ * such support:
-+ *
-+ * At appropriate moments, this function may be called to flip the polarity
-+ * settings of both-edge irq lines to try and catch the next edge.
-+ *
-+ * The attempt is considered successful if:
-+ * - the status bit goes high, indicating that an edge was caught, or
-+ * - the input value of the gpio doesn't change during the attempt.
-+ * If the value changes twice during the process, that would cause the first
-+ * test to fail but would force the second, as two opposite
-+ * transitions would cause a detection no matter the polarity setting.
-+ *
-+ * The do-loop tries to sledge-hammer closed the timing hole between
-+ * the initial value-read and the polarity-write - if the line value changes
-+ * during that window, an interrupt is lost, the new polarity setting is
-+ * incorrect, and the first success test will fail, causing a retry.
-+ *
-+ * Algorithm comes from Google's msmgpio driver, see mach-msm/gpio.c.
-+ */
-+static void msm_gpio_update_dual_edge_pos(unsigned gpio)
-+{
-+	int loop_limit = 100;
-+	unsigned val, val2, intstat;
-+
-+	do {
-+		val = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN);
-+		if (val)
-+			clear_gpio_bits(BIT(INTR_POL_CTL), GPIO_INTR_CFG(gpio));
-+		else
-+			set_gpio_bits(BIT(INTR_POL_CTL), GPIO_INTR_CFG(gpio));
-+		val2 = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN);
-+		intstat = readl(GPIO_INTR_STATUS(gpio)) & BIT(INTR_STATUS);
-+		if (intstat || val == val2)
-+			return;
-+	} while (loop_limit-- > 0);
-+	pr_err("dual-edge irq failed to stabilize, "
-+	       "interrupts dropped. %#08x != %#08x\n",
-+	       val, val2);
-+}
-+
-+static void msm_gpio_irq_ack(unsigned int irq)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+
-+	writel(BIT(INTR_STATUS), GPIO_INTR_STATUS(gpio));
-+	if (test_bit(gpio, msm_gpio.dual_edge_irqs))
-+		msm_gpio_update_dual_edge_pos(gpio);
-+}
-+
-+static void msm_gpio_irq_mask(unsigned int irq)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+	unsigned long irq_flags;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
-+	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	__clear_bit(gpio, msm_gpio.enabled_irqs);
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+}
-+
-+static void msm_gpio_irq_unmask(unsigned int irq)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+	unsigned long irq_flags;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+	__set_bit(gpio, msm_gpio.enabled_irqs);
-+	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+}
-+
-+static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+	unsigned long irq_flags;
-+	uint32_t bits;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+
-+	bits = readl(GPIO_INTR_CFG(gpio));
-+
-+	if (flow_type & IRQ_TYPE_EDGE_BOTH) {
-+		bits |= BIT(INTR_DECT_CTL);
-+		irq_desc[irq].handle_irq = handle_edge_irq;
-+		if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
-+			__set_bit(gpio, msm_gpio.dual_edge_irqs);
-+		else
-+			__clear_bit(gpio, msm_gpio.dual_edge_irqs);
-+	} else {
-+		bits &= ~BIT(INTR_DECT_CTL);
-+		irq_desc[irq].handle_irq = handle_level_irq;
-+		__clear_bit(gpio, msm_gpio.dual_edge_irqs);
-+	}
-+
-+	if (flow_type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_LEVEL_HIGH))
-+		bits |= BIT(INTR_POL_CTL);
-+	else
-+		bits &= ~BIT(INTR_POL_CTL);
-+
-+	writel(bits, GPIO_INTR_CFG(gpio));
-+
-+	if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
-+		msm_gpio_update_dual_edge_pos(gpio);
-+
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+
 +	return 0;
 +}
 +
-+/*
-+ * When the summary IRQ is raised, any number of GPIO lines may be high.
-+ * It is the job of the summary handler to find all those GPIO lines
-+ * which have been set as summary IRQ lines and which are triggered,
-+ * and to call their interrupt handlers.
-+ */
-+static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
++extern inline size_t rar_release(struct RAR_buffer *buffers, size_t count)
 +{
-+	unsigned long i;
-+
-+	for (i = find_first_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
-+	     i < NR_GPIO_IRQS;
-+	     i = find_next_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS, i + 1)) {
-+		if (readl(GPIO_INTR_STATUS(i)) & BIT(INTR_STATUS))
-+			generic_handle_irq(msm_gpio_to_irq(&msm_gpio.gpio_chip,
-+							   i));
-+	}
-+	desc->chip->ack(irq);
-+}
-+
-+static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+
-+	if (on) {
-+		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
-+			set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 1);
-+		set_bit(gpio, msm_gpio.wake_irqs);
-+	} else {
-+		clear_bit(gpio, msm_gpio.wake_irqs);
-+		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
-+			set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 0);
-+	}
-+
 +	return 0;
 +}
 +
-+static struct irq_chip msm_gpio_irq_chip = {
-+	.name		= "msmgpio",
-+	.mask		= msm_gpio_irq_mask,
-+	.unmask		= msm_gpio_irq_unmask,
-+	.ack		= msm_gpio_irq_ack,
-+	.set_type	= msm_gpio_irq_set_type,
-+	.set_wake	= msm_gpio_irq_set_wake,
- };
- 
- static int __devinit msm_gpio_probe(struct platform_device *dev)
- {
--	int ret;
-+	int i, irq, ret;
-+
-+	bitmap_zero(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
-+	bitmap_zero(msm_gpio.wake_irqs, NR_GPIO_IRQS);
-+	bitmap_zero(msm_gpio.dual_edge_irqs, NR_GPIO_IRQS);
-+	msm_gpio.gpio_chip.label = dev->name;
-+	ret = gpiochip_add(&msm_gpio.gpio_chip);
-+	if (ret < 0)
-+		return ret;
- 
--	msm_gpio.label = dev->name;
--	ret = gpiochip_add(&msm_gpio);
-+	for (i = 0; i < msm_gpio.gpio_chip.ngpio; ++i) {
-+		irq = msm_gpio_to_irq(&msm_gpio.gpio_chip, i);
-+		set_irq_chip(irq, &msm_gpio_irq_chip);
-+		set_irq_handler(irq, handle_level_irq);
-+		set_irq_flags(irq, IRQF_VALID);
-+	}
- 
--	return ret;
-+	set_irq_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
-+				msm_summary_irq_handler);
++extern inline size_t rar_handle_to_bus(struct RAR_buffer *buffers,
++				size_t count)
++{
 +	return 0;
- }
++}
++
++#endif  /* MRST_RAR_HANDLER */
+ #endif  /* __KERNEL__ */
  
- static int __devexit msm_gpio_remove(struct platform_device *dev)
- {
--	int ret = gpiochip_remove(&msm_gpio);
-+	int ret = gpiochip_remove(&msm_gpio.gpio_chip);
+ #endif  /* _MEMRAR_H */
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index 8a1ff86..b2cf553 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -59,6 +59,8 @@
+ #include <linux/connector.h>
+ #include <linux/cn_proc.h>
  
- 	if (ret < 0)
- 		return ret;
--- 
-1.7.0.4
++#include "../memrar/memrar.h"
++
+ #include "sep_driver_hw_defs.h"
+ #include "sep_driver_config.h"
+ #include "sep_driver_api.h"
+diff --git a/drivers/staging/sep/sep_driver_config.h b/drivers/staging/sep/sep_driver_config.h
+index cfda86f..b96045f 100644
+--- a/drivers/staging/sep/sep_driver_config.h
++++ b/drivers/staging/sep/sep_driver_config.h
+@@ -230,138 +230,5 @@ held by the proccess (struct file) */
+ /* the token that defines the data pool pointers address */
+ #define SEP_EXT_CACHE_ADDR_VAL_TOKEN                          0xBABABABA
+ 
+-/* rar handler */
+-#ifndef CONFIG_MRST_RAR_HANDLER
+-
+-/* This stub header is for non Moorestown driver only */
+-
+-/*
+- * @struct RAR_stat
+- *
+- * @brief This structure is used for @c RAR_HANDLER_STAT ioctl and for
+- *	@c RAR_get_stat() user space wrapper function.
+- */
+-struct RAR_stat {
+-	/* Type of RAR memory (e.g., audio vs. video) */
+-	__u32 type;
+-
+-	/*
+-	* Total size of RAR memory region.
+-	*/
+-	__u32 capacity;
+-
+-	/* Size of the largest reservable block. */
+-	__u32 largest_block_size;
+-};
+-
+-
+-/*
+- * @struct RAR_block_info
+- *
+- * @brief The argument for the @c RAR_HANDLER_RESERVE @c ioctl.
+- *
+- */
+-struct RAR_block_info {
+-	/* Type of RAR memory (e.g., audio vs. video) */
+-	__u32 type;
+-
+-	/* Requested size of a block to be reserved in RAR. */
+-	__u32 size;
+-
+-	/* Handle that can be used to refer to reserved block. */
+-	__u32 handle;
+-};
+-
+-/*
+- * @struct RAR_buffer
+- *
+- * Structure that contains all information related to a given block of
+- * memory in RAR.  It is generally only used when retrieving bus
+- * addresses.
+- *
+- * @note This structure is used only by RAR-enabled drivers, and is
+- *	 not intended to be exposed to the user space.
+- */
+-struct RAR_buffer {
+-	/* Structure containing base RAR buffer information */
+-	struct RAR_block_info info;
+-
+-	/* Buffer bus address */
+-	__u32 bus_address;
+-};
+-
+-
+-#define RAR_IOCTL_BASE 0xE0
+-
+-/* Reserve RAR block. */
+-#define RAR_HANDLER_RESERVE _IOWR(RAR_IOCTL_BASE, 0x00, struct RAR_block_info)
+-
+-/* Release previously reserved RAR block. */
+-#define RAR_HANDLER_RELEASE _IOW(RAR_IOCTL_BASE, 0x01, __u32)
+-
+-/* Get RAR stats. */
+-#define RAR_HANDLER_STAT    _IOWR(RAR_IOCTL_BASE, 0x02, struct RAR_stat)
+-
+-
+-/* -------------------------------------------------------------- */
+-/*		 Kernel Side RAR Handler Interface		*/
+-/* -------------------------------------------------------------- */
+-
+-/*
+- * @function rar_reserve
+- *
+- * @brief Reserve RAR buffers.
+- *
+- * This function will reserve buffers in the restricted access regions
+- * of given types.
+- *
+- * @return Number of successfully reserved buffers.
+- *	 Successful buffer reservations will have the corresponding
+- *	 @c bus_address field set to a non-zero value in the
+- *	 given @a buffers vector.
+- */
+-#define rar_reserve(a, b) ((size_t)NULL)
+-
+-/*
+- * @function rar_release
+- *
+- * @brief Release RAR buffers retrieved through call to
+- *	@c rar_reserve() or @c rar_handle_to_bus().
+- *
+- * This function will release RAR buffers that were retrieved through
+- * a call to @c rar_reserve() or @c rar_handle_to_bus() by
+- * decrementing the reference count.  The RAR buffer will be reclaimed
+- * when the reference count drops to zero.
+- *
+- * @return Number of successfully released buffers.
+- *	 Successful releases will have their handle field set to
+- *	 zero in the given @a buffers vector.
+- */
+-#define rar_release(a, b) ((size_t)NULL)
+-
+-/*
+- * @function rar_handle_to_bus
+- *
+- * @brief Convert a vector of RAR handles to bus addresses.
+- *
+- * This function will retrieve the RAR buffer bus addresses, type and
+- * size corresponding to the RAR handles provided in the @a buffers
+- * vector.
+- *
+- * @return Number of successfully converted buffers.
+- *	 The bus address will be set to @c 0 for unrecognized
+- *	 handles.
+- *
+- * @note The reference count for each corresponding buffer in RAR will
+- *	 be incremented.  Call @c rar_release() when done with the
+- *	 buffers.
+- */
+-#define rar_handle_to_bus(a, b) ((size_t)NULL)
+-
+-#else /* using rear memrar */
+-
+-#include "../memrar/memrar.h"
+-
+-#endif  /* MEMRAR */
+ 
+ #endif /* SEP DRIVER CONFIG */
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
