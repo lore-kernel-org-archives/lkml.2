@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab0KXDVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 22:21:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32834 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab0KXDVB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 22:21:01 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=SVzli-G6I4cA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=LFi28DPnIuLyeGUhB8gA:9 a=Hkqeox3ctbDoJUYaY1N3npCgjjoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: trivial: make comment about vs{n,cn,}printf more understandable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Milton Miller <miltonm@bga.com>
-Cc: u.kleine-koenig@pengutronix.de, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-In-Reply-To: <1290567844_20137@mail4.comsite.net>
-References: <1290528765-25057-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <1290567844_20137@mail4.comsite.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 23 Nov 2010 22:20:57 -0500
-Message-ID: <1290568857.30543.442.camel@gandalf.stny.rr.com>
+	id S1752906Ab0KXDXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 22:23:14 -0500
+Received: from mail.perches.com ([173.55.12.10]:1833 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab0KXDXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 22:23:13 -0500
+Subject: [PATCH] block: Add __attribute__((format (printf to
+ __trace_note_message and fix fallout
+From: Joe Perches <joe@perches.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Nov 2010 19:23:12 -0800
+Message-ID: <1290568992.11971.32.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 21:04 -0600, Milton Miller wrote:
-> On Tue, 23 Nov 2010 at about 16:12:45 -0000, Uwe Kleine-König wrote:
-> > 
-> > "You probably want ... instead." sounds like a recommendation better
-> > not to use the v... functions.
-> > 
-> 
-> Which is true, if you dont' have a va_list its hard to get them.
-> But I do get your point.
-> 
-> >   * the @buf not including the trailing '\0'. If @size is <= 0 the function
-> >   * returns 0.
-> >   *
-> > - * Call this function if you are already dealing with a va_list.
-> > - * You probably want scnprintf() instead.
-> > + * If you're not already dealing with a va_list better use scnprintf().
-> 
-> That doesn't flow off my (mid-western usa) tounge.
-> 
-> How about
->  * Call this function if you are already dealing with a va_list.
->  * Otherwise you probably want to use scnprintf().
+And change formats match arguments.
+Change !CONFIG_BLK_DEV_IO_TRACE blk_add_trace_msg macro to no_printk
 
-This is closer to what he asked us on IRC ;-)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ block/blk-throttle.c         |   18 +++++++++---------
+ block/cfq-iosched.c          |   11 ++++++-----
+ include/linux/blktrace_api.h |    6 ++++--
+ 3 files changed, 19 insertions(+), 16 deletions(-)
 
-But a "do X if Y" is more perl syntax than English (IMHO).
-
-
-> 
-> Alternatively,
->  * If you're not already dealing with a va_list consider scnprintf().
-
-This isn't bad. My recommendation I gave him was:
-
- * If you are already dealing with a va_list, then call this function.
- * Otherwise you probably want to use scnprintf()
-
-But my upstate NY tongue may not be the best judgment here.
-
--- Steve
-
-"When people ask me what language my mother tongue is, I simply reply 'C'"
-
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 56ad453..40cee22 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -761,9 +761,9 @@ static int throtl_dispatch(struct request_queue *q)
+ 
+ 	bio_list_init(&bio_list_on_stack);
+ 
+-	throtl_log(td, "dispatch nr_queued=%lu read=%u write=%u",
+-			total_nr_queued(td), td->nr_queued[READ],
+-			td->nr_queued[WRITE]);
++	throtl_log(td, "dispatch nr_queued=%d read=%u write=%u",
++		   total_nr_queued(td), td->nr_queued[READ],
++		   td->nr_queued[WRITE]);
+ 
+ 	nr_disp = throtl_select_dispatch(td, &bio_list_on_stack);
+ 
+@@ -1005,12 +1005,12 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+ 	}
+ 
+ queue_bio:
+-	throtl_log_tg(td, tg, "[%c] bio. bdisp=%u sz=%u bps=%llu"
+-			" iodisp=%u iops=%u queued=%d/%d",
+-			rw == READ ? 'R' : 'W',
+-			tg->bytes_disp[rw], bio->bi_size, tg->bps[rw],
+-			tg->io_disp[rw], tg->iops[rw],
+-			tg->nr_queued[READ], tg->nr_queued[WRITE]);
++	throtl_log_tg(td, tg,
++		      "[%c] bio. bdisp=%llu sz=%u bps=%llu iodisp=%u iops=%u queued=%d/%d",
++		      rw == READ ? 'R' : 'W',
++		      (unsigned long long)tg->bytes_disp[rw], bio->bi_size,
++		      tg->bps[rw], tg->io_disp[rw], tg->iops[rw],
++		      tg->nr_queued[READ], tg->nr_queued[WRITE]);
+ 
+ 	throtl_add_bio_tg(q->td, tg, bio);
+ 	*biop = NULL;
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 78ee4b1..dd51f6b 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -971,9 +971,10 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+ 					st->min_vdisktime);
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
+-			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
+-			iops_mode(cfqd), cfqq->nr_sectors);
++	cfq_log_cfqq(cfqq->cfqd, cfqq,
++		     "sl_used=%u disp=%u charge=%u iops=%u sect=%lu",
++		     used_sl, cfqq->slice_dispatch, charge,
++		     iops_mode(cfqd), cfqq->nr_sectors);
+ 	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+ 	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
+ }
+@@ -1955,8 +1956,8 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+ 	 */
+ 	if (sample_valid(cic->ttime_samples) &&
+ 	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
+-		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%d",
+-				cic->ttime_mean);
++		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%lu",
++			     cic->ttime_mean);
+ 		return;
+ 	}
+ 
+diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
+index 3395cf7..514503c 100644
+--- a/include/linux/blktrace_api.h
++++ b/include/linux/blktrace_api.h
+@@ -169,7 +169,8 @@ extern void blk_trace_shutdown(struct request_queue *);
+ extern int do_blk_trace_setup(struct request_queue *q, char *name,
+ 			      dev_t dev, struct block_device *bdev,
+ 			      struct blk_user_trace_setup *buts);
+-extern void __trace_note_message(struct blk_trace *, const char *fmt, ...);
++extern __attribute((format (printf, 2, 3)))
++void __trace_note_message(struct blk_trace *, const char *fmt, ...);
+ 
+ /**
+  * blk_add_trace_msg - Add a (simple) message to the blktrace stream
+@@ -212,7 +213,8 @@ extern struct attribute_group blk_trace_attr_group;
+ # define blk_trace_setup(q, name, dev, bdev, arg)	(-ENOTTY)
+ # define blk_trace_startstop(q, start)			(-ENOTTY)
+ # define blk_trace_remove(q)				(-ENOTTY)
+-# define blk_add_trace_msg(q, fmt, ...)			do { } while (0)
++# define blk_add_trace_msg(q, fmt, ...)			\
++	do { no_printk(fmt, ##__VA_ARGS__); } while (0)
+ # define blk_trace_remove_sysfs(dev)			do { } while (0)
+ static inline int blk_trace_init_sysfs(struct device *dev)
+ {
 
 
