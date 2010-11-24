@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab0KXHjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 02:39:19 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:31955 "EHLO
+	id S1752576Ab0KXHjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 02:39:33 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:32107 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752452Ab0KXHjP (ORCPT
+	by vger.kernel.org with ESMTP id S1752203Ab0KXHja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 02:39:15 -0500
-Message-ID: <4CECC109.4010407@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 16:38:49 +0900
+	Wed, 24 Nov 2010 02:39:30 -0500
+Message-ID: <4CECC118.9070301@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 16:39:04 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
@@ -20,100 +20,88 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 15/17 v2] can: EG20T PCH: Move MSI processing
- open/close to probe/remove
+Subject: [PATCH net-next-2.6 16/17 v2] can: EG20T PCH: Fix incorrect return
+ processing
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move MSI processing to probe/remove processing.
-Currently, in case this driver is integrated as module, and when this
-module is re-installed, no interrupts is to be occurred.
-For the above issue, move MSI processing to open/release processing.
+Fix incorrect return processing
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ drivers/net/can/pch_can.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index df14569..c612a99 100644
+index c612a99..ecb1a8c 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -859,15 +859,6 @@ static int pch_can_open(struct net_device *ndev)
+@@ -589,9 +589,11 @@ static irqreturn_t pch_can_interrupt(int irq, void
+*dev_id)
+ 	struct net_device *ndev = (struct net_device *)dev_id;
  	struct pch_can_priv *priv = netdev_priv(ndev);
- 	int retval;
- -	retval = pci_enable_msi(priv->dev);
--	if (retval) {
--		netdev_err(ndev, "PCH CAN opened without MSI\n");
--		priv->use_msi = 0;
--	} else {
--		netdev_err(ndev, "PCH CAN opened with MSI\n");
--		priv->use_msi = 1;
--	}
--
- 	/* Regstering the interrupt. */
- 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
- 			     ndev->name, ndev);
-@@ -893,9 +884,6 @@ static int pch_can_open(struct net_device *ndev)
- err_open_candev:
- 	free_irq(priv->dev->irq, ndev);
- req_irq_err:
--	if (priv->use_msi)
--		pci_disable_msi(priv->dev);
--
- 	pch_can_release(priv);
-  	return retval;
-@@ -909,8 +897,6 @@ static int pch_close(struct net_device *ndev)
- 	napi_disable(&priv->napi);
- 	pch_can_release(priv);
- 	free_irq(priv->dev->irq, ndev);
--	if (priv->use_msi)
--		pci_disable_msi(priv->dev);
- 	close_candev(ndev);
- 	priv->can.state = CAN_STATE_STOPPED;
- 	return 0;
-@@ -993,12 +979,14 @@ static void __devexit pch_can_remove(struct
-pci_dev *pdev)
- 	struct pch_can_priv *priv = netdev_priv(ndev);
-  	unregister_candev(priv->ndev);
--	free_candev(priv->ndev);
- 	pci_iounmap(pdev, priv->regs);
-+	if (priv->use_msi)
-+		pci_disable_msi(priv->dev);
- 	pci_release_regions(pdev);
- 	pci_disable_device(pdev);
- 	pci_set_drvdata(pdev, NULL);
- 	pch_can_reset(priv);
-+	free_candev(priv->ndev);
- }
-  #ifdef CONFIG_PM
-@@ -1255,6 +1243,15 @@ static int __devinit pch_can_probe(struct pci_dev
-*pdev,
-  	netif_napi_add(ndev, &priv->napi, pch_can_poll, PCH_RX_OBJ_END);
- +	rc = pci_enable_msi(priv->dev);
-+	if (rc) {
-+		netdev_err(ndev, "PCH CAN opened without MSI\n");
-+		priv->use_msi = 0;
-+	} else {
-+		netdev_err(ndev, "PCH CAN opened with MSI\n");
-+		priv->use_msi = 1;
-+	}
+ +	if (!pch_can_int_pending(priv))
++		return IRQ_NONE;
 +
- 	rc = register_candev(ndev);
- 	if (rc) {
- 		dev_err(&pdev->dev, "Failed register_candev %d\n", rc);
-@@ -1264,6 +1261,8 @@ static int __devinit pch_can_probe(struct pci_dev
-*pdev,
- 	return 0;
-  probe_exit_reg_candev:
-+	if (priv->use_msi)
-+		pci_disable_msi(priv->dev);
- 	free_candev(ndev);
- probe_exit_alloc_candev:
- 	pci_iounmap(pdev, addr);
+ 	pch_can_set_int_enables(priv, PCH_CAN_NONE);
+ 	napi_schedule(&priv->napi);
+-
+ 	return IRQ_HANDLED;
+ }
+ @@ -674,7 +676,7 @@ static int pch_can_rx_normal(struct net_device
+*ndev, u32 obj_num, int quota)
+ 		if (reg & PCH_IF_MCONT_MSGLOST) {
+ 			rtn = pch_can_rx_msg_lost(ndev, obj_num);
+ 			if (!rtn)
+-				return rtn;
++				return rcv_pkts;
+ 			rcv_pkts++;
+ 			quota--;
+ 			obj_num++;
+@@ -685,8 +687,10 @@ static int pch_can_rx_normal(struct net_device
+*ndev, u32 obj_num, int quota)
+ 		}
+  		skb = alloc_can_skb(priv->ndev, &cf);
+-		if (!skb)
+-			return -ENOMEM;
++		if (!skb) {
++			netdev_err(ndev, "alloc_can_skb Failed\n");
++			return rcv_pkts;
++		}
+  		/* Get Received data */
+ 		id2 = ioread32(&priv->regs->ifregs[0].id2);
+@@ -747,8 +751,8 @@ static int pch_can_poll(struct napi_struct *napi,
+int quota)
+ 	struct net_device *ndev = napi->dev;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	u32 int_stat;
+-	int rcv_pkts = 0;
+ 	u32 reg_stat;
++	int quota_save = quota;
+  	int_stat = pch_can_int_pending(priv);
+ 	if (!int_stat)
+@@ -777,10 +781,7 @@ static int pch_can_poll(struct napi_struct *napi,
+int quota)
+ 		goto end;
+  	if ((int_stat >= PCH_RX_OBJ_START) && (int_stat <= PCH_RX_OBJ_END)) {
+-		rcv_pkts += pch_can_rx_normal(ndev, int_stat, quota);
+-		quota -= rcv_pkts;
+-		if (quota < 0)
+-			goto end;
++		quota -= pch_can_rx_normal(ndev, int_stat, quota);
+ 	} else if ((int_stat >= PCH_TX_OBJ_START) &&
+ 		   (int_stat <= PCH_TX_OBJ_END)) {
+ 		/* Handle transmission interrupt */
+@@ -791,7 +792,7 @@ end:
+ 	napi_complete(napi);
+ 	pch_can_set_int_enables(priv, PCH_CAN_ALL);
+ -	return rcv_pkts;
++	return (quota_save - quota);
+ }
+  static int pch_set_bittiming(struct net_device *ndev)
 -- 
 1.6.0.6
 
