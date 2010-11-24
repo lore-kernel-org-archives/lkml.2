@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab0KXSjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:39:35 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49071 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab0KXSje convert rfc822-to-8bit (ORCPT
+	id S1754541Ab0KXSkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 13:40:00 -0500
+Received: from 206.83.70.71.ptr.us.xo.net ([206.83.70.71]:12690 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab0KXSj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:39:34 -0500
-Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
- label key entries
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Steven Rostedt <rostedt@goodmis.org>, mingo@elte.hu, hpa@zytor.com,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101124182424.GF2815@redhat.com>
-References: <cover.1290546539.git.jbaron@redhat.com>
-	 <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com>
-	 <20101123234355.GA21549@Krystal>
-	 <1290556830.30543.415.camel@gandalf.stny.rr.com>
-	 <20101124002411.GA29158@Krystal>  <20101124182424.GF2815@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Nov 2010 19:39:30 +0100
-Message-ID: <1290623970.2072.504.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 24 Nov 2010 13:39:59 -0500
+X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Nov 2010 13:39:59 EST
+Date: Wed, 24 Nov 2010 13:24:46 -0500
+Message-Id: <201011241824.oAOIOkCw001546@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile drivers (PCI RC and Ethernet) for v2.6.37
+X-OriginalArrivalTime: 24 Nov 2010 18:24:47.0778 (UTC) FILETIME=[E01A7820:01CB8C04]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 13:24 -0500, Jason Baron wrote:
-> By storing the state of the jump label with each key, we make
-> sure that when modules are added, they are updated to the correct
-> state. For example, if the kmalloc tracepoint is enabled and
-> a module is added which has kmalloc, we make sure that the tracepoint
-> is properly enabled on module load.
-> 
-> Also, if jump_label_enable(key), is called but the key has not yet
-> been added to the hashtable of jump label keys, add 'key' to the table.
-> In this way, if key value has its state updated, but we have not
-> yet encountered a JUMP_LABEL() definition for it (if its located in
-> a module), we ensure that the jump label is set to the correct
-> state when it finally is encountered.
-> 
-> When modules are unloaded, we traverse the jump label hashtable,
-> and remove any entries that have a key value that is contained
-> by that module's text section. In this way key values are properly
-> unregistered, and can be re-used.
+Linus,
 
-So why again are we adding all this complexity? Does this really need to
-be optimized in the face of how expensive text pokes are?
+Please pull the following changes for new drivers for the "tile"
+architecture, specifically PCI root complex support and built-in
+Ethernet support.  The changes are sufficiently standalone that I think
+it's plausible to apply them to the 2.6.37 rc series, despite the fact
+that they are not strictly bug fixes.  However, they enable the use of
+tile standalone boxes (TILEmpower and Quanta S2Q) that otherwise can't
+currently be used with the existing 2.6.36 or the 2.6.37 rc's.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git drivers
+
+The changes were mailed out to linux-net and linux-pci around Nov 2
+and generated only some mild syntactical feedback.  The second round of
+patches on Nov 15 generated no further comment.
+
+The changes include the following:
+
+Chris Metcalf (3):
+      MAINTAINERS: add drivers/char/hvc_tile.c as maintained by tile
+      drivers/net/tile/: on-chip network drivers for the tile architecture
+      pci root complex: support for tile architecture
+
+ MAINTAINERS                          |    2 +
+ arch/tile/Kconfig                    |   12 +
+ arch/tile/include/asm/cacheflush.h   |   52 +
+ arch/tile/include/asm/io.h           |   15 +-
+ arch/tile/include/asm/pci-bridge.h   |  117 --
+ arch/tile/include/asm/pci.h          |  107 +-
+ arch/tile/include/asm/processor.h    |   10 +
+ arch/tile/include/hv/drv_xgbe_impl.h |  300 ++++
+ arch/tile/include/hv/drv_xgbe_intf.h |  615 +++++++
+ arch/tile/include/hv/netio_errors.h  |  122 ++
+ arch/tile/include/hv/netio_intf.h    | 2975 ++++++++++++++++++++++++++++++++++
+ arch/tile/kernel/Makefile            |    1 +
+ arch/tile/kernel/pci.c               |  621 +++++++
+ arch/tile/mm/init.c                  |    8 +-
+ drivers/net/Kconfig                  |   12 +
+ drivers/net/Makefile                 |    1 +
+ drivers/net/tile/Makefile            |   10 +
+ drivers/net/tile/tilepro.c           | 2406 +++++++++++++++++++++++++++
+ drivers/pci/Makefile                 |    1 +
+ drivers/pci/quirks.c                 |   18 +
+ 20 files changed, 7216 insertions(+), 189 deletions(-)
+ delete mode 100644 arch/tile/include/asm/pci-bridge.h
+ create mode 100644 arch/tile/include/hv/drv_xgbe_impl.h
+ create mode 100644 arch/tile/include/hv/drv_xgbe_intf.h
+ create mode 100644 arch/tile/include/hv/netio_errors.h
+ create mode 100644 arch/tile/include/hv/netio_intf.h
+ create mode 100644 arch/tile/kernel/pci.c
+ create mode 100644 drivers/net/tile/Makefile
+ create mode 100644 drivers/net/tile/tilepro.c
