@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab0KXTRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:17:37 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:24315 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab0KXTRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:17:36 -0500
-Message-ID: <4CED649B.5000805@siemens.com>
-Date: Wed, 24 Nov 2010 20:16:43 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1756273Ab0KXTRy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:17:54 -0500
+Received: from netnation.com ([204.174.223.2]:35230 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756208Ab0KXTRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:17:52 -0500
+Date: Wed, 24 Nov 2010 11:17:49 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Free memory never fully used, swapping
+Message-ID: <20101124191749.GA29511@hostway.ca>
+References: <20101115195246.GB17387@hostway.ca> <20101122154419.ee0e09d2.akpm@linux-foundation.org> <20101123100402.GH19571@csn.ul.ie> <20101124064329.GB25170@hostway.ca> <20101124092753.GS19571@csn.ul.ie>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: write protect memory after slot swap
-References: <20101025012124.GA31262@redhat.com> <4CC54EB8.9020604@redhat.com>
-In-Reply-To: <4CC54EB8.9020604@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101124092753.GS19571@csn.ul.ie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.10.2010 11:32, Avi Kivity wrote:
->  On 10/25/2010 03:21 AM, Michael S. Tsirkin wrote:
->> I have observed the following bug trigger:
->>
->> 1. userspace calls GET_DIRTY_LOG
->> 2. kvm_mmu_slot_remove_write_access is called and makes a page ro
->> 3. page fault happens and makes the page writeable
->>     fault is logged in the bitmap appropriately
->> 4. kvm_vm_ioctl_get_dirty_log swaps slot pointers
->>
->> a lot of time passes
->>
->> 5. guest writes into the page
->> 6. userspace calls GET_DIRTY_LOG
->>
->> At point (5), bitmap is clean and page is writeable,
->> thus, guest modification of memory is not logged
->> and GET_DIRTY_LOG returns an empty bitmap.
->>
->> The rule is that all pages are either dirty in the current bitmap,
->> or write-protected, which is violated here.
->>
->> It seems that just moving kvm_mmu_slot_remove_write_access down
->> to after the slot pointer swap should fix this bug.
->>
->> Warning: completely untested.
->> Please comment.
->> Note: fix will be needed for -stable etc.
+On Wed, Nov 24, 2010 at 09:27:53AM +0000, Mel Gorman wrote:
+
+> On Tue, Nov 23, 2010 at 10:43:29PM -0800, Simon Kirby wrote:
+> > On Tue, Nov 23, 2010 at 10:04:03AM +0000, Mel Gorman wrote:
+> > 
+> > > On Mon, Nov 22, 2010 at 03:44:19PM -0800, Andrew Morton wrote:
+> > > > On Mon, 15 Nov 2010 11:52:46 -0800
+> > > > Simon Kirby <sim@hostway.ca> wrote:
+> > > > 
+> > > > > I noticed that CONFIG_NUMA seems to enable some more complicated
+> > > > > reclaiming bits and figured it might help since most stock kernels seem
+> > > > > to ship with it now.  This seems to have helped, but it may just be
+> > > > > wishful thinking.  We still see this happening, though maybe to a lesser
+> > > > > degree.  (The following observations are with CONFIG_NUMA enabled.)
+> > > > > 
+> > > 
+> > > Hi,
+> > > 
+> > > As this is a NUMA machine, what is the value of
+> > > /proc/sys/vm/zone_reclaim_mode ? When enabled, this reclaims memory
+> > > local to the node in preference to using remote nodes. For certain
+> > > workloads this performs better but for users that expect all of memory
+> > > to be used, it has surprising results.
+> > > 
+> > > If set to 1, try testing with it set to 0 and see if it makes a
+> > > difference. Thanks
+> > 
+> > Hi Mel,
+> > 
+> > It is set to 0.  It's an Intel EM64T...I only enabled CONFIG_NUMA since
+> > it seemed to enable some more complicated handling, and I figured it
+> > might help, but it didn't seem to.  It's also required for
+> > CONFIG_COMPACTION, but that is still marked experimental.
+> > 
 > 
-> Excellent catch, I stared at this code for a while and didn't see the
-> bug.  Patch applied.
-> 
+> I'm surprised a little that you are bringing compaction up because unless
+> there are high-order involved, it wouldn't make a difference. Is there
+> a constant source of high-order allocations in the system e.g. a network
+> card configured to use jumbo frames? A possible consequence of that is that
+> reclaim is kicking in early to free order-[2-4] pages that would prevent 100%
+> of memory being used.
 
-This patch was marked KVM-stable on commit, but it did not make into any
-stable branch thus also none of the recent releases. Please fix (for
-2.6.36 now).
+We /were/ using jumbo frames, but only over a local cross-over connection
+to another node (for DRBD), so I disabled jumbo frames on this interface
+and reconnected DRBD.  Even with MTUs set to 1500, we saw GFP_ATOMIC
+order=3 allocations coming from __alloc_skb:
 
-Thanks,
-Jan
+perf record --event kmem:mm_page_alloc --filter 'order>=3' -a --call-graph sleep 10
+perf trace
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+	imap-20599 [002] 1287672.803567: mm_page_alloc: page=0xffffea00004536c0 pfn=4536000 order=3 migratetype=0 gfp_flags=GFP_ATOMIC|GFP_NOWARN|GFP_NORETRY|GFP_COMP
+
+perf report shows:
+
+__alloc_pages_nodemask
+alloc_pages_current
+new_slab
+__slab_alloc
+__kmalloc_node_track_caller
+__alloc_skb
+__netdev_alloc_skb
+bnx2_poll_work
+
+Dave was seeing these on his laptop with an Intel NIC as well.  Ralf
+noted that the slab cache grows in higher order blocks, so this is
+normal.  The GFP_ATOMIC bubbles up from *alloc_skb, I guess.
+
+Simon-
