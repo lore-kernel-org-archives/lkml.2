@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab0KXOoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:44:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44954 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751189Ab0KXOoh (ORCPT
+	id S1752391Ab0KXOo7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:44:59 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:56405 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0KXOo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:44:37 -0500
-Date: Wed, 24 Nov 2010 14:44:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        vbarinov@embeddedalley.com, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: tlv320aic3x - fix variable may be used
- uninitialized warning
-Message-ID: <20101124144434.GI24970@rakim.wolfsonmicro.main>
-References: <1290609659.2749.2.camel@phoenix>
+	Wed, 24 Nov 2010 09:44:58 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eugene Teo <eugene@redhat.com>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] af_unix: limit unix_tot_inflight
+References: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
+	<1290553918.2866.80.camel@edumazet-laptop>
+	<1290590335.3464.24.camel@edumazet-laptop>
+Date: Wed, 24 Nov 2010 15:44:53 +0100
+In-Reply-To: <1290590335.3464.24.camel@edumazet-laptop> (Eric Dumazet's
+	message of "Wed, 24 Nov 2010 10:18:55 +0100")
+Message-ID: <877hg2g4re.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290609659.2749.2.camel@phoenix>
-X-Cookie: Made with real ingredients.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 10:40:59PM +0800, Axel Lin wrote:
-> If aic3x_read failed , val is used uninitialized.
-> Fix it by initializing val to 0.
-> 
-> This patch fixes below compile warning:
-> sound/soc/codecs/tlv320aic3x.c: In function 'aic3x_get_gpio':
-> sound/soc/codecs/tlv320aic3x.c:1183: warning: 'val' may be used uninitialized in this function
-> sound/soc/codecs/tlv320aic3x.c: In function 'aic3x_headset_detected':
-> sound/soc/codecs/tlv320aic3x.c:1211: warning: 'val' may be used uninitialized in this function
-> sound/soc/codecs/tlv320aic3x.c: In function 'aic3x_button_pressed':
-> sound/soc/codecs/tlv320aic3x.c:1219: warning: 'val' may be used uninitialized in this function
+Eric Dumazet <eric.dumazet@gmail.com> writes:
+>
+> diff --git a/net/unix/garbage.c b/net/unix/garbage.c
+> index c8df6fd..40df93d 100644
+> --- a/net/unix/garbage.c
+> +++ b/net/unix/garbage.c
+> @@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
+>  }
+>  
+>  static bool gc_in_progress = false;
+> +#define UNIX_INFLIGHT_TRIGGER_GC 16000
 
-This does rather look like a compiler bug.  I'm generally against this
-sort of change as it just tramples over the warning in cases where it
-may be valid, though given the trivially small functions here it's hard
-to care.
+It would be better to define this as a percentage of
+lowmem.
 
-Really this stuff should all be written to use the standard jack and
-GPIO APIs anyway.
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
