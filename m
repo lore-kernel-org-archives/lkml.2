@@ -1,158 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab0KXTzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:55:40 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48617 "EHLO deliverator"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756368Ab0KXTx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:53:58 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 02/12] sep: handle the rar definition stuff in the header
-To: greg@kroah.com, mark.a.allyn@intel.com, linux-kernel@vger.kernel.org
-Date: Wed, 24 Nov 2010 19:33:43 +0000
-Message-ID: <20101124193338.16425.36821.stgit@bob.linux.org.uk>
-In-Reply-To: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
-References: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932128Ab0KXTzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:55:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34236 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756470Ab0KXTzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:55:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Nmfd8d6OOCmoSePIP2V2NaeHf7os4dAy4a53+/9r6oT5x0VxlyJZdzPz8Nh5pr2/XN
+         LFbVFVuhoSdFrdYgdeA2bPY6DDlAxSJLv0TazVz4usDZap4XB9EKMVLUwe7uOaEl+a4T
+         arC4KGcreKFe2tmUupOgzvO40Pb8Ri9BbA8+Y=
+Date: Wed, 24 Nov 2010 11:55:24 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Fabien Marteau <fabien.marteau@armadeus.com>
+Cc: Scott Moreau <oreaus@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: joystick:   Adding Austria Microsystem AS5011
+ joystick driver
+Message-ID: <20101124195523.GF27368@core.coreip.homeip.net>
+References: <4CEBED7E.7010101@armadeus.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CEBED7E.7010101@armadeus.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Hi Fabien,
 
-SEP isn't the only driver that may need to handle both cases easily
+On Tue, Nov 23, 2010 at 05:36:14PM +0100, Fabien Marteau wrote:
+> Driver for EasyPoint AS5011 2 axis joystick chip. This chip is plugged
+> on an I2C bus. It as been tested on ARM processor (i.MX27).
+> 
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Thank you for the patch. In addiitoon to comments you got from the other
+reviewers I'd recommend switching to threaded IRQ instead of using a
+separate workqueue, it greatly simplifies the code.
 
- drivers/staging/sep/sep_driver.c        |    1 +
- drivers/staging/sep/sep_driver_config.h |   61 -------------------------------
- include/linux/rar_register.h            |   16 ++++++++
- 3 files changed, 17 insertions(+), 61 deletions(-)
+> +
+> +static irqreturn_t button_interrupt(int irq, void *dev_id)
+> +{
+> +	struct as5011_platform_data *plat_dat =
+> +		(struct as5011_platform_data *)dev_id;
+> +	int ret;
+> +
+> +	ret = gpio_get_value(plat_dat->button_gpio);
+> +	if (ret)
+> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 0);
+> +	else
+> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 1);
+> +	input_sync(plat_dat->input_dev);
+> +	return IRQ_HANDLED;
 
+That appears to be a hard IRQ; are you sure that gpio_get_value will not
+sleep?
 
-diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index ef36239..8a1ff86 100644
---- a/drivers/staging/sep/sep_driver.c
-+++ b/drivers/staging/sep/sep_driver.c
-@@ -53,6 +53,7 @@
- #include <asm/cacheflush.h>
- #include <linux/sched.h>
- #include <linux/delay.h>
-+#include <linux/rar_register.h>
- 
- #include <linux/netlink.h>
- #include <linux/connector.h>
-diff --git a/drivers/staging/sep/sep_driver_config.h b/drivers/staging/sep/sep_driver_config.h
-index 68688cb..cfda86f 100644
---- a/drivers/staging/sep/sep_driver_config.h
-+++ b/drivers/staging/sep/sep_driver_config.h
-@@ -236,15 +236,6 @@ held by the proccess (struct file) */
- /* This stub header is for non Moorestown driver only */
- 
- /*
-- * Constants that specify different kinds of RAR regions that could be
-- * set up.
-- */
--static __u32 const RAR_TYPE_VIDEO;  /* 0 */
--static __u32 const RAR_TYPE_AUDIO = 1;
--static __u32 const RAR_TYPE_IMAGE = 2;
--static __u32 const RAR_TYPE_DATA  = 3;
--
--/*
-  * @struct RAR_stat
-  *
-  * @brief This structure is used for @c RAR_HANDLER_STAT ioctl and for
-@@ -373,56 +364,4 @@ struct RAR_buffer {
- 
- #endif  /* MEMRAR */
- 
--/* rar_register */
--#ifndef CONFIG_RAR_REGISTER
--/* This stub header is for non Moorestown driver only */
--
--/* The register_rar function is to used by other device drivers
-- * to ensure that this driver is ready. As we cannot be sure of
-- * the compile/execute order of dirvers in ther kernel, it is
-- * best to give this driver a callback function to call when
-- * it is ready to give out addresses. The callback function
-- * would have those steps that continue the initialization of
-- * a driver that do require a valid RAR address. One of those
-- * steps would be to call get_rar_address()
-- * This function return 0 on success an -1 on failure.
-- */
--#define register_rar(a, b, c) (-ENODEV)
--
--/* The get_rar_address function is used by other device drivers
-- * to obtain RAR address information on a RAR. It takes two
-- * parameter:
-- *
-- * int rar_index
-- * The rar_index is an index to the rar for which you wish to retrieve
-- * the address information.
-- * Values can be 0,1, or 2.
-- *
-- * struct RAR_address_struct is a pointer to a place to which the function
-- * can return the address structure for the RAR.
-- *
-- * The function returns a 0 upon success or a -1 if there is no RAR
-- * facility on this system.
-- */
--#define rar_get_address(a, b, c) (-ENODEV)
--
--/* The lock_rar function is ued by other device drivers to lock an RAR.
-- * once an RAR is locked, it stays locked until the next system reboot.
-- * The function takes one parameter:
-- *
-- * int rar_index
-- * The rar_index is an index to the rar that you want to lock.
-- * Values can be 0,1, or 2.
-- *
-- * The function returns a 0 upon success or a -1 if there is no RAR
-- * facility on this system.
-- */
--#define rar_lock(a) (-1)
--
--#else /* using real RAR_REGISTER */
--
--#include <linux/rar_register.h>
--
--#endif  /* CONFIG_RAR_REGISTER */
--
- #endif /* SEP DRIVER CONFIG */
-diff --git a/include/linux/rar_register.h b/include/linux/rar_register.h
-index ffa8057..5c61181 100644
---- a/include/linux/rar_register.h
-+++ b/include/linux/rar_register.h
-@@ -34,11 +34,27 @@
- 
- struct rar_device;
- 
-+#if defined(CONFIG_RAR_REGISTER)
- int register_rar(int num,
- 		int (*callback)(unsigned long data), unsigned long data);
- void unregister_rar(int num);
- int rar_get_address(int rar_index, dma_addr_t *start, dma_addr_t *end);
- int rar_lock(int rar_index);
-+#else
-+extern void unregister_rar(int num)  { }
-+extern int rar_lock(int rar_index) { return -EIO; }
-+
-+extern inline int register_rar(int num,
-+		int (*callback)(unsigned long data), unsigned long data)
-+{
-+	return -ENODEV;
-+}
-+
-+extern int rar_get_address(int rar_index, dma_addr_t *start, dma_addr_t *end)
-+{
-+	return -ENODEV;
-+}
-+#endif	/* RAR_REGISTER */
- 
- #endif  /* __KERNEL__ */
- #endif  /* _RAR_REGISTER_H */
+> +
+> +	plat_dat->input_dev->name = "Austria Microsystem as5011 joystick";
+> +	plat_dat->input_dev->uniq = "Austria0";
+> +	plat_dat->input_dev->id.bustype = BUS_I2C;
+> +	plat_dat->input_dev->phys = "/dev/input/event0";
 
+Phys is not the path in device tree but rather physical device
+connection path within the system. If there is not known connection path
+it is better just leave it as NULL.
+
+> +	plat_dat->input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+> +	plat_dat->input_dev->keybit[BIT_WORD(BTN_JOYSTICK)] =
+> +					BIT_MASK(BTN_JOYSTICK);
+> +
+> +	input_set_abs_params(plat_dat->input_dev,
+> +			     ABS_X,
+> +			     AS5011_MIN_AXIS,
+> +			     AS5011_MAX_AXIS,
+> +			     AS5011_FUZZ,
+> +			     AS5011_FLAT);
+> +	input_set_abs_params(plat_dat->input_dev,
+> +			     ABS_Y,
+> +			     AS5011_MIN_AXIS,
+> +			     AS5011_MAX_AXIS,
+> +			     AS5011_FUZZ,
+> +			     AS5011_FLAT);
+> +
+> +	plat_dat->button_irq_name =
+> +		kmalloc(sizeof(unsigned char)*SIZE_NAME,
+> +					 GFP_KERNEL);
+
+Just why does it have to be separately allocated? I'd even stick with
+"as5011" for all IRQ names.
+
+> +
+> +	queue_work(plat_dat->workqueue, &plat_dat->update_axes_work);
+> +
+
+The device is quite likely not opened here so why do you want to send
+events?
+
+Thanks.
+
+-- 
+Dmitry
