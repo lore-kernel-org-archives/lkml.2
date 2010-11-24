@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab0KXOAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:00:49 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17967 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab0KXOAs (ORCPT
+	id S1754999Ab0KXOAy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:00:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41770 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752640Ab0KXOAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:00:48 -0500
-Date: Wed, 24 Nov 2010 14:53:05 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Rakib Mullick <rakib.mullick@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: Re: [PATCH] x86, dumpstack: Fix unused variable warning.
-In-Reply-To: <AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1011241452040.23994@swampdragon.chaosbits.net>
-References: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com> <alpine.LNX.2.00.1011241051370.23994@swampdragon.chaosbits.net> <AANLkTinOAdDqmVo+zrEk=-EUri-CXBY1kukd96-ocHhL@mail.gmail.com>
- <AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 24 Nov 2010 09:00:52 -0500
+Date: Wed, 24 Nov 2010 14:00:49 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [question] NR_IRQS in genirq
+Message-ID: <20101124140048.GG24970@rakim.wolfsonmicro.main>
+References: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com>
+ <alpine.LFD.2.00.1011241416360.2900@localhost6.localdomain6>
+ <AANLkTik5N0d9wcaiS538UWQ83E_HhXoWC8nMxVY__1+k@mail.gmail.com>
+ <20101124135048.GC13507@sirena.org.uk>
+ <alpine.LFD.2.00.1011241453330.2900@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1257869183-1290606785=:23994"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011241453330.2900@localhost6.localdomain6>
+X-Cookie: Made with real ingredients.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Nov 24, 2010 at 02:54:38PM +0100, Thomas Gleixner wrote:
+> On Wed, 24 Nov 2010, Mark Brown wrote:
+> > On Wed, Nov 24, 2010 at 09:46:06PM +0800, Haojian Zhuang wrote:
 
---8323328-1257869183-1290606785=:23994
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+> > Most ARM platforms have come up with some Kconfig gunk to allow boards
+> > to extend this for off-SoC GPIOs.  It'd be really nice to get rid of
+> > NR_IRQS and stop having to worry about this at all :(
 
-On Wed, 24 Nov 2010, Frederic Weisbecker wrote:
+> I mean with sparse_irq you can set NR_IRQS insanely high w/o
+> increasing memory consumption. That's the whole point.
 
-> On Wed, Nov 24, 2010 at 04:26:01PM +0600, Rakib Mullick wrote:
-> > On Wed, Nov 24, 2010 at 3:57 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > > On Wed, 24 Nov 2010, Rakib Mullick wrote:
-> > >
-> > >
-> > > So, now the bp variable does not exist at all if CONFIG_FRAME_POINTER is
-> > > not defined.
-> >
-> > Yes - right. And its not used outside CONFIG_FRAME_POINTER.
-> >
-> > > That's going to make this line :
-> > >
-> > >          show_trace(NULL, NULL, &stack, bp);
-> > >
-> > Not clear what are you trying to say. Would you please, clear it up a bit?
-> 
-> 
-> I think Jesper is confused because your patch applies on -tip (tip/master or
-> tip/perf/core) where we have zapped the bp argument from show_trace() lately.
-> 
-> But in the mainline, show_trace() still has the bp argument.
+Yeah, I was just pointing out common practice on ARM (sparse IRQ isn't
+widely enough deployed there :/ ).
 
-
-Ahh yes, my mistake. I checked the code in mainline.
-Sorry about the confusion.
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-1257869183-1290606785=:23994--
+Would it be worth having sparse_irq change the default NR_IRQS to be
+something suitably large - there doesn't seem any point in having
+platforms using it each pick their own particular definition of insanely
+high?  I'll take a look and cook up a patch unless I can spot anything
+silly about that by myself.
