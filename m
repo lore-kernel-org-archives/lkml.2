@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab0KXIYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:24:36 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:45136 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751175Ab0KXIYf (ORCPT
+	id S1752029Ab0KXI3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 03:29:49 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:58084 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab0KXI3s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:24:35 -0500
-Message-ID: <4CECCBAE.6080707@stericsson.com>
-Date: Wed, 24 Nov 2010 09:24:14 +0100
-From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Lightning/1.0b1 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/3] mfd: Added new regulator_data pointer to ab8500 board
- configuration
-References: <1290536754-21775-1-git-send-email-bengt.g.jonsson@stericsson.com> <1290536754-21775-2-git-send-email-bengt.g.jonsson@stericsson.com> <20101123183037.GA19212@rakim.wolfsonmicro.main>
-In-Reply-To: <20101123183037.GA19212@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Nov 2010 03:29:48 -0500
+Subject: Re: [PATCH 0/3] jump label: updates for 2.6.37
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <1290553854.30543.406.camel@gandalf.stny.rr.com>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <1290548527.30543.401.camel@gandalf.stny.rr.com>
+	 <20101123215604.GC4715@redhat.com>
+	 <1290553854.30543.406.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 09:29:22 +0100
+Message-ID: <1290587362.2072.429.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-23 19:30, Mark Brown wrote:
-> On Tue, Nov 23, 2010 at 07:25:52PM +0100, Bengt Jonsson wrote:
->
->> The ab8500 regulator board configuration will be better separated
->> from the MFD board configuration. This patch adds a void pointer
->> for this purpose.
->
-> Adding something completely typesafe seems like a real loss - if you
-> want to point to something else at least point to a particular type -
-> eg,
->
-> struct foo;
->
-> struct pdata {
-> 	int other_stuff;
-> 	struct foo *foo;
-> };
->
-I get your point, I'll try this out.
->>   	struct regulator_init_data *regulator[AB8500_NUM_REGULATORS];
->> +	void *regulator_data;
->
-> It'd also help if you could articulate the problem you see with the
-> current approach...
-The problem I see is that ab8500-core defines the number of regulators 
-which I can see no reason for. If someone wants to add or remove a 
-regulator they have to make a change in include/linux/mfd/ab8500.c as 
-well as in the regulator files.
+On Tue, 2010-11-23 at 18:10 -0500, Steven Rostedt wrote:
 
-I will add a better description in an updated patch.
+> Anyway, I just tried what you explained with the current kernel, with
+> and without jump labels and, without jump labels, the module has its
+> kmalloc tracepoint traced, but with jump labels it does not. So we can
+> treat this as a regression, which is something that can go into an -rc.
+> 
+> The change log must state that this _is_ a regression, or Linus may not
+> accept it.
+
+I really dislike the first patch... Preferably I'd simply fully revert
+all the jump-label stuff and try again next round with a saner
+interface.
+
+There's a really good simple fix for this, simply disable the gcc
+trickery for .37 and use the fallback.
+
+Then for .38, mandate the key type to be atomic_t * and switch to the
+SWITCH_POINT() interface from hpa.
