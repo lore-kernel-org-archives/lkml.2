@@ -1,149 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab0KXKDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 05:03:00 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47524 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab0KXKC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 05:02:58 -0500
-Date: Wed, 24 Nov 2010 10:02:42 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-Message-ID: <20101124100242.GW19571@csn.ul.ie>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com> <20101123092826.GD19571@csn.ul.ie> <AANLkTi=KunDRwVd73vtbng0F+a=QBgJeV5BXrewYJa3R@mail.gmail.com>
+	id S1752951Ab0KXKEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 05:04:55 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15240 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab0KXKEy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 05:04:54 -0500
+Date: Wed, 24 Nov 2010 10:57:10 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: [PATCH] x86, dumpstack: Fix unused variable warning.
+In-Reply-To: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1011241051370.23994@swampdragon.chaosbits.net>
+References: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=KunDRwVd73vtbng0F+a=QBgJeV5BXrewYJa3R@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-432350309-1290592630=:23994"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 08:24:35AM +0900, Minchan Kim wrote:
-> >> <SNIP>
-> >>
-> >> +static void __pagevec_lru_deactive(struct pagevec *pvec)
-> >> +{
-> >
-> > Might be worth commenting that this function must be called with pre-emption
-> > disabled. FWIW, I am reasonably sure your implementation is prefectly safe
-> > but a note wouldn't hurt.
-> 
-> Will fix.
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Thanks
+--8323328-432350309-1290592630=:23994
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 
-> >
-> >> +     int i, lru, file;
-> >> +
-> >> +     struct zone *zone = NULL;
-> >> +
-> >> +     for (i = 0; i < pagevec_count(pvec); i++) {
-> >> +             struct page *page = pvec->pages[i];
-> >> +             struct zone *pagezone = page_zone(page);
-> >> +
-> >> +             if (pagezone != zone) {
-> >> +                     if (zone)
-> >> +                             spin_unlock_irq(&zone->lru_lock);
-> >> +                     zone = pagezone;
-> >> +                     spin_lock_irq(&zone->lru_lock);
-> >> +             }
-> >> +
-> >> +             if (PageLRU(page)) {
-> >> +                     if (PageActive(page)) {
-> >> +                             file = page_is_file_cache(page);
-> >> +                             lru = page_lru_base_type(page);
-> >> +                             del_page_from_lru_list(zone, page,
-> >> +                                             lru + LRU_ACTIVE);
-> >> +                             ClearPageActive(page);
-> >> +                             ClearPageReferenced(page);
-> >> +                             add_page_to_lru_list(zone, page, lru);
-> >> +                             __count_vm_event(PGDEACTIVATE);
-> >> +
-> >
-> > What about memcg, do we not need to be calling mem_cgroup_add_lru_list() here
-> > as well? I'm looking at the differences between what move_active_pages_to_lru()
-> 
-> Recently, add_page_to_lru_list contains mem_cgroup_add_lru_list.
-> 
+On Wed, 24 Nov 2010, Rakib Mullick wrote:
 
-My bad, you're right. I was thrown by move_active_pages_to_lru() needing to
-do memcg stuff manually and didn't spot why it ok to miss it here.
+> With allnoconfig, bp becomes unused. So put bp into defination of
+> CONFIG_FRAME_POINTER.
+> 
+> arch/x86/kernel/dumpstack.c: In function ‘dump_stack’:
+> arch/x86/kernel/dumpstack.c:200: warning: unused variable ‘bp’
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ---
+> 
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index 8474c99..fc5a253 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -197,10 +197,10 @@ void show_stack(struct task_struct *task,
+> unsigned long *sp)
+>   */
+>  void dump_stack(void)
+>  {
+> -	unsigned long bp = 0;
+>  	unsigned long stack;
+> 
+>  #ifdef CONFIG_FRAME_POINTER
+> +	unsigned long bp = 0;
+>  	if (!bp)
+>  		get_bp(bp);
+>  #endif
 
-> > is doing and this. I'm wondering if it'd be worth your whole building a list
-> > of active pages that are to be moved to the inactive list and passing them
-> > to move_active_pages_to_lru() ? I confuess I have not thought about it deeply
-> > so it might be a terrible suggestion but it might reduce duplication of code.
-> 
-> Firstly I tried it so I sent a patch about making
-> move_to_active_pages_to_lru more generic.
-> move_to_active_pages_to_lru needs zone argument so I need gathering
-> pages per zone in truncate.
-> I don't want for user of the function to consider even zone and
-> zone->lru_lock handling.
-> 
-> I think the lru_demote_pages could be used elsewhere(ex, readahead max
-> size heuristic).
-> So it's generic and easy to use. :)
-> 
+So, now the bp variable does not exist at all if CONFIG_FRAME_POINTER is 
+not defined.
+That's going to make this line :
 
-Ok, that's fair enough.
+          show_trace(NULL, NULL, &stack, bp);
 
-> >
-> >> +                             update_page_reclaim_stat(zone, page, file, 0);
-> >> +                     }
-> >> +             }
-> >> +     }
-> >> +     if (zone)
-> >> +             spin_unlock_irq(&zone->lru_lock);
-> >> +
-> >> +     release_pages(pvec->pages, pvec->nr, pvec->cold);
-> >> +     pagevec_reinit(pvec);
-> >> +}
-> >> +
-> >>  /*
-> >>   * Drain pages out of the cpu's pagevecs.
-> >>   * Either "cpu" is the current CPU, and preemption has already been
-> >> @@ -292,8 +333,28 @@ static void drain_cpu_pagevecs(int cpu)
-> >>               pagevec_move_tail(pvec);
-> >>               local_irq_restore(flags);
-> >>       }
-> >> +
-> >> +     pvec = &per_cpu(lru_deactive_pvecs, cpu);
-> >> +     if (pagevec_count(pvec))
-> >> +             __pagevec_lru_deactive(pvec);
-> >> +}
-> >> +
-> >> +/*
-> >> + * Function used to forecefully demote a page to the head of the inactive
-> >> + * list.
-> >
-> > s/forecefully/forcefully/
-> >
-> > The comment should also state *why* and under what circumstances we move
-> > pages to the inactive list like this. Also based on the discussions
-> > elsewhere in this thread, it'd be nice to include a comment why it's the
-> > head of the inactive list and not the tail.
-> 
-> Fair enough.
-> 
-> Thanks for the comment, Mel.
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+found further down in the dump_stack() function, quite unhappy.
+
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-432350309-1290592630=:23994--
