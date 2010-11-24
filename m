@@ -1,69 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab0KXT4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:56:13 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:33381 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932106Ab0KXT4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:56:10 -0500
-Date: Wed, 24 Nov 2010 14:56:06 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless)
-	fastpaths for slub
-Message-ID: <20101124195606.GA18766@Krystal>
-References: <20101123235139.908255844@linux.com> <20101123235201.758191189@linux.com> <AANLkTikVFWYS9UeCP1DJxhzYn9_rMcrovSfbQpNmXsvk@mail.gmail.com> <alpine.DEB.2.00.1011241012180.14268@router.home> <4CED695E.5050502@goop.org>
+	id S932133Ab0KXT47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:56:59 -0500
+Received: from claw.goop.org ([74.207.240.146]:50573 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281Ab0KXT46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:56:58 -0500
+Message-ID: <4CED6E08.4030407@goop.org>
+Date: Wed, 24 Nov 2010 11:56:56 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CED695E.5050502@goop.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:53:22 up 1 day, 56 min,  4 users,  load average: 0.07, 0.04,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v2] Use PHYSDEVOP_get_free_pirq to implement
+ find_unbound_pirq
+References: <alpine.DEB.2.00.1011241918290.2373@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1011241918290.2373@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jeremy Fitzhardinge (jeremy@goop.org) wrote:
-> On 11/24/2010 08:17 AM, Christoph Lameter wrote:
-> > On Wed, 24 Nov 2010, Pekka Enberg wrote:
-> >
-> >>> +       /*
-> >>> +        * The transaction ids are globally unique per cpu and per operation on
-> >>> +        * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
-> >>> +        * occurs on the right processor and that there was no operation on the
-> >>> +        * linked list in between.
-> >>> +        */
-> >>> +       tid = c->tid;
-> >>> +       barrier();
-> >> You're using a compiler barrier after every load from c->tid. Why?
-> > To make sure that the compiler does not do something like loading the tid
-> > later. The tid must be obtained before the rest of the information from
-> > the per cpu slab data is retrieved in order to ensure that we have a
-> > consistent set of data to operate on.
-> 
-> Isn't that best expressed with ACCESS_ONCE()?
+On 11/24/2010 11:22 AM, Stefano Stabellini wrote:
+> Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
+>
+> Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
+> pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
+> amount of pirq available.
+>
+> Changes since v1:
+>
+> - if PHYSDEVOP_get_free_pirq is not implemented, start pirq allocation
+> from 0 instead of 16. The pirq number 16 is not actually meaningful for
+> Xen.
+>
+> - Remove nr_pirqs, it is not needed anymore. Add a comment to specify
+> that we don't actually know the upper limit of the pirq number range.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>
+>
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 2811bb9..072af50 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -105,7 +105,6 @@ struct irq_info
+>  
+>  static struct irq_info *irq_info;
+>  static int *pirq_to_irq;
+> -static int nr_pirqs;
+>  
+>  static int *evtchn_to_irq;
+>  struct cpu_evtchn_s {
+> @@ -385,12 +384,17 @@ static int get_nr_hw_irqs(void)
+>  	return ret;
+>  }
+>  
+> -/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
+> - * succeeded otherwise nr_pirqs won't hold the right value */
+> -static int find_unbound_pirq(void)
+> +static int find_unbound_pirq(int type)
+>  {
+> -	int i;
+> -	for (i = nr_pirqs-1; i >= 0; i--) {
+> +	int rc, i;
+> +	struct physdev_get_free_pirq op_get_free_pirq;
+> +	op_get_free_pirq.type = type;
+> +
+> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
+> +	if (!rc)
+> +		return op_get_free_pirq.pirq;
+> +
+> +	for (i = 0; i <= nr_irqs-1; i++) {
 
-ACCESS_ONCE() use of volatile only ensures that volatile accesses are not
-reordered wrt each other. It does not ensure anything about other unrelated
-memory accesses (which we want to make sure the compiler won't move before the
-c->tid read). The compiler barrier() is really what seems to be needed here.
+That seems needlessly complex.  What's wrong with "i < nr_irqs"?  Are
+you trying to express something specific with this?
+>  		if (pirq_to_irq[i] < 0)
+>  			return i;
+>  	}
+> @@ -611,9 +615,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
+>  
+>  	spin_lock(&irq_mapping_update_lock);
+>  
+> -	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
+> +	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
+>  		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
+> -			pirq > nr_pirqs ? "nr_pirqs" :"",
+> +			pirq > nr_irqs ? "nr_pirqs" :"",
+>  			gsi > nr_irqs ? "nr_irqs" : "");
+>  		goto out;
+>  	}
+> @@ -672,7 +676,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
+>  	if (*irq == -1)
+>  		goto out;
+>  
+> -	*pirq = find_unbound_pirq();
+> +	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
+>  	if (*pirq == -1)
+>  		goto out;
+>  
+> @@ -1506,26 +1510,17 @@ void xen_callback_vector(void) {}
+>  
+>  void __init xen_init_IRQ(void)
+>  {
+> -	int i, rc;
+> -	struct physdev_nr_pirqs op_nr_pirqs;
+> +	int i;
+>  
+>  	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
+>  				    GFP_KERNEL);
+>  	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
+>  
+> -	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
+> -	if (rc < 0) {
+> -		nr_pirqs = nr_irqs;
+> -		if (rc != -ENOSYS)
+> -			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
+> -	} else {
+> -		if (xen_pv_domain() && !xen_initial_domain())
+> -			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
+> -		else
+> -			nr_pirqs = op_nr_pirqs.nr_pirqs;
+> -	}
+> -	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
+> -	for (i = 0; i < nr_pirqs; i++)
+> +	/* We are using nr_irqs as the maximum number of pirq available but
+> +	 * that number is actually chosen by Xen and we don't know exactly
+> +	 * what it is. Be careful choosing high pirq numbers. */
+> +	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
+> +	for (i = 0; i < nr_irqs; i++)
+>  		pirq_to_irq[i] = -1;
+>  
+>  	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
+> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> index 2b2c66c..534cac8 100644
+> --- a/include/xen/interface/physdev.h
+> +++ b/include/xen/interface/physdev.h
+> @@ -188,6 +188,16 @@ struct physdev_nr_pirqs {
+>      uint32_t nr_pirqs;
+>  };
+>  
+> +/* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
+> + * the hypercall returns a free pirq */
+> +#define PHYSDEVOP_get_free_pirq    23
+> +struct physdev_get_free_pirq {
 
-Thanks,
+I guess it doesn't really matter, and it's probably a bit late, but this
+seems like an odd name.  Normally I'd think of this as an allocation, so
+something like PHYSDEVOP_alloc_pirq.
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+    J
