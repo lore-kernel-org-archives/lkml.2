@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0KXOzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:55:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab0KXOzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:55:01 -0500
-Date: Wed, 24 Nov 2010 09:54:01 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: rostedt@goodmis.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
-	label key entries
-Message-ID: <20101124145401.GA2815@redhat.com>
-References: <cover.1290546539.git.jbaron@redhat.com> <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com> <1290586809.2072.424.camel@laptop>
+	id S1753417Ab0KXO57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:57:59 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:57069 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0KXO55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 09:57:57 -0500
+Date: Wed, 24 Nov 2010 14:57:50 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: corentincj@iksaif.net, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: eeepc: rfkill on 900A defunct
+Message-ID: <20101124145750.GA32033@srcf.ucam.org>
+References: <4CED26EF.5000109@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290586809.2072.424.camel@laptop>
+In-Reply-To: <4CED26EF.5000109@suse.cz>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 09:20:09AM +0100, Peter Zijlstra wrote:
-> On Tue, 2010-11-23 at 16:27 -0500, Jason Baron wrote:
-> >         struct hlist_head modules;
-> >         unsigned long key;
-> > +       u32 nr_entries : 31,
-> > +              enabled :  1;
-> >  }; 
-> 
-> I still don't see why you do this, why not simply mandate that the key
-> is of type atomic_t* and use *key as enabled state?
-> 
+On Wed, Nov 24, 2010 at 03:53:35PM +0100, Jiri Slaby wrote:
 
-Because I want to use *key as a pointer directly to 'struct jump_label_entry'.
-In this way jump_label_enable(), jump_label_disable(), become O(1) operations.
-That way we don't need any hashing.
+> but without hotplug support (pciehp cannot be bound to it). However the
+> eeepc-laptop driver expects the wifi on the 1st bus (pci_find_bus(0,
+> 1)), so it operates on a NIC on this machine instead of wifi.
 
-thanks,
+Yeah, this really needs to be fixed. We need to shift this code out of 
+eeepc-laptop and just have the PCI core handle it - that is, if we get a 
+hotplug notification, we need to rescan the slot even if we don't have a 
+hotplug driver bound to it. Let me look into that.
 
--Jason
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
