@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab0KXP1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 10:27:47 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57245 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab0KXP1q (ORCPT
+	id S1753388Ab0KXP3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 10:29:49 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51888 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab0KXP3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 10:27:46 -0500
-Subject: Re: trivial: make comment about vs{n,cn,}printf more understandable
-From: Will Schmidt <will_schmidt@vnet.ibm.com>
-Reply-To: will_schmidt@vnet.ibm.com
-Cc: Milton Miller <miltonm@bga.com>, u.kleine-koenig@pengutronix.de,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <1290568857.30543.442.camel@gandalf.stny.rr.com>
-References: <1290528765-25057-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <1290567844_20137@mail4.comsite.net>
-	 <1290568857.30543.442.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Wed, 24 Nov 2010 09:27:42 -0600
-Message-ID: <1290612462.3159.16.camel@lexx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 24 Nov 2010 10:29:48 -0500
+Date: Wed, 24 Nov 2010 10:25:07 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Frantisek Hanzlik <franta@hanzlici.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andrea Merello <andreamrl@tiscali.it>,
+        Michael Wu <flamingice@sourmilk.net>
+Subject: Re: rtl8180 freeze some i386 systems
+Message-ID: <20101124152506.GA7435@tuxdriver.com>
+References: <4CEBA51C.5010604@hanzlici.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CEBA51C.5010604@hanzlici.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 22:20 -0500, Steven Rostedt wrote:
-> On Tue, 2010-11-23 at 21:04 -0600, Milton Miller wrote:
-> > On Tue, 23 Nov 2010 at about 16:12:45 -0000, Uwe Kleine-König wrote:
-> > > 
-> > > "You probably want ... instead." sounds like a recommendation better
-> > > not to use the v... functions.
-> > > 
-> > 
-> > Which is true, if you dont' have a va_list its hard to get them.
-> > But I do get your point.
-> > 
-> > >   * the @buf not including the trailing '\0'. If @size is <= 0 the function
-> > >   * returns 0.
-> > >   *
-> > > - * Call this function if you are already dealing with a va_list.
-> > > - * You probably want scnprintf() instead.
-> > > + * If you're not already dealing with a va_list better use scnprintf().
-> > 
-> > That doesn't flow off my (mid-western usa) tounge.
-> > 
-> > How about
-> >  * Call this function if you are already dealing with a va_list.
-> >  * Otherwise you probably want to use scnprintf().
+On Tue, Nov 23, 2010 at 12:27:24PM +0100, Frantisek Hanzlik wrote:
+> On two PCs with Fedora 14/i386 these systems freezes just after command
+> "ip link set wlan0 up" was entered.
+> "freezes" meant system is totally unuseable, ping to LAN interface
+> hasn't reply, kbd/mouse not work, only way is HW reset/power off.
+> 
+> This hang occurs always independently on system runlevel: when switch to
+> runlevel 1, when only kernel threads + udev + root bash are active,
+> system still hangs.
+> Systems hangs on all tested kernels 2.6.34, 2.6.35.9 and 2.6.36.
+> Systems hangs with implicit cmdline and too when using "nomodeset",
+> "acpi=noirq", "acpi=off", "pci=biosirq", "pci=routeirq", "pci=noacpi"
+> parameters.
+> 
+> I have two Zyxel "G-302 v3" wifi adapters reported as RTL 8185 rev 20
+> (10ec:8185), which on other two PCs with F1{3,4}/i386 and same config
+> works well.
+> 
+> Can someone help with? Is some general method for solving this issue?
 
-> This is closer to what he asked us on IRC ;-)
-> 
-> But a "do X if Y" is more perl syntax than English (IMHO).
-> 
-> 
-> > 
-> > Alternatively,
-> >  * If you're not already dealing with a va_list consider scnprintf().
-> 
-> This isn't bad. My recommendation I gave him was:
-> 
->  * If you are already dealing with a va_list, then call this function.
->  * Otherwise you probably want to use scnprintf()
+Sorry for the late reply -- I wanted to attempt to recreate the issue.
+Unfortunately(?) I am not seeing any such problem.  My card is a PCCard
+apparently sold by CompUSA, but the chipset reported in dmesg matches
+yours (i.e. RTL8185vD + rtl8225).
 
-Would be nice if we could lead with the "probably...", but I don't see a
-clean way of doing that.    How about a blending of the two:
+I have tried vanilla 2.6.34 and 2.6.35 as well as the Fedora-provided
+2.6.35.6-48.fc14 -- all seem to work equally well, despite the annoying
+warning that continues to pop-up during scans.  (I need to get that
+fixed in Fedora!)
 
- * Call this function if you are dealing with a va_list, otherwise use
-the scnprintf() function.
+Could you try using netconsole to capture a backtrace over an ethernet
+connection?
 
+If that doesn't work, you might try doing a git bisect from the last
+working kernel (2.6.33?) to the first broken one (2.6.34?).
 
-> But my upstate NY tongue may not be the best judgment here.
-> 
-> -- Steve
-> 
-> "When people ask me what language my mother tongue is, I simply reply 'C'"
-> 
-> 
-> 
+Thanks,
 
-
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
