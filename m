@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab0KXAb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:31:29 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53469 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017Ab0KXAb0 (ORCPT
+	id S1755817Ab0KXAeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:34:17 -0500
+Received: from tomts43-srv.bellnexxia.net ([209.226.175.110]:43161 "EHLO
+	tomts43-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755581Ab0KXAeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:31:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=EwePUR6HzS8wgsTDob1XGhwy92mlk7KWN2nMYW4fkgSCr7kHi6ID0g+FVf74b8mUy9
-         tvifAHX9avwtpMU2UM6BRNggnp+4d7dTd68NrsBCqCopOKaLePNXK2QY1PioLQcL66Yo
-         aMCcTPIBOGlOkyEfsd3Q600k5EaG9jd7viUQA=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 2/2] rcu: Stop checking quiescent states after grace period completion from remote
-Date: Wed, 24 Nov 2010 01:31:13 +0100
-Message-Id: <1290558673-23580-3-git-send-crap-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
-References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+	Tue, 23 Nov 2010 19:34:14 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJbn60xGHlyW/2dsb2JhbACianK+EIVLBIRa
+Date: Tue, 23 Nov 2010 19:24:11 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
+	label key entries
+Message-ID: <20101124002411.GA29158@Krystal>
+References: <cover.1290546539.git.jbaron@redhat.com> <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com> <20101123234355.GA21549@Krystal> <1290556830.30543.415.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1290556830.30543.415.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 19:22:22 up 230 days, 10:12,  5 users,  load average: 0.18, 0.13,
+	0.11
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a CPU starts to chase its quiescent states by setting
-rdp->qs_pending to 1, it can still enter into an extended
-quiescent state and then another CPU will take care of this
-and complete the grace period if necessary.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Tue, 2010-11-23 at 18:43 -0500, Mathieu Desnoyers wrote:
+> > * Jason Baron (jbaron@redhat.com) wrote:
+> > [...]
+> > > +static void update_jump_label_module(struct module *mod)
+> > > +{
+> > > +	struct hlist_head *head;
+> > > +	struct hlist_node *node, *node_next, *module_node, *module_node_next;
+> > > +	struct jump_label_entry *e;
+> > > +	struct jump_label_module_entry *e_module;
+> > > +	struct jump_entry *iter;
+> > > +	int i, count;
+> > > +
+> > > +	/* if the module doesn't have jump label entries, just return */
+> > > +	if (!mod->num_jump_entries)
+> > > +		return;
+> > > +
+> > > +	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
+> > > +		head = &jump_label_table[i];
+> > > +		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
+> > > +			if (!e->enabled)
+> > > +				continue;
+> > > +			hlist_for_each_entry_safe(e_module, module_node,
+> > > +						  module_node_next,
+> > > +						  &(e->modules), hlist) {
+> > > +				if (e_module->mod != mod)
+> > > +					continue;
+> > 
+> > Ouch.
+> > 
+> > Could you iterate on the loaded/unloaded module jump labels and do hash
+> > table lookups rather than doing this O(n^3) iteration ?
+> 
+> This does not look O(n^3) to me.
+> 
+> It's a hash table, thus the first two loops is just iterating O(n) items
+> in the hash.
 
-rcu_report_qs_rdp() currently doesn't handle well this case
-and considers it must try later to notify its quiescent state.
+Good point.
 
-However if the last grace period has been completed there is
-nothing left to do for the current CPU.
+> 
+> And the third loop is all the modules that use a particular event.
+> 
+> So it is O(n*m)  where n is the number of events, and m is the number of
+> modules attached to the events. And that's only if all events are used
+> by those modules. The actual case is much smaller.
 
-It means that until a next grace period starts, the CPU that
-runs into that case will keep chasing its own quiescent states
-by raising a softirq on every tick for no good reason.
+Still, I wonder if the O(n) iteration on all events could be shrinked to
+an interation on only the events present in the loaded/unloaded module ?
+I think I did something like that for immediate values already. It might
+apply (or not) here, just a thought.
 
-This can take a while before a new grace period starts and
-this time slice is covered by spurious softirqs and other
-kinds of rcu checks.
+Thanks,
 
-Fix this by resetting rdp->qs_pending if the last grace
-period has been completed by a remote CPU while we were
-in an extended quiescent state.
+Mathieu
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/rcutree.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 5f038a1..f287eaa 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -937,6 +937,15 @@ rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp, long las
- 		 * race occurred.
- 		 */
- 		rdp->passed_quiesc = 0;	/* try again later! */
-+
-+		/*
-+		 * Another CPU may have taken care of us if we were in an
-+		 * extended quiescent state, in which case we don't need
-+		 * to continue to track anything.
-+		 */
-+		if (rnp->gpnum == rnp->completed)
-+			rdp->qs_pending = 0;
-+
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		return;
- 	}
 -- 
-1.7.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
