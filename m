@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab0KXA55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:57:57 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49548 "EHLO ogre.sisk.pl"
+	id S1755857Ab0KXA60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:58:26 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50952 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755567Ab0KXA5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:57:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [Regression, post-2.6.37-rc2] Unable to start KDE with 2.6.37-rc3 on Acer Ferrari One
-Date: Wed, 24 Nov 2010 01:57:00 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>
-References: <201011240122.33174.rjw@sisk.pl>
-In-Reply-To: <201011240122.33174.rjw@sisk.pl>
+	id S1754410Ab0KXA6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Nov 2010 19:58:24 -0500
+Date: Tue, 23 Nov 2010 16:58:20 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states
+ after extended grace periods
+Message-ID: <20101124005820.GH8056@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+ <1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011240157.00726.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 24, 2010, Rafael J. Wysocki wrote:
-> Hi,
+On Wed, Nov 24, 2010 at 01:31:12AM +0100, Frederic Weisbecker wrote:
+> When a cpu is in an extended quiescent state, which includes idle
+> nohz or CPU offline, others CPUs will take care of the grace periods
+> on its behalf.
 > 
-> I cannot start KDE with the 2.6.37-rc3 kernel.  The X server and display
-> manager start normally, but when I attempt to log into KDE, it attempts to
-> start, but then the X apparently crashes and this appears in the dmesg output:
+> When this CPU exits its extended quiescent state, it will catch up
+> with the last started grace period and start chasing its own
+> quiescent states to end the current grace period.
 > 
-> [   24.342287] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
-> [   24.342298] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
-> [   24.342304] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
-> [   24.694106] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
-> [   93.938946] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
-> [   93.938956] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
-> [   93.938962] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
-> [   94.278050] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
-> [  114.898043] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
-> [  114.898053] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
-> [  114.898058] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
-> [  115.266113] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
-> [  129.722472] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
-> [  142.984314] radeon 0000:01:05.0: r600_cs_track_validate_cb offset[0] 0 46097920 4325376 too big
-> [  142.984324] radeon 0000:01:05.0: r600_packet3_check:1331 invalid cmd stream 502
-> [  142.984330] [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
-> [  143.370083] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> However in this case we always start to track quiescent states if the
+> grace period number has changed since we started our extended
+> quiescent state. And we do this because we always assume that the last
+> grace period is not finished and needs us to complete it, which is
+> sometimes wrong.
 > 
-> This doesn't happen with 2.6.37-rc2.
+> This patch verifies if the last grace period has been completed and
+> if so, start hunting local quiescent states like we always did.
+> Otherwise don't do anything, this economizes us some work and
+> an unnecessary softirq.
 
-Reverting the following commit:
+Interesting approach!  I can see how this helps in the case where the
+CPU just came online, but I don't see it in the nohz case, because the
+nohz case does not update the rdp->completed variable.  In contrast,
+the online path calls rcu_init_percpu_data() which sets up this variable.
 
-commit 16790569eddf4d406a16a65f4750f405fa669c52
-Author: Alex Deucher <alexdeucher@gmail.com>
-Date:   Sun Nov 14 20:24:35 2010 -0500
+So, what am I missing here?
 
-    drm/radeon/kms: fix and unify tiled buffer alignment checking for r6xx/7xx
+							Thanx, Paul
 
-fixes the issue for me (so everyone involved is already in the Cc list ;-)).
+PS.  It might well be worthwhile for the online case alone, but
+     the commit message does need to be accurate.
 
-Thanks,
-Rafael
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/rcutree.c |   13 +++++++++++--
+>  1 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index ccdc04c..5f038a1 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -620,8 +620,17 @@ static void __init check_cpu_stall_init(void)
+>  static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
+>  {
+>  	if (rdp->gpnum != rnp->gpnum) {
+> -		rdp->qs_pending = 1;
+> -		rdp->passed_quiesc = 0;
+> +		/*
+> +		 * Another CPU might have taken take of this new grace period
+> +		 * while we were idle and handled us as in an extended quiescent
+> +		 * state. In that case, we don't need to chase a local quiescent
+> +		 * state, otherwise:
+> +		 */
+> +		if (rdp->completed != rnp->gpnum) {
+> +			rdp->qs_pending = 1;
+> +			rdp->passed_quiesc = 0;
+> +		}
+> +
+>  		rdp->gpnum = rnp->gpnum;
+>  	}
+>  }
+> -- 
+> 1.7.1
+> 
