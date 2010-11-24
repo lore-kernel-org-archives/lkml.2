@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab0KXWoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 17:44:11 -0500
-Received: from ozlabs.org ([203.10.76.45]:34493 "EHLO ozlabs.org"
+	id S1756103Ab0KXWqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 17:46:17 -0500
+Received: from ozlabs.org ([203.10.76.45]:34517 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755295Ab0KXWoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 17:44:09 -0500
+	id S1755295Ab0KXWqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 17:46:16 -0500
 Subject: Re: How do I choose an arbitrary minor number for my tty device?
 From: Michael Ellerman <michael@ellerman.id.au>
 Reply-To: michael@ellerman.id.au
-To: Greg KH <gregkh@suse.de>
-Cc: Scott Wood <scottwood@freescale.com>, Timur Tabi <timur@freescale.com>,
+To: Scott Wood <scottwood@freescale.com>
+Cc: Timur Tabi <timur@freescale.com>, Greg KH <gregkh@suse.de>,
         Arnd Bergmann <arnd@arndb.de>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Stuart Yoder <stuart.yoder@freescale.com>,
-        devicetree-discuss@vger.kernel.org
-In-Reply-To: <20101124182353.GA10589@suse.de>
-References: <4CE45A4E.70308@freescale.com> <20101118022434.GA9833@suse.de>
-	 <4CE546C5.8060401@freescale.com> <20101118153912.GA1443@suse.de>
-	 <4CE54E40.9040503@freescale.com>
+        devicetree-discuss@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+In-Reply-To: <20101124120818.7951bcb4@udp111988uds.am.freescale.net>
+References: <4CE44B1B.9040709@freescale.com>
+	 <20101117215147.GA26792@suse.de> <4CE452CD.3050001@freescale.com>
+	 <20101117221903.GA4066@suse.de> <4CE45A4E.70308@freescale.com>
+	 <20101118022434.GA9833@suse.de> <4CE546C5.8060401@freescale.com>
+	 <20101118153912.GA1443@suse.de> <4CE54E40.9040503@freescale.com>
 	 <20101118112146.3275eb08@udp111988uds.am.freescale.net>
 	 <4CE5657D.8060105@freescale.com>
 	 <20101118121356.3491da72@udp111988uds.am.freescale.net>
 	 <1290594227.4446.12.camel@concordia>
 	 <20101124120818.7951bcb4@udp111988uds.am.freescale.net>
-	 <20101124182353.GA10589@suse.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-Eku0tbkG6JAdlyszpVzr"
-Date: Thu, 25 Nov 2010 09:44:07 +1100
-Message-ID: <1290638647.14502.10.camel@concordia>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-F/QU5Wdh/j0Wk+AYf+h0"
+Date: Thu, 25 Nov 2010 09:46:13 +1100
+Message-ID: <1290638773.14502.12.camel@concordia>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,67 +37,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Eku0tbkG6JAdlyszpVzr
+--=-F/QU5Wdh/j0Wk+AYf+h0
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2010-11-24 at 10:23 -0800, Greg KH wrote:
-> On Wed, Nov 24, 2010 at 12:08:18PM -0600, Scott Wood wrote:
-> > On Wed, 24 Nov 2010 21:23:47 +1100
-> > Michael Ellerman <michael@ellerman.id.au> wrote:
+On Wed, 2010-11-24 at 12:08 -0600, Scott Wood wrote:
+> On Wed, 24 Nov 2010 21:23:47 +1100
+> Michael Ellerman <michael@ellerman.id.au> wrote:
+
+> > > It would be nice if platform devices that are created from device tre=
+e
+> > > nodes included a link to the corresponding /proc/device-tree node in
+> > > their sysfs node.
 > >=20
-> > > On Thu, 2010-11-18 at 12:13 -0600, Scott Wood wrote:
-> > > > Unfortunately, it's not an exact match, and the fact that reg doesn=
-'t
-> > > > translate to a physical address means that AFAICT you'll currently =
-get
-> > > > something like "byte-channel.nnn", where "nnn" is an arbitrary
-> > > > kernel-assigned number.
-> > >=20
-> > > Can you not use device_rename() ?
-> >=20
-> > Ah, didn't know about that.  Still, might be nice to add support for
-> > "handle" nodes at the infrastructure level rather than in each driver.
+> > It's not a link, but the OF path is in devspec, so you can work it out
+> > fairly easily.
 >=20
-> No, please never use that function, bad things will happen.
+> Hmm, I see a "devspec" in PCI devices, but not in devtree-probed
+> platform devices.  of_bus_type_init isn't being called from anywhere
+> but the ibmebus code.  It looks like this was a casualty of merging
+> of_platform with platform (commit eca3930163ba8884060ce9d9ff5ef0d9b7c7b00=
+f).
 
-Why? The network & wireless code uses it, so presumably it can work? If
-not please consider:
+Ah crud, yeah I was looking at an old kernel.
 
-commit f470f680dfaad8731f079a033a50440082e20930
-Author: Michael Ellerman <michael@ellerman.id.au>
-Date:   Thu Nov 25 09:41:28 2010 +1100
+That seems like a regression, but seemingly no one has complained so
+perhaps it doesn't matter in practice. It was certainly a nice feature
+though.
 
-    driver core: Document that device_rename() is not to be used
-   =20
-    Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 6ed6454..f1fac19 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1513,6 +1513,8 @@ EXPORT_SYMBOL_GPL(device_destroy);
-  * exclusion between two different calls of device_rename
-  * on the same device to ensure that new_name is valid and
-  * won't conflict with other devices.
-+ *
-+ * "Never use this function, bad things will happen" - gregkh
-  */
- int device_rename(struct device *dev, const char *new_name)
- {
+cheers
 
 
---=-Eku0tbkG6JAdlyszpVzr
+--=-F/QU5Wdh/j0Wk+AYf+h0
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAkztlTQACgkQdSjSd0sB4dLJOgCgnSMumalbM18SMJhbxfp7vFxq
-RUYAoMvwENtZyg4iIIYXP5bGmugqi7Hp
-=MgbL
+iEYEABECAAYFAkztlbUACgkQdSjSd0sB4dIPFQCePdZlTe1UowSvKb8hNWGw+WNc
+FpwAnjylpwtR+LzVM9ZJJKh5mZKI/WfB
+=cFgI
 -----END PGP SIGNATURE-----
 
---=-Eku0tbkG6JAdlyszpVzr--
+--=-F/QU5Wdh/j0Wk+AYf+h0--
 
