@@ -1,176 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab0KXMJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:09:48 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:3712 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab0KXMJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:09:46 -0500
-X-IronPort-AV: E=Sophos;i="4.59,247,1288584000"; 
-   d="scan'208";a="123919007"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH] xen: x86/32: perform initial startup on initial_page_table
-Date: Wed, 24 Nov 2010 12:09:41 +0000
-Message-Id: <1290600581-8392-1-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.5.6.5
-X-OriginalArrivalTime: 24 Nov 2010 12:09:45.0400 (UTC) FILETIME=[7BA41380:01CB8BD0]
+	id S1754010Ab0KXMKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:10:45 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45787 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753376Ab0KXMKn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 07:10:43 -0500
+Message-ID: <4CED00A9.50006@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 21:10:17 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 3/17 v3] can: EG20T PCH: Enumerate some macros
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only make swapper_pg_dir readonly and pinned when generic x86 architecture code
-(which also starts on initial_page_table) switches to it.  This helps ensure
-that the generic setup paths work on Xen unmodified. In particular
-clone_pgd_range writes directly to the destination pgd entries and is used to
-initialise swapper_pg_dir so we need to ensure that it remains writeable until
-the last possible moment during bring up.
+For easy to readable, LEC and interface register number macros are
+replaced to enums.
 
-This is complicated slightly by the need to avoid sharing kernel PMD entries
-when running under Xen, therefore the Xen implementation must make a copy of
-the kernel PMD (which is otherwise referred to by both intial_page_table and
-swapper_pg_dir) before switching to swapper_pg_dir.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- arch/x86/xen/enlighten.c |    2 -
- arch/x86/xen/mmu.c       |   69 +++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 56 insertions(+), 15 deletions(-)
+ drivers/net/can/pch_can.c |   90
++++++++++++++++++++++++++--------------------
+ 1 files changed, 50 insertions(+), 40 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 7250bef..02c710b 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1200,8 +1200,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* Allocate and initialize top and mid mfn levels for p2m structure */
- 	xen_build_mfn_list_list();
- 
--	init_mm.pgd = pgd;
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index b028ae4..5c21f5c 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -69,21 +69,12 @@
+ #define PCH_REC			0x00007f00
+ #define PCH_TEC			0x000000ff
+
++
+ #define PCH_TX_OK		BIT(3)
+ #define PCH_RX_OK		BIT(4)
+ #define PCH_EPASSIV		BIT(5)
+ #define PCH_EWARN		BIT(6)
+ #define PCH_BUS_OFF		BIT(7)
+-#define PCH_LEC0		BIT(0)
+-#define PCH_LEC1		BIT(1)
+-#define PCH_LEC2		BIT(2)
+-#define PCH_LEC_ALL		(PCH_LEC0 | PCH_LEC1 | PCH_LEC2)
+-#define PCH_STUF_ERR		PCH_LEC0
+-#define PCH_FORM_ERR		PCH_LEC1
+-#define PCH_ACK_ERR		(PCH_LEC0 | PCH_LEC1)
+-#define PCH_BIT1_ERR		PCH_LEC2
+-#define PCH_BIT0_ERR		(PCH_LEC0 | PCH_LEC2)
+-#define PCH_CRC_ERR		(PCH_LEC1 | PCH_LEC2)
+
+ /* bit position of certain controller bits. */
+ #define PCH_BIT_BRP		0
+@@ -96,9 +87,6 @@
+ #define PCH_MSK_CTRL_IE_SIE_EIE	0x07
+ #define PCH_COUNTER_LIMIT	10
+
+-#define PCH_RX_IFREG			0
+-#define PCH_TX_IFREG			1
 -
- 	/* keep using Xen gdt for now; no urgent need to change it */
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 790af90..a1feff9 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2133,44 +2133,83 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- 	return pgd;
+ #define PCH_CAN_CLK		50000000	/* 50MHz */
+
+ /* Define the number of message object.
+@@ -113,6 +101,21 @@
+
+ #define PCH_FIFO_THRESH		16
+
++enum pch_ifreg {
++	PCH_RX_IFREG,
++	PCH_TX_IFREG,
++};
++
++enum pch_can_err {
++	PCH_STUF_ERR = 1,
++	PCH_FORM_ERR,
++	PCH_ACK_ERR,
++	PCH_BIT1_ERR,
++	PCH_BIT0_ERR,
++	PCH_CRC_ERR,
++	PCH_LEC_ALL,
++};
++
+ enum pch_can_mode {
+ 	PCH_CAN_ENABLE,
+ 	PCH_CAN_DISABLE,
+@@ -302,7 +305,7 @@ static void pch_can_check_if_busy(u32 __iomem
+*creq_addr, u32 num)
  }
- #else	/* !CONFIG_X86_64 */
--static RESERVE_BRK_ARRAY(pmd_t, level2_kernel_pgt, PTRS_PER_PMD);
-+static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
-+static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
-+
-+static __init void xen_write_cr3_init(unsigned long cr3)
-+{
-+	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
-+
-+	BUG_ON(read_cr3() != __pa(initial_page_table));
-+	BUG_ON(cr3 != __pa(swapper_pg_dir));
-+
-+	/*
-+	 * We are switching to swapper_pg_dir for the first time (from
-+	 * initial_page_table) and therefore need to mark that page
-+	 * read-only and then pin it.
-+	 *
-+	 * Xen disallows sharing of kernel PMDs for PAE
-+	 * guests. Therefore we must copy the kernel PMD from
-+	 * initial_page_table into a new kernel PMD to be used in
-+	 * swapper_pg_dir.
-+	 */
-+	swapper_kernel_pmd =
-+		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
-+	memcpy(swapper_kernel_pmd, initial_kernel_pmd,
-+	       sizeof(pmd_t) * PTRS_PER_PMD);
-+	swapper_pg_dir[KERNEL_PGD_BOUNDARY] =
-+		__pgd(__pa(swapper_kernel_pmd) | _PAGE_PRESENT);
-+	set_page_prot(swapper_kernel_pmd, PAGE_KERNEL_RO);
-+
-+	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
-+	xen_write_cr3(cr3);
-+	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
-+
-+	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
-+			  PFN_DOWN(__pa(initial_page_table)));
-+	set_page_prot(initial_page_table, PAGE_KERNEL);
-+	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
-+
-+	pv_mmu_ops.write_cr3 = &xen_write_cr3;
-+}
- 
- __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- 					 unsigned long max_pfn)
+
+ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
+-				  int set, u32 dir)
++			     int set, enum pch_ifreg dir)
  {
- 	pmd_t *kernel_pmd;
- 
--	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
-+	initial_kernel_pmd =
-+		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
- 
- 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
- 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
- 				  512*1024);
- 
- 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
--	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
-+	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
- 
--	xen_map_identity_early(level2_kernel_pgt, max_pfn);
-+	xen_map_identity_early(initial_kernel_pmd, max_pfn);
- 
--	memcpy(swapper_pg_dir, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
--	set_pgd(&swapper_pg_dir[KERNEL_PGD_BOUNDARY],
--			__pgd(__pa(level2_kernel_pgt) | _PAGE_PRESENT));
-+	memcpy(initial_page_table, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
-+	initial_page_table[KERNEL_PGD_BOUNDARY] =
-+		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
- 
--	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
--	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
-+	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
-+	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
- 	set_page_prot(empty_zero_page, PAGE_KERNEL_RO);
- 
- 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
- 
--	xen_write_cr3(__pa(swapper_pg_dir));
+ 	unsigned long flags;
+ 	u32 ie;
+@@ -616,7 +619,7 @@ static void pch_can_error(struct net_device *ndev,
+u32 status)
+ 	struct sk_buff *skb;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	struct can_frame *cf;
+-	u32 errc;
++	u32 errc, lec;
+ 	struct net_device_stats *stats = &(priv->ndev->stats);
+ 	enum can_state state = priv->can.state;
+
+@@ -661,35 +664,42 @@ static void pch_can_error(struct net_device *ndev,
+u32 status)
+ 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
+ 	}
+
+-	if (status & PCH_LEC_ALL) {
++	lec = status & PCH_LEC_ALL;
++	switch (lec) {
++	case PCH_STUF_ERR:
++		cf->data[2] |= CAN_ERR_PROT_STUFF;
+ 		priv->can.can_stats.bus_error++;
+ 		stats->rx_errors++;
+-		switch (status & PCH_LEC_ALL) {
+-		case PCH_STUF_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_STUFF;
+-			break;
+-		case PCH_FORM_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_FORM;
+-			break;
+-		case PCH_ACK_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_LOC_ACK |
+-				       CAN_ERR_PROT_LOC_ACK_DEL;
+-			break;
+-		case PCH_BIT1_ERR:
+-		case PCH_BIT0_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_BIT;
+-			break;
+-		case PCH_CRC_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
+-				       CAN_ERR_PROT_LOC_CRC_DEL;
+-			break;
+-		default:
+-			iowrite32(status | PCH_LEC_ALL, &priv->regs->stat);
+-			break;
+-		}
 -
--	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
-+	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
-+			  PFN_DOWN(__pa(initial_page_table)));
-+	xen_write_cr3(__pa(initial_page_table));
- 
- 	memblock_x86_reserve_range(__pa(xen_start_info->pt_base),
- 		      __pa(xen_start_info->pt_base +
- 			   xen_start_info->nr_pt_frames * PAGE_SIZE),
- 		      "XEN PAGETABLES");
- 
--	return swapper_pg_dir;
-+	return initial_page_table;
- }
- #endif	/* CONFIG_X86_64 */
- 
-@@ -2304,7 +2343,11 @@ static const struct pv_mmu_ops xen_mmu_ops __initdata = {
- 	.write_cr2 = xen_write_cr2,
- 
- 	.read_cr3 = xen_read_cr3,
-+#ifdef CONFIG_X86_32
-+	.write_cr3 = xen_write_cr3_init,
-+#else
- 	.write_cr3 = xen_write_cr3,
-+#endif
- 
- 	.flush_tlb_user = xen_flush_tlb,
- 	.flush_tlb_kernel = xen_flush_tlb,
++		break;
++	case PCH_FORM_ERR:
++		cf->data[2] |= CAN_ERR_PROT_FORM;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_ACK_ERR:
++		cf->can_id |= CAN_ERR_ACK;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_BIT1_ERR:
++	case PCH_BIT0_ERR:
++		cf->data[2] |= CAN_ERR_PROT_BIT;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_CRC_ERR:
++		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
++			       CAN_ERR_PROT_LOC_CRC_DEL;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_LEC_ALL: /* Written by CPU. No error status */
++		break;
+ 	}
+
++	cf->data[6] = errc & PCH_TEC;
++	cf->data[7] = (errc & PCH_REC) >> 8;
++
+ 	priv->can.state = state;
+ 	netif_rx(skb);
+
 -- 
-1.5.6.5
+1.6.0.6
 
