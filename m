@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab0KXQMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 11:12:14 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61800 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab0KXQML (ORCPT
+	id S1753487Ab0KXQPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 11:15:06 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:46734 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751443Ab0KXQPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 11:12:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rotYdpaBD8x2MPg1Ve8LPVSe28V6stecQWObV/qPLxLQswBSJ4SSt4heWJw78f7dIn
-         sqVrLH1ela9oZ2StXBgs+2A6UwuYT8WqFsih8+StfGg69lpDcwLsXF+lm+Z5KNTjJHWH
-         MJtWC9TilyJgCtspusv7Hz4a0Fd1z5liSacHc=
-Date: Wed, 24 Nov 2010 19:11:54 +0300
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: mkl0301@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] ARM: cns3xxx: Add new and export the old power
- management functions
-Message-ID: <20101124161154.GA10890@oksana.dev.rtsoft.ru>
-References: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
- <1290443565-20766-2-git-send-email-mkl0301@gmail.com>
+	Wed, 24 Nov 2010 11:15:04 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: eZMVm7UVM1nXrZ8nR_JxfthXHyJO1UoWUUqkxABTO2L39yd
+ GtKjlymZpI7VWjX_j1slZvVWmjlcogwqNJsozEh4.CpvCn18__LiicwgVnrL
+ Pa4t742T15Z2rHeVHHYKc.7EheFZ23PTHR6vVtI50LJ5kKOfVsSCF2_YarOK
+ YS3_qaEwkl7FNCvI7v5rYv4IRm2s7BQIgF4RoCGOI_ZMcyJpH_vY9OVd.J9Q
+ yJ8ZJYkkxcsYBNlRL1D.Hnu531ZkJUB_a7zuMg0c-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 24 Nov 2010 10:14:58 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless) fastpaths
+ for slub
+In-Reply-To: <1290586512.2072.423.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1011241013240.14268@router.home>
+References: <20101123235139.908255844@linux.com>  <20101123235201.758191189@linux.com> <1290586512.2072.423.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1290443565-20766-2-git-send-email-mkl0301@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 12:32:43AM +0800, mkl0301@gmail.com wrote:
-> From: Mac Lin <mkl0301@gmail.com>
-> 
-> This patch add cns3xxx_pwr_clk_dis, and export thoes power management functions
-> that may be used by many other device drivers on CNS3XXX.
-> 
-> Signed-off-by: Mac Lin <mkl0301@gmail.com>
-> ---
->  arch/arm/mach-cns3xxx/core.h            |    4 ++--
->  arch/arm/mach-cns3xxx/include/mach/pm.h |   19 +++++++++++++++++++
->  arch/arm/mach-cns3xxx/pm.c              |   17 +++++++++++++++++
->  3 files changed, 38 insertions(+), 2 deletions(-)
->  create mode 100644 arch/arm/mach-cns3xxx/include/mach/pm.h
-> 
-> diff --git a/arch/arm/mach-cns3xxx/core.h b/arch/arm/mach-cns3xxx/core.h
-> index 6b33ec1..c6636bd 100644
-> --- a/arch/arm/mach-cns3xxx/core.h
-> +++ b/arch/arm/mach-cns3xxx/core.h
-> @@ -11,13 +11,13 @@
->  #ifndef __CNS3XXX_CORE_H
->  #define __CNS3XXX_CORE_H
->  
-> +#include <mach/pm.h>
+On Wed, 24 Nov 2010, Peter Zijlstra wrote:
 
-This isn't needed in this file. Instead, devices.c should include
-it. Plus, pm.c needs to include mach/pm.h, otherwise sparse gives
-the following warnings:
+> This thing still relies on disabling IRQs in the slow path, which means
+> its still going to be a lot of work to make it work on -rt.
 
-  CHECK   arch/arm/mach-cns3xxx/pm.c
-pm.c:26:6: warning: symbol 'cns3xxx_pwr_clk_dis' was not declared. Should it be static?
-pm.c:35:6: warning: symbol 'cns3xxx_pwr_power_up' was not declared. Should it be static?
-pm.c:47:6: warning: symbol 'cns3xxx_pwr_power_down' was not declared. Should it be static?
-pm.c:121:10: warning: symbol 'usb_pwr_ref' was not declared. Should it be static?
+The disabling of irqs is because slab operations are used from interrupt
+context. If we can avoid slab operations from interrupt contexts then we
+can drop the interrupt disable in the slab allocators.
 
-I've fixed it up, and applied the patch to cns3xxx tree.
-
-Thanks!
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
