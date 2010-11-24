@@ -1,60 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0KXXdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 18:33:42 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44924 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab0KXXdl (ORCPT
+	id S1756535Ab0KXXdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:33:55 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38631 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756155Ab0KXXdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 18:33:41 -0500
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: David Strand <dpstrand@gmail.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bonding: check for assigned mac before adopting the slaves mac address
-In-reply-to: <AANLkTinpO=FmoecfV8epubXU4OrhFsXJ7-Kc68yNhMEs@mail.gmail.com>
-References: <AANLkTinpO=FmoecfV8epubXU4OrhFsXJ7-Kc68yNhMEs@mail.gmail.com>
-Comments: In-reply-to David Strand <dpstrand@gmail.com>
-   message dated "Wed, 24 Nov 2010 15:12:14 -0800."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
-Date: Wed, 24 Nov 2010 15:33:37 -0800
-Message-ID: <31169.1290641617@death>
+	Wed, 24 Nov 2010 18:33:53 -0500
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Carl Love <cel@us.ibm.com>, Ian Munsie <ianmunsi@au1.ibm.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Subject: [RFC PATCHv2] perf tools: add event grouping capability to "perf stat"
+Date: Wed, 24 Nov 2010 15:28:50 -0800
+Message-Id: <1290641330-2327-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Strand <dpstrand@gmail.com> wrote:
+Add the ability to create multiple event groups, each with their own leader
+using the existing "-e <event>[,<event> ...] [-e <event>[,<event>]]"
+syntax.  Each additional -e switch creates a new group, and each event
+listed within a -e switch is within that group.
 
->Restore the check for a missing mac address before adopting the first
->slaves as it's own. This regression was introduced in:
->http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commit;h=c20811a79e671a6a1fe86a8c1afe04aca8a7f085
+Changes since v1:
+- When no events are given on the command line, place each event in its
+own group to make it easier to schedule, and this more likely to be
+measurable.
 
-	How exactly is this a regression?  The above referenced patch
-changes the method used to decide if the bonding master needs to have
-it's MAC address set.  The original way was "bonding master's MAC is
-zero," after the above, it's "adding first slave."
-
-	Do you have some use case that manually sets the master's MAC
-address prior to adding any slaves?
-
-	-J
-
->Signed-off-by: David Strand dpstrand@gmail.com
->---
->diff -uprN a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->--- a/drivers/net/bonding/bond_main.c	2010-11-24 11:36:58.125640000 -0800
->+++ b/drivers/net/bonding/bond_main.c	2010-11-24 11:40:58.175640000 -0800
->@@ -1577,8 +1577,9 @@ int bond_enslave(struct net_device *bond
-> 	/* If this is the first slave, then we need to set the master's hardware
-> 	 * address to be the same as the slave's. */
-> 	if (bond->slave_cnt == 0)
->-		memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
->-		       slave_dev->addr_len);
->+		if (is_zero_ether_addr(bond->dev->dev_addr))
->+			memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
->+			       slave_dev->addr_len);
->
->
-> 	new_slave = kzalloc(sizeof(struct slave), GFP_KERNEL);
-
+Signed-off-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 ---
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+ tools/perf/Documentation/perf-stat.txt |   12 +++++++++---
+ tools/perf/builtin-stat.c              |   12 ++++++++++--
+ tools/perf/util/parse-events.c         |    4 ++++
+ tools/perf/util/parse-events.h         |    1 +
+ 4 files changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 4b3a2d4..d522ebd 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -8,8 +8,8 @@ perf-stat - Run a command and gather performance counter statistics
+ SYNOPSIS
+ --------
+ [verse]
+-'perf stat' [-e <EVENT> | --event=EVENT] [-S] [-a] <command>
+-'perf stat' [-e <EVENT> | --event=EVENT] [-S] [-a] -- <command> [<options>]
++'perf stat' [-e <EVENT>[,<EVENT>...] | --event=<EVENT>[,<EVENT>...]] [-S] [-a] <command>
++'perf stat' [-e <EVENT>[,<EVENT>...] | --event=<EVENT>[,<EVENT>...]] [-S] [-a] -- <command> [<options>]
+ 
+ DESCRIPTION
+ -----------
+@@ -28,7 +28,13 @@ OPTIONS
+ 	Select the PMU event. Selection can be a symbolic event name
+ 	(use 'perf list' to list all events) or a raw PMU
+ 	event (eventsel+umask) in the form of rNNN where NNN is a
+-	 hexadecimal event descriptor.
++	hexadecimal event descriptor.  As shown, multiple events can be
++	separated by commas in each -e/--event switch.  Each additional
++	-e/--event switch creates a new event group.  Grouped events are
++	scheduled onto the PMU hardware at the same time, which is
++	important to know when the PMU is overscheduled.  A good example of
++	this is measuring CPI where both instructions and cycles events
++	need to be scheduled simultaneously to get an accurate estimate.
+ 
+ -i::
+ --no-inherit::
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 8b9afa6..5f9fdc8 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -162,8 +162,12 @@ static int create_perf_stat_counter(int counter, bool *perm_err)
+ 		int cpu;
+ 
+ 		for (cpu = 0; cpu < nr_cpus; cpu++) {
++			if (counter == grp_leaders[counter])
++				/* first counter in the group is the leader */
++				fd[cpu][grp_leaders[counter]][0] = -1;
+ 			fd[cpu][counter][0] = sys_perf_event_open(attr,
+-					-1, cpumap[cpu], -1, 0);
++					-1, cpumap[cpu],
++					fd[cpu][grp_leaders[counter]][0], 0);
+ 			if (fd[cpu][counter][0] < 0) {
+ 				if (errno == EPERM || errno == EACCES)
+ 					*perm_err = true;
+@@ -180,8 +184,12 @@ static int create_perf_stat_counter(int counter, bool *perm_err)
+ 			attr->enable_on_exec = 1;
+ 		}
+ 		for (thread = 0; thread < thread_num; thread++) {
++			if (counter == grp_leaders[counter])
++				/* first counter in the group is the leader */
++				fd[0][grp_leaders[counter]][thread] = -1;
+ 			fd[0][counter][thread] = sys_perf_event_open(attr,
+-				all_tids[thread], -1, -1, 0);
++				all_tids[thread], -1,
++				fd[0][grp_leaders[counter]][thread], 0);
+ 			if (fd[0][counter][thread] < 0) {
+ 				if (errno == EPERM || errno == EACCES)
+ 					*perm_err = true;
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 4af5bd5..eeecb2a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -12,6 +12,7 @@
+ 
+ int				nr_counters;
+ 
++int				grp_leaders[MAX_COUNTERS];
+ struct perf_event_attr		attrs[MAX_COUNTERS];
+ char				*filters[MAX_COUNTERS];
+ 
+@@ -804,11 +805,13 @@ int parse_events(const struct option *opt __used, const char *str, int unset __u
+ {
+ 	struct perf_event_attr attr;
+ 	enum event_result ret;
++	int grp_leader;
+ 
+ 	if (strchr(str, ':'))
+ 		if (store_event_type(str) < 0)
+ 			return -1;
+ 
++	grp_leader = nr_counters;
+ 	for (;;) {
+ 		if (nr_counters == MAX_COUNTERS)
+ 			return -1;
+@@ -822,6 +825,7 @@ int parse_events(const struct option *opt __used, const char *str, int unset __u
+ 			return -1;
+ 
+ 		if (ret != EVT_HANDLED_ALL) {
++			grp_leaders[nr_counters] = grp_leader;
+ 			attrs[nr_counters] = attr;
+ 			nr_counters++;
+ 		}
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index fc4ab3f..d820f42 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -17,6 +17,7 @@ extern bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events);
+ 
+ extern int			nr_counters;
+ 
++extern int grp_leaders[MAX_COUNTERS];
+ extern struct perf_event_attr attrs[MAX_COUNTERS];
+ extern char *filters[MAX_COUNTERS];
+ 
+-- 
+1.7.0.4
+
