@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab0KXOo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:44:59 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:56405 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0KXOo6 (ORCPT
+	id S1753051Ab0KXOps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:45:48 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45576 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab0KXOpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:44:58 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Vegard Nossum <vegard.nossum@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eugene Teo <eugene@redhat.com>, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] af_unix: limit unix_tot_inflight
-References: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
-	<1290553918.2866.80.camel@edumazet-laptop>
-	<1290590335.3464.24.camel@edumazet-laptop>
-Date: Wed, 24 Nov 2010 15:44:53 +0100
-In-Reply-To: <1290590335.3464.24.camel@edumazet-laptop> (Eric Dumazet's
-	message of "Wed, 24 Nov 2010 10:18:55 +0100")
-Message-ID: <877hg2g4re.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 24 Nov 2010 09:45:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=viSyFpJmwea4UCpWjhmI59pQh0nLternWLyfzq6uy8p1Pf2hxpDb7f/DisEYnQmDa6
+         NKTVWxPjV26Za8OH7WWCNfSI6qkwrVzQVt/DDFUOzGyKDPtfD7e0PeXVA3DOusCCUb9L
+         4Uy/AhwoeBNk/+PMHwnM1GtVXMZ7XFOLNiSDc=
+Date: Wed, 24 Nov 2010 12:45:40 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: tom.leiming@gmail.com
+Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au1.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 1/2] perf:tools: avoid to create much more maps for
+ kernel symbols on ARM
+Message-ID: <20101124144540.GB15875@ghostprotocols.net>
+References: <1290598502-31727-1-git-send-email-tom.leiming@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290598502-31727-1-git-send-email-tom.leiming@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> writes:
->
-> diff --git a/net/unix/garbage.c b/net/unix/garbage.c
-> index c8df6fd..40df93d 100644
-> --- a/net/unix/garbage.c
-> +++ b/net/unix/garbage.c
-> @@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
->  }
->  
->  static bool gc_in_progress = false;
-> +#define UNIX_INFLIGHT_TRIGGER_GC 16000
+Em Wed, Nov 24, 2010 at 07:35:02PM +0800, tom.leiming@gmail.com escreveu:
+> From: Ming Lei <tom.leiming@gmail.com>
+ 
+> On ARM, module addresss space is ahead of kernel space, so the module
+> symbols are handled before kernel symbol in dso__split_kallsyms, then
+> cause one map is created for each kernel symbol.
+ 
+> This patch fixes the issue by restoring to original kernel map in
+> dso__split_kallsyms() to avoid create unnecessary maps for kernel
+> symbols when starting to handle kenel symbol maps but after module
+> symbol maps are handled over.
 
-It would be better to define this as a percentage of
-lowmem.
+Can you try with the following patch instead?
 
--Andi
+- Arnaldo
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index b39f499..a7518d2 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -530,7 +530,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 	struct machine *machine = kmaps->machine;
+ 	struct map *curr_map = map;
+ 	struct symbol *pos;
+-	int count = 0;
++	int count = 0, moved = 0;	
+ 	struct rb_root *root = &self->symbols[map->type];
+ 	struct rb_node *next = rb_first(root);
+ 	int kernel_range = 0;
+@@ -588,6 +588,11 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 			char dso_name[PATH_MAX];
+ 			struct dso *dso;
+ 
++			if (count == 0) {
++				curr_map = map;
++				goto filter_symbol;
++			}
++
+ 			if (self->kernel == DSO_TYPE_GUEST_KERNEL)
+ 				snprintf(dso_name, sizeof(dso_name),
+ 					"[guest.kernel].%d",
+@@ -613,7 +618,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 			map_groups__insert(kmaps, curr_map);
+ 			++kernel_range;
+ 		}
+-
++filter_symbol:
+ 		if (filter && filter(curr_map, pos)) {
+ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 			symbol__delete(pos);
+@@ -621,8 +626,9 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 			if (curr_map != map) {
+ 				rb_erase(&pos->rb_node, root);
+ 				symbols__insert(&curr_map->dso->symbols[curr_map->type], pos);
+-			}
+-			count++;
++				++moved;
++			} else
++				++count;
+ 		}
+ 	}
+ 
+@@ -632,7 +638,7 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 		dso__set_loaded(curr_map->dso, curr_map->type);
+ 	}
+ 
+-	return count;
++	return count + moved;
+ }
+ 
+ int dso__load_kallsyms(struct dso *self, const char *filename,
