@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab0KXAk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:40:26 -0500
-Received: from tomts13.bellnexxia.net ([209.226.175.34]:50569 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754410Ab0KXAkZ (ORCPT
+	id S1756062Ab0KXAlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:41:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64112 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410Ab0KXAlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:40:25 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAJbn60xGHlyW/2dsb2JhbACianK+EIVLBIRaOA
-Date: Tue, 23 Nov 2010 18:55:19 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Jason Baron <jbaron@redhat.com>
-Cc: rostedt@goodmis.org, mingo@elte.hu, peterz@infradead.org, hpa@zytor.com,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] jump label: move jump table to r/w section
-Message-ID: <20101123235519.GB21549@Krystal>
-References: <cover.1290546539.git.jbaron@redhat.com> <bbc34a86a4cf4addcde1b85d7fa7faecc0966c03.1290546539.git.jbaron@redhat.com>
+	Tue, 23 Nov 2010 19:41:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PcI/4tLRn0C89yn89AnuFLTDHSYK30sWnnu1ae6PThA6r615vcTv/nvSnDrdpYNJPY
+         zzqbAdgweoxyoqPvF3oRlkNwVIy0dH3Rjk9ro66OTDfXeG8UgdDrXuZE0ox4C5/62gYc
+         Z71yTsWcAEuPa+1LhdR8Nj4yUwPt3qaCG99Ds=
+Subject: Re: [thiscpuops upgrade 09/10] x86: this_cpu_cmpxchg and
+ this_cpu_cmpxchg_double operations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101123235201.146063796@linux.com>
+References: <20101123235139.908255844@linux.com>
+	 <20101123235201.146063796@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 01:41:41 +0100
+Message-ID: <1290559301.2866.129.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <bbc34a86a4cf4addcde1b85d7fa7faecc0966c03.1290546539.git.jbaron@redhat.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 18:49:00 up 230 days,  9:39,  4 users,  load average: 0.01, 0.05,
-	0.07
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jason Baron (jbaron@redhat.com) wrote:
-> Since we writing the jump table it should be be in R/W kernel
-> section. Move it to DATA_DATA
+Le mardi 23 novembre 2010 à 17:51 -0600, Christoph Lameter a écrit :
+> pièce jointe document texte brut (this_cpu_cmpxchg_x86)
+> Provide support as far as the hardware capabilities of the x86 cpus
+> allow.
 > 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
-> ---
->  include/asm-generic/vmlinux.lds.h |   14 ++++----------
->  1 files changed, 4 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index bd69d79..9ca894d 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -161,6 +161,10 @@
->  	VMLINUX_SYMBOL(__start___tracepoints) = .;			\
->  	*(__tracepoints)						\
->  	VMLINUX_SYMBOL(__stop___tracepoints) = .;			\
-> +	. = ALIGN(8);							\
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Past churn with various architectures and compiler with tracepoints,
-markers and immediate values lead me to hint at the following approach
-for jump label structure alignment:
+> +
+> +#define percpu_cmpxchg16b(pcp, o1, o2, n1, n2)				\
+> +({									\
+> +	char __ret;							\
+> +	typeof(o1) __o1 = o1;						\
+> +	typeof(o1) __n1 = n1;						\
+> +	typeof(o2) __o2 = o2;						\
+> +	typeof(o2) __n2 = n2;						\
+> +	asm("cmpxchg16b "__percpu_arg(1)"\n\tsetz %0\n\t"		\
+> +		    : "=a"(__ret), "=m" (*pcp)				\
+> +		    :  "b"(__n1), "c"(__n2), "a"(__o1), "d"(__o2));	\
+> +	__ret;								\
+> +})
 
-. = ALIGN(32);
+I thought some x86_64 cpus dont have cmpxchg16b ?
 
-and to modify jump_label.h to have:
+You have to check cx16 feature flag or implement a fallback ?
 
-struct jump_entry {
-	jump_label_t code;
-	jump_label_t target;
-	jump_label_t key;
-} __attribute__((aligned(32)));
 
-Otherwise, the compiler is free to choose on which value it prefers to
-align the jump_entry structures, which might not match the address at
-which the linker scripts puts the beginning of the jump table.
 
-In this case, given that we put put the jump label table after the
-tracepoint table, we should be already aligned on 32 bytes. But I would
-recommend to put the . = ALIGN(32) in the linker script anyway, just for
-documentation purpose (and it should not add any padding in this case).
 
-This is not a problem introduced by this patch, it also applies to the
-current jump label code.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
