@@ -1,99 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab0KXHgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 02:36:52 -0500
-Received: from mail.perches.com ([173.55.12.10]:1849 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472Ab0KXHgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 02:36:51 -0500
-Subject: [PATCH] cpufreq: Add __attribute__((format (printf...) to
- cpufreq_debug_printk and fix fallout
-From: Joe Perches <joe@perches.com>
-To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86 <x86@kernel.org>
-Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Nov 2010 23:36:49 -0800
-Message-ID: <1290584209.11971.49.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752177Ab0KXHhg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 02:37:36 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11525 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751488Ab0KXHhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 02:37:34 -0500
+Message-ID: <4CECC0A4.9090605@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 16:37:08 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 10/17 v2] can: EG20T PCH: Fix coding rule violation
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add __attribute__((format (printf, 3, 4))) to cpufreq_debug_printk.
-Use no_printk in !CONFIG_CPU_FREQ_DEBUG.
-Make formats and arguments match.
+Fix coding rule violation.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c   |    6 +++---
- arch/x86/kernel/cpu/cpufreq/speedstep-smi.c |    4 ++--
- include/linux/cpufreq.h                     |    8 +++++---
- 3 files changed, 10 insertions(+), 8 deletions(-)
+ drivers/net/can/pch_can.c |   48
+++++++++++++++++++++------------------------
+ 1 files changed, 22 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-index 4f6f679..14dec2b 100644
---- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-@@ -178,8 +178,8 @@ static unsigned int pcc_get_freq(unsigned int cpu)
- 	curr_freq = (((ioread32(&pcch_hdr->nominal) * (output_buffer & 0xff))
- 			/ 100) * 1000);
- 
--	dprintk("get: SUCCESS: (virtual) output_offset for cpu %d is "
--		"0x%x, contains a value of: 0x%x. Speed is: %d MHz\n",
-+	dprintk("get: SUCCESS: (virtual) output_offset for cpu %d is %p, "
-+		"contains a value of: 0x%x. Speed is: %d MHz\n",
- 		cpu, (pcch_virt_addr + pcc_cpu_data->output_offset),
- 		output_buffer, curr_freq);
- 
-@@ -213,7 +213,7 @@ static int pcc_cpufreq_target(struct cpufreq_policy *policy,
- 	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
- 
- 	dprintk("target: CPU %d should go to target freq: %d "
--		"(virtual) input_offset is 0x%x\n",
-+		"(virtual) input_offset is %p\n",
- 		cpu, target_freq,
- 		(pcch_virt_addr + pcc_cpu_data->input_offset));
- 
-diff --git a/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c b/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c
-index 8abd869..5872f4da 100644
---- a/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c
-+++ b/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c
-@@ -407,8 +407,8 @@ static int __init speedstep_init(void)
- 		return -ENODEV;
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index e71817d..318eb1f 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -89,9 +89,11 @@
+  #define PCH_CAN_CLK		50000000	/* 50MHz */
+ -/* Define the number of message object.
++/*
++ * Define the number of message object.
+  * PCH CAN communications are done via Message RAM.
+- * The Message RAM consists of 32 message objects. */
++ * The Message RAM consists of 32 message objects.
++ */
+ #define PCH_RX_OBJ_NUM		26
+ #define PCH_TX_OBJ_NUM		6
+ #define PCH_RX_OBJ_START	1
+@@ -126,7 +128,7 @@ enum pch_can_mode {
+ 	PCH_CAN_ALL,
+ 	PCH_CAN_NONE,
+ 	PCH_CAN_STOP,
+-	PCH_CAN_RUN
++	PCH_CAN_RUN,
+ };
+  struct pch_can_if_regs {
+@@ -290,21 +292,20 @@ static void pch_can_set_rxtx(struct pch_can_priv
+*priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_RXIE;
+ -	/* Reading the receive buffer data from RAM to Interface1 registers */
++	/* Reading the receive buffer data from RAM to Interface1/2 registers */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ -	/* Setting the IF1MASK1 register to access MsgVal and RxIE bits */
++	/* Setting the IF1/2MASK1 register to access MsgVal and RxIE bits */
+ 	iowrite32(PCH_CMASK_RDWR | PCH_CMASK_ARB | PCH_CMASK_CTRL,
+ 		  &priv->regs->ifregs[dir].cmask);
+  	if (set) {
+-		/* Setting the MsgVal and RxIE bits */
++		/* Setting the MsgVal and RxIE/TxIE bits */
+ 		pch_can_bit_set(&priv->regs->ifregs[dir].mcont, ie);
+ 		pch_can_bit_set(&priv->regs->ifregs[dir].id2, PCH_ID_MSGVAL);
+-
+ 	} else {
+-		/* Resetting the MsgVal and RxIE bits */
++		/* Clearing the MsgVal and RxIE/TxIE bits */
+ 		pch_can_bit_clear(&priv->regs->ifregs[dir].mcont, ie);
+ 		pch_can_bit_clear(&priv->regs->ifregs[dir].id2, PCH_ID_MSGVAL);
  	}
- 
--	dprintk("signature:0x%.8lx, command:0x%.8lx, "
--		"event:0x%.8lx, perf_level:0x%.8lx.\n",
-+	dprintk("signature:0x%.8x, command:0x%.8x, "
-+		"event:0x%.8x, perf_level:0x%.8x.\n",
- 		ist_info.signature, ist_info.command,
- 		ist_info.event, ist_info.perf_level);
- 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index c3e9de8..117b921 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -416,12 +416,14 @@ void cpufreq_frequency_table_put_attr(unsigned int cpu);
- 
- #ifdef CONFIG_CPU_FREQ_DEBUG
- 
--extern void cpufreq_debug_printk(unsigned int type, const char *prefix, 
--				 const char *fmt, ...);
-+extern __attribute__((format (printf, 3, 4)))
-+void cpufreq_debug_printk(unsigned int type, const char *prefix,
-+			  const char *fmt, ...);
- 
- #else
- 
--#define cpufreq_debug_printk(msg...) do { } while(0)
-+#define cpufreq_debug_printk(type, prefix, fmt, ...)	\
-+	no_printk(fmt, ##__VA_ARGS__)
- 
- #endif /* CONFIG_CPU_FREQ_DEBUG */
- 
-
+@@ -312,7 +313,6 @@ static void pch_can_set_rxtx(struct pch_can_priv
+*priv, u32 buff_num,
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ }
+ -
+ static void pch_can_set_rx_all(struct pch_can_priv *priv, int set)
+ {
+ 	int i;
+@@ -328,7 +328,7 @@ static void pch_can_set_tx_all(struct pch_can_priv
+*priv, int set)
+  	/* Traversing to obtain the object configured as transmit object. */
+ 	for (i = PCH_TX_OBJ_START; i <= PCH_TX_OBJ_END; i++)
+-		pch_can_set_rxtx(priv, i, set, 1);
++		pch_can_set_rxtx(priv, i, set, PCH_TX_IFREG);
+ }
+  static u32 pch_can_int_pending(struct pch_can_priv *priv)
+@@ -363,8 +363,7 @@ static void pch_can_config_rx_tx_buffers(struct
+pch_can_priv *priv)
+ 	int i;
+  	for (i = PCH_RX_OBJ_START; i <= PCH_RX_OBJ_END; i++) {
+-		iowrite32(PCH_CMASK_RX_TX_GET,
+-			&priv->regs->ifregs[0].cmask);
++		iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[0].creq, i);
+  		iowrite32(0x0, &priv->regs->ifregs[0].id1);
+@@ -386,16 +385,14 @@ static void pch_can_config_rx_tx_buffers(struct
+pch_can_priv *priv)
+ 				  0x1fff | PCH_MASK2_MDIR_MXTD);
+  		/* Setting CMASK for writing */
+-		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+-			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+-			  &priv->regs->ifregs[0].cmask);
++		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK | PCH_CMASK_ARB |
++			  PCH_CMASK_CTRL, &priv->regs->ifregs[0].cmask);
+  		pch_can_rw_msg_obj(&priv->regs->ifregs[0].creq, i);
+ 	}
+  	for (i = PCH_TX_OBJ_START; i <= PCH_TX_OBJ_END; i++) {
+-		iowrite32(PCH_CMASK_RX_TX_GET,
+-			&priv->regs->ifregs[1].cmask);
++		iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[1].cmask);
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[1].creq, i);
+  		/* Resetting DIR bit for reception */
+@@ -410,9 +407,8 @@ static void pch_can_config_rx_tx_buffers(struct
+pch_can_priv *priv)
+ 		pch_can_bit_clear(&priv->regs->ifregs[1].mask2, 0x1fff);
+  		/* Setting CMASK for writing */
+-		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+-			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+-			  &priv->regs->ifregs[1].cmask);
++		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK | PCH_CMASK_ARB |
++			  PCH_CMASK_CTRL, &priv->regs->ifregs[1].cmask);
+  		pch_can_rw_msg_obj(&priv->regs->ifregs[1].creq, i);
+ 	}
+@@ -471,8 +467,9 @@ static void pch_can_int_clr(struct pch_can_priv
+*priv, u32 mask)
+  		pch_can_rw_msg_obj(&priv->regs->ifregs[0].creq, mask);
+ 	} else if ((mask >= PCH_TX_OBJ_START) && (mask <= PCH_TX_OBJ_END)) {
+-		/* Setting CMASK for clearing interrupts for
+-					 frame transmission. */
++		/*
++		 * Setting CMASK for clearing interrupts for frame transmission.
++		 */
+ 		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_CTRL | PCH_CMASK_ARB,
+ 			  &priv->regs->ifregs[1].cmask);
+ @@ -600,7 +597,6 @@ static irqreturn_t pch_can_interrupt(int irq, void
+*dev_id)
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+  	pch_can_set_int_enables(priv, PCH_CAN_NONE);
+-
+ 	napi_schedule(&priv->napi);
+  	return IRQ_HANDLED;
+@@ -1048,11 +1044,11 @@ static u32 pch_can_get_rxtx_ir(struct
+pch_can_priv *priv, u32 buff_num, u32 dir)
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+  	if (((ioread32(&priv->regs->ifregs[dir].id2)) & PCH_ID_MSGVAL) &&
+-			((ioread32(&priv->regs->ifregs[dir].mcont)) & ie)) {
++			((ioread32(&priv->regs->ifregs[dir].mcont)) & ie))
+ 		enable = 1;
+-	} else {
++	else
+ 		enable = 0;
+-	}
++
+ 	return enable;
+ }
+ -- 1.6.0.6
 
