@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab0KXOq3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:46:29 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:38206 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751342Ab0KXOq2 (ORCPT
+	id S1752698Ab0KXOsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:48:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:38444 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab0KXOsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:46:28 -0500
-Date: Tue, 23 Nov 2010 18:24:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Kyle Moffett <kyle@moffetthome.net>, Marcus Meissner <meissner@suse.de>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@osdl.org, hpa@zytor.com, w@1wt.eu,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101123172437.GB8412@ucw.cz>
-References: <20101116104600.GA24015@suse.de>
- <AANLkTi=F1vbwpOzyN9o0nuRtsEUTQx2j3==kLu9j7Ccb@mail.gmail.com>
- <20101118073126.GB32621@elte.hu>
+	Wed, 24 Nov 2010 09:48:20 -0500
+Date: Wed, 24 Nov 2010 09:48:11 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: ltuikov@yahoo.com, Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+Message-ID: <20101124144811.GA29196@infradead.org>
+References: <549123.75632.qm@web31809.mail.mud.yahoo.com>
+ <1290593429.14652.33.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101118073126.GB32621@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290593429.14652.33.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, Nov 24, 2010 at 10:10:29AM +0000, James Bottomley wrote:
+> The final question is is it worth it?  Since USB devices are supposed to
+> be hot unpluggable, surely a USB device with a write back cache would be
+> a disaster: no-one will SYNC the cache on a surprise unplug anyway ...
+> therefore there shouldn't really be any of them surviving in the wild
+> (famous last words, I suppose).
 
-> >   (2) Most of the arguments about introducing "uncertainty" into the
-> > hacking process are specious as well. [...]
-> 
-> It is only specious if you ignore the arguments i made in the previous
-> discussion. One argument i made was:
+There's tons of USB devices with writeback caches.  Recent windows
+version tend to use the FUA bit a lot because of this.  And the linux
+usb storage target implementation thus has a hook to ignore the FUA bit,
+and it's probably not the only one..
 
-Well, but it has downsides, too.
-
-If I know school server is vulnerable, I can get admin to fix it... if
-I can see dmesg without being root, I can help with problems. I have
-done both before...
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
