@@ -1,662 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0KXUym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 15:54:42 -0500
-Received: from mailfw02.zoner.fi ([84.34.147.249]:50972 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab0KXUyk (ORCPT
+	id S1756608Ab0KXU5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 15:57:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54518 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659Ab0KXU5f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 15:54:40 -0500
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH RFC 2/3] Decompressors: Add boot-time XZ support
-Cc: linux-embedded@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Alain Knaff <alain@knaff.lu>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-From: Lasse Collin <lasse.collin@tukaani.org>
-Date: Wed, 24 Nov 2010 22:54:41 +0200
+	Wed, 24 Nov 2010 15:57:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=kZ2/Knjq/ItYKdtA0pygDRg7inqI/sVSIWjJvcsXnwLyEsmcuQVQVc0TbUmgfk3xm+
+         Fctjuis50YXVRaSx/q4j1raXFQ/cXZdha6iZYhJ0fU9nrFdTTSxu8xefe9U5bC4wQ6S1
+         pu4UruC2nZ6jnaK9LZVvTwFYY0YIsN8MIHCEQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011242254.41176.lasse.collin@tukaani.org>
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+In-Reply-To: <20101124145247.GA2860@BohrerMBP.rgmadvisors.com>
+References: <1281307532-3235-1-git-send-email-shawn.bohrer@gmail.com>
+ <AANLkTinLCN3ojoRqcAwRsA=JJ=0=R6TWv2dmyUvbMMTC@mail.gmail.com> <20101124145247.GA2860@BohrerMBP.rgmadvisors.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 24 Nov 2010 15:57:13 -0500
+Message-ID: <AANLkTi=oTq3_-7OZZwGrYjQPXA0TCDFB_DaFXJ7rvWH9@mail.gmail.com>
+Subject: Re: [PATCH] hrtimer: make epoll_wait() use the hrtimer range feature
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lasse Collin <lasse.collin@tukaani.org>
+On Wed, Nov 24, 2010 at 09:52, Shawn Bohrer wrote:
+> On Wed, Nov 24, 2010 at 03:33:02AM -0500, Mike Frysinger wrote:
+>> On Sun, Aug 8, 2010 at 18:45, Shawn Bohrer wrote:
+>> > @@ -1116,18 +1113,22 @@ static int ep_send_events(struct eventpoll *ep,
+>> >  static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+>> >                   int maxevents, long timeout)
+>> >  {
+>> > -       int res, eavail;
+>> > +       int res, eavail, timed_out = 0;
+>> >        unsigned long flags;
+>> > -       long jtimeout;
+>> > +       long slack;
+>> >        wait_queue_t wait;
+>> > -
+>> > -       /*
+>> > -        * Calculate the timeout by checking for the "infinite" value (-1)
+>> > -        * and the overflow condition. The passed timeout is in milliseconds,
+>> > -        * that why (t * HZ) / 1000.
+>> > -        */
+>> > -       jtimeout = (timeout < 0 || timeout >= EP_MAX_MSTIMEO) ?
+>> > -               MAX_SCHEDULE_TIMEOUT : (timeout * HZ + 999) / 1000;
+>> > +       struct timespec end_time;
+>> > +       ktime_t expires, *to = NULL;
+>> > +
+>> > +       if (timeout > 0) {
+>> > +               ktime_get_ts(&end_time);
+>> > +               timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
+>> > +               slack = estimate_accuracy(&end_time);
+>> > +               to = &expires;
+>> > +               *to = timespec_to_ktime(end_time);
+>> > +       } else if (timeout == 0) {
+>> > +               timed_out = 1;
+>> > +       }
+>> >
+>> >  retry:
+>> >        spin_lock_irqsave(&ep->lock, flags);
+>> > @@ -1149,7 +1150,7 @@ retry:
+>> >                         * to TASK_INTERRUPTIBLE before doing the checks.
+>> >                         */
+>> >                        set_current_state(TASK_INTERRUPTIBLE);
+>> > -                       if (!list_empty(&ep->rdllist) || !jtimeout)
+>> > +                       if (!list_empty(&ep->rdllist) || timed_out)
+>> >                                break;
+>> >                        if (signal_pending(current)) {
+>> >                                res = -EINTR;
+>> > @@ -1157,7 +1158,9 @@ retry:
+>> >                        }
+>> >
+>> >                        spin_unlock_irqrestore(&ep->lock, flags);
+>> > -                       jtimeout = schedule_timeout(jtimeout);
+>> > +                       if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
+>> > +                               timed_out = 1;
+>> > +
+>> >                        spin_lock_irqsave(&ep->lock, flags);
+>> >                }
+>> >                __remove_wait_queue(&ep->wq, &wait);
+>>
+>> this code introduces a warning:
+>> fs/eventpoll.c: In function ‘ep_poll’:
+>> fs/eventpoll.c:1119: warning: ‘slack’ may be used uninitialized in this function
+>>
+>> looks to me like you arent properly handling negative timeouts.
+>> certainly epoll_wait() passes the timeout value straight from
+>> userspace to ep_poll() without any error checking, so if userspace
+>> passes a negative timeout value, it looks like "slack" will be used
+>> uninitialized.
+>
+> If a negative timeout is passed in then 'to' remains NULL.  When 'to
+> is NULL schedule_hrtimeout_range() has an infinite timeout and the
+> 'slack' parameter is never used.  So technically everything should be
+> fine here.
 
-This implements the API defined in <linux/decompress/generic.h>
-which is used for kernel, initramfs, and initrd decompression.
-This patch together with the first patch is enough for
-XZ-compressed initramfs and initrd; XZ-compressed kernel will
-need arch-specific changes.
+ok, but that depends on an external function never changing behavior
+and makes changing the API pretty hard since all callers must be
+closely analyzed
 
-In contrast to other initramfs compression methods, support for
-XZ-compressed initramfs is not enabled by default in usr/Kconfig.
-This is primarily due to the Kconfig options of the xz_dec
-module. It can be good to require that xz_dec is enabled
-separately so the user can select only the BCJ filters he needs
-when EMBEDDED=y.
+> Of course it would be safest and best to simply initialize slack to 0.
+> I can send a patch this evening with the fix.
 
-The buffering requirements described in decompress_unxz.c are
-stricter than with gzip, so the relevant changes should be done
-to the arch-specific code when adding support for XZ-compressed
-kernel. Similarly, the heap size in arch-specific pre-boot code
-may need to be increased (30 KiB is enough).
-
-The XZ decompressor needs memmove(), memeq() (memcmp() == 0),
-and memzero() (memset(ptr, 0, size)), which aren't available in
-all arch-specific pre-boot environments. I'm including simple
-versions in decompress_unxz.c, but a cleaner solution would
-naturally be nicer.
-
-Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
----
-
- include/linux/decompress/unxz.h |   20 ++
- init/Kconfig                    |   21 +-
- lib/Kconfig                     |    3 
- lib/Makefile                    |    1 
- lib/decompress.c                |    5 
- lib/decompress_unxz.c           |  390 ++++++++++++++++++++++++++++++++++++++++
- scripts/gen_initramfs_list.sh   |    2 
- usr/Kconfig                     |   25 ++
- usr/Makefile                    |    5 
- 9 files changed, 464 insertions(+), 8 deletions(-)
-
-diff -uprN linux-2.6.37-rc3.orig/include/linux/decompress/unxz.h linux-2.6.37-rc3/include/linux/decompress/unxz.h
---- linux-2.6.37-rc3.orig/include/linux/decompress/unxz.h	1970-01-01 02:00:00.000000000 +0200
-+++ linux-2.6.37-rc3/include/linux/decompress/unxz.h	2010-11-24 08:10:27.000000000 +0200
-@@ -0,0 +1,20 @@
-+/*
-+ * Wrapper for XZ decompressor to make it usable for kernel and initramfs
-+ * decompression
-+ *
-+ * Author: Lasse Collin <lasse.collin@tukaani.org>
-+ *
-+ * This file has been put into the public domain.
-+ * You can do whatever you want with this file.
-+ */
-+
-+#ifndef DECOMPRESS_UNXZ_H
-+#define DECOMPRESS_UNXZ_H
-+
-+int unxz(unsigned char *in, int in_size,
-+		int (*fill)(void *dest, unsigned int size),
-+		int (*flush)(void *src, unsigned int size),
-+		unsigned char *out, int *in_used,
-+		void (*error)(char *x));
-+
-+#endif
-diff -uprN linux-2.6.37-rc3.orig/init/Kconfig linux-2.6.37-rc3/init/Kconfig
---- linux-2.6.37-rc3.orig/init/Kconfig	2010-11-22 10:51:46.000000000 +0200
-+++ linux-2.6.37-rc3/init/Kconfig	2010-11-24 08:04:29.000000000 +0200
-@@ -130,13 +130,16 @@ config HAVE_KERNEL_BZIP2
- config HAVE_KERNEL_LZMA
- 	bool
- 
-+config HAVE_KERNEL_XZ
-+	bool
-+
- config HAVE_KERNEL_LZO
- 	bool
- 
- choice
- 	prompt "Kernel compression mode"
- 	default KERNEL_GZIP
--	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_LZO
-+	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO
- 	help
- 	  The linux kernel is a kind of self-extracting executable.
- 	  Several compression algorithms are available, which differ
-@@ -176,10 +179,20 @@ config KERNEL_LZMA
- 	bool "LZMA"
- 	depends on HAVE_KERNEL_LZMA
- 	help
-+	  This is the predecessor of XZ.
-+
-+config KERNEL_XZ
-+	bool "XZ"
-+	depends on HAVE_KERNEL_XZ
-+	help
- 	  The most recent compression algorithm.
--	  Its ratio is best, decompression speed is between the other
--	  two. Compression is slowest.	The kernel size is about 33%
--	  smaller with LZMA in comparison to gzip.
-+	  Its compression ratio is the best. Decompression speed is
-+	  better than that of bzip2 but worse than gzip and LZO.
-+	  Compression is the slowest. The kernel size is about 30%
-+	  smaller with XZ in comparison to gzip. On architectures
-+	  for which there is a BCJ filter in XZ (i386, x86_64, ARM,
-+	  IA-64, PowerPC, and SPARC), XZ will create a few percent
-+	  smaller kernel than LZMA.
- 
- config KERNEL_LZO
- 	bool "LZO"
-diff -uprN linux-2.6.37-rc3.orig/lib/Kconfig linux-2.6.37-rc3/lib/Kconfig
---- linux-2.6.37-rc3.orig/lib/Kconfig	2010-10-20 23:30:22.000000000 +0300
-+++ linux-2.6.37-rc3/lib/Kconfig	2010-11-21 10:42:11.000000000 +0200
-@@ -120,6 +120,9 @@ config DECOMPRESS_BZIP2
- config DECOMPRESS_LZMA
- 	tristate
- 
-+config DECOMPRESS_XZ
-+	tristate
-+
- config DECOMPRESS_LZO
- 	select LZO_DECOMPRESS
- 	tristate
-diff -uprN linux-2.6.37-rc3.orig/lib/Makefile linux-2.6.37-rc3/lib/Makefile
---- linux-2.6.37-rc3.orig/lib/Makefile	2010-10-20 23:30:22.000000000 +0300
-+++ linux-2.6.37-rc3/lib/Makefile	2010-11-21 10:42:11.000000000 +0200
-@@ -74,6 +74,7 @@ obj-$(CONFIG_RAID6_PQ) += raid6/
- lib-$(CONFIG_DECOMPRESS_GZIP) += decompress_inflate.o
- lib-$(CONFIG_DECOMPRESS_BZIP2) += decompress_bunzip2.o
- lib-$(CONFIG_DECOMPRESS_LZMA) += decompress_unlzma.o
-+lib-$(CONFIG_DECOMPRESS_XZ) += decompress_unxz.o
- lib-$(CONFIG_DECOMPRESS_LZO) += decompress_unlzo.o
- 
- obj-$(CONFIG_TEXTSEARCH) += textsearch.o
-diff -uprN linux-2.6.37-rc3.orig/lib/decompress.c linux-2.6.37-rc3/lib/decompress.c
---- linux-2.6.37-rc3.orig/lib/decompress.c	2010-10-20 23:30:22.000000000 +0300
-+++ linux-2.6.37-rc3/lib/decompress.c	2010-11-21 10:42:11.000000000 +0200
-@@ -8,6 +8,7 @@
- 
- #include <linux/decompress/bunzip2.h>
- #include <linux/decompress/unlzma.h>
-+#include <linux/decompress/unxz.h>
- #include <linux/decompress/inflate.h>
- #include <linux/decompress/unlzo.h>
- 
-@@ -23,6 +24,9 @@
- #ifndef CONFIG_DECOMPRESS_LZMA
- # define unlzma NULL
- #endif
-+#ifndef CONFIG_DECOMPRESS_XZ
-+# define unxz NULL
-+#endif
- #ifndef CONFIG_DECOMPRESS_LZO
- # define unlzo NULL
- #endif
-@@ -36,6 +40,7 @@ static const struct compress_format {
- 	{ {037, 0236}, "gzip", gunzip },
- 	{ {0x42, 0x5a}, "bzip2", bunzip2 },
- 	{ {0x5d, 0x00}, "lzma", unlzma },
-+	{ {0xfd, 0x37}, "xz", unxz },
- 	{ {0x89, 0x4c}, "lzo", unlzo },
- 	{ {0, 0}, NULL, NULL }
- };
-diff -uprN linux-2.6.37-rc3.orig/lib/decompress_unxz.c linux-2.6.37-rc3/lib/decompress_unxz.c
---- linux-2.6.37-rc3.orig/lib/decompress_unxz.c	1970-01-01 02:00:00.000000000 +0200
-+++ linux-2.6.37-rc3/lib/decompress_unxz.c	2010-11-24 18:18:37.000000000 +0200
-@@ -0,0 +1,390 @@
-+/*
-+ * XZ decoder as a single file for uncompressing the kernel and initramfs
-+ *
-+ * Author: Lasse Collin <lasse.collin@tukaani.org>
-+ *
-+ * This file has been put into the public domain.
-+ * You can do whatever you want with this file.
-+ */
-+
-+/*
-+ * Important notes about in-place decompression
-+ *
-+ * At least on x86, the kernel is decompressed in place: the compressed data
-+ * is placed to the end of the output buffer, and the decompressor overwrites
-+ * most of the compressed data. There must be enough safety margin to
-+ * guarantee that the write position is always behind the read position.
-+ *
-+ * The safety margin for XZ with LZMA2 or BCJ+LZMA2 is calculated below.
-+ * Note that the margin with XZ is bigger than with Deflate (gzip)!
-+ *
-+ * The worst case for in-place decompression is that the beginning of
-+ * the file is compressed extremely well, and the rest of the file is
-+ * uncompressible. Thus, we must look for worst-case expansion when the
-+ * compressor is encoding uncompressible data.
-+ *
-+ * The structure of the .xz file in case of a compresed kernel is as follows.
-+ * Sizes (as bytes) of the fields are in parenthesis.
-+ *
-+ *    Stream Header (12)
-+ *    Block Header:
-+ *      Block Header (8-12)
-+ *      Compressed Data (N)
-+ *      Block Padding (0-3)
-+ *      CRC32 (4)
-+ *    Index (8-20)
-+ *    Stream Footer (12)
-+ *
-+ * Normally there is exactly one Block, but let's assume that there are
-+ * 2-4 Blocks just in case. Because Stream Header and also Block Header
-+ * of the first Block don't make the decompressor produce any uncompressed
-+ * data, we can ignore them from our calculations. Block Headers of possible
-+ * additional Blocks have to be taken into account still. With these
-+ * assumptions, it is safe to assume that the total header overhead is
-+ * less than 128 bytes.
-+ *
-+ * Compressed Data contains LZMA2 or BCJ+LZMA2 encoded data. Since BCJ
-+ * doesn't change the size of the data, it is enough to calculate the
-+ * safety margin for LZMA2.
-+ *
-+ * LZMA2 stores the data in chunks. Each chunk has a header whose size is
-+ * a maximum of 6 bytes, but to get round 2^n numbers, let's assume that
-+ * the maximum chunk header size is 8 bytes. After the chunk header, there
-+ * may be up to 64 KiB of actual payload in the chunk. Often the payload is
-+ * quite a bit smaller though; to be safe, let's assume that an average
-+ * chunk has only 32 KiB of payload.
-+ *
-+ * The maximum uncompressed size of the payload is 2 MiB. The minimum
-+ * uncompressed size of the payload is in practice never less than the
-+ * payload size itself. The LZMA2 format would allow uncompressed size
-+ * to be less than the payload size, but no sane compressor creates such
-+ * files. LZMA2 supports storing uncompressible data in uncompressed form,
-+ * so there's never a need to create payloads whose uncompressed size is
-+ * smaller than the compressed size.
-+ *
-+ * The assumption, that the uncompressed size of the payload is never
-+ * smaller than the payload itself, is valid only when talking about
-+ * the payload as a whole. It is possible that the payload has parts where
-+ * the decompressor consumes more input than it produces output. Calculating
-+ * the worst case for this would be tricky. Instead of trying to do that,
-+ * let's simply make sure that the decompressor never overwrites any bytes
-+ * of the payload which it is currently reading.
-+ *
-+ * Now we have enough information to calculate the safety margin. We need
-+ *   - 128 bytes for the .xz file format headers;
-+ *   - 8 bytes per every 32 KiB of uncompressed size (one LZMA2 chunk header
-+ *     per chunk, each chunk having average payload size of 32 KiB); and
-+ *   - 64 KiB (biggest possible LZMA2 chunk payload size) to make sure that
-+ *     the decompressor never overwrites anything from the LZMA2 chunk
-+ *     payload it is currently reading.
-+ *
-+ * We get the following formula:
-+ *
-+ *    safety_margin = 128 + uncompressed_size * 8 / 32768 + 65536
-+ *                  = 128 + (uncompressed_size >> 12) + 65536
-+ *
-+ * For comparision, according to arch/x86/boot/compressed/misc.c, the
-+ * equivalent formula for Deflate is this:
-+ *
-+ *    safety_margin = 18 + (uncompressed_size >> 12) + 32768
-+ *
-+ * Thus, when updating Deflate-only in-place kernel decompressor to
-+ * support XZ, the fixed overhead has to be increased from 18+32768 bytes
-+ * to 128+65536 bytes.
-+ */
-+
-+/*
-+ * STATIC is defined to "static" if we are being built for kernel
-+ * decompression (pre-boot code). <linux/decompress/mm.h> will define
-+ * STATIC to empty if it wasn't already defined. Since we will need to
-+ * know later if we are being used for kernel decompression, we define
-+ * XZ_PREBOOT here.
-+ */
-+#ifdef STATIC
-+#	define XZ_PREBOOT
-+#endif
-+#ifdef __KERNEL__
-+#	include <linux/decompress/mm.h>
-+#endif
-+#define XZ_EXTERN STATIC
-+
-+#ifndef XZ_PREBOOT
-+#	include <linux/slab.h>
-+#	include <linux/xz.h>
-+#else
-+/*
-+ * Use the internal CRC32 code instead of kernel's CRC32 module, which
-+ * is not available in early phase of booting.
-+ */
-+#define XZ_INTERNAL_CRC32 1
-+
-+/*
-+ * For boot time use, we enable only the BCJ filter of the current
-+ * architecture or none if no BCJ filter is available for the architecture.
-+ */
-+#ifdef CONFIG_X86
-+#	define XZ_DEC_X86
-+#endif
-+#ifdef CONFIG_PPC
-+#	define XZ_DEC_POWERPC
-+#endif
-+#ifdef CONFIG_ARM
-+#	define XZ_DEC_ARM
-+#endif
-+#ifdef CONFIG_IA64
-+#	define XZ_DEC_IA64
-+#endif
-+#ifdef CONFIG_SPARC
-+#	define XZ_DEC_SPARC
-+#endif
-+
-+/*
-+ * This will get the basic headers so that memeq() and others
-+ * can be defined.
-+ */
-+#include "xz/xz_private.h"
-+
-+/*
-+ * Replace the normal allocation functions with the versions from
-+ * <linux/decompress/mm.h>. vfree() needs to support vfree(NULL)
-+ * when XZ_DYNALLOC is used, but the pre-boot free() doesn't support it.
-+ * Workaround it here because the other decompressors don't need it.
-+ */
-+#undef kmalloc
-+#undef kfree
-+#undef vmalloc
-+#undef vfree
-+#define kmalloc(size, flags) malloc(size)
-+#define kfree(ptr) free(ptr)
-+#define vmalloc(size) malloc(size)
-+#define vfree(ptr) do { if (ptr != NULL) free(ptr); } while (0)
-+
-+/*
-+ * FIXME: Not all basic memory functions are provided in architecture-specific
-+ * files (yet). We define our own versions here for now, but this should be
-+ * only a temporary solution.
-+ *
-+ * memeq and memzero are not used much and any remotely sane implementation
-+ * is fast enough. memcpy/memmove speed matters in multi-call mode, but
-+ * the kernel image is decompressed in single-call mode, in which only
-+ * memcpy speed can matter and only if there is a lot of uncompressible data
-+ * (LZMA2 stores uncompressible chunks in uncompressed form). Thus, the
-+ * functions below should just be kept small; it's probably not worth
-+ * optimizing for speed.
-+ */
-+
-+#ifndef memeq
-+static bool memeq(const void *a, const void *b, size_t size)
-+{
-+	const uint8_t *x = a;
-+	const uint8_t *y = b;
-+	size_t i;
-+
-+	for (i = 0; i < size; ++i)
-+		if (x[i] != y[i])
-+			return false;
-+
-+	return true;
-+}
-+#endif
-+
-+#ifndef memzero
-+static void memzero(void *buf, size_t size)
-+{
-+	uint8_t *b = buf;
-+	uint8_t *e = b + size;
-+	while (b != e)
-+		*b++ = '\0';
-+}
-+#endif
-+
-+#ifndef memmove
-+/* Not static to avoid a conflict with the prototype in the Linux headers. */
-+void *memmove(void *dest, const void *src, size_t size)
-+{
-+	uint8_t *d = dest;
-+	const uint8_t *s = src;
-+	size_t i;
-+
-+	if (d < s) {
-+		for (i = 0; i < size; ++i)
-+			d[i] = s[i];
-+	} else if (d > s) {
-+		i = size;
-+		while (i-- > 0)
-+			d[i] = s[i];
-+	}
-+
-+	return dest;
-+}
-+#endif
-+
-+/*
-+ * Since we need memmove anyway, would use it as memcpy too.
-+ * Commented out for now to avoid breaking things.
-+ */
-+/*
-+#ifndef memcpy
-+#	define memcpy memmove
-+#endif
-+*/
-+
-+#include "xz/xz_crc32.c"
-+#include "xz/xz_dec_stream.c"
-+#include "xz/xz_dec_lzma2.c"
-+#include "xz/xz_dec_bcj.c"
-+
-+#endif /* XZ_PREBOOT */
-+
-+/* Size of the input and output buffers in multi-call mode */
-+#define XZ_IOBUF_SIZE 4096
-+
-+/*
-+ * This function implements the API defined in <linux/decompress/generic.h>.
-+ *
-+ * This wrapper will automatically choose single-call or multi-call mode
-+ * of the native XZ decoder API. The single-call mode can be used only when
-+ * both input and output buffers are available as a single chunk, i.e. when
-+ * fill() and flush() won't be used.
-+ */
-+STATIC int INIT unxz(unsigned char *in, int in_size,
-+		int (*fill)(void *dest, unsigned int size),
-+		int (*flush)(void *src, unsigned int size),
-+		unsigned char *out, int *in_used,
-+		void (*error)(char *x))
-+{
-+	struct xz_buf b;
-+	struct xz_dec *s;
-+	enum xz_ret ret;
-+
-+#if XZ_INTERNAL_CRC32
-+	xz_crc32_init();
-+#endif
-+
-+	if (in != NULL && out != NULL)
-+		s = xz_dec_init(XZ_SINGLE, 0);
-+	else
-+		s = xz_dec_init(XZ_DYNALLOC, (uint32_t)-1);
-+
-+	if (s == NULL)
-+		goto error_alloc_state;
-+
-+	b.in = in;
-+	b.in_pos = 0;
-+	b.in_size = in_size;
-+	b.out_pos = 0;
-+
-+	if (in_used != NULL)
-+		*in_used = 0;
-+
-+	if (fill == NULL && flush == NULL) {
-+		b.out = out;
-+		b.out_size = (size_t)-1;
-+		ret = xz_dec_run(s, &b);
-+	} else {
-+		b.out_size = XZ_IOBUF_SIZE;
-+		b.out = malloc(XZ_IOBUF_SIZE);
-+		if (b.out == NULL)
-+			goto error_alloc_out;
-+
-+		if (fill != NULL) {
-+			in = malloc(XZ_IOBUF_SIZE);
-+			if (in == NULL)
-+				goto error_alloc_in;
-+
-+			b.in = in;
-+		}
-+
-+		do {
-+			if (b.in_pos == b.in_size && fill != NULL) {
-+				if (in_used != NULL)
-+					*in_used += b.in_pos;
-+
-+				b.in_pos = 0;
-+
-+				in_size = fill(in, XZ_IOBUF_SIZE);
-+				if (in_size < 0) {
-+					/*
-+					 * This isn't an optimal error code
-+					 * but it probably isn't worth making
-+					 * a new one either.
-+					 */
-+					ret = XZ_BUF_ERROR;
-+					break;
-+				}
-+
-+				b.in_size = in_size;
-+			}
-+
-+			ret = xz_dec_run(s, &b);
-+
-+			if (b.out_pos == b.out_size || ret != XZ_OK) {
-+				/*
-+				 * Setting ret here may hide an error
-+				 * returned by xz_dec_run(), but probably
-+				 * it's not too bad.
-+				 */
-+				if (flush(b.out, b.out_pos) != (int)b.out_pos)
-+					ret = XZ_BUF_ERROR;
-+
-+				b.out_pos = 0;
-+			}
-+		} while (ret == XZ_OK);
-+
-+		if (fill != NULL)
-+			free(in);
-+
-+		free(b.out);
-+	}
-+
-+	if (in_used != NULL)
-+		*in_used += b.in_pos;
-+
-+	xz_dec_end(s);
-+
-+	switch (ret) {
-+	case XZ_STREAM_END:
-+		return 0;
-+
-+	case XZ_MEM_ERROR:
-+		/* This can occur only in multi-call mode. */
-+		error("XZ decompressor ran out of memory");
-+		break;
-+
-+	case XZ_FORMAT_ERROR:
-+		error("Input is not in the XZ format (wrong magic bytes)");
-+		break;
-+
-+	case XZ_OPTIONS_ERROR:
-+		error("Input was encoded with settings that are not "
-+				"supported by this XZ decoder");
-+		break;
-+
-+	case XZ_DATA_ERROR:
-+	case XZ_BUF_ERROR:
-+		error("XZ-compressed data is corrupt");
-+		break;
-+
-+	default:
-+		error("Bug in the XZ decompressor");
-+		break;
-+	}
-+
-+	return -1;
-+
-+error_alloc_in:
-+	free(b.out);
-+
-+error_alloc_out:
-+	xz_dec_end(s);
-+
-+error_alloc_state:
-+	error("XZ decompressor ran out of memory");
-+	return -1;
-+}
-+
-+/*
-+ * This macro is used by architecture-specific files to decompress
-+ * the kernel image.
-+ */
-+#define decompress unxz
-diff -uprN linux-2.6.37-rc3.orig/scripts/gen_initramfs_list.sh linux-2.6.37-rc3/scripts/gen_initramfs_list.sh
---- linux-2.6.37-rc3.orig/scripts/gen_initramfs_list.sh	2010-10-20 23:30:22.000000000 +0300
-+++ linux-2.6.37-rc3/scripts/gen_initramfs_list.sh	2010-11-21 10:42:11.000000000 +0200
-@@ -243,6 +243,8 @@ case "$arg" in
- 		echo "$output_file" | grep -q "\.gz$" && compr="gzip -9 -f"
- 		echo "$output_file" | grep -q "\.bz2$" && compr="bzip2 -9 -f"
- 		echo "$output_file" | grep -q "\.lzma$" && compr="lzma -9 -f"
-+		echo "$output_file" | grep -q "\.xz$" && \
-+				compr="xz --check=crc32 --lzma2=dict=1MiB"
- 		echo "$output_file" | grep -q "\.lzo$" && compr="lzop -9 -f"
- 		echo "$output_file" | grep -q "\.cpio$" && compr="cat"
- 		shift
-diff -uprN linux-2.6.37-rc3.orig/usr/Kconfig linux-2.6.37-rc3/usr/Kconfig
---- linux-2.6.37-rc3.orig/usr/Kconfig	2010-11-22 10:51:47.000000000 +0200
-+++ linux-2.6.37-rc3/usr/Kconfig	2010-11-24 08:04:29.000000000 +0200
-@@ -72,6 +72,18 @@ config RD_LZMA
- 	  Support loading of a LZMA encoded initial ramdisk or cpio buffer
- 	  If unsure, say N.
- 
-+config RD_XZ
-+	bool "Support initial ramdisks compressed using XZ"
-+	depends on BLK_DEV_INITRD && XZ_DEC=y
-+	select DECOMPRESS_XZ
-+	help
-+	  Support loading of a XZ encoded initial ramdisk or cpio buffer.
-+
-+	  If this option is inactive, say Y to "XZ decompression support"
-+	  under "Library routines" first.
-+
-+	  If unsure, say N.
-+
- config RD_LZO
- 	bool "Support initial ramdisks compressed using LZO" if EMBEDDED
- 	default !EMBEDDED
-@@ -134,10 +146,17 @@ config INITRAMFS_COMPRESSION_LZMA
- 	bool "LZMA"
- 	depends on RD_LZMA
- 	help
-+	  This is the predecessor of XZ.
-+
-+config INITRAMFS_COMPRESSION_XZ
-+	bool "XZ"
-+	depends on RD_XZ
-+	help
- 	  The most recent compression algorithm.
--	  Its ratio is best, decompression speed is between the other
--	  three. Compression is slowest. The initramfs size is about 33%
--	  smaller with LZMA in comparison to gzip.
-+	  Its compression ratio is the best. Decompression speed is
-+	  better than that of bzip2 but worse than gzip and LZO.
-+	  Compression is the slowest. The initramfs size is about 30%
-+	  smaller with XZ in comparison to gzip.
- 
- config INITRAMFS_COMPRESSION_LZO
- 	bool "LZO"
-diff -uprN linux-2.6.37-rc3.orig/usr/Makefile linux-2.6.37-rc3/usr/Makefile
---- linux-2.6.37-rc3.orig/usr/Makefile	2010-11-22 10:51:47.000000000 +0200
-+++ linux-2.6.37-rc3/usr/Makefile	2010-11-24 08:04:29.000000000 +0200
-@@ -15,6 +15,9 @@ suffix_$(CONFIG_INITRAMFS_COMPRESSION_BZ
- # Lzma
- suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZMA)   = .lzma
- 
-+# XZ
-+suffix_$(CONFIG_INITRAMFS_COMPRESSION_XZ)     = .xz
-+
- # Lzo
- suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZO)   = .lzo
- 
-@@ -50,7 +53,7 @@ endif
- quiet_cmd_initfs = GEN     $@
-       cmd_initfs = $(initramfs) -o $@ $(ramfs-args) $(ramfs-input)
- 
--targets := initramfs_data.cpio.gz initramfs_data.cpio.bz2 initramfs_data.cpio.lzma initramfs_data.cpio.lzo initramfs_data.cpio
-+targets := initramfs_data.cpio.gz initramfs_data.cpio.bz2 initramfs_data.cpio.lzma initramfs_data.cpio.xz initramfs_data.cpio.lzo initramfs_data.cpio
- # do not try to update files included in initramfs
- $(deps_initramfs): ;
- 
+thanks !
+-mike
