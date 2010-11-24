@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0KXNOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 08:14:43 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13817 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab0KXNOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 08:14:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,248,1288594800"; 
-   d="scan'208";a="860955375"
-Date: Wed, 24 Nov 2010 21:14:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
-Message-ID: <20101124131437.GE10413@localhost>
-References: <20101117042720.033773013@intel.com>
- <20101117042850.002299964@intel.com>
- <1290596732.2072.450.camel@laptop>
- <20101124121046.GA8333@localhost>
- <1290603047.2072.465.camel@laptop>
+	id S1754949Ab0KXNQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 08:16:21 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:45094 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab0KXNQT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 08:16:19 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Ben Gardiner <bengardiner@nanometrics.ca>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Cordahi <christophercordahi@nanometrics.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Date: Wed, 24 Nov 2010 18:46:01 +0530
+Subject: RE: [PATCH v4 2/5] da850-evm: add UI Expander pushbuttons
+Thread-Topic: [PATCH v4 2/5] da850-evm: add UI Expander pushbuttons
+Thread-Index: AcuLRmicZj/Rs3oATd++x+vWzxE2FgAkT9iA
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024793194E@dbde02.ent.ti.com>
+References: <cover.1290201713.git.bengardiner@nanometrics.ca>
+ <cover.1290540916.git.bengardiner@nanometrics.ca>
+ <9e73184bfb5c0a0d47377dd9b0627405dd87ce8a.1290540916.git.bengardiner@nanometrics.ca>
+In-Reply-To: <9e73184bfb5c0a0d47377dd9b0627405dd87ce8a.1290540916.git.bengardiner@nanometrics.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290603047.2072.465.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 08:50:47PM +0800, Peter Zijlstra wrote:
-> On Wed, 2010-11-24 at 20:10 +0800, Wu Fengguang wrote:
-> > > > +       /*
-> > > > +        * When there lots of tasks throttled in balance_dirty_pages(), they
-> > > > +        * will each try to update the bandwidth for the same period, making
-> > > > +        * the bandwidth drift much faster than the desired rate (as in the
-> > > > +        * single dirtier case). So do some rate limiting.
-> > > > +        */
-> > > > +       if (jiffies - bdi->write_bandwidth_update_time < elapsed)
-> > > > +               goto snapshot;
-> > >
-> > > Why this goto snapshot and not simply return? This is the second call
-> > > (bdi_update_bandwidth equivalent).
-> > 
-> > Good question. The loop inside balance_dirty_pages() normally run only
-> > once, however wb_writeback() may loop over and over again. If we just
-> > return here, the condition
-> > 
-> >         (jiffies - bdi->write_bandwidth_update_time < elapsed)
-> > 
-> > cannot be reset, then future bdi_update_bandwidth() calls in the same
-> > wb_writeback() loop will never find it OK to update the bandwidth.
-> 
-> But the thing is, you don't want to reset that, it might loop so fast
-> you'll throttle all of them, if you keep the pre-throttle value you'll
-> eventually pass, no?
+Hi Ben,
 
-It (let's name it A) only resets the _local_ vars bw_* when it's sure
-by the condition
+I have some minor comments on this patch. You could
+wait for other pending items to get resolved before
+posting a re-spin.
 
-        (jiffies - bdi->write_bandwidth_update_time < elapsed)
+On Wed, Nov 24, 2010 at 01:10:57, Ben Gardiner wrote:
 
-that someone else (name B) has updated the _global_ bandwidth in the
-time range we planned. So there may be some time in A's range that is
-not covered by B, but sure the range is not totally bypassed without
-updating the bandwidth.
+>  arch/arm/mach-davinci/board-da850-evm.c |   98 ++++++++++++++++++++++++++++++-
+>  1 files changed, 97 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
 
-> > It does assume no races between CPUs.. We may need some per-cpu based
-> > estimation. 
-> 
-> But that multi-writer race is valid even for the balance_dirty_pages()
-> call, two or more could interleave on the bw_time and bw_written
-> variables.
+> +static struct gpio_keys_button da850_evm_ui_keys[] = {
+> +     [0 ... DA850_N_UI_PB - 1] = {
+> +             .type                   = EV_KEY,
+> +             .active_low             = 1,
+> +             .wakeup                 = 0,
+> +             .debounce_interval      = DA850_KEYS_DEBOUNCE_MS,
+> +             .code                   = -1, /* assigned at runtime */
+> +             .gpio                   = -1, /* assigned at runtime */
+> +             .desc                   = NULL, /* assigned at runtime */
+> +     },
+> +};
+> +
+> +static struct gpio_keys_platform_data da850_evm_ui_keys_pdata = {
+> +     .buttons = da850_evm_ui_keys,
+> +     .nbuttons = ARRAY_SIZE(da850_evm_ui_keys),
+> +     .rep = 0, /* disable auto-repeat */
+> +     .poll_interval = DA850_GPIO_KEYS_POLL_MS,
+> +};
+> +
+> +static struct platform_device da850_evm_ui_keys_device = {
+> +     .name = "gpio-keys",
+> +     .id = 0,
+> +     .dev = {
+> +             .platform_data = &da850_evm_ui_keys_pdata
+> +     },
+> +};
 
-The race will only exist in each task's local vars (their bw_* will
-overlap). But the update bdi->write_bandwidth* will be safeguarded
-by the above check. When the task is scheduled back, it may find
-updated write_bandwidth_update_time and hence give up his estimation.
-This is rather tricky..
+No need of zero/NULL initialization in structures above
+since they are static.
+
+> @@ -304,15 +388,24 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+>       gpio_direction_output(sel_b, 1);
+>       gpio_direction_output(sel_c, 1);
+>
+> +     da850_evm_ui_keys_init(gpio);
+> +     ret = platform_device_register(&da850_evm_ui_keys_device);
+> +     if (ret) {
+> +             pr_warning("Could not register UI GPIO expander push-buttons"
+> +                             " device\n");
+
+Line-breaking an error message is not preferred since it becomes
+difficult to grep in code. Looking at this message, you could drop
+" device" altogether.
+
+> +             goto exp_setup_keys_fail;
+> +     }
+> +
+>       ui_card_detected = 1;
+>       pr_info("DA850/OMAP-L138 EVM UI card detected\n");
+>
+>       da850_evm_setup_nor_nand();
+> -
+
+Random white space change?
 
 Thanks,
-Fengguang
+Sekhar
+
