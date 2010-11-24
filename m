@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab0KXXMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 18:12:19 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:56670 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab0KXXMP (ORCPT
+	id S1756550Ab0KXXNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:13:24 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:2602 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab0KXXNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 18:12:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=c3bEy5j25LLrNnSjNf3FMzSiVdaMg401KSev5I3PYxHAFWrhCRLKHCv8Fv316Y5jZ9
-         ncuZRZL0ciYyXUfMfCQgESjQ0wOmUibOM6W+GYjDTh6J+B7aoaHKfCabN67dc2udu9DJ
-         0z5tqBmJ+W9EmPCt/ItGwHl7qHCPa0lYc40b0=
-MIME-Version: 1.0
-Date: Wed, 24 Nov 2010 15:12:14 -0800
-Message-ID: <AANLkTinpO=FmoecfV8epubXU4OrhFsXJ7-Kc68yNhMEs@mail.gmail.com>
-Subject: [PATCH] bonding: check for assigned mac before adopting the slaves
- mac address
-From: David Strand <dpstrand@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Jay Vosburgh <fubar@us.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Nov 2010 18:13:21 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=ZzY4w5c/A9cBw5qZnpN2tT5oexnPs1+frThXAv1lbI66lrrV08uW7F+UJqRIifJ4y
+	fX7e0qnKpEdlNZY9p6Bqw==
+From: Slava Pestov <slavapestov@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhsharp@google.com, mrubin@google.com,
+        Slava Pestov <slavapestov@google.com>
+Subject: [PATCH] ftrace: Fix panic when lseek() called on "trace" opened for writing
+Date: Wed, 24 Nov 2010 15:13:16 -0800
+Message-Id: <1290640396-24179-1-git-send-email-slavapestov@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restore the check for a missing mac address before adopting the first
-slaves as it's own. This regression was introduced in:
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commit;h=c20811a79e671a6a1fe86a8c1afe04aca8a7f085
+The file_ops struct for the "trace" special file defined llseek as seq_lseek().
+However, if the file was opened for writing only, seq_open() was not called,
+and the seek would dereference a null pointer, file->private_data.
 
-Signed-off-by: David Strand dpstrand@gmail.com
+This patch introduces a new wrapper for seq_lseek() which checks if the file
+descriptor is opened for reading first. If not, it does nothing.
+
+This patch is for Linux 2.6.36.1.
+
+Signed-Off-By: Slava Pestov <slavapestov@google.com>
 ---
-diff -uprN a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
---- a/drivers/net/bonding/bond_main.c	2010-11-24 11:36:58.125640000 -0800
-+++ b/drivers/net/bonding/bond_main.c	2010-11-24 11:40:58.175640000 -0800
-@@ -1577,8 +1577,9 @@ int bond_enslave(struct net_device *bond
- 	/* If this is the first slave, then we need to set the master's hardware
- 	 * address to be the same as the slave's. */
- 	if (bond->slave_cnt == 0)
--		memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
--		       slave_dev->addr_len);
-+		if (is_zero_ether_addr(bond->dev->dev_addr))
-+			memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
-+			       slave_dev->addr_len);
 
+Change-Id: Iaabc50d84fb541c04e3efabd4788cebadbadbb4c
+---
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
- 	new_slave = kzalloc(sizeof(struct slave), GFP_KERNEL);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9ec59f5..7702f5a 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2320,11 +2320,19 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
+ 	return count;
+ }
+ 
++static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
++{
++	if (file->f_mode & FMODE_READ)
++		return seq_lseek(file, offset, origin);
++	else
++		return 0;
++}
++
+ static const struct file_operations tracing_fops = {
+ 	.open		= tracing_open,
+ 	.read		= seq_read,
+ 	.write		= tracing_write_stub,
+-	.llseek		= seq_lseek,
++	.llseek		= tracing_seek,
+ 	.release	= tracing_release,
+ };
+ 
+-- 
+1.7.3.1
+
