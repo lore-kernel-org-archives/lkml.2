@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab0KXRDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 12:03:31 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:17428
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753690Ab0KXRD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755598Ab0KXRDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 12:03:30 -0500
+Received: from build.ihdev.net ([178.63.197.118]:58093 "EHLO build.ossfans.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab0KXRD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Nov 2010 12:03:29 -0500
-X-SpamScore: -27
-X-BigFish: VPS-27(zz542N1432N14ffO9371Pzz1202hzz8275dhz2dh95h691h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+Date: Wed, 24 Nov 2010 12:03:26 -0500
+From: Sergey Lapin <slapin@ossfans.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ldisc problems with 2.6.32-2.6.37-rc2 (at least)
+Message-ID: <20101124170326.GB7282@build.ihdev.net>
+References: <20101124135249.GA7282@build.ihdev.net>
+ <4CED2251.3020708@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Subject: RE: Mega rename of device tree routines from of_*() to dt_*()
-Date: Wed, 24 Nov 2010 09:02:18 -0800
-In-Reply-To: <1290607413.12457.44.camel@concordia>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Mega rename of device tree routines from of_*() to dt_*()
-Thread-Index: AcuL4IxPnEXiFsmISpat6zMuVNPGJgAGC53g
-References: <1290607413.12457.44.camel@concordia>
-From: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-To: <michael@ellerman.id.au>, LKML <linux-kernel@vger.kernel.org>
-CC: linux-mips <linux-mips@linux-mips.org>,
-        <microblaze-uclinux@itee.uq.edu.au>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        <sparclinux@vger.kernel.org>
-X-OriginalArrivalTime: 24 Nov 2010 17:03:22.0310 (UTC) FILETIME=[80233660:01CB8BF9]
-X-RCIS-Action: ALLOW
-Message-ID: <fa44e045-9600-4c46-939a-af246afab4f6@VA3EHSMHS019.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CED2251.3020708@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAOH3eGX013652
 
+Hi,
 
+Sorry, I was wrong.
 
-> -----Original Message-----
-> From: linuxppc-dev-bounces+stephen=neuendorffer.name@lists.ozlabs.org [mailto:linuxppc-dev-
-> bounces+stephen=neuendorffer.name@lists.ozlabs.org] On Behalf Of Michael Ellerman
-> Sent: Wednesday, November 24, 2010 6:04 AM
-> To: LKML
-> Cc: linux-mips; microblaze-uclinux@itee.uq.edu.au; devicetree-discuss@lists.ozlabs.org; linuxppc-dev
-> list; sparclinux@vger.kernel.org
-> Subject: RFC: Mega rename of device tree routines from of_*() to dt_*()
-> 
-> Hi all,
-> 
-> There were some murmurings on IRC last week about renaming the of_*()
-> routines. I was procrastinating at the time and said I'd have a look at
-> it, so here I am.
-> 
-> The thinking is that on many platforms that use the of_() routines
-> OpenFirmware is not involved at all, this is true even on many powerpc
-> platforms. Also for folks who don't know the OpenFirmware connection it
-> reads as "of", as in "a can of worms".
-> 
-> Personally I'm a bit ambivalent about it, the OF name is a bit wrong so
-> it would be nice to get rid of, but it's a lot of churn.
-> 
-> So I'm hoping people with either say "YES this is a great idea", or "NO
-> this is stupid".
+> Hi, I don't think you get similar backtraces in .37-rc2. Could you grab one?
 
-Personally, I think it's a great idea, if only because I stared long and hard
-at the code once upon a time trying to figure out what is really OF-related
-and what isn't.  It's somewhat clearer now that drivers/of has been factored
-out (although, shouldn't it be drivers/dt???)
+Yeah, they are different definitely.
 
-That said, it *is* alot of code churn.  If it's going to be done, I think it should be
-done in concert with fixing a bunch of the function names which don't really follow any
-sane naming convention, so that the backporting discontinuity only happens once.
+------------[ cut here ]------------
+WARNING: at drivers/tty/tty_ldisc.c:451 tty_ldisc_open+0x3c/0x9c()
+Modules linked in:
+[<c002c694>] (unwind_backtrace+0x0/0xe4) from [<c0037ad4>] (warn_slowpath_common+0x4c/0x64)
+[<c0037ad4>] (warn_slowpath_common+0x4c/0x64) from [<c0037b04>] (warn_slowpath_null+0x18/0x1c)
+[<c0037b04>] (warn_slowpath_null+0x18/0x1c) from [<c01bb88c>] (tty_ldisc_open+0x3c/0x9c)
+[<c01bb88c>] (tty_ldisc_open+0x3c/0x9c) from [<c01bc110>] (tty_set_ldisc+0x328/0x454)
+[<c01bc110>] (tty_set_ldisc+0x328/0x454) from [<c01b6624>] (tty_ioctl+0x83c/0xac4)
+[<c01b6624>] (tty_ioctl+0x83c/0xac4) from [<c00b383c>] (vfs_ioctl+0x20/0x3c)
+[<c00b383c>] (vfs_ioctl+0x20/0x3c) from [<c00b3f9c>] (do_vfs_ioctl+0x540/0x598)
+[<c00b3f9c>] (do_vfs_ioctl+0x540/0x598) from [<c00b4028>] (sys_ioctl+0x34/0x54)
+[<c00b4028>] (sys_ioctl+0x34/0x54) from [<c0027a80>] (ret_fast_syscall+0x0/0x2c)
+---[ end trace 7979e0da5684d2cf ]---
 
-Steve
+All the best,
+S.
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
