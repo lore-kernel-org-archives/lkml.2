@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab0KXTRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:17:54 -0500
-Received: from netnation.com ([204.174.223.2]:35230 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756208Ab0KXTRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:17:52 -0500
-Date: Wed, 24 Nov 2010 11:17:49 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: Free memory never fully used, swapping
-Message-ID: <20101124191749.GA29511@hostway.ca>
-References: <20101115195246.GB17387@hostway.ca> <20101122154419.ee0e09d2.akpm@linux-foundation.org> <20101123100402.GH19571@csn.ul.ie> <20101124064329.GB25170@hostway.ca> <20101124092753.GS19571@csn.ul.ie>
+	id S1756241Ab0KXTSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:18:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753021Ab0KXTSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:18:47 -0500
+Date: Wed, 24 Nov 2010 14:18:04 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
+	label key entries
+Message-ID: <20101124191804.GH2815@redhat.com>
+References: <cover.1290546539.git.jbaron@redhat.com> <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com> <1290586809.2072.424.camel@laptop> <20101124145401.GA2815@redhat.com> <1290611702.30543.488.camel@gandalf.stny.rr.com> <20101124152118.GC2815@redhat.com> <1290614246.30543.536.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101124092753.GS19571@csn.ul.ie>
+In-Reply-To: <1290614246.30543.536.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 09:27:53AM +0000, Mel Gorman wrote:
-
-> On Tue, Nov 23, 2010 at 10:43:29PM -0800, Simon Kirby wrote:
-> > On Tue, Nov 23, 2010 at 10:04:03AM +0000, Mel Gorman wrote:
-> > 
-> > > On Mon, Nov 22, 2010 at 03:44:19PM -0800, Andrew Morton wrote:
-> > > > On Mon, 15 Nov 2010 11:52:46 -0800
-> > > > Simon Kirby <sim@hostway.ca> wrote:
-> > > > 
-> > > > > I noticed that CONFIG_NUMA seems to enable some more complicated
-> > > > > reclaiming bits and figured it might help since most stock kernels seem
-> > > > > to ship with it now.  This seems to have helped, but it may just be
-> > > > > wishful thinking.  We still see this happening, though maybe to a lesser
-> > > > > degree.  (The following observations are with CONFIG_NUMA enabled.)
-> > > > > 
-> > > 
-> > > Hi,
-> > > 
-> > > As this is a NUMA machine, what is the value of
-> > > /proc/sys/vm/zone_reclaim_mode ? When enabled, this reclaims memory
-> > > local to the node in preference to using remote nodes. For certain
-> > > workloads this performs better but for users that expect all of memory
-> > > to be used, it has surprising results.
-> > > 
-> > > If set to 1, try testing with it set to 0 and see if it makes a
-> > > difference. Thanks
-> > 
-> > Hi Mel,
-> > 
-> > It is set to 0.  It's an Intel EM64T...I only enabled CONFIG_NUMA since
-> > it seemed to enable some more complicated handling, and I figured it
-> > might help, but it didn't seem to.  It's also required for
-> > CONFIG_COMPACTION, but that is still marked experimental.
-> > 
+On Wed, Nov 24, 2010 at 10:57:26AM -0500, Steven Rostedt wrote:
+> On Wed, 2010-11-24 at 10:21 -0500, Jason Baron wrote:
 > 
-> I'm surprised a little that you are bringing compaction up because unless
-> there are high-order involved, it wouldn't make a difference. Is there
-> a constant source of high-order allocations in the system e.g. a network
-> card configured to use jumbo frames? A possible consequence of that is that
-> reclaim is kicking in early to free order-[2-4] pages that would prevent 100%
-> of memory being used.
+> > The keys are simply the address of a variable or structure (so as to be
+> > unique). We can put pointers or anything else in the variable.
+> 
+> Note, there is not a 1 to 1 with keys and places that need to be
+> patched.
+> 
+> Doing the following objdump:
+> 
+>   objdump -dr vmlinux | grep 'jmpq.*<trace_kmalloc' | wc -l
+> 375
+> 
+> That's 375 instances of kmalloc tracepoints[*] and one key. How do you
+> handle this?
+> 
 
-We /were/ using jumbo frames, but only over a local cross-over connection
-to another node (for DRBD), so I disabled jumbo frames on this interface
-and reconnected DRBD.  Even with MTUs set to 1500, we saw GFP_ATOMIC
-order=3 allocations coming from __alloc_skb:
+so there is 1 key associated with a kmalloc, call it key 'a'.
+Then, each time a trace_kmalloc is found in the text it generates a
+entry in the jump label section:
 
-perf record --event kmem:mm_page_alloc --filter 'order>=3' -a --call-graph sleep 10
-perf trace
+[to be patched address i] [address to jump to j] [key a]
+[to be patched address k] [address to jump to l] [key a]
+.
+.
 
-	imap-20599 [002] 1287672.803567: mm_page_alloc: page=0xffffea00004536c0 pfn=4536000 order=3 migratetype=0 gfp_flags=GFP_ATOMIC|GFP_NOWARN|GFP_NORETRY|GFP_COMP
+So when we do jump_label_enable(key a), we patch all addresses
+associated with key a. Does this make sense?
 
-perf report shows:
 
-__alloc_pages_nodemask
-alloc_pages_current
-new_slab
-__slab_alloc
-__kmalloc_node_track_caller
-__alloc_skb
-__netdev_alloc_skb
-bnx2_poll_work
+> -- Steve
+> 
+> 
+> 
+> 
+> [*] this should be fixed, we probably should find a way to move the
+> tracepoint into the kmalloc functions that are not inlined.
+> 
 
-Dave was seeing these on his laptop with an Intel NIC as well.  Ralf
-noted that the slab cache grows in higher order blocks, so this is
-normal.  The GFP_ATOMIC bubbles up from *alloc_skb, I guess.
+I believe there are patches pending for this.
 
-Simon-
+thanks,
+
+-Jason
