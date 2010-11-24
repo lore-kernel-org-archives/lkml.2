@@ -1,156 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab0KXXdz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 18:33:55 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38631 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab0KXXdx (ORCPT
+	id S1755749Ab0KXXen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:34:43 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:10500 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0KXXek convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 18:33:53 -0500
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Carl Love <cel@us.ibm.com>, Ian Munsie <ianmunsi@au1.ibm.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Subject: [RFC PATCHv2] perf tools: add event grouping capability to "perf stat"
-Date: Wed, 24 Nov 2010 15:28:50 -0800
-Message-Id: <1290641330-2327-1-git-send-email-cjashfor@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 24 Nov 2010 18:34:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wlj2myMHjvXorF12JRaeeCIkcJCBz4Yb81GK1FpsSG+7CDdqP23EI1PNLJIuBMhcQT
+         2BbcSdtlME72x3N5kJ5w==
+MIME-Version: 1.0
+In-Reply-To: <1290640396-24179-1-git-send-email-slavapestov@google.com>
+References: <1290640396-24179-1-git-send-email-slavapestov@google.com>
+From: David Sharp <dhsharp@google.com>
+Date: Wed, 24 Nov 2010 15:34:17 -0800
+Message-ID: <AANLkTinzoH69xwCYcAQUKdeutYrq_DjDO9MYP8AbSRGR@mail.gmail.com>
+Subject: Re: [PATCH] ftrace: Fix panic when lseek() called on "trace" opened
+ for writing
+To: Slava Pestov <slavapestov@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the ability to create multiple event groups, each with their own leader
-using the existing "-e <event>[,<event> ...] [-e <event>[,<event>]]"
-syntax.  Each additional -e switch creates a new group, and each event
-listed within a -e switch is within that group.
+On Wed, Nov 24, 2010 at 3:13 PM, Slava Pestov <slavapestov@google.com> wrote:
+> The file_ops struct for the "trace" special file defined llseek as seq_lseek().
+> However, if the file was opened for writing only, seq_open() was not called,
+> and the seek would dereference a null pointer, file->private_data.
+>
+> This patch introduces a new wrapper for seq_lseek() which checks if the file
+> descriptor is opened for reading first. If not, it does nothing.
+>
+> This patch is for Linux 2.6.36.1.
+>
+> Signed-Off-By: Slava Pestov <slavapestov@google.com>
 
-Changes since v1:
-- When no events are given on the command line, place each event in its
-own group to make it easier to schedule, and this more likely to be
-measurable.
+Cc: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
----
- tools/perf/Documentation/perf-stat.txt |   12 +++++++++---
- tools/perf/builtin-stat.c              |   12 ++++++++++--
- tools/perf/util/parse-events.c         |    4 ++++
- tools/perf/util/parse-events.h         |    1 +
- 4 files changed, 24 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 4b3a2d4..d522ebd 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -8,8 +8,8 @@ perf-stat - Run a command and gather performance counter statistics
- SYNOPSIS
- --------
- [verse]
--'perf stat' [-e <EVENT> | --event=EVENT] [-S] [-a] <command>
--'perf stat' [-e <EVENT> | --event=EVENT] [-S] [-a] -- <command> [<options>]
-+'perf stat' [-e <EVENT>[,<EVENT>...] | --event=<EVENT>[,<EVENT>...]] [-S] [-a] <command>
-+'perf stat' [-e <EVENT>[,<EVENT>...] | --event=<EVENT>[,<EVENT>...]] [-S] [-a] -- <command> [<options>]
- 
- DESCRIPTION
- -----------
-@@ -28,7 +28,13 @@ OPTIONS
- 	Select the PMU event. Selection can be a symbolic event name
- 	(use 'perf list' to list all events) or a raw PMU
- 	event (eventsel+umask) in the form of rNNN where NNN is a
--	 hexadecimal event descriptor.
-+	hexadecimal event descriptor.  As shown, multiple events can be
-+	separated by commas in each -e/--event switch.  Each additional
-+	-e/--event switch creates a new event group.  Grouped events are
-+	scheduled onto the PMU hardware at the same time, which is
-+	important to know when the PMU is overscheduled.  A good example of
-+	this is measuring CPI where both instructions and cycles events
-+	need to be scheduled simultaneously to get an accurate estimate.
- 
- -i::
- --no-inherit::
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 8b9afa6..5f9fdc8 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -162,8 +162,12 @@ static int create_perf_stat_counter(int counter, bool *perm_err)
- 		int cpu;
- 
- 		for (cpu = 0; cpu < nr_cpus; cpu++) {
-+			if (counter == grp_leaders[counter])
-+				/* first counter in the group is the leader */
-+				fd[cpu][grp_leaders[counter]][0] = -1;
- 			fd[cpu][counter][0] = sys_perf_event_open(attr,
--					-1, cpumap[cpu], -1, 0);
-+					-1, cpumap[cpu],
-+					fd[cpu][grp_leaders[counter]][0], 0);
- 			if (fd[cpu][counter][0] < 0) {
- 				if (errno == EPERM || errno == EACCES)
- 					*perm_err = true;
-@@ -180,8 +184,12 @@ static int create_perf_stat_counter(int counter, bool *perm_err)
- 			attr->enable_on_exec = 1;
- 		}
- 		for (thread = 0; thread < thread_num; thread++) {
-+			if (counter == grp_leaders[counter])
-+				/* first counter in the group is the leader */
-+				fd[0][grp_leaders[counter]][thread] = -1;
- 			fd[0][counter][thread] = sys_perf_event_open(attr,
--				all_tids[thread], -1, -1, 0);
-+				all_tids[thread], -1,
-+				fd[0][grp_leaders[counter]][thread], 0);
- 			if (fd[0][counter][thread] < 0) {
- 				if (errno == EPERM || errno == EACCES)
- 					*perm_err = true;
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4af5bd5..eeecb2a 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -12,6 +12,7 @@
- 
- int				nr_counters;
- 
-+int				grp_leaders[MAX_COUNTERS];
- struct perf_event_attr		attrs[MAX_COUNTERS];
- char				*filters[MAX_COUNTERS];
- 
-@@ -804,11 +805,13 @@ int parse_events(const struct option *opt __used, const char *str, int unset __u
- {
- 	struct perf_event_attr attr;
- 	enum event_result ret;
-+	int grp_leader;
- 
- 	if (strchr(str, ':'))
- 		if (store_event_type(str) < 0)
- 			return -1;
- 
-+	grp_leader = nr_counters;
- 	for (;;) {
- 		if (nr_counters == MAX_COUNTERS)
- 			return -1;
-@@ -822,6 +825,7 @@ int parse_events(const struct option *opt __used, const char *str, int unset __u
- 			return -1;
- 
- 		if (ret != EVT_HANDLED_ALL) {
-+			grp_leaders[nr_counters] = grp_leader;
- 			attrs[nr_counters] = attr;
- 			nr_counters++;
- 		}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index fc4ab3f..d820f42 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -17,6 +17,7 @@ extern bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events);
- 
- extern int			nr_counters;
- 
-+extern int grp_leaders[MAX_COUNTERS];
- extern struct perf_event_attr attrs[MAX_COUNTERS];
- extern char *filters[MAX_COUNTERS];
- 
--- 
-1.7.0.4
-
+> ---
+>
+> Change-Id: Iaabc50d84fb541c04e3efabd4788cebadbadbb4c
+> ---
+>  kernel/trace/trace.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 9ec59f5..7702f5a 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2320,11 +2320,19 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
+>        return count;
+>  }
+>
+> +static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
+> +{
+> +       if (file->f_mode & FMODE_READ)
+> +               return seq_lseek(file, offset, origin);
+> +       else
+> +               return 0;
+> +}
+> +
+>  static const struct file_operations tracing_fops = {
+>        .open           = tracing_open,
+>        .read           = seq_read,
+>        .write          = tracing_write_stub,
+> -       .llseek         = seq_lseek,
+> +       .llseek         = tracing_seek,
+>        .release        = tracing_release,
+>  };
+>
+> --
+> 1.7.3.1
+>
+>
