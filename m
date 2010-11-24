@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0KXItY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:49:24 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47976 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab0KXItX (ORCPT
+	id S1752547Ab0KXIyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 03:54:12 -0500
+Received: from darkcity.gna.ch ([195.226.6.51]:34222 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752150Ab0KXIyL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:49:23 -0500
-Date: Wed, 24 Nov 2010 17:48:36 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: make ioremap_prot() take a pgprot.
-Message-ID: <20101124084836.GH2212@linux-sh.org>
-References: <20101102203102.GA12723@linux-sh.org> <20101108063403.GA12790@linux-sh.org> <1289225899.2147.1363.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289225899.2147.1363.camel@pasglop>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Wed, 24 Nov 2010 03:54:11 -0500
+X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
+	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
+	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
+Subject: Re: [PATCH] MAINTAINERS: INTEL DRM DRIVERS list (intel-gfx) is
+ subscribers-only
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+In-Reply-To: <c6d829$pl04gp@fmsmga001.fm.intel.com>
+References: <1290580602.11971.44.camel@Joe-Laptop>
+	 <c6d829$pl04gp@fmsmga001.fm.intel.com>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 09:53:46 +0100
+Message-ID: <1290588826.4130.277.camel@thor.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 01:18:19AM +1100, Benjamin Herrenschmidt wrote:
-> On Mon, 2010-11-08 at 15:34 +0900, Paul Mundt wrote:
-> > On Wed, Nov 03, 2010 at 05:31:03AM +0900, Paul Mundt wrote:
-> > > The current definition of ioremap_prot() takes an unsigned long for the
-> > > page flags and then converts to/from a pgprot as necessary. This is
-> > > unfortunately not sufficient for the SH-X2 TLB case which has a 64-bit
-> > > pgprot and a 32-bit unsigned long.
-> > > 
-> > > An inspection of the tree shows that tile and cris also have their
-> > > own equivalent routines that are using the pgprot_t but do not set
-> > > HAVE_IOREMAP_PROT, both of which could trivially be adapted.
-> > > 
-> > > After cris/tile are updated there would also be enough critical mass to
-> > > move the powerpc devm_ioremap_prot() in to the generic lib/devres.c.
-> > > 
-> > > Signed-off-by: Paul Mundt <lethal@linux-sh.org>
-> > > 
-> > Any takers?
+On Mit, 2010-11-24 at 08:46 +0000, Chris Wilson wrote: 
+> On Tue, 23 Nov 2010 22:36:42 -0800, Joe Perches <joe@perches.com> wrote:
+> > Mark it so.
 > 
-> Haven't had a chance to play with it yet, still travelling.
-> 
-Ping.
+> It was my mistake so I've applied this patch and will send upwards.
+
+It would be better to fix the mailing list not to automatically reject
+posts from non-subscribers but to just make them go through a moderation
+queue. That would get you from 'subscribers-only' to 'moderated for
+non-subscribers'. To make that unnecessary as well, disable the bounce
+about the moderation in the mailman configuration, as is the case with
+the dri-devel list.
+
+
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
