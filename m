@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab0KXKHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 05:07:40 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40400 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab0KXKHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 05:07:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rhzUDOFuAtXUzGUmr/RXFY7HkCoghz52CSO2e0Ma0Ahdnw6oeoeoVQGEYS+2cnzBgL
-         Bj9yqaIEPr3enW56qD56j+F8TG3pK4Tp1rpmr0fxqwWcps9v0zOnJCQgbYoGK8+nSn1m
-         /DcCTfcKdPvnBHtJThm4C0MF122O+heL4stuk=
-Date: Wed, 24 Nov 2010 18:12:25 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.37-rc3
-Message-ID: <20101124101225.GB5139@cr0.nay.redhat.com>
-References: <AANLkTi=Di4UQMYyJ_wpZ6N=NZt1+3EeXL7FUsBX004YL@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=Di4UQMYyJ_wpZ6N=NZt1+3EeXL7FUsBX004YL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753071Ab0KXKKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 05:10:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51308 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752656Ab0KXKKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 05:10:36 -0500
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+From: James Bottomley <James.Bottomley@suse.de>
+To: ltuikov@yahoo.com
+Cc: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
+In-Reply-To: <549123.75632.qm@web31809.mail.mud.yahoo.com>
+References: <549123.75632.qm@web31809.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Nov 2010 10:10:29 +0000
+Message-ID: <1290593429.14652.33.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Linus,
+On Wed, 2010-11-24 at 01:02 -0800, Luben Tuikov wrote:
+> I doubt this as very unlikely. Has anyone actually seen a device that
+> sends mode parameter data with faux Caching mode page or corrupted
+> data that is in fact interpreted as a Caching mode page? Is such a
+> device fully operational sans the faux Caching mode page, or does it
+> just not work? Is it common to have devices having a faux Caching mode
+> page or corrupted mode parameter data resulting in a Caching mode page
+> with random data?
+> 
+> Undoubtedly, as the usb-storage maintainer, you must have variety of
+> devices, some broken some not. Could you apply this patch to your tree
+> and test some of the devices you have? My tests indicate a stable
+> behavior.
 
-Seems this patch from me is still not merged?
+The basic problem isn't devices lying ... the worst we'll do is current
+behaviour (not SYNC when we should).  The problem is devices that get
+confused (or worse simply crash the firmware).  The best way to avoid
+the crashing firmware problem ... if we can assume that modern USB
+devices are better is to key off the SCSI version.  Unfortunately, in
+spite of several attempts, we've never managed to stop usbstorage lying
+about this:
 
-We need to add recordmcount into .gitignore,
-it is a generated file, otherwise git will complain.
+		/* Some devices report a SCSI revision level above 2 but are
+		 * unable to handle the REPORT LUNS command (for which
+		 * support is mandatory at level 3).  Since we already have
+		 * a Get-Max-LUN request, we won't lose much by setting the
+		 * revision level down to 2.  The only devices that would be
+		 * affected are those with sparse LUNs. */
+		if (sdev->scsi_level > SCSI_2)
+			sdev->sdev_target->scsi_level =
+					sdev->scsi_level = SCSI_2;
 
-Thanks!
+Untangling all of this would be rather complex, I fear.
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+The final question is is it worth it?  Since USB devices are supposed to
+be hot unpluggable, surely a USB device with a write back cache would be
+a disaster: no-one will SYNC the cache on a surprise unplug anyway ...
+therefore there shouldn't really be any of them surviving in the wild
+(famous last words, I suppose).
 
----
+James
 
-diff --git a/scripts/.gitignore b/scripts/.gitignore
-index c5d5db5..e2741d2 100644
---- a/scripts/.gitignore
-+++ b/scripts/.gitignore
-@@ -7,3 +7,4 @@ pnmtologo
- bin2c
- unifdef
- ihex2fw
-+recordmcount
+
