@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab0KXF0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 00:26:25 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59334 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab0KXF0X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 00:26:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=lfwOnXwd3IffoUrPseTNVZIm38EODi/U51yshz0ysCXSjp5v78CaEkiSyPMjVT9vaJ
-         dVDB/KhHLAop+po0TI4bNKKk2h7cjPzzc+yKRD/3atl4SMk6rNZZ4xX/DtRcPk2Oezjb
-         F6va48KoPjSiNmgbhEJy2gmrJs2+gVpmq2tF8=
-MIME-Version: 1.0
-In-Reply-To: <1290575460.18917.3.camel@dcbw.foobar.com>
-References: <AANLkTim0=ds3EhQOEfHdrKt2dSnEqUgf5CLOPHNyW=jE@mail.gmail.com>
- <1290569516.3074.41.camel@dcbw.foobar.com> <AANLkTi=ioGgpAQ-rx_abCHcOmOezXwJFfbKWc7=tGAJ5@mail.gmail.com>
- <1290571986.3074.64.camel@dcbw.foobar.com> <AANLkTi=0ocvsR185Qib3VoT43ziTUa_3oRDnmU65pYjv@mail.gmail.com>
- <1290575460.18917.3.camel@dcbw.foobar.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Wed, 24 Nov 2010 16:26:02 +1100
-Message-ID: <AANLkTiks65oAvVEu0Df4yeHNJm=cVnSfFeo=enxt-gpn@mail.gmail.com>
-Subject: Re: Re-distributable 88w8335 Firmware?
-To: Dan Williams <dcbw@redhat.com>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>, David.Woodhouse@intel.com,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Holger Schurig <holgerschurig@googlemail.com>,
-        Markus Becker <mab@comnets.uni-bremen.de>, andreamrl@tiscali.it,
-        Denis Kirjanov <kirjanov@gmail.com>, dwmw2@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751409Ab0KXFaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 00:30:05 -0500
+Received: from cantor.suse.de ([195.135.220.2]:50562 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab0KXFaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 00:30:02 -0500
+Date: Wed, 24 Nov 2010 16:29:53 +1100
+From: Neil Brown <neilb@suse.de>
+To: <aniket@netezza.com>
+Cc: <linux-raid@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] md: Fix nr_pending race during raid10 recovery
+Message-ID: <20101124162953.4a405299@notabene.brown>
+In-Reply-To: <1290020270.3055.12.camel@aniket-desktop>
+References: <1290020270.3055.12.camel@aniket-desktop>
+X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 16:10, Dan Williams <dcbw@redhat.com> wrote:
-> On Wed, 2010-11-24 at 15:48 +1100, Julian Calaby wrote:
->> On Wed, Nov 24, 2010 at 15:13, Dan Williams <dcbw@redhat.com> wrote:
->> > Malo supports the PCMCIA/CF variant of the 8385; not a PCI variant
->> > AFAICT.  I know of no PCI variant for the 8385, just CF, SDIO, and GSPI.
->> > But I find it curious that malo supports 8335+8385, given that the
->> > firmware interface of the 8385 and the 8335 are so different.  Unless
->> > they have special firmware, the 8385 is a fullmac device, while the 8335
->> > is a softmac device.  Enough differences exist that I'd expect them to
->> > be driven by separate drivers, otherwise the code would be quite ugly.
->> > Which is why we didn't try to shoehorn the 8335 or TopDog stuff into
->> > libertas.
->>
->> You clearly know a hell of a lot more about the ins and outs of Marvel
->> chipsets that I do. =)
->
-> Eh, *some* of the chipsets :)  Others (Lennert) know a lot more about
-> later versions than I do.  But I never know everything or even enough of
-> anything :)
+On Wed, 17 Nov 2010 13:57:50 -0500
+Aniket Kulkarni <aniket@netezza.com> wrote:
 
-I know exactly how you feel. =)
+> If a RAID10 rdev that is undergoing recovery is marked 'faulty', the rdev 
+> could get taken out of the array in spite of outstanding IOs leading to 
+> a kernel panic. There are two issues here -
+> 
+> 1. The ref count (nr_pending) increment for sync or recovery leaves a lot of
+> open windows for concurrent rdev removals
+> 2. raid10 sync thread continues to submit recovery IOs to faulty devices. These get
+> rejected at a later stage by management thread (raid10d).
+> 
+> Note - rd denotes the rdev from which we are reading, and wr the one we are
+> writing to
+> 
+>   Sync Thread                                Management Thread
+> 
+> sync_request
+>   ++rd.nr_pending
+>   bi_end_io = end_sync_read
+>   generic_make_request         -------> recovery_request_write
+>          |                    |             wr.nr_pending++
+>          |                    |             bi_end_io = end_sync_write
+>          V                    |             generic_make_request
+> end_sync_read    --------------                      |
+>   --rd.nr_pending                                    |
+>   reschedule_retry for write                         |
+>                                                      v
+>                                          end_sync_write
+>                                              --wr.nr_pending
+> 
+> So a set-faulty and remove on recovery rdev between sync_request and 
+> recovery_request_write is allowed and will lead to a panic.
+> 
+> The fix is -
+> 
+> 1. Increment wr.nr_pending immediately after selecting a good target. Ofcourse
+> the decrements will be added to error paths in sync_request and end_sync_read.
+> 2. Don't submit recovery IOs to faulty targets
 
->> I stand corrected.
->>
->> So, to amend my previous request: We're after firmware for the softmac
->> 88w8335 chipset *only*.
->>
->> Though it may be nicer if Marvell were to bless Malo's firmware
->> package (linked above) as this contains firmware for the PCI 88w8335,
->> USB 88w8338 and a file which claims to be for the PCMCIA/CF 88w8385.
->
-> Yeah, though honestly I'd rather have the duplex firmware from MSSII for
-> the 8335, since it can do AP mode too.  That does leave the 8338 (USB?)
+Hi again,
+ I've been thinking about this some more and cannot see that it is a real
+ problem.
+ Do you have an actual 'oops' showing a crash in this situation?
 
-Me too - and it'd mean that we don't have to do AP-mode firmware
-loading tricks like in mw8k. But if we can't get that then some
-firmware is better than none.
+ The reason it shouldn't happen is that devices are only removed by
+ remove_and_add_devices, and that is only called when no resync/recovery is
+ happening.
+ So when a device fail, the recovery will abort (waiting for all requests to
+ complete), then failed devices are removed and possibly spares are added,
+ then possible recovery starts up again.
 
-> of course but we can probably get clarification on that too.  As with
-> the 8335, I only have access to a 8335 Windows driver, but if we had a
-> firmware extractor tool, I believe the Marvell Extranet firmware license
-> covers embedded firmware from Windows .sys files too.
+ So it should work correctly as it is....
 
-I think I may have a simple firmware extractor at home that I pulled
-from *somewhere* when I was working on this last time. We can see if
-it does anything with those files. I believe I have at least two
-different Windows drivers at home - IIRC, one of them is *just* the
-files needed for this extractor.
+confused,
+NeilBrown
 
-> And I think I might actually have a usb8338 too somewhere...
-
-Nice!
-
-Out of curiosity, what brand and model number is it? I might see if I
-can obtain one for testing / development or whatever. (Not that I
-really have time to write a driver, but I can test at the very least)
-
-Thanks,
-
--- 
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
