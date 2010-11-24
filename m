@@ -1,116 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab0KXM6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:58:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37825 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab0KXM6h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:58:37 -0500
-Message-ID: <4CED0BF1.1060305@pengutronix.de>
-Date: Wed, 24 Nov 2010 13:58:25 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	id S1754545Ab0KXM7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:59:09 -0500
+Received: from mga03.intel.com ([143.182.124.21]:11948 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189Ab0KXM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 07:59:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,248,1288594800"; 
+   d="scan'208";a="352718819"
+Date: Wed, 24 Nov 2010 20:59:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/13] writeback: quit throttling when bdi dirty pages
+ dropped low
+Message-ID: <20101124125901.GD10413@localhost>
+References: <20101117042720.033773013@intel.com>
+ <20101117042850.245782303@intel.com>
+ <1290597233.2072.454.camel@laptop>
+ <20101124123023.GA10413@localhost>
+ <1290602811.2072.462.camel@laptop>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        andrew.chih.howe.khor@intel.com, qi.wang@intel.com,
-        margie.foster@intel.com, yong.y.wang@intel.com, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 12/17 v3] can: EG20T PCH: Fix bit timing
- calculation issue
-References: <4CED037F.6060306@dsn.okisemi.com>
-In-Reply-To: <4CED037F.6060306@dsn.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig77324EAB8C3B34DEAE8D6DC6"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290602811.2072.462.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig77324EAB8C3B34DEAE8D6DC6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 24, 2010 at 08:46:51PM +0800, Peter Zijlstra wrote:
+> On Wed, 2010-11-24 at 20:30 +0800, Wu Fengguang wrote:
+> > 
+> > For the 1-dd case, it looks better to lower the break threshold to
+> > 125ms. After all, it's not easy for the dirty pages to drop by 250ms
+> > worth of data when you only slept 200ms (note: the max pause time has
+> > been doubled mainly for servers).
+> > 
+> > -               if (nr_dirty < dirty_thresh &&
+> > -                   bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 4)
+> > +               if (nr_dirty <= dirty_thresh &&
+> > +                   bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 8)
+> >                         break;
+> 
+> Hrm, but 125ms worth in 200ms is rather easy, you'd want to keep that
+> limit above what the pause should give you, right?
 
-On 11/24/2010 01:22 PM, Tomoya MORINAGA wrote:
-> Fix bit timing calculation issue
-> Modify like use calculated value directly passed by CAN core module.
->=20
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Yeah, I exactly mean to quit the loop after sleeping 200ms.
+200ms pause already seem large..
 
-Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+I'll leave the safeguard to the "nr_dirty <= dirty_thresh" test :)
 
-> ---
->  drivers/net/can/pch_can.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-> index 7342030..466f011 100644
-> --- a/drivers/net/can/pch_can.c
-> +++ b/drivers/net/can/pch_can.c
-> @@ -800,17 +800,15 @@ static int pch_set_bittiming(struct net_device *n=
-dev)
->  	const struct can_bittiming *bt =3D &priv->can.bittiming;
->  	u32 canbit;
->  	u32 bepe;
-> -	u32 brp;
->=20
->  	/* Setting the CCE bit for accessing the Can Timing register. */
->  	pch_can_bit_set(&priv->regs->cont, PCH_CTRL_CCE);
->=20
-> -	brp =3D (bt->tq) / (1000000000/PCH_CAN_CLK) - 1;
-> -	canbit =3D brp & PCH_MSK_BITT_BRP;
-> +	canbit =3D (bt->brp - 1) & PCH_MSK_BITT_BRP;
+This trace shows the problem it tries to solve. Here on fresh boot,
+bdi_dirty=106600 which is much larger than bdi_limit=13525.
 
-Masking here shouldn't be necessary but won't hurt, better play safe.
+The same situation may happen if some task quickly eats lots of
+anonymous memory, then the global/bdi limits will be knock down
+suddenly and it takes time to bring down bdi_dirty.
 
->  	canbit |=3D (bt->sjw - 1) << PCH_BIT_SJW_SHIFT;
->  	canbit |=3D (bt->phase_seg1 + bt->prop_seg - 1) << PCH_BIT_TSEG1_SHIF=
-T;
->  	canbit |=3D (bt->phase_seg2 - 1) << PCH_BIT_TSEG2_SHIFT;
-> -	bepe =3D (brp & PCH_MSK_BRPE_BRPE) >> PCH_BIT_BRPE_BRPE_SHIFT;
-> +	bepe =3D ((bt->brp - 1) & PCH_MSK_BRPE_BRPE) >> PCH_BIT_BRPE_BRPE_SHI=
-FT;
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+           <...>-2722  [005]    39.623216: balance_dirty_pages: bdi=8:0 bdi_dirty=106600 bdi_limit=13525 task_limit=13423 task_weight=12% task_gap=-11022% bdi_gap=-5504% dirtied=268 bw=0 ratelimit=0 period=0 think=0 pause=200
+           <...>-2720  [004]    39.623222: balance_dirty_pages: bdi=8:0 bdi_dirty=106600 bdi_limit=13513 task_limit=13441 task_weight=9% task_gap=-11029% bdi_gap=-5510% dirtied=267 bw=0 ratelimit=0 period=0 think=0 pause=200                             
+           <...>-2717  [003]    39.623666: balance_dirty_pages: bdi=8:0 bdi_dirty=106560 bdi_limit=13742 task_limit=13659 task_weight=10% task_gap=-10815% bdi_gap=-5402% dirtied=268 bw=0 ratelimit=0 period=0 think=0 pause=200                            
+           <...>-2718  [004]    39.623990: balance_dirty_pages: bdi=8:0 bdi_dirty=106560 bdi_limit=13979 task_limit=13913 task_weight=8% task_gap=-10603% bdi_gap=-5297% dirtied=272 bw=0 ratelimit=0 period=0 think=0 pause=200                             
+           <...>-2715  [007]    39.626472: balance_dirty_pages: bdi=8:0 bdi_dirty=106360 bdi_limit=15312 task_limit=15211 task_weight=11% task_gap=-9523% bdi_gap=-4756% dirtied=268 bw=0 ratelimit=0 period=0 think=0 pause=200                             
+           <...>-2723  [001]    39.628951: balance_dirty_pages: bdi=8:0 bdi_dirty=106560 bdi_limit=15749 task_limit=15640 task_weight=11% task_gap=-9236% bdi_gap=-4612% dirtied=269 bw=0 ratelimit=0 period=0 think=0 pause=200                  
 
-dito
-
->  	iowrite32(canbit, &priv->regs->bitt);
->  	iowrite32(bepe, &priv->regs->brpe);
->  	pch_can_bit_clear(&priv->regs->cont, PCH_CTRL_CCE);
-
-cheers, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig77324EAB8C3B34DEAE8D6DC6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkztC/QACgkQjTAFq1RaXHNRIQCePMQYYBNFn4127QpxG2R6RbjN
-q84An0SmoXzlx4RX0uHRcnwVw/w6zvqo
-=98VQ
------END PGP SIGNATURE-----
-
---------------enig77324EAB8C3B34DEAE8D6DC6--
+Thanks,
+Fengguang
