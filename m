@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab0KXLfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 06:35:44 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41661 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab0KXLfm (ORCPT
+	id S1753701Ab0KXLfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 06:35:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57438 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab0KXLfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 06:35:42 -0500
+	Wed, 24 Nov 2010 06:35:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=LgtV8tcGejC/vxqasXA3EPiaB114APjg6mq/A0YfPd/bOt2etW2rxzd7yUNyKCo5GY
-         lxvo9fOZopIi+4ZGho0BJXD1Amfr0gEOZg5osPG4CmGS17CDKYBfbR7x1lkFT/ztwuxs
-         khWPvb9YivcUgo5MiACBnabqceVt0G4F328TQ=
-From: tom.leiming@gmail.com
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/2] perf:tools: figure out start address of kernel map from /proc/kallsyms
-Date: Wed, 24 Nov 2010 19:35:33 +0800
-Message-Id: <1290598533-31855-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.3
+        h=from:to:cc:subject:x-gnus-delayed:date:message-id:user-agent
+         :mime-version:content-type;
+        b=mmKEcrAGb/rewpxphL4gyEpNaXvAxV/B0zsU1x7dOL7aqOZmmPV5rTs4kNy/3KqJk4
+         3OPsWMHbhBtknzKosEVXkwKXAaQmzthsijCwjqWMheRo8lFG9L/UzWgQrzgYg4Y7pMjs
+         N215efG3royFOJd+OiFZlB/G9FVedIASiaaKA=
+From: Franck Bui-Huu <vagabon.xyz@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: perf: some questions about perf software events
+X-Gnus-Delayed: Wed, 24 Nov 2010 12:12:31 +0100
+Date: Wed, 24 Nov 2010 12:35:36 +0100
+Message-ID: <m3tyj73qev.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+Hello Peter,
 
-On ARM, module symbol start address is ahead of kernel symbol start
-address, so we can't suppose that the start address of kenerl map
-always is zero, otherwise may cause incorrect .start and .end of kernel map
-(caused by fixup) when there are modules loaded, then map_groups__find
-may return incorrect map for symbol query.
+I've still a couple of questions after looking at the software events
+code, hope you don't mind.
 
-This patch always figures out the start address of kernel map from
-/proc/kallsyms if the file is available, so fix the issues on ARM for
-module loaded case.
+For pure software events (ie excluding {task,cpu}-clock), does it make
+sense to set a sample frequency ? I would have done something like this:
 
-This patch fixes the following issues on ARM when modules are loaded:
 
-	- vmlinux symbol can't be found by kallsyms maps doing 'perf test'
-	- module symbols are parsed mistakenlly when doing 'perf top'/'perf report'
-
-Cc: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
----
- tools/perf/util/symbol.c |   60 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 59 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c5b4ccb..1a8895c 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2183,14 +2183,72 @@ static struct dso *machine__create_kernel(struct machine *self)
- 	return kernel;
- }
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 31515200..df27fd8 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4671,6 +4671,8 @@ static int perf_swevent_init(struct perf_event *event)
  
-+/*figure out the start address of kernel map from /proc/kallsyms*/
-+static u64 __machine_get_kernel_start_addr(struct machine *self)
-+{
-+	char *line = NULL;
-+	size_t n;
-+	u64 start_addr = 0;
-+	FILE *file;
-+	const char *filename;
-+	char path[PATH_MAX];
-+
-+	if (machine__is_default_guest(self)) {
-+		filename = symbol_conf.default_guest_kallsyms;
-+		if (!filename)
-+			goto out_failure;
-+	} else {
-+		sprintf(path, "%s/proc/kallsyms", self->root_dir);
-+		filename = path;
-+	}
-+
-+	file = fopen(filename, "r");
-+
-+	if (file == NULL)
-+		goto out_failure;
-+
-+	while (!feof(file)) {
-+		u64 start = 0;
-+		int line_len, len;
-+
-+		line_len = getline(&line, &n, file);
-+		if (line_len < 0 || !line)
-+			break;
-+
-+		line[--line_len] = '\0'; /* \n */
-+
-+		/*if the line is for module symbol, skip it*/
-+		if (strchr(line, '['))
-+			continue;
-+
-+		len = hex2u64(line, &start);
-+
-+		len++;
-+		if (len + 2 >= line_len)
-+			continue;
-+
-+		start_addr = start;
-+		break;
-+	}
-+
-+	free(line);
-+	fclose(file);
-+	return start_addr;
-+
-+out_failure:
-+	return start_addr;
-+}
-+
- int __machine__create_kernel_maps(struct machine *self, struct dso *kernel)
- {
- 	enum map_type type;
-+	u64 start;
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
++	if (event->attr.freq)
++		return -EINVAL;
  
-+	start = __machine_get_kernel_start_addr(self);
- 	for (type = 0; type < MAP__NR_TYPES; ++type) {
- 		struct kmap *kmap;
- 
--		self->vmlinux_maps[type] = map__new2(0, kernel, type);
-+		self->vmlinux_maps[type] = map__new2(start, kernel, type);
- 		if (self->vmlinux_maps[type] == NULL)
- 			return -1;
- 
+ 	switch (event_id) {
+ 	case PERF_COUNT_SW_CPU_CLOCK:
+
+
+
+That is for no 'contiguous' events, setting a sampling frequency doesn't
+really make sense since for example you could set a frequency to 1000 HZ
+for the software ALIGNMENT_FAULT event and never get any samplings or at
+least getting sampling but with a totally different rate. And the
+current code doesn't look to handle sample_freq anyway.
+
+Also I'm currently not seeing any real differences between cpu-clock and
+task-clock events. They both seem to count the time elapsed when the
+task is running on a CPU. Am I wrong ?
+
+Thanks
 -- 
-1.7.3
-
+		Franck
