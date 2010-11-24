@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab0KXNuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 08:50:52 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52533 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab0KXNuv (ORCPT
+	id S1755245Ab0KXNvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 08:51:37 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:55761 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab0KXNvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 08:50:51 -0500
-Date: Wed, 24 Nov 2010 13:50:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [question] NR_IRQS in genirq
-Message-ID: <20101124135048.GC13507@sirena.org.uk>
-References: <AANLkTimoBdFyQ6GfS2DKiF0wdRox0x7MfM0_keD9Z1D0@mail.gmail.com> <alpine.LFD.2.00.1011241416360.2900@localhost6.localdomain6> <AANLkTik5N0d9wcaiS538UWQ83E_HhXoWC8nMxVY__1+k@mail.gmail.com>
+	Wed, 24 Nov 2010 08:51:35 -0500
+Date: Wed, 24 Nov 2010 22:50:47 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] rmobile updates for 2.6.37-rc4
+Message-ID: <20101124135047.GA3270@linux-sh.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik5N0d9wcaiS538UWQ83E_HhXoWC8nMxVY__1+k@mail.gmail.com>
-X-Cookie: I invented skydiving in 1989!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 09:46:06PM +0800, Haojian Zhuang wrote:
+This was going to be a fairly simple set of changes, but it was
+unfortunately discovered that the FSIDIV clock has been doing some fairly
+bogus things with regards to finding creative ways to sidestep its
+refcount, leading to situations where users of the clock in question can
+find themselves invariably shafted by the alsa driver. As a result of
+this, a bit of a rethink was needed, resulting in the FSIDIV and PLLC2
+clock handling being refactored for AP4.
 
-> My hardware environment is ARM. Each machine description can specify
-> nr_irqs. In my implementation of PXA, NR_IRQS is fixed for SoC
-> internal IRQs. And there's some additional board IRQs, we arrange them
-> between NR_IRQS and nr_irqs. So nr_irqs will be larger than NR_IRQS if
-> board IRQs exists.
+As we're already at -rc3 this is obviously a lot bigger than I would care
+for at this point. The alternative would be a series of reverts that
+would result in a similar amount of churn, and then giving it all a go
+again for .38. I can prepare a topic branch that does that if you'd
+prefer that option, this would however render the alsa driver unusable
+for .37.
 
-Most ARM platforms have come up with some Kconfig gunk to allow boards
-to extend this for off-SoC GPIOs.  It'd be really nice to get rid of
-NR_IRQS and stop having to worry about this at all :(
+Please pull from:
+
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git rmobile-fixes-for-linus
+
+Which contains:
+
+Kuninori Morimoto (6):
+      ARM: mach-shmobile: clock-sh7372: remove fsidiv bogus disable
+      ARM: mach-shmobile: ap4evb: FSI clock use proper process for HDMI
+      ARM: mach-shmobile: ap4evb: FSI clock use proper process for ak4642
+      ARM: mach-shmobile: clock-sh7372: modify error code
+      ARM: mach-shmobile: clock-sh7372: remove unnecessary fsi clocks
+      ARM: mach-shmobile: clock-sh7372: remove bogus pllc2 clock toggling.
+
+Magnus Damm (1):
+      ARM: mach-shmobile: sh7372 USB0/IIC1 MSTP fix
+
+ arch/arm/mach-shmobile/board-ap4evb.c |  147 +++++++++++++++++++++++++--------
+ arch/arm/mach-shmobile/clock-sh7372.c |   33 ++------
+ include/sound/sh_fsi.h                |    6 +-
+ sound/soc/sh/fsi.c                    |   25 ++++--
+ 4 files changed, 140 insertions(+), 71 deletions(-)
