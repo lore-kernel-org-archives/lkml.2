@@ -1,65 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab0KXSSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:18:49 -0500
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:21652 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab0KXSSo (ORCPT
+	id S1755749Ab0KXSTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 13:19:18 -0500
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:55623
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754083Ab0KXSTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:18:44 -0500
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFrm7EyrRN+K/2dsb2JhbACjBHGjUJtGhUcEhFuLGA
-X-IronPort-AV: E=Sophos;i="4.59,249,1288569600"; 
-   d="scan'208";a="384426229"
-Date: Wed, 24 Nov 2010 10:18:26 -0800
-From: David VomLehn <dvomlehn@cisco.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        sparclinux@vger.kernel.org
-Subject: Re: RFC: Mega rename of device tree routines from of_*() to dt_*()
-Message-ID: <20101124181825.GA17112@dvomlehn-lnx2.corp.sa.net>
-References: <1290607413.12457.44.camel@concordia>
+	Wed, 24 Nov 2010 13:19:12 -0500
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i691h668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LCEIV0-01-383-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 7/9] KVM: SVM: Add intercept checks for one-byte instructions
+Date: Wed, 24 Nov 2010 19:18:33 +0100
+Message-ID: <1290622715-8382-8-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
+References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290607413.12457.44.camel@concordia>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 01:03:33AM +1100, Michael Ellerman wrote:
-> Hi all,
-> 
-> There were some murmurings on IRC last week about renaming the of_*()
-> routines. I was procrastinating at the time and said I'd have a look at
-> it, so here I am.
-> 
-> The thinking is that on many platforms that use the of_() routines
-> OpenFirmware is not involved at all, this is true even on many powerpc
-> platforms. Also for folks who don't know the OpenFirmware connection it
-> reads as "of", as in "a can of worms".
-> 
-> Personally I'm a bit ambivalent about it, the OF name is a bit wrong so
-> it would be nice to get rid of, but it's a lot of churn.
-> 
-> So I'm hoping people with either say "YES this is a great idea", or "NO
-> this is stupid".
-> 
-> As step one I've just renamed as many routines as I could find to see
-> what the resulting patch looks like, so we can quantify the churn. I
-> also did device.of_node, which is used quite a bit.
-> 
-> Thoughts?
+This patch add intercept checks for emulated one-byte
+instructions to the KVM instruction emulation path.
 
-I'm looking at it the other way. There are inconsistencies in naming of
-symbols and files we definitely should clean up. Since we're doing that,
-let's take the opportunity to move from of* to dt*. With multiple
-architectures adding device tree support, this is about the last chance
-to do this without impacting too many people.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kvm/svm.c |   36 +++++++++++++++++++++++++++++++++---
+ 1 files changed, 33 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 77b344e..2a30b5b 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3668,6 +3668,35 @@ static void svm_check_group7(struct vmcb *vmcb, struct x86_emulate_ctxt *ctxt)
+ 	}
+ }
+ 
++static void svm_check_onebyte(struct vmcb *vmcb, struct x86_emulate_ctxt *ctxt)
++{
++	struct decode_cache *c = &ctxt->decode;
++
++	switch (c->b) {
++	case 0x90: /* PAUSE */
++		if (c->rep_prefix == REPE_PREFIX)
++			vmcb->control.exit_code = SVM_EXIT_PAUSE;
++		break;
++	case 0x9c: /* PUSHF */
++		break;
++	case 0x9d: /* POPF */
++		vmcb->control.exit_code = SVM_EXIT_POPF;
++		break;
++	case 0xcd: /* INTn */
++		vmcb->control.exit_code = SVM_EXIT_SWINT;
++		break;
++	case 0xcf: /* IRET */
++		vmcb->control.exit_code = SVM_EXIT_IRET;
++		break;
++	case 0xf1: /* ICEBP */
++		vmcb->control.exit_code = SVM_EXIT_ICEBP;
++		break;
++	case 0xf4: /* HLT */
++		vmcb->control.exit_code = SVM_EXIT_HLT;
++		break;
++	}
++}
++
+ static int svm_insn_intercepted(struct kvm_vcpu *vcpu,
+ 				struct x86_emulate_ctxt *ctxt)
+ {
+@@ -3681,8 +3710,10 @@ static int svm_insn_intercepted(struct kvm_vcpu *vcpu,
+ 
+ 	ret = X86EMUL_CONTINUE;
+ 
+-	if (!c->twobyte)
++	if (!c->twobyte) {
++		svm_check_onebyte(vmcb, ctxt);
+ 		goto out;
++	}
+ 
+ 	switch (c->b) {
+ 	case 0x00:
+@@ -3799,14 +3830,13 @@ static int svm_insn_intercepted(struct kvm_vcpu *vcpu,
+ 		break;
+ 	}
+ 
++out:
+ 	vmcb->control.next_rip = ctxt->eip;
+ 	vmexit = nested_svm_exit_handled(svm);
+ 
+ 	ret = (vmexit == NESTED_EXIT_DONE) ? X86EMUL_INTERCEPTED
+ 					   : X86EMUL_CONTINUE;
+ 
+-out:
+-
+ 	return ret;
+ }
+ 
 -- 
-David VL
+1.7.1
+
+
