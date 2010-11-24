@@ -1,96 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab0KXJCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 04:02:32 -0500
-Received: from web31809.mail.mud.yahoo.com ([68.142.207.72]:27759 "HELO
-	web31809.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752392Ab0KXJCa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 04:02:30 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=ideHyPYqWTai4Gg9YFErcEGYCCzR8q6Kwknkuja+yc6KdKsL57MvjNf7P6mgVywq/EcrzjsfoJFX9JpWCA9SSImHV9BRNo3S3xftj3fdbgJVmKcYbhQgMdhqj9BhqXqIkKkxUKkVSG5kIONcENRSS5FoYmLy/BQ6hNoCiVzO7VM=;
-Message-ID: <549123.75632.qm@web31809.mail.mud.yahoo.com>
-X-YMail-OSG: EYbwJ5sVM1n7YTjhUFPMcCmxrBGmagXgAAEm8J4mamLkg2w
- vBGlwYYL1r_RFq8XXn3gH0f8LrQ1KSCi3mC5AYHiUhN90aZsdLU.w53Ocyhz
- Bbqu5uNoRMWzZ.8eHmdjdYjcyUgMPJ4w53benNM.ByoNRk.wAGh8TuiWIEqq
- 41aQj3GbgI1FjpF80Db6cbzTyOjvnOmQT.yatJkQbLUvP9zKeCXaCdi3GaoP
- WDtFgFYCK7EbEPUVSsf99L47kCOVUFnAffEe1QcsG9QJ_aYoPMs_ivEdskQl
- s2mjDFybPPBin7AIqI_X8MBk_c6ceBrm0Z5mD2ciKul5fbYYlnLZSh.gkryo
- H31gXC2SAXtOTi9ZDsyDwQ6RoRvMq7EPGqfHU
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Wed, 24 Nov 2010 01:02:28 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        James Bottomley <James.Bottomley@suse.de>
-In-Reply-To: <20101123143026.GM20296@one-eyed-alien.net>
+	id S1752179Ab0KXJJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 04:09:38 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33274 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab0KXJJg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 04:09:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=Ph8JhzRFoGnMRDUmPEPTigBh8jxvgIucqaPKdtI6fSKzcCW6Y20sxyqqu96W9AyVjx
+         ZWrJMf72bu1dbUTqciE2zGdTJh3wd03WvvjZm2CEefXSdmVVso4dr4geiQb7uiXf6dWt
+         K9ZKH6l/tEayRivBzb1WrvwNmXbqVoDVj+pd0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <20101124081748.GV4693@pengutronix.de>
+References: <20101011152516.GF27153@n2100.arm.linux.org.uk>
+	<1290505382-16110-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	<20101123101210.GA18170@n2100.arm.linux.org.uk>
+	<20101123103940.GN4693@pengutronix.de>
+	<20101123105830.GO4693@pengutronix.de>
+	<AANLkTinmky17XZZPh7QvcY_r=66f_PwzRYFPUSvhiJGK@mail.gmail.com>
+	<20101124081748.GV4693@pengutronix.de>
+Date: Wed, 24 Nov 2010 10:09:35 +0100
+Message-ID: <AANLkTikLT0vuLLxb6pDLCcVP=ncwKfhkMcCxTqVTukkQ@mail.gmail.com>
+Subject: Re: About multi-line printk and the need (not) to repeat loglevel
+ markers [Was: Re: [PATCH] ARM: mx3/pcm037: properly allocate memory for mx3-camera]
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Tue, 11/23/10, Matthew Dharm <mdharm-kernel@one-eyed-alien.net> wrote:
+2010/11/24 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> Hello Linus,
+>
+> On Wed, Nov 24, 2010 at 07:16:06AM +0900, Linus Torvalds wrote:
+>> 10/11/23 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+>> >
+>> > BTW, I just noticed that Linus wrote:
+>> >
+>> >        Additionally, if no newline existed, one is added (unless the
+>> >        log-level is the explicit KERN_CONT marker, to explicitly show
+>> >        that it's a continuation of a previous line).
+>> >
+>> > This seems to be unimplemented, otherwise the output of
+>> >
+>> >        printk(KERN_ERR "foo bar baz ");
+>> >        printk("buz\n" KERN_WARNING "fiz\n");
+>> >
+>> > should be
+>> >
+>> >        "foo bar baz \n" at error level
+>> >        "buz\n<4>fiz\n" at default level
+>>
+>> No. The KERN_WARNING in the middle of a string is always totally
+>> bogus. There is no "should be". It's just wrong.
+>>
+>> The "\n" is added automatically iff there is a log-level marker at the
+>> beginning of the string (with LOG_CONT being the exception).
+> So
+>
+>        printk("anything that doesn't look like a loglevel marker");
+>
+> always behaves like
+>
+>        printk(KERN_CONT "anything that doesn't look like a loglevel marker");
+>
+> so unless someone wants to print a literal kernel marker we can just do
+>
+> -#define        KERN_CONT       "<c>"
+> +#define        KERN_CONT       ""
+>
+> without any harm.
+>
+> I wonder why you implemented "iff there is a log-level marker at the
+> beginning ot the string (with KERN_CONT being the exception)." and not
+> "unless there is a KERN_CONT marker".
+>
+>>                                                              So
+>>
+>>    printk("foo bar baz ");
+>>    printk(KERN_WARNING "fiz\n");
+>>
+>> should output two lines ("foo bar baz" with the default loglevel, and
+>> "fiz" with KERN_WARNING). Even though there is no explicit "\n" there
+>> for the first one.
+>>
+>> But KERN_XYZ anywhere but in the beginning of the string do not
+>> matter. Adding newlines changes none of that. It doesn't make the
+>> marker beginning of the string, it just makes it beginning of the
+>> line.
+> I see one reason to interpret markers after a newline.  In case
+> recursion_bug is true, printk_buf is initialized with recursion_bug_msg
+> and my message gets appended.  So currently the marker I pass with my
+> message is ignored.
+> Maybe wanting to fix that is just my addiction to overengineering :-)
 
-> Not really.  In your example case of the write-protect
-> bit, either the
-> device would be improperly marked as write-protected when
-> it is not, or we
-> would improperly send write commands to a protected
-> device.  Neither is a
-> great tradgedy; commands will fail, errors will be
-> generated, and life will
-> go on.
+Hello, Kernel Hackers!
 
-Yes, indeed.
+I think that KERN_CONT and any other form of continuation printks() is
+just source of trouble.
 
-> However, I don't know what is in the Caching Mode
-> Page.
+This is usually used in code like this:
 
-It's described in SBC-3.
+int init_dev(...)
+{
+    ...
+    printk("Initializing dev %s ... ", dev->name);
+    /* do initialize, sleeping/scheduling is allowed */
+    printk("%s.\n", ok ? "done" : "error");
+    ...
+}
 
-> I don't know how
-> those bits are used to determine the behavior of the rest
-> of the kernel.
+When parallel initialization is done you might expect output like this:
 
-I see.
+Initializing dev A ...
+Initializing dev B ... error.
+done.
 
-> Maybe one of those bits means "only store data in Japanese"
-> or something
-> equally disturbing.
+And now guess which one failed.
 
-I doubt it. (And I don't find that disturbing.)
+Second case against printk() continuations is netconsole. Every
+printk() output is sent as separate packet with no ordering or
+delivery guarantees, and usually logged as separate lines by remote
+logging daemon. From the example code above, you might get this in
+remote log:
 
-> The old code used to make a "safe" default choice if the
-> caching mode page
-> was not available (for whatever
-> reason).   What are the implications of not
-> making the "safe" choice improperly (due to mode page
-> corruption)?
+Initializing dev A ...
+done.
+Initializing dev B ...
+error.
 
-Let's see... the old code made the ``"safe" default choice'' of believing that the write cache is disabled and will thus never synchronize the cache, i.e. send SYNCHRONIZE CACHE command, reading drivers/scsi/sd.c. It also believes that the read cache is enabled, harmless as it is not used by the kernel. It also assumes that DPOFUA is not supported and will thus never set FUA in the CDB, in sd_revalidate_disk() (blk dev ops).
+When in reality A failed and B initialized properly. (Yes, I know this
+is highly unlikely, but still - possible.)
 
-Quoting you, s/write commands/cdbs with FUA set or SYNCHRONIZE CACHE command/g:
-
-> we
-> would improperly send write commands to a protected
-> device.  Neither is a
-> great tradgedy; commands will fail, errors will be
-> generated, and life will
-> go on.
-
-But I believe the discussion has gone astray. Bringing it back to the original topic:
-
-I doubt this as very unlikely. Has anyone actually seen a device that sends mode parameter data with faux Caching mode page or corrupted data that is in fact interpreted as a Caching mode page? Is such a device fully operational sans the faux Caching mode page, or does it just not work? Is it common to have devices having a faux Caching mode page or corrupted mode parameter data resulting in a Caching mode page with random data?
-
-Undoubtedly, as the usb-storage maintainer, you must have variety of devices, some broken some not. Could you apply this patch to your tree and test some of the devices you have? My tests indicate a stable behavior.
-
-    Luben
-
+Best Regards,
+Micha³ Miros³aw
