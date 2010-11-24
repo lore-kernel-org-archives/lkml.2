@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab0KXMWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:22:51 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13449 "EHLO
+	id S1754447Ab0KXMXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:23:23 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13469 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754165Ab0KXMWt (ORCPT
+	by vger.kernel.org with ESMTP id S1753481Ab0KXMXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:22:49 -0500
-Message-ID: <4CED037F.6060306@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 21:22:23 +0900
+	Wed, 24 Nov 2010 07:23:21 -0500
+Message-ID: <4CED039F.3020106@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 21:22:55 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
@@ -20,7 +20,7 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 12/17 v3] can: EG20T PCH: Fix bit timing calculation
+Subject: [PATCH net-next-2.6 13/17 v3] can: EG20T PCH: Fix miss-setting status
  issue
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
@@ -28,37 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix bit timing calculation issue
-Modify like use calculated value directly passed by CAN core module.
+Modify miss-setting status issue at suspend.
+
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/can/pch_can.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 7342030..466f011 100644
+index 466f011..610cf3b 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -800,17 +800,15 @@ static int pch_set_bittiming(struct net_device *ndev)
- 	const struct can_bittiming *bt = &priv->can.bittiming;
- 	u32 canbit;
- 	u32 bepe;
--	u32 brp;
+@@ -1084,7 +1084,7 @@ static int pch_can_suspend(struct pci_dev *pdev,
+pm_message_t state)
+ 	pch_can_set_run_mode(priv, PCH_CAN_STOP);
 
- 	/* Setting the CCE bit for accessing the Can Timing register. */
- 	pch_can_bit_set(&priv->regs->cont, PCH_CTRL_CCE);
+ 	/* Indicate that we are aboutto/in suspend */
+-	priv->can.state = CAN_STATE_SLEEPING;
++	priv->can.state = CAN_STATE_STOPPED;
 
--	brp = (bt->tq) / (1000000000/PCH_CAN_CLK) - 1;
--	canbit = brp & PCH_MSK_BITT_BRP;
-+	canbit = (bt->brp - 1) & PCH_MSK_BITT_BRP;
- 	canbit |= (bt->sjw - 1) << PCH_BIT_SJW_SHIFT;
- 	canbit |= (bt->phase_seg1 + bt->prop_seg - 1) << PCH_BIT_TSEG1_SHIFT;
- 	canbit |= (bt->phase_seg2 - 1) << PCH_BIT_TSEG2_SHIFT;
--	bepe = (brp & PCH_MSK_BRPE_BRPE) >> PCH_BIT_BRPE_BRPE_SHIFT;
-+	bepe = ((bt->brp - 1) & PCH_MSK_BRPE_BRPE) >> PCH_BIT_BRPE_BRPE_SHIFT;
- 	iowrite32(canbit, &priv->regs->bitt);
- 	iowrite32(bepe, &priv->regs->brpe);
- 	pch_can_bit_clear(&priv->regs->cont, PCH_CTRL_CCE);
+ 	/* Waiting for all transmission to complete. */
+ 	while (counter) {
 -- 
 1.6.0.6
+
