@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab0KXHit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 02:38:49 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:46849 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0KXHir (ORCPT
+	id S1752460Ab0KXHjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 02:39:07 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11917 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752241Ab0KXHix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 02:38:47 -0500
-Date: Wed, 24 Nov 2010 16:38:00 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh updates for 2.6.37-rc4
-Message-ID: <20101124073800.GA2212@linux-sh.org>
+	Wed, 24 Nov 2010 02:38:53 -0500
+Message-ID: <4CECC0F3.3090409@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 16:38:27 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 13/17 v2] can: EG20T PCH: Fix miss-setting status
+ issue
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A fairly straightforward set of fixes. Now that we're later in .37, I've
-also opted to kill off an unused API call in the clock framework, isolate
-legacy support, and update the users accordingly. This will prevent new
-users being added in .38, which are already popping up.
+Modify miss-setting status issue at suspend.
 
-Please pull from:
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/net/can/pch_can.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Which contains:
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 466f011..610cf3b 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -1084,7 +1084,7 @@ static int pch_can_suspend(struct pci_dev *pdev,
+pm_message_t state)
+ 	pch_can_set_run_mode(priv, PCH_CAN_STOP);
+  	/* Indicate that we are aboutto/in suspend */
+-	priv->can.state = CAN_STATE_SLEEPING;
++	priv->can.state = CAN_STATE_STOPPED;
+  	/* Waiting for all transmission to complete. */
+ 	while (counter) {
+-- 
+1.6.0.6
 
-Giuseppe CAVALLARO (3):
-      sh: avoid to flush all cache in sys_cacheflush
-      sh: fix vsyscall compilation due to .eh_frame issue
-      sh: Use GCC __builtin_prefetch() to implement prefetch().
-
-Paul Mundt (4):
-      sh: clkfwk: Kill off unused clk_set_rate_ex().
-      sh: clkfwk: Kill off now unused algo_id in set_rate op.
-      sh: clkfwk: Disable init clk op for non-legacy clocks.
-      sh: clkfwk: Build fix for non-legacy CPG changes.
-
- Documentation/DocBook/sh.tmpl            |    4 ---
- Documentation/sh/clk.txt                 |   32 ----------------------------
- arch/arm/mach-shmobile/clock-sh7372.c    |    6 +---
- arch/sh/include/asm/processor_32.h       |    7 ++++-
- arch/sh/kernel/cpu/sh4/clock-sh4-202.c   |    2 +-
- arch/sh/kernel/sys_sh.c                  |    2 +-
- arch/sh/kernel/vsyscall/vsyscall-trapa.S |    2 +-
- drivers/sh/clk/core.c                    |   16 +++++--------
- drivers/sh/clk/cpg.c                     |    7 ++---
- include/linux/sh_clk.h                   |   34 ++---------------------------
- 10 files changed, 22 insertions(+), 90 deletions(-)
- delete mode 100644 Documentation/sh/clk.txt
