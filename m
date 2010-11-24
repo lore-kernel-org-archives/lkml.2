@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab0KXExi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 23:53:38 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:51951 "EHLO
+	id S1754236Ab0KXEzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 23:55:49 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:52084 "EHLO
 	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab0KXExh (ORCPT
+	with ESMTP id S1753888Ab0KXEzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 23:53:37 -0500
+	Tue, 23 Nov 2010 23:55:48 -0500
 X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: akpm@linux-foundation.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: mmotm 2010-11-23 - lockdep whinge in e1000e driver
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: mmotm 2010-11-23 - WARNING: at drivers/tty/tty_io.c:1331
 In-Reply-To: Your message of "Tue, 23 Nov 2010 16:13:06 PST."
              <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
 From: Valdis.Kletnieks@vt.edu
 References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1290574354_5261P";
+Content-Type: multipart/signed; boundary="==_Exmh_1290574539_5261P";
 	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Date: Tue, 23 Nov 2010 23:52:34 -0500
-Message-ID: <5622.1290574354@localhost>
+Date: Tue, 23 Nov 2010 23:55:39 -0500
+Message-ID: <5747.1290574539@localhost>
 X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
 X-Mirapoint-IP-Reputation: reputation=neutral-1,
 	source=Fixed,
@@ -31,7 +28,7 @@ X-Mirapoint-IP-Reputation: reputation=neutral-1,
 	actions=MAILHURDLE SPF TAG
 X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
 X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020209.4CEC9A13.017D,ss=1,fgs=0,
+	refid=str=0001.0A020203.4CEC9ACC.0097,ss=1,fgs=0,
 	ip=0.0.0.0,
 	so=2009-09-22 00:05:22,
 	dmn=2009-09-10 00:05:08,
@@ -41,7 +38,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1290574354_5261P
+--==_Exmh_1290574539_5261P
 Content-Type: text/plain; charset=us-ascii
 
 On Tue, 23 Nov 2010 16:13:06 PST, akpm@linux-foundation.org said:
@@ -49,69 +46,48 @@ On Tue, 23 Nov 2010 16:13:06 PST, akpm@linux-foundation.org said:
 > 
 >    http://userweb.kernel.org/~akpm/mmotm/
 
-Whinges during boot while bringing up the ethernet interface:
+Seen during boot:
 
-[    1.081504] ===================================================
-[    1.081507] [ INFO: suspicious rcu_dereference_check() usage. ]
-[    1.081509] ---------------------------------------------------
-[    1.081512] include/linux/inetdevice.h:208 invoked rcu_dereference_check() without protection!
-[    1.081514] 
-[    1.081515] other info that might help us debug this:
-[    1.081516] 
-[    1.081518] 
-[    1.081518] rcu_scheduler_active = 1, debug_locks = 1
-[    1.081521] 3 locks held by swapper/1:
-[    1.081523]  #0:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff812d0b57>] device_lock+0xf/0x11
-[    1.081534]  #1:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff812d0b57>] device_lock+0xf/0x11
-[    1.081541]  #2:  (rtnl_mutex){+.+.+.}, at: [<ffffffff8142dee8>] rtnl_lock+0x12/0x14
-[    1.081549] 
-[    1.081550] stack backtrace:
-[    1.081553] Pid: 1, comm: swapper Not tainted 2.6.37-rc3-mmotm1123 #3
-[    1.081555] Call Trace:
-[    1.081562]  [<ffffffff81069580>] lockdep_rcu_dereference+0x9d/0xa5
-[    1.081567]  [<ffffffff8147b235>] __in_dev_get_rcu.clone.12+0x3f/0x47
-[    1.081571]  [<ffffffff8147b24d>] inet_get_link_af_size+0x10/0x1f
-[    1.081575]  [<ffffffff8142ce16>] if_nlmsg_size+0xd5/0x111
-[    1.081579]  [<ffffffff8142ecf6>] rtmsg_ifinfo+0x1f/0xeb
-[    1.081584]  [<ffffffff8105d78e>] ? raw_notifier_call_chain+0xf/0x11
-[    1.081589]  [<ffffffff81421ee7>] register_netdevice+0x3ea/0x410
-[    1.081593]  [<ffffffff81421f47>] register_netdev+0x3a/0x4c
-[    1.081599]  [<ffffffff81551cc2>] e1000_probe+0x986/0xb6f
-[    1.081604]  [<ffffffff81237b2e>] local_pci_probe+0x3f/0x70
-[    1.081608]  [<ffffffff81237eae>] pci_device_probe+0x65/0x96
-[    1.081614]  [<ffffffff8115a82a>] ? sysfs_create_link+0xe/0x10
-[    1.081617]  [<ffffffff812d0fe0>] driver_probe_device+0xe8/0x182
-[    1.081621]  [<ffffffff812d10c4>] __driver_attach+0x4a/0x6b
-[    1.081625]  [<ffffffff812d107a>] ? __driver_attach+0x0/0x6b
-[    1.081629]  [<ffffffff812d01cf>] bus_for_each_dev+0x57/0x83
-[    1.081633]  [<ffffffff812d0ca5>] driver_attach+0x19/0x1b
-[    1.081637]  [<ffffffff812d08e7>] bus_add_driver+0xae/0x205
-[    1.081641]  [<ffffffff812d1324>] driver_register+0xb5/0x122
-[    1.081646]  [<ffffffff81b455cb>] ? e1000_init_module+0x0/0x3e
-[    1.081650]  [<ffffffff812380e4>] __pci_register_driver+0x61/0xcd
-[    1.081654]  [<ffffffff81b455cb>] ? e1000_init_module+0x0/0x3e
-[    1.081658]  [<ffffffff81b45607>] e1000_init_module+0x3c/0x3e
-[    1.081663]  [<ffffffff810002ff>] do_one_initcall+0x7a/0x12f
-[    1.081668]  [<ffffffff81b1fd08>] kernel_init+0x15d/0x1e7
-[    1.081672]  [<ffffffff810035d4>] kernel_thread_helper+0x4/0x10
-[    1.081678]  [<ffffffff8102f845>] ? finish_task_switch+0x3f/0xe3
-[    1.081682]  [<ffffffff8155b5c0>] ? restore_args+0x0/0x30
-[    1.081686]  [<ffffffff81b1fbab>] ? kernel_init+0x0/0x1e7
-[    1.081690]  [<ffffffff810035d0>] ? kernel_thread_helper+0x0/0x10
-[    1.081731] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GB/s:Width x1) 00:24:e8:c6:ad:17
+[   22.859616] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+[   23.015434] ------------[ cut here ]------------
+[   23.015443] WARNING: at drivers/tty/tty_io.c:1331 tty_open+0x2a2/0x49a()
+[   23.015446] Hardware name: Latitude E6500                  
+[   23.015448] Modules linked in:
+[   23.015453] Pid: 1207, comm: plymouthd Not tainted 2.6.37-rc3-mmotm1123 #3
+[   23.015455] Call Trace:
+[   23.015461]  [<ffffffff8103b189>] warn_slowpath_common+0x80/0x98
+[   23.015465]  [<ffffffff8103b1b6>] warn_slowpath_null+0x15/0x17
+[   23.015469]  [<ffffffff8128a3ab>] tty_open+0x2a2/0x49a
+[   23.015475]  [<ffffffff810fd53f>] chrdev_open+0x11d/0x146
+[   23.015479]  [<ffffffff810fd422>] ? chrdev_open+0x0/0x146
+[   23.015483]  [<ffffffff810f7b4c>] __dentry_open+0x31a/0x483
+[   23.015488]  [<ffffffff810f88fe>] nameidata_to_filp+0x50/0x57
+[   23.015492]  [<ffffffff81105e53>] do_last+0x448/0x5b2
+[   23.015497]  [<ffffffff81229229>] ? __raw_spin_lock_init+0x31/0x50
+[   23.015501]  [<ffffffff81106205>] do_filp_open+0x248/0x64a
+[   23.015507]  [<ffffffff810a5c4d>] ? trace_preempt_on+0x15/0x28
+[   23.015511]  [<ffffffff81110cda>] ? alloc_fd+0x17c/0x18e
+[   23.015516]  [<ffffffff8155adfc>] ? _raw_spin_unlock+0x30/0x69
+[   23.015521]  [<ffffffff8155e3b8>] ? sub_preempt_count+0x35/0x49
+[   23.015525]  [<ffffffff81110cda>] ? alloc_fd+0x17c/0x18e
+[   23.015529]  [<ffffffff810f8965>] do_sys_open+0x60/0xfb
+[   23.015533]  [<ffffffff8155a64b>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   23.015537]  [<ffffffff810f8a1b>] sys_open+0x1b/0x1d
+[   23.015542]  [<ffffffff8100277b>] system_call_fastpath+0x16/0x1b
+[   23.015545] ---[ end trace 12db3a7ab6675b51 ]---
 
 
---==_Exmh_1290574354_5261P
+--==_Exmh_1290574539_5261P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFM7JoScC3lWbTT17ARAub5AKCMW0SAbmgnBhEFO4yeESALSwXuAgCggcyd
-AZWiMkMs8rtx3Vkay8tm8Wg=
-=GBVK
+iD8DBQFM7JrLcC3lWbTT17ARAsTtAJsH4HWUhE6KA7u5JM0gqXfXqmoKJgCfWsvo
+lDJHz1TWSWTFbtAdCcgx4H0=
+=BN94
 -----END PGP SIGNATURE-----
 
---==_Exmh_1290574354_5261P--
+--==_Exmh_1290574539_5261P--
 
