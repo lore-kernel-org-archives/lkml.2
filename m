@@ -1,95 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0KXSSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:18:46 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:13664 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab0KXSSo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:18:44 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i691h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCEIUZ-02-3OF-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 6/9] KVM: SVM: Add intercept checks for remaining twobyte instructions
-Date: Wed, 24 Nov 2010 19:18:32 +0100
-Message-ID: <1290622715-8382-7-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
-References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
+	id S1755963Ab0KXSTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 13:19:37 -0500
+Received: from claw.goop.org ([74.207.240.146]:55415 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755877Ab0KXSTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 13:19:35 -0500
+Message-ID: <4CED5736.2050000@goop.org>
+Date: Wed, 24 Nov 2010 10:19:34 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Ian Campbell <ian.campbell@citrix.com>
+CC: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] xen: x86/32: perform initial startup on initial_page_table
+References: <1290600581-8392-1-git-send-email-ian.campbell@citrix.com>
+In-Reply-To: <1290600581-8392-1-git-send-email-ian.campbell@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds intercepts checks for the remaining twobyte
-instructions to the KVM instruction emulator.
+On 11/24/2010 04:09 AM, Ian Campbell wrote:
+> Only make swapper_pg_dir readonly and pinned when generic x86 architecture code
+> (which also starts on initial_page_table) switches to it.  This helps ensure
+> that the generic setup paths work on Xen unmodified. In particular
+> clone_pgd_range writes directly to the destination pgd entries and is used to
+> initialise swapper_pg_dir so we need to ensure that it remains writeable until
+> the last possible moment during bring up.
+>
+> This is complicated slightly by the need to avoid sharing kernel PMD entries
+> when running under Xen, therefore the Xen implementation must make a copy of
+> the kernel PMD (which is otherwise referred to by both intial_page_table and
+> swapper_pg_dir) before switching to swapper_pg_dir.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kvm/svm.c |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+The one thing I'd add is the commit ID of the change which made this
+necessary.
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 7284193..77b344e 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3741,10 +3741,19 @@ static int svm_insn_intercepted(struct kvm_vcpu *vcpu,
- 
- 			break;
- 			}
-+		case 0x07: /* INVLPG */
-+			vmcb->control.exit_code = SVM_EXIT_INVLPG;
-+			break;
- 		}
- 	case 0x06: /* CLTS */
- 		vmcb->control.exit_code = SVM_EXIT_WRITE_CR0;
- 		break;
-+	case 0x08: /* INVD */
-+		vmcb->control.exit_code = SVM_EXIT_INVD;
-+		break;
-+	case 0x09: /* WBINVD */
-+		vmcb->control.exit_code = SVM_EXIT_WBINVD;
-+		break;
- 	case 0x20: /* CR read  */
- 		vmcb->control.exit_code = SVM_EXIT_READ_CR0 + c->modrm_reg;
- 		break;
-@@ -3768,6 +3777,26 @@ static int svm_insn_intercepted(struct kvm_vcpu *vcpu,
- 	case 0x23:
- 		vmcb->control.exit_code = SVM_EXIT_WRITE_DR0 + c->modrm_reg;
- 		break;
-+	case 0x30: /* WRMSR */
-+		vmcb->control.exit_code = SVM_EXIT_MSR;
-+		vmcb->control.exit_info_1 = 1;
-+		break;
-+	case 0x31: /* RDTSC */
-+		vmcb->control.exit_code = SVM_EXIT_RDTSC;
-+		break;
-+	case 0x32: /* RDMSR */
-+		vmcb->control.exit_code = SVM_EXIT_MSR;
-+		vmcb->control.exit_info_1 = 0;
-+		break;
-+	case 0x33: /* RDPMC */
-+		vmcb->control.exit_code = SVM_EXIT_RDPMC;
-+		break;
-+	case 0xa2: /* CPUID */
-+		vmcb->control.exit_code = SVM_EXIT_CPUID;
-+		break;
-+	case 0xaa: /* RSM */
-+		vmcb->control.exit_code = SVM_EXIT_RSM;
-+		break;
- 	}
- 
- 	vmcb->control.next_rip = ctxt->eip;
--- 
-1.7.1
+    J
 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> ---
+>  arch/x86/xen/enlighten.c |    2 -
+>  arch/x86/xen/mmu.c       |   69 +++++++++++++++++++++++++++++++++++++--------
+>  2 files changed, 56 insertions(+), 15 deletions(-)
+>
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 7250bef..02c710b 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1200,8 +1200,6 @@ asmlinkage void __init xen_start_kernel(void)
+>  	/* Allocate and initialize top and mid mfn levels for p2m structure */
+>  	xen_build_mfn_list_list();
+>  
+> -	init_mm.pgd = pgd;
+> -
+>  	/* keep using Xen gdt for now; no urgent need to change it */
+>  
+>  #ifdef CONFIG_X86_32
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 790af90..a1feff9 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -2133,44 +2133,83 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+>  	return pgd;
+>  }
+>  #else	/* !CONFIG_X86_64 */
+> -static RESERVE_BRK_ARRAY(pmd_t, level2_kernel_pgt, PTRS_PER_PMD);
+> +static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
+> +static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
+> +
+> +static __init void xen_write_cr3_init(unsigned long cr3)
+> +{
+> +	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
+> +
+> +	BUG_ON(read_cr3() != __pa(initial_page_table));
+> +	BUG_ON(cr3 != __pa(swapper_pg_dir));
+> +
+> +	/*
+> +	 * We are switching to swapper_pg_dir for the first time (from
+> +	 * initial_page_table) and therefore need to mark that page
+> +	 * read-only and then pin it.
+> +	 *
+> +	 * Xen disallows sharing of kernel PMDs for PAE
+> +	 * guests. Therefore we must copy the kernel PMD from
+> +	 * initial_page_table into a new kernel PMD to be used in
+> +	 * swapper_pg_dir.
+> +	 */
+> +	swapper_kernel_pmd =
+> +		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+> +	memcpy(swapper_kernel_pmd, initial_kernel_pmd,
+> +	       sizeof(pmd_t) * PTRS_PER_PMD);
+> +	swapper_pg_dir[KERNEL_PGD_BOUNDARY] =
+> +		__pgd(__pa(swapper_kernel_pmd) | _PAGE_PRESENT);
+> +	set_page_prot(swapper_kernel_pmd, PAGE_KERNEL_RO);
+> +
+> +	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
+> +	xen_write_cr3(cr3);
+> +	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
+> +
+> +	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
+> +			  PFN_DOWN(__pa(initial_page_table)));
+> +	set_page_prot(initial_page_table, PAGE_KERNEL);
+> +	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
+> +
+> +	pv_mmu_ops.write_cr3 = &xen_write_cr3;
+> +}
+>  
+>  __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+>  					 unsigned long max_pfn)
+>  {
+>  	pmd_t *kernel_pmd;
+>  
+> -	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+> +	initial_kernel_pmd =
+> +		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+>  
+>  	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+>  				  xen_start_info->nr_pt_frames * PAGE_SIZE +
+>  				  512*1024);
+>  
+>  	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+> -	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
+> +	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
+>  
+> -	xen_map_identity_early(level2_kernel_pgt, max_pfn);
+> +	xen_map_identity_early(initial_kernel_pmd, max_pfn);
+>  
+> -	memcpy(swapper_pg_dir, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
+> -	set_pgd(&swapper_pg_dir[KERNEL_PGD_BOUNDARY],
+> -			__pgd(__pa(level2_kernel_pgt) | _PAGE_PRESENT));
+> +	memcpy(initial_page_table, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
+> +	initial_page_table[KERNEL_PGD_BOUNDARY] =
+> +		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
+>  
+> -	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
+> -	set_page_prot(swapper_pg_dir, PAGE_KERNEL_RO);
+> +	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
+> +	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
+>  	set_page_prot(empty_zero_page, PAGE_KERNEL_RO);
+>  
+>  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+>  
+> -	xen_write_cr3(__pa(swapper_pg_dir));
+> -
+> -	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
+> +	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
+> +			  PFN_DOWN(__pa(initial_page_table)));
+> +	xen_write_cr3(__pa(initial_page_table));
+>  
+>  	memblock_x86_reserve_range(__pa(xen_start_info->pt_base),
+>  		      __pa(xen_start_info->pt_base +
+>  			   xen_start_info->nr_pt_frames * PAGE_SIZE),
+>  		      "XEN PAGETABLES");
+>  
+> -	return swapper_pg_dir;
+> +	return initial_page_table;
+>  }
+>  #endif	/* CONFIG_X86_64 */
+>  
+> @@ -2304,7 +2343,11 @@ static const struct pv_mmu_ops xen_mmu_ops __initdata = {
+>  	.write_cr2 = xen_write_cr2,
+>  
+>  	.read_cr3 = xen_read_cr3,
+> +#ifdef CONFIG_X86_32
+> +	.write_cr3 = xen_write_cr3_init,
+> +#else
+>  	.write_cr3 = xen_write_cr3,
+> +#endif
+>  
+>  	.flush_tlb_user = xen_flush_tlb,
+>  	.flush_tlb_kernel = xen_flush_tlb,
 
