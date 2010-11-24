@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab0KXRob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 12:44:31 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56469 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab0KXRo3 (ORCPT
+	id S1755369Ab0KXRqa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 12:46:30 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47507 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab0KXRq3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 12:44:29 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <hpa@zytor.com>, <mingo@elte.hu>, <tglx@linutronix.de>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: <x86@kernel.org>, kvm@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 1/2] x86, lib: Add a wbinvd helper for an arbitrary cpu set
-Date: Wed, 24 Nov 2010 18:44:03 +0100
-Message-Id: <1290620644-27423-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.3.1.50.g1e633
+	Wed, 24 Nov 2010 12:46:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=a+wfqbhG8+32Nm96vFf6BFGEnZBd3ZnsEBNpDicKyNtRFTMY73sunprNSzpgsBfnN9
+         +Ik3hgabPRFn1NE8/Pd8pK8qXzL6JOhap4yTN+kTsvez5Gx+hNmYHuBBlYd1A6RhpBnn
+         Hf2x/qvCtOnVV0zAYSIcKd8SqG0ypwyc3n8dA=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=yV02oY5AmNAYr+ZF0RUgVv8gkeP+D9_CcOfLi@mail.gmail.com>
+References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+	<20101122161158.02699d10.akpm@linux-foundation.org>
+	<1290501502.2390.7029.camel@nimitz>
+	<AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com>
+	<1290529171.2390.7994.camel@nimitz>
+	<AANLkTikCn-YvORocXSJ1Z+ovYNMhKF7TaX=BHWKwrQup@mail.gmail.com>
+	<AANLkTi=mgTHPEYFsryDYnxPa78f-Nr+H7i4+0KPZbxh3@mail.gmail.com>
+	<AANLkTimo1BR=mSJ6wPQwrL4FDNv=_TfanPPTT7uWx7hQ@mail.gmail.com>
+	<AANLkTi=yV02oY5AmNAYr+ZF0RUgVv8gkeP+D9_CcOfLi@mail.gmail.com>
+Date: Wed, 24 Nov 2010 19:46:28 +0200
+X-Google-Sender-Auth: 9294wgu7DDnWi3fyhwryRtLpQXg
+Message-ID: <AANLkTi=PXoMA0gv53_7h16u1259sh1uOxg2cSXYSXThv@mail.gmail.com>
+Subject: Re: Sudden and massive page cache eviction
+From: Pekka Enberg <penberg@kernel.org>
+To: =?ISO-8859-1?Q?Peter_Sch=FCller?= <scode@spotify.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mattias de Zalenski <zalenski@spotify.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Hi Peter,
 
-Add a wbinvd helper for an arbitrary set of CPUs.
+2010/11/24 Peter Schüller <scode@spotify.com>:
+>>> I forgot to address the second part of this question: How would I best
+>>> inspect whether the kernel is doing that?
+>>
+>> You can, for example, record
+>>
+>>  cat /proc/meminfo | grep Huge
+>>
+>> for large page allocations.
+>
+> Those show zero a per my other post. However I got the impression Dave
+> was asking about regular but larger-than-one-page allocations internal
+> to the kernel, while the Huge* lines in /proc/meminfo refers to
+> allocations specifically done by userland applications doing huge page
+> allocation on a system with huge pages enabled - or am I confused?
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/smp.h |    4 +++-
- arch/x86/lib/cache-smp.c   |   12 ++++++++++++
- 2 files changed, 15 insertions(+), 1 deletions(-)
+He was asking about both (large page allocations and higher order allocations).
 
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 4c2f63c..f7805f1 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -141,6 +141,7 @@ void native_cpu_die(unsigned int cpu);
- void native_play_dead(void);
- void play_dead_common(void);
- void wbinvd_on_cpu(int cpu);
-+void wbinvd_on_cpus(const struct cpumask *);
- int wbinvd_on_all_cpus(void);
- 
- void native_send_call_func_ipi(const struct cpumask *mask);
-@@ -155,7 +156,8 @@ static inline int num_booting_cpus(void)
- 	return cpumask_weight(cpu_callout_mask);
- }
- #else /* !CONFIG_SMP */
--#define wbinvd_on_cpu(cpu)     wbinvd()
-+#define wbinvd_on_cpu(cpu)	wbinvd()
-+#define wbinvd_on_cpus(mask)	wbinvd()
- static inline int wbinvd_on_all_cpus(void)
- {
- 	wbinvd();
-diff --git a/arch/x86/lib/cache-smp.c b/arch/x86/lib/cache-smp.c
-index a3c6688..7778d56 100644
---- a/arch/x86/lib/cache-smp.c
-+++ b/arch/x86/lib/cache-smp.c
-@@ -12,6 +12,18 @@ void wbinvd_on_cpu(int cpu)
- }
- EXPORT_SYMBOL(wbinvd_on_cpu);
- 
-+void wbinvd_on_cpus(const struct cpumask *mask)
-+{
-+	int this_cpu = get_cpu();
-+
-+	if (cpumask_test_cpu(this_cpu, mask))
-+		wbinvd();
-+
-+	smp_call_function_many(mask, __wbinvd, NULL, 1);
-+	put_cpu();
-+}
-+EXPORT_SYMBOL(wbinvd_on_cpus);
-+
- int wbinvd_on_all_cpus(void)
- {
- 	return on_each_cpu(__wbinvd, NULL, 1);
--- 
-1.7.3.1.50.g1e633
+>> The "pagesperslab" column of /proc/slabinfo tells you how many pages
+>> slab allocates from the page allocator.
+>
+> Seems to be what vmstat -m reports.
 
+No, "vmstat -m" reports _total number_ of pages allocated. We're
+interested in how many pages slab allocator whenever it needs to
+allocate memory for a new slab. That's represented by the
+"pagesperslab" column of /proc/slabinfo from which you can deduce the
+page allocation order.
+
+                        Pekka
