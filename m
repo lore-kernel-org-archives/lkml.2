@@ -1,73 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766Ab0KXCxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 21:53:20 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:63158 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab0KXCxS (ORCPT
+	id S1752136Ab0KXC74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 21:59:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54295 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab0KXC7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 21:53:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=AIudco0MhgIwUrh70KWrdF+2q5XyMF+d75gZq8VLI8aCmLwZXJznoMG/M+SD87UNb/
-         e5A7u5rcRkQwGJxxWj4UZv6ksho9ZKxc/4hHxrdbRCquF64ZPuiFB5p1xpcip2WdiR0d
-         KoJwe1EQmxWQwK0awNN4x4eh+fJhX8CLhYQK0=
-MIME-Version: 1.0
-In-Reply-To: <4CEC2BE7.4060205@tilera.com>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
-	<1289489007.17691.1310.camel@edumazet-laptop>
-	<AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
-	<ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
-	<4CDF1945.8090101@tilera.com>
-	<AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>
-	<201011151425.oAFEPU3W005682@farm-0010.internal.tilera.com>
-	<AANLkTikGj+zG9OqVJseKh4fGqQNnqnJpHgcaaXOL8nNi@mail.gmail.com>
-	<4CEA71AD.5010606@tilera.com>
-	<AANLkTim1YyujwGZfenU_m52HEJJSFmTg3Wswn2DkqA3a@mail.gmail.com>
-	<4CEC2BE7.4060205@tilera.com>
-Date: Wed, 24 Nov 2010 10:53:17 +0800
-Message-ID: <AANLkTinx3pcJHGrQq_C-Rgk5g7SxjmpTcD0A50d8d48b@mail.gmail.com>
-Subject: Re: [PATCH] arch/tile: fix rwlock so would-be write lockers don't
- block new readers
-From: Cypher Wu <cypher.w@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Nov 2010 21:59:55 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=fIAfbhESzNEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=bcMtALr44WPWFqAyzPwA:9 a=GmfcTasCeeci-FfHUmwA:7 a=-62nPtYrzhmBAJJqJZO2b-wcda0A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=V4PGMTEq58M-QOI7:21 a=6QIJ6nUxqNr9ngHF:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/3] jump label: move jump table to r/w section
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1290565133.30543.430.camel@gandalf.stny.rr.com>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <bbc34a86a4cf4addcde1b85d7fa7faecc0966c03.1290546539.git.jbaron@redhat.com>
+	 <20101123235519.GB21549@Krystal>
+	 <1290565133.30543.430.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 23 Nov 2010 21:59:53 -0500
+Message-ID: <1290567593.30543.436.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/24 Chris Metcalf <cmetcalf@tilera.com>:
-> On 11/22/2010 8:36 PM, Cypher Wu wrote:
->> Say, if core A try to write_lock() rwlock and current_ticket_ is 0 and
->> it write next_ticket_ to 1, when it processing the lock, core B try to
->> write_lock() again and write next_ticket_ to 2, then when A
->> write_unlock() it seen that (current_ticket_+1) is not equal to
->> next_ticket_, so it increment current_ticket_, and core B get the
->> lock. If core A try write_lock again before core B write_unlock, it
->> will increment next_ticket_ to 3. And so on.
->> This may rarely happened, I've tested it yesterday for several hours
->> it goes very well under pressure.
->
-> This should be OK when it happens (other than starving out the readers, but
-> that was the decision made by doing a ticket lock in the first place).
-> Even if we wrap around 255 back to zero on the tickets, the ticket queue
-> will work correctly.  The key is not to need more than 256 concurrent write
-> lock waiters, which we don't.
->
-> --
-> Chris Metcalf, Tilera Corp.
-> http://www.tilera.com
->
->
+[ Calling attention to David Miller ]
 
-If we count on that, should we make 'my_ticket_ = (val >>
-WR_NEXT_SHIFT) & WR_MASK;'?
+On Tue, 2010-11-23 at 21:18 -0500, Steven Rostedt wrote:
+> On Tue, 2010-11-23 at 18:55 -0500, Mathieu Desnoyers wrote:
+> > * Jason Baron (jbaron@redhat.com) wrote:
+> > > Since we writing the jump table it should be be in R/W kernel
+> > > section. Move it to DATA_DATA
+> > > 
+> > > Signed-off-by: Jason Baron <jbaron@redhat.com>
+> > > ---
+> > >  include/asm-generic/vmlinux.lds.h |   14 ++++----------
+> > >  1 files changed, 4 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> > > index bd69d79..9ca894d 100644
+> > > --- a/include/asm-generic/vmlinux.lds.h
+> > > +++ b/include/asm-generic/vmlinux.lds.h
+> > > @@ -161,6 +161,10 @@
+> > >  	VMLINUX_SYMBOL(__start___tracepoints) = .;			\
+> > >  	*(__tracepoints)						\
+> > >  	VMLINUX_SYMBOL(__stop___tracepoints) = .;			\
+> > > +	. = ALIGN(8);							\
+> > 
+> > Past churn with various architectures and compiler with tracepoints,
+> > markers and immediate values lead me to hint at the following approach
+> > for jump label structure alignment:
+> > 
+> > . = ALIGN(32);
+> > 
+> > and to modify jump_label.h to have:
+> > 
+> > struct jump_entry {
+> > 	jump_label_t code;
+> > 	jump_label_t target;
+> > 	jump_label_t key;
+> > } __attribute__((aligned(32)));
+> > 
+> > Otherwise, the compiler is free to choose on which value it prefers to
+> > align the jump_entry structures, which might not match the address at
+> > which the linker scripts puts the beginning of the jump table.
+> > 
+> > In this case, given that we put put the jump label table after the
+> > tracepoint table, we should be already aligned on 32 bytes. But I would
+> > recommend to put the . = ALIGN(32) in the linker script anyway, just for
+> > documentation purpose (and it should not add any padding in this case).
+> > 
+> > This is not a problem introduced by this patch, it also applies to the
+> > current jump label code.
+> > 
+> 
+> Looking at this we have much bigger issues. That alignment to the
+> structure wont do anything but break things. This is because the
+> structure is not used in assigning that section. It's done in assembly:
+> 
+> # define JUMP_LABEL(key, label)					\
+> 	do {							\
+> 		asm goto("1:"					\
+> 			JUMP_LABEL_INITIAL_NOP			\
+> 			".pushsection __jump_table,  \"a\" \n\t"\
+> 			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+> 			".popsection \n\t"			\
+> 			: :  "i" (key) :  : label);		\
+> 	} while (0)
+> 
+> 
+> 
+> That __ASM_PTR "1b, %l[" #label "], %c0 \n\t" is assigning the section
+> the address of label 1, the address of the label #label, and the key.
+> 
+> We either need to fix this by allocating an array of jump_entrys and
+> having each arch copy the data into it, or we need to do something
+> similar to exception tables.
 
--- 
-Cyberman Wu
-http://www.meganovo.com
+Talking with Mathieu about this, we may have the simple solution of
+adding the packed attribute to all arch declarations of struct
+jump_entry, and that should fix it. And having this on an 8 byte
+alignment should be fine.
+
+I just want to make sure this is fine with sparc, as it is one of the
+more exotic archs.
+
+-- Steve
+
+
