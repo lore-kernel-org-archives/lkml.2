@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab0KXKvG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 05:51:06 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55000 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab0KXKvE (ORCPT
+	id S1753578Ab0KXKvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 05:51:12 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:55772 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab0KXKvJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 05:51:04 -0500
-Subject: Re: [PATCH 2/2] ASoC: Fix resource reclaim for osk5912
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: "Varadarajan, Charulatha" <charu@ti.com>, axel lin <axel.lin@gmail.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Arun KS <arunks@mistralsolutions.com>,
-        Jarkko Nikula <jhnikula@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org
-In-Reply-To: <AANLkTimJ-f=MRBqKDQckHdJXBaV15f7b_KKeA8rguQWp@mail.gmail.com>
-References: <1290583248.20639.1.camel@mola> <1290583400.20639.3.camel@mola>
-	 <AANLkTimJ-f=MRBqKDQckHdJXBaV15f7b_KKeA8rguQWp@mail.gmail.com>
+	Wed, 24 Nov 2010 05:51:09 -0500
+Subject: Re: [PATCH 03/13] writeback: per-task rate limit on
+ balance_dirty_pages()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101124104331.GA6096@localhost>
+References: <20101117042720.033773013@intel.com>
+	 <20101117042849.650810571@intel.com> <1290594187.2072.440.camel@laptop>
+	 <20101124104331.GA6096@localhost>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Nov 2010 10:50:59 +0000
-Message-ID: <1290595859.3332.6.camel@odin>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 11:49:28 +0100
+Message-ID: <1290595768.2072.443.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 14:07 +0530, Varadarajan, Charulatha wrote:
-> On Wed, Nov 24, 2010 at 12:53, Axel Lin <axel.lin@gmail.com> wrote:
+On Wed, 2010-11-24 at 18:43 +0800, Wu Fengguang wrote:
+> On Wed, Nov 24, 2010 at 06:23:07PM +0800, Peter Zijlstra wrote:
+> > On Wed, 2010-11-17 at 12:27 +0800, Wu Fengguang wrote:
+> > > +       if (unlikely(current->nr_dirtied >= current->nr_dirtied_pause ||
+> > > +                    bdi->dirty_exceeded)) {
+> > > +               balance_dirty_pages(mapping, current->nr_dirtied);
+> > > +               current->nr_dirtied = 0;
+> > >         } 
+> > 
+> > Was it a conscious choice to use
+> >   current->nr_dirtied = 0
+> > over 
+> >   current->nr_dirtied -= current->nr_dirtied_pause
+> > ?
+> > 
+> > The former will cause a drift in pause times due to truncation of the
+> > excess.
 > 
-> Add Patch description.
+> It should be fine in either way, as long as the "truncated" number is
+> passed to balance_dirty_pages():
 > 
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> > ---
+> +               balance_dirty_pages(mapping, current->nr_dirtied);
+> +               current->nr_dirtied = 0;
+> 
+> or
+> 
+> +               balance_dirty_pages(mapping, current->nr_dirtied_pause);
+> +               current->nr_dirtied -= current->nr_dirtied_pause;
 
-Please resubmit with a patch description and Jarkko's Ack.
-
-Thanks
-
-Liam 
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+ok, just wanted to make sure you'd considered it.
 
