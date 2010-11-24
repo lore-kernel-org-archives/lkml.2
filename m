@@ -1,225 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab0KXGWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 01:22:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45130 "EHLO mx2.suse.de"
+	id S1753074Ab0KXGWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 01:22:21 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:50366 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076Ab0KXGWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 01:22:13 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aries Lee <arieslee@jmicron.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 2/2] mmc: Test bus-width for old MMC devices
-Date: Wed, 24 Nov 2010 07:21:14 +0100
-Message-Id: <1290579674-4616-3-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1290579674-4616-1-git-send-email-tiwai@suse.de>
-References: <1290579674-4616-1-git-send-email-tiwai@suse.de>
+	id S1752966Ab0KXGWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 01:22:19 -0500
+Date: Tue, 23 Nov 2010 22:22:12 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states
+ after extended grace periods
+Message-ID: <20101124062212.GA2165@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+ <1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
+ <20101124005820.GH8056@linux.vnet.ibm.com>
+ <AANLkTikhGErGQrFB-QNiYjWt2PqRGdF+m3kOkt2tmnER@mail.gmail.com>
+ <AANLkTinFhEf1XVSRYuL+JL=JETLZ6cz3GYCR8CL3ex8X@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinFhEf1XVSRYuL+JL=JETLZ6cz3GYCR8CL3ex8X@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aries Lee <arieslee@jmicron.com>
+On Wed, Nov 24, 2010 at 03:33:21AM +0100, Frederic Weisbecker wrote:
+> 2010/11/24 Frederic Weisbecker <fweisbec@gmail.com>:
+> > On Tue, Nov 23, 2010 at 04:58:20PM -0800, Paul E. McKenney wrote:
+> >> On Wed, Nov 24, 2010 at 01:31:12AM +0100, Frederic Weisbecker wrote:
+> >> > When a cpu is in an extended quiescent state, which includes idle
+> >> > nohz or CPU offline, others CPUs will take care of the grace periods
+> >> > on its behalf.
+> >> >
+> >> > When this CPU exits its extended quiescent state, it will catch up
+> >> > with the last started grace period and start chasing its own
+> >> > quiescent states to end the current grace period.
+> >> >
+> >> > However in this case we always start to track quiescent states if the
+> >> > grace period number has changed since we started our extended
+> >> > quiescent state. And we do this because we always assume that the last
+> >> > grace period is not finished and needs us to complete it, which is
+> >> > sometimes wrong.
+> >> >
+> >> > This patch verifies if the last grace period has been completed and
+> >> > if so, start hunting local quiescent states like we always did.
+> >> > Otherwise don't do anything, this economizes us some work and
+> >> > an unnecessary softirq.
+> >>
+> >> Interesting approach!  I can see how this helps in the case where the
+> >> CPU just came online, but I don't see it in the nohz case, because the
+> >> nohz case does not update the rdp->completed variable.  In contrast,
+> >> the online path calls rcu_init_percpu_data() which sets up this variable.
+> >>
+> >> So, what am I missing here?
+> >>
+> >>                                                       Thanx, Paul
+> >>
+> >> PS.  It might well be worthwhile for the online case alone, but
+> >>      the commit message does need to be accurate.
+> >
+> >
+> > So, let's take this scenario (inspired from a freshly dumped trace to
+> > clarify my ideas):
+> >
+> > CPU 1 was idle, it has missed several grace periods, but CPU 0 took care
+> > of that.
+> >
+> > Hence, CPU 0's rdp->gpnum = rdp->completed = 4294967000
 
-Some old MMC devices fail with the 4/8 bits the driver tries to use
-exclusively.  This patch adds a test for the given bus setup and falls
-back to the lower bit mode (until 1-bit mode) when the test fails.
+But CPU 1's rdp state is outdated, due to locking design.
 
-[Major rework and refactoring by tiwai]
+> > But the last grace period was 4294967002 and it's completed
+> > (rnp->pgnum = rnp->completed = rsp->pgnum = 4294967002).
+> >
+> > Now CPU 0 gets a tick for a random reason, it calls rcu_check_callbacks()
+> > and then rcu_pending() which raises the softirq because of this:
+> >
+> >        /* Has another RCU grace period completed?  */
+> >        if (ACCESS_ONCE(rnp->completed) != rdp->completed) { /* outside lock */
+> >                rdp->n_rp_gp_completed++;
+> >                return 1;
+> >        }
 
-Signed-off-by: Aries Lee <arieslee@jmicron.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- drivers/mmc/core/mmc.c     |   49 ++++++++++++---------
- drivers/mmc/core/mmc_ops.c |  102 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/mmc_ops.h |    1 +
- 3 files changed, 131 insertions(+), 21 deletions(-)
+Yes, because CPU 0 has not yet updated its rdp state.
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index e81e6fe..5d8b4b2 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -507,29 +507,36 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 	 */
- 	if ((card->csd.mmca_vsn >= CSD_SPEC_VER_4) &&
- 	    (host->caps & (MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA))) {
--		unsigned ext_csd_bit, bus_width;
--
--		if (host->caps & MMC_CAP_8_BIT_DATA) {
--			ext_csd_bit = EXT_CSD_BUS_WIDTH_8;
--			bus_width = MMC_BUS_WIDTH_8;
--		} else {
--			ext_csd_bit = EXT_CSD_BUS_WIDTH_4;
--			bus_width = MMC_BUS_WIDTH_4;
-+		static unsigned ext_csd_bits[] = {
-+			EXT_CSD_BUS_WIDTH_8,
-+			EXT_CSD_BUS_WIDTH_4,
-+			EXT_CSD_BUS_WIDTH_1
-+		};
-+		static unsigned bus_widths[] = {
-+			MMC_BUS_WIDTH_8,
-+			MMC_BUS_WIDTH_4,
-+			MMC_BUS_WIDTH_1
-+		};
-+		unsigned idx;
-+
-+		if (host->caps & MMC_CAP_8_BIT_DATA)
-+			idx = 0;
-+		else
-+			idx = 1;
-+		for (; idx < ARRAY_SIZE(bus_widths); idx++) {
-+			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					 EXT_CSD_BUS_WIDTH, ext_csd_bits[idx]);
-+			if (!err) {
-+				mmc_set_bus_width(card->host, bus_widths[idx]);
-+				err = mmc_bus_test(card, bus_widths[idx]);
-+				if (!err)
-+					break;
-+			}
- 		}
--
--		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
--				 EXT_CSD_BUS_WIDTH, ext_csd_bit);
--
--		if (err && err != -EBADMSG)
--			goto free_card;
--
- 		if (err) {
--			printk(KERN_WARNING "%s: switch to bus width %d "
--			       "failed\n", mmc_hostname(card->host),
--			       1 << bus_width);
--			err = 0;
--		} else {
--			mmc_set_bus_width(card->host, bus_width);
-+			printk(KERN_WARNING "%s: switch to bus width failed\n",
-+			       mmc_hostname(card->host));
-+			goto free_card;
- 		}
- 	}
- 
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 326447c..f8f47f9 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -462,3 +462,105 @@ int mmc_send_status(struct mmc_card *card, u32 *status)
- 	return 0;
- }
- 
-+#define MMC_CMD_BUS_TEST_W		19
-+#define MMC_CMD_BUS_TEST_R		14
-+
-+static int
-+mmc_send_bus_test(struct mmc_card *card, struct mmc_host *host, u8 opcode,
-+		  u8 len)
-+{
-+	struct mmc_request mrq;
-+	struct mmc_command cmd;
-+	struct mmc_data data;
-+	struct scatterlist sg;
-+	u8 *data_buf;
-+	u8 *test_buf;
-+	int i, err;
-+	static u8 testdata_8bit[8] = { 0x55, 0xaa, 0, 0, 0, 0, 0, 0 };
-+	static u8 testdata_4bit[4] = { 0x5a, 0, 0, 0 };
-+
-+	/* dma onto stack is unsafe/nonportable, but callers to this
-+	 * routine normally provide temporary on-stack buffers ...
-+	 */
-+	data_buf = kmalloc(len, GFP_KERNEL);
-+	if (!data_buf)
-+		return -ENOMEM;
-+
-+	if (len == 8)
-+		test_buf = testdata_8bit;
-+	else if (len == 4)
-+		test_buf = testdata_4bit;
-+	else {
-+		printk(KERN_ERR "%s: Invaild bus_width %d\n",
-+		       mmc_hostname(host), len);
-+		return -EINVAL;
-+	}
-+
-+	if (opcode == MMC_CMD_BUS_TEST_W)
-+		memcpy(data_buf, test_buf, len);
-+
-+	memset(&mrq, 0, sizeof(struct mmc_request));
-+	memset(&cmd, 0, sizeof(struct mmc_command));
-+	memset(&data, 0, sizeof(struct mmc_data));
-+
-+	mrq.cmd = &cmd;
-+	mrq.data = &data;
-+	cmd.opcode = opcode;
-+	cmd.arg = 0;
-+
-+	/* NOTE HACK:  the MMC_RSP_SPI_R1 is always correct here, but we
-+	 * rely on callers to never use this with "native" calls for reading
-+	 * CSD or CID.  Native versions of those commands use the R2 type,
-+	 * not R1 plus a data block.
-+	 */
-+	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
-+
-+	data.blksz = len;
-+	data.blocks = 1;
-+	if (opcode == MMC_CMD_BUS_TEST_R)
-+		data.flags = MMC_DATA_READ;
-+	else
-+		data.flags = MMC_DATA_WRITE;
-+
-+	data.sg = &sg;
-+	data.sg_len = 1;
-+	sg_init_one(&sg, data_buf, len);
-+	mmc_wait_for_req(host, &mrq);
-+	err = 0;
-+	if (opcode == MMC_CMD_BUS_TEST_R) {
-+		for (i = 0; i < len / 4; i++)
-+			if ((test_buf[i] ^ data_buf[i]) != 0xff) {
-+				err = -EIO;
-+				break;
-+			}
-+	}
-+	kfree(data_buf);
-+
-+	if (cmd.error)
-+		return cmd.error;
-+	if (data.error)
-+		return data.error;
-+
-+	return err;
-+}
-+
-+int mmc_bus_test(struct mmc_card *card, u8 bus_width)
-+{
-+	int err, width;
-+
-+	if (bus_width == MMC_BUS_WIDTH_8)
-+		width = 8;
-+	else if (bus_width == MMC_BUS_WIDTH_4)
-+		width = 4;
-+	else if (bus_width == MMC_BUS_WIDTH_1)
-+		return 0; /* no need for test */
-+	else
-+		return -EINVAL;
-+	err = mmc_send_bus_test(card, card->host, MMC_CMD_BUS_TEST_W, width);
-+	if (err < 0)
-+		return err;
-+	err = mmc_send_bus_test(card, card->host, MMC_CMD_BUS_TEST_R, width);
-+	return err;
-+
-+
-+}
-diff --git a/drivers/mmc/core/mmc_ops.h b/drivers/mmc/core/mmc_ops.h
-index 653eb8e..e6d44b8 100644
---- a/drivers/mmc/core/mmc_ops.h
-+++ b/drivers/mmc/core/mmc_ops.h
-@@ -26,6 +26,7 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid);
- int mmc_spi_read_ocr(struct mmc_host *host, int highcap, u32 *ocrp);
- int mmc_spi_set_crc(struct mmc_host *host, int use_crc);
- int mmc_card_sleepawake(struct mmc_host *host, int sleep);
-+int mmc_bus_test(struct mmc_card *card, u8 bus_width);
- 
- #endif
- 
--- 
-1.7.3.1
+> > The softirq fires, we call rcu_process_gp_end() which will
+> > update rdp->completed into the global state:
+> > (rsp->completed = rnp->pgnum = rnp->completed = rsp->pgnum = 4294967002).
+> >
+> > But rsp->pgnum is still 2 offsets backwards.
 
+This one is hard for me to believe -- rsp->gpnum drives the rest of
+the ->gpnum fields, right?
+
+> > Now we call rcu_check_quiescent_state() -> check_for_new_grace_period()
+> > -> note_new_gpnum() and then we end up a requested quiescent state while
+> > every grace periods are completed.
+> 
+> Sorry I should have described that in the changelogs but my ideas
+> weren't as clear as they
+> are now (at least I feel they are, doesn't mean they actually are ;)
+> Chasing these RCU bugs for too much hours has toasted my brain..
+
+Welcome to my world!!!  But keep in mind that an extra timer tick
+or two is much preferable to a potential hang!  And you only get
+the extra timer tick if there was some other reason that the
+CPU came out of nohz mode, correct?
+
+Which is why checking the rnp fields makes more sense to me, actually.
+Acquiring rnp->lock is much less painful than pinning down the rsp state.
+
+							Thanx, Paul
