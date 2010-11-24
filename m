@@ -1,148 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab0KXJJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 04:09:38 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:33274 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab0KXJJg convert rfc822-to-8bit (ORCPT
+	id S1752407Ab0KXJQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 04:16:42 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44573 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab0KXJQk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 04:09:36 -0500
+	Wed, 24 Nov 2010 04:16:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Ph8JhzRFoGnMRDUmPEPTigBh8jxvgIucqaPKdtI6fSKzcCW6Y20sxyqqu96W9AyVjx
-         ZWrJMf72bu1dbUTqciE2zGdTJh3wd03WvvjZm2CEefXSdmVVso4dr4geiQb7uiXf6dWt
-         K9ZKH6l/tEayRivBzb1WrvwNmXbqVoDVj+pd0=
+         :cc:content-type:content-transfer-encoding;
+        b=qiA3dwhzGzKPmZRGWaqpW3yc4ck0RL3ZofX+dRcdy3aX8SBqQcSslmAmZ3HJ8U6J5a
+         7KOqLQ2rcIYhZocCMMcM62N+TnvYo5lvqWNL2RpD2CM8P0rtFZ5wIm3xwVcQt6t7XbvU
+         Xhz1yrsNaBSimTwY4hB/mDkOOwLXB0eclXeA8=
 MIME-Version: 1.0
-In-Reply-To: <20101124081748.GV4693@pengutronix.de>
-References: <20101011152516.GF27153@n2100.arm.linux.org.uk>
-	<1290505382-16110-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<20101123101210.GA18170@n2100.arm.linux.org.uk>
-	<20101123103940.GN4693@pengutronix.de>
-	<20101123105830.GO4693@pengutronix.de>
-	<AANLkTinmky17XZZPh7QvcY_r=66f_PwzRYFPUSvhiJGK@mail.gmail.com>
-	<20101124081748.GV4693@pengutronix.de>
-Date: Wed, 24 Nov 2010 10:09:35 +0100
-Message-ID: <AANLkTikLT0vuLLxb6pDLCcVP=ncwKfhkMcCxTqVTukkQ@mail.gmail.com>
-Subject: Re: About multi-line printk and the need (not) to repeat loglevel
- markers [Was: Re: [PATCH] ARM: mx3/pcm037: properly allocate memory for mx3-camera]
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+In-Reply-To: <4CEC3211.7050503@gmail.com>
+References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>
+	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
+	<4CEBC751.6090906@gmail.com>
+	<AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
+	<4CEC3211.7050503@gmail.com>
+Date: Wed, 24 Nov 2010 10:16:36 +0100
+Message-ID: <AANLkTin6Am=17wyMZJRu9bYk5-QTYqZhGtZqV_sDwJW4@mail.gmail.com>
+Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created device.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/24 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> Hello Linus,
+On Tue, Nov 23, 2010 at 10:28 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 11/23/2010 03:00 PM, Belisko Marek wrote:
+>> On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>>> On 11/23/2010 01:29 PM, Marek Belisko wrote:
+>>>> Use simple misc device for ioctl driver funtionality testing.
+>>>>
+>>>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>>>> ---
+>>>> Â drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c | Â  90 ++++++++++++++++++---
+>>>> Â 1 files changed, 77 insertions(+), 13 deletions(-)
+>>>>
+>>>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>>>> index 1aec926..d1784a3 100644
+>>>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>>>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>>>> @@ -32,6 +32,7 @@
+>>>> Â #include <linux/poll.h>
+>>>> Â #include <linux/netdevice.h>
+>>>> Â #include <linux/delay.h>
+>>>> +#include <linux/miscdevice.h>
+>>>>
+>>>> Â #include <linux/fs.h>
+>>>> Â #include <linux/kmod.h>
+>>>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
+>>>> Â  Â  Â  .llseek Â  Â  Â  Â  = no_llseek,
+>>>> Â };
+>>>>
+>>>> +struct ft1000_misc_device {
+>>>> + Â  Â  struct miscdevice dev;
+>>>> + Â  Â  int inf_id;
+>>>> +};
+>>>> +
+>>>> +#define FREE_ID (0xFF)
+>>>> +
+>>>> +/* we support just 3 devices */
+>>>> +#define MAX_DEVICE 3
+>>>
+>>> No, why this should be converted to miscdevice? Leave it as chrdev.
+>> Is there any problem with using miscdev?
 >
-> On Wed, Nov 24, 2010 at 07:16:06AM +0900, Linus Torvalds wrote:
->> 10/11/23 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
->> >
->> > BTW, I just noticed that Linus wrote:
->> >
->> >        Additionally, if no newline existed, one is added (unless the
->> >        log-level is the explicit KERN_CONT marker, to explicitly show
->> >        that it's a continuation of a previous line).
->> >
->> > This seems to be unimplemented, otherwise the output of
->> >
->> >        printk(KERN_ERR "foo bar baz ");
->> >        printk("buz\n" KERN_WARNING "fiz\n");
->> >
->> > should be
->> >
->> >        "foo bar baz \n" at error level
->> >        "buz\n<4>fiz\n" at default level
->>
->> No. The KERN_WARNING in the middle of a string is always totally
->> bogus. There is no "should be". It's just wrong.
->>
->> The "\n" is added automatically iff there is a log-level marker at the
->> beginning of the string (with LOG_CONT being the exception).
-> So
+> Yes, if you want more than a single device per system.
 >
->        printk("anything that doesn't look like a loglevel marker");
+>> Old interface create /dev nodes with
+>> calling kernel thread and some usermode_helper or whatever.
 >
-> always behaves like
+> Yes, that's crap indeed. But doesn't judge for miscdevice.
 >
->        printk(KERN_CONT "anything that doesn't look like a loglevel marker");
+>> Just convert to misc dev
+>> where this is done automatically.
 >
-> so unless someone wants to print a literal kernel marker we can just do
+> So the only thing you need to do is to send a uevent to udev appropriately.
+Could be used something like:
+register_chrdev(0,"ft1000", &fops)
+class = class_create(THIS_MODULE, "ft1000");
+device_create(class, NULL, MKDEV(major, i), NULL, "ft1000%d", i);
+Then will be created different devices for every plugged device.
+This should have effect of automatic device node creation also suppose.
+
 >
-> -#define        KERN_CONT       "<c>"
-> +#define        KERN_CONT       ""
+> regards,
+> --
+> js
 >
-> without any harm.
->
-> I wonder why you implemented "iff there is a log-level marker at the
-> beginning ot the string (with KERN_CONT being the exception)." and not
-> "unless there is a KERN_CONT marker".
->
->>                                                              So
->>
->>    printk("foo bar baz ");
->>    printk(KERN_WARNING "fiz\n");
->>
->> should output two lines ("foo bar baz" with the default loglevel, and
->> "fiz" with KERN_WARNING). Even though there is no explicit "\n" there
->> for the first one.
->>
->> But KERN_XYZ anywhere but in the beginning of the string do not
->> matter. Adding newlines changes none of that. It doesn't make the
->> marker beginning of the string, it just makes it beginning of the
->> line.
-> I see one reason to interpret markers after a newline.  In case
-> recursion_bug is true, printk_buf is initialized with recursion_bug_msg
-> and my message gets appended.  So currently the marker I pass with my
-> message is ignored.
-> Maybe wanting to fix that is just my addiction to overengineering :-)
 
-Hello, Kernel Hackers!
+thanks,
 
-I think that KERN_CONT and any other form of continuation printks() is
-just source of trouble.
+marek
+,
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-This is usually used in code like this:
-
-int init_dev(...)
-{
-    ...
-    printk("Initializing dev %s ... ", dev->name);
-    /* do initialize, sleeping/scheduling is allowed */
-    printk("%s.\n", ok ? "done" : "error");
-    ...
-}
-
-When parallel initialization is done you might expect output like this:
-
-Initializing dev A ...
-Initializing dev B ... error.
-done.
-
-And now guess which one failed.
-
-Second case against printk() continuations is netconsole. Every
-printk() output is sent as separate packet with no ordering or
-delivery guarantees, and usually logged as separate lines by remote
-logging daemon. From the example code above, you might get this in
-remote log:
-
-Initializing dev A ...
-done.
-Initializing dev B ...
-error.
-
-When in reality A failed and B initialized properly. (Yes, I know this
-is highly unlikely, but still - possible.)
-
-Best Regards,
-Micha³ Miros³aw
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
