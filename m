@@ -1,152 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab0KXOLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 09:11:42 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41890 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab0KXOLl (ORCPT
+	id S1751744Ab0KXOM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 09:12:59 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:53782 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab0KXOM6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 09:11:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=TW5z91K+meoinkLnaKbd3xN8Qs1jgtsrr0rqZyI1LIiYAvuOUUUAlDx5eSzMEWn934
-         JlLgh7I7t65JeqK9O4IW3I7aVUHjqiiasfG6QKNZQJls1HB8L1WczB3cZb1YZT+a7Xoe
-         2zm6uOd6mIO09SW+LgA6Hk+vLti6BLIsyFYX8=
-Date: Wed, 24 Nov 2010 12:11:29 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: tom.leiming@gmail.com
-Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au1.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 2/2] perf:tools: figure out start address of kernel map
- from /proc/kallsyms
-Message-ID: <20101124141129.GA15875@ghostprotocols.net>
-References: <1290598533-31855-1-git-send-email-tom.leiming@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290598533-31855-1-git-send-email-tom.leiming@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Nov 2010 09:12:58 -0500
+Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101124134641.GA12987@localhost>
+References: <20101117042720.033773013@intel.com>
+	 <20101117042850.002299964@intel.com> <1290596732.2072.450.camel@laptop>
+	 <20101124121046.GA8333@localhost> <1290603047.2072.465.camel@laptop>
+	 <20101124131437.GE10413@localhost> <20101124132012.GA12117@localhost>
+	 <1290606129.2072.467.camel@laptop>  <20101124134641.GA12987@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 15:12:33 +0100
+Message-ID: <1290607953.2072.472.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 24, 2010 at 07:35:33PM +0800, tom.leiming@gmail.com escreveu:
-> From: Ming Lei <tom.leiming@gmail.com>
+On Wed, 2010-11-24 at 21:46 +0800, Wu Fengguang wrote:
+> On Wed, Nov 24, 2010 at 09:42:09PM +0800, Peter Zijlstra wrote:
+> > On Wed, 2010-11-24 at 21:20 +0800, Wu Fengguang wrote:
+> > > >         (jiffies - bdi->write_bandwidth_update_time < elapsed)
+> > > 
+> > > this will be true if someone else has _done_ overlapped estimation,
+> > > otherwise it will equal:
+> > > 
+> > >         jiffies - bdi->write_bandwidth_update_time == elapsed
+> > > 
+> > > Sorry the comment needs updating. 
+> > 
+> > Right, but its racy as hell..
 > 
-> On ARM, module symbol start address is ahead of kernel symbol start
-> address, so we can't suppose that the start address of kenerl map
-> always is zero, otherwise may cause incorrect .start and .end of kernel map
-> (caused by fixup) when there are modules loaded, then map_groups__find
-> may return incorrect map for symbol query.
-> 
-> This patch always figures out the start address of kernel map from
-> /proc/kallsyms if the file is available, so fix the issues on ARM for
-> module loaded case.
-> 
-> This patch fixes the following issues on ARM when modules are loaded:
-> 
-> 	- vmlinux symbol can't be found by kallsyms maps doing 'perf test'
-> 	- module symbols are parsed mistakenlly when doing 'perf top'/'perf report'
-> 
-> Cc: Ian Munsie <imunsie@au1.ibm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tom Zanussi <tzanussi@gmail.com>
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
->  tools/perf/util/symbol.c |   60 +++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 59 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index c5b4ccb..1a8895c 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -2183,14 +2183,72 @@ static struct dso *machine__create_kernel(struct machine *self)
->  	return kernel;
->  }
->  
-> +/*figure out the start address of kernel map from /proc/kallsyms*/
-> +static u64 __machine_get_kernel_start_addr(struct machine *self)
-> +{
-> +	char *line = NULL;
-> +	size_t n;
-> +	u64 start_addr = 0;
-> +	FILE *file;
-> +	const char *filename;
-> +	char path[PATH_MAX];
-> +
-> +	if (machine__is_default_guest(self)) {
-> +		filename = symbol_conf.default_guest_kallsyms;
-> +		if (!filename)
-> +			goto out_failure;
-> +	} else {
-> +		sprintf(path, "%s/proc/kallsyms", self->root_dir);
-> +		filename = path;
-> +	}
-> +
-> +	file = fopen(filename, "r");
+> Yeah, for N concurrent dirtiers, plus the background flusher, only
+> one is able to update write_bandwidth[_update_time]..
 
-Can you please use kallsyms__parse()? Please take a look at
-event__synthesize_kernel_mmap as it also uses it.
+Wrong, nr_cpus are, they could all observe the old value before seeing
+the update of the variable.
 
-> +	if (file == NULL)
-> +		goto out_failure;
-> +
-> +	while (!feof(file)) {
-> +		u64 start = 0;
-> +		int line_len, len;
-> +
-> +		line_len = getline(&line, &n, file);
-> +		if (line_len < 0 || !line)
-> +			break;
-> +
-> +		line[--line_len] = '\0'; /* \n */
-> +
-> +		/*if the line is for module symbol, skip it*/
-> +		if (strchr(line, '['))
-> +			continue;
-> +
-> +		len = hex2u64(line, &start);
-> +
-> +		len++;
-> +		if (len + 2 >= line_len)
-> +			continue;
-> +
-> +		start_addr = start;
-> +		break;
-> +	}
-> +
-> +	free(line);
-> +	fclose(file);
+Why not something like the below, which keeps the stamps per bdi and
+serializes on a lock (trylock, you only need a single updater at any one
+time anyway):
 
-Out failure could be here, avoiding one return case.
+probably got the math wrong, but the idea should be clear, you can even
+add an explicit bdi_update_bandwidth_stamps() function which resets the
+stamps to the current situation in order to skip periods of low
+throughput (that would need to do spin_lock).
 
-> +	return start_addr;
-> +
-> +out_failure:
-> +	return start_addr;
-> +}
-> +
->  int __machine__create_kernel_maps(struct machine *self, struct dso *kernel)
->  {
->  	enum map_type type;
-> +	u64 start;
->  
-> +	start = __machine_get_kernel_start_addr(self);
->  	for (type = 0; type < MAP__NR_TYPES; ++type) {
->  		struct kmap *kmap;
->  
-> -		self->vmlinux_maps[type] = map__new2(0, kernel, type);
-> +		self->vmlinux_maps[type] = map__new2(start, kernel, type);
->  		if (self->vmlinux_maps[type] == NULL)
->  			return -1;
->  
-> -- 
-> 1.7.3
+---
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 4ce34fa..de690c3 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
+ enum bdi_stat_item {
+ 	BDI_RECLAIMABLE,
+ 	BDI_WRITEBACK,
++	BDI_WRITTEN,
+ 	NR_BDI_STAT_ITEMS
+ };
+ 
+@@ -88,6 +89,11 @@ struct backing_dev_info {
+ 
+ 	struct timer_list laptop_mode_wb_timer;
+ 
++	spinlock_t bw_lock;
++	unsigned long bw_time_stamp;
++	unsigned long bw_write_stamp;
++	int write_bandwidth;
++
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry *debug_dir;
+ 	struct dentry *debug_stats;
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 027100d..a934fe9 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -661,6 +661,11 @@ int bdi_init(struct backing_dev_info *bdi)
+ 	bdi->dirty_exceeded = 0;
+ 	err = prop_local_init_percpu(&bdi->completions);
+ 
++	spin_lock_init(&bdi->bw_lock);
++	bdi->bw_time_stamp = jiffies;
++	bdi->bw_write_stamp = 0;
++	bdi->write_bandwidth = 100 << (20 - PAGE_SHIFT); /* 100 MB/s */
++
+ 	if (err) {
+ err:
+ 		while (i--)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index b840afa..f3f5c24 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -219,6 +219,7 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
+  */
+ static inline void __bdi_writeout_inc(struct backing_dev_info *bdi)
+ {
++	__inc_bdi_state(bdi, BDI_WRITTEN);
+ 	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
+ 			      bdi->max_prop_frac);
+ }
+@@ -238,6 +239,35 @@ void task_dirty_inc(struct task_struct *tsk)
+ 	prop_inc_single(&vm_dirties, &tsk->dirties);
+ }
+ 
++void bdi_update_write_bandwidth(struct backing_dev_info *bdi)
++{
++	unsigned long time_now, write_now;
++	long time_delta, write_delta;
++	long bw;
++
++	if (!spin_try_lock(&bdi->bw_lock))
++		return;
++
++	write_now = bdi_stat(bdi, BDI_WRITTEN);
++	time_now = jiffies;
++
++	write_delta = write_now - bdi->bw_write_stamp;
++	time_delta = time_now - bdi->bw_time_stamp;
++
++	/* rate-limit, only update once every 100ms */
++	if (time_delta < HZ/10 || !write_delta)
++		goto unlock;
++
++	bdi->bw_write_stamp = write_now;
++	bdi->bw_time_stamp = time_now;
++
++	bw = write_delta * HZ / time_delta;
++	bdi->write_bandwidth = (bdi->write_bandwidth + bw + 3) / 4;
++
++unlock:
++	spin_unlock(&bdi->bw_lock);
++}
++
+ /*
+  * Obtain an accurate fraction of the BDI's portion.
+  */
+
