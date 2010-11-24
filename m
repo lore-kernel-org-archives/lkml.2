@@ -1,121 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab0KXAJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:09:24 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44063 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab0KXAJV (ORCPT
+	id S1755375Ab0KXAJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:09:22 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:32498 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754833Ab0KXAJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Nov 2010 19:09:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OB0D15gnhmVA0B+Bp4H5cBseotXPTJ41ktPZgizt0UyZMDEE4jlPTkKkrlvpDVRplq
-         kylfPAbt0/SjmtBG17GbiALCCuZePKcSckV8WQp/Koi4IJiU2C4zETLet+T7ydhJfjzl
-         t1R5/NM7n0E7b9ObCRgpG3o46nBMxJGkpWkgc=
-Subject: [PATCH net-next-2.6] scm: lower SCM_MAX_FD
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Vegard Nossum <vegard.nossum@gmail.com>,
-        David Miller <davem@davemloft.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eugene Teo <eugene@redhat.com>, netdev <netdev@vger.kernel.org>
-In-Reply-To: <1290553918.2866.80.camel@edumazet-laptop>
-References: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
-	 <1290553918.2866.80.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Nov 2010 01:09:15 +0100
-Message-ID: <1290557355.2866.117.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Message-ID: <000b01cb8b6b$d7542a90$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: <andrew.chih.howe.khor@intel.com>, <socketcan-core@lists.berlios.de>,
+        "Samuel Ortiz" <sameo@linux.intel.com>, <margie.foster@intel.com>,
+        <netdev@vger.kernel.org>, "Christian Pellegrin" <chripell@fsfe.org>,
+        <linux-kernel@vger.kernel.org>, <yong.y.wang@intel.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfgang Grandegger" <wg@grandegger.com>, <qi.wang@intel.com>
+References: <4CE2434B.5050701@dsn.okisemi.com>	<4CE27796.2000206@pengutronix.de>	<007401cb87b1$a773b3d0$66f8800a@maildom.okisemi.com>	<4CE64167.2030405@pengutronix.de> <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com> <4CEA2986.4080607@pengutronix.de>
+Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow control,
+Date: Wed, 24 Nov 2010 09:09:16 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+x-mimeole: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, November 22, 2010 5:27 PM, Marc Kleine-Budde wrote:
+>>>>> Still we have the busy waiting in the TX path. Maybe you can move the
+>>>>> waiting before accessing the if[1] and remove the busy waiting here.
+>>>> I can't understand your saying.
+>>>> For transmitting data, calling pch_can_rw_msg_obj is mandatory.
+>>> Yes, but the busy wait is not needed. It should be enough to do the
+>>> busy-waiting _before_ accessing the if[1].
+>>
+>> Do you mean we should create other pch_can_rw_msg_obj which doesn't have busy wait ?
+>ACK, and this non busy waiting is use in the TX path. But you add a busy
+>wait only function before accessing the if[1] in the TX path.
 
-> David, commit f8d570a4 added one "struct list_head list;" to struct
-> scm_fp_list, enlarging it by a two factor because of power of two
-> kmalloc() sizes.  (2048 bytes on 64bit arches instead of 1024
-> previously)
-> 
-> We might lower SCM_MAX_FD from 255 to 253 ?
-> 
-> 
+The "busy waiting" of pch_can_rw_msg_obj is for next processing accesses to Message object.
+If deleting this busy waiting, next processing can access to Message object, regardless previous transfer doesn't
+complete yet.
+Thus, I think, the "busy waiting" is necessary.
 
-This wont correct Vegard reported problem yet, but following patch
-should reduce ram usage a lot (32 bytes instead of 2048 bytes per scm in
-Vegard test program)
-
-Thanks
-
-[PATCH net-next-2.6] net: scm: lower SCM_MAX_FD
-
-Lower SCM_MAX_FD from 255 to 253 so that allocations for scm_fp_list are
-halved. (commit f8d570a4 added two pointers in this structure)
-
-scm_fp_dup() should not copy whole structure (and trigger kmemcheck
-warnings), but only the used part. While we are at it, only allocate
-needed size.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
- include/net/scm.h |    5 +++--
- net/core/scm.c    |   10 ++++++----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+Thanks,
 
-diff --git a/include/net/scm.h b/include/net/scm.h
-index 3165650..745460f 100644
---- a/include/net/scm.h
-+++ b/include/net/scm.h
-@@ -10,11 +10,12 @@
- /* Well, we should have at least one descriptor open
-  * to accept passed FDs 8)
-  */
--#define SCM_MAX_FD	255
-+#define SCM_MAX_FD	253
- 
- struct scm_fp_list {
- 	struct list_head	list;
--	int			count;
-+	short			count;
-+	short			max;
- 	struct file		*fp[SCM_MAX_FD];
- };
- 
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 413cab8..bbe4544 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -79,10 +79,11 @@ static int scm_fp_copy(struct cmsghdr *cmsg, struct scm_fp_list **fplp)
- 			return -ENOMEM;
- 		*fplp = fpl;
- 		fpl->count = 0;
-+		fpl->max = SCM_MAX_FD;
- 	}
- 	fpp = &fpl->fp[fpl->count];
- 
--	if (fpl->count + num > SCM_MAX_FD)
-+	if (fpl->count + num > fpl->max)
- 		return -EINVAL;
- 
- 	/*
-@@ -331,11 +332,12 @@ struct scm_fp_list *scm_fp_dup(struct scm_fp_list *fpl)
- 	if (!fpl)
- 		return NULL;
- 
--	new_fpl = kmalloc(sizeof(*fpl), GFP_KERNEL);
-+	new_fpl = kmemdup(fpl, offsetof(struct scm_fp_list, fp[fpl->count]),
-+			  GFP_KERNEL);
- 	if (new_fpl) {
--		for (i=fpl->count-1; i>=0; i--)
-+		for (i = 0; i < fpl->count; i++)
- 			get_file(fpl->fp[i]);
--		memcpy(new_fpl, fpl, sizeof(*fpl));
-+		new_fpl->max = new_fpl->count;
- 	}
- 	return new_fpl;
- }
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
+----- Original Message ----- 
+From: "Marc Kleine-Budde" <mkl@pengutronix.de>
+To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+Cc: <andrew.chih.howe.khor@intel.com>; <socketcan-core@lists.berlios.de>; "Samuel Ortiz" <sameo@linux.intel.com>;
+<margie.foster@intel.com>; <netdev@vger.kernel.org>; "Christian Pellegrin" <chripell@fsfe.org>;
+<linux-kernel@vger.kernel.org>; <yong.y.wang@intel.com>; "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>;
+<kok.howg.ewe@intel.com>; <joel.clark@intel.com>; "David S. Miller" <davem@davemloft.net>; "Wolfgang Grandegger"
+<wg@grandegger.com>; <qi.wang@intel.com>
+Sent: Monday, November 22, 2010 5:27 PM
+Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow control,
 
 
