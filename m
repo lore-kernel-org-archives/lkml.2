@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab0KXKvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 05:51:12 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:55772 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab0KXKvJ convert rfc822-to-8bit (ORCPT
+	id S1753740Ab0KXKv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 05:51:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55000 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab0KXKv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 05:51:09 -0500
-Subject: Re: [PATCH 03/13] writeback: per-task rate limit on
- balance_dirty_pages()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101124104331.GA6096@localhost>
-References: <20101117042720.033773013@intel.com>
-	 <20101117042849.650810571@intel.com> <1290594187.2072.440.camel@laptop>
-	 <20101124104331.GA6096@localhost>
+	Wed, 24 Nov 2010 05:51:27 -0500
+Subject: Re: [PATCH] ASoC: nuc900-ac97: fix a memory leak
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1290588263.7545.1.camel@mola>
+References: <1290588263.7545.1.camel@mola>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Nov 2010 11:49:28 +0100
-Message-ID: <1290595768.2072.443.camel@laptop>
+Date: Wed, 24 Nov 2010 10:51:22 +0000
+Message-ID: <1290595882.3332.7.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 18:43 +0800, Wu Fengguang wrote:
-> On Wed, Nov 24, 2010 at 06:23:07PM +0800, Peter Zijlstra wrote:
-> > On Wed, 2010-11-17 at 12:27 +0800, Wu Fengguang wrote:
-> > > +       if (unlikely(current->nr_dirtied >= current->nr_dirtied_pause ||
-> > > +                    bdi->dirty_exceeded)) {
-> > > +               balance_dirty_pages(mapping, current->nr_dirtied);
-> > > +               current->nr_dirtied = 0;
-> > >         } 
-> > 
-> > Was it a conscious choice to use
-> >   current->nr_dirtied = 0
-> > over 
-> >   current->nr_dirtied -= current->nr_dirtied_pause
-> > ?
-> > 
-> > The former will cause a drift in pause times due to truncation of the
-> > excess.
+On Wed, 2010-11-24 at 16:44 +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/nuc900/nuc900-ac97.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> It should be fine in either way, as long as the "truncated" number is
-> passed to balance_dirty_pages():
-> 
-> +               balance_dirty_pages(mapping, current->nr_dirtied);
-> +               current->nr_dirtied = 0;
-> 
-> or
-> 
-> +               balance_dirty_pages(mapping, current->nr_dirtied_pause);
-> +               current->nr_dirtied -= current->nr_dirtied_pause;
+> diff --git a/sound/soc/nuc900/nuc900-ac97.c b/sound/soc/nuc900/nuc900-ac97.c
+> index 293dc74..e00e39d 100644
+> --- a/sound/soc/nuc900/nuc900-ac97.c
+> +++ b/sound/soc/nuc900/nuc900-ac97.c
+> @@ -384,7 +384,6 @@ out0:
+>  
+>  static int __devexit nuc900_ac97_drvremove(struct platform_device *pdev)
+>  {
+> -
+>  	snd_soc_unregister_dai(&pdev->dev);
+>  
+>  	clk_put(nuc900_ac97_data->clk);
+> @@ -392,6 +391,7 @@ static int __devexit nuc900_ac97_drvremove(struct platform_device *pdev)
+>  	release_mem_region(nuc900_ac97_data->res->start,
+>  				resource_size(nuc900_ac97_data->res));
+>  
+> +	kfree(nuc900_ac97_data);
+>  	nuc900_ac97_data = NULL;
+>  
+>  	return 0;
 
-ok, just wanted to make sure you'd considered it.
+
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
