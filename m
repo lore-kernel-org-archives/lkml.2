@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750988Ab0KXFCB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 00:02:01 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:36672 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0KXFB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 00:01:59 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: mmotm 2010-11-23 + autogroups -> inconsistent lock state
-In-Reply-To: Your message of "Tue, 23 Nov 2010 16:13:06 PST."
-             <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-From: Valdis.Kletnieks@vt.edu
-References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1290574869_5261P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1751580Ab0KXFLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 00:11:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23224 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751261Ab0KXFLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 00:11:53 -0500
+Subject: Re: Re-distributable 88w8335 Firmware?
+From: Dan Williams <dcbw@redhat.com>
+To: Julian Calaby <julian.calaby@gmail.com>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>, David.Woodhouse@intel.com,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Holger Schurig <holgerschurig@googlemail.com>,
+        Markus Becker <mab@comnets.uni-bremen.de>, andreamrl@tiscali.it,
+        Denis Kirjanov <kirjanov@gmail.com>, dwmw2@infradead.org
+Date: Tue, 23 Nov 2010 23:10:56 -0600
+In-Reply-To: <AANLkTi=0ocvsR185Qib3VoT43ziTUa_3oRDnmU65pYjv@mail.gmail.com>
+References: <AANLkTim0=ds3EhQOEfHdrKt2dSnEqUgf5CLOPHNyW=jE@mail.gmail.com>
+	 <1290569516.3074.41.camel@dcbw.foobar.com>
+	 <AANLkTi=ioGgpAQ-rx_abCHcOmOezXwJFfbKWc7=tGAJ5@mail.gmail.com>
+	 <1290571986.3074.64.camel@dcbw.foobar.com>
+	 <AANLkTi=0ocvsR185Qib3VoT43ziTUa_3oRDnmU65pYjv@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Date: Wed, 24 Nov 2010 00:01:09 -0500
-Message-ID: <6003.1290574869@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020202.4CEC9C16.021E,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Message-ID: <1290575460.18917.3.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1290574869_5261P
-Content-Type: text/plain; charset=us-ascii
-
-On Tue, 23 Nov 2010 16:13:06 PST, akpm@linux-foundation.org said:
-> The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+On Wed, 2010-11-24 at 15:48 +1100, Julian Calaby wrote:
+> On Wed, Nov 24, 2010 at 15:13, Dan Williams <dcbw@redhat.com> wrote:
+> > On Wed, 2010-11-24 at 14:55 +1100, Julian Calaby wrote:
+> >> On Wed, Nov 24, 2010 at 14:31, Dan Williams <dcbw@redhat.com> wrote:
+> >> > On Sat, 2010-11-20 at 11:29 +1100, Julian Calaby wrote:
+> >> >> If we cannot obtain proper firmware files, the very least Marvel could
+> >> >> do would be to bless the *BSD Malo driver's firmware files (obtainable
+> >> >> here: http://www.nazgul.ch/malo/malo-firmware-1.4.tgz - see
+> >> >> http://www.unix.com/man-page/freebsd/4/MALO/ for more info) with a
+> >> >> proper re-distributable license.
+> >> >>
+> >> >> In terms of the actual chipsets in question, I'm referring to the
+> >> >> 88w8335, 88w8338, and 88w8385 chipsets. I believe Marvel refers to
+> >> >
+> >> > Note that the 8385 shouldn't be included in this list, since it's a
+> >> > FullMAC chip, is handled already by the 'libertas' kernel driver, and
+> >> > we've already got firmware for its CF & SDIO variants in linux-firmware
+> >> > along with the 8388, 8682, 8686, and 8688.
+> >>
+> >> That'll teach me to not do all the research on this =)
+> >>
+> >> I pulled that number from the Malo firmware archive linked above.
+> >> (Malo claims to only work with 8335s, but yeah) I'm guessing that if
+> >> that firmware file is used, it'd be for a PCI variant of the 8385
+> >> chipset (given that such a thing exists) and that isn't supported by
+> >> the "libertas" driver.
+> >
+> > Malo supports the PCMCIA/CF variant of the 8385; not a PCI variant
+> > AFAICT.  I know of no PCI variant for the 8385, just CF, SDIO, and GSPI.
+> > But I find it curious that malo supports 8335+8385, given that the
+> > firmware interface of the 8385 and the 8335 are so different.  Unless
+> > they have special firmware, the 8385 is a fullmac device, while the 8335
+> > is a softmac device.  Enough differences exist that I'd expect them to
+> > be driven by separate drivers, otherwise the code would be quite ugly.
+> > Which is why we didn't try to shoehorn the 8335 or TopDog stuff into
+> > libertas.
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
+> You clearly know a hell of a lot more about the ins and outs of Marvel
+> chipsets that I do. =)
 
-(I appear to be on a roll tonight - 3 splats before I even had a chance to login. :)
+Eh, *some* of the chipsets :)  Others (Lennert) know a lot more about
+later versions than I do.  But I never know everything or even enough of
+anything :)
 
-mmotm + Ingo's cleanup of Mike's autogroups patch.
+> I stand corrected.
+> 
+> So, to amend my previous request: We're after firmware for the softmac
+> 88w8335 chipset *only*.
+> 
+> Though it may be nicer if Marvell were to bless Malo's firmware
+> package (linked above) as this contains firmware for the PCI 88w8335,
+> USB 88w8338 and a file which claims to be for the PCMCIA/CF 88w8385.
 
-[  114.569222] =================================
-[  114.578171] [ INFO: inconsistent lock state ]
-[  114.578171] 2.6.37-rc3-mmotm1123 #3
-[  114.578171] ---------------------------------
-[  114.578171] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-[  114.578171] kworker/0:0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
-[  114.578171]  (&(&sighand->siglock)->rlock){?.+...}, at: [<ffffffff8104bfb1>] __lock_task_sighand+0x88/0xd6
-[  114.578171] {HARDIRQ-ON-W} state was registered at:
-[  114.578171]   [<ffffffff8106a9a9>] __lock_acquire+0x358/0xd4e
-[  114.578171]   [<ffffffff8106b8b1>] lock_acquire+0x100/0x126
-[  114.578171]   [<ffffffff8155a849>] _raw_spin_lock+0x36/0x45
-[  114.578171]   [<ffffffff81030bc6>] sched_autogroup_fork+0x30/0x61
-[  114.578171]   [<ffffffff8103995a>] copy_process+0x994/0x1325
-[  114.578171]   [<ffffffff8103a4ca>] do_fork+0x1ae/0x3e3
-[  114.578171]   [<ffffffff81009603>] kernel_thread+0x6b/0x6d
-[  114.578171]   [<ffffffff8105832e>] kthreadd+0xdd/0x11f
-[  114.578171]   [<ffffffff810035d4>] kernel_thread_helper+0x4/0x10
-[  114.578171] irq event stamp: 1137212
-[  114.578171] hardirqs last  enabled at (1137209): [<ffffffff8155ae6f>] _raw_spin_unlock_irqrestore+0x3a/0x80
-[  114.578171] hardirqs last disabled at (1137210): [<ffffffff8155b467>] save_args+0x67/0x70
-[  114.578171] softirqs last  enabled at (1137212): [<ffffffff810414f3>] _local_bh_enable+0xe/0x10
-[  114.578171] softirqs last disabled at (1137211): [<ffffffff81041edd>] irq_enter+0x3d/0x6f
-[  114.578171] 
-[  114.578171] other info that might help us debug this:
-[  114.578171] 3 locks held by kworker/0:0/0:
-[  114.578171]  #0:  (&(&new_timer->it_lock)->rlock){-.....}, at: [<ffffffff81056e7b>] posix_timer_fn+0x24/0xc7
-[  114.578171]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81056d77>] rcu_read_lock+0x0/0x35
-[  114.578171]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff8104a6e6>] rcu_read_lock+0x0/0x35
-[  114.578171] 
-[  114.578171] stack backtrace:
-[  114.578171] Pid: 0, comm: kworker/0:0 Tainted: G        W   2.6.37-rc3-mmotm1123 #3
-[  114.578171] Call Trace:
-[  114.578171]  <IRQ>  [<ffffffff8106a467>] valid_state+0x17c/0x18e
-[  114.578171]  [<ffffffff81069d2c>] ? check_usage_forwards+0x0/0x87
-[  114.578171]  [<ffffffff8106a558>] mark_lock+0xdf/0x1d8
-[  114.578171]  [<ffffffff81069d2c>] ? check_usage_forwards+0x0/0x87
-[  114.578171]  [<ffffffff8106a928>] __lock_acquire+0x2d7/0xd4e
-[  114.578171]  [<ffffffff8106a4a6>] ? mark_lock+0x2d/0x1d8
-[  114.578171]  [<ffffffff8104bfb1>] ? __lock_task_sighand+0x88/0xd6
-[  114.578171]  [<ffffffff8106b8b1>] lock_acquire+0x100/0x126
-[  114.578171]  [<ffffffff8104bfb1>] ? __lock_task_sighand+0x88/0xd6
-[  114.578171]  [<ffffffff8155a942>] _raw_spin_lock_irqsave+0x44/0x57
-[  114.578171]  [<ffffffff8104bfb1>] ? __lock_task_sighand+0x88/0xd6
-[  114.578171]  [<ffffffff8104bfb1>] __lock_task_sighand+0x88/0xd6
-[  114.578171]  [<ffffffff8104c6b3>] send_sigqueue+0x51/0x162
-[  114.578171]  [<ffffffff81056e42>] posix_timer_event+0x3f/0x54
-[  114.578171]  [<ffffffff81056ea1>] posix_timer_fn+0x4a/0xc7
-[  114.578171]  [<ffffffff812294fd>] ? do_raw_spin_unlock+0xd0/0xfa
-[  114.578171]  [<ffffffff8105bb7e>] __run_hrtimer+0x13e/0x27a
-[  114.578171]  [<ffffffff81056e57>] ? posix_timer_fn+0x0/0xc7
-[  114.578171]  [<ffffffff8105c5f3>] hrtimer_interrupt+0xea/0x1d6
-[  114.578171]  [<ffffffff8101ad4f>] smp_apic_timer_interrupt+0x74/0x87
-[  114.578171]  [<ffffffff81003193>] apic_timer_interrupt+0x13/0x20
-[  114.578171]  <EOI>  [<ffffffff81000cf5>] ? cpu_idle+0x42/0x14e
-[  114.578171]  [<ffffffff81000dd5>] ? cpu_idle+0x122/0x14e
-[  114.578171]  [<ffffffff81b57170>] start_secondary+0x1a9/0x1ad
-~                                                                    
+Yeah, though honestly I'd rather have the duplex firmware from MSSII for
+the 8335, since it can do AP mode too.  That does leave the 8338 (USB?)
+of course but we can probably get clarification on that too.  As with
+the 8335, I only have access to a 8335 Windows driver, but if we had a
+firmware extractor tool, I believe the Marvell Extranet firmware license
+covers embedded firmware from Windows .sys files too.
 
---==_Exmh_1290574869_5261P
-Content-Type: application/pgp-signature
+And I think I might actually have a usb8338 too somewhere...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Dan
 
-iD8DBQFM7JwVcC3lWbTT17ARAolRAJ42GnZ8ckvf89KJMQLAj0gnqCLdtACffLdt
-5DRVKj6W+Gs0O1jhgM/xBfA=
-=qg7J
------END PGP SIGNATURE-----
-
---==_Exmh_1290574869_5261P--
 
