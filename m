@@ -1,165 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab0KXLqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 06:46:36 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48672 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab0KXLqf (ORCPT
+	id S1753998Ab0KXLrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 06:47:49 -0500
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:13325 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753701Ab0KXLrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 06:46:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=VUtm4tGiR3/P+b3Z4BUZoxPhDu8J3JFVIi1vIFjTGvTmqFzilGuTuBFtV+EOYWnngO
-         5IZeSiEK6oFfTh5wpKdcmyrba9B/gyoTqByw8cYjFIEqaAlCHU5txQRvY6OWO6c2id5t
-         EajgxVG/1SsUWInIOyKO+rxlvbf1yBsiwKp40=
+	Wed, 24 Nov 2010 06:47:47 -0500
+Message-ID: <4CECFB19.1090003@draigBrady.com>
+Date: Wed, 24 Nov 2010 11:46:33 +0000
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=Emgr=gYLgg+PXkubmiRyFpLDjPE=kO6DFQwhi@mail.gmail.com>
-References: <20101123224601.766827604@openvz.org>
-	<20101123224800.658686382@openvz.org>
-	<1290587537.2072.430.camel@laptop>
-	<AANLkTinac7XwdARsLSeLmbc4Kj6my5MHQ=hAgV+A7o-W@mail.gmail.com>
-	<1290589356.2072.433.camel@laptop>
-	<AANLkTi=Emgr=gYLgg+PXkubmiRyFpLDjPE=kO6DFQwhi@mail.gmail.com>
-Date: Wed, 24 Nov 2010 14:46:34 +0300
-X-Google-Sender-Auth: doJVQcc7VIDjGfsi7Ho9RSbU0rM
-Message-ID: <AANLkTimo2CoYvcSyKB-s_iGVEpir5qh7SxL5oOGd7MXk@mail.gmail.com>
-Subject: Re: [rfc 3/3] perf, x86: P4 PMU -- export ABI part of event config to userspace
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        ming.m.lin@intel.com, eranian@google.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
+CC: Andreas Dilger <adilger.kernel@dilger.ca>, wharms@bfs.de,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com> <20101112120834.33062900.akpm@linux-foundation.org> <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca> <20101114092533.GB5323@albatros> <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop> <20101123140111.GA3816@hack> <4CEBD37E.5060107@bfs.de> <203E1F2A-2D04-4B7F-8D1B-9DC24522CB5E@dilger.ca> <4CECECA2.6070301@draigBrady.com> <20101124110535.GD5139@cr0.nay.redhat.com>
+In-Reply-To: <20101124110535.GD5139@cr0.nay.redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 12:39 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On 11/24/10, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, 2010-11-24 at 11:48 +0300, Cyrill Gorcunov wrote:
->>> On 11/24/10, Peter Zijlstra <peterz@infradead.org> wrote:
->>> > On Wed, 2010-11-24 at 01:46 +0300, Cyrill Gorcunov wrote:
->>> >> plain text document attachment (x86-perf-export-abi)
->>> >> Due to tight 64 bit size of event config field (where we have to track
->>> >> pretty lot of info during event lifetime) some bits are to be exported
->>> >> via header into userspace.
->>> >>
->>> >> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
->>> >> CC: Lin Ming <ming.m.lin@intel.com>
->>> >> CC: Stephane Eranian <eranian@google.com>
->>> >> CC: Peter Zijlstra <peterz@infradead.org>
->>> >> ---
->>> >>
->>> >> Note that I don't like much the idea to export anything into userspace
->>> >> but it seems there is no other choise. So there is a minimum which
->>> >> should
->>> >> be exported.
->>> >
->>> >
->>> > Could you say what exactly is exposed to userspace and why?
+On 24/11/10 11:05, Américo Wang wrote:
+> On Wed, Nov 24, 2010 at 10:44:50AM +0000, Pádraig Brady wrote:
+>> On 23/11/10 18:02, Andreas Dilger wrote:
+>>> On 2010-11-23, at 07:45, walter harms wrote:
+>>>> Maybe we can convince the gcc people to make 0 padding default. That will not solve the problems for other compilers but when they claim "works like gcc" we can press then to support this also. I can imagine that this will close some other subtle leaks also.
 >>>
->>> yes, we need two enums to be exported, because we use custom encoding,
->>> which is described in first patch. peter i'll describe more detailed
->>> in a couple of hours, ok?
+>>> It makes the most sense to tackle this at the GCC level, since the added overhead of doing memset(0) on the whole struct may be non-trivial for commonly-used and/or large structures.  Since GCC is already explicitly zeroing the _used_ fields in the struct, it can much more easily determine whether there is padding in the structure, and zero those few bytes as needed.
 >>
->> Sure, but have you seen my sysfs patches? wouldn't describing the format
->> in there suffice?
+>> Zero padding structs is part of C90. Details here:
+>> http://www.pixelbeat.org/programming/gcc/auto_init.html
+> 
+> Nope.
+> 
 >>
->> http://lkml.org/lkml/2010/11/17/154
+>> gcc doesn't zero pad when _all_ elements are specified.
 >>
->>
-> just looked at them, but the main problem is that a few fields in
-> .config consist of custom values about which userspace knows nothing,
-> ie these fields are not described in SDM but we define own ones. this
-> mess is because we need to pack a lot of info in single 64bit field so
-> kernel would track event properly in terms of hardware resources. i
-> will describe the details as only reach the computer.
->
+> 
+> That is what gcc does, not what C standard specifies.
 
-Peter, would the following change log make more sense?
----
-perf, x86: P4 PMU -- export ABI part of event config to userspace v2
+Looks like gcc is following the standard exactly.
 
-Due to tight 64 bit size of event config field (where we have to track
-pretty lot of info during event lifetime) some bits are to be exported
-via header into userspace, so the caller (regardless if it's a kernel
-side caller or call from userspace) should pass them to get event running.
+C90 - 6.5.7
+C99 - 6.7.8
 
-In particular we have to export enums P4_PEBS_METRIC and P4_EVENTS.
+  If there are fewer initializers in a brace-enclosed list than
+  there are elements or members of an aggregate ... the remainder
+  of the aggregate shall be initialized implicitly the same as
+  objects that have static storage duration.
 
-The P4_PEBS_METRIC is used to inform the perf subsystem that an
-event needs PEBs metric to be set (which tells the kernel to program
-tow additional MSR for such event).
-
-In turn P4_EVENTS is used as a primary key for tracking event's
-hardware resource.
-
-The proper places of these enums in config are described in comments
-in header (the comments are exported as well).
-
-Such a bit complex scheme grows from nature of P4 events, the kernel
-has to track ESCR+CCCR+COUNTER+METRIC for every event and 64 bits solely
-is not enough for that. Moreover, some events share ESCR "Event Select"
-and CCCR "EventMask", so to make every event unique from kernel point
-of veiew we define own keys to be used instead of ESCR "Event Select".
-
-v2: Describe what we need to export in commit message
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/include/asm/Kbuild          |    1 +
- arch/x86/include/asm/perf_event_p4.h |    8 ++++++++
- 2 files changed, 9 insertions(+)
-
-Index: linux-2.6.git/arch/x86/include/asm/Kbuild
-=====================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/Kbuild
-+++ linux-2.6.git/arch/x86/include/asm/Kbuild
-@@ -23,3 +23,4 @@ header-y += unistd_32.h
- header-y += unistd_64.h
- header-y += vm86.h
- header-y += vsyscall.h
-+header-y += perf_event_p4.h
-Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-=====================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
-+++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-@@ -5,6 +5,8 @@
- #ifndef PERF_EVENT_P4_H
- #define PERF_EVENT_P4_H
-
-+#ifdef __KERNEL__
-+
- #include <linux/cpu.h>
- #include <linux/bitops.h>
-
-@@ -201,6 +203,8 @@ static inline u32 p4_default_escr_conf(i
- 	return escr;
- }
-
-+#endif /* __KERNEL__ */
-+
- /*
-  * This are the events which should be used in "Event Select"
-  * field of ESCR register, they are like unique keys which allow
-@@ -256,6 +260,8 @@ enum P4_EVENTS {
- 	P4_EVENT_INSTR_COMPLETED,
- };
-
-+#ifdef __KERNEL__
-+
- #define P4_OPCODE(event)		event##_OPCODE
- #define P4_OPCODE_ESEL(opcode)		((opcode & 0x00ff) >> 0)
- #define P4_OPCODE_EVNT(opcode)		((opcode & 0xff00) >> 8)
-@@ -767,6 +773,8 @@ enum P4_ESCR_EMASKS {
-
- #define p4_config_pebs_has(v, mask)	(p4_config_unpack_pebs(v) & (mask))
-
-+#endif /* __KERNEL__ */
-+
- enum P4_PEBS_METRIC {
- 	P4_PEBS_METRIC__none,
+cheers,
+Pádraig.
