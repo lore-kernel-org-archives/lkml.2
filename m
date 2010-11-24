@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab0KXS6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:58:48 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:47498 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab0KXS6r (ORCPT
+	id S1754912Ab0KXTAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:00:14 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:43993 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab0KXTAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:58:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=RLFp9VFXEBH5LEwDc3s7A4SPf42ln9ql1Rlmmu7TMOGgHAHNXhXMP5elhG4EOv0kjk
-         T74mM0bLiwRcf7nFZASw==
-MIME-Version: 1.0
-In-Reply-To: <4CEC7329.7070909@cn.fujitsu.com>
-References: <AANLkTikx6d0_VFtZ4zWQucRCf=vFt7N2M6=0jpnKasEE@mail.gmail.com>
- <1290398767-15230-1-git-send-email-ccross@android.com> <AANLkTi=4-OgPUugnUBaqSU3oC=3wxTjAsOB_Ais3Or+i@mail.gmail.com>
- <4CEC7329.7070909@cn.fujitsu.com>
-From: Paul Menage <menage@google.com>
-Date: Wed, 24 Nov 2010 10:58:23 -0800
-Message-ID: <AANLkTikhE-z7HuLimuj_pJLKd7FHq+w6PQCd85XuT0a8@mail.gmail.com>
-Subject: Re: [PATCH] cgroup: Convert synchronize_rcu to call_rcu in cgroup_attach_task
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Wed, 24 Nov 2010 14:00:13 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 24 Nov 2010 14:00:12 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: James Jones <jajones@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Fix find_next_zero_bit and related assembly
+In-reply-to: <4CED55A6.5090608@codeaurora.org>
+Message-id: <alpine.LFD.2.00.1011241357520.9313@xanadu.home>
+References: <1289524615-22484-1-git-send-email-jajones@nvidia.com>
+ <alpine.LFD.2.00.1011231625380.9313@xanadu.home>
+ <201011231528.25668.jajones@nvidia.com> <4CED55A6.5090608@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 6:06 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->
-> If we do this, it's not anymore safe to use get_css_set(), which just
-> increments the refcount without checking if it's zero.
+On Wed, 24 Nov 2010, Stephen Boyd wrote:
 
-I don't believe that it's currently safe to use get_css_set() on a
-zero-refcount css_set anyway - a css_set starts with refcount 1 and
-can be freed the moment that its refcount reaches 0. You can only use
-get_css_set() on a stable reference to an existing css_set, which by
-definition has a refcount of at least 1. Were you thinking of any
-particular existing uses?
+> On 11/23/2010 03:28 PM, James Jones wrote:
+> > On Tuesday 23 November 2010 13:26:47 Nicolas Pitre wrote:
+> >> On Thu, 11 Nov 2010, James Jones wrote:
+> >>> The find_next_bit, find_first_bit, find_next_zero_bit
+> >>> and find_first_zero_bit functions were not properly
+> >>> clamping to the maxbit argument at the bit level. They
+> >>> were instead only checking maxbit at the byte level.
+> >>> To fix this, add a compare and a conditional move
+> >>> instruction to the end of the common bit-within-the-
+> >>> byte code used by all the functions and be sure not to
+> >>> clobber the maxbit argument before it is used.
+> >>>
+> >>> Signed-off-by: James Jones <jajones@nvidia.com>
+> >>> Tested-by: Stephen Warren <swarren@nvidia.com>
+> >> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> >>
+> >> Please send to RMK's patch system.
+> > Thanks for the review.  It's already in the patch system, but I updated the 
+> > entry to include your reviewed-by line.
+> 
+> Should this be sent to the stable tree too?
 
-Paul
+It could, yes.  This is hardly an urgent fix though, as the bug has been 
+there virtually forever.
+
+
+Nicolas
