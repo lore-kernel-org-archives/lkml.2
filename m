@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab0KXHh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 02:37:26 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11479 "EHLO
+	id S1752206Ab0KXHhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 02:37:48 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11575 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751488Ab0KXHhX (ORCPT
+	by vger.kernel.org with ESMTP id S1751342Ab0KXHhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 02:37:23 -0500
-Message-ID: <4CECC098.5020809@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 16:36:56 +0900
+	Wed, 24 Nov 2010 02:37:45 -0500
+Message-ID: <4CECC0AE.8020208@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 16:37:18 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
@@ -20,89 +20,156 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 9/17 v2] can: EG20T PCH: Use netdev_dbg instead
- of dev_dbg
+Subject: [PATCH net-next-2.6 11/17 v2] can: EG20T PCH: Delete unnecessary/redundant
+ code
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For easy to readable, use netdev_dbg instead of dev_dbg partly
+Delete unnecessary/redundant code
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/can/pch_can.c |   86
+++++++++++++++++++++-------------------------
+ 1 files changed, 38 insertions(+), 48 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 3a39786..e71817d 100644
+index 318eb1f..7342030 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -222,7 +222,7 @@ static void pch_can_set_run_mode(struct pch_can_priv
-*priv,
- 		break;
-  	default:
--		dev_err(&priv->ndev->dev, "%s -> Invalid Mode.\n", __func__);
-+		netdev_err(priv->ndev, "%s -> Invalid Mode.\n", __func__);
- 		break;
- 	}
- }
-@@ -275,7 +275,7 @@ static void pch_can_set_int_enables(struct
-pch_can_priv *priv,
- 		break;
-  	default:
--		dev_err(&priv->ndev->dev, "Invalid interrupt number.\n");
-+		netdev_err(priv->ndev, "Invalid interrupt number.\n");
- 		break;
- 	}
- }
-@@ -535,7 +535,7 @@ static void pch_can_error(struct net_device *ndev,
+@@ -447,11 +447,6 @@ static void pch_can_release(struct pch_can_priv *priv)
+ /* This function clears interrupt(s) from the CAN device. */
+ static void pch_can_int_clr(struct pch_can_priv *priv, u32 mask)
+ {
+-	if (mask == PCH_STATUS_INT) {
+-		ioread32(&priv->regs->stat);
+-		return;
+-	}
+-
+ 	/* Clear interrupt for transmit object */
+ 	if ((mask >= PCH_RX_OBJ_START) && (mask <= PCH_RX_OBJ_END)) {
+ 		/* Setting CMASK for clearing the reception interrupts. */
+@@ -518,8 +513,6 @@ static void pch_can_error(struct net_device *ndev,
 u32 status)
- 			cf->data[1] |= CAN_ERR_CRTL_RX_WARNING;
- 		if ((errc & PCH_TEC) > 96)
- 			cf->data[1] |= CAN_ERR_CRTL_TX_WARNING;
--		dev_warn(&ndev->dev,
-+		netdev_dbg(ndev,
- 			"%s -> Error Counter is more than 96.\n", __func__);
+ 		state = CAN_STATE_BUS_OFF;
+ 		cf->can_id |= CAN_ERR_BUSOFF;
+ 		can_bus_off(ndev);
+-		pch_can_set_run_mode(priv, PCH_CAN_RUN);
+-		dev_err(&ndev->dev, "%s -> Bus Off occurres.\n", __func__);
  	}
- 	/* Error passive interrupt. */
-@@ -547,7 +547,7 @@ static void pch_can_error(struct net_device *ndev,
-u32 status)
- 			cf->data[1] |= CAN_ERR_CRTL_RX_PASSIVE;
- 		if ((errc & PCH_TEC) > 127)
- 			cf->data[1] |= CAN_ERR_CRTL_TX_PASSIVE;
--		dev_err(&ndev->dev,
-+		netdev_dbg(ndev,
- 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
- 	}
- @@ -877,10 +877,10 @@ static int pch_can_open(struct net_device *ndev)
-  	retval = pci_enable_msi(priv->dev);
- 	if (retval) {
--		dev_info(&ndev->dev, "PCH CAN opened without MSI\n");
-+		netdev_err(ndev, "PCH CAN opened without MSI\n");
- 		priv->use_msi = 0;
- 	} else {
--		dev_info(&ndev->dev, "PCH CAN opened with MSI\n");
-+		netdev_err(ndev, "PCH CAN opened with MSI\n");
- 		priv->use_msi = 1;
- 	}
- @@ -888,14 +888,14 @@ static int pch_can_open(struct net_device *ndev)
- 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
- 			     ndev->name, ndev);
- 	if (retval) {
--		dev_err(&ndev->dev, "request_irq failed.\n");
-+		netdev_err(ndev, "request_irq failed.\n");
- 		goto req_irq_err;
- 	}
-  	/* Open common can device */
- 	retval = open_candev(ndev);
- 	if (retval) {
--		dev_err(ndev->dev.parent, "open_candev() failed %d\n", retval);
-+		netdev_err(ndev, "open_candev() failed %d\n", retval);
- 		goto err_open_candev;
- 	}
+  	errc = ioread32(&priv->regs->errc);
+@@ -658,7 +651,6 @@ static int pch_can_rx_normal(struct net_device
+*ndev, u32 obj_num, int quota)
+ 	canid_t id;
+ 	int rcv_pkts = 0;
+ 	int rtn;
+-	int next_flag = 0;
+ 	struct sk_buff *skb;
+ 	struct can_frame *cf;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+@@ -685,50 +677,48 @@ static int pch_can_rx_normal(struct net_device
+*ndev, u32 obj_num, int quota)
+ 				return rtn;
+ 			rcv_pkts++;
+ 			quota--;
+-			next_flag = 1;
+-		} else if (!(reg & PCH_IF_MCONT_NEWDAT))
+-			next_flag = 1;
+-
+-		if (!next_flag) {
+-			skb = alloc_can_skb(priv->ndev, &cf);
+-			if (!skb)
+-				return -ENOMEM;
+-
+-			/* Get Received data */
+-			id2 = ioread32(&priv->regs->ifregs[0].id2);
+-			if (id2 & PCH_ID2_XTD) {
+-				id = (ioread32(&priv->regs->ifregs[0].id1) &
+-					       0xffff);
+-				id |= (((id2) & 0x1fff) << 16);
+-				cf->can_id = id | CAN_EFF_FLAG;
+-			} else {
+-				id = ((id2 & (CAN_SFF_MASK << 2)) >> 2);
+-				cf->can_id = id;
+-			}
+-
+-			if (id2 & PCH_ID2_DIR)
+-				cf->can_id |= CAN_RTR_FLAG;
++			obj_num++;
++			continue;
++		} else if (!(reg & PCH_IF_MCONT_NEWDAT)) {
++			obj_num++;
++			continue;
++		}
+ -			cf->can_dlc = get_can_dlc((ioread32(&priv->regs->
+-						   ifregs[0].mcont)) & 0xF);
++		skb = alloc_can_skb(priv->ndev, &cf);
++		if (!skb)
++			return -ENOMEM;
++
++		/* Get Received data */
++		id2 = ioread32(&priv->regs->ifregs[0].id2);
++		if (id2 & PCH_ID2_XTD) {
++			id = (ioread32(&priv->regs->ifregs[0].id1) & 0xffff);
++			id |= (((id2) & 0x1fff) << 16);
++			cf->can_id = id | CAN_EFF_FLAG;
++		} else {
++			id = ((id2 & (CAN_SFF_MASK << 2)) >> 2);
++			cf->can_id = id;
++		}
+ -			for (i = 0; i < cf->can_dlc; i += 2) {
+-				data_reg = ioread16(&priv->regs->ifregs[0].
+-						    data[i / 2]);
+-				cf->data[i] = data_reg & 0xff;
+-				cf->data[i + 1] = (data_reg >> 8) & 0xff;
+-			}
++		if (id2 & PCH_ID2_DIR)
++			cf->can_id |= CAN_RTR_FLAG;
+ -			netif_receive_skb(skb);
+-			rcv_pkts++;
+-			stats->rx_packets++;
+-			quota--;
+-			stats->rx_bytes += cf->can_dlc;
++		cf->can_dlc = get_can_dlc((ioread32(&priv->regs->
++						    ifregs[0].mcont)) & 0xF);
+ -			pch_fifo_thresh(priv, obj_num);
++		for (i = 0; i < cf->can_dlc; i += 2) {
++			data_reg = ioread16(&priv->regs->ifregs[0].data[i / 2]);
++			cf->data[i] = data_reg & 0xff;
++			cf->data[i + 1] = data_reg >> 8;
+ 		}
++
++		netif_receive_skb(skb);
++		rcv_pkts++;
++		stats->rx_packets++;
++		quota--;
++		stats->rx_bytes += cf->can_dlc;
++
++		pch_fifo_thresh(priv, obj_num);
+ 		obj_num++;
+-		next_flag = 0;
+ 	} while (quota > 0);
+  	return rcv_pkts;
+@@ -764,7 +754,7 @@ static int pch_can_poll(struct napi_struct *napi,
+int quota)
+ 	if (!int_stat)
+ 		goto end;
+ -	if ((int_stat == PCH_STATUS_INT) && (quota > 0)) {
++	if (int_stat == PCH_STATUS_INT) {
+ 		reg_stat = ioread32(&priv->regs->stat);
+ 		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
+ 			if (reg_stat & PCH_BUS_OFF ||
+@@ -932,7 +922,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb,
+struct net_device *ndev)
+ {
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	struct can_frame *cf = (struct can_frame *)skb->data;
+-	int tx_obj_no = 0;
++	int tx_obj_no;
+ 	int i;
+ 	u32 id2;
  -- 1.6.0.6
 
