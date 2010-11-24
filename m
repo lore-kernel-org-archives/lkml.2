@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab0KXAgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:36:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63132 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab0KXAge (ORCPT
+	id S1756166Ab0KXAin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:38:43 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37393 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab0KXAim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:36:34 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=dloADZ4KP7gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=fw9oxepunfSf3KicNw0A:9 a=n793RStf4hkp7UPiXo3XyxH9QPMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/3] jump label: updates for 2.6.37
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1290557416.30543.420.camel@gandalf.stny.rr.com>
-References: <cover.1290546539.git.jbaron@redhat.com>
-	 <4CEC33F6.9090808@zytor.com>
-	 <1290553914.30543.408.camel@gandalf.stny.rr.com>
-	 <4CEC4EF3.4000304@zytor.com>
-	 <1290557416.30543.420.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 23 Nov 2010 19:36:31 -0500
-Message-ID: <1290558991.30543.422.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Nov 2010 19:38:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XxrEHYH6htnwb8HNq51MTyXhoUSfZIvtUmgWhZCkCAtHUtYKcXMqdwg2pt8YxnX4Ho
+         30n7Lfcjf0x29YRZ4NOZtvhYsS4Iq901hiyXvEDalIIyuBQFSYBeSqyFgjhPRG8aERQO
+         fuwbIvQTNhs8EPXhJ/s39RkEHI9cBispD4ClU=
+Date: Tue, 23 Nov 2010 16:38:33 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
+Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
+Message-ID: <20101124003832.GA27368@core.coreip.homeip.net>
+References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+ <20101122075554.GA27300@core.coreip.homeip.net>
+ <AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+ <20101123222458.GB20283@core.coreip.homeip.net>
+ <AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 19:10 -0500, Steven Rostedt wrote:
-
-> So you would rather have it as an if statement? Something like this:
+On Tue, Nov 23, 2010 at 04:12:13PM -0800, Ping Cheng wrote:
+> On Tue, Nov 23, 2010 at 2:24 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> >
+> >> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
+> >> > currently touching the surface of the device. Buttons are expected to be
+> >> > always present and can change their state regardless of what tool is
+> >> > being used at the moment. I.e. The full hardware state (between
+> >> > EV_SYN/SYN_REPORT) could be, for example,
+> >> >
+> >> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
+> >> > BTN_2) or
+> >> >
+> >> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
+> >> >
+> >> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
+> >> > BTN_TOOL_PEN or any other BTN_TOOL_*.
+> >>
+> >> You are right. The tablet buttons can go with one of those other
+> >> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
+> >> tablet buttons.
+> >>
+> >> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
+> >> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
+> >> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
+> >> (refer to wacom_wac.c line 622 to 665).
+> >>
+> >> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
+> >> it, the two LEFT and RIGHT buttons will have a hard time to tell the
+> >> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
+> >> worst case could be the LEFT/RIGHT sent later overwrites the earlier
+> >> ones.
+> >>
+> >> We could do some guesswork in the user land to figure out which
+> >> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
+> >> happen. But, it would be much cheaper and more reliable if we can tell
+> >> the user land where those LEFT and RIGHT come from. This is the whole
+> >> purpose of the kernel driver, isn't it?
+> >
+> > What would userspace want to figure what physical button was pressed?
+> > Input events convey _actions_, i.e. BTN_LEFT means that user pressed
+> > primary button on the device. It does not matter if it was pressed on
+> > tablet or the mouse/lens; the response should be the same.
 > 
-> 	if (unlikely(JUMP_LABEL(key)))
-> 		__DO_TRACE(....);
+> You're right, if the user wants a LEFT click. In a lot of cases, they
+> want to translate it into something else. LEFT is only a default value
+> that we give them if they do nothing.
 > 
-> (Note, I like the above better too)
+> > If you expect different response, depending on which physical button is
+> > pressed, then they should emit different BTN_* events. If you are
+> > concerned that some users might want to have the same actions while
+> > others want different actions - then please implement key remapping in
+> > the driver.
 > 
+> That is exactly what I am trying to convince you. Without being able
+> to tell one button event from the other, even just logically, how can
+> I and other clients remap them?
 
-I do like this better, but this change should wait till 2.6.38.
+EVIOCSKEYCODE. You just need to wire wacom driver to support this ioctl.
 
--- Steve
+> 
+> > If you want to treat touch and pen as completely independent devices -
+> > we can do that too but as you remember there are some issues with
+> > "pairing" of the devices.
+> 
+> No, this issue has nothing to do with separating pen and touch
+> devices. This is for BUTTONS only. Those button events can come from
+> the physical tools (pen, mouse, lens, etc.) or the tablet itself.
+> Without knowing that the button events are from the ones that
+> physically sit on the tablet, it may mess up with the buttons that are
+> from the physical tools.
+> 
+> You might have mixed my BTN_TOOL_TOUCH request with this patch.
 
+No, I have not. Again, if actions are different then physical buttons
+should emit different events. If actions are the same then events are
+the same and it does not matter whether user pushed button on the
+touchpad or the mouse.
 
+-- 
+Dmitry
