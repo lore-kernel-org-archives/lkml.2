@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab0KXT7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:59:13 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47194 "EHLO deliverator"
+	id S932204Ab0KXT70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:59:26 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47197 "EHLO deliverator"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932087Ab0KXT7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:59:10 -0500
+	id S932129Ab0KXT7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:59:23 -0500
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 10/12] sep: cant is an angular inclination
+Subject: [PATCH 11/12] sep: clean up a couple of spots missed in pass one
 To: greg@kroah.com, mark.a.allyn@intel.com, linux-kernel@vger.kernel.org
-Date: Wed, 24 Nov 2010 19:38:54 +0000
-Message-ID: <20101124193850.16425.60027.stgit@bob.linux.org.uk>
+Date: Wed, 24 Nov 2010 19:39:07 +0000
+Message-ID: <20101124193905.16425.57578.stgit@bob.linux.org.uk>
 In-Reply-To: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
 References: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,44 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-So use can't instead.
+Another copy_user case and some formatting of dbg
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/sep/sep_driver.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/sep/sep_driver.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
 
 diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index 9c16558..ebe7a90 100644
+index ebe7a90..5e27b5a 100644
 --- a/drivers/staging/sep/sep_driver.c
 +++ b/drivers/staging/sep/sep_driver.c
-@@ -98,7 +98,7 @@ static int sep_load_firmware(struct sep_device *sep)
- 
- 	error = request_firmware(&fw, res_name, &sep->pdev->dev);
+@@ -1037,8 +1037,6 @@ static int sep_allocate_data_pool_memory_handler(struct sep_device *sep,
+ 		sizeof(struct alloc_struct));
  	if (error) {
--		dev_warn(&sep->pdev->dev, "cant request resident fw\n");
-+		dev_warn(&sep->pdev->dev, "can't request resident fw\n");
- 		return error;
- 	}
- 
-@@ -3280,7 +3280,7 @@ static int sep_callback(unsigned long sep_context_pointer)
- 							&rar_end_address);
- 
- 	if (error) {
--		dev_warn(&sep->pdev->dev, "mrst cant get rar region\n");
-+		dev_warn(&sep->pdev->dev, "mrst can't get rar region\n");
+ 		error = -EFAULT;
+-		dev_warn(&sep->pdev->dev,
+-			"allocate data pool copy to user error\n");
  		goto end_function;
  	}
  
-@@ -3417,7 +3417,7 @@ static int __devinit sep_probe(struct pci_dev *pdev,
- 		sep->rar_addr = dma_alloc_coherent(NULL,
- 			sep->rar_size, &sep->rar_bus, GFP_KERNEL);
- 		if (sep->rar_addr == NULL) {
--			dev_warn(&sep->pdev->dev, "cant allocate mfld rar\n");
-+			dev_warn(&sep->pdev->dev, "can't allocate mfld rar\n");
- 			error = -ENOMEM;
- 			goto end_function_deallocate_sep_shared_area;
- 		}
+@@ -1083,13 +1081,10 @@ static int sep_lock_kernel_pages(struct sep_device *sep,
+ 	/* Map array */
+ 	struct sep_dma_map *map_array;
+ 
+-	dev_dbg(&sep->pdev->dev,
+-		"sep_lock_kernel_pages start\n");
+-
+-	dev_dbg(&sep->pdev->dev,
+-		"kernel_virt_addr is %08x\n", kernel_virt_addr);
+-	dev_dbg(&sep->pdev->dev,
+-		"data_size is %x\n", data_size);
++	dev_dbg(&sep->pdev->dev, "sep_lock_kernel_pages start\n");
++	dev_dbg(&sep->pdev->dev, "kernel_virt_addr is %08x\n",
++							kernel_virt_addr);
++	dev_dbg(&sep->pdev->dev, "data_size is %x\n", data_size);
+ 
+ 	lli_array = kmalloc(sizeof(struct sep_lli_entry), GFP_ATOMIC);
+ 	if (!lli_array) {
+@@ -1182,8 +1177,7 @@ static int sep_lock_user_pages(struct sep_device *sep,
+ 	/* Direction of the DMA mapping for locked pages */
+ 	enum dma_data_direction	dir;
+ 
+-	dev_dbg(&sep->pdev->dev,
+-		"sep_lock_user_pages start\n");
++	dev_dbg(&sep->pdev->dev, "sep_lock_user_pages start\n");
+ 
+ 	/* Set start and end pages  and num pages */
+ 	end_page = (app_virt_addr + data_size - 1) >> PAGE_SHIFT;
 
