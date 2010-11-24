@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0KXPtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 10:49:09 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39688 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0KXPtH (ORCPT
+	id S1753378Ab0KXPxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 10:53:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35323 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0KXPxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 10:49:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hE+9c9oI75l4Yq543bZ4ZlnxutNPU3/jGbBnzX+DF9kNWVWQ6FClpErtWMILXEFl22
-         NlS8Ghc6mMfJT2qFb6nRByRPgLZLpRiwCrQ2auCG+xTeT9aNgTAIheS16/14yTZl1lO/
-         MupejQItWsVWB08ruSfrfWpCL42JE3h+eRe6o=
-Message-ID: <4CED33E0.5040000@lwfinger.net>
-Date: Wed, 24 Nov 2010 09:48:48 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Pavel Machek <pma@sysgo.com>
-CC: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
-        linux-wireless@vger.kernel.org, rudolf.marek@sysgo.com, cko@sysgo.com,
-        mfa@sysgo.com, anl@sysgo.com
-Subject: Re: working usb wifi card, that is still possible to buy
-References: <20101103092431.GA21138@pma.sysgo.com> <20101124081616.GA30595@pma.sysgo.com> <20101124131320.GA2611@pma.sysgo.com>
-In-Reply-To: <20101124131320.GA2611@pma.sysgo.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Nov 2010 10:53:20 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=UaNWXry1k3EA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=9BLoJqIw0YXVjHMsbR0A:9 a=ghHzuzem5yuU0U_0ey8A:7 a=Lc3kKYUrsbOrM-8lyy6OeozBrGcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
+ label key entries
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <20101124154200.GD2815@redhat.com>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com>
+	 <1290586809.2072.424.camel@laptop> <20101124145401.GA2815@redhat.com>
+	 <1290611478.2072.482.camel@laptop> <20101124151936.GB2815@redhat.com>
+	 <1290612245.2072.486.camel@laptop>  <20101124154200.GD2815@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 24 Nov 2010 10:53:17 -0500
+Message-ID: <1290613997.30543.529.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 07:13 AM, Pavel Machek wrote:
-> |                                          |              
-> | D-Link DWA-131            | 07d1:3303 | realtek?            |                                          |              
+On Wed, 2010-11-24 at 10:42 -0500, Jason Baron wrote:
 
-This one should work with driver r8712u in staging in kernel 2.6.37-rcX. I don't
-have this model for testing, but the DWA-130 is rock solid with that driver.
+> > And I think the only arch where you can do text pokes without cross-cpu
+> > synchronization is one that doesn't have SMP support.
+> > 
+> > 
+> 
+> is this really true?
+> 
+> The powerpc implementation uses patch_instruction():
+> 
+> 
+> arch/powerpc/lib/code-patching.c:
+> 
+> void patch_instruction(unsigned int *addr, unsigned int instr)
+> {
+>         *addr = instr;
+>         asm ("dcbst 0, %0; sync; icbi 0,%0; sync; isync" : : "r"
+> (addr));
+> }
 
-Larry
+Is this ever called outside of boot up? After SMP is enabled? (besides
+for creating trampolines, before they are used).
+
+-- Steve
+
+
