@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab0KXMYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:24:00 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3014 "EHLO
+	id S1754606Ab0KXMYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:24:34 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3074 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754367Ab0KXMX5 (ORCPT
+	by vger.kernel.org with ESMTP id S1754379Ab0KXMYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:23:57 -0500
-Message-ID: <4CED03C3.7010908@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 21:23:31 +0900
+	Wed, 24 Nov 2010 07:24:32 -0500
+Message-ID: <4CED03E6.9010608@dsn.okisemi.com>
+Date: Wed, 24 Nov 2010 21:24:06 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
@@ -20,77 +20,107 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 14/17 v3] can: EG20T PCH: Comment optimization
+Subject: [PATCH net-next-2.6 15/17 v3] can: EG20T PCH: Move MSI processing
+ open/close to probe/remove
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment optimization
+Move MSI processing to probe/remove processing.
+Currently, in case this driver is integrated as module, and when this
+module is re-installed, no interrupts is to be occurred.
+For the above issue, move MSI processing to open/release processing.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/can/pch_can.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 610cf3b..df14569 100644
+index df14569..c612a99 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv
-*priv, u32 buff_num,
- 	else
- 		ie = PCH_IF_MCONT_RXIE;
+@@ -859,15 +859,6 @@ static int pch_can_open(struct net_device *ndev)
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	int retval;
 
--	/* Reading the receive buffer data from RAM to Interface1/2 registers */
-+	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
- 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
- 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
-
-@@ -868,7 +868,7 @@ static int pch_can_open(struct net_device *ndev)
- 		priv->use_msi = 1;
- 	}
-
--	/* Regsitering the interrupt. */
-+	/* Regstering the interrupt. */
+-	retval = pci_enable_msi(priv->dev);
+-	if (retval) {
+-		netdev_err(ndev, "PCH CAN opened without MSI\n");
+-		priv->use_msi = 0;
+-	} else {
+-		netdev_err(ndev, "PCH CAN opened with MSI\n");
+-		priv->use_msi = 1;
+-	}
+-
+ 	/* Regstering the interrupt. */
  	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
  			     ndev->name, ndev);
- 	if (retval) {
-@@ -972,7 +972,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb,
-struct net_device *ndev)
+@@ -893,9 +884,6 @@ static int pch_can_open(struct net_device *ndev)
+ err_open_candev:
+ 	free_irq(priv->dev->irq, ndev);
+ req_irq_err:
+-	if (priv->use_msi)
+-		pci_disable_msi(priv->dev);
+-
+ 	pch_can_release(priv);
 
- 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
+ 	return retval;
+@@ -909,8 +897,6 @@ static int pch_close(struct net_device *ndev)
+ 	napi_disable(&priv->napi);
+ 	pch_can_release(priv);
+ 	free_irq(priv->dev->irq, ndev);
+-	if (priv->use_msi)
+-		pci_disable_msi(priv->dev);
+ 	close_candev(ndev);
+ 	priv->can.state = CAN_STATE_STOPPED;
+ 	return 0;
+@@ -993,12 +979,14 @@ static void __devexit pch_can_remove(struct
+pci_dev *pdev)
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
 
--	/* Updating the size of the data. */
-+	/* Set the size of the data. Update if2_mcont */
- 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
- 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
+ 	unregister_candev(priv->ndev);
+-	free_candev(priv->ndev);
+ 	pci_iounmap(pdev, priv->regs);
++	if (priv->use_msi)
++		pci_disable_msi(priv->dev);
+ 	pci_release_regions(pdev);
+ 	pci_disable_device(pdev);
+ 	pci_set_drvdata(pdev, NULL);
+ 	pch_can_reset(priv);
++	free_candev(priv->ndev);
+ }
 
-@@ -1072,8 +1072,8 @@ static u32 pch_can_get_rx_buffer_link(struct
-pch_can_priv *priv, u32 buffer_num)
+ #ifdef CONFIG_PM
+@@ -1255,6 +1243,15 @@ static int __devinit pch_can_probe(struct pci_dev
+*pdev,
 
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return value. */
-+	int i;
-+	int retval;
- 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
- 	int counter = PCH_COUNTER_LIMIT;
+ 	netif_napi_add(ndev, &priv->napi, pch_can_poll, PCH_RX_OBJ_END);
 
-@@ -1130,8 +1130,8 @@ static int pch_can_suspend(struct pci_dev *pdev,
-pm_message_t state)
++	rc = pci_enable_msi(priv->dev);
++	if (rc) {
++		netdev_err(ndev, "PCH CAN opened without MSI\n");
++		priv->use_msi = 0;
++	} else {
++		netdev_err(ndev, "PCH CAN opened with MSI\n");
++		priv->use_msi = 1;
++	}
++
+ 	rc = register_candev(ndev);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "Failed register_candev %d\n", rc);
+@@ -1264,6 +1261,8 @@ static int __devinit pch_can_probe(struct pci_dev
+*pdev,
+ 	return 0;
 
- static int pch_can_resume(struct pci_dev *pdev)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return variable. */
-+	int i;
-+	int retval;
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct pch_can_priv *priv = netdev_priv(dev);
-
+ probe_exit_reg_candev:
++	if (priv->use_msi)
++		pci_disable_msi(priv->dev);
+ 	free_candev(ndev);
+ probe_exit_alloc_candev:
+ 	pci_iounmap(pdev, addr);
 -- 
 1.6.0.6
 
