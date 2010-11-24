@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab0KXHH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 02:07:27 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64320 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab0KXHH0 (ORCPT
+	id S1751175Ab0KXHPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 02:15:44 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40532 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0KXHPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 02:07:26 -0500
+	Wed, 24 Nov 2010 02:15:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=kt5R474JmUmExaNf3tcVz+f7FuMHYG2z9CwFMiRJ2IDm7SQbfSPvJKWeMOPAsTnOjz
-         M5mA/UCf9msL6J1TVx2XjC3oUMmYAHYpfqO85Vt1fH7OCyLUsJSovcyaMPaEE5vmnYOf
-         ZdnQ24QTCPFgNxFPCKWBPK9fJ8DI+jZQbv8kI=
-MIME-Version: 1.0
-In-Reply-To: <20101123235156.482244613@linux.com>
-References: <20101123235139.908255844@linux.com>
-	<20101123235156.482244613@linux.com>
-Date: Wed, 24 Nov 2010 09:07:25 +0200
-X-Google-Sender-Auth: s-1YDtFMlm3IKKs_gitv9cLE3yM
-Message-ID: <AANLkTim=Gu3Hju-q7Qu-imEer5fCuwkJ8rwX3-9bL=Xu@mail.gmail.com>
-Subject: Re: [thiscpuops upgrade 01/10] percpucounter: Optimize
- __percpu_counter_add a bit through the use of this_cpu() options.
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=ekux9vjb4Cw8A5oiU8qSBPxYYbFs1D0uHU13gsCHqP26zNIQrtHPmT8F7jwpHwOFPT
+         P5Iocqkphky2Tybe8deG8eUFze5zhKWl1TOJlob0zb/FB4SMIlLsSdfqFcWDub163O3m
+         KUYjvXCAsv03I3oTJ7q4ADDbQBHEvBeg/m4zg=
+Subject: [PATCH 1/2] ASoC: Return proper error for omap3pandora_soc_init
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Grazvydas Ignotas <notasas@gmail.com>, Jarkko Nikula <jhnikula@gmail.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain
+Date: Wed, 24 Nov 2010 15:20:48 +0800
+Message-Id: <1290583248.20639.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 1:51 AM, Christoph Lameter <cl@linux.com> wrote:
-> The this_cpu_* options can be used to optimize __percpu_counter_add a bit. Avoids
-> some address arithmetic and saves 12 bytes.
+Return PTR_ERR(omap3pandora_dac_reg) instead of 0 if regulator_get failed.
 
-[snip]
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/omap/omap3pandora.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+diff --git a/sound/soc/omap/omap3pandora.c b/sound/soc/omap/omap3pandora.c
+index bff9864..8047c52 100644
+--- a/sound/soc/omap/omap3pandora.c
++++ b/sound/soc/omap/omap3pandora.c
+@@ -307,6 +307,7 @@ static int __init omap3pandora_soc_init(void)
+ 		pr_err(PREFIX "Failed to get DAC regulator from %s: %ld\n",
+ 			dev_name(&omap3pandora_snd_device->dev),
+ 			PTR_ERR(omap3pandora_dac_reg));
++		ret = PTR_ERR(omap3pandora_dac_reg);
+ 		goto fail3;
+ 	}
+ 
+-- 
+1.7.2
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+
+
