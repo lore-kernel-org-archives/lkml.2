@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab0KXJ44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 04:56:56 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:51118 "EHLO mail.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab0KXJ4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 04:56:55 -0500
-Date: Wed, 24 Nov 2010 10:57:50 +0100
-From: Pavel Machek <pma@sysgo.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
-        linux-wireless@vger.kernel.org
-Subject: Re: working usb wifi card, that is still possible to buy
-Message-ID: <20101124095750.GB11950@pma.sysgo.com>
-References: <20101103092431.GA21138@pma.sysgo.com>
- <20101124081616.GA30595@pma.sysgo.com>
- <1290588158.3790.6.camel@jlt3.sipsolutions.net>
+	id S1753049Ab0KXJ7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 04:59:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34794 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab0KXJ7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 04:59:45 -0500
+Date: Wed, 24 Nov 2010 10:59:35 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aries Lee <arieslee@jmicron.com>
+Subject: Re: [PATCH 1/2] mmc: Add support for JMicron 388 SD/MMC controller
+Message-ID: <20101124095935.GA6812@pengutronix.de>
+References: <1290579674-4616-1-git-send-email-tiwai@suse.de>
+ <1290579674-4616-2-git-send-email-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
 Content-Disposition: inline
-In-Reply-To: <1290588158.3790.6.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1290579674-4616-2-git-send-email-tiwai@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> > http://linuxwireless.org/en/users/Devices/USB
-> 
-> You have to edit the driver pages, like
-> http://linuxwireless.org/en/users/Drivers/p54/devices
+--CE+1k2dSO48ffgeK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks, that works.
+On Wed, Nov 24, 2010 at 07:21:13AM +0100, Takashi Iwai wrote:
+
+> +/* Controller doesn't support VDD 180 for MMC (for SD/MMC combo chips) */
+> +#define SDHCI_QUIRK_MMC_VDD_180				(1<<30)
+
+Can't we handle this more generic? Like setting ocr_avail_* from
+sdhci-pci.c somehow (just brainstorming, didn't have a deeper look)? I'd
+like to avoid new quirks as much as possible.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--CE+1k2dSO48ffgeK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkzs4gcACgkQD27XaX1/VRtsjwCgt6BwCmPPMwLKQsmPEJmGDrrv
+fwsAoKWVt4A4trvU3X/VMWbeuAwupG4+
+=ALgW
+-----END PGP SIGNATURE-----
+
+--CE+1k2dSO48ffgeK--
