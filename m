@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab0KXAJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 19:09:22 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:32498 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754833Ab0KXAJV (ORCPT
+	id S1755440Ab0KXAKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 19:10:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56213 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab0KXAKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 19:09:21 -0500
-Message-ID: <000b01cb8b6b$d7542a90$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: <andrew.chih.howe.khor@intel.com>, <socketcan-core@lists.berlios.de>,
-        "Samuel Ortiz" <sameo@linux.intel.com>, <margie.foster@intel.com>,
-        <netdev@vger.kernel.org>, "Christian Pellegrin" <chripell@fsfe.org>,
-        <linux-kernel@vger.kernel.org>, <yong.y.wang@intel.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wolfgang Grandegger" <wg@grandegger.com>, <qi.wang@intel.com>
-References: <4CE2434B.5050701@dsn.okisemi.com>	<4CE27796.2000206@pengutronix.de>	<007401cb87b1$a773b3d0$66f8800a@maildom.okisemi.com>	<4CE64167.2030405@pengutronix.de> <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com> <4CEA2986.4080607@pengutronix.de>
-Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow control,
-Date: Wed, 24 Nov 2010 09:09:16 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
+	Tue, 23 Nov 2010 19:10:19 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=dloADZ4KP7gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3C5KqkU7oq1yFZnwMNQA:9 a=RIMNgDGKp6Q7h8AeEjcA:7 a=EyMPkj05_EB4Mr9a2ZUJdy-C-YsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/3] jump label: updates for 2.6.37
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4CEC4EF3.4000304@zytor.com>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <4CEC33F6.9090808@zytor.com>
+	 <1290553914.30543.408.camel@gandalf.stny.rr.com>
+	 <4CEC4EF3.4000304@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 23 Nov 2010 19:10:16 -0500
+Message-ID: <1290557416.30543.420.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-x-mimeole: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 22, 2010 5:27 PM, Marc Kleine-Budde wrote:
->>>>> Still we have the busy waiting in the TX path. Maybe you can move the
->>>>> waiting before accessing the if[1] and remove the busy waiting here.
->>>> I can't understand your saying.
->>>> For transmitting data, calling pch_can_rw_msg_obj is mandatory.
->>> Yes, but the busy wait is not needed. It should be enough to do the
->>> busy-waiting _before_ accessing the if[1].
->>
->> Do you mean we should create other pch_can_rw_msg_obj which doesn't have busy wait ?
->ACK, and this non busy waiting is use in the TX path. But you add a busy
->wait only function before accessing the if[1] in the TX path.
+On Tue, 2010-11-23 at 15:32 -0800, H. Peter Anvin wrote:
+> On 11/23/2010 03:11 PM, Steven Rostedt wrote:
+> >> I would also like to see a change in the API, preferrably something
+> >> closer to the "SWITCH_POINT" interface I discussed with Stephen before
+> >> Kernel Summit.
+> > 
+> > Could you explain in more detail what you would like to see.
+> 
+> The JUMP_LABEL() macro is rather ugly, and I found from the
+> static_cpu_has() work that inlines like (somewhat pseudocode here):
+> 
+> static inline bool SWITCH_POINT(void *metadata)
+> {
+> 	asm goto("1: <5 byte nop>\n"
+> 	         ".section \".metadata\",\"a\"\n"
+> 		 ".long 1b, %p0\n"
+> 		 ".previous\n"
+> 	         : : "i" (metadata)
+> 		 : : l_yes);
+> 	return false;
+> l_yes:
+> 	return true;
+> }
+> 
+> ... work quite well; with the resulting SWITCH_POINT() being usable like
+> any other boolean expression in the kernel, i.e. as part of if, while,
+> etc.  Most of the time, gcc is smart enough to just use the flow of
+> control provided, and it also permits backwards compatibility with older
+> gcc by patching in a one-byte immediate instead.
+> 
+> There are some instances where it double-jumps; those can be avoided by
+> always jumping (allowing the patch code to replace the jump with a
+> 5-byte NOP opportunistically a posteori) but unfortunately current gcc
+> tends to not order the sequentially next code afterwards if one does that.
+> 
 
-The "busy waiting" of pch_can_rw_msg_obj is for next processing accesses to Message object.
-If deleting this busy waiting, next processing can access to Message object, regardless previous transfer doesn't
-complete yet.
-Thus, I think, the "busy waiting" is necessary.
+So you would rather have it as an if statement? Something like this:
 
----
-Thanks,
+	if (unlikely(JUMP_LABEL(key)))
+		__DO_TRACE(....);
 
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+(Note, I like the above better too)
 
------ Original Message ----- 
-From: "Marc Kleine-Budde" <mkl@pengutronix.de>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Cc: <andrew.chih.howe.khor@intel.com>; <socketcan-core@lists.berlios.de>; "Samuel Ortiz" <sameo@linux.intel.com>;
-<margie.foster@intel.com>; <netdev@vger.kernel.org>; "Christian Pellegrin" <chripell@fsfe.org>;
-<linux-kernel@vger.kernel.org>; <yong.y.wang@intel.com>; "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>;
-<kok.howg.ewe@intel.com>; <joel.clark@intel.com>; "David S. Miller" <davem@davemloft.net>; "Wolfgang Grandegger"
-<wg@grandegger.com>; <qi.wang@intel.com>
-Sent: Monday, November 22, 2010 5:27 PM
-Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow control,
+-- Steve
 
 
