@@ -1,161 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab0KXUSm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 15:18:42 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:59405 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab0KXUSl (ORCPT
+	id S1756365Ab0KXUTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 15:19:47 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43015 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227Ab0KXUTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 15:18:41 -0500
-Date: Wed, 24 Nov 2010 20:18:34 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: corentincj@iksaif.net, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: eeepc: rfkill on 900A defunct
-Message-ID: <20101124201834.GA7760@srcf.ucam.org>
-References: <4CED26EF.5000109@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CED26EF.5000109@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 24 Nov 2010 15:19:45 -0500
+Date: Wed, 24 Nov 2010 12:18:33 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: greg@kroah.com, mark.a.allyn@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] SEP cleanups
+Message-Id: <20101124121833.8c48619c.randy.dunlap@oracle.com>
+In-Reply-To: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
+References: <20101124192136.16425.49994.stgit@bob.linux.org.uk>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hm. As a shorter term fix, can you try this (entirely untested!) 
-approach?
+On Wed, 24 Nov 2010 19:23:46 +0000 Alan Cox wrote:
 
-diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index b2edfdc..8f817d6 100644
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -574,8 +574,9 @@ static bool eeepc_wlan_rfkill_blocked(struct eeepc_laptop *eeepc)
- 	return true;
- }
- 
--static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
-+static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
- {
-+	struct pci_dev *port;
- 	struct pci_dev *dev;
- 	struct pci_bus *bus;
- 	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
-@@ -588,9 +589,17 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
- 	mutex_lock(&eeepc->hotplug_lock);
- 
- 	if (eeepc->hotplug_slot) {
--		bus = pci_find_bus(0, 1);
-+		port = acpi_get_pci_dev(handle);
-+
-+		if (!port) {
-+			pr_warning("Unable to find port\n");
-+			goto out_unlock;
-+		}
-+
-+		bus = port->subordinate;
-+
- 		if (!bus) {
--			pr_warning("Unable to find PCI bus 1?\n");
-+			pr_warning("Unable to find PCI bus?\n");
- 			goto out_unlock;
- 		}
- 
-@@ -636,6 +645,17 @@ out_unlock:
- 	mutex_unlock(&eeepc->hotplug_lock);
- }
- 
-+static void eeepc_rfkill_hotplug_update(struct eeepc_laptop *eeepc, char *node)
-+{
-+	acpi_status status = AE_OK;
-+	acpi_handle handle;
-+
-+	status = acpi_get_handle(NULL, node, &handle);
-+
-+	if (ACPI_SUCCESS(status))
-+		eeepc_rfkill_hotplug(eeepc, handle);
-+}
-+
- static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
- {
- 	struct eeepc_laptop *eeepc = data;
-@@ -643,7 +663,7 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
- 	if (event != ACPI_NOTIFY_BUS_CHECK)
- 		return;
- 
--	eeepc_rfkill_hotplug(eeepc);
-+	eeepc_rfkill_hotplug(eeepc, handle);
- }
- 
- static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
-@@ -661,6 +681,11 @@ static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
- 						     eeepc);
- 		if (ACPI_FAILURE(status))
- 			pr_warning("Failed to register notify on %s\n", node);
-+		/*
-+		 * Refresh pci hotplug in case the rfkill state was
-+		 * changed during setup.
-+		 */
-+		eeepc_rfkill_hotplug(eeepc, handle);
- 	} else
- 		return -ENODEV;
- 
-@@ -682,6 +707,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_laptop *eeepc,
- 		if (ACPI_FAILURE(status))
- 			pr_err("Error removing rfkill notify handler %s\n",
- 				node);
-+			/*
-+			 * Refresh pci hotplug in case the rfkill
-+			 * state was changed after
-+			 * eeepc_unregister_rfkill_notifier()
-+			 */
-+		eeepc_rfkill_hotplug(eeepc, handle);
- 	}
- }
- 
-@@ -805,11 +836,7 @@ static void eeepc_rfkill_exit(struct eeepc_laptop *eeepc)
- 		rfkill_destroy(eeepc->wlan_rfkill);
- 		eeepc->wlan_rfkill = NULL;
- 	}
--	/*
--	 * Refresh pci hotplug in case the rfkill state was changed after
--	 * eeepc_unregister_rfkill_notifier()
--	 */
--	eeepc_rfkill_hotplug(eeepc);
-+
- 	if (eeepc->hotplug_slot)
- 		pci_hp_deregister(eeepc->hotplug_slot);
- 
-@@ -878,11 +905,6 @@ static int eeepc_rfkill_init(struct eeepc_laptop *eeepc)
- 	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P5");
- 	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P6");
- 	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P7");
--	/*
--	 * Refresh pci hotplug in case the rfkill state was changed during
--	 * setup.
--	 */
--	eeepc_rfkill_hotplug(eeepc);
- 
- exit:
- 	if (result && result != -ENODEV)
-@@ -917,8 +939,11 @@ static int eeepc_hotk_restore(struct device *device)
- 	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
- 
- 	/* Refresh both wlan rfkill state and pci hotplug */
--	if (eeepc->wlan_rfkill)
--		eeepc_rfkill_hotplug(eeepc);
-+	if (eeepc->wlan_rfkill) {
-+		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P5");
-+		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P6");
-+		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P7");
-+	}
- 
- 	if (eeepc->bluetooth_rfkill)
- 		rfkill_set_sw_state(eeepc->bluetooth_rfkill,
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> This is a rework from the bits I sent you a while back Mark (which I suspect
+> got eaten in the email) and some other cleanup. I've not beaten it up with
+> CodingStyle yet because most of the debug wants removing before that is done
+> so it is probably more productive to fix the logic and the inherited choice of
+> TRUELY_GIANT_DEFINE_NAMES_THAT_CAUSE_MUCH_WRAPPING before we worry about finer
+> points of style.
+
+TRULY.  (or is that Brit. vs. Amer.?)
+
+
+
+How about someone addressing these printk format warnings (linux-next)?
+
+drivers/staging/sep/sep_driver.c:115: warning: format '%08x' expects type 'unsigned int', but argument 4 has type 'size_t'
+drivers/staging/sep/sep_driver.c:149: warning: format '%08x' expects type 'unsigned int', but argument 4 has type 'size_t'
+drivers/staging/sep/sep_driver.c:170: warning: format '%08x' expects type 'unsigned int', but argument 4 has type 'size_t'
+drivers/staging/sep/sep_driver.c:212: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'size_t'
+drivers/staging/sep/sep_driver.c:3397: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3399: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3405: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3407: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3411: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3413: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3415: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+drivers/staging/sep/sep_driver.c:3738: warning: format '%x' expects type 'unsigned int', but argument 6 has type 'size_t'
+drivers/staging/sep/sep_driver.c:3866: warning: format '%x' expects type 'unsigned int', but argument 6 has type 'size_t'
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
