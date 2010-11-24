@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab0KXNT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 08:19:27 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40094 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab0KXNTY (ORCPT
+	id S1755242Ab0KXNTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 08:19:39 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40142 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab0KXNTh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 08:19:24 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, Neil Brown <neilb@suse.de>,
-        <x86@kernel.org>, cpufreq@vger.kernel.org,
-        <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Thomas Renninger <trenn@suse.de>,
-        Mark Langsdorf <mark.langsdorf@amd.com>
-Subject: [PATCH 1/2] x86, powernow-k8: Fixup missing _PSS objects message
-Date: Wed, 24 Nov 2010 14:19:00 +0100
-Message-Id: <1290604741-25151-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.3.1.50.g1e633
-In-Reply-To: <20101124131303.GA24892@aftab>
-References: <20101124131303.GA24892@aftab>
+	Wed, 24 Nov 2010 08:19:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hlxZrr4VJkkCnjAfKwuy1o3W6rfoz4k8Z6SS7KQigrGD1JbNHUOnwYmkAjSyeFfu7m
+         +rgkNi8iE4pGS42WgFStKljr1GrWFXW2KqFYgcolr7CL3Cu9wq51cG1jzrQluaRzOX7X
+         ljliNU0dcRJR/atAIkSmFeJIeVqan5AnrdakQ=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com>
+References: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com>
+Date: Wed, 24 Nov 2010 14:19:35 +0100
+Message-ID: <AANLkTik0iWzP4KwVwpY4bDJuyZnQTFnW0Q5pj3TM-s_O@mail.gmail.com>
+Subject: Re: [PATCH] x86, dumpstack: Fix unused variable warning.
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+2010/11/24 Rakib Mullick <rakib.mullick@gmail.com>:
+> With allnoconfig, bp becomes unused. So put bp into defination of
+> CONFIG_FRAME_POINTER.
+>
+> arch/x86/kernel/dumpstack.c: In function ‘dump_stack’:
+> arch/x86/kernel/dumpstack.c:200: warning: unused variable ‘bp’
+>
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ---
+>
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index 8474c99..fc5a253 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -197,10 +197,10 @@ void show_stack(struct task_struct *task,
+> unsigned long *sp)
+>  */
+>  void dump_stack(void)
+>  {
+> -       unsigned long bp = 0;
+>        unsigned long stack;
+>
+>  #ifdef CONFIG_FRAME_POINTER
+> +       unsigned long bp = 0;
+>        if (!bp)
+>                get_bp(bp);
+>  #endif
+>
 
-_PSS objects can also be missing if Cool'N'Quiet is disabled in the
-BIOS. Add that to the FW_BUG message for the user to try before updating
-her BIOS. Fix formatting.
+Looks like you can even remove that block. bp is not used any more in
+this function.
+get_bp() was only loading bp but did not make any use of it.
 
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Mark Langsdorf <mark.langsdorf@amd.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-index 491977b..d2e53ac 100644
---- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-+++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-@@ -1247,12 +1247,15 @@ static void __cpuinit powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
- 	init_on_cpu->rc = 0;
- }
- 
-+static const char missing_pss_msg[] =
-+	KERN_ERR
-+	FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
-+	FW_BUG PFX "First, make sure Cool'N'Quiet is enabled in the BIOS.\n"
-+	FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
-+
- /* per CPU init entry point to the driver */
- static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- {
--	static const char ACPI_PSS_BIOS_BUG_MSG[] =
--		KERN_ERR FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
--		FW_BUG PFX "Try again with latest BIOS.\n";
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
- 	int rc;
-@@ -1280,7 +1283,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- 		 * an UP version, and is deprecated by AMD.
- 		 */
- 		if (num_online_cpus() != 1) {
--			printk_once(ACPI_PSS_BIOS_BUG_MSG);
-+			printk_once(missing_pss_msg);
- 			goto err_out;
- 		}
- 		if (pol->cpu != 0) {
--- 
-1.7.3.1.50.g1e633
-
+Thanks.
