@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab0KXTp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:45:28 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59202 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab0KXTp1 (ORCPT
+	id S1756320Ab0KXTq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:46:26 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59516 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab0KXTqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:45:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=riUiaMGz1A84zaeITkXjEpvkZpxAOjukbl68xeDW1jFNluFcvcUvMFRUa9DLnoPXFd
-         mleTjgeiWerTEmvotECLnY7qi8+n3qGLmhVa6dSQIsOygKuC1p+CBnn51ERSlCq/ApZi
-         +etIxS4PJvT6ctt8rJHHOpfhlFc7P1z2vXBAo=
-Message-ID: <4CED6B53.50408@suse.cz>
-Date: Wed, 24 Nov 2010 20:45:23 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Sergey Lapin <slapin@ossfans.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: ldisc problems with 2.6.32-2.6.37-rc2 (at least)
-References: <20101124135249.GA7282@build.ihdev.net> <4CED2251.3020708@suse.cz> <20101124170326.GB7282@build.ihdev.net> <4CED6ACF.9000402@suse.cz>
-In-Reply-To: <4CED6ACF.9000402@suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Nov 2010 14:46:24 -0500
+Date: Wed, 24 Nov 2010 11:46:09 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Harsha Priya <priya.harsha@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dharageswari R <dharageswari.r@intel.com>,
+        KP Jeeja <jeeja.kp@intel.com>
+Subject: [PATCH -next] staging: fix intel_sst/intelmid sound build
+Message-Id: <20101124114609.2b6e030e.randy.dunlap@oracle.com>
+In-Reply-To: <20101124131047.b738bc7c.sfr@canb.auug.org.au>
+References: <20101124131047.b738bc7c.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 08:43 PM, Jiri Slaby wrote:
-> Could you provide disassembly of tty_set_ldisc? E.g. by extracting it from:
-> objdump -d drivers/tty/tty_ldisc.o
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Or maybe better after linking:
-objdump -d vmlinux
+SND_INTELMID selects 3 SND_* kconfig symbols, but that is useless
+if the SOUND & SND symbols in their hierarchy are not enabled,
+so make this symbol depend on SOUND & SND.
 
-thanks,
--- 
-js
-suse labs
+ERROR: "snd_pcm_period_elapsed" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_card_create" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_hw_constraint_integer" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_device_new" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_set_ops" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_jack_new" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_lib_free_pages" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_lib_ioctl" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_lib_malloc_pages" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_ctl_new1" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_lib_preallocate_pages_for_all" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_card_free" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_card_register" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_jack_report" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_pcm_new" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+ERROR: "snd_ctl_add" [drivers/staging/intel_sst/snd-intelmid.ko] undefined!
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/staging/intel_sst/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20101124.orig/drivers/staging/intel_sst/Kconfig
++++ linux-next-20101124/drivers/staging/intel_sst/Kconfig
+@@ -8,6 +8,7 @@ config SND_INTEL_SST
+ 
+ config SND_INTELMID
+ 	tristate "Intel MID sound card driver"
++	depends on SOUND && SND
+ 	select SND_PCM
+ 	select SND_SEQUENCER
+ 	select SND_JACK
