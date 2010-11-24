@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab0KXThG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:37:06 -0500
-Received: from claw.goop.org ([74.207.240.146]:48333 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755851Ab0KXThF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:37:05 -0500
-Message-ID: <4CED695E.5050502@goop.org>
-Date: Wed, 24 Nov 2010 11:37:02 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless) fastpaths
- for slub
-References: <20101123235139.908255844@linux.com> <20101123235201.758191189@linux.com> <AANLkTikVFWYS9UeCP1DJxhzYn9_rMcrovSfbQpNmXsvk@mail.gmail.com> <alpine.DEB.2.00.1011241012180.14268@router.home>
-In-Reply-To: <alpine.DEB.2.00.1011241012180.14268@router.home>
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1755369Ab0KXTmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:42:21 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29784 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab0KXTmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 14:42:20 -0500
+Date: Wed, 24 Nov 2010 11:41:09 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org, Pelagicore AB <info@pelagicore.com>,
+        linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Subject: [PATCH -mmotm/-next] media: fix timblogiw kconfig & build error
+Message-Id: <20101124114109.c78df4e1.randy.dunlap@oracle.com>
+In-Reply-To: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
+References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 08:17 AM, Christoph Lameter wrote:
-> On Wed, 24 Nov 2010, Pekka Enberg wrote:
->
->>> +       /*
->>> +        * The transaction ids are globally unique per cpu and per operation on
->>> +        * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
->>> +        * occurs on the right processor and that there was no operation on the
->>> +        * linked list in between.
->>> +        */
->>> +       tid = c->tid;
->>> +       barrier();
->> You're using a compiler barrier after every load from c->tid. Why?
-> To make sure that the compiler does not do something like loading the tid
-> later. The tid must be obtained before the rest of the information from
-> the per cpu slab data is retrieved in order to ensure that we have a
-> consistent set of data to operate on.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Isn't that best expressed with ACCESS_ONCE()?
+timblogiw uses dma() interfaces and it selects TIMB_DMA for that
+support.  However, drivers/dma/ is not built unless
+CONFIG_DMA_ENGINE is enabled, so select/enable that symbol also.
 
-    J
+drivers/built-in.o: In function `timblogiw_close':
+timblogiw.c:(.text+0x4419fe): undefined reference to `dma_release_channel'
+drivers/built-in.o: In function `buffer_release':
+timblogiw.c:(.text+0x441a8d): undefined reference to `dma_sync_wait'
+drivers/built-in.o: In function `timblogiw_open':
+timblogiw.c:(.text+0x44212b): undefined reference to `__dma_request_channel'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/media/video/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- mmotm-2010-1123-1612.orig/drivers/media/video/Kconfig
++++ mmotm-2010-1123-1612/drivers/media/video/Kconfig
+@@ -669,6 +669,7 @@ config VIDEO_HEXIUM_GEMINI
+ config VIDEO_TIMBERDALE
+ 	tristate "Support for timberdale Video In/LogiWIN"
+ 	depends on VIDEO_V4L2 && I2C
++	select DMA_ENGINE
+ 	select TIMB_DMA
+ 	select VIDEO_ADV7180
+ 	select VIDEOBUF_DMA_CONTIG
