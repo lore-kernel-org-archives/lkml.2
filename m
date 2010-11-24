@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab0KXIPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:15:23 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:43527 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab0KXIPV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:15:21 -0500
-Subject: Re: [thiscpuops upgrade 10/10] Lockless (and preemptless)
- fastpaths for slub
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <20101123235201.758191189@linux.com>
-References: <20101123235139.908255844@linux.com>
-	 <20101123235201.758191189@linux.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Nov 2010 09:15:12 +0100
-Message-ID: <1290586512.2072.423.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752101Ab0KXIPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 03:15:34 -0500
+Received: from mail.sysgo.com ([195.145.229.155]:58871 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab0KXIPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 03:15:22 -0500
+Date: Wed, 24 Nov 2010 09:16:16 +0100
+From: Pavel Machek <pma@sysgo.com>
+To: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
+        linux-wireless@vger.kernel.org
+Subject: Re: working usb wifi card, that is still possible to buy
+Message-ID: <20101124081616.GA30595@pma.sysgo.com>
+References: <20101103092431.GA21138@pma.sysgo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101103092431.GA21138@pma.sysgo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 17:51 -0600, Christoph Lameter wrote:
-> So there is no need even to disable preemption which will make the allocations
-> scale well in a RT environment. 
+Hi!
 
-The RT thing isn't particularly about scaling per-se, its mostly about
-working at all.
+So we shopped around a bit, and got following cards:
 
-This thing still relies on disabling IRQs in the slow path, which means
-its still going to be a lot of work to make it work on -rt.
+TP-LINK TL-WN321G, 148f:2070, ralink?
+PEGATRON WL166N11, 1d4d:000c, ralink?
+Tenda w311U, 148f:3070, ralink?
+Netgear WPN111, 1385:5f01, atheros?
+edimax ew-7711UMn, 7392:7711, ralink?
+Canyon CNP-WF518N2, 0bda:8171, realtek? 
+EMTEC Wi350, 0bda:8172, realtek?
+MSI WLAN 11N US300EX Lite, 148f:3070, ralink?
+AirLive Wl-1600 USB, 1b75:8187, rtl8187 driver, works out of the box
+on 2.6.27.25-78.2.56.fc9.i686 kernel
+Netgear wg111, 05e3:4260, rtl8187 driver, works out of the box on
+2.6.27.25-78.2.56.fc9.i686 kernel
+D-Link DWA-131, 07d1:3303, realtek?
+TP-Link TL-WN721N, 0cf3:9271, atheros?
+TP-Link TL-WN322G, 0cf3:1006, atheros?
 
-It also heavily relies on bit-spinlocks, which again is going to need
-changes for -rt.
+I'd update database at linuxwireless.org, but have not figured out how
+to do that. I do have an account, but "edit" button on 
 
-But yes, the lockless fast path is nice, I'll try and get around to
-reading it.
+http://linuxwireless.org/en/users/Devices/USB
+
+does not exactly do anything useful :-(.
+
+								Pavel
