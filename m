@@ -1,209 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab0KXV1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 16:27:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39050 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab0KXV1U (ORCPT
+	id S1755070Ab0KXVlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 16:41:07 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34413 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab0KXVlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 16:27:20 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=VDq_daVXeo0A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=sisueTLzoOCg0nn5vmUA:9 a=ayP9ANMSoku7AqlVTMMA:7 a=SVT_C6OrPMdfi0RenwRHJUiHPlEA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ekggrGZkb-jRGlEu:21 a=nWVgzHBg3V1vj3fh:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20101124212717.158709480@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 24 Nov 2010 16:23:34 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org,
-        Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
-Subject: [RFC][PATCH 1/2] [PATCH 1/2] tracing/slab: Move kmalloc tracepoint out of inline code
-References: <20101124212333.808256210@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-slab-Move-kmalloc-tracepoint-out-of-inline-c.patch
+	Wed, 24 Nov 2010 16:41:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=FG9lwZwo4eLTt90CUupnCYAiFNqeIn1z/KaYrXryfWm6q4flsl+5Isq0Bxg9Nw+G7L
+         Lz4yEKQ+ReDuPf02z0ive4jlTmn25ZPJ2Ql9VW7EV0DN49ElYQQh7e/J06Sx56Q2rTEb
+         axtLftauwfXguFRNtyTfFWOer6zdaN7yOTJoo=
+Date: Wed, 24 Nov 2010 23:40:58 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] proc: use seq_puts()/seq_putc() where possible
+Message-ID: <20101124214058.GA21245@core2.telecom.by>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-The tracepoint for kmalloc is in the slab inlined code which causes
-every instance of kmalloc to have the tracepoint.
-
-This patch moves the tracepoint out of the inline code to the
-slab C file, which removes a large number of inlined trace
-points.
-
-  objdump -dr vmlinux.slab| grep 'jmpq.*<trace_kmalloc' |wc -l
-213
-  objdump -dr vmlinux.slab.patched| grep 'jmpq.*<trace_kmalloc' |wc -l
-1
-
-This also has a nice impact on size.
+For string without format specifiers, use seq_puts().
+For seq_printf("\n"), use seq_putc('\n').
 
    text	   data	    bss	    dec	    hex	filename
-7023060	2121564	2482432	11627056	 b16a30	vmlinux.slab
-6970579	2109772	2482432	11562783	 b06f1f	vmlinux.slab.patched
+  61866	    488	    112	  62466	   f402	fs/proc/proc.o
+  61729	    488	    112	  62329	   f379	fs/proc/proc.o
+  ----------------------------------------------------
+  			   -139
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- include/linux/slab_def.h |   33 +++++++++++++--------------------
- mm/slab.c                |   38 +++++++++++++++++++++++---------------
- 2 files changed, 36 insertions(+), 35 deletions(-)
 
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index 791a502..83203ae 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -138,11 +138,12 @@ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
- void *__kmalloc(size_t size, gfp_t flags);
+ fs/proc/array.c    |   22 +++++++++++-----------
+ fs/proc/base.c     |    2 +-
+ fs/proc/devices.c  |    4 ++--
+ fs/proc/proc_tty.c |   26 +++++++++++++-------------
+ fs/proc/softirqs.c |    6 +++---
+ fs/proc/stat.c     |    2 +-
+ 6 files changed, 31 insertions(+), 31 deletions(-)
+
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -95,7 +95,7 @@ static inline void task_name(struct seq_file *m, struct task_struct *p)
  
- #ifdef CONFIG_TRACING
--extern void *kmem_cache_alloc_notrace(struct kmem_cache *cachep, gfp_t flags);
-+extern void *kmem_cache_alloc_trace(size_t size,
-+				    struct kmem_cache *cachep, gfp_t flags);
- extern size_t slab_buffer_size(struct kmem_cache *cachep);
- #else
- static __always_inline void *
--kmem_cache_alloc_notrace(struct kmem_cache *cachep, gfp_t flags)
-+kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
- {
- 	return kmem_cache_alloc(cachep, flags);
- }
-@@ -179,10 +180,7 @@ found:
- #endif
- 			cachep = malloc_sizes[i].cs_cachep;
+ 	get_task_comm(tcomm, p);
  
--		ret = kmem_cache_alloc_notrace(cachep, flags);
--
--		trace_kmalloc(_THIS_IP_, ret,
--			      size, slab_buffer_size(cachep), flags);
-+		ret = kmem_cache_alloc_trace(size, cachep, flags);
- 
- 		return ret;
+-	seq_printf(m, "Name:\t");
++	seq_puts(m, "Name:\t");
+ 	end = m->buf + m->size;
+ 	buf = m->buf + m->count;
+ 	name = tcomm;
+@@ -122,7 +122,7 @@ static inline void task_name(struct seq_file *m, struct task_struct *p)
+ 		buf++;
  	}
-@@ -194,14 +192,16 @@ extern void *__kmalloc_node(size_t size, gfp_t flags, int node);
- extern void *kmem_cache_alloc_node(struct kmem_cache *, gfp_t flags, int node);
- 
- #ifdef CONFIG_TRACING
--extern void *kmem_cache_alloc_node_notrace(struct kmem_cache *cachep,
--					   gfp_t flags,
--					   int nodeid);
-+extern void *kmem_cache_alloc_node_trace(size_t size,
-+					 struct kmem_cache *cachep,
-+					 gfp_t flags,
-+					 int nodeid);
- #else
- static __always_inline void *
--kmem_cache_alloc_node_notrace(struct kmem_cache *cachep,
--			      gfp_t flags,
--			      int nodeid)
-+kmem_cache_alloc_node_trace(size_t size,
-+			    struct kmem_cache *cachep,
-+			    gfp_t flags,
-+			    int nodeid)
- {
- 	return kmem_cache_alloc_node(cachep, flags, nodeid);
+ 	m->count = buf - m->buf;
+-	seq_printf(m, "\n");
++	seq_putc(m, '\n');
  }
-@@ -210,7 +210,6 @@ kmem_cache_alloc_node_notrace(struct kmem_cache *cachep,
- static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ 
+ /*
+@@ -208,7 +208,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		seq_printf(m, "%d ", GROUP_AT(group_info, g));
+ 	put_cred(cred);
+ 
+-	seq_printf(m, "\n");
++	seq_putc(m, '\n');
+ }
+ 
+ static void render_sigset_t(struct seq_file *m, const char *header,
+@@ -216,7 +216,7 @@ static void render_sigset_t(struct seq_file *m, const char *header,
  {
- 	struct kmem_cache *cachep;
--	void *ret;
+ 	int i;
  
- 	if (__builtin_constant_p(size)) {
- 		int i = 0;
-@@ -234,13 +233,7 @@ found:
- #endif
- 			cachep = malloc_sizes[i].cs_cachep;
+-	seq_printf(m, "%s", header);
++	seq_puts(m, header);
  
--		ret = kmem_cache_alloc_node_notrace(cachep, flags, node);
--
--		trace_kmalloc_node(_THIS_IP_, ret,
--				   size, slab_buffer_size(cachep),
--				   flags, node);
--
--		return ret;
-+		return kmem_cache_alloc_node_trace(size, cachep, flags, node);
+ 	i = _NSIG;
+ 	do {
+@@ -230,7 +230,7 @@ static void render_sigset_t(struct seq_file *m, const char *header,
+ 		seq_printf(m, "%x", x);
+ 	} while (i >= 4);
+ 
+-	seq_printf(m, "\n");
++	seq_putc(m, '\n');
+ }
+ 
+ static void collect_sigign_sigcatch(struct task_struct *p, sigset_t *ign,
+@@ -291,12 +291,12 @@ static void render_cap_t(struct seq_file *m, const char *header,
+ {
+ 	unsigned __capi;
+ 
+-	seq_printf(m, "%s", header);
++	seq_puts(m, header);
+ 	CAP_FOR_EACH_U32(__capi) {
+ 		seq_printf(m, "%08x",
+ 			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
  	}
- 	return __kmalloc_node(size, flags, node);
+-	seq_printf(m, "\n");
++	seq_putc(m, '\n');
  }
-diff --git a/mm/slab.c b/mm/slab.c
-index b1e40da..dfcc888 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3653,11 +3653,18 @@ void *kmem_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
- EXPORT_SYMBOL(kmem_cache_alloc);
  
- #ifdef CONFIG_TRACING
--void *kmem_cache_alloc_notrace(struct kmem_cache *cachep, gfp_t flags)
-+void *
-+kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
+ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+@@ -329,12 +329,12 @@ static inline void task_context_switch_counts(struct seq_file *m,
+ 
+ static void task_cpus_allowed(struct seq_file *m, struct task_struct *task)
  {
--	return __cache_alloc(cachep, flags, __builtin_return_address(0));
-+	void *ret;
-+
-+	ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
-+
-+	trace_kmalloc(_RET_IP_, ret,
-+		      size, slab_buffer_size(cachep), flags);
-+	return ret;
+-	seq_printf(m, "Cpus_allowed:\t");
++	seq_puts(m, "Cpus_allowed:\t");
+ 	seq_cpumask(m, &task->cpus_allowed);
+-	seq_printf(m, "\n");
+-	seq_printf(m, "Cpus_allowed_list:\t");
++	seq_putc(m, '\n');
++	seq_puts(m, "Cpus_allowed_list:\t");
+ 	seq_cpumask_list(m, &task->cpus_allowed);
+-	seq_printf(m, "\n");
++	seq_putc(m, '\n');
  }
--EXPORT_SYMBOL(kmem_cache_alloc_notrace);
-+EXPORT_SYMBOL(kmem_cache_alloc_trace);
+ 
+ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -392,7 +392,7 @@ static int lstats_show_proc(struct seq_file *m, void *v)
+ 					*c = 0;
+ 				seq_printf(m, "%s ", sym);
+ 			}
+-			seq_printf(m, "\n");
++			seq_putc(m, '\n');
+ 		}
+ 
+ 	}
+--- a/fs/proc/devices.c
++++ b/fs/proc/devices.c
+@@ -9,14 +9,14 @@ static int devinfo_show(struct seq_file *f, void *v)
+ 
+ 	if (i < CHRDEV_MAJOR_HASH_SIZE) {
+ 		if (i == 0)
+-			seq_printf(f, "Character devices:\n");
++			seq_puts(f, "Character devices:\n");
+ 		chrdev_show(f, i);
+ 	}
+ #ifdef CONFIG_BLOCK
+ 	else {
+ 		i -= CHRDEV_MAJOR_HASH_SIZE;
+ 		if (i == 0)
+-			seq_printf(f, "\nBlock devices:\n");
++			seq_puts(f, "\nBlock devices:\n");
+ 		blkdev_show(f, i);
+ 	}
  #endif
- 
- /**
-@@ -3705,31 +3712,32 @@ void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- EXPORT_SYMBOL(kmem_cache_alloc_node);
- 
- #ifdef CONFIG_TRACING
--void *kmem_cache_alloc_node_notrace(struct kmem_cache *cachep,
--				    gfp_t flags,
--				    int nodeid)
-+void *kmem_cache_alloc_node_trace(size_t size,
-+				  struct kmem_cache *cachep,
-+				  gfp_t flags,
-+				  int nodeid)
- {
--	return __cache_alloc_node(cachep, flags, nodeid,
-+	void *ret;
-+
-+	ret = __cache_alloc_node(cachep, flags, nodeid,
- 				  __builtin_return_address(0));
-+	trace_kmalloc_node(_RET_IP_, ret,
-+			   size, slab_buffer_size(cachep),
-+			   flags, nodeid);
-+	return ret;
- }
--EXPORT_SYMBOL(kmem_cache_alloc_node_notrace);
-+EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
+--- a/fs/proc/proc_tty.c
++++ b/fs/proc/proc_tty.c
+@@ -36,27 +36,27 @@ static void show_tty_range(struct seq_file *m, struct tty_driver *p,
+ 	}
+ 	switch (p->type) {
+ 	case TTY_DRIVER_TYPE_SYSTEM:
+-		seq_printf(m, "system");
++		seq_puts(m, "system");
+ 		if (p->subtype == SYSTEM_TYPE_TTY)
+-			seq_printf(m, ":/dev/tty");
++			seq_puts(m, ":/dev/tty");
+ 		else if (p->subtype == SYSTEM_TYPE_SYSCONS)
+-			seq_printf(m, ":console");
++			seq_puts(m, ":console");
+ 		else if (p->subtype == SYSTEM_TYPE_CONSOLE)
+-			seq_printf(m, ":vtmaster");
++			seq_puts(m, ":vtmaster");
+ 		break;
+ 	case TTY_DRIVER_TYPE_CONSOLE:
+-		seq_printf(m, "console");
++		seq_puts(m, "console");
+ 		break;
+ 	case TTY_DRIVER_TYPE_SERIAL:
+-		seq_printf(m, "serial");
++		seq_puts(m, "serial");
+ 		break;
+ 	case TTY_DRIVER_TYPE_PTY:
+ 		if (p->subtype == PTY_TYPE_MASTER)
+-			seq_printf(m, "pty:master");
++			seq_puts(m, "pty:master");
+ 		else if (p->subtype == PTY_TYPE_SLAVE)
+-			seq_printf(m, "pty:slave");
++			seq_puts(m, "pty:slave");
+ 		else
+-			seq_printf(m, "pty");
++			seq_puts(m, "pty");
+ 		break;
+ 	default:
+ 		seq_printf(m, "type:%d.%d", p->type, p->subtype);
+@@ -74,19 +74,19 @@ static int show_tty_driver(struct seq_file *m, void *v)
+ 		/* pseudo-drivers first */
+ 		seq_printf(m, "%-20s /dev/%-8s ", "/dev/tty", "tty");
+ 		seq_printf(m, "%3d %7d ", TTYAUX_MAJOR, 0);
+-		seq_printf(m, "system:/dev/tty\n");
++		seq_puts(m, "system:/dev/tty\n");
+ 		seq_printf(m, "%-20s /dev/%-8s ", "/dev/console", "console");
+ 		seq_printf(m, "%3d %7d ", TTYAUX_MAJOR, 1);
+-		seq_printf(m, "system:console\n");
++		seq_puts(m, "system:console\n");
+ #ifdef CONFIG_UNIX98_PTYS
+ 		seq_printf(m, "%-20s /dev/%-8s ", "/dev/ptmx", "ptmx");
+ 		seq_printf(m, "%3d %7d ", TTYAUX_MAJOR, 2);
+-		seq_printf(m, "system\n");
++		seq_puts(m, "system\n");
  #endif
+ #ifdef CONFIG_VT
+ 		seq_printf(m, "%-20s /dev/%-8s ", "/dev/vc/0", "vc/0");
+ 		seq_printf(m, "%3d %7d ", TTY_MAJOR, 0);
+-		seq_printf(m, "system:vtmaster\n");
++		seq_puts(m, "system:vtmaster\n");
+ #endif
+ 	}
  
- static __always_inline void *
- __do_kmalloc_node(size_t size, gfp_t flags, int node, void *caller)
+--- a/fs/proc/softirqs.c
++++ b/fs/proc/softirqs.c
+@@ -10,16 +10,16 @@ static int show_softirqs(struct seq_file *p, void *v)
  {
- 	struct kmem_cache *cachep;
--	void *ret;
+ 	int i, j;
  
- 	cachep = kmem_find_general_cachep(size, flags);
- 	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
- 		return cachep;
--	ret = kmem_cache_alloc_node_notrace(cachep, flags, node);
--
--	trace_kmalloc_node((unsigned long) caller, ret,
--			   size, cachep->buffer_size, flags, node);
--
--	return ret;
-+	return kmem_cache_alloc_node_trace(size, cachep, flags, node);
+-	seq_printf(p, "                    ");
++	seq_puts(p, "                    ");
+ 	for_each_possible_cpu(i)
+ 		seq_printf(p, "CPU%-8d", i);
+-	seq_printf(p, "\n");
++	seq_putc(p, '\n');
+ 
+ 	for (i = 0; i < NR_SOFTIRQS; i++) {
+ 		seq_printf(p, "%12s:", softirq_to_name[i]);
+ 		for_each_possible_cpu(j)
+ 			seq_printf(p, " %10u", kstat_softirqs_cpu(i, j));
+-		seq_printf(p, "\n");
++		seq_putc(p, '\n');
+ 	}
+ 	return 0;
  }
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -126,7 +126,7 @@ static int show_stat(struct seq_file *p, void *v)
  
- #if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_TRACING)
--- 
-1.7.1
-
-
+ 	for (i = 0; i < NR_SOFTIRQS; i++)
+ 		seq_printf(p, " %u", per_softirq_sums[i]);
+-	seq_printf(p, "\n");
++	seq_putc(p, '\n');
+ 
+ 	return 0;
+ }
