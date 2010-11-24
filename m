@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab0KXW0V (ORCPT <rfc822;w@1wt.eu>);
+	id S1756116Ab0KXW0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 17:26:23 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46235 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755980Ab0KXW0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Nov 2010 17:26:21 -0500
-Received: from build.ihdev.net ([178.63.197.118]:58597 "EHLO build.ossfans.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab0KXW0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 17:26:20 -0500
-Date: Wed, 24 Nov 2010 17:26:17 -0500
-From: Sergey Lapin <slapin@ossfans.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ldisc problems with 2.6.32-2.6.37-rc2 (at least)
-Message-ID: <20101124222617.GC8691@build.ihdev.net>
-References: <20101124135249.GA7282@build.ihdev.net>
- <4CED2251.3020708@suse.cz>
- <20101124170326.GB7282@build.ihdev.net>
- <4CED6ACF.9000402@suse.cz>
- <4CED6B53.50408@suse.cz>
- <20101124215339.GA8691@build.ihdev.net>
- <4CED8B86.6070607@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CED8B86.6070607@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 24 Nov 2010 14:25:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lasse Collin <lasse.collin@tukaani.org>
+Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Alain Knaff <alain@knaff.lu>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Phillip Lougher <phillip@lougher.demon.co.uk>
+Subject: Re: [PATCH RFC 1/3] Decompressors: Add XZ decompressor module
+Message-Id: <20101124142549.c1b9ad14.akpm@linux-foundation.org>
+In-Reply-To: <201011242251.52927.lasse.collin@tukaani.org>
+References: <201011242251.52927.lasse.collin@tukaani.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 11:02:46PM +0100, Jiri Slaby wrote:
-> On 11/24/2010 10:53 PM, Sergey Lapin wrote:
-> > Initially I run it, everything is ok.
-> > Then I run it and get error and backtrace.
-> > And if I run it again, everything is ok again, repeatedly. Probably some resources are properly
-> > set up in error condition, and not in normal condition.
-> > 
-> > I use ARM machine for testing and x86, bug is architecture-independent.
-> > 
-> > addr2lines:
-> > c01bc110 drivers/tty/tty_ldisc.c:499
+On Wed, 24 Nov 2010 22:51:52 +0200
+Lasse Collin <lasse.collin@tukaani.org> wrote:
+
+> From: Lasse Collin <lasse.collin@tukaani.org>
 > 
-> Got it. Does this fixes the warning?
-> --- a/drivers/tty/tty_ldisc.c
-> +++ b/drivers/tty/tty_ldisc.c
-> @@ -454,6 +454,8 @@ static int tty_ldisc_open(struct tty_struct *tty,
-> struct tty_ldisc *ld)
->                  /* BTM here locks versus a hangup event */
->                 WARN_ON(!tty_locked());
->                 ret = ld->ops->open(tty);
-> +               if (ret)
-> +                       clear_bit(TTY_LDISC_OPEN, &tty->flags);
->                 return ret;
->         }
->         return 0;
+> In userspace, the .lzma format has become mostly a legacy
+> file format that got superseded by the .xz format. Similarly,
+> LZMA Utils was superseded by XZ Utils.
 > 
-> thanks,
-> -- 
-> js
-> suse labs
-This one fixes this particular backtrace, but now we have another one, which happens less often
-only every 3 times of executing problem and never on ENOMEM case:
+> These patches add support for XZ decompression into
+> the kernel. Most of the code is as is from XZ Embedded
+> <http://tukaani.org/xz/embedded.html>. It was written for
+> the Linux kernel but is usable in other projects too.
+> 
+> Advantages of XZ over the current LZMA code in the kernel:
+>   - Nice API that can be used by other kernel modules; it's
+>     not limited to kernel, initramfs, and initrd decompression.
+>   - Integrity check support (CRC32)
+>   - BCJ filters improve compression of executable code on
+>     certain architectures. These together with LZMA2 can
+>     produce a few percent smaller kernel or Squashfs images
+>     than plain LZMA without making the decompression slower.
+> 
+> This patch: Add the main decompression code (xz_dec), testing
+> module (xz_dec_test), wrapper script (xz_wrap.sh) for the xz
+> command line tool, and documentation. The xz_dec module is
+> enough to have a usable XZ decompressor e.g. for Squashfs.
 
-------------[ cut here ]------------
-WARNING: at drivers/tty/tty_ldisc.c:475 tty_ldisc_close+0x24/0x64()
+I'm not seeing any documentation which tells me how to create, install
+and execute xs-compressed kernels. There are new makefile targets?
 
-Modules linked in:
-[<c002c694>] (unwind_backtrace+0x0/0xe4) from [<c0037ad4>] (warn_slowpath_common+0x4c/0x64)
-[<c0037ad4>] (warn_slowpath_common+0x4c/0x64) from [<c0037b04>] (warn_slowpath_null+0x18/0x1c)
-[<c0037b04>] (warn_slowpath_null+0x18/0x1c) from [<c01bb810>] (tty_ldisc_close+0x24/0x64)
-[<c01bb810>] (tty_ldisc_close+0x24/0x64) from [<c01bba1c>] (tty_ldisc_release+0x3c/0x70)
-[<c01bba1c>] (tty_ldisc_release+0x3c/0x70) from [<c01b6cf0>] (tty_release+0x41c/0x480)
-[<c01b6cf0>] (tty_release+0x41c/0x480) from [<c00a7374>] (fput+0x108/0x200)
-[<c00a7374>] (fput+0x108/0x200) from [<c00a46b0>] (filp_close+0x6c/0x78)
-[<c00a46b0>] (filp_close+0x6c/0x78) from [<c00399d8>] (put_files_struct+0x80/0xdc)
-[<c00399d8>] (put_files_struct+0x80/0xdc) from [<c003b014>] (do_exit+0x1a8/0x6b4)
-[<c003b014>] (do_exit+0x1a8/0x6b4) from [<c003b5e0>] (do_group_exit+0xc0/0xf4)
-[<c003b5e0>] (do_group_exit+0xc0/0xf4) from [<c003b624>] (sys_exit_group+0x10/0x1c)
-[<c003b624>] (sys_exit_group+0x10/0x1c) from [<c0027a80>] (ret_fast_syscall+0x0/0x2c)
----[ end trace 59483134a28e9f56 ]---
+>
+> ...
+>
+> +#define bcj_x86_test_msbyte(b) ((b) == 0x00 || (b) == 0xFF)
 
-addr2lines:
-c01bb810 arch/arm/include/asm/irqflags.h:53
-c01bba1c drivers/tty/tty_ldisc.c:377
-c01b6cf0 drivers/tty/tty_io.c:1763
-c00a7374 fs/file_table.c:249
-c00a46b0 fs/open.c:960
-c00399d8 kernel/exit.c:495
-c003b014 kernel/exit.c:985
-c003b5e0 include/linux/sched.h:2213
-c003b624 kernel/exit.c:1106
+This should be written in C.  It looks nicer, and so
+bcj_x86_test_msbyte(*p++) won't explode.
 
-ENOMEM case is one which still wonders me, especially why it happens every second run.
+> +static noinline_for_stack size_t bcj_x86(
 
-Thanks a lot,
-S.
+hm, but it uses little stack space.
 
+> +static noinline_for_stack size_t bcj_x86(
+> +		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+
+The preferred style is
+
+static noinline_for_stack size_t bcj_x86(struct xz_dec_bcj *s, uint8_t *buf,
+					size_t size)
+
+or
+
+static noinline_for_stack size_t
+bcj_x86(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+
+(lots of dittoes)
