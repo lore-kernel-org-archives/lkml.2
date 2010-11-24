@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab0KXMXX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 07:23:23 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13469 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753481Ab0KXMXV (ORCPT
+	id S1754533Ab0KXMX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 07:23:58 -0500
+Received: from outbound3.messaging.lotuslive.com ([8.12.152.113]:45073 "EHLO
+	outbound3.messaging.lotuslive.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754285Ab0KXMX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 07:23:21 -0500
-Message-ID: <4CED039F.3020106@dsn.okisemi.com>
-Date: Wed, 24 Nov 2010 21:22:55 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Wed, 24 Nov 2010 07:23:57 -0500
+Message-ID: <20101124120144.7092.qmail@c-in3ws--03-04.sv2.lotuslive.com>
+Cc: recipient list not shown:;
+X-ob-auth: dkcorner:hickorytech.net@hickorytech.net
+Reply-To: <mysteryshop@student.com>
+From: "Mystery Shopper Inc" <nz.shopper@mysteryshop.net>
+Subject: Job Offer: Get Paid Per Assignment $400 NZ Dollars
+Date: Wed, 24 Nov 2010 22:01:41 +1000
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 13/17 v3] can: EG20T PCH: Fix miss-setting status
- issue
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=1.1 cv=65FICZCwooaUzSuu4t9TATr0H0ociQWcmnm9OfJJqTQ= c=1
+		sm=1 a=Dyoqhi_TatcA:10 a=YLiffhMk7iQA:10 a=XyqzpHdeIV4A:10
+		a=BLceEmwcHowA:10 a=Cfj4BQAnxiAA:10 a=e41OtgTIu5_Qc_cOaEgA:9
+		a=3HihuHN99-B3afkNct4A:7 a=y-J_X32VrTwVNBy-pDaxHZfio1MA:4 a=Ft8UYL4EG9YA:10
+		a=ZLWhqwrAy1QTjJHz:21 a=8q0kw9oWa-tQzSMX:21 a=WkljmVdYkabdwxfqvArNOQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify miss-setting status issue at suspend.
+Dear Applicant
+
+AboutFace? is accepting applications for individuals to become Secret
+shoppers. There is no charge to become a shopper. There are many secret
+shopping companies out there that ask you to pay "a small fee" to
+become a shopper. Don't do it! At AboutFace, you will never pay to
+shop! We pay you!
+The assignment will pay $400.00 NZ Dollars/per Assignment. Kindly fill out the
+application form below and we will get back to you with the assignment
+details.
 
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Your Full Name:
+Residential Address:
+City:
+Post code:
+Occupation:
+Age:
+Phone Number(s):
+Email:
+Banking Institution:
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 466f011..610cf3b 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -1084,7 +1084,7 @@ static int pch_can_suspend(struct pci_dev *pdev,
-pm_message_t state)
- 	pch_can_set_run_mode(priv, PCH_CAN_STOP);
 
- 	/* Indicate that we are aboutto/in suspend */
--	priv->can.state = CAN_STATE_SLEEPING;
-+	priv->can.state = CAN_STATE_STOPPED;
-
- 	/* Waiting for all transmission to complete. */
- 	while (counter) {
--- 
-1.6.0.6
-
+Have receive or done an offer like this? Yes or No? If yes give out come?
+Anthony Williams
+Copyright ? 2010 AboutFace?
+3292 Thompson Bridge Road, Suite 329
+Gainesville, GA 30506
