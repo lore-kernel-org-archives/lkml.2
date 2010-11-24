@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab0KXW4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 17:56:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12332 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab0KXW4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 17:56:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,250,1288594800"; 
-   d="scan'208";a="680809469"
-Date: Wed, 24 Nov 2010 22:36:00 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv5 05/17] tty: don't allow ldisc dcd_change() after ldisc
- halt
-Message-ID: <20101124223600.5eb8476f@bob.linux.org.uk>
-In-Reply-To: <20101125013812.0dc828ad@tornado.gnet>
-References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
-	<48e935cac42ae455e2ef8fc45f7eef7631eece6b.1290599844.git.lasaine@lvk.cs.msu.su>
-	<20101124164329.75368d71@lxorguk.ukuu.org.uk>
-	<20101125013812.0dc828ad@tornado.gnet>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756477Ab0KXXMT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 18:12:19 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:56670 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab0KXXMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 18:12:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=c3bEy5j25LLrNnSjNf3FMzSiVdaMg401KSev5I3PYxHAFWrhCRLKHCv8Fv316Y5jZ9
+         ncuZRZL0ciYyXUfMfCQgESjQ0wOmUibOM6W+GYjDTh6J+B7aoaHKfCabN67dc2udu9DJ
+         0z5tqBmJ+W9EmPCt/ItGwHl7qHCPa0lYc40b0=
+MIME-Version: 1.0
+Date: Wed, 24 Nov 2010 15:12:14 -0800
+Message-ID: <AANLkTinpO=FmoecfV8epubXU4OrhFsXJ7-Kc68yNhMEs@mail.gmail.com>
+Subject: [PATCH] bonding: check for assigned mac before adopting the slaves
+ mac address
+From: David Strand <dpstrand@gmail.com>
+To: netdev@vger.kernel.org
+Cc: Jay Vosburgh <fubar@us.ibm.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, indeed, it's a bug. Please consider the following example:
-> 
->      CPU1                                      CPU2
-> =========================================================
-> uart_handle_dcd_change() {		tty_set_ldisc() {
->   ld = tty_ldisc_ref(...)			  ...
+Restore the check for a missing mac address before adopting the first
+slaves as it's own. This regression was introduced in:
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commit;h=c20811a79e671a6a1fe86a8c1afe04aca8a7f085
 
-[We have a reference]
->   ...					  tty_ldisc_halt(...)
-					  [Should block]
+Signed-off-by: David Strand dpstrand@gmail.com
+---
+diff -uprN a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+--- a/drivers/net/bonding/bond_main.c	2010-11-24 11:36:58.125640000 -0800
++++ b/drivers/net/bonding/bond_main.c	2010-11-24 11:40:58.175640000 -0800
+@@ -1577,8 +1577,9 @@ int bond_enslave(struct net_device *bond
+ 	/* If this is the first slave, then we need to set the master's hardware
+ 	 * address to be the same as the slave's. */
+ 	if (bond->slave_cnt == 0)
+-		memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
+-		       slave_dev->addr_len);
++		if (is_zero_ether_addr(bond->dev->dev_addr))
++			memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
++			       slave_dev->addr_len);
 
-> I think tty code is exactly the right place to fix this bug; this is
-> what my patch is for.
 
-More special case magic on top of the current crap isn't the right fix
-here, tty_ldisc_halt needs to wait for the references to hit zero.
-
-Alan
- 
-
+ 	new_slave = kzalloc(sizeof(struct slave), GFP_KERNEL);
