@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab0KXV7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 16:59:44 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:53301 "HELO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756070Ab0KXV7l (ORCPT
+	id S1756042Ab0KXV7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 16:59:40 -0500
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:34151 "HELO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754641Ab0KXV7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 16:59:41 -0500
+	Wed, 24 Nov 2010 16:59:39 -0500
 From: Ben Gardiner <bengardiner@nanometrics.ca>
 To: Kevin Hilman <khilman@deeprootsystems.com>,
         davinci-linux-open-source@linux.davincidsp.com,
@@ -15,360 +15,128 @@ To: Kevin Hilman <khilman@deeprootsystems.com>,
 Cc: linux-kernel@vger.kernel.org,
         Chris Cordahi <christophercordahi@nanometrics.ca>,
         Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        Gabor Juhos <juhosg@openwrt.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [PATCH v5 1/5] [WIP] input: add input driver for polled GPIO buttons
-Date: Wed, 24 Nov 2010 16:59:30 -0500
-Message-Id: <91c06463c8c2afb543c8a22350d2ddd8bf2ef71f.1290635422.git.bengardiner@nanometrics.ca>
+        Gabor Juhos <juhosg@openwrt.org>
+Subject: [PATCH v5 0/5] da850-evm: add gpio-{keys,leds} for UI and BB expanders
+Date: Wed, 24 Nov 2010 16:59:29 -0500
+Message-Id: <cover.1290635422.git.bengardiner@nanometrics.ca>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1290635422.git.bengardiner@nanometrics.ca>
-References: <cover.1290540916.git.bengardiner@nanometrics.ca> <cover.1290635422.git.bengardiner@nanometrics.ca>
+In-Reply-To: <cover.1290540916.git.bengardiner@nanometrics.ca>
+References: <cover.1290540916.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabor Juhos <juhosg@openwrt.org>
+Note: I must regrettably move on to other projects for awhile and will thus
+be unavailable to continue this integration effort. I am posting the most
+recent version of the series with a modified version of Gabor Juho's driver
+in the hopes that it will make the integration effort easier for whoever picks
+up the task when the time is right -- whether or not that is me.
 
-The existing gpio-keys driver can be usable only for GPIO lines with
-interrupt support. Several devices have buttons connected to a GPIO
-line which is not capable to generate interrupts. This patch adds a
-new input driver using the generic GPIO layer and the input-polldev
-to support such buttons.
+My apologies for the patchbomb. I will do my best to make time for reviews 
+and testing of any future versions of the series.
 
-(WIP: this version has incorporated into it the changes I suggested in review
-of the original patch by Gabor Junos. I am posting it as part of the da850-evm
-series in the hopes that the final version produced by Gabor can be
-substituted in its place when the time is right. I don't mean to imply that
-this version of the patch should be integrated in the final series)
+Best Regards,
+Ben Gardiner
 
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-input@vger.kernel.org
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
 ---
+
+The da850-evm baseboard (BB) and its UI board both have tca6416 IO expanders.
+They are bootstrapped to different I2C addresses so they can be used
+concurrently.
+
+The expander on the UI board is currently used to enable/disable the
+peripherals that are available on the UI board. In addition to this
+functionality the expander is also connected to 8 pushbuttons. The expander
+on the baseboard is not currently used; it is connected to deep sleep enable,
+sw reset, a push button, some switches and LEDs.
+
+This proposed patch series enables the push buttons and switches on the UI and
+BB expanders using the gpio-keys polling mode patch by Gabor Juhos. Some
+work was performed to test irq-based gpio-keys support on the expanders (a WIP
+patch can be posted on request) but I believe that it is not possible to use 
+irq-based gpio-keys on IO expanders for arm systems at this time. 
+
+The attempt started when I noticed the patch of Alek Du and Alan Cox [1] which 
+was recently committed [2]; a stab at integrating irq-based gpio-keys support
+based on that patch was attempted. I found that I either got a warning that the
+irq could not be mapped for the given gpio ; or, when N_IRQ was increased, a
+system freeze.
+
+>From what I have read (particularly the message by Grant Likely [3]) IRQs on
+IO expanders are not ready in ARM yet. I _think_ that the sparse IRQ rework by
+Thomas Gleixner [4] will resolve the blocker to irq-based gpio-keys support. 
+
+In the meantime we have buttons and switches that we would like to excersise
+in our prototyping development. The patch to convert this series to irq-based
+gpio-keys will be straighforward once the support in arch/arm is there.
+
+There is an existing tca6416-keypad driver with polling support which I did not
+employ because it isn't possible to keep the gpio's used for peripheral
+enable/disable on the UI board or the LEDs on the baseboard registered while
+simultaneously registering the pushbuttons or switches as a tca6416-keypad 
+instance.
+
+I tested this patch series using evtest on the resulting /dev/input/eventN 
+devices and also on the event node of a non-polling gpio-keys instance to 
+ensure that irq-based input handling is not broken by the introduction of the
+polling-mode gpio-keys patch. The non-polling instance creation and
+registration is not included in this series since it uses one of the boot-mode
+DIP switches and woult not (I think) be suitable for mainline.
+
+Disclaimer: 
+I'm not an expert in irq's or gpio-keys; this is, in fact, my first proposed
+feature. Please feel free to correct me -- I welcome the chance to learn from
+your expertise.
+
+Ben Gardiner (4):
+  da850-evm: add UI Expander pushbuttons
+  da850-evm: extract defines for SEL{A,B,C} pins in UI expander
+  da850-evm: add baseboard GPIO expander buttons, switches and LEDs
+  da850-evm: KEYBOARD_GPIO_POLLED Kconfig conditional
+
+Gabor Juhos (1):
+  [WIP] input: add input driver for polled GPIO buttons
+
+ arch/arm/mach-davinci/Kconfig             |    3 +
+ arch/arm/mach-davinci/board-da850-evm.c   |  306 +++++++++++++++++++++++++++--
  drivers/input/keyboard/Kconfig            |   16 ++
  drivers/input/keyboard/Makefile           |    2 +
- drivers/input/keyboard/gpio_keys_polled.c |  240 +++++++++++++++++++++++++++++
+ drivers/input/keyboard/gpio_keys_polled.c |  240 ++++++++++++++++++++++
  include/linux/gpio_keys_polled.h          |   26 +++
- 4 files changed, 284 insertions(+), 0 deletions(-)
+ 6 files changed, 581 insertions(+), 12 deletions(-)
  create mode 100644 drivers/input/keyboard/gpio_keys_polled.c
  create mode 100644 include/linux/gpio_keys_polled.h
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index b8c51b9..9648ff4 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -485,4 +485,20 @@ config KEYBOARD_W90P910
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called w90p910_keypad.
- 
-+config KEYBOARD_GPIO_POLLED
-+	tristate "Polled GPIO buttons"
-+	depends on GENERIC_GPIO
-+	select INPUT_POLLDEV
-+	help
-+	  This driver implements support for buttons connected
-+	  to GPIO pins of various CPUs (and some other chips).
-+
-+	  Say Y here if your device has buttons connected
-+	  directly to such GPIO pins.  Your board-specific
-+	  setup logic must also provide a platform device,
-+	  with configuration data saying which GPIOs are used.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called gpio-buttons.
-+
- endif
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index a34452e..e6da817 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -44,3 +44,5 @@ obj-$(CONFIG_KEYBOARD_TNETV107X)	+= tnetv107x-keypad.o
- obj-$(CONFIG_KEYBOARD_TWL4030)		+= twl4030_keypad.o
- obj-$(CONFIG_KEYBOARD_XTKBD)		+= xtkbd.o
- obj-$(CONFIG_KEYBOARD_W90P910)		+= w90p910_keypad.o
-+obj-$(CONFIG_KEYBOARD_GPIO_POLLED)	+= gpio_keys_polled.o
-+
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-new file mode 100644
-index 0000000..390ed93
---- /dev/null
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -0,0 +1,240 @@
-+/*
-+ *  Driver for buttons on GPIO lines not capable of generating interrupts
-+ *
-+ *  Copyright (C) 2007-2010 Gabor Juhos <juhosg@openwrt.org>
-+ *  Copyright (C) 2010 Nuno Goncalves <nunojpg@gmail.com>
-+ *
-+ *  This file was based on: /drivers/input/misc/cobalt_btns.c
-+ *	Copyright (C) 2007 Yoichi Yuasa <yoichi_yuasa@tripeaks.co.jp>
-+ *
-+ *  also was based on: /drivers/input/keyboard/gpio_keys.c
-+ *	Copyright 2005 Phil Blundell
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/input.h>
-+#include <linux/input-polldev.h>
-+#include <linux/ioport.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/gpio_keys_polled.h>
-+
-+#define DRV_NAME	"gpio-keys-polled"
-+
-+struct gpio_keys_button_data {
-+	int last_state;
-+	int count;
-+	int can_sleep;
-+};
-+
-+struct gpio_keys_polled_dev {
-+	struct input_polled_dev *poll_dev;
-+	struct gpio_keys_polled_platform_data *pdata;
-+	struct gpio_keys_button_data *data;
-+};
-+
-+static void gpio_keys_polled_check_state(struct input_dev *input,
-+				      struct gpio_keys_button *button,
-+				      struct gpio_keys_button_data *bdata)
-+{
-+	int state;
-+
-+	if (bdata->can_sleep)
-+		state = !!gpio_get_value_cansleep(button->gpio);
-+	else
-+		state = !!gpio_get_value(button->gpio);
-+
-+	if (state != bdata->last_state) {
-+		unsigned int type = button->type ?: EV_KEY;
-+
-+		input_event(input, type, button->code,
-+			    !!(state ^ button->active_low));
-+		input_sync(input);
-+		bdata->count = 0;
-+		bdata->last_state = state;
-+	}
-+}
-+
-+static void gpio_keys_polled_poll(struct input_polled_dev *dev)
-+{
-+	struct gpio_keys_polled_dev *bdev = dev->private;
-+	struct gpio_keys_polled_platform_data *pdata = bdev->pdata;
-+	struct input_dev *input = dev->input;
-+	int i, threshold;
-+
-+	for (i = 0; i < bdev->pdata->nbuttons; i++) {
-+		struct gpio_keys_button *button = &pdata->buttons[i];
-+		struct gpio_keys_button_data *bdata = &bdev->data[i];
-+
-+		threshold = round_up(button->debounce_interval,
-+				pdata->poll_interval) /
-+				pdata->poll_interval;
-+		if (bdata->count < threshold)
-+			bdata->count++;
-+		else
-+			gpio_keys_polled_check_state(input, button, bdata);
-+
-+	}
-+}
-+
-+static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
-+{
-+	struct gpio_keys_polled_platform_data *pdata = pdev->dev.platform_data;
-+	struct device *dev = &pdev->dev;
-+	struct gpio_keys_polled_dev *bdev;
-+	struct input_polled_dev *poll_dev;
-+	struct input_dev *input;
-+	int error;
-+	int i;
-+
-+	if (!pdata)
-+		return -ENXIO;
-+
-+	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
-+		       pdata->nbuttons * sizeof(struct gpio_keys_button_data),
-+		       GFP_KERNEL);
-+	if (!bdev) {
-+		dev_err(dev, "no memory for private data\n");
-+		return -ENOMEM;
-+	}
-+
-+	bdev->data = (struct gpio_keys_button_data *) &bdev[1];
-+
-+	poll_dev = input_allocate_polled_device();
-+	if (!poll_dev) {
-+		dev_err(dev, "no memory for polled device\n");
-+		error = -ENOMEM;
-+		goto err_free_bdev;
-+	}
-+
-+	poll_dev->private = bdev;
-+	poll_dev->poll = gpio_keys_polled_poll;
-+	poll_dev->poll_interval = pdata->poll_interval;
-+
-+	input = poll_dev->input;
-+
-+	input->evbit[0] = BIT(EV_KEY);
-+	input->name = pdev->name;
-+	input->phys = DRV_NAME"/input0";
-+	input->dev.parent = &pdev->dev;
-+
-+	input->id.bustype = BUS_HOST;
-+	input->id.vendor = 0x0001;
-+	input->id.product = 0x0001;
-+	input->id.version = 0x0100;
-+
-+	for (i = 0; i < pdata->nbuttons; i++) {
-+		struct gpio_keys_button *button = &pdata->buttons[i];
-+		unsigned int gpio = button->gpio;
-+		unsigned int type = button->type ?: EV_KEY;
-+
-+		if (button->wakeup) {
-+			dev_err(dev, DRV_NAME " does not support wakeup\n");
-+			goto err_free_gpio;
-+		}
-+
-+		error = gpio_request(gpio,
-+				     button->desc ? button->desc : DRV_NAME);
-+		if (error) {
-+			dev_err(dev, "unable to claim gpio %u, err=%d\n",
-+				gpio, error);
-+			goto err_free_gpio;
-+		}
-+
-+		error = gpio_direction_input(gpio);
-+		if (error) {
-+			dev_err(dev,
-+				"unable to set direction on gpio %u, err=%d\n",
-+				gpio, error);
-+			goto err_free_gpio;
-+		}
-+
-+		bdev->data[i].can_sleep = gpio_cansleep(gpio);
-+		bdev->data[i].last_state = -1;
-+
-+		input_set_capability(input, type, button->code);
-+	}
-+
-+	bdev->poll_dev = poll_dev;
-+	bdev->pdata = pdata;
-+	platform_set_drvdata(pdev, bdev);
-+
-+	error = input_register_polled_device(poll_dev);
-+	if (error) {
-+		dev_err(dev, "unable to register polled device, err=%d\n",
-+			error);
-+		goto err_free_gpio;
-+	}
-+
-+	/* report initial state of the buttons */
-+	for (i = 0; i < pdata->nbuttons; i++)
-+		gpio_keys_polled_check_state(input, &pdata->buttons[i],
-+					 &bdev->data[i]);
-+
-+	return 0;
-+
-+err_free_gpio:
-+	for (i = i - 1; i >= 0; i--)
-+		gpio_free(pdata->buttons[i].gpio);
-+
-+	input_free_polled_device(poll_dev);
-+
-+err_free_bdev:
-+	kfree(bdev);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	return error;
-+}
-+
-+static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
-+{
-+	struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
-+	struct gpio_keys_polled_platform_data *pdata = bdev->pdata;
-+	int i;
-+
-+	input_unregister_polled_device(bdev->poll_dev);
-+
-+	for (i = 0; i < pdata->nbuttons; i++)
-+		gpio_free(pdata->buttons[i].gpio);
-+
-+	input_free_polled_device(bdev->poll_dev);
-+
-+	kfree(bdev);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver gpio_keys_polled_driver = {
-+	.probe	= gpio_keys_polled_probe,
-+	.remove	= __devexit_p(gpio_keys_polled_remove),
-+	.driver	= {
-+		.name	= DRV_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init gpio_keys_polled_init(void)
-+{
-+	return platform_driver_register(&gpio_keys_polled_driver);
-+}
-+
-+static void __exit gpio_keys_polled_exit(void)
-+{
-+	platform_driver_unregister(&gpio_keys_polled_driver);
-+}
-+
-+module_init(gpio_keys_polled_init);
-+module_exit(gpio_keys_polled_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");
-+MODULE_DESCRIPTION("Polled GPIO Buttons driver");
-diff --git a/include/linux/gpio_keys_polled.h b/include/linux/gpio_keys_polled.h
-new file mode 100644
-index 0000000..bf7f94a
---- /dev/null
-+++ b/include/linux/gpio_keys_polled.h
-@@ -0,0 +1,26 @@
-+/*
-+ *  Definitions for the GPIO buttons interface driver
-+ *
-+ *  Copyright (C) 2007-2010 Gabor Juhos <juhosg@openwrt.org>
-+ *
-+ *  This file was based on: /include/linux/gpio_keys.h
-+ *	The original gpio_keys.h seems not to have a license.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef _GPIO_BUTTONS_H_
-+#define _GPIO_BUTTONS_H_
-+
-+#include <linux/gpio_keys.h>
-+
-+struct gpio_keys_polled_platform_data {
-+	struct gpio_keys_button *buttons;
-+	int	nbuttons;		/* number of buttons */
-+	int	poll_interval;		/* polling interval in msecs*/
-+};
-+
-+#endif /* _GPIO_BUTTONS_H_ */
--- 
-1.7.0.4
+---
+
+Changes since v4:
+ * integrated Gabor Juhos' polling gpio button driver in place of the
+   gpio-keys patch of Paul Mundt and Alex Clouter
+ * dont' line break error messages (Sekhar Nori)
+ * whitespace cleanup (Sekhar Nori)
+
+Changes since v3:
+ * introduced patch 5 in the series by extracting the Kconfig changes proposed
+   in patch 2 of v3.
+ * not gpio_request()'ing the sw_rst and deep_sleep_en lines as requested 
+   (Sekhar Nori)
+
+Changes since v2:
+ * register a single input device for switches and keys on the baseboard since
+   there is no benefit to separate devices with different polling intervals
+   (Dmitry Torokhov)
+ * use static array intialization and range intialization for platform data 
+   structure to minimize the amount of runtime intialization needed:
+   (Sekhar Nori)
+ * Use the da850_evm variable name prefix for static symbols in
+   board-da850-evm.c
+
+Changes since v1:
+ * use locally defined functions that are no-ops/error checkers when
+   INPUT_POLLDEV is not defined.
+ * disable polling mode support when input-polldev is a module and gpio_keys
+   is builtin
+ * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
+   unconditionally
+ * adding note to description about why tca6416-keypad was not used
 
