@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab0KXTAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 14:00:14 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:43993 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab0KXTAN (ORCPT
+	id S1754923Ab0KXTFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 14:05:16 -0500
+Received: from 206.83.70.71.ptr.us.xo.net ([206.83.70.71]:12905 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab0KXTFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 14:00:13 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Wed, 24 Nov 2010 14:00:12 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: James Jones <jajones@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: Fix find_next_zero_bit and related assembly
-In-reply-to: <4CED55A6.5090608@codeaurora.org>
-Message-id: <alpine.LFD.2.00.1011241357520.9313@xanadu.home>
-References: <1289524615-22484-1-git-send-email-jajones@nvidia.com>
- <alpine.LFD.2.00.1011231625380.9313@xanadu.home>
- <201011231528.25668.jajones@nvidia.com> <4CED55A6.5090608@codeaurora.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 24 Nov 2010 14:05:15 -0500
+Message-Id: <201011241905.oAOJ5Etn028906@farm-0013.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 24 Nov 2010 13:42:15 -0500
+Subject: [PATCH] arch/tile: make glibc's sysconf(_SC_NPROCESSORS_CONF) work correctly
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 24 Nov 2010 19:05:14.0481 (UTC) FILETIME=[8687F610:01CB8C0A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Nov 2010, Stephen Boyd wrote:
+glibc assumes that it can count /sys/devices/system/cpu/cpu* to get
+the number of configured cpus.  For this to be valid on tile, we need
+to generate a "cpu" entry for all cpus, including the ones that are
+not currently allocated for Linux's use.
 
-> On 11/23/2010 03:28 PM, James Jones wrote:
-> > On Tuesday 23 November 2010 13:26:47 Nicolas Pitre wrote:
-> >> On Thu, 11 Nov 2010, James Jones wrote:
-> >>> The find_next_bit, find_first_bit, find_next_zero_bit
-> >>> and find_first_zero_bit functions were not properly
-> >>> clamping to the maxbit argument at the bit level. They
-> >>> were instead only checking maxbit at the byte level.
-> >>> To fix this, add a compare and a conditional move
-> >>> instruction to the end of the common bit-within-the-
-> >>> byte code used by all the functions and be sure not to
-> >>> clobber the maxbit argument before it is used.
-> >>>
-> >>> Signed-off-by: James Jones <jajones@nvidia.com>
-> >>> Tested-by: Stephen Warren <swarren@nvidia.com>
-> >> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> >>
-> >> Please send to RMK's patch system.
-> > Thanks for the review.  It's already in the patch system, but I updated the 
-> > entry to include your reviewed-by line.
-> 
-> Should this be sent to the stable tree too?
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/setup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It could, yes.  This is hardly an urgent fix though, as the bug has been 
-there virtually forever.
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index fb0b3cb..f185736 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -840,7 +840,7 @@ static int __init topology_init(void)
+ 	for_each_online_node(i)
+ 		register_one_node(i);
+ 
+-	for_each_present_cpu(i)
++	for (i = 0; i < smp_height * smp_width; ++i)
+ 		register_cpu(&cpu_devices[i], i);
+ 
+ 	return 0;
+-- 
+1.6.5.2
 
-
-Nicolas
