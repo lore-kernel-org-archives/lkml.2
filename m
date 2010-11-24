@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab0KXCcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 21:32:52 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:41659 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab0KXCcv (ORCPT
+	id S1752299Ab0KXCdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 21:33:25 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48336 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab0KXCdX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 21:32:51 -0500
-Date: Tue, 23 Nov 2010 20:32:39 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: [PATCH v1.5 3/5] key: add tpm_send command
-Message-ID: <20101124023238.GA26540@tiny>
-References: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1290556456.2604.14.camel@localhost.localdomain>
+	Tue, 23 Nov 2010 21:33:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=h/Wqeer/sJ/zp9l6lRA9sL1KbSsuPXuJ47CTGE/ToSRZsopTiGobxNGJbTf9yKtue9
+         z0cpcOyDa1QGCJMK8+P52AigSh/I8hNhSawmXx+G2PankbJxHExzCkS3sfZaYcsPV/VF
+         YObAlPJH1bcavgJDgCCxOVyMm7gP9NqGB5CPI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290556456.2604.14.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikhGErGQrFB-QNiYjWt2PqRGdF+m3kOkt2tmnER@mail.gmail.com>
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+	<1290558673-23580-2-git-send-crap-fweisbec@gmail.com>
+	<20101124005820.GH8056@linux.vnet.ibm.com>
+	<AANLkTikhGErGQrFB-QNiYjWt2PqRGdF+m3kOkt2tmnER@mail.gmail.com>
+Date: Wed, 24 Nov 2010 03:33:21 +0100
+Message-ID: <AANLkTinFhEf1XVSRYuL+JL=JETLZ6cz3GYCR8CL3ex8X@mail.gmail.com>
+Subject: Re: [PATCH 1/2] rcu: Don't chase unnecessary quiescent states after
+ extended grace periods
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
-> Add internal kernel tpm_send() command used to seal/unseal keys.
-> 
-> Changelog:
-> - replaced module_put in tpm_send() with new tpm_chip_put() wrapper
->   (suggested by David Howells)
-> - Make tpm_send() cmd argument a 'void *' (suggested by David Howells)
-> 
-> Signed-off-by: David Safford <safford@watson.ibm.com>
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> Acked-by: David Howells <dhowells@redhat.com>
-> ---
->  drivers/char/tpm/tpm.c |   16 ++++++++++++++++
->  include/linux/tpm.h    |    4 ++++
->  2 files changed, 20 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index 26c09f3..068bac8 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -780,6 +780,22 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
->  }
->  EXPORT_SYMBOL_GPL(tpm_pcr_extend);
->  
-> +int tpm_send(u32 chip_num, void *cmd, size_t buflen)
+2010/11/24 Frederic Weisbecker <fweisbec@gmail.com>:
+> On Tue, Nov 23, 2010 at 04:58:20PM -0800, Paul E. McKenney wrote:
+>> On Wed, Nov 24, 2010 at 01:31:12AM +0100, Frederic Weisbecker wrote:
+>> > When a cpu is in an extended quiescent state, which includes idle
+>> > nohz or CPU offline, others CPUs will take care of the grace periods
+>> > on its behalf.
+>> >
+>> > When this CPU exits its extended quiescent state, it will catch up
+>> > with the last started grace period and start chasing its own
+>> > quiescent states to end the current grace period.
+>> >
+>> > However in this case we always start to track quiescent states if the
+>> > grace period number has changed since we started our extended
+>> > quiescent state. And we do this because we always assume that the last
+>> > grace period is not finished and needs us to complete it, which is
+>> > sometimes wrong.
+>> >
+>> > This patch verifies if the last grace period has been completed and
+>> > if so, start hunting local quiescent states like we always did.
+>> > Otherwise don't do anything, this economizes us some work and
+>> > an unnecessary softirq.
+>>
+>> Interesting approach!  I can see how this helps in the case where the
+>> CPU just came online, but I don't see it in the nohz case, because the
+>> nohz case does not update the rdp->completed variable.  In contrast,
+>> the online path calls rcu_init_percpu_data() which sets up this variable.
+>>
+>> So, what am I missing here?
+>>
+>>                                                       Thanx, Paul
+>>
+>> PS.  It might well be worthwhile for the online case alone, but
+>>      the commit message does need to be accurate.
+>
+>
+> So, let's take this scenario (inspired from a freshly dumped trace to
+> clarify my ideas):
+>
+> CPU 1 was idle, it has missed several grace periods, but CPU 0 took care
+> of that.
+>
+> Hence, CPU 0's rdp->gpnum = rdp->completed = 4294967000
+>
+> But the last grace period was 4294967002 and it's completed
+> (rnp->pgnum = rnp->completed = rsp->pgnum = 4294967002).
+>
+> Now CPU 0 gets a tick for a random reason, it calls rcu_check_callbacks()
+> and then rcu_pending() which raises the softirq because of this:
+>
+>        /* Has another RCU grace period completed?  */
+>        if (ACCESS_ONCE(rnp->completed) != rdp->completed) { /* outside lock */
+>                rdp->n_rp_gp_completed++;
+>                return 1;
+>        }
+>
+> The softirq fires, we call rcu_process_gp_end() which will
+> update rdp->completed into the global state:
+> (rsp->completed = rnp->pgnum = rnp->completed = rsp->pgnum = 4294967002).
+>
+> But rsp->pgnum is still 2 offsets backwards.
+>
+> Now we call rcu_check_quiescent_state() -> check_for_new_grace_period()
+> -> note_new_gpnum() and then we end up a requested quiescent state while
+> every grace periods are completed.
 
-Hate to nit-pick, but any particular reason you're not following the
-rest of the file and using 'struct tpm_cmd_t *cmd' here?
 
-Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-
-> +{
-> +	struct tpm_chip *chip;
-> +	int rc;
-> +
-> +	chip = tpm_chip_find_get(chip_num);
-> +	if (chip == NULL)
-> +		return -ENODEV;
-> +
-> +	rc = transmit_cmd(chip, cmd, buflen, "attempting tpm_cmd");
-> +
-> +	tpm_chip_put(chip);
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(tpm_send);
-> +
->  ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
->  		      char *buf)
->  {
-> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-> index ac5d1c1..fdc718a 100644
-> --- a/include/linux/tpm.h
-> +++ b/include/linux/tpm.h
-> @@ -31,6 +31,7 @@
->  
->  extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
->  extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash);
-> +extern int tpm_send(u32 chip_num, void *cmd, size_t buflen);
->  #else
->  static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
->  	return -ENODEV;
-> @@ -38,5 +39,8 @@ static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
->  static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash) {
->  	return -ENODEV;
->  }
-> +static inline int tpm_send(u32 chip_num, void *cmd, size_t buflen) {
-> +	return -ENODEV;
-> +}
->  #endif
->  #endif
-> -- 
-> 1.7.2.2
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Sorry I should have described that in the changelogs but my ideas
+weren't as clear as they
+are now (at least I feel they are, doesn't mean they actually are ;)
+Chasing these RCU bugs for too much hours has toasted my brain..
