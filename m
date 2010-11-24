@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab0KXBHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Nov 2010 20:07:14 -0500
-Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:51451 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755626Ab0KXBHM (ORCPT
+	id S1756240Ab0KXBKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Nov 2010 20:10:54 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64718 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755735Ab0KXBKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Nov 2010 20:07:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAI/v60xGHlyW/2dsb2JhbACibXK9dYJyglkEhFo4
-Date: Tue, 23 Nov 2010 19:27:03 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] jump label: move jump table to r/w section
-Message-ID: <20101124002703.GB29158@Krystal>
-References: <cover.1290546539.git.jbaron@redhat.com> <bbc34a86a4cf4addcde1b85d7fa7faecc0966c03.1290546539.git.jbaron@redhat.com> <20101123235519.GB21549@Krystal> <1290557049.30543.417.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1290557049.30543.417.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 19:24:40 up 230 days, 10:14,  5 users,  load average: 1.15, 0.40,
-	0.19
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 23 Nov 2010 20:10:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bKn3tqfRQooKbvAnRH/KxH1z0yYHTVS+RJ4vkE3Qic76UOpQLO6VFR9lPYUajrONZO
+         +nfTOMzjaYhmOmzPCZTW5gGUx/uxdm4IjjAH7Xzq/24UYR/YK00gCrp2BVeiAWFPIUJR
+         bg/x2m1g9tD0bR8gxQaDHPzajKzWZdI3Hxv3E=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinJZyDcORj5DBGNr6Ss8penFyLxw4YDBFaTNLSK@mail.gmail.com>
+References: <1290126335-12430-1-git-send-email-pingc@wacom.com>
+	<20101122075554.GA27300@core.coreip.homeip.net>
+	<AANLkTinVYUrD2a+6Z3K0nUze12ZoSc5N0AtR0xB=AjOa@mail.gmail.com>
+	<20101123222458.GB20283@core.coreip.homeip.net>
+	<AANLkTimht8osNw=L+1TkhYOW5AafQDPBX64Xa1qBbdfP@mail.gmail.com>
+	<20101124003832.GA27368@core.coreip.homeip.net>
+	<AANLkTinJZyDcORj5DBGNr6Ss8penFyLxw4YDBFaTNLSK@mail.gmail.com>
+Date: Tue, 23 Nov 2010 17:10:50 -0800
+Message-ID: <AANLkTi=_swc-_J+hO-UWYh1sbQj=Lr2gFW-rK88fE6Z6@mail.gmail.com>
+Subject: Re: [PATCH] Add BTN_TOOL_BUTTONS to input.h
+From: Ping Cheng <pinglinux@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Tue, 2010-11-23 at 18:55 -0500, Mathieu Desnoyers wrote:
-> > * Jason Baron (jbaron@redhat.com) wrote:
-> > > Since we writing the jump table it should be be in R/W kernel
-> > > section. Move it to DATA_DATA
-> > > 
-> > > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> > > ---
-> > >  include/asm-generic/vmlinux.lds.h |   14 ++++----------
-> > >  1 files changed, 4 insertions(+), 10 deletions(-)
-> > > 
-> > > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> > > index bd69d79..9ca894d 100644
-> > > --- a/include/asm-generic/vmlinux.lds.h
-> > > +++ b/include/asm-generic/vmlinux.lds.h
-> > > @@ -161,6 +161,10 @@
-> > >  	VMLINUX_SYMBOL(__start___tracepoints) = .;			\
-> > >  	*(__tracepoints)						\
-> > >  	VMLINUX_SYMBOL(__stop___tracepoints) = .;			\
-> > > +	. = ALIGN(8);							\
-> > 
-> > Past churn with various architectures and compiler with tracepoints,
-> > markers and immediate values lead me to hint at the following approach
-> > for jump label structure alignment:
-> > 
-> > . = ALIGN(32);
-> > 
-> > and to modify jump_label.h to have:
-> > 
-> > struct jump_entry {
-> > 	jump_label_t code;
-> > 	jump_label_t target;
-> > 	jump_label_t key;
-> > } __attribute__((aligned(32)));
-> > 
-> > Otherwise, the compiler is free to choose on which value it prefers to
-> > align the jump_entry structures, which might not match the address at
-> > which the linker scripts puts the beginning of the jump table.
-> > 
-> > In this case, given that we put put the jump label table after the
-> > tracepoint table, we should be already aligned on 32 bytes. But I would
-> > recommend to put the . = ALIGN(32) in the linker script anyway, just for
-> > documentation purpose (and it should not add any padding in this case).
-> > 
-> > This is not a problem introduced by this patch, it also applies to the
-> > current jump label code.
-> 
-> Agreed, but this change could probably wait for 2.6.38.
-> 
-> Also, if this is done, then an it should be wrapped in a
-> #ifdef CONFIG_JUMP_LABEL and only inserted if we are using jump labels.
-> Otherwise we may add a 32 byte hole for nothing. I know it's small, but
-> why waste it if you don't need to.
+On Tue, Nov 23, 2010 at 4:51 PM, Ping Cheng <pinglinux@gmail.com> wrote:
+> On Tue, Nov 23, 2010 at 4:38 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> On Tue, Nov 23, 2010 at 04:12:13PM -0800, Ping Cheng wrote:
+>>> On Tue, Nov 23, 2010 at 2:24 PM, Dmitry Torokhov
+>>> <dmitry.torokhov@gmail.com> wrote:
+>>> >
+>>> >> > The BTN_TOOL_* were introduced to indicate to the userspace tool that is
+>>> >> > currently touching the surface of the device. Buttons are expected to be
+>>> >> > always present and can change their state regardless of what tool is
+>>> >> > being used at the moment. I.e. The full hardware state (between
+>>> >> > EV_SYN/SYN_REPORT) could be, for example,
+>>> >> >
+>>> >> > Pen at 10,20, BTN_0, and BTN_2 (ABS_X 10, ABS_Y 20, BTN_TOOL_PEN, BTN_0,
+>>> >> > BTN_2) or
+>>> >> >
+>>> >> > Lens at 20,15 and BTN_1 (ABS_X 20, ABS_Y 15, BTN_TOOL_LENS, BTN_1).
+>>> >> >
+>>> >> > As you can see BTN_* events can accompany either BTN_TOOL_LENS or
+>>> >> > BTN_TOOL_PEN or any other BTN_TOOL_*.
+>>> >>
+>>> >> You are right. The tablet buttons can go with one of those other
+>>> >> BTN_TOOL_s _if_ they do not define the same event types (BTN_s) as the
+>>> >> tablet buttons.
+>>> >>
+>>> >> The new Bamboo MT code sends both BTN_LEFT and BTN_RIGHT events for
+>>> >> Tablet Buttons (refer to line 905 and 908 of wacom_wac.c). However,
+>>> >> BTN_LEFT and BTN_RIGHT are also sent by BTN_TOOL_MOUSE/LENS tool
+>>> >> (refer to wacom_wac.c line 622 to 665).
+>>> >>
+>>> >> If we remove BTN_TOOL_FINGER without a BTN_TOOL-something to replace
+>>> >> it, the two LEFT and RIGHT buttons will have a hard time to tell the
+>>> >> user land if they are from the MOUSE/LENS or the Tablet Buttons. The
+>>> >> worst case could be the LEFT/RIGHT sent later overwrites the earlier
+>>> >> ones.
+>>> >>
+>>> >> We could do some guesswork in the user land to figure out which
+>>> >> LEFT/RIGHT belongs to which BTN_TOOL_ if the above scenario does not
+>>> >> happen. But, it would be much cheaper and more reliable if we can tell
+>>> >> the user land where those LEFT and RIGHT come from. This is the whole
+>>> >> purpose of the kernel driver, isn't it?
+>>> >
+>>> > What would userspace want to figure what physical button was pressed?
+>>> > Input events convey _actions_, i.e. BTN_LEFT means that user pressed
+>>> > primary button on the device. It does not matter if it was pressed on
+>>> > tablet or the mouse/lens; the response should be the same.
+>>>
+>>> You're right, if the user wants a LEFT click. In a lot of cases, they
+>>> want to translate it into something else. LEFT is only a default value
+>>> that we give them if they do nothing.
+>>>
+>>> > If you expect different response, depending on which physical button is
+>>> > pressed, then they should emit different BTN_* events. If you are
+>>> > concerned that some users might want to have the same actions while
+>>> > others want different actions - then please implement key remapping in
+>>> > the driver.
+>>>
+>>> That is exactly what I am trying to convince you. Without being able
+>>> to tell one button event from the other, even just logically, how can
+>>> I and other clients remap them?
+>>
+>> EVIOCSKEYCODE. You just need to wire wacom driver to support this ioctl.
 
-The lack of proper alignment did cause nasty hard-to-identify/reproduce
-regressions based on the compiler used, target platform and data layout.
-It's up to you, but I'd be much more comfortable merging this in 2.6.37.
+Hold on. I was too concentrated on the buttons then. There are touch
+rings (reported as ABS_WHEEL) on the tablet. How do we pass the raw
+ring data to the user land and tell if that ABS_WHEEL is from the ring
+or from a stylus' wheel? Should we add an ABS_RING then?
 
-Thanks,
+Also, if there is no tool on the tablet, which BTN_TOOL_* should we
+use to report those buttons and strips/rings? They are not PEN, not
+MOUSE, and not TOUCH. They are in fact an independent tool, like it or
+not.
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Ping
