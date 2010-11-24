@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab0KXI6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 03:58:06 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57866 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab0KXI6D (ORCPT
+	id S1752784Ab0KXJC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 04:02:28 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:43021 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab0KXJC1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 03:58:03 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, kernel@pengutronix.de,
-        Arjan van de Ven <arjan@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 2/6] block: add some KERN_CONT markers to continuation lines
-Date: Wed, 24 Nov 2010 09:57:46 +0100
-Message-Id: <1290589070-854-2-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101124085645.GW4693@pengutronix.de>
-References: <20101124085645.GW4693@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 24 Nov 2010 04:02:27 -0500
+Subject: Re: [rfc 3/3] perf, x86: P4 PMU -- export ABI part of event config
+ to userspace
+From: Peter Zijlstra <peterz@infradead.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, eranian@google.com
+In-Reply-To: <AANLkTinac7XwdARsLSeLmbc4Kj6my5MHQ=hAgV+A7o-W@mail.gmail.com>
+References: <20101123224601.766827604@openvz.org>
+	 <20101123224800.658686382@openvz.org> <1290587537.2072.430.camel@laptop>
+	 <AANLkTinac7XwdARsLSeLmbc4Kj6my5MHQ=hAgV+A7o-W@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Nov 2010 10:02:36 +0100
+Message-ID: <1290589356.2072.433.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- block/genhd.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+On Wed, 2010-11-24 at 11:48 +0300, Cyrill Gorcunov wrote:
+> On 11/24/10, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2010-11-24 at 01:46 +0300, Cyrill Gorcunov wrote:
+> >> plain text document attachment (x86-perf-export-abi)
+> >> Due to tight 64 bit size of event config field (where we have to track
+> >> pretty lot of info during event lifetime) some bits are to be exported
+> >> via header into userspace.
+> >>
+> >> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> >> CC: Lin Ming <ming.m.lin@intel.com>
+> >> CC: Stephane Eranian <eranian@google.com>
+> >> CC: Peter Zijlstra <peterz@infradead.org>
+> >> ---
+> >>
+> >> Note that I don't like much the idea to export anything into userspace
+> >> but it seems there is no other choise. So there is a minimum which should
+> >> be exported.
+> >
+> >
+> > Could you say what exactly is exposed to userspace and why?
+> 
+> yes, we need two enums to be exported, because we use custom encoding,
+> which is described in first patch. peter i'll describe more detailed
+> in a couple of hours, ok?
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 5fa2b44..9437048 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -665,19 +665,19 @@ void __init printk_all_partitions(void)
- 			if (part->info)
- 				part_unpack_uuid(part->info->uuid, uuid);
- 
--			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
-+			printk(KERN_CONT "%s%s %10llu %s %s", is_part0 ? "" : "  ",
- 			       bdevt_str(part_devt(part), devt_buf),
- 			       (unsigned long long)part->nr_sects >> 1,
- 			       disk_name(disk, part->partno, name_buf), uuid);
- 			if (is_part0) {
- 				if (disk->driverfs_dev != NULL &&
- 				    disk->driverfs_dev->driver != NULL)
--					printk(" driver: %s\n",
-+					printk(KERN_CONT " driver: %s\n",
- 					      disk->driverfs_dev->driver->name);
- 				else
--					printk(" (driver?)\n");
-+					printk(KERN_CONT " (driver?)\n");
- 			} else
--				printk("\n");
-+				printk(KERN_CONT "\n");
- 		}
- 		disk_part_iter_exit(&piter);
- 	}
--- 
-1.7.2.3
+Sure, but have you seen my sysfs patches? wouldn't describing the format
+in there suffice?
+
+http://lkml.org/lkml/2010/11/17/154
 
