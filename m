@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab0KYQPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:15:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:49577 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab0KYQPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:15:41 -0500
-Date: Thu, 25 Nov 2010 16:15:25 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Simon Kirby <sim@hostway.ca>, Shaohua Li <shaohua.li@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: Free memory never fully used, swapping
-Message-ID: <20101125161524.GE26037@csn.ul.ie>
-References: <1290647274.12777.3.camel@sli10-conroe> <20101125090328.GB14180@hostway.ca> <20101125180959.F462.A69D9226@jp.fujitsu.com>
+	id S1753985Ab0KYQP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:15:57 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48751 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632Ab0KYQPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 11:15:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=r920hSBuOiCnasziCN+OOm+EGHnSAlVqN3XaCWmstTOIJUG5keg9uufFl0Q9vhZS3b
+         9TvZlEmfJZ5atIqpw2JLs7AX6HDB9tVA4taNp2JgO5h5cvhNjhEhhhHkJDS8XVTDY0GC
+         4R6vOboAs/dLPAYJVyB3Gj70FyOZsY82cSiH8=
+Date: Thu, 25 Nov 2010 19:15:50 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Lin Mac <mkl0301@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dbrownell@users.sourceforge.net,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] ARM: cns3xxx: Add architecture definition for
+ EHCI/OHCI controller
+Message-ID: <20101125161550.GA2580@oksana.dev.rtsoft.ru>
+References: <20101125135614.GA22212@oksana.dev.rtsoft.ru>
+ <Pine.LNX.4.44L0.1011251031220.22247-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101125180959.F462.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <Pine.LNX.4.44L0.1011251031220.22247-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 07:51:44PM +0900, KOSAKI Motohiro wrote:
-> > kswapd is throwing out many times what is needed for the order 3
-> > watermark to be met.  It seems to be not as bad now, but look at these
-> > pages being reclaimed (200ms intervals, whitespace-packed buddyinfo
-> > followed by nr_pages_free calculation and final order-3 watermark test,
-> > kswapd woken after the second sample):
-> > 
-> > Normal zone at the same time (shown separately for clarity):
-> >
-> >   Zone order:0      1     2     3    4   5  6 7 8 9 A nr_free or3-low-chk
-> > 
-> > Normal     452      1     0     0    0   0  0 0 0 0 0     454 -5 <= 238
-> > Normal     452      1     0     0    0   0  0 0 0 0 0     454 -5 <= 238
-> > (kswapd wakes)
-> > Normal    7618     76     0     0    0   0  0 0 0 0 0    7770 145 <= 238
-> > Normal    8860     73     1     0    0   0  0 0 0 0 0    9010 143 <= 238
-> > Normal    8929     25     0     0    0   0  0 0 0 0 0    8979 43 <= 238
-> > Normal    8917      0     0     0    0   0  0 0 0 0 0    8917 -7 <= 238
-> > Normal    8978     16     0     0    0   0  0 0 0 0 0    9010 25 <= 238
-> > Normal    9064      4     0     0    0   0  0 0 0 0 0    9072 1 <= 238
-> > Normal    9068      2     0     0    0   0  0 0 0 0 0    9072 -3 <= 238
-> > Normal    8992      9     0     0    0   0  0 0 0 0 0    9010 11 <= 238
-> > Normal    9060      6     0     0    0   0  0 0 0 0 0    9072 5 <= 238
-> > Normal    9010      0     0     0    0   0  0 0 0 0 0    9010 -7 <= 238
-> > Normal    8907      5     0     0    0   0  0 0 0 0 0    8917 3 <= 238
-> > Normal    8576      0     0     0    0   0  0 0 0 0 0    8576 -7 <= 238
-> > Normal    8018      0     0     0    0   0  0 0 0 0 0    8018 -7 <= 238
-> > Normal    6778      0     0     0    0   0  0 0 0 0 0    6778 -7 <= 238
-> > Normal    6189      0     0     0    0   0  0 0 0 0 0    6189 -7 <= 238
-> > Normal    6220      0     0     0    0   0  0 0 0 0 0    6220 -7 <= 238
-> > Normal    6096      0     0     0    0   0  0 0 0 0 0    6096 -7 <= 238
-> > Normal    6251      0     0     0    0   0  0 0 0 0 0    6251 -7 <= 238
-> > Normal    6127      0     0     0    0   0  0 0 0 0 0    6127 -7 <= 238
-> > Normal    6218      1     0     0    0   0  0 0 0 0 0    6220 -5 <= 238
-> > Normal    6034      0     0     0    0   0  0 0 0 0 0    6034 -7 <= 238
-> > Normal    6065      0     0     0    0   0  0 0 0 0 0    6065 -7 <= 238
-> > Normal    6189      0     0     0    0   0  0 0 0 0 0    6189 -7 <= 238
-> > Normal    6189      0     0     0    0   0  0 0 0 0 0    6189 -7 <= 238
-> > Normal    6096      0     0     0    0   0  0 0 0 0 0    6096 -7 <= 238
-> > Normal    6127      0     0     0    0   0  0 0 0 0 0    6127 -7 <= 238
-> > Normal    6158      0     0     0    0   0  0 0 0 0 0    6158 -7 <= 238
-> > Normal    6127      0     0     0    0   0  0 0 0 0 0    6127 -7 <= 238
-> > (kswapd sleeps -- maybe too much turkey)
-> > 
-> > DMA32 get so much reclaimed that the watermark test succeeded long ago.
-> > Meanwhile, Normal is being reclaimed as well, but because it's fighting
-> > with allocations, it tries for a while and eventually succeeds (I think),
-> > but the 200ms samples didn't catch it.
-> > 
-> > KOSAKI Motohiro, I'm interested in your commit 73ce02e9.  This seems
-> > to be similar to this problem, but your change is not working here. 
-> > We're seeing kswapd run without sleeping, KSWAPD_SKIP_CONGESTION_WAIT
-> > is increasing (so has_under_min_watermark_zone is true), and pageoutrun
-> > increasing all the time.  This means that balance_pgdat() keeps being
-> > called, but sleeping_prematurely() is returning true, so kswapd() just
-> > keeps re-calling balance_pgdat().  If your approach is correct to stop
-> > kswapd here, the problem seems to be that balance_pgdat's copy of order
-> > and sc.order is being set to 0, but not pgdat->kswapd_max_order, so
-> > kswapd never really sleeps.  How is this supposed to work?
+On Thu, Nov 25, 2010 at 10:37:16AM -0500, Alan Stern wrote:
+> > > 2010/11/25 Anton Vorontsov <cbouatmailru@gmail.com>:
+> > > > On Thu, Nov 25, 2010 at 03:25:38PM +0800, Lin Mac wrote:
+> > > > [...]
+> > > >> > Â #include <linux/module.h>
+> > > >> > Â #include <linux/io.h>
+> > > >> > Â #include <linux/delay.h>
+> > > >> > +#include <asm/atomic.h>
+> > > >> It's not necessary for mach/pm.h already included it, right?
+> > > >
+> > > > Technically, it's not necessary. But in Linux we don't rely on
+> > > > headers including other headers.
 > 
-> Um. this seems regression since commit f50de2d381 (vmscan: have kswapd sleep 
-> for a short interval and double check it should be asleep)
-> 
+> Just saw this.  Don't be ridiculous -- this happens all over the place.
+> People generally aren't aware of it, because it's next to impossible to
+> verify that all the headers needed by a source file are included
+> directly.
 
-I wrote my own patch before I saw this but for one of the issues we are doing
-something similar. You are checking if enough pages got reclaimed where as
-my patch considers any zone being balanced for high-orders being sufficient
-for kswapd to go to sleep. I think mine is a little stronger because
-it's checking what state the zones are in for a given order regardless
-of what has been reclaimed. Lets see what testing has to say.
+Sure. But that doesn't mean we shouldn't try to keep these things
+sane enough.
+
+I just noticed that the patch introduced atomic_t usage, but didn't
+include asm/atomic.h, so I corrected this before applying that patch.
+So I don't see what's the fuss is about. :-)
+
+Thanks,
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
