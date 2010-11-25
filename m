@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab0KYRga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 12:36:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12271 "EHLO mx1.redhat.com"
+	id S1753848Ab0KYRnC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 12:43:02 -0500
+Received: from www.tglx.de ([62.245.132.106]:50847 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab0KYRg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 12:36:29 -0500
-Date: Thu, 25 Nov 2010 18:35:18 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 17 of 66] add pmd mangling generic functions
-Message-ID: <20101125173518.GR6118@random.random>
-References: <patchbomb.1288798055@v2.random>
- <6022613f956ee326d9b6.1288798072@v2.random>
- <20101118125249.GN8135@csn.ul.ie>
- <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
+	id S1752323Ab0KYRnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 12:43:00 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: sodaville@linutronix.de, x86@kernel.org
+Subject: Add device tree support for x86
+Date: Thu, 25 Nov 2010 18:39:50 +0100
+Message-Id: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 09:32:36AM -0800, Linus Torvalds wrote:
-> I dunno. Those macros are _way_ too big and heavy to be macros or
-> inline functions. Why aren't pmdp_splitting_flush() etc just
-> functions?
+This patchset introduces device tree support on x86. The device tree is 
+passed by the bootloader via setup_data. It is used as an additional 
+source of information and does not replace the "traditional" x86 boot
+page.
+Right now we get the the following information from it:
+- hpet location
+- apic & ioapic location
+- ioapic's interrupt routing
+- legacy devices which are not initialized by bios
+- devices which are behind a bus which does not support enumeration like 
+  i2c
 
-That's because ptep_clear_flush and everything else in that file named
-with ptep_* and doing expensive tlb flushes was a macro.
+The series is based on the tip tree and is also available at
+  git://git.linutronix.de/users/bigeasy/soda.git ce_of
 
-> 
-> There is no performance advantage to inlining them - the TLB flush is
-> going to be expensive enough that there's no point in avoiding a
-> function call. And that header file really does end up being _really_
-> ugly.
+Sebastian Andrzej Siewior (11):
+      x86/kernel: remove conditional early remap in parse_e820_ext
+      x86: Add device tree support
+      x86/dtb: Add a device tree for CE4100
+      x86/dtb: add irq host abstraction
+      x86/dtb: add early parsing of APIC and IO APIC
+      x86/dtb: add support hpet
+      x86/dtb: add support for PCI devices backed by dtb nodes
+      x86/dtb: Add generic bus probe
+      x86/ioapic: Add OF bindings for IO-APIC
+      x86/io_apic: add simply id set
+      x86/ce4100: use OF for ioapic
 
-I agree but to me it looks like your compliant applies to the current
-include/asm-generic/pgtable.h. My changes that simply mirrors closely
-the style of that file to avoid altering coding style just for the new
-stuff. That is compact code that I'm not even sure if anybody is
-using, most certainly x86 isn't using that code so the .text bloat
-isn't a practical concern.
+ Documentation/x86/boot_with_dtb.txt   |   20 ++
+ arch/x86/Kconfig                      |    7 +
+ arch/x86/include/asm/bootparam.h      |    1 +
+ arch/x86/include/asm/e820.h           |    2 +-
+ arch/x86/include/asm/io_apic.h        |    8 +
+ arch/x86/include/asm/irq_controller.h |   12 +
+ arch/x86/include/asm/prom.h           |   67 ++++++
+ arch/x86/kernel/Makefile              |    1 +
+ arch/x86/kernel/apic/io_apic.c        |  144 +++++++++++++
+ arch/x86/kernel/e820.c                |    8 +-
+ arch/x86/kernel/irqinit.c             |    9 +-
+ arch/x86/kernel/prom.c                |  370 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/setup.c               |   15 ++-
+ arch/x86/platform/ce4100/ce4100.c     |   16 ++-
+ arch/x86/platform/ce4100/ce4100.dts   |  210 +++++++++++++++++++
+ 15 files changed, 877 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/x86/boot_with_dtb.txt
+ create mode 100644 arch/x86/include/asm/irq_controller.h
+ create mode 100644 arch/x86/include/asm/prom.h
+ create mode 100644 arch/x86/kernel/prom.c
+ create mode 100644 arch/x86/platform/ce4100/ce4100.dts
 
-Do you like me to do a cleanup of the asm-generic/pgtable.h and move
-the tlb flushes to lib/pgtable.c? (ideally the pgtable.o file should
-be empty after the preprocessor runs on x86*)
+Sebastian
+
