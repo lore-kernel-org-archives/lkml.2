@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab0KYMHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 07:07:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42732 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab0KYMHP (ORCPT
+	id S1752045Ab0KYMIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 07:08:52 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37360 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab0KYMIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 07:07:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=OhfFV9aSzUvuKjDcXYhxJzbCZpkZvrIOlQ8u2XiP8z2KKfGLuAWFdyLk5euMye+gzU
-         WiCSVYAfRhHouBmpiKl4WwQWPdqUZ95Z4PkDvDcfEncHFm+mWr00uQceLyVQ3su1XWZr
-         egf8SebmEK0T1S+vXrx4GLATRYLox75onyNzE=
-Message-ID: <4CEE516E.6010006@gmail.com>
-Date: Thu, 25 Nov 2010 13:07:10 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+	Thu, 25 Nov 2010 07:08:50 -0500
+Message-ID: <4CEE51CA.8010402@pengutronix.de>
+Date: Thu, 25 Nov 2010 13:08:42 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Andrew Hendry <andrew.hendry@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, slapin@ossfans.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] NET: wan/x25_asy, move lapb_unregister to x25_asy_close_tty
-References: <1290642894-4577-1-git-send-email-jslaby@suse.cz> <AANLkTi=DEHOKkrvzHUBnW+rAkGz-uhizRqZb2PAuh4k-@mail.gmail.com>
-In-Reply-To: <AANLkTi=DEHOKkrvzHUBnW+rAkGz-uhizRqZb2PAuh4k-@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: andrew.chih.howe.khor@intel.com, socketcan-core@lists.berlios.de,
+        Samuel Ortiz <sameo@linux.intel.com>, margie.foster@intel.com,
+        netdev@vger.kernel.org, Christian Pellegrin <chripell@fsfe.org>,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
+        kok.howg.ewe@intel.com, joel.clark@intel.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfgang Grandegger <wg@grandegger.com>, qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow
+ control,
+References: <4CE2434B.5050701@dsn.okisemi.com>	<4CE27796.2000206@pengutronix.de>	<007401cb87b1$a773b3d0$66f8800a@maildom.okisemi.com>	<4CE64167.2030405@pengutronix.de> <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com> <4CEA2986.4080607@pengutronix.de> <000b01cb8b6b$d7542a90$66f8800a@maildom.okisemi.com> <4CED0650.7030004@pengutronix.de> <001b01cb8c98$d06aaa00$66f8800a@maildom.okisemi.com>
+In-Reply-To: <001b01cb8c98$d06aaa00$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigEF8E6FA0CEF6759DD0AFD3F9"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2010 12:37 PM, Andrew Hendry wrote:
-> Sorry I haven't used this driver so can't fully test it. Looks
-> straightforward and compile tested ok.
-> 
-> On Thu, Nov 25, 2010 at 10:54 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->> We register lapb when tty is created, but unregister it only when the
->> device is UP. So move the lapb_unregister to x25_asy_close_tty after
->> the device is down.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigEF8E6FA0CEF6759DD0AFD3F9
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I forgot to mention what it causes. The commit message should add:
-The old behaviour causes ldisc switching to fail each second attempt,
-because we noted for us that the device is unused, so we use it the
-second time, but labp layer still have it registered, so it fails
-obviously.
+On 11/25/2010 01:03 PM, Tomoya MORINAGA wrote:
+> On Wednesday, November 24, 2010 9:34 PM, Marc Kleine-Budde wrote :
+>> On 11/24/2010 01:09 AM, Tomoya MORINAGA wrote:
+>>> On Monday, November 22, 2010 5:27 PM, Marc Kleine-Budde wrote:
+>>>>>>>> Still we have the busy waiting in the TX path. Maybe you can mov=
+e the
+>>>>>>>> waiting before accessing the if[1] and remove the busy waiting h=
+ere.
+>>>>>>> I can't understand your saying.
+>>>>>>> For transmitting data, calling pch_can_rw_msg_obj is mandatory.
+>>>>>> Yes, but the busy wait is not needed. It should be enough to do th=
+e
+>>>>>> busy-waiting _before_ accessing the if[1].
+>>>>>
+>>>>> Do you mean we should create other pch_can_rw_msg_obj which doesn't=
+ have busy wait ?
+>>>> ACK, and this non busy waiting is use in the TX path. But you add a =
+busy
+>>>> wait only function before accessing the if[1] in the TX path.
+>>>
+>>> The "busy waiting" of pch_can_rw_msg_obj is for next processing acces=
+ses to Message object.
+>>> If deleting this busy waiting, next processing can access to Message =
+object, regardless previous transfer doesn't
+>>> complete yet.
+>>> Thus, I think, the "busy waiting" is necessary.
+>>
+>> Yes, it's necessary, but not where it is done currently.
+>> Let me outline how I think the TX path should look like:
+>>
+>> pch_xmit() {
+>> take_care_about_flow_control();
+>> prepare_can_frame_to_be_copied_to_tx_if();
+>>
+>> /* most likely we don't have to wait here */
+>> wait_until_tx_if_is_ready();
+>>
+>> copy_can_frame_to_tx_if();
+>>
+>> /* trigger tx in hardware */
+>> send_tx_if_but_dont_do_busywait();
+>>
+>> /* tx_if is busy now, but before we access it, we'll check tx_if is re=
+ady */
+>> }
+>=20
+> This Tx path also has Read-Modify-Write for MessageRAM access.
+> Do you mean Tx path shouldn't have Read-Modify-Write ?
 
-thanks,
--- 
-js
+Why do you Read-Modify-Write for TX? Naively speaking you just need to
+push your Data into a Mail/IF/Whatever and push the send button.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enigEF8E6FA0CEF6759DD0AFD3F9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzuUcoACgkQjTAFq1RaXHN0mwCfc6Ph3bRd0E90dVNVBtBc6Gy6
+eo8AnAowXty9cxu9sYOX+D2I5Sjh9aC1
+=Ur55
+-----END PGP SIGNATURE-----
+
+--------------enigEF8E6FA0CEF6759DD0AFD3F9--
