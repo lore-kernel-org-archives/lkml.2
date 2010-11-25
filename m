@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab0KYS5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 13:57:35 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:56296 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab0KYS5e (ORCPT
+	id S1752090Ab0KYTJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 14:09:54 -0500
+Received: from webmail10.mail.sp.isp-net.nl ([217.149.192.62]:61265 "EHLO
+	webmail10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751747Ab0KYTJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 13:57:34 -0500
-Date: Thu, 25 Nov 2010 13:57:30 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: patch_realtek: handle unset external amp bits
-Message-ID: <20101125185730.GK22651@bombadil.infradead.org>
+	Thu, 25 Nov 2010 14:09:53 -0500
+Message-ID: <4CEEB4A9.3090808@xmsnet.nl>
+Date: Thu, 25 Nov 2010 20:10:33 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Caoco <caoco2002@yahoo.com>
+CC: Netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Unplug ethernet cable, the route persists.  Why?
+References: <242082.99180.qm@web63407.mail.re1.yahoo.com>
+In-Reply-To: <242082.99180.qm@web63407.mail.re1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Language-Detected: en
+X-Spam-Scanned: InterNLnet Mail Scan System V2.03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyle McMartin <kyle@redhat.com>
+On 11/24/2010 08:48 PM, Mike Caoco wrote:
+> Hello,
+>
+> This may have been discussed, but all search engines couldn't give me a good answer...
+>
+> I notice that when an interface is up/running, a local route is in the routing table:
+>
+> $ ifconfig eth1
+> eth1      Link encap:Ethernet  HWaddr 00:13:20:0e:2f:ed
+>            inet addr:192.168.1.125  Bcast:192.168.1.255  Mask:255.255.255.0
+>            inet6 addr: fe80::213:20ff:fe0e:2fed/64 Scope:Link
+>            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+>            RX packets:35984995 errors:0 dropped:0 overruns:0 frame:0
+>            TX packets:7409151 errors:0 dropped:0 overruns:0 carrier:0
+>            collisions:0 txqueuelen:1000
+>            RX bytes:3252413825 (3.2 GB)  TX bytes:1340077250 (1.3 GB)
+>
+> $ ip route
+> 192.168.20.0/24 dev eth0  proto kernel  scope link  src 192.168.20.120
+> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.125
+> default via 192.168.20.254 dev eth1  metric 100
+>
+> After I unplug the cable from eth1, the RUNNING flag disappears, but the route is still there:
+>
+> $ ifconfig eth1
+> eth1      Link encap:Ethernet  HWaddr 00:13:20:0e:2f:ed
+>            inet addr:192.168.1.125  Bcast:192.168.1.255  Mask:255.255.255.0
+>            inet6 addr: fe80::213:20ff:fe0e:2fed/64 Scope:Link
+>            UP BROADCAST MULTICAST  MTU:1500  Metric:1
+>            RX packets:35985023 errors:0 dropped:0 overruns:0 frame:0
+>            TX packets:7409151 errors:0 dropped:0 overruns:0 carrier:0
+>            collisions:0 txqueuelen:1000
+>            RX bytes:3252415633 (3.2 GB)  TX bytes:1340077250 (1.3 GB)
+>
+> $ ip route
+> 192.168.20.0/24 dev eth0  proto kernel  scope link  src 192.168.20.120
+> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.125
+> default via 192.168.20.254 dev eth1  metric 100
+>
+> And that *prevents* from using the default route to reach 192.168.1/24 subnet after eth1 is out.
 
-Commit ef5dbbcc removes the default initialization of init_amp to
-ALC_INIT_DEFAULT, with the justification that it should be set by
-alc_subsystem_id, which contains a switch case:
+Well suppose the default route is used, and the source address is of the 
+packets stay 192.168.1.125, then there is no way for the peers to 
+respond to the packets. I do not know wat sets the source address in 
+linux, but on windows it will allway's be the one you do not want.
 
-        tmp = (ass & 0x38) >> 3;        /* external Amp control */
-        switch (tmp) {
-        case 1:
-	...
-	case 5:
-	}
+-- 
+Hans
 
-Which handles values 1,3,7 for GPIOs, or 5 to set _DEFAULT.
 
-But... what if it's 0? :)
-
-I got a bug report this morning from a user whose sound had broken
-between 2.6.34 and 2.6.35, and I bisected it down to this commit.
-
-[ 32.366183] ALSA sound/pci/hda/patch_realtek.c:1374: realtek: Enabling
-init ASM_ID=0x8a05 CODEC_ID=10ec0888
-
-(0x8a05 & 0x38) >> 3 = 0;
-
-But otherwise the SKU looks fine (since if I revert that commit, it
-seems to work correctly.)
-
-I think the best thing to do would be to either restore the 'redundant'
-default initialization, or quirk it.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=657388
-
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
----
-    Revert "ALSA: hda - Remove superfluous external amp setup for ALC888"
-    
-    This reverts commit ef5dbbccbbfa7d2211fa8efcc095a9f4a7912dda.
-
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 76c4968..b6ba1d5 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -10604,6 +10604,9 @@ static int patch_alc882(struct hda_codec *codec)
- 	spec->stream_digital_playback = &alc882_pcm_digital_playback;
- 	spec->stream_digital_capture = &alc882_pcm_digital_capture;
- 
-+	if (codec->vendor_id == 0x10ec0888)
-+		spec->init_amp = ALC_INIT_DEFAULT; /* always initialize */
-+
- 	if (!spec->adc_nids && spec->input_mux) {
- 		int i, j;
- 		spec->num_adc_nids = 0;
