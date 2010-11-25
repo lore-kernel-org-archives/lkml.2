@@ -1,45 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab0KYJTD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 04:19:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab0KYJTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 04:19:01 -0500
-Message-ID: <4CEE29F6.1010003@redhat.com>
-Date: Thu, 25 Nov 2010 11:18:46 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1751955Ab0KYJ1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 04:27:15 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41168 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab0KYJ1N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 04:27:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cKv0iSLhqYasABxRJ/O5j3KA44kGjllhd72GHsMn4sI2O/HFyoNJ1bs/iGoig/X4Mt
+         sVIOJeW1dlwMAr/QotBkjhWjz39SfTLQ4TyTJ8bfLGRgjXCmpszrpxdF0qALIXUqEHPt
+         6r5OltAZIdDnmmrJyEukTVArzo46rk8MClY4I=
+Date: Thu, 25 Nov 2010 10:27:08 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/2] rcu: Fix series of spurious RCU softirqs
+Message-ID: <20101125092706.GH2538@nowhere>
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+ <4CEDDB2A.2020807@cn.fujitsu.com>
+ <20101125073857.GB2538@nowhere>
+ <4CEE1FD2.7040707@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: write protect memory after slot swap
-References: <20101025012124.GA31262@redhat.com> <4CC54EB8.9020604@redhat.com> <4CED649B.5000805@siemens.com>
-In-Reply-To: <4CED649B.5000805@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CEE1FD2.7040707@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 09:16 PM, Jan Kiszka wrote:
-> >
-> >  Excellent catch, I stared at this code for a while and didn't see the
-> >  bug.  Patch applied.
-> >
->
-> This patch was marked KVM-stable on commit, but it did not make into any
-> stable branch thus also none of the recent releases. Please fix (for
-> 2.6.36 now).
+On Thu, Nov 25, 2010 at 04:35:30PM +0800, Lai Jiangshan wrote:
+> On 11/25/2010 03:38 PM, Frederic Weisbecker wrote:
+> > On Thu, Nov 25, 2010 at 11:42:34AM +0800, Lai Jiangshan wrote:
+> >> On 11/24/2010 08:31 AM, Frederic Weisbecker wrote:
+> >>> Hi,
+> >>>
+> >>> I've observed some not so unfrequent series of spurious rcu
+> >>> softirqs, sometimes happening at each ticks for a random
+> >>> while.
+> >>>
+> >>> These patches aims at fixing them.
+> >>>
+> >>> Thanks.
+> >>>
+> >>> Frederic Weisbecker (2):
+> >>>   rcu: Don't chase unnecessary quiescent states after extended grace periods
+> >>>   rcu: Stop checking quiescent states after grace period completion from remote
+> >>>
+> >>
+> >> If we ensure rdp->gpnum >= rdp->completed is always true, the problems as
+> >> you described will not be existed. Or maybe I misunderstand you.
+> >>
+> >> rdp->gpnum >= rdp->completed is a very important guarantee I think.
+> >> (In my RCURING, it is guaranteed.) I'm afraid there are some other
+> >> problems still hidden if it is not guaranteed.
+> >>
+> >> so I recommend: (code is better than words)
+> >>
+> >> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> >> index d5bc439..af4e87a 100644
+> >> --- a/kernel/rcutree.c
+> >> +++ b/kernel/rcutree.c
+> >> @@ -648,6 +648,13 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+> >>  
+> >>  		/* Remember that we saw this grace-period completion. */
+> >>  		rdp->completed = rnp->completed;
+> >> +
+> >> +		/* Ensure ->gpnum >= ->completed after NO_HZ */
+> >> +		if (unlikely(rnp->completed - rdp->gpnum > 0
+> >> +				|| rdp->gpnum - rnp->gpnum > 0)) {
+> >> +			rdp->gpnum = rnp->completed;
+> >> +			rdp->qs_pending = 0;
+> > 
+> > 
+> > That's an alternative to my first patch yeah.
+> 
+> Since rdp->gpnum >= rdp->completed is guaranteed.
+> your second patch is not needed, the problem is also fixed.
+> 
+> if rnp->gpnum == rnp->completed, rcu_report_qs_rdp() will not be called.
+> it is because rdp->qs_pending == 0 when rnp->gpnum == rnp->completed.
 
-We need some bot that watches out for commits with the tag going into 
-upstream and pokes the maintainers.
 
--- 
-error compiling committee.c: too many arguments to function
+Aaah...
+
+
+> 
+> And if rdp->gpnum >= rdp->completed
+> > must be a guarantee outside the rnp lock, then it's certainly better because
+> > the lock is relaxed between rcu_process_gp_end() and note_new_gpnum(), and
+> > both values are async in this lockless frame.
+> > 
+> > But perhaps this shouldn't touch rdp->qs_pending:
+> 
+> if rdp->gpnum == rnp->completed, it means we don't need a qs for rdp->gpnum,
+> it is completed. so we must set rdp->qs_pending = 0;
+> 
+> when we really need a qs, rdp->qs_pending will be fixed in note_new_gp_new().
+
+
+Ok that makes all sense now!
+
+I'm just not sure about your check above.
+
+(rdp->gpnum - rnp->gpnum > 0) can never happen, right?
+
+Also perhaps we should set rdp->qs_pending = 0 only if
+rnp->completed == rdp->completed?
+
+Which in the end would be:
+
+	/* Remember that we saw this grace-period completion. */
+	rdp->completed = rnp->completed;
+
++	if (rdp->gpnum < rdp->completed)
++		rdp->gpnum = rdp->completed;
++
++	if (rdp->gpnum == rdp->completed)
++		rdp->qs_pending = 0;
+
+
+And then if there is a new grace period to handle, this will
+be done through note_new_pgnum().
+
+Hm?
+
 
