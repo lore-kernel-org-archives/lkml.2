@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab0KYAWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 19:22:22 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:39135 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab0KYAWV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 19:22:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=gZLtRe96MmxLFLbQBD0gt73OnkloIkTIT6Ok9NnbfrT0a6d87rGxKIp9+YxUp+qcfE
-         c8MekQ9RlIkYyIHi7ajg==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimwvP2Ey1gJ6AbbFNtDKjGZt4cwqL=08nGBa_PT@mail.gmail.com>
-References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com>
- <1290577024-12347-1-git-send-email-ccross@android.com> <AANLkTimFqJ+qPidS_81DKd7ExSxDG7GNi0gjcUEEq_7j@mail.gmail.com>
- <AANLkTimwvP2Ey1gJ6AbbFNtDKjGZt4cwqL=08nGBa_PT@mail.gmail.com>
-From: Paul Menage <menage@google.com>
-Date: Wed, 24 Nov 2010 16:21:58 -0800
-Message-ID: <AANLkTimJA52-GTM=AzS+tkOugrsi6Keh0_j87vK1BkGv@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
-To: Colin Cross <ccross@android.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1755369Ab0KYAXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 19:23:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23059 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367Ab0KYAXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 19:23:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,250,1288594800"; 
+   d="scan'208";a="577372631"
+Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
+References: <1290340877.2245.124.camel@localhost>
+	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
+	 <1290348259.2245.172.camel@localhost>	<1290361473.2153.39.camel@laptop>
+	 <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Nov 2010 08:24:35 +0800
+Message-ID: <1290644675.2405.90.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 4:11 PM, Colin Cross <ccross@android.com> wrote:
->>
->> We seem to have lost some notify_on_release() checks - maybe move that
->> to check_for_release()?
-> check_for_release immediately calls cgroup_is_releasable, which checks
-> for the same bit as notify_on_release.  There's no need for
-> CGRP_RELEASABLE to depend on notify_on_release, or to check
-> notify_on_release before calling check_for_release.
+On Tue, 2010-11-23 at 18:00 +0800, Stephane Eranian wrote:
+> On Sun, Nov 21, 2010 at 6:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
+> >> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
+> >> > >
+> >> > > 2. Uncore pmu NMI handling
+> >> > >
+> >> > > All the 4 cores are programmed to receive uncore counter overflow
+> >> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
+> >> > > counters enabled by all 4 cores.
+> >> >
+> >> > Really for uncore monitoring there is no need to use an NMI handler.
+> >> > You can't profile a core anyways, so you can just delay the reporting
+> >> > a little bit. It may simplify the code to not use one here
+> >> > and just use an ordinary handler.
+> >>
+> >> OK, I can use on ordinary interrupt handler here.
+> >
+> > Does the hardware actually allow using a different interrupt source?
+> >
+> It does not. It's using whatever you've programmed into the APIC
+> LVT vector, AFAIK. Uncore interrupt mode is enabled via
+> IA32_DEBUGCTL. Regarless of sampling or not, you need the interrupt
+> to virtualize the counters to 64 bits.
 
-OK.
+If only counting(perf stat) makes sense for uncore events, do we still
+need an interrupt handler?
 
-> I matched the existing behavior, __css_put sets CGRP_RELEASABLE when
-> refcnt goes to 0.
->
+48 bits counter is not that easy to overflow in practice.
 
-Ah, we do appear to have had that behaviour for a while. I don't
-remember the justification for it at this point :-)
 
-> check_for_release is only called from __css_put, cgroup_rmdir, and
-> __put_css_set (or free_css_set_work after my second patch).  Those all
-> imply that __css_get, get_css_set, or cgroup_create have been
-> previously called, which are the functions that set CGRP_RELEASABLE.
-
-Not in one case - if we create a new cgroup and try to move a thread
-into it, but the thread is exiting as we move it, we'll call
-put_css_set() on the new css_set, which will drop the refcount on the
-target cgroup back to 0. We wouldn't want the auto-release
-notification to kick in in that situation, I think.
-
-Paul
