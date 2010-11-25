@@ -1,64 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0KYAXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 19:23:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23059 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab0KYAXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 19:23:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,250,1288594800"; 
-   d="scan'208";a="577372631"
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
-References: <1290340877.2245.124.camel@localhost>
-	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
-	 <1290348259.2245.172.camel@localhost>	<1290361473.2153.39.camel@laptop>
-	 <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Nov 2010 08:24:35 +0800
-Message-ID: <1290644675.2405.90.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1754396Ab0KYA2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 19:28:46 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:34050 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab0KYA2p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 19:28:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=hgF0pl/RoUYIFIvriaN9SSAWcgZ2rXd5UiMjY5kCPM7ZXvuRBuGxEbvieMaCf3pALM
+         IGxQr6aahKwX7qOgn+QGlNY9mhujOtKbE0GwoHR8R1upErglYwB8aOYgVe7+O0owNvqz
+         v20GGArE8pJnlIzQobHd9TKQx6J2x8+p9VuHg=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 25 Nov 2010 01:28:44 +0100
+Message-ID: <AANLkTik-hmACi2V_H4hDMeJV+2yKDAmR_0a9oQ9SAqTt@mail.gmail.com>
+Subject: Re: Cross compilers available on kernel.org
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: tony@bakeyournoodle.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-23 at 18:00 +0800, Stephane Eranian wrote:
-> On Sun, Nov 21, 2010 at 6:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
-> >> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
-> >> > >
-> >> > > 2. Uncore pmu NMI handling
-> >> > >
-> >> > > All the 4 cores are programmed to receive uncore counter overflow
-> >> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
-> >> > > counters enabled by all 4 cores.
-> >> >
-> >> > Really for uncore monitoring there is no need to use an NMI handler.
-> >> > You can't profile a core anyways, so you can just delay the reporting
-> >> > a little bit. It may simplify the code to not use one here
-> >> > and just use an ordinary handler.
-> >>
-> >> OK, I can use on ordinary interrupt handler here.
-> >
-> > Does the hardware actually allow using a different interrupt source?
-> >
-> It does not. It's using whatever you've programmed into the APIC
-> LVT vector, AFAIK. Uncore interrupt mode is enabled via
-> IA32_DEBUGCTL. Regarless of sampling or not, you need the interrupt
-> to virtualize the counters to 64 bits.
+Hi,
 
-If only counting(perf stat) makes sense for uncore events, do we still
-need an interrupt handler?
+uploaded to wrong dir? For example [1].
 
-48 bits counter is not that easy to overflow in practice.
+- Sedat -
 
-
+[1] http://kernel.org/pub/tools/crosstool/files/bin/i686/4.4.5/i686-gcc-4.5.1-nolibc_x86_64-linux.tar.gz
