@@ -1,62 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab0KYHEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 02:04:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38253 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab0KYHEr (ORCPT
+	id S1752055Ab0KYHFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 02:05:13 -0500
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:52046 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab0KYHFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 02:04:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pShiEZ3XseVD35UlyP+1MjH5cqerK9rFh7bUkvy8ya+DxW+bmeKBZS1WnoA5XOwdih
-         S5v0IAiZghUReS6XsSTsTL7YP//lS6xxzIukAS2TiQIORr+bYy9J4Ik568qSgvgQXIb+
-         dvCif0Tp87p8Y5QzcCWcKwi1njo/P2BOxYfgI=
-Subject: [PATCH 3/8] ASoC: snd-soc-afeb9260: remove unneeded
-	platform_device_del in error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Sergey Lapin <slapin@ossfans.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1290668785.30158.7.camel@mola>
-References: <1290668785.30158.7.camel@mola>
-Content-Type: text/plain
-Date: Thu, 25 Nov 2010 15:10:01 +0800
-Message-Id: <1290669001.30158.13.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Nov 2010 02:05:09 -0500
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
+        h.mitake@gmail.com, Miao Xie <miaox@cn.fujitsu.com>,
+        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH v2 1/2] perf bench: print both of prefaulted and no prefaulted results
+Date: Thu, 25 Nov 2010 16:04:52 +0900
+Message-Id: <1290668693-27068-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <4CEE0A66.6000409@dcl.info.waseda.ac.jp>
+References: <4CEE0A66.6000409@dcl.info.waseda.ac.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f3b1f9a02fe390b2f12b9097a1d4d9de55618b34 Mon Sep 17 00:00:00 2001
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 25 Nov 2010 10:44:59 +0800
-Subject: [PATCH 3/8] ASoC: snd-soc-afeb9260: remove unneeded platform_device_del in error path
+After applying this patch, perf bench mem memcpy prints
+both of prefualted and without prefaulted score of memcpy().
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+New options --no-prefault and --only-prefault are added
+to print single result, mainly for scripting usage.
+
+Example of usage:
+| mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB
+| # Running mem/memcpy benchmark...
+| # Copying 500MB Bytes ...
+|
+|      634.969014 MB/Sec
+|        4.828062 GB/Sec (with prefault)
+| mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB --only-prefault
+| # Running mem/memcpy benchmark...
+| # Copying 500MB Bytes ...
+|
+|        4.705192 GB/Sec (with prefault)
+| mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB --no-prefault
+| # Running mem/memcpy benchmark...
+| # Copying 500MB Bytes ...
+|
+|      642.725568 MB/Sec
+
+Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Ma Ling <ling.ma@intel.com>
+Cc: Zhao Yakui <yakui.zhao@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 ---
- sound/soc/atmel/snd-soc-afeb9260.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ tools/perf/bench/mem-memcpy.c |  219 ++++++++++++++++++++++++++++++-----------
+ 1 files changed, 162 insertions(+), 57 deletions(-)
 
-diff --git a/sound/soc/atmel/snd-soc-afeb9260.c b/sound/soc/atmel/snd-soc-afeb9260.c
-index 1202f5e..da2208e 100644
---- a/sound/soc/atmel/snd-soc-afeb9260.c
-+++ b/sound/soc/atmel/snd-soc-afeb9260.c
-@@ -167,7 +167,6 @@ static int __init afeb9260_soc_init(void)
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index 38dae74..db82021 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -12,6 +12,7 @@
+ #include "../util/parse-options.h"
+ #include "../util/header.h"
+ #include "bench.h"
++#include "mem-memcpy-arch.h"
  
- 	return 0;
- err1:
--	platform_device_del(afeb9260_snd_device);
- 	platform_device_put(afeb9260_snd_device);
- 	return err;
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -23,8 +24,10 @@
+ 
+ static const char	*length_str	= "1MB";
+ static const char	*routine	= "default";
+-static bool		use_clock	= false;
++static bool		use_clock;
+ static int		clock_fd;
++static bool		only_prefault;
++static bool		no_prefault;
+ 
+ static const struct option options[] = {
+ 	OPT_STRING('l', "length", &length_str, "1MB",
+@@ -34,19 +37,33 @@ static const struct option options[] = {
+ 		    "Specify routine to copy"),
+ 	OPT_BOOLEAN('c', "clock", &use_clock,
+ 		    "Use CPU clock for measuring"),
++	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
++		    "Show only the result with page faults before memcpy()"),
++	OPT_BOOLEAN('n', "no-prefault", &no_prefault,
++		    "Show only the result without page faults before memcpy()"),
+ 	OPT_END()
+ };
+ 
++typedef void *(*memcpy_t)(void *, const void *, size_t);
++
+ struct routine {
+ 	const char *name;
+ 	const char *desc;
+-	void * (*fn)(void *dst, const void *src, size_t len);
++	memcpy_t fn;
+ };
+ 
+ struct routine routines[] = {
+ 	{ "default",
+ 	  "Default memcpy() provided by glibc",
+ 	  memcpy },
++#ifdef ARCH_X86_64
++
++#define MEMCPY_FN(fn, name, desc) { name, desc, fn },
++#include "mem-memcpy-x86-64-asm-def.h"
++#undef MEMCPY_FN
++
++#endif
++
+ 	{ NULL,
+ 	  NULL,
+ 	  NULL   }
+@@ -89,29 +106,98 @@ static double timeval2double(struct timeval *ts)
+ 		(double)ts->tv_usec / (double)1000000;
  }
+ 
++static void alloc_mem(void **dst, void **src, size_t length)
++{
++	*dst = zalloc(length);
++	if (!dst)
++		die("memory allocation failed - maybe length is too large?\n");
++
++	*src = zalloc(length);
++	if (!src)
++		die("memory allocation failed - maybe length is too large?\n");
++}
++
++static u64 do_memcpy_clock(memcpy_t fn, size_t len, bool prefault)
++{
++	u64 clock_start = 0ULL, clock_end = 0ULL;
++	void *src = NULL, *dst = NULL;
++
++	alloc_mem(&src, &dst, len);
++
++	if (prefault)
++		fn(dst, src, len);
++
++	clock_start = get_clock();
++	fn(dst, src, len);
++	clock_end = get_clock();
++
++	free(src);
++	free(dst);
++	return clock_end - clock_start;
++}
++
++static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
++{
++	struct timeval tv_start, tv_end, tv_diff;
++	void *src = NULL, *dst = NULL;
++
++	alloc_mem(&src, &dst, len);
++
++	if (prefault)
++		fn(dst, src, len);
++
++	BUG_ON(gettimeofday(&tv_start, NULL));
++	fn(dst, src, len);
++	BUG_ON(gettimeofday(&tv_end, NULL));
++
++	timersub(&tv_end, &tv_start, &tv_diff);
++
++	free(src);
++	free(dst);
++	return (double)((double)len / timeval2double(&tv_diff));
++}
++
++#define pf (no_prefault ? 0 : 1)
++
++#define print_bps(x) do {					\
++		if (x < K)					\
++			printf(" %14lf B/Sec", x);		\
++		else if (x < K * K)				\
++			printf(" %14lfd KB/Sec", x / K);	\
++		else if (x < K * K * K)				\
++			printf(" %14lf MB/Sec", x / K / K);	\
++		else						\
++			printf(" %14lf GB/Sec", x / K / K / K); \
++	} while (0)
++
+ int bench_mem_memcpy(int argc, const char **argv,
+ 		     const char *prefix __used)
+ {
+ 	int i;
+-	void *dst, *src;
+-	size_t length;
+-	double bps = 0.0;
+-	struct timeval tv_start, tv_end, tv_diff;
+-	u64 clock_start, clock_end, clock_diff;
++	size_t len;
++	double result_bps[2];
++	u64 result_clock[2];
+ 
+-	clock_start = clock_end = clock_diff = 0ULL;
+ 	argc = parse_options(argc, argv, options,
+ 			     bench_mem_memcpy_usage, 0);
+ 
+-	tv_diff.tv_sec = 0;
+-	tv_diff.tv_usec = 0;
+-	length = (size_t)perf_atoll((char *)length_str);
++	if (use_clock)
++		init_clock();
++
++	len = (size_t)perf_atoll((char *)length_str);
+ 
+-	if ((s64)length <= 0) {
++	result_clock[0] = result_clock[1] = 0ULL;
++	result_bps[0] = result_bps[1] = 0.0;
++
++	if ((s64)len <= 0) {
+ 		fprintf(stderr, "Invalid length:%s\n", length_str);
+ 		return 1;
+ 	}
+ 
++	/* same to without specifying either of prefault and no-prefault */
++	if (only_prefault && no_prefault)
++		only_prefault = no_prefault = false;
++
+ 	for (i = 0; routines[i].name; i++) {
+ 		if (!strcmp(routines[i].name, routine))
+ 			break;
+@@ -126,61 +212,80 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 		return 1;
+ 	}
+ 
+-	dst = zalloc(length);
+-	if (!dst)
+-		die("memory allocation failed - maybe length is too large?\n");
+-
+-	src = zalloc(length);
+-	if (!src)
+-		die("memory allocation failed - maybe length is too large?\n");
+-
+-	if (bench_format == BENCH_FORMAT_DEFAULT) {
+-		printf("# Copying %s Bytes from %p to %p ...\n\n",
+-		       length_str, src, dst);
+-	}
+-
+-	if (use_clock) {
+-		init_clock();
+-		clock_start = get_clock();
+-	} else {
+-		BUG_ON(gettimeofday(&tv_start, NULL));
+-	}
+-
+-	routines[i].fn(dst, src, length);
++	if (bench_format == BENCH_FORMAT_DEFAULT)
++		printf("# Copying %s Bytes ...\n\n", length_str);
+ 
+-	if (use_clock) {
+-		clock_end = get_clock();
+-		clock_diff = clock_end - clock_start;
++	if (!only_prefault && !no_prefault) {
++		/* show both of results */
++		if (use_clock) {
++			result_clock[0] =
++				do_memcpy_clock(routines[i].fn, len, false);
++			result_clock[1] =
++				do_memcpy_clock(routines[i].fn, len, true);
++		} else {
++			result_bps[0] =
++				do_memcpy_gettimeofday(routines[i].fn,
++						len, false);
++			result_bps[1] =
++				do_memcpy_gettimeofday(routines[i].fn,
++						len, true);
++		}
+ 	} else {
+-		BUG_ON(gettimeofday(&tv_end, NULL));
+-		timersub(&tv_end, &tv_start, &tv_diff);
+-		bps = (double)((double)length / timeval2double(&tv_diff));
++		if (use_clock) {
++			result_clock[pf] =
++				do_memcpy_clock(routines[i].fn,
++						len, only_prefault);
++		} else {
++			result_bps[pf] =
++				do_memcpy_gettimeofday(routines[i].fn,
++						len, only_prefault);
++		}
+ 	}
+ 
+ 	switch (bench_format) {
+ 	case BENCH_FORMAT_DEFAULT:
+-		if (use_clock) {
+-			printf(" %14lf Clock/Byte\n",
+-			       (double)clock_diff / (double)length);
+-		} else {
+-			if (bps < K)
+-				printf(" %14lf B/Sec\n", bps);
+-			else if (bps < K * K)
+-				printf(" %14lfd KB/Sec\n", bps / 1024);
+-			else if (bps < K * K * K)
+-				printf(" %14lf MB/Sec\n", bps / 1024 / 1024);
+-			else {
+-				printf(" %14lf GB/Sec\n",
+-				       bps / 1024 / 1024 / 1024);
++		if (!only_prefault && !no_prefault) {
++			if (use_clock) {
++				printf(" %14lf Clock/Byte\n",
++					(double)result_clock[0]
++					/ (double)len);
++				printf(" %14lf Clock/Byte (with prefault)\n",
++					(double)result_clock[1]
++					/ (double)len);
++			} else {
++				print_bps(result_bps[0]);
++				printf("\n");
++				print_bps(result_bps[1]);
++				printf(" (with prefault)\n");
+ 			}
++		} else {
++			if (use_clock) {
++				printf(" %14lf Clock/Byte",
++					(double)result_clock[pf]
++					/ (double)len);
++			} else
++				print_bps(result_bps[pf]);
++
++			printf("%s\n", only_prefault ? " (with prefault)" : "");
+ 		}
+ 		break;
+ 	case BENCH_FORMAT_SIMPLE:
+-		if (use_clock) {
+-			printf("%14lf\n",
+-			       (double)clock_diff / (double)length);
+-		} else
+-			printf("%lf\n", bps);
++		if (!only_prefault && !no_prefault) {
++			if (use_clock) {
++				printf("%lf %lf\n",
++					(double)result_clock[0] / (double)len,
++					(double)result_clock[1] / (double)len);
++			} else {
++				printf("%lf %lf\n",
++					result_bps[0], result_bps[1]);
++			}
++		} else {
++			if (use_clock) {
++				printf("%lf\n", (double)result_clock[pf]
++					/ (double)len);
++			} else
++				printf("%lf\n", result_bps[pf]);
++		}
+ 		break;
+ 	default:
+ 		/* reaching this means there's some disaster: */
 -- 
-1.7.2
-
-
+1.6.5.2
 
