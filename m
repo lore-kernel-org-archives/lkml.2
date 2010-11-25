@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab0KYITe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 03:19:34 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34701 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab0KYITd (ORCPT
+	id S1751854Ab0KYIkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 03:40:22 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:39370 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab0KYIkV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 03:19:33 -0500
-Message-ID: <4CEE1C0F.5060606@retis.net.pl>
-Date: Thu, 25 Nov 2010 09:19:27 +0100
-From: Grzegorz Chwesewicz <grzegorz.chwesewicz@retis.net.pl>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org
-Subject: Re: [regression] 2.6.37-rc1: Freeze while booting on HP nx6325
-References: <4CED1AB8.80305@retis.net.pl> <201011241230.26262.bjorn.helgaas@hp.com>
-In-Reply-To: <201011241230.26262.bjorn.helgaas@hp.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Nov 2010 03:40:21 -0500
+Subject: Re: rcu_read_lock/unlock protect find_task_by_vpid call in
+ posix_cpu_timer_create
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20101125010948.GA1371@redhat.com>
+References: <20101125010948.GA1371@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 25 Nov 2010 09:40:36 +0100
+Message-ID: <1290674436.2072.562.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas pisze:
-> On Wednesday, November 24, 2010 07:01:28 am Grzegorz Chwesewicz wrote:
->> Hi, I have a problem with 2.6.37-rc1. My HP nx6325 freezes during boot.
->> It happens after printing lines:
->>
->> [    0.298457] atiixp 0000:00:14.1: not 100% native mode: will probe
->> irqs later
->> [    0.298515]     ide0: BM-DMA at 0x7040-0x7047
->> [    0.298573] atiixp 0000:00:14.1: simplex device: DMA disabled
->> [    0.298625] ide1: DMA disabled
->> <Freeze>
+On Wed, 2010-11-24 at 20:09 -0500, Dave Jones wrote:
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> kernel/pid.c:419 invoked rcu_dereference_check() without protection!
 > 
-> I think this is the same problem as
-> https://bugzilla.kernel.org/show_bug.cgi?id=23332
+> other info that might help us debug this:
 > 
-> If you have more of the log, that would be useful, but I doubt you
-> do because I don't think the nx6325 has a serial port.  
+> 
+> rcu_scheduler_active = 1, debug_locks = 1
+> 1 lock held by scrashme/20820:
+>  #0:  (tasklist_lock){.?.?..}, at: [<ffffffff8106e30f>] posix_cpu_timer_create+0x50/0xee
+> 
+> stack backtrace:
+> Pid: 20820, comm: scrashme Not tainted 2.6.37-rc3+ #7
+> Call Trace:
+>  [<ffffffff8107cfd5>] lockdep_rcu_dereference+0x9d/0xa5
+>  [<ffffffff81069d08>] find_task_by_pid_ns+0x44/0x5d
+>  [<ffffffff81069d43>] find_task_by_vpid+0x22/0x24
+>  [<ffffffff8106e32d>] posix_cpu_timer_create+0x6e/0xee
+>  [<ffffffff8106eb88>] do_cpu_nanosleep+0x83/0x1ad
+>  [<ffffffff8106f50a>] posix_cpu_nsleep+0x6d/0xf6
+>  [<ffffffff810f9a64>] ? might_fault+0xa5/0xac
+>  [<ffffffff810f9a1b>] ? might_fault+0x5c/0xac
+>  [<ffffffff8106bf57>] sys_clock_nanosleep+0x7c/0xcb
+>  [<ffffffff81009cb2>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Dave Jones <davej@redhat.com>
+> 
+> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+> index 6842eeb..2658955 100644
+> --- a/kernel/posix-cpu-timers.c
+> +++ b/kernel/posix-cpu-timers.c
+> @@ -391,6 +391,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+>  	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
+>  
+>  	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
+>  		if (pid == 0) {
+>  			p = current;
+> @@ -414,6 +415,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+>  	} else {
+>  		ret = -EINVAL;
+>  	}
+> +	rcu_read_unlock();
+>  	read_unlock(&tasklist_lock);
+>  
+>  	return ret;
 
-It doesn't have serial port, I tried with console on USB<->serial
-converter, but it is initialized too late to dump something.
+Do we still need the tasklist_lock in this case?
 
-I do have
-> a sample of that system, so I'm hoping to learn something about it
-> today.
-
--- 
-Greetings
-Grzegorz Chwesewicz
-grzegorz.chwesewicz@retis.net.pl
+Also, why is that think complaining, surely the tasklist_lock pins any
+and all PID objects?
