@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab0KYMkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 07:40:15 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51922 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab0KYMkL (ORCPT
+	id S1752095Ab0KYNNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 08:13:32 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47350 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab0KYNNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 07:40:11 -0500
-Message-ID: <4CEE5921.40304@pengutronix.de>
-Date: Thu, 25 Nov 2010 13:40:01 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Thu, 25 Nov 2010 08:13:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vto/ZBZg8iwcSTAClt3YrtnZIIQvnv/NgwKcXSN2rOVxwSEO6Haq0uwzQqWkBXnaXr
+         gQDRwOC6baWDzBGRpD0ih0U2V1cPZeL865toQnmoEw+d4yhfC/W83VM0SPZP+fWyA17z
+         b111ht0m3UmafSJyJ3NEiCVivUphuHTSaZp6U=
+Date: Thu, 25 Nov 2010 16:12:24 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: mkl0301@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] USB: cns3xxx: Add EHCI and OHCI bus glue for
+ cns3xxx SOCs
+Message-ID: <20101125131224.GA15916@oksana.dev.rtsoft.ru>
+References: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
+ <1290443565-20766-4-git-send-email-mkl0301@gmail.com>
+ <20101124162512.GB10890@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: andrew.chih.howe.khor@intel.com, socketcan-core@lists.berlios.de,
-        Samuel Ortiz <sameo@linux.intel.com>, margie.foster@intel.com,
-        netdev@vger.kernel.org, Christian Pellegrin <chripell@fsfe.org>,
-        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
-        kok.howg.ewe@intel.com, joel.clark@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfgang Grandegger <wg@grandegger.com>, qi.wang@intel.com
-Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow
- control,
-References: <4CE2434B.5050701@dsn.okisemi.com>	<4CE27796.2000206@pengutronix.de>	<007401cb87b1$a773b3d0$66f8800a@maildom.okisemi.com>	<4CE64167.2030405@pengutronix.de> <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com> <4CEA2986.4080607@pengutronix.de> <000b01cb8b6b$d7542a90$66f8800a@maildom.okisemi.com> <4CED0650.7030004@pengutronix.de> <001b01cb8c98$d06aaa00$66f8800a@maildom.okisemi.com> <4CEE51CA.8010402@pengutronix.de> <002f01cb8c9d$103f7760$66f8800a@maildom.okisemi.com>
-In-Reply-To: <002f01cb8c9d$103f7760$66f8800a@maildom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig6E75CF61E0C27555F9E3E1A4"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20101124162512.GB10890@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6E75CF61E0C27555F9E3E1A4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 24, 2010 at 07:25:12PM +0300, Anton Vorontsov wrote:
+> On Tue, Nov 23, 2010 at 12:32:45AM +0800, mkl0301@gmail.com wrote:
+> > From: Mac Lin <mkl0301@gmail.com>
+> > 
+> > The CNS3XXX SOC has include USB EHCI and OHCI compatible controllers. This
+> > patch adds the necessary glue logic to allow ehci-hcd and ohci-hcd drivers to
+> > work on CNS3XXX
+> > 
+> > The EHCI and OHCI controllers share a common clock control and reset bit,
+> > therefore additional check for the timming of enabling and disabling is
+> > required. The USB bit of PLL Power Down Control is also shared by OTG, 24MHz
+> > UART clock, Crypto clock, PCIe reference clock, and Clock Scale Generator.
+> > Therefore we only ensure it is enabled, while not disabling it.
+> > 
+> > Signed-off-by: Mac Lin <mkl0301@gmail.com>
+> 
+> Thanks for the patch!
+> 
+> A few (mostly cosmetic) comments down below.
+[...]
+> > +#ifdef CNS3XXX_USB_BASE_VIRT
+> > +	hcd->regs = (void __iomem *) CNS3XXX_USB_BASE_VIRT;
+> > +#else
 
-On 11/25/2010 01:34 PM, Tomoya MORINAGA wrote:
-> On Thursday, November 25, 2010 9:08 PM, Marc Kleine-Budde wrote :=20
->> Why do you Read-Modify-Write for TX? Naively speaking you just need to=
+Oh, and also. Please get rid of these #ifdefs. There is no
+CNS3XXX_USB_BASE_VIRT anymore. So, just remove them.
 
->> push your Data into a Mail/IF/Whatever and push the send button.
->=20
-> I see.
-> I will implement this.
+Thanks!
 
-With "naively speaking", I mean I haven't looked at the Datasheet, maybe
-in the real world with real hardware it's needed to do a RMW.
-
-regard, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig6E75CF61E0C27555F9E3E1A4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzuWSQACgkQjTAFq1RaXHPENQCfX9ZKMUdJta10BvLpRoHMeGOi
-J6EAnjXWwCDjpS5loCFeSIfjZ2Oz1xd2
-=tz/a
------END PGP SIGNATURE-----
-
---------------enig6E75CF61E0C27555F9E3E1A4--
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
