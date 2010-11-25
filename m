@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab0KYJEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 04:04:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55438 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab0KYJEj (ORCPT
+	id S1751813Ab0KYJLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 04:11:08 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49450 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab0KYJLH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 04:04:39 -0500
-Date: Thu, 25 Nov 2010 10:04:35 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Anatolij Gustschin <agust@denx.de>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] dmaengine: imx-sdma: fix bug in buffer descriptor
-	initialization
-Message-ID: <20101125090435.GQ6017@pengutronix.de>
-References: <1290447318-29333-1-git-send-email-agust@denx.de>
+	Thu, 25 Nov 2010 04:11:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type:content-transfer-encoding;
+        b=DvFm+21f7BzoOpO83arPqK6a1dcJyCPKATWrjgmRcsWaPb009hQyYn8MKoReBYlNnW
+         71Yu/Zht3XLNPcXPDwbfJd7I0a9GZynQREptq4Tsd2s0pCgA5bA5NwakkDO4CwIx0ZNq
+         VmEzDW5MTnzL2QKwJdz3c8wRNAuB6WhfFwX4g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290447318-29333-1-git-send-email-agust@denx.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:04:21 up 145 days, 15 min, 59 users,  load average: 0.18,
-	0.22, 0.39
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 25 Nov 2010 10:11:06 +0100
+Message-ID: <AANLkTimahUpEL3cV6pFhkN8KqrphfVMSOw8xAN2=9jPy@mail.gmail.com>
+Subject: Re: [PATCH 0/13] ACPI / PM: Rework power resources management
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 06:35:18PM +0100, Anatolij Gustschin wrote:
-> Currently while submitting scatterlists with more than one SG
-> entry the DMA buffer address from the first SG entry is inserted
-> into all initialized DMA buffer descriptors. This is due to the
-> typo in the for_each_sg() loop where the scatterlist pointer is
-> used for obtaining the DMA buffer address and _not_ the SG list
-> iterator.
-> 
-> As a result all received data will be written only into the first
-> DMA buffer while reading. While writing the data from the first
-> DMA buffer is send to the device multiple times. This caused
-> the filesystem destruction on the MMC card when using DMA in
-> mxcmmc driver.
-> 
-> Signed-off-by: Anatolij Gustschin <agust@denx.de>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Hi Rafael,
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+I applied your patch-set against linux-next (next-20101124) with
+backlight-type patches from Matthew.
 
-> ---
->  drivers/dma/imx-sdma.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index 0834323..13d6447 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -951,7 +951,7 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
->  		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
->  		int param;
->  
-> -		bd->buffer_addr = sgl->dma_address;
-> +		bd->buffer_addr = sg->dma_address;
->  
->  		count = sg->length;
->  
-> -- 
-> 1.7.1
-> 
-> 
+# grep "error:" build_linux-next_next20101124.dileks.2.log
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/fujitsu-laptop.c:692:
+error: implicit declaration of function ‘acpi_bus_get_power’
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Looking into the source:
+
+# grep acpi_bus_get_power -r
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/fujitsu-laptop.c:
+   result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/fujitsu-laptop.c:
+   result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
+
+Checking the acpi tree:
+
+# grep "acpi_bus_get_power(" -r
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/acpi/
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/acpi/bus.c:static
+int __acpi_bus_get_power(struct acpi_device *device, int *state)
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/acpi/bus.c:
+      result = __acpi_bus_get_power(device, &state);
+/home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/acpi/bus.c:
+      result = __acpi_bus_get_power(device, &state);
+
+Just wanna let you know.
+
+Kind Regards,
+- Sedat -
