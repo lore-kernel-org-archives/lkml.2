@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0KYATG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 19:19:06 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:53795 "EHLO
+	id S1754905Ab0KYAWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 19:22:22 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:39135 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab0KYATD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753638Ab0KYAWV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 19:19:03 -0500
+	Wed, 24 Nov 2010 19:22:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ESWAmhM+UUUQatc5AyA6B7/O5WMyL+E9qGPEkWDgl575Xq0EIr3tQoW+Hyza2icBSi
-         PcnVa/IMImyam57Y5ViA==
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=gZLtRe96MmxLFLbQBD0gt73OnkloIkTIT6Ok9NnbfrT0a6d87rGxKIp9+YxUp+qcfE
+         c8MekQ9RlIkYyIHi7ajg==
 MIME-Version: 1.0
 In-Reply-To: <AANLkTimwvP2Ey1gJ6AbbFNtDKjGZt4cwqL=08nGBa_PT@mail.gmail.com>
 References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com>
-	<1290577024-12347-1-git-send-email-ccross@android.com>
-	<AANLkTimFqJ+qPidS_81DKd7ExSxDG7GNi0gjcUEEq_7j@mail.gmail.com>
-	<AANLkTimwvP2Ey1gJ6AbbFNtDKjGZt4cwqL=08nGBa_PT@mail.gmail.com>
-Date: Wed, 24 Nov 2010 16:18:59 -0800
-X-Google-Sender-Auth: cqOiqf695LEDzSMv7Wzd5hip6Hc
-Message-ID: <AANLkTin-PrZxoGzO0+pq+28Xr0_PK3PYTJjKYRh0YQD4@mail.gmail.com>
+ <1290577024-12347-1-git-send-email-ccross@android.com> <AANLkTimFqJ+qPidS_81DKd7ExSxDG7GNi0gjcUEEq_7j@mail.gmail.com>
+ <AANLkTimwvP2Ey1gJ6AbbFNtDKjGZt4cwqL=08nGBa_PT@mail.gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Wed, 24 Nov 2010 16:21:58 -0800
+Message-ID: <AANLkTimJA52-GTM=AzS+tkOugrsi6Keh0_j87vK1BkGv@mail.gmail.com>
 Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
-From: Colin Cross <ccross@android.com>
-To: Paul Menage <menage@google.com>
+To: Colin Cross <ccross@android.com>
 Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -36,19 +33,6 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Nov 24, 2010 at 4:11 PM, Colin Cross <ccross@android.com> wrote:
-> On Wed, Nov 24, 2010 at 3:54 PM, Paul Menage <menage@google.com> wrote:
->> On Tue, Nov 23, 2010 at 9:37 PM, Colin Cross <ccross@android.com> wrote:
->>> @@ -364,12 +372,8 @@ static void __put_css_set(struct css_set *cg, int taskexit)
->>>                struct cgroup *cgrp = link->cgrp;
->>>                list_del(&link->cg_link_list);
->>>                list_del(&link->cgrp_link_list);
->>> -               if (atomic_dec_and_test(&cgrp->count) &&
->>> -                   notify_on_release(cgrp)) {
->>> -                       if (taskexit)
->>> -                               set_bit(CGRP_RELEASABLE, &cgrp->flags);
->>> +               if (atomic_dec_and_test(&cgrp->count))
->>>                        check_for_release(cgrp);
->>> -               }
 >>
 >> We seem to have lost some notify_on_release() checks - maybe move that
 >> to check_for_release()?
@@ -56,32 +40,25 @@ On Wed, Nov 24, 2010 at 4:11 PM, Colin Cross <ccross@android.com> wrote:
 > for the same bit as notify_on_release.  There's no need for
 > CGRP_RELEASABLE to depend on notify_on_release, or to check
 > notify_on_release before calling check_for_release.
->
->>>  /* Caller must verify that the css is not for root cgroup */
->>> +void __css_get(struct cgroup_subsys_state *css, int count)
->>> +{
->>> +       atomic_add(count, &css->refcnt);
->>> +       set_bit(CGRP_RELEASABLE, &css->cgroup->flags);
->>> +}
->>
->> Is css_get() the right place to be putting this? It's not clear to me
->> why a subsystem taking a refcount on a cgroup's state should render it
->> releasable when it drops that refcount.
+
+OK.
+
 > I matched the existing behavior, __css_put sets CGRP_RELEASABLE when
 > refcnt goes to 0.
 >
->> Should we maybe clear the CGRP_RELEASABLE flag right before doing the
->> userspace callback?
-> Actually, I think CGRP_RELEASABLE can be dropped entirely.
+
+Ah, we do appear to have had that behaviour for a while. I don't
+remember the justification for it at this point :-)
+
 > check_for_release is only called from __css_put, cgroup_rmdir, and
 > __put_css_set (or free_css_set_work after my second patch).  Those all
 > imply that __css_get, get_css_set, or cgroup_create have been
 > previously called, which are the functions that set CGRP_RELEASABLE.
-Nevermind, that's not true - get_css_set does not set CGRP_RELEASABLE,
-cgroup_attach_task does.
 
-If CGRP_RELEASABLE is not cleared before the callback, the
-release_agent would be run once when the last task was removed from
-the cgroup, and then again if a task failed to be added to the empty
-cgroup because the task was exiting, so clearing the flag sounds like
-a good idea.
+Not in one case - if we create a new cgroup and try to move a thread
+into it, but the thread is exiting as we move it, we'll call
+put_css_set() on the new css_set, which will drop the refcount on the
+target cgroup back to 0. We wouldn't want the auto-release
+notification to kick in in that situation, I think.
+
+Paul
