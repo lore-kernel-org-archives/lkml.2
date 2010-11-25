@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0KYOxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 09:53:07 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:6296 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab0KYOxF convert rfc822-to-8bit (ORCPT
+	id S1753342Ab0KYOx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 09:53:59 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:37463 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752628Ab0KYOx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 09:53:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Xxpa3A+OyuAiu27uSTM4GlzgFVnwQeV/RENjmQixoEm50IylC3nJvkaJFvMuoZsy3X
-         U6Yp72MSIpGs2pFJZpEQ==
+	Thu, 25 Nov 2010 09:53:57 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAJIH7kxLd/sX/2dsb2JhbAAHg0jPA5BpgSGDM3MEhFyLGQ
+X-IronPort-AV: E=Sophos;i="4.59,255,1288584000"; 
+   d="scan'208";a="83661082"
+Message-ID: <4CEE7884.5010007@teksavvy.com>
+Date: Thu, 25 Nov 2010 09:53:56 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <1290684033.2145.25.camel@laptop>
-References: <4ce510d4.0fedd80a.742c.10b9@mx.google.com>
-	<1290684033.2145.25.camel@laptop>
-Date: Thu, 25 Nov 2010 15:53:00 +0100
-Message-ID: <AANLkTim23nB7gL_wfanxGjJBHvE-7VpSjQ4wU4cQ_fG3@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf_events: add support for per-cpu per-cgroup
- monitoring (v5)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Greg Freemyer <greg.freemyer@gmail.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com> <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com> <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com> <20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com> <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com>
+In-Reply-To: <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 12:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+On 10-11-24 11:41 PM, Greg Freemyer wrote:
 >
-> On Thu, 2010-11-18 at 12:40 +0200, Stephane Eranian wrote:
-> > @@ -919,6 +945,10 @@ static inline void perf_event_task_sched_in(struct task_struct *task)
-> >  static inline
-> >  void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
-> >  {
-> > +#ifdef CONFIG_CGROUPS
-> > +       atomic_t *cgroup_events = &__get_cpu_var(perf_cgroup_events);
-> > +       COND_STMT(cgroup_events, perf_cgroup_switch(task, next));
-> > +#endif
-> >         COND_STMT(&perf_task_events, __perf_event_task_sched_out(task, next));
-> >  }
->
-> I don't think that'll actually work, the jump label stuff needs a static
-> address.
->
+> If you see a significant speed difference between mke2fs and running
+> wiper.sh on that same filesystem immediately after formatting, then
+> their is likely a bug worth chasing.
 
-I did not know that.
 
-> Why not simply: s/perf_task_events/perf_sched_events/ and increment it
-> for cgroup events as well?
->
+You're right.  They're both equally slow on a blank Sandforce drive,
+taking about 83-90 seconds to TRIM 100GB.
 
-But you would need to demultiplex. that's not because perf_sched_events is
-set that you want BOTH perf_cgroup_switch() AND perf_event_task_sched_out().
-Cgroup mode is per-cpu only.
+The difference being that mke2fs just sits there with zero indication
+or information as to what the huge delay is.
+
+It's a pity the TRIM commands are so sluggish on the Sandforce.
+It's a generation newer than the original Vertex, and TRIM is way faster
+on the older Vertex.  Not that either of them do it quickly enough that
+I'd ever want the kernel doing it automatically "on my behalf".
+
+The strange thing, is that when we TRIM the entire raw device,
+using ATA SECURITY ERASE, it takes less than 2 seconds.
+
+Cheers
