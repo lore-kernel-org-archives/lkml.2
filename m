@@ -1,112 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab0KYLrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:47:21 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:62928 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752866Ab0KYLrT (ORCPT
+	id S1752954Ab0KYLr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:47:57 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34997 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab0KYLr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:47:19 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALLY7Ux5LcZJ/2dsb2JhbACjCnK+EYVHBA
-Date: Thu, 25 Nov 2010 22:47:11 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Roman Zippel <zippel@linux-m68k.org>,
-        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC][PATCH] Possible data integrity problems in lots of
- filesystems?
-Message-ID: <20101125114711.GA3622@amd>
-References: <20101125074909.GA4160@amd>
- <4CEE2C2E.4010003@panasas.com>
- <20101125100603.GA3164@amd>
- <4CEE3F9F.9070108@panasas.com>
+	Thu, 25 Nov 2010 06:47:56 -0500
+Message-ID: <4CEE4CE0.7050500@pengutronix.de>
+Date: Thu, 25 Nov 2010 12:47:44 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CEE3F9F.9070108@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: andrew.chih.howe.khor@intel.com, Samuel Ortiz <sameo@linux.intel.com>,
+        margie.foster@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+        yong.y.wang@intel.com, kok.howg.ewe@intel.com,
+        Wolfgang Grandegger <wg@grandegger.com>, joel.clark@intel.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Christian Pellegrin <chripell@fsfe.org>, qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 6/17 v3] can: EG20T PCH: Fix endianness issue
+References: <4CED023E.1070009@dsn.okisemi.com>	<4CED13B5.5020309@pengutronix.de> <001c01cb8c91$6e93aef0$66f8800a@maildom.okisemi.com>
+In-Reply-To: <001c01cb8c91$6e93aef0$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig3B5C7D08EAD3B01DD426A040"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 12:51:11PM +0200, Boaz Harrosh wrote:
-> On 11/25/2010 12:06 PM, Nick Piggin wrote:
-> > On Thu, Nov 25, 2010 at 11:28:14AM +0200, Boaz Harrosh wrote:
-> 
-> >>> Index: linux-2.6/fs/exofs/file.c
-> >>> ===================================================================
-> >>> --- linux-2.6.orig/fs/exofs/file.c	2010-11-19 16:50:00.000000000 +1100
-> >>> +++ linux-2.6/fs/exofs/file.c	2010-11-19 16:50:07.000000000 +1100
-> >>> @@ -48,11 +48,6 @@ static int exofs_file_fsync(struct file
-> >>>  	struct inode *inode = filp->f_mapping->host;
-> >>>  	struct super_block *sb;
-> >>>  
-> >>> -	if (!(inode->i_state & I_DIRTY))
-> >>> -		return 0;
-> >>> -	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
-> >>> -		return 0;
-> >>> -
-> >>>  	ret = sync_inode_metadata(inode, 1);
-> >>>  
-> >>>  	/* This is a good place to write the sb */
-> >>>
-> >>
-> >> Is that a good enough fix for the issue in your opinion?
-> >> Or is there more involved?
-> > 
-> > For the inode dirty bit race problem, yes it should fix it.
-> > sync_inode_metadata basically makes the same checks without
-> > races (in a subsequent patch I re-introduced the datasync
-> > optimisation).
-> > 
-> >  
-> 
-> > 
-> > Well in your fsync, you need to wait for inode writeback
-> > that might have been started by an asynchronous write_inode.
-> > 
-> 
-> All I'm calling is sync_inode_metadata(,1) which calls sync_inode()
-> which calls writeback_single_inode(sync_mode == WB_SYNC_ALL). It gets
-> a little complicated but from the looks of it, even though the
-> call to .write_inode() is not under any lock the state machine there
-> will do inode_wait_for_writeback() if there was one in motion
-> all ready. ?
-> 
-> And it looks like writeback_single_inode() does all the proper
-> checks in the correct order for these flags above.
-> 
-> So current code in exofs_file_fsync() looks scary to me. I would
-> like to push your above patch for this Kernel. (I'll repost it)
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig3B5C7D08EAD3B01DD426A040
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It does not get it right, because of the situation I described
-above. Background writeout can come in first, and clear the inode
-dirty bits, and call your ->write_inode for async writeout.
+On 11/25/2010 12:10 PM, Tomoya MORINAGA wrote:
+> On Wednesday, November 24, 2010 10:31 PM,  Marc Kleine-Budde wrote :
+>=20
+>>> For easy to read, some sub-functions are created.
+>>>
+>>>
+>>> Modify complex "goto" to do~while.
+>> What about the next_flag in the rx_normal function? Can you get rid of=
 
-That means you skip doing the exofs_put_io_state(), and (I presume)
-this means you aren't waiting for write completion there.
+>> it, too?
+> Subsequent Patch (11/17 Delete unnecessary ...) deletes "next_flag" in =
+the rx_normal function.
 
-What then happens is that sync_inode_metadata() from your fsync
-does not call ->write_inode because the inode dirty bits are clear.
-It's basically a noop. So you need to either make your .write_inode
-always synchronous, or wait for it in your .fsync and .sync_fs.
+Thanks, I've found the patch myself.
+
+cheers, Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-> > Also, with your sync_inode_metadata call, you shouldn't need the
-> > sync_inode call by the looks.
-> >  
-> 
-> What? I missed you. You mean I don't need to sync_inode_metadata(,wait==1),
-> or what did you mean?
+--------------enig3B5C7D08EAD3B01DD426A040
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Sorry, I was looking at the wrong code, ignore that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Nick
+iEYEARECAAYFAkzuTOQACgkQjTAFq1RaXHNhggCfQ3EkotrK6ihLFzrI168AtcfQ
+dYIAn0sjuJhP++eNCf7BF2Lv6XjPLtb8
+=DXbc
+-----END PGP SIGNATURE-----
+
+--------------enig3B5C7D08EAD3B01DD426A040--
