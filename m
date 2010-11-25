@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab0KYKvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 05:51:53 -0500
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:5107 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752393Ab0KYKvv (ORCPT
+	id S1752628Ab0KYKwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 05:52:14 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:18905 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab0KYKwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 05:51:51 -0500
-Message-ID: <4CEE3F77.4020206@draigBrady.com>
-Date: Thu, 25 Nov 2010 10:50:31 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Thu, 25 Nov 2010 05:52:12 -0500
+Message-ID: <4CEE3FD8.6080202@panasas.com>
+Date: Thu, 25 Nov 2010 12:52:08 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        BTRFS MAILING LIST <linux-btrfs@vger.kernel.org>
-Subject: Re: VFS support for fast copy on deduplicating FSes
-References: <AANLkTinz17SePZCCixBCA_WoW3rFWAsB7mRghL9uN17h@mail.gmail.com> <20101125103258.GA16562@mother.pipebreaker.pl>
-In-Reply-To: <20101125103258.GA16562@mother.pipebreaker.pl>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Nick Piggin <npiggin@kernel.dk>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
+Subject: [PATCH] exofs: simple fsync race fix
+References: <20101125074909.GA4160@amd> <4CEE2C2E.4010003@panasas.com> <20101125100603.GA3164@amd> <4CEE3F9F.9070108@panasas.com>
+In-Reply-To: <4CEE3F9F.9070108@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Nov 2010 10:52:11.0444 (UTC) FILETIME=[D0147F40:01CB8C8E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/11/10 10:32, Tomasz Torcz wrote:
-> On Thu, Nov 25, 2010 at 04:19:17AM -0600, David Nicol wrote:
->> unresearched question/suggestion:
->>
->> Is there general support for a "fast copy" ioctl in the VFS layer,
->> which would be hooked by file systems that support COW or other forms
->> of deduplication and can provide copy semantics by manipulating
->> metadata only?
->>
-> 
->   Yes, see reflink(2) syscall (http://lwn.net/Articles/331576/).
-> 
+From: Nick Piggin <npiggin@kernel.dk>
 
-Yep and this: http://lwn.net/Articles/335380/
-Note that cp --reflink has been supported for a while,
-but it's BTRFS specific at the moment.
-We'll need to change to the more generic interface.
+It is incorrect to test inode dirty bits without participating in the inode
+writeback protocol. Inode writeback sets I_SYNC and clears I_DIRTY_?, then
+writes out the particular bits, then clears I_SYNC when it is done. BTW. it
+may not completely write all pages out, so I_DIRTY_PAGES would get set
+again.
 
-cheers,
-Pádraig.
+This is a standard pattern used throughout the kernel's writeback caches
+(I_SYNC ~= I_WRITEBACK, if that makes it clearer).
+
+And so it is not possible to determine an inode's dirty status just by
+checking I_DIRTY bits. Especially not for the purpose of data integrity
+syncs.
+
+Missing the check for these bits means that fsync can complete while
+writeback to the inode is underway. Inode writeback functions get this
+right, so call into them rather than try to shortcut things by testing
+dirty state improperly.
+
+Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ fs/exofs/file.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
+
+diff --git a/fs/exofs/file.c b/fs/exofs/file.c
+index b905c79..4c0d6ba 100644
+--- a/fs/exofs/file.c
++++ b/fs/exofs/file.c
+@@ -48,11 +48,6 @@ static int exofs_file_fsync(struct file *filp, int datasync)
+ 	struct inode *inode = filp->f_mapping->host;
+ 	struct super_block *sb;
+ 
+-	if (!(inode->i_state & I_DIRTY))
+-		return 0;
+-	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
+-		return 0;
+-
+ 	ret = sync_inode_metadata(inode, 1);
+ 
+ 	/* This is a good place to write the sb */
+-- 
+1.7.2.3
+
+
