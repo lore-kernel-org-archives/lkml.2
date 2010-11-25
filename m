@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0KYSHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 13:07:38 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52512 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751823Ab0KYSHg (ORCPT
+	id S1754175Ab0KYSIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 13:08:51 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:4520 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab0KYSIu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 13:07:36 -0500
-Date: Thu, 25 Nov 2010 18:06:27 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Clemens Ladisch <clemens@ladisch.de>, linux-media@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-Subject: Re: [RFC/PATCH v6 02/12] media: Media device
-Message-ID: <20101125180627.16aa89c0@lxorguk.ukuu.org.uk>
-In-Reply-To: <1q7hf5w7lvslx3nba6ooh9j2.1290705631030@email.android.com>
-References: <1q7hf5w7lvslx3nba6ooh9j2.1290705631030@email.android.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Nov 2010 13:08:50 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
+ a=dPnxFd8_iYEA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VwQbUJbxAAAA:8 a=wc6DhzEo1zFAyykfiEEA:9
+ a=jGJZYycv87Mi4yxxqvsA:7 a=L84e0MIl-bp4eU1GyLX1YU70JQYA:4 a=CjuIK1q_8ugA:10
+ a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH] fcntl: Add the F_READAHEAD command
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20101125095437.GA3409@ping.uio.no>
+Date: Thu, 25 Nov 2010 11:08:45 -0700
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DEAF94DC-08D0-42D2-A6E9-62B1B9C39D40@dilger.ca>
+References: <20101125095437.GA3409@ping.uio.no>
+To: Morten Hustveit <mortehu@ping.uio.no>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Nov 2010 12:20:31 -0500
-Andy Walls <awalls@md.metrocast.net> wrote:
+On 2010-11-25, at 02:54, Morten Hustveit wrote:
+> +static int f_readahead(struct file *filp, unsigned long arg)
+> +{
+> +	if (arg) {
+> +		filp->f_ra.ra_pages = (arg + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
-> The signedness of char is ambiguous for 8 bit data, which is why an API would normally use u8 (or s8, I guess).
+Functionality itself is fine, but it would be clearer if you used a better variable name than "arg" here.  Something like "readahead_bytes" or similar would make it immediately clear what the parameter is.
+
+> +		spin_lock(&filp->f_lock);
+> +		filp->f_mode &= ~FMODE_RANDOM;
+> +		spin_unlock(&filp->f_lock);
+> +	} else {
+> +		spin_lock(&filp->f_lock);
+> +		filp->f_mode |= FMODE_RANDOM;
+> +		spin_unlock(&filp->f_lock);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
+> 		struct file *filp)
+> {
+> @@ -420,6 +445,9 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
+> 	case F_GETPIPE_SZ:
+> 		err = pipe_fcntl(filp, cmd, arg);
+> 		break;
+> +	case F_READAHEAD:
+> +		err = f_readahead(filp, arg);
+> +		break;
+> 	default:
+> 		break;
+> 	}
+> diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
+> index afc00af..69d8e4d 100644
+> --- a/include/linux/fcntl.h
+> +++ b/include/linux/fcntl.h
+> @@ -28,6 +28,11 @@
+> #define F_GETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 8)
 > 
-> Since this is known to be character data, I would think char would be fine.  I am assuming C compilers would never assume multibyte "char"s.
+> /*
+> + * Set read-ahead buffer size
+> + */
+> +#define F_READAHEAD	(F_LINUX_SPECIFIC_BASE + 9)
+> +
+> +/*
+> * Types of directory notifications that may be requested.
+> */
+> #define DN_ACCESS	0x00000001	/* File accessed */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-char is 8bit in all modern C. I have used C compilers with configurable 9
-or 7 bit char and such a machine is never going to run Linux without
-serious insanity. Even grep in 9bit char is not fun...
 
-The advantage of using u8 is that any casting goes the way you expect
-whereas when working with UTF-8 things like
+Cheers, Andreas
 
-	int x = name[0];
 
-may not produce the expected result otherwise.
 
-Alan
+
+
