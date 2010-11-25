@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756455Ab0KYAfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 19:35:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32620 "EHLO mx1.redhat.com"
+	id S1754064Ab0KYAgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 19:36:13 -0500
+Received: from ozlabs.org ([203.10.76.45]:51802 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810Ab0KYAfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 19:35:10 -0500
-Date: Wed, 24 Nov 2010 19:35:01 -0500
-From: Dean Nelson <dnelson@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Message-Id: <20101125003501.4884.70261.send-patch@localhost6.localdomain6>
-Subject: [PATCH] Conditionally call unlock_page() in hugetlb_fault()
+	id S1751510Ab0KYAgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 19:36:12 -0500
+Date: Thu, 25 Nov 2010 11:36:11 +1100
+From: Tony Breeds <tony@bakeyournoodle.com>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Cross compilers available on kernel.org
+Message-ID: <20101125003611.GJ19615@ozlabs.org>
+Mail-Followup-To: sedat.dilek@gmail.com,
+	LKML <linux-kernel@vger.kernel.org>
+References: <AANLkTik-hmACi2V_H4hDMeJV+2yKDAmR_0a9oQ9SAqTt@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTik-hmACi2V_H4hDMeJV+2yKDAmR_0a9oQ9SAqTt@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have hugetlb_fault() call unlock_page(page) only if it had previously called
-lock_page(page).
+On Thu, Nov 25, 2010 at 01:28:44AM +0100, Sedat Dilek wrote:
+> Hi,
+> 
+> uploaded to wrong dir? For example [1].
+> 
+> - Sedat -
+> 
+> [1] http://kernel.org/pub/tools/crosstool/files/bin/i686/4.4.5/i686-gcc-4.5.1-nolibc_x86_64-linux.tar.gz
 
-Signed-off-by: Dean Nelson <dnelson@redhat.com>
-CC: stable@kernel.org
+Gah!  I'll fix it ASAP.
 
----
+Thanks.
 
-Setting CONFIG_DEBUG_VM=y and then running the libhugetlbfs test suite,
-resulted in the tripping of VM_BUG_ON(!PageLocked(page)) in unlock_page()
-having been called by hugetlb_fault() when page == pagecache_page.
-This patch remedied the problem.
-
- mm/hugetlb.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c4a3558..8585524 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2738,7 +2738,8 @@ out_page_table_lock:
- 		unlock_page(pagecache_page);
- 		put_page(pagecache_page);
- 	}
--	unlock_page(page);
-+	if (page != pagecache_page)
-+		unlock_page(page);
- 
- out_mutex:
- 	mutex_unlock(&hugetlb_instantiation_mutex);
+Yours Tony
