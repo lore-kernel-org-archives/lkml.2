@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab0KYOBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 09:01:30 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40108 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab0KYOB3 convert rfc822-to-8bit (ORCPT
+	id S1753378Ab0KYOCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 09:02:10 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41766 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab0KYOCI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 09:01:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xz/o9ztGZI6k6MxHu127ud5lw7GSicMa3HMVoJ69BvKTqFdUSKLHo1bx311onPZRjq
-         jOpjnRHYQUC8AuW6/H01AUOdLnFP34bPYaeln4Cuj4YyXZTYRtN8xTi7Ub42+MJGpuzP
-         T7uGZ+5/31mFk2GMIyYWhVIOK5NsBia0pbRUU=
-MIME-Version: 1.0
-In-Reply-To: <1290692075.689.20.camel@concordia>
-References: <1290607413.12457.44.camel@concordia>
-	<1290692075.689.20.camel@concordia>
-Date: Thu, 25 Nov 2010 15:01:27 +0100
-X-Google-Sender-Auth: Ckong4qhIcssKb7d-UbKPdNxJTs
-Message-ID: <AANLkTim9fPPWO-240dmavng+j=70G8Y4P-+j3Y+OZTL0@mail.gmail.com>
-Subject: Re: RFC: Mega rename of device tree routines from of_*() to dt_*()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: michael@ellerman.id.au
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        sparclinux@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Nov 2010 09:02:08 -0500
+Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to
+ "perf stat"
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <AANLkTinTNAwMCe_zu1snG1U5hSRafdBHQdzAr4e9nuWO@mail.gmail.com>
+References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+	 <1290666760.2072.539.camel@laptop>
+	 <AANLkTinTNAwMCe_zu1snG1U5hSRafdBHQdzAr4e9nuWO@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 25 Nov 2010 15:02:00 +0100
+Message-ID: <1290693720.2145.34.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 14:34, Michael Ellerman <michael@ellerman.id.au> wrote:
-> I've left for_each_child_of_node(), because I read it as "of", but maybe
-> it's "OF"?
+On Thu, 2010-11-25 at 14:19 +0100, Stephane Eranian wrote:
 
-I always read it as "for each child-OF-node", so I would rename it to
-"dt_for_each_child_node".
+> I think using PERF_SAMPLE_READ may expose a problem in the
+> perf.data format. To correctly parse a sample created with SAMPLE_READ,
+> you need to know the attr.read_format. But for that you need to know the
+> event which caused the sample, but for that you need the SAMPLE_ID,
+> and you don't know if it's there or not. In other words, there is a chicken
+> and egg problem.
+> 
+> I think the issue is that PERF_RECORD_SAMPLE is missing a mandatory
+> piece of information: overflow event ID. This must a mandatory field, not
+> optional as it is today. It is okay when you have only one group, but we'd
+> like to go beyond that.
 
-Gr{oetje,eeting}s,
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I'm not sure I get it, there's both PERF_FORMAT_ID and PERF_SAMPLE_ID,
+so afaict there's a working combination for what you want to do.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
