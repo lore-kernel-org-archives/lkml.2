@@ -1,119 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab0KYKAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 05:00:04 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40125 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab0KYKAB convert rfc822-to-8bit (ORCPT
+	id S1751934Ab0KYKGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 05:06:13 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:37406 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750997Ab0KYKGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 05:00:01 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: rcu_read_lock/unlock protect find_task_by_vpid call in migrate_pages
-Cc: kosaki.motohiro@jp.fujitsu.com, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <1290674541.2072.564.camel@laptop>
-References: <20101125095012.F446.A69D9226@jp.fujitsu.com> <1290674541.2072.564.camel@laptop>
-Message-Id: <20101125174751.F45C.A69D9226@jp.fujitsu.com>
+	Thu, 25 Nov 2010 05:06:11 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAF/D7Ux5LcZJ/2dsb2JhbACjCHK9WYVHBA
+Date: Thu, 25 Nov 2010 21:06:03 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Possible data integrity problems in lots of
+ filesystems?
+Message-ID: <20101125100603.GA3164@amd>
+References: <20101125074909.GA4160@amd>
+ <4CEE2C2E.4010003@panasas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 25 Nov 2010 18:59:58 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CEE2C2E.4010003@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2010-11-25 at 09:50 +0900, KOSAKI Motohiro wrote:
-> > Hi
+On Thu, Nov 25, 2010 at 11:28:14AM +0200, Boaz Harrosh wrote:
+> Hi Nick.
+> Thanks for digging into this issue, I bet it's causing pain. Which
+> I totally missed in my tests. I wish I had a better xsync+reboot
+> tests for all this.
+
+That's no problem, thanks for looking.
+
+
+> So in that previous patch you had:
+> > Index: linux-2.6/fs/exofs/file.c
+> > ===================================================================
+> > --- linux-2.6.orig/fs/exofs/file.c	2010-11-19 16:50:00.000000000 +1100
+> > +++ linux-2.6/fs/exofs/file.c	2010-11-19 16:50:07.000000000 +1100
+> > @@ -48,11 +48,6 @@ static int exofs_file_fsync(struct file
+> >  	struct inode *inode = filp->f_mapping->host;
+> >  	struct super_block *sb;
+> >  
+> > -	if (!(inode->i_state & I_DIRTY))
+> > -		return 0;
+> > -	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
+> > -		return 0;
+> > -
+> >  	ret = sync_inode_metadata(inode, 1);
+> >  
+> >  	/* This is a good place to write the sb */
 > > 
-> > > Signed-off-by: Dave Jones <davej@redhat.com>
-> > > 
-> > > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> > > index 4a57f13..2f0f55b 100644
-> > > --- a/mm/mempolicy.c
-> > > +++ b/mm/mempolicy.c
-> > > @@ -1308,6 +1308,7 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
-> > >  
-> > >  	/* Find the mm_struct */
-> > >  	read_lock(&tasklist_lock);
-> > > +	rcu_read_lock();
-> > >  	task = pid ? find_task_by_vpid(pid) : current;
-> > >  	if (!task) {
-> > >  		read_unlock(&tasklist_lock);
-> > > @@ -1315,6 +1316,7 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
-> > >  		goto out;
-> > >  	}
-> > >  	mm = get_task_mm(task);
-> > > +	rcu_read_unlock();
-> > >  	read_unlock(&tasklist_lock);
-> > >  
-> > >  	err = -EINVAL;
-> > 
-> > Thanks reporting. but mmotm seems already has the same patch.
 > 
-> Another one,... again:
-> 
-> 
-> Do we still need the tasklist_lock in this case?
-> 
-> Also, why is that think complaining, surely the tasklist_lock pins any
-> and all PID objects?
+> Is that a good enough fix for the issue in your opinion?
+> Or is there more involved?
 
-(cc to Christoph and Oleg)
+For the inode dirty bit race problem, yes it should fix it.
+sync_inode_metadata basically makes the same checks without
+races (in a subsequent patch I re-introduced the datasync
+optimisation).
 
-Good spotting.
-
-As far as I understand, find_task_by_pid() did required tasklist_lock in
-old days. but It isn't now.
-
-So I think we can remove tasklist_lock from here.
-
-===========================================================================
->From 9de9f70f74e55d92b5e9057e22fc629405f63295 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 16 Dec 2010 17:49:23 +0900
-Subject: [PATCH] mempolicy: remove tasklist_lock from migrate_pages
-
-Today, tasklist_lock in migrate_pages doesn't protect anything. 
-rcu_read_lock() provide enough protection from pid hash walk.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/mempolicy.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 11ff260..9064945 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1308,16 +1308,13 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
  
- 	/* Find the mm_struct */
- 	rcu_read_lock();
--	read_lock(&tasklist_lock);
- 	task = pid ? find_task_by_vpid(pid) : current;
- 	if (!task) {
--		read_unlock(&tasklist_lock);
- 		rcu_read_unlock();
- 		err = -ESRCH;
- 		goto out;
- 	}
- 	mm = get_task_mm(task);
--	read_unlock(&tasklist_lock);
- 	rcu_read_unlock();
+> In exofs there is nothing special to do other than VFS
+> managment and the final call, by vfs, to .write_inode.
+> 
+> I wish we had a simple_file_fsync() from VFS that does
+> what the VFS expects us to do. So when code evolves it
+> does not need to change all FSs. This is the third time
+> I'm fixing this code trying to second guess the VFS.
+
+Well in your fsync, you need to wait for inode writeback
+that might have been started by an asynchronous write_inode.
+
+Also, with your sync_inode_metadata call, you shouldn't need the
+sync_inode call by the looks.
  
- 	err = -EINVAL;
--- 
-1.6.5.2
+> Actually the only other thing I need to do in file_fsync
+> today is sb_sync. But this is a stupidity (and a bug) that
+> I'm fixing soon. So that theoretical simple_file_fsync()
+> would be all I need.
+> 
+> Please advise?
+> BTW: Do you want that I take the changes through my tree?
 
+At this point I'd just like some review and feedback, we
+might get some other opinions on how to fix it, so don't
+take the changes quite yet.
 
+I'll cc you again with a broken out patch.
 
-
-
+Thanks,
+Nick
 
