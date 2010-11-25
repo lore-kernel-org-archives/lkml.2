@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab0KYCbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 21:31:16 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35139 "EHLO
+	id S1756703Ab0KYCb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 21:31:57 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:43439 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745Ab0KYCbO (ORCPT
+	with ESMTP id S1756126Ab0KYCbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 21:31:14 -0500
+	Wed, 24 Nov 2010 21:31:55 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: sakari.ailus@maxwell.research.nokia.com,
         broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-Subject: [RFC/PATCH v6 09/12] media: Entity locking and pipeline management
-Date: Thu, 25 Nov 2010 03:28:16 +0100
-Message-Id: <1290652099-15102-10-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [RFC/PATCH v6 10/12] v4l: Add a media_device pointer to the v4l2_device structure
+Date: Thu, 25 Nov 2010 03:28:17 +0100
+Message-Id: <1290652099-15102-11-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,199 +22,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Link states must not be modified while streaming is in progress on a
-graph they belong or connect to. The entity locking API helps drivers
-enforcing that requirement.
+The pointer will later be used to register/unregister media entities
+when registering/unregistering a v4l2_subdev or a video_device.
 
-When starting streaming on a graph, drivers lock all entities in the
-graph with a call to media_entity_graph_lock(). Similarly, when stopping
-the stream, they unlock the entities with a call to
-media_entity_graph_unlock().
+With the introduction of media devices, device drivers need to store a
+pointer to a driver-specific structure in the device's drvdata.
+v4l2_device can't claim ownership of the drvdata anymore.
 
-The media_entity_graph_lock() function takes a pointer to a media
-pipeline and stores it in every entity in the graph. Drivers should
-embed the media_pipeline structure in higher-level pipeline structures
-and can then access the pipeline through the media_entity structure.
-
-Link configuration will fail with -EBUSY if either end of the link is a
-locked entity.
+To maintain compatibility with drivers that rely on v4l2_device storing
+a pointer to itself in the device's drvdata, v4l2_device_register() will
+keep doing so if the drvdata is NULL.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- Documentation/media-framework.txt |   35 ++++++++++++++++++++
- drivers/media/media-entity.c      |   64 +++++++++++++++++++++++++++++++++++++
- include/media/media-entity.h      |   10 ++++++
- 3 files changed, 109 insertions(+), 0 deletions(-)
+ Documentation/video4linux/v4l2-framework.txt |   17 ++++++++++++-----
+ drivers/media/video/v4l2-device.c            |   13 +++++++------
+ include/media/v4l2-device.h                  |    4 ++++
+ 3 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
-index e2987b7..3131e1e 100644
---- a/Documentation/media-framework.txt
-+++ b/Documentation/media-framework.txt
-@@ -343,3 +343,38 @@ and sink entities.
- In other words, activating or deactivating a link propagates reference count
- changes through the graph, and the final state is identical to what it would
- have been if the link had been active or inactive from the start.
+diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
+index 4db1def..aeb2a22 100644
+--- a/Documentation/video4linux/v4l2-framework.txt
++++ b/Documentation/video4linux/v4l2-framework.txt
+@@ -83,11 +83,17 @@ You must register the device instance:
+ 
+ 	v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev);
+ 
+-Registration will initialize the v4l2_device struct and link dev->driver_data
+-to v4l2_dev. If v4l2_dev->name is empty then it will be set to a value derived
+-from dev (driver name followed by the bus_id, to be precise). If you set it
+-up before calling v4l2_device_register then it will be untouched. If dev is
+-NULL, then you *must* setup v4l2_dev->name before calling v4l2_device_register.
++Registration will initialize the v4l2_device struct. If the dev->driver_data
++field is NULL, it will be linked to v4l2_dev. Drivers that use the media
++device framework in addition to the V4L2 framework need to set
++dev->driver_data manually to point to the driver-specific device structure
++that embed the struct v4l2_device instance. This is achieved by a
++dev_set_drvdata() call before registering the V4L2 device instance.
 +
-+
-+Entity locking and pipelines
-+----------------------------
-+
-+When starting streaming, drivers must lock all entities in the graph to
-+prevent link states from being modified during streaming by calling
-+
-+	media_entity_graph_lock(struct media_entity *entity,
-+				struct media_pipeline *pipe);
-+
-+The function will lock all entities connected to the given entity through
-+active links, either directly or indirectly.
-+
-+The media_pipeline instance pointed to by the pipe argument will be stored in
-+every entity in the graph. Drivers should embed the media_pipeline structure
-+in higher-level pipeline structures and can then access the pipeline through
-+the media_entity pipe field.
-+
-+Calls to media_entity_graph_lock() can be nested. The pipeline pointer must be
-+identical for all nested calls to the function.
-+
-+When stopping the stream, drivers must unlock the entities with
-+
-+	media_entity_graph_unlock(struct media_entity *entity);
-+
-+If multiple calls to media_entity_graph_lock() have been made the same number
-+of media_entity_graph_unlock() calls are required to unlock the graph. The
-+media_entity pipe field is reset to NULL on the last nested unlock call.
-+
-+Link configuration will fail with -EBUSY if either end of the link is a
-+locked entity. If other operations need to be disallowed on locked entities
-+(such as changing entities configuration parameters) drivers can explictly
-+check the media_entity lock_count field to find out if an entity is locked.
-+This operation must be done with the media_device graph_mutex held.
-diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
-index 5ebda28..3e2670e 100644
---- a/drivers/media/media-entity.c
-+++ b/drivers/media/media-entity.c
-@@ -196,6 +196,67 @@ media_entity_graph_walk_next(struct media_entity_graph *graph)
++If v4l2_dev->name is empty then it will be set to a value derived from dev
++(driver name followed by the bus_id, to be precise). If you set it up before
++calling v4l2_device_register then it will be untouched. If dev is NULL, then
++you *must* setup v4l2_dev->name before calling v4l2_device_register.
+ 
+ You can use v4l2_device_set_name() to set the name based on a driver name and
+ a driver-global atomic_t instance. This will generate names like ivtv0, ivtv1,
+@@ -108,6 +114,7 @@ You unregister with:
+ 
+ 	v4l2_device_unregister(struct v4l2_device *v4l2_dev);
+ 
++If the dev->driver_data field points to v4l2_dev, it will be reset to NULL.
+ Unregistering will also automatically unregister all subdevs from the device.
+ 
+ If you have a hotpluggable device (e.g. a USB device), then when a disconnect
+diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
+index 318e911..8447466 100644
+--- a/drivers/media/video/v4l2-device.c
++++ b/drivers/media/video/v4l2-device.c
+@@ -46,9 +46,8 @@ int v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev)
+ 	if (!v4l2_dev->name[0])
+ 		snprintf(v4l2_dev->name, sizeof(v4l2_dev->name), "%s %s",
+ 			dev->driver->name, dev_name(dev));
+-	if (dev_get_drvdata(dev))
+-		v4l2_warn(v4l2_dev, "Non-NULL drvdata on register\n");
+-	dev_set_drvdata(dev, v4l2_dev);
++	if (!dev_get_drvdata(dev))
++		dev_set_drvdata(dev, v4l2_dev);
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
+ EXPORT_SYMBOL_GPL(v4l2_device_register);
+@@ -71,10 +70,12 @@ EXPORT_SYMBOL_GPL(v4l2_device_set_name);
  
-+/**
-+ * media_entity_graph_lock - Lock all entities in a graph
-+ * @entity: Starting entity
-+ * @pipe: Media pipeline to be assigned to all entities in the graph.
-+ *
-+ * Lock all entities connected to a given entity through active links, either
-+ * directly or indirectly. The given pipeline is assigned to every entity in
-+ * the graph and stored in the media_entity pipe field.
-+ *
-+ * Calls to this function can be nested, in which case the same number of
-+ * media_entity_graph_unlock() calls will be required to unlock the graph. The
-+ * pipeline pointer must be identical for all nested calls to
-+ * media_entity_graph_lock().
-+ */
-+void media_entity_graph_lock(struct media_entity *entity,
-+			     struct media_pipeline *pipe)
-+{
-+	struct media_device *mdev = entity->parent;
-+	struct media_entity_graph graph;
+ void v4l2_device_disconnect(struct v4l2_device *v4l2_dev)
+ {
+-	if (v4l2_dev->dev) {
++	if (v4l2_dev->dev == NULL)
++		return;
 +
-+	mutex_lock(&mdev->graph_mutex);
-+
-+	media_entity_graph_walk_start(&graph, entity);
-+
-+	while ((entity = media_entity_graph_walk_next(&graph))) {
-+		entity->lock_count++;
-+		WARN_ON(entity->pipe && entity->pipe != pipe);
-+		entity->pipe = pipe;
-+	}
-+
-+	mutex_unlock(&mdev->graph_mutex);
-+}
-+EXPORT_SYMBOL_GPL(media_entity_graph_lock);
-+
-+/**
-+ * media_entity_graph_unlock - Unlock all entities in a graph
-+ * @entity: Starting entity
-+ *
-+ * Unlock all entities connected to a given entity through active links, either
-+ * directly or indirectly. The media_entity pipe field is reset to NULL on the
-+ * last nested unlock call.
-+ */
-+void media_entity_graph_unlock(struct media_entity *entity)
-+{
-+	struct media_device *mdev = entity->parent;
-+	struct media_entity_graph graph;
-+
-+	mutex_lock(&mdev->graph_mutex);
-+
-+	media_entity_graph_walk_start(&graph, entity);
-+
-+	while ((entity = media_entity_graph_walk_next(&graph))) {
-+		entity->lock_count--;
-+		if (entity->lock_count == 0)
-+			entity->pipe = NULL;
-+	}
-+
-+	mutex_unlock(&mdev->graph_mutex);
-+}
-+EXPORT_SYMBOL_GPL(media_entity_graph_unlock);
-+
- /* -----------------------------------------------------------------------------
-  * Power state handling
-  */
-@@ -505,6 +566,9 @@ int __media_entity_setup_link(struct media_link *link, u32 flags)
- 	if (link->flags == flags)
- 		return 0;
++	if (dev_get_drvdata(v4l2_dev->dev) == v4l2_dev)
+ 		dev_set_drvdata(v4l2_dev->dev, NULL);
+-		v4l2_dev->dev = NULL;
+-	}
++	v4l2_dev->dev = NULL;
+ }
+ EXPORT_SYMBOL_GPL(v4l2_device_disconnect);
  
-+	if (link->source->entity->lock_count || link->sink->entity->lock_count)
-+		return -EBUSY;
-+
- 	source = __media_entity_get(link->source->entity);
- 	if (!source)
- 		return ret;
-diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-index 11bef651..74030f2 100644
---- a/include/media/media-entity.h
-+++ b/include/media/media-entity.h
-@@ -26,6 +26,9 @@
- #include <linux/list.h>
- #include <linux/media.h>
+diff --git a/include/media/v4l2-device.h b/include/media/v4l2-device.h
+index 6648036..b649c74 100644
+--- a/include/media/v4l2-device.h
++++ b/include/media/v4l2-device.h
+@@ -21,6 +21,7 @@
+ #ifndef _V4L2_DEVICE_H
+ #define _V4L2_DEVICE_H
  
-+struct media_pipeline {
-+};
-+
- struct media_link {
- 	struct media_pad *source;	/* Source pad */
- 	struct media_pad *sink;		/* Sink pad  */
-@@ -68,8 +71,11 @@ struct media_entity {
++#include <media/media-device.h>
+ #include <media/v4l2-subdev.h>
  
- 	const struct media_entity_operations *ops;	/* Entity operations */
- 
-+	int lock_count;			/* Lock count for the entity. */
- 	int use_count;			/* Use count for the entity. */
- 
-+	struct media_pipeline *pipe;	/* Pipeline this entity belongs to. */
-+
- 	union {
- 		/* Node specifications */
- 		struct {
-@@ -111,6 +117,7 @@ struct media_entity_graph {
- int media_entity_init(struct media_entity *entity, u16 num_pads,
- 		struct media_pad *pads, u16 extra_links);
- void media_entity_cleanup(struct media_entity *entity);
-+
- int media_entity_create_link(struct media_entity *source, u16 source_pad,
- 		struct media_entity *sink, u16 sink_pad, u32 flags);
- int __media_entity_setup_link(struct media_link *link, u32 flags);
-@@ -126,6 +133,9 @@ void media_entity_graph_walk_start(struct media_entity_graph *graph,
- 		struct media_entity *entity);
- struct media_entity *
- media_entity_graph_walk_next(struct media_entity_graph *graph);
-+void media_entity_graph_lock(struct media_entity *entity,
-+		struct media_pipeline *pipe);
-+void media_entity_graph_unlock(struct media_entity *entity);
- 
- #define media_entity_call(entity, operation, args...)			\
- 	(((entity)->ops && (entity)->ops->operation) ?			\
+ /* Each instance of a V4L2 device should create the v4l2_device struct,
+@@ -39,6 +40,9 @@ struct v4l2_device {
+ 	   Note: dev might be NULL if there is no parent device
+ 	   as is the case with e.g. ISA devices. */
+ 	struct device *dev;
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct media_device *mdev;
++#endif
+ 	/* used to keep track of the registered subdevs */
+ 	struct list_head subdevs;
+ 	/* lock this struct; can be used by the driver as well if this
 -- 
 1.7.2.2
 
