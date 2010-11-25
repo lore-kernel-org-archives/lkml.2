@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab0KYM3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 07:29:47 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46891 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab0KYM3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 07:29:46 -0500
-Date: Thu, 25 Nov 2010 17:59:39 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 1/4] taskstats: Introduce "struct cdata"
-Message-ID: <20101125122938.GC3298@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101119201108.269346583@linux.vnet.ibm.com>
- <20101119201143.787050299@linux.vnet.ibm.com>
+	id S1753261Ab0KYMeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 07:34:15 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:22715 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753225Ab0KYMeN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 07:34:13 -0500
+Message-ID: <002f01cb8c9d$103f7760$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: <andrew.chih.howe.khor@intel.com>, <socketcan-core@lists.berlios.de>,
+        "Samuel Ortiz" <sameo@linux.intel.com>, <margie.foster@intel.com>,
+        <netdev@vger.kernel.org>, "Christian Pellegrin" <chripell@fsfe.org>,
+        <linux-kernel@vger.kernel.org>, <yong.y.wang@intel.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfgang Grandegger" <wg@grandegger.com>, <qi.wang@intel.com>
+References: <4CE2434B.5050701@dsn.okisemi.com>	<4CE27796.2000206@pengutronix.de>	<007401cb87b1$a773b3d0$66f8800a@maildom.okisemi.com>	<4CE64167.2030405@pengutronix.de> <003201cb8a02$f05b15e0$66f8800a@maildom.okisemi.com> <4CEA2986.4080607@pengutronix.de> <000b01cb8b6b$d7542a90$66f8800a@maildom.okisemi.com> <4CED0650.7030004@pengutronix.de> <001b01cb8c98$d06aaa00$66f8800a@maildom.okisemi.com> <4CEE51CA.8010402@pengutronix.de>
+Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow control,
+Date: Thu, 25 Nov 2010 21:34:09 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101119201143.787050299@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain;
+	charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-11-19 21:11:09]:
+On Thursday, November 25, 2010 9:08 PM, Marc Kleine-Budde wrote : 
+> Why do you Read-Modify-Write for TX? Naively speaking you just need to
+> push your Data into a Mail/IF/Whatever and push the send button.
 
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> This patch introduces a new structure "struct cdata" that is used to
-> store cumulative resource counters for dead child processes and threads.
-> 
-> Note that there is one asymmetry:
-> For "struct task_io_accounting" (ioc) there is no extra accounting field for
-> dead threads. One field is used for both, dead processes and threads.
-> 
-> This patch introduces no functional change.
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  fs/binfmt_elf.c           |    4 +-
->  fs/exec.c                 |    2 -
->  fs/proc/array.c           |   16 ++++----
->  include/linux/sched.h     |   22 +++++++----
->  kernel/exit.c             |   86 ++++++++++++++++++++++++----------------------
->  kernel/posix-cpu-timers.c |   12 +++---
->  kernel/sys.c              |   44 ++++++++++++-----------
->  7 files changed, 100 insertions(+), 86 deletions(-)
+I see.
+I will implement this.
 
-Looks good to me
+--
+Thanks,
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
--- 
-	Three Cheers,
-	Balbir
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
