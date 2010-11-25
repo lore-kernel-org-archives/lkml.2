@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab0KYV67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 16:58:59 -0500
-Received: from wrar.name ([109.74.195.39]:55461 "EHLO haley.wrar.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab0KYV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 16:58:58 -0500
-X-Greylist: delayed 2443 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Nov 2010 16:58:58 EST
-Date: Fri, 26 Nov 2010 02:18:03 +0500
-From: Andrey Rahmatullin <wrar@wrar.name>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: [BISECTED] 2.6.36 regression for ALC892
-Message-ID: <20101125211803.GA4236@belkar.wrar.name>
+	id S1752568Ab0KYWSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 17:18:43 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46524 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab0KYWSl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 17:18:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=G1GNjrpUjI3ertoH/SO9YMAfSBylAer+2vr5aK0zlYbiHt+ehEOfLp91CvrcG38alQ
+         TGwIS4JGAmlst225J7yzMtkQMb0lMDSeqzfRCuQSTVKtU26p+PTLv5UhvvZTDCfuXj6b
+         oYsJgZrnAS4v1K1p7mSjH2vbiA8k8rMWY4k1Q=
+Message-ID: <4CEEE0BB.6020509@gmail.com>
+Date: Thu, 25 Nov 2010 23:18:35 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.13) Gecko/20100916 SeaMonkey/2.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-X-Operating-System: Debian Sid
-X-Jabber-Id: wrar@altlinux.org
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ben Gamari <bgamari@gmail.com>
+CC: Mike Caoco <caoco2002@yahoo.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Unplug ethernet cable, the route persists.  Why?
+References: <144174.46619.qm@web63401.mail.re1.yahoo.com> <87bp5df9j9.fsf@gmail.com>
+In-Reply-To: <87bp5df9j9.fsf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ben Gamari wrote:
+> On Wed, 24 Nov 2010 12:29:43 -0800 (PST), Mike Caoco <caoco2002@yahoo.com> wrote:
+>> So if you rely on NetworkManager or Connman or Quagga to remove the
+>> route, the routing daemons will recompute the route table anyway.  So
+>> why cannot this be done in the kernel?
+> 
+> This is policy. In the Linux world we generally strive to separate
+> policy from mechanism, leaving the former to userspace. This allows
+> (potentially complex) policy decisions to be made in user-space. The
+> reason for this is two-fold: First, every line of kernel code introduces
+> the potentially for a bug and error handling in the kernel is generally
+> more complex than it is in user-space. Secondly, allowing user-space to
+> handle policy allows users to do things with the kernel that kernel
+> developers did not envision. This flexibility is one reason why the
+> kernel is so suited for running on anything from your cell-phone to 4000
+> processor big iron.
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Secondly and a half, if you add a specific route you may really
+mean it, and prefer not to send at all than use default.
 
-Hello. I have an Intel H55 motherboard (ASUS P7H55-M PRO) with ALC892
-sound codec and a 3.5" front panel which doesn't support newer HDA pinout.
-So the panel is connected in "AC97" mode and this mode is set in the BIOS
-setup. In 2.6.35 and earlier the panel's headphones jack was working. Now
-it isn't. I've bisected this down to
-ce503f38bdb59c9175a9076215a3ba579fad4e64 (which is present in 2.6.36),
-reverting it helps. I've got "Too many connections" messages without this
-commit, indeed, but I had no problems (though I use only a pair of
-speakers connected to the rear panel and headphones in the front panel).
-
---=20
-WBR, wRAR
-
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBCAAGBQJM7tKDAAoJEOih81koZvPBMOMH/1gyvCfqG4XOv6OR0DXtTSaS
-UA5q87SKRKYrWaPNB8VtutQ6feAwO//tBxHos0grtuD1OTKcDyktMZcmSWdeT17h
-TE33Nom/ynQeZ1OLMiJKV9j0/3MGsH6wDnTClVqUHL5hVaIjDSMCFHGWDxBW0voE
-Kylpa1PBouykl8x03fPCZ8+uX748L/+ZkmNYpW2Yx1h4YExmaIsSPKs3jkq+l8+X
-suMmS6GZnKRMOT03Qe3eA03WHNPO89CJMvdl1YZctvDxPPW3gBF3vK0eSKhnO1i3
-y9/Zb+4C0aYpxvkj5glguLWYlcAPYxfDXpt5Z+VzTgyiy/UGUlO8SDLF5mo/REU=
-=+vo2
------END PGP SIGNATURE-----
-
---FCuugMFkClbJLl1L--
+Cheers,
+Jarek P.
