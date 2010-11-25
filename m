@@ -1,48 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab0KYLUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:20:41 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:60240 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab0KYLUk convert rfc822-to-8bit (ORCPT
+	id S1752526Ab0KYL1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:27:23 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33643 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab0KYL1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:20:40 -0500
-Subject: Re: [PATCH 1/2] perf_events: add support for per-cpu per-cgroup
- monitoring (v5)
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-In-Reply-To: <4ce510d4.0fedd80a.742c.10b9@mx.google.com>
-References: <4ce510d4.0fedd80a.742c.10b9@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 25 Nov 2010 12:20:33 +0100
-Message-ID: <1290684033.2145.25.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 25 Nov 2010 06:27:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pZ9e//JfcZ0i5oDJqO+sf5oH5bqVVsJnezppcc6v4im8+urDVkax37JvA0xUHppuMb
+         IxvX4ZCNfDrPWJymLZDXHuBg9/58zsZKoUEjlc2u9D67oWK+s5s+0qvRz6HEV3nl9IQ+
+         /CR63EvOin3X3D3qi13RXLcmj0t5U7hgB+2oQ=
+Date: Thu, 25 Nov 2010 13:28:00 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: rcu_read_lock/unlock protect find_task_by_vpid call in
+ posix_cpu_timer_create
+Message-ID: <20101125112800.GA4126@swordfish.minsk.epam.com>
+References: <20101125010948.GA1371@redhat.com>
+ <1290674436.2072.562.camel@laptop>
+ <20101125110230.GB19031@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <20101125110230.GB19031@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 12:40 +0200, Stephane Eranian wrote:
-> @@ -919,6 +945,10 @@ static inline void perf_event_task_sched_in(struct task_struct *task)
->  static inline
->  void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
->  {
-> +#ifdef CONFIG_CGROUPS
-> +       atomic_t *cgroup_events = &__get_cpu_var(perf_cgroup_events);
-> +       COND_STMT(cgroup_events, perf_cgroup_switch(task, next));
-> +#endif
->         COND_STMT(&perf_task_events, __perf_event_task_sched_out(task, next));
->  } 
 
-I don't think that'll actually work, the jump label stuff needs a static
-address.
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why not simply: s/perf_task_events/perf_sched_events/ and increment it
-for cgroup events as well?
+Hello,
+
+On (11/25/10 12:02), Oleg Nesterov wrote:
+> (another try, actually add Sergey)
+>
+Thank you.
+=20
+> On 11/25, Peter Zijlstra wrote:
+> >
+> > On Wed, 2010-11-24 at 20:09 -0500, Dave Jones wrote:
+> > > --- a/kernel/posix-cpu-timers.c
+> > > +++ b/kernel/posix-cpu-timers.c
+> > > @@ -391,6 +391,7 @@ int posix_cpu_timer_create(struct k_itimer *new_t=
+imer)
+> > >  	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
+> > >
+> > >  	read_lock(&tasklist_lock);
+> > > +	rcu_read_lock();
+> > >  	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
+> > >  		if (pid =3D=3D 0) {
+> > >  			p =3D current;
+> > > @@ -414,6 +415,7 @@ int posix_cpu_timer_create(struct k_itimer *new_t=
+imer)
+> > >  	} else {
+> > >  		ret =3D -EINVAL;
+> > >  	}
+> > > +	rcu_read_unlock();
+> > >  	read_unlock(&tasklist_lock);
+> > >
+> > >  	return ret;
+> >
+> > Do we still need the tasklist_lock in this case?
+>=20
+> No. posix-cpu-timer.c shouldn't use tasklist at all. But it is not
+> completely trivial to remove it.
+>=20
+> In particular, this patch is not exactly right, we can't trust
+> thread_group_leader() without tasklist.
+>=20
+> Sergey already sent the patch which removes tasklist from
+> posix_cpu_timer_create() and posix_cpu_timer_create(), and iirc
+> Thomas queued it.
+>=20
+
+You're right, Oleg.
+
+Commit-ID:  c0deae8c9587419ab13874b74425ce2eb2e18508
+Gitweb:     http://git.kernel.org/tip/c0deae8c9587419ab13874b74425ce2eb2e18=
+508
+Author:     Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+AuthorDate: Wed, 3 Nov 2010 18:52:56 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 10 Nov 2010 13:07:06 +0100
+
+posix-cpu-timers: Rcu_read_lock/unlock protect find_task_by_vpid call
+
+queued (15 days so far).
 
 
+> > Also, why is that think complaining, surely the tasklist_lock pins any
+> > and all PID objects?
+>=20
+> The only problem is: if copy_process() fails, it does free_pid()
+> lockless. This means, without rcu lock it is not safe to scan the
+> rcu-protected lists.
+>=20
+> We can change copy_process() (in fact I sent the patch several
+> years ago), but everybody think that find_pid/etc should always
+> take rcu_read_lock() instead. I tend to agree.
+>=20
+> Oleg.
+>=20
+
+	Sergey
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAkzuSEAACgkQfKHnntdSXjSp6wQA1TChd/MfycYlsRxVKOvrA+NM
+htZqb1PTUqCzKB6sDfmYVk10xSfrY0KLQP7coBeo9lVj7WI8a+NLgXRXGKHPDCjF
+r+wqcUBCI3jto90mS3wvcpvD0LqJ5jhNQmg0bVvjFCMZTIuTUOQrDehn3tYlgwAX
+2w9ocWbxCNfnxQWzK9E=
+=jsav
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
