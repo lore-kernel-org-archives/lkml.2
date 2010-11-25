@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0KYBpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 20:45:45 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49729 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab0KYBpn convert rfc822-to-8bit (ORCPT
+	id S1756686Ab0KYBsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 20:48:33 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:58480 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab0KYBsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 20:45:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=E281bsYAb1v+nmuLiXDHjKfGD9azVoiwNEZjrCuSr0q0m44Va0TImJAumPreMspCL+
-         jnLwWKknaDEnEgTlo1p8nACjpA8rBlVNN3+Evb2CpiSseVnljkxs3hThFR5e8AifRZiy
-         SwIr2aqt5qD7TC14ah5Sm8aPuYKTZbm7NS6ac=
+	Wed, 24 Nov 2010 20:48:32 -0500
+Date: Thu, 25 Nov 2010 10:48:28 +0900
+From: Simon Horman <horms@verge.net.au>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Cc: Pavel Machek <pma@sysgo.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] kdump: update kexec-tools URL and Vivek's email
+Message-ID: <20101125014828.GA19623@verge.net.au>
+References: <1290648612-14964-1-git-send-email-horms@verge.net.au>
 MIME-Version: 1.0
-In-Reply-To: <31169.1290641617@death>
-References: <AANLkTinpO=FmoecfV8epubXU4OrhFsXJ7-Kc68yNhMEs@mail.gmail.com>
-	<31169.1290641617@death>
-Date: Wed, 24 Nov 2010 17:45:42 -0800
-Message-ID: <AANLkTi=-DzUmopboX13V_cd=mZnmD=mBNNCuhQYF0PQQ@mail.gmail.com>
-Subject: Re: [PATCH] bonding: check for assigned mac before adopting the
- slaves mac address
-From: David Strand <dpstrand@gmail.com>
-To: Jay Vosburgh <fubar@us.ibm.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290648612-14964-1-git-send-email-horms@verge.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a use case where we assign a mac to the bond device, because
-the slave device configuration may change periodically. With older
-kernels, it honored the assigned mac and everything was fine, with
-2.6.36 it now uses the mac of whatever slave device is first instead
-of our assigned one.
+[ repost with Andrew's correct email address ]
 
-ifenslave code and documentation appears to still support the old way,
-where a bond assigned mac will reign supreme, so this patch restores
-that behavior.
-
-On Wed, Nov 24, 2010 at 3:33 PM, Jay Vosburgh <fubar@us.ibm.com> wrote:
->        How exactly is this a regression?  The above referenced patch
-> changes the method used to decide if the bonding master needs to have
-> it's MAC address set.  The original way was "bonding master's MAC is
-> zero," after the above, it's "adding first slave."
->
->        Do you have some use case that manually sets the master's MAC
-> address prior to adding any slaves?
->
->        -J
+On Thu, Nov 25, 2010 at 10:30:12AM +0900, Simon Horman wrote:
+> Signed-off-by: Simon Horman <horms@verge.net.au>
+> ---
+>  Documentation/kdump/kdump.txt |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+> index cab61d8..7a9e0b4 100644
+> --- a/Documentation/kdump/kdump.txt
+> +++ b/Documentation/kdump/kdump.txt
+> @@ -65,18 +65,21 @@ Install kexec-tools
+>  
+>  2) Download the kexec-tools user-space package from the following URL:
+>  
+> -http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/kexec-tools.tar.gz
+> +http://kernel.org/pub/linux/utils/kernel/kexec/kexec-tools.tar.gz
+>  
+>  This is a symlink to the latest version.
+>  
+>  The latest kexec-tools git tree is available at:
+>  
+> -git://git.kernel.org/pub/scm/linux/kernel/git/horms/kexec-tools.git
+> -or
+> -http://www.kernel.org/git/?p=linux/kernel/git/horms/kexec-tools.git
+> +git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
+> +and
+> +http://www.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
+> +
+> +There is also a gitweb interface available at
+> +http://www.kernel.org/git/?p=utils/kernel/kexec/kexec-tools.git
+>  
+>  More information about kexec-tools can be found at
+> -http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/README.html
+> +http://www.kernel.org/pub/linux/utils/kernel/kexec/README.html
+>  
+>  3) Unpack the tarball with the tar command, as follows:
+>  
+> @@ -439,6 +442,6 @@ To Do
+>  Contact
+>  =======
+>  
+> -Vivek Goyal (vgoyal@in.ibm.com)
+> +Vivek Goyal (vgoyal@redhat.com)
+>  Maneesh Soni (maneesh@in.ibm.com)
+>  
+> -- 
+> 1.7.2.3
+> 
