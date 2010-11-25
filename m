@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119Ab0KYFfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 00:35:20 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57734 "EHLO
+	id S1751063Ab0KYFg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 00:36:28 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50356 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab0KYFfT (ORCPT
+	with ESMTP id S1750785Ab0KYFg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 00:35:19 -0500
+	Thu, 25 Nov 2010 00:36:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=Sqd8Cd8nVhrc6VInWrIHL1YNRE785Bxm7pVMHBAa0ehW3yb9HcTucK7BMY6liwzldH
-         GX8BHUR56aIhXM4moCG+AcfA+rluKP0AomXhHj1Mh5oaxNgBulTrGQVdTAxZGdOX1Q8T
-         InGiy2ESb2OmnRCSZVYbKNIIV/JeUXiJJdFR4=
+        b=T8r9mQt/iOffkOYJstl6NyOi2M03uovmnUSzhC8CAgA+cToI2u9XczCmJgV+eC21fY
+         ygOJ+pmZkHu422OoP6EjJsRpaZaafh7X3+NHBn+Gi+AOSSelA3haOwXi3mpJ+MXe2zJa
+         lYoOCD6yxbufhW6C3JqoyCljqdXtXHik0LgXM=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik0iWzP4KwVwpY4bDJuyZnQTFnW0Q5pj3TM-s_O@mail.gmail.com>
+In-Reply-To: <AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
 References: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com>
-	<AANLkTik0iWzP4KwVwpY4bDJuyZnQTFnW0Q5pj3TM-s_O@mail.gmail.com>
-Date: Thu, 25 Nov 2010 11:35:16 +0600
-Message-ID: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
+	<alpine.LNX.2.00.1011241051370.23994@swampdragon.chaosbits.net>
+	<AANLkTinOAdDqmVo+zrEk=-EUri-CXBY1kukd96-ocHhL@mail.gmail.com>
+	<AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
+Date: Thu, 25 Nov 2010 11:36:25 +0600
+Message-ID: <AANLkTin-KUUAx00b3RXAWMM0vBZMWax8kLHYQv8u0A00@mail.gmail.com>
 Subject: Re: [PATCH] x86, dumpstack: Fix unused variable warning.
 From: Rakib Mullick <rakib.mullick@gmail.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, sandmann@redhat.com
+Cc: Jesper Juhl <jj@chaosbits.net>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 7:19 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2010/11/24 Rakib Mullick <rakib.mullick@gmail.com>:
+On Wed, Nov 24, 2010 at 7:01 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Nov 24, 2010 at 04:26:01PM +0600, Rakib Mullick wrote:
+>> On Wed, Nov 24, 2010 at 3:57 PM, Jesper Juhl <jj@chaosbits.net> wrote:
 >
-> Looks like you can even remove that block. bp is not used any more in
-> this function.
-> get_bp() was only loading bp but did not make any use of it.
-
-Yes, right. Here is the updated one.
-
- In dump_stack function, bp isn't used anymore, which is introduced by
-commit 9c0729dc8062bed96189bd14ac6d4920f3958743. This patch removes bp
-completely.
-
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 8474c99..d6fb146 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -197,14 +197,8 @@ void show_stack(struct task_struct *task,
-unsigned long *sp)
-  */
- void dump_stack(void)
- {
--	unsigned long bp = 0;
- 	unsigned long stack;
-
--#ifdef CONFIG_FRAME_POINTER
--	if (!bp)
--		get_bp(bp);
--#endif
--
- 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
- 		current->pid, current->comm, print_tainted(),
- 		init_utsname()->release,
-
-
+> I think Jesper is confused because your patch applies on -tip (tip/master or
+> tip/perf/core) where we have zapped the bp argument from show_trace() lately.
 >
-> Thanks.
+Yes, the patch was made against tip/master.
+
+> But in the mainline, show_trace() still has the bp argument.
 >
