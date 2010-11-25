@@ -1,116 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab0KYJf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 04:35:58 -0500
-Received: from smtprelay04.ispgateway.de ([80.67.31.38]:44724 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab0KYJf4 (ORCPT
+	id S1752172Ab0KYJk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 04:40:28 -0500
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:57202 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab0KYJk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 04:35:56 -0500
-Message-ID: <4CEE2E7D.6060608@ladisch.de>
-Date: Thu, 25 Nov 2010 10:38:05 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-Subject: Re: [RFC/PATCH v6 03/12] [alsa-devel] media: Entities, pads and links
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <1290652099-15102-4-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1290652099-15102-4-git-send-email-laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=us-ascii
+	Thu, 25 Nov 2010 04:40:26 -0500
+Subject: Re: [patch 3/4] taskstats: Introduce cdata_acct for complete
+ cumulative accounting
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20101123165951.GA5938@redhat.com>
+References: <20101119201108.269346583@linux.vnet.ibm.com>
+	 <20101119201144.542948128@linux.vnet.ibm.com>
+	 <20101123165951.GA5938@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Thu, 25 Nov 2010 10:40:22 +0100
+Message-ID: <1290678022.1941.29.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laurent Pinchart wrote:
-> A link is a point-to-point oriented connection between two pads, either
-> on the same entity or on different entities. Data flows from a source
-> pad to a sink pad.
+Hello Oleg,
+
+On Tue, 2010-11-23 at 17:59 +0100, Oleg Nesterov wrote: 
+> On 11/19, Michael Holzheu wrote:
+> > TODO:
+> > -----
+> > With this patch we take the siglock twice. First for the dead task
+> > and second for the parent of the dead task. This give the following
+> > lockdep warning (probably a lockdep annotation is needed here):
 > 
-> Links are stored in the source entity.
+> And we already discussed this ;) We do not need 2 siglock's, only
+> parent's. Just move the callsite in __exit_signal() down, under
+> another (lockless) group_dead check.
+> 
+> Or I missed something?
 
-In the descriptors of USB Audio and HDAudio devices, the links are
-stored only in the sink.  But AFAICS this doesn't matter in the media
-driver API.
+The problem with moving this down to the second group_dead check is that
+after __unhash_process() is called, pid_alive(tsk) which is checked in
+thread_group_cputime() returns false. Therefore we always get zero CPU
+times.
 
-> +Links have flags that describe the link capabilities and state.
-> +
-> +	MEDIA_LINK_FLAG_ACTIVE indicates that the link is active and can be
-> +	used to transfer media data. When two or more links target a sink pad,
-> +	only one of them can be active at a time.
-> +	MEDIA_LINK_FLAG_IMMUTABLE indicates that the link active state can't
-> +	be modified at runtime. If MEDIA_LINK_FLAG_IMMUTABLE is set, then
-> +	MEDIA_LINK_FLAG_ACTIVE must also be set since an immutable link is
-> +	always active.
+So I probably have to introduce a second group_dead check at the
+beginning of __exit_signal():
 
-So the intended userspace API for controlling routing is to change the
-ACTIVE flag of links?
+@@ -150,6 +153,9 @@ static void __exit_signal(struct task_st
+        struct sighand_struct *sighand;
+        struct tty_struct *uninitialized_var(tty);
 
-In USB and HD audio devices, all links are immutable, and the routing
-is controlled by 'selector' entities that activate exactly one of their
-input pads.  In userspace, this entity shows up as a mixer control.
-I guess it would be possible to map the ACTIVE flag onto these controls.
++       if (group_dead)
++               __account_cdata(...);
++
+        sighand = rcu_dereference_check(tsk->sighand,
+                                        rcu_read_lock_held() ||
+                                        
+> We can do this before taking ->siglock. Not that I think this really
+> matters, but otherwise this looks a bit confusing imho, as if we need
+> parent's ->siglock to pin something.
 
-Alternatively, entities can have 'mute' mixer controls associated with
-their pads.  In this case, multiple unmuted inputs would be mixed
-together.
+ok
 
-> +#define MEDIA_ENTITY_TYPE_MASK               0x00ff0000
-> +#define MEDIA_ENTITY_SUBTYPE_MASK            0x0000ffff
-> +
-> +#define MEDIA_ENTITY_TYPE_NODE               (1 << MEDIA_ENTITY_TYPE_SHIFT)
-> ...
-> +#define MEDIA_ENTITY_TYPE_NODE_ALSA          (MEDIA_ENTITY_TYPE_NODE + 3)
+> 
+> 
+> And thanks for splitting these changes. It was much, much easier to
+> read now.
 
-ALSA has PCM and MIDI devices, and several types of mixer controls.
-(It also has hardware dependent and timer devices, but I don't think
-these would need topology information.)  So we need at least these:
-  MEDIA_ENTITY_TYPE_NODE_ALSA_PCM
-  MEDIA_ENTITY_TYPE_NODE_ALSA_MIDI
-  MEDIA_ENTITY_TYPE_SUBDEV_ALSA_CONTROL
+My personal feeling is that probably the only acceptable thing would be
+to make the new behavior configurable with a sysctl and define the
+default as it currently is (POSIX compliant).
 
-Furthermore, topology information is also needed for entities not
-associated with a mixer control, such as microphones, speakers, jacks/
-connectors, and effect units.  These entities are defined in the USB and
-HD audio specifications, but are not yet handled by ALSA.
+This would only introduce two additional checks in __exit_signal() and
+wait_task_zombie() and would not add any new fields to the
+signal_struct.
 
-> +struct media_entity {
-> ...
-> +	union {
-> +		/* Node specifications */
-> +		struct {
-> +			u32 major;
-> +			u32 minor;
-> +		} v4l;
-> +		struct {
-> +			u32 major;
-> +			u32 minor;
-> +		} fb;
-> +		int alsa;
-> +		int dvb;
-> +
-> +		/* Sub-device specifications */
-> +		/* Nothing needed yet */
-> +	};
+Michael
 
-ALSA devices are not addressed by their device node but with card/device/
-subdevice numbers; mixer controls have numeric IDs, unique per card:
-
-		struct {
-			int card;
-			int device;
-			int subdevice;
-		} alsa_device;
-		struct {
-			int card;
-			int numid;
-		} alsa_control;
-
-
-Regards,
-Clemens
