@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0KYQtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:49:53 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59835 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab0KYQtv (ORCPT
+	id S1754464Ab0KYQvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:51:19 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53598 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365Ab0KYQvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:49:51 -0500
-Date: Thu, 25 Nov 2010 17:49:24 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Raoul Bhatia [IPAX]" <r.bhatia@ipax.at>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [PATCH] trivial: fix typos in Documentation/edac.txt
-Message-ID: <20101125164923.GA32383@aftab>
-References: <4CEA729A.2070300@ipax.at>
- <20101122144702.GA2704@kryptos.osrc.amd.com>
- <4CEE7FF0.4090605@ipax.at>
+	Thu, 25 Nov 2010 11:51:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=owPAaxsdCuTcA9Qxc/dgNj5GynfdQiXdLw2vpclKdW2G1zaSj7/wHNXz229SR3mphv
+         N6ZYvvD1nwLGJgALMC7ahWmcO/3OTOamtlIfJHWw6wAHS4MOZg3/VUv3a0JJoGSkknfG
+         NAz8U8CbqkZQok/6YiJhPb3RvrDwRm8PqleD8=
+Message-ID: <4CEE93FF.3040507@suse.cz>
+Date: Thu, 25 Nov 2010 17:51:11 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CEE7FF0.4090605@ipax.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+CC: Kyle McMartin <kyle@mcmartin.ca>, Valdis.Kletnieks@vt.edu,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: mmotm 2010-11-23 - WARNING: at drivers/tty/tty_io.c:1331
+References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org> <5747.1290574539@localhost> <20101125151436.GG22651@bombadil.infradead.org> <4CEE9280.9050504@suse.cz>
+In-Reply-To: <4CEE9280.9050504@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 10:25:36AM -0500, Raoul Bhatia [IPAX] wrote:
-> Fixing trivial typos in edac.txt.
-> patch for linux-2.6.36.1.
+On 11/25/2010 05:44 PM, Jiri Slaby wrote:
+> On 11/25/2010 04:14 PM, Kyle McMartin wrote:
+>> On Tue, Nov 23, 2010 at 11:55:39PM -0500, Valdis.Kletnieks@vt.edu wrote:
+>>> On Tue, 23 Nov 2010 16:13:06 PST, akpm@linux-foundation.org said:
+>>>> The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+>>>>
+>>>>    http://userweb.kernel.org/~akpm/mmotm/
+>>>
+>>> Seen during boot:
+>>>
+>>> [   23.015448] Modules linked in:
+>>> [   23.015453] Pid: 1207, comm: plymouthd Not tainted 2.6.37-rc3-mmotm1123 #3
+>>> [   23.015455] Call Trace:
+>>
+>> I've been trying to figure this one out for a while, without much luck.
+>> (Users are seeing it in 2.6.36 as well.)
+>>
+>> I *think* (I added a rawhide debugging patch to print the tty->name)
+>> that plymouth is always opening tty7 to cause this. My guess is the BKL
+>> removal has exposed some kind of race, but it's not obvious to me (and
+>> there's many other bugs to sort through too. :(
+>>
+>> CC-ing Jiri since he seems to be the poor guy who's been poking this
+>> recently (there's a good few threads about this (though the others look
+>> like an ldisc attach race...)) I wouldn't think that's the case here
+>> since N_TTY is the default...
 > 
-> Signed-off-by: Raoul Bhatia <r.bhatia@ipax.at>
+> Ok, tty_reopen is called without TTY_LDISC set. For further
+> considerations, note tty_lock is held in tty_open. TTY_LDISC is cleared in:
+> 
+> 1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+> section tty_lock is held.
+> 
+> 2) tty_release via tty_ldisc_release till the end of tty existence. If
+> tty->count <= 1, tty_lock is taken, TTY_CLOSING bit set and then
+> tty_ldisc_release called. tty_reopen checks TTY_CLOSING before checking
+> TTY_LDISC.
+> 
+> 3) tty_set_ldisc from tty_ldisc_halt to tty_ldisc_enable. We take
+> tty_lock, set TTY_LDISC_CHANGING, put tty_lock, do some other work, take
+> tty_lock, call tty_ldisc_enable, put tty_lock.
 
-Ok, this is on its way of getting better but I still couldn't apply the
-patch and had to edit it by hand because it was garbled - maybe because
-you're using the browser to send email:
+Oh, "do some other work" includes tty_ldisc_halt where TTY_LDISC is
+cleared and tty_lock is _not_ held.
 
-user-agent: Mozilla/5.0 (X11; U; Linux x86_64; de-DE; rv:1.9.2.13pre) Gecko/20101113 Shredder/3.1.7pre
-
-and it obviously fiddles with whitespace.
-
-For the future, please take a look at <Documentation/email-clients.txt>
-for a good mail client to use when sending patches to LKML and after
-you've configured it, send the patch yourself first and try applying
-the received copy on another kernel repo (not the one you've used for
-creating the patch, of course; or create a new git branch and try
-applying it there). If it applies fine, your patch sending process works
-and you can send the patch now to LKML :)
-
-Anyway, applied.
-Thanks.
-
+> So the only option I see is 3) and we should do:
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -1310,7 +1310,8 @@ static int tty_reopen(struct tty_struct *tty)
+>  {
+>         struct tty_driver *driver = tty->driver;
+> 
+> -       if (test_bit(TTY_CLOSING, &tty->flags))
+> +       if (test_bit(TTY_CLOSING, &tty->flags) ||
+> +                       test_bit(TTY_LDISC_CHANGING, &tty->flags))
+>                 return -EIO;
+> 
+>         if (driver->type == TTY_DRIVER_TYPE_PTY &&
+> 
+> Alan, Greg?
+> 
+> thanks,
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+js
+suse labs
