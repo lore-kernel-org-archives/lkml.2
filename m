@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab0KYKrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 05:47:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53676 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab0KYKrv (ORCPT
+	id S1752527Ab0KYKsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 05:48:11 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62187 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab0KYKsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 05:47:51 -0500
-Subject: Re: [PATCH 0/8] ASoC: fix resource leak in error paths
+	Thu, 25 Nov 2010 05:48:09 -0500
+Subject: Re: [PATCH] ASoC: neo1973_gta02_wm8753: fix wrong parameter for
+ snd_soc_register_dai and snd_soc_unregister_dai
 From: Liam Girdwood <lrg@slimlogic.co.uk>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Graeme Gregory <graeme@openmoko.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Jon Smirl <jonsmirl@gmail.com>,
-        Sergey Lapin <slapin@ossfans.org>,
-        Sedji Gaouaou <sedji.gaouaou@atmel.com>,
-        Jaswinder Singh Brar <jassi.brar@samsung.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-In-Reply-To: <1290668785.30158.7.camel@mola>
-References: <1290668785.30158.7.camel@mola>
+        alsa-devel@alsa-project.org
+In-Reply-To: <1290675056.1928.1.camel@mola>
+References: <1290675056.1928.1.camel@mola>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Nov 2010 10:47:47 +0000
-Message-ID: <1290682067.3302.14.camel@odin>
+Date: Thu, 25 Nov 2010 10:48:05 +0000
+Message-ID: <1290682085.3302.15.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -30,34 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-25 at 15:06 +0800, Axel Lin wrote:
-> This serial of patches fix resource leak in error paths.
+On Thu, 2010-11-25 at 16:50 +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/samsung/neo1973_gta02_wm8753.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Axel Lin (8):
->   ASoC: efika-audio-fabric: fix resource leak in efika_fabric_init
->     error path
->   ASoC: pcm030-audio-fabric: fix resource leak in pcm030_fabric_init
->     error path
->   ASoC: snd-soc-afeb9260: remove unneeded platform_device_del in error
->     path
->   ASoC: sam9g20_wm8731: fix resource leak in at91sam9g20ek_init error
->     path
->   ASoC: smdk_wm9713: fix resource leak in smdk_init error path
->   ASoC: simone: fix resource leak in simone_init error path
->   ASoC: imx-ssi: fix resource leak
->   ASoC: phycore-ac97: fix resource leak
-> 
->  sound/soc/atmel/sam9g20_wm8731.c    |    5 ++++-
->  sound/soc/atmel/snd-soc-afeb9260.c  |    1 -
->  sound/soc/ep93xx/simone.c           |   18 ++++++++++--------
->  sound/soc/fsl/efika-audio-fabric.c  |    1 +
->  sound/soc/fsl/pcm030-audio-fabric.c |    1 +
->  sound/soc/imx/imx-ssi.c             |   15 +++++++++++----
->  sound/soc/imx/phycore-ac97.c        |   28 +++++++++++++++++++++-------
->  sound/soc/samsung/smdk_wm9713.c     |   17 ++++++++++-------
->  8 files changed, 58 insertions(+), 28 deletions(-)
-> 
-All
+> diff --git a/sound/soc/samsung/neo1973_gta02_wm8753.c b/sound/soc/samsung/neo1973_gta02_wm8753.c
+> index 920e8d1..8c65b63 100644
+> --- a/sound/soc/samsung/neo1973_gta02_wm8753.c
+> +++ b/sound/soc/samsung/neo1973_gta02_wm8753.c
+> @@ -438,7 +438,7 @@ static int __init neo1973_gta02_init(void)
+>  		return -ENOMEM;
+>  
+>  	/* register bluetooth DAI here */
+> -	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, -1, &bt_dai);
+> +	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, &bt_dai);
+>  	if (ret) {
+>  		platform_device_put(neo1973_gta02_snd_device);
+>  		return ret;
+> @@ -491,7 +491,7 @@ module_init(neo1973_gta02_init);
+>  
+>  static void __exit neo1973_gta02_exit(void)
+>  {
+> -	snd_soc_unregister_dai(&neo1973_gta02_snd_device->dev, -1);
+> +	snd_soc_unregister_dai(&neo1973_gta02_snd_device->dev);
+>  	platform_device_unregister(neo1973_gta02_snd_device);
+>  	gpio_free(GTA02_GPIO_HP_IN);
+>  	gpio_free(GTA02_GPIO_AMP_SHUT);
 
 Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 -- 
