@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab0KYJTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 04:19:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45383 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab0KYJTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752092Ab0KYJTF (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Nov 2010 04:19:05 -0500
-Date: Thu, 25 Nov 2010 10:19:03 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 7/8] ASoC: imx-ssi: fix resource leak
-Message-ID: <20101125091903.GT6017@pengutronix.de>
-References: <1290668785.30158.7.camel@mola> <1290669189.30158.20.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290669189.30158.20.camel@mola>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:18:51 up 145 days, 29 min, 59 users,  load average: 3.43,
-	1.12, 0.62
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Received: from smtp.nokia.com ([147.243.1.48]:61642 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab0KYJTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 04:19:01 -0500
+Subject: Re: [PATCH] memblock: fix memblock_is_region_memory()
+From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+To: ext Andrew Morton <akpm@linux-foundation.org>
+Cc: benh@kernel.crashing.org, yinghai@kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101124153154.a0e68722.akpm@linux-foundation.org>
+References: <1289214013-13449-1-git-send-email-tomi.valkeinen@nokia.com>
+	 <20101124153154.a0e68722.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Thu, 25 Nov 2010 11:17:17 +0200
+Message-ID: <1290676637.24703.31.camel@tubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 03:13:09PM +0800, Axel Lin wrote:
-> Fix imx_ssi_probe() error path and imx_ssi_remove() to properly free
-> allocated resources.
+On Wed, 2010-11-24 at 15:31 -0800, ext Andrew Morton wrote:
+> On Mon,  8 Nov 2010 13:00:13 +0200
+> Tomi Valkeinen <tomi.valkeinen@nokia.com> wrote:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > To: benh@kernel.crashing.org, yinghai@kernel.org
+> 
+> wakey wakey!
+> 
+> > memblock_is_region_memory() uses reserved memblocks to search for the
+> > given region, while it should use the memory memblocks.
+> > 
+> > Signed-off-by: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+> > ---
+> >  mm/memblock.c |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/mm/memblock.c b/mm/memblock.c
+> > index 400dc62..bdba245 100644
+> > --- a/mm/memblock.c
+> > +++ b/mm/memblock.c
+> > @@ -683,13 +683,13 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
+> >  
+> >  int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
+> >  {
+> > -	int idx = memblock_search(&memblock.reserved, base);
+> > +	int idx = memblock_search(&memblock.memory, base);
+> >  
+> >  	if (idx == -1)
+> >  		return 0;
+> > -	return memblock.reserved.regions[idx].base <= base &&
+> > -		(memblock.reserved.regions[idx].base +
+> > -		 memblock.reserved.regions[idx].size) >= (base + size);
+> > +	return memblock.memory.regions[idx].base <= base &&
+> > +		(memblock.memory.regions[idx].base +
+> > +		 memblock.memory.regions[idx].size) >= (base + size);
+> >  }
+> 
+> What were the runtime effects of this problem?
+> 
+> afacit the only callers are a couple of obscure fbdev drivers.  Do you
+> know of other callers?
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+I don't know any other callers.
 
-> ---
->  sound/soc/imx/imx-ssi.c |   15 +++++++++++----
->  1 files changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/sound/soc/imx/imx-ssi.c b/sound/soc/imx/imx-ssi.c
-> index ad21f81..30894ea 100644
-> --- a/sound/soc/imx/imx-ssi.c
-> +++ b/sound/soc/imx/imx-ssi.c
-> @@ -679,8 +679,11 @@ static int imx_ssi_probe(struct platform_device *pdev)
->  	}
->  
->  	ssi->soc_platform_pdev_fiq = platform_device_alloc("imx-fiq-pcm-audio", pdev->id);
-> -	if (!ssi->soc_platform_pdev_fiq)
-> +	if (!ssi->soc_platform_pdev_fiq) {
-> +		ret = -ENOMEM;
->  		goto failed_pdev_fiq_alloc;
-> +	}
-> +
->  	platform_set_drvdata(ssi->soc_platform_pdev_fiq, ssi);
->  	ret = platform_device_add(ssi->soc_platform_pdev_fiq);
->  	if (ret) {
-> @@ -689,8 +692,11 @@ static int imx_ssi_probe(struct platform_device *pdev)
->  	}
->  
->  	ssi->soc_platform_pdev = platform_device_alloc("imx-pcm-audio", pdev->id);
-> -	if (!ssi->soc_platform_pdev)
-> +	if (!ssi->soc_platform_pdev) {
-> +		ret = -ENOMEM;
->  		goto failed_pdev_alloc;
-> +	}
-> +
->  	platform_set_drvdata(ssi->soc_platform_pdev, ssi);
->  	ret = platform_device_add(ssi->soc_platform_pdev);
->  	if (ret) {
-> @@ -703,6 +709,7 @@ static int imx_ssi_probe(struct platform_device *pdev)
->  failed_pdev_add:
->  	platform_device_put(ssi->soc_platform_pdev);
->  failed_pdev_alloc:
-> +	platform_device_del(ssi->soc_platform_pdev_fiq);
->  failed_pdev_fiq_add:
->  	platform_device_put(ssi->soc_platform_pdev_fiq);
->  failed_pdev_fiq_alloc:
-> @@ -726,8 +733,8 @@ static int __devexit imx_ssi_remove(struct platform_device *pdev)
->  	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	struct imx_ssi *ssi = platform_get_drvdata(pdev);
->  
-> -	platform_device_del(ssi->soc_platform_pdev);
-> -	platform_device_put(ssi->soc_platform_pdev);
-> +	platform_device_unregister(ssi->soc_platform_pdev);
-> +	platform_device_unregister(ssi->soc_platform_pdev_fiq);
->  
->  	snd_soc_unregister_dai(&pdev->dev);
->  
-> -- 
-> 1.7.2
-> 
-> 
-> 
-> 
+I encountered the problem with OMAP's framebuffer ram allocation.
+Normally the ram is allocated dynamically, and this function is not
+called. However, if we want to pass the framebuffer from the bootloader
+to the kernel (to retain the boot image), this function is used to check
+the validity of the kernel parameters for the framebuffer ram area.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+ Tomi
+
+
