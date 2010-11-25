@@ -1,243 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab0KYD5t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 22:57:49 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:39775 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab0KYD5s (ORCPT
+	id S1751810Ab0KYD7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 22:59:40 -0500
+Received: from nm10.bullet.mail.ne1.yahoo.com ([98.138.90.73]:31425 "HELO
+	nm10.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751713Ab0KYD7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 22:57:48 -0500
-Date: Wed, 24 Nov 2010 22:57:22 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [RFT][PATCH] Poke ACPI about connected floppy drives
-In-reply-to: <20101122182428.GR22651@bombadil.infradead.org>
-Message-id: <alpine.LFD.2.00.1011242153330.637@x980>
-References: <20101122182428.GR22651@bombadil.infradead.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 24 Nov 2010 22:59:38 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 149002.32775.bm@omp1041.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=GK5OOKaaR+KD1yF8kMoeIAYgiGmx1pYVP2QID+9XeuwwuEexDWGNkLi+XH1treAPNrH2O2R9kMad/JJfs3Hs35o7rTqGXuO9dEOzKC/p40dqCKRwzuMBLASoGmGB1OFvj7JmAQ5gQTRf3RljSNROyY1iZKtEZFHCQ+luEAfGPro=;
+Message-ID: <536589.12568.qm@web180310.mail.gq1.yahoo.com>
+X-YMail-OSG: 7c6phvUVM1kBST1aNmCebWr6_bxvjH59GANrdqveYSd67KH
+ Y.YoNg6caoZGI10OTb2Mfzo2tqFLLq7Kzxa8OfKVWGJK8HRlQnwhTViX.ZTr
+ WpqvE9ZZyepurHmu83HsZQWqD5d2K8wnsEMMsuK0wnivSSWCemtWeSx4YMFP
+ BUgJoraPwrFJcMKavoeykX5WM0DUiHTCobHhdD6hF4WraY6YpuJS5OWMqvZM
+ _R.BGllb8J5l3zHSHK8TiDeJaQNfeOM9afFTdo9hHfEDlOfpAv9VrQAzdAZB
+ mlToTdQKIBfKNlC5ZuCQaPx2XiRqGkjU5RUi9wnywb8rZYlOGeitSroACQPX
+ lOuY47Q--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
+Date: Wed, 24 Nov 2010 19:59:37 -0800 (PST)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
+To: MugdhaKamoolkar <mugdha@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        BenoitCousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        HariKanigeri <h-kanigeri2@ti.com>, SumanAnna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <AANLkTi=JSuJCqceJ3iw3TnV5OeJd+e5T3CyHtWVzBRu_@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+My rule of thumb is that nothing is "generic"
+until at least three whatever-it-is instances
+plug in to it.  Sometimes this is called
+the "Rule of Three".
 
+Other than OMAP, what's providing hardware
+spinlocks that plug into this framework?
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+- Dave
 
-On Mon, 22 Nov 2010, Kyle McMartin wrote:
-
-> I've gotten a few complaints because I removed the floppy module
-> modaliases in Fedora, which means people with ancient junk need
-> to manually probe it. (Some modern machines spend a good few seconds
-> probing non-existant floppy drives otherwise.)
-> 
-> Re-organize floppy.ko a bit to allow us to, in the case of CONFIG_ACPI,
-> poke the ACPI _FDE object to see how many floppy drives are connected,
-> and not bother probing if there are none.
-> 
-> I'd appreciate it if people could test this patch, and let me know how
-> many floppy drives they actually have, versus how many are reported
-> from the ACPI object. My 965-era Asus lies through its teeth about the
-> table, so I'm not entirely convinced this method is tenable, but it's my
-> olive branch to the floppy users.
-> 
-> If !CONFIG_ACPI, it should have the ordinary pnp ids and bind that way.
-
-(adding linux-acpi list)
-
-I've got two machines handy that have a floppy drive,
-an Intel D975XBX2 (Core2 extreme desktop motherboard)
-supermicro X7DB8 (Core2 Dual Xeon workstation)
-
-Both of them have PNP PNP0700 devices present in their DSDT.
-However, neither implement the _FDE method.
-
-I have 45 DSDTs on-hand that include PNP0700,
-but only 18 of those implement _FDE...
-
-I have a Lenovo T61 which has PNP0700 and implements _FDE.
-However, it doesn't physically have a floppy, and so
-acpi_fde_add() will never get called -- I guess
-because _CRS said it wasn't present?  This seems
-to make evaluating _FDE from the .add routine
-somewhat redundant, no?
-
-Note that you've got a memory leak in acpi_fde_add()
-in the "if (!c)" case.  Also, "rmmod floppy" takes an oops.
-
-cheers,
-Len Brown, Intel Open Source Technology Center
-
-> Not-yet-signed-off-by: Kyle McMartin <kyle@redhat.com>
-> 
-> ---
-> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> index 3951020..9208596 100644
-> --- a/drivers/block/floppy.c
-> +++ b/drivers/block/floppy.c
-> @@ -193,6 +193,9 @@ static int print_unex = 1;
->  #include <linux/io.h>
->  #include <linux/uaccess.h>
->  
-> +#include <acpi/acpi_bus.h>
-> +#include <acpi/acpi_drivers.h>
-> +
->  /*
->   * PS/2 floppies have much slower step rates than regular floppies.
->   * It's been recommended that take about 1/4 of the default speed
-> @@ -4548,6 +4551,110 @@ static void __init parse_floppy_cfg_string(char *cfg)
->  	}
->  }
->  
-> +static void __exit floppy_module_exit(void);
-> +
-> +#if defined(CONFIG_ACPI)
-> +
-> +#define MAX_ACPI_FLOPPIES	4
-> +struct fde_ret {
-> +	u32 floppies[MAX_ACPI_FLOPPIES];
-> +	u32 tape;
-> +};
-> +
-> +static int acpi_fde_add(struct acpi_device *dev)
-> +{
-> +	struct acpi_buffer out = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object *obj;
-> +	struct fde_ret *fde;
-> +	acpi_status status;
-> +	int i, c = 0;
-> +
-> +	status = acpi_evaluate_object(dev->handle, "_FDE", NULL, &out);
-> +	if (ACPI_FAILURE(status)) {	/* fallback */
-> +		pr_info("acpi_fde: failed to evaluate _FDE\n");
-> +		goto probe_floppies;
-> +	}
-> +
-> +	obj = out.pointer;
-> +	if (!obj || obj->type != ACPI_TYPE_BUFFER) {
-> +		pr_info("acpi_fde: bad return from _FDE method\n");
-> +		goto probe_floppies;
-> +	}
-> +
-> +	fde = (struct fde_ret *)obj->buffer.pointer;
-> +
-> +	for (i = 0; i < MAX_ACPI_FLOPPIES; i++)
-> +		if (fde->floppies[i])
-> +			c++;
-> +
-> +	pr_info("acpi_fde: firmware reports %d floppies attached\n", c);
-> +	if (!c)
-> +		return 0;
-> +
-> +	/* fallthrough, we had floppies... */
-> +probe_floppies:
-> +	kfree(out.pointer);
-> +
-> +	if (floppy)
-> +		parse_floppy_cfg_string(floppy);
-> +	return floppy_init();
-> +}
-> +
-> +static const struct acpi_device_id fde_pnpids[] = {
-> +	{ "PNP0700", 0 },
-> +	{ "PNP0701", 0 },
-> +	{ "", 0 }
-> +};
-> +MODULE_DEVICE_TABLE(acpi, fde_pnpids);
-> +
-> +static struct acpi_driver acpi_fde_driver = {
-> +	.name = "fde",
-> +	.class = "floppy",
-> +	.ids = fde_pnpids,
-> +	.ops = {
-> +		.add = acpi_fde_add,
-> +	},
-> +};
-> +
-> +static int __init acpi_fde_init(void)
-> +{
-> +	int err;
-> +
-> +	if (acpi_disabled) {
-> +		if (floppy)
-> +			parse_floppy_cfg_string(floppy);
-> +		return floppy_init();
-> +	}
-> +
-> +	err = acpi_bus_register_driver(&acpi_fde_driver);
-> +	if (err) {
-> +		pr_info("error register acpi floppy\n");
-> +		return err;
-> +	}
-> +
-> +	pr_info("floppy: loaded\n");
-> +
-> +	return 0;
-> +}
-> +module_init(acpi_fde_init);
-> +
-> +static void __exit acpi_fde_fini(void) {
-> +	acpi_bus_unregister_driver(&acpi_fde_driver);
-> +	floppy_module_exit();
-> +	pr_info("floppy: unloaded\n");
-> +}
-> +module_exit(acpi_fde_fini);
-> +
-> +#else /*!CONFIG_ACPI*/
-> +
-> +/* This doesn't actually get used other than for module information */
-> +static const struct pnp_device_id floppy_pnpids[] = {
-> +	{"PNP0700", 0},
-> +	{}
-> +};
-> +
-> +MODULE_DEVICE_TABLE(pnp, floppy_pnpids);
-> +
->  static int __init floppy_module_init(void)
->  {
->  	if (floppy)
-> @@ -4556,6 +4663,10 @@ static int __init floppy_module_init(void)
->  }
->  module_init(floppy_module_init);
->  
-> +module_exit(floppy_module_exit);
-> +
-> +#endif /*CONFIG_ACPI*/
-> +
->  static void __exit floppy_module_exit(void)
->  {
->  	int drive;
-> @@ -4587,8 +4698,6 @@ static void __exit floppy_module_exit(void)
->  	fd_eject(0);
->  }
->  
-> -module_exit(floppy_module_exit);
-> -
->  module_param(floppy, charp, 0);
->  module_param(FLOPPY_IRQ, int, 0);
->  module_param(FLOPPY_DMA, int, 0);
-> @@ -4596,14 +4705,6 @@ MODULE_AUTHOR("Alain L. Knaff");
->  MODULE_SUPPORTED_DEVICE("fd");
->  MODULE_LICENSE("GPL");
->  
-> -/* This doesn't actually get used other than for module information */
-> -static const struct pnp_device_id floppy_pnpids[] = {
-> -	{"PNP0700", 0},
-> -	{}
-> -};
-> -
-> -MODULE_DEVICE_TABLE(pnp, floppy_pnpids);
-> -
->  #else
->  
->  __setup("floppy=", floppy_setup);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
