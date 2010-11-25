@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331Ab0KYDdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 22:33:04 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47028 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab0KYDdD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 22:33:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=fXXBHvWUXNLiJCbzAHc8gjmGUXR45qfDwux/CenLDW2Hb/3EGx6cy3c1QMIe/YWsB0
-         O/+TpIeW7447EYcMGm2FjXZjhvSZQehoH1SwqMTIWYWQH8Ob0eZhSm/vo0EAJpO/rUKI
-         VOhIs2R/XC6fDZPQ2X0Db/6iwMNyor03Ocq/o=
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Mike Frysinger <vapier.adi@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <shawn.bohrer@gmail.com>
-Subject: [PATCH] epoll: initialize slack for negative timeout values
-Date: Wed, 24 Nov 2010 21:31:49 -0600
-Message-Id: <1290655909-10616-1-git-send-email-shawn.bohrer@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <AANLkTi=oTq3_-7OZZwGrYjQPXA0TCDFB_DaFXJ7rvWH9@mail.gmail.com>
-References: <AANLkTi=oTq3_-7OZZwGrYjQPXA0TCDFB_DaFXJ7rvWH9@mail.gmail.com>
+	id S1751534Ab0KYDlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 22:41:31 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50714 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab0KYDl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 22:41:29 -0500
+Message-ID: <4CEDDB2A.2020807@cn.fujitsu.com>
+Date: Thu, 25 Nov 2010 11:42:34 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/2] rcu: Fix series of spurious RCU softirqs
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+In-Reply-To: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-25 11:41:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-25 11:41:45,
+	Serialize complete at 2010-11-25 11:41:45
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a negative timeout value is passed to epoll the 'slack' variable is
-currently uninitialized:
+On 11/24/2010 08:31 AM, Frederic Weisbecker wrote:
+> Hi,
+> 
+> I've observed some not so unfrequent series of spurious rcu
+> softirqs, sometimes happening at each ticks for a random
+> while.
+> 
+> These patches aims at fixing them.
+> 
+> Thanks.
+> 
+> Frederic Weisbecker (2):
+>   rcu: Don't chase unnecessary quiescent states after extended grace periods
+>   rcu: Stop checking quiescent states after grace period completion from remote
+> 
 
-fs/eventpoll.c: In function ‘ep_poll’:
-fs/eventpoll.c:1119: warning: ‘slack’ may be used uninitialized in this function
+If we ensure rdp->gpnum >= rdp->completed is always true, the problems as
+you described will not be existed. Or maybe I misunderstand you.
 
-In this case a NULL pointer is passed to schedule_hrtimeout_range()
-specifying an infinite timeout.  The current implementation of
-schedule_hrtimeout_range() does not use slack in this case, but we
-should still initialize slack to 0 in case future implementations use it.
+rdp->gpnum >= rdp->completed is a very important guarantee I think.
+(In my RCURING, it is guaranteed.) I'm afraid there are some other
+problems still hidden if it is not guaranteed.
 
-Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
----
- fs/eventpoll.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+so I recommend: (code is better than words)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 8cf0724..c24a032 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1116,7 +1116,7 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- {
- 	int res, eavail, timed_out = 0;
- 	unsigned long flags;
--	long slack;
-+	long slack = 0;
- 	wait_queue_t wait;
- 	struct timespec end_time;
- 	ktime_t expires, *to = NULL;
--- 
-1.7.3.2
-
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index d5bc439..af4e87a 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -648,6 +648,13 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+ 
+ 		/* Remember that we saw this grace-period completion. */
+ 		rdp->completed = rnp->completed;
++
++		/* Ensure ->gpnum >= ->completed after NO_HZ */
++		if (unlikely(rnp->completed - rdp->gpnum > 0
++				|| rdp->gpnum - rnp->gpnum > 0)) {
++			rdp->gpnum = rnp->completed;
++			rdp->qs_pending = 0;
++		}
+ 	}
+ }
+ 
