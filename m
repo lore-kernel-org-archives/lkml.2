@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab0KYHDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 02:03:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33187 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0KYHDQ (ORCPT
+	id S1751826Ab0KYHET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 02:04:19 -0500
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:51998 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab0KYHES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 02:03:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GRqqt1HEIFamBcMW9uhXc25lFoe8l6guSvfmD2Do4g7bImYtAJuX3VIvN2vy6ipCHu
-         7wb+xPcORLeaWND+gBpxVChA0+6PpYpAfhc11eQJK6OXVq1V1ImC6bRIGL5RqEsb0wDE
-         TG30ktKBCnx//QCsvlaqMZwQbpif8O47YNPmk=
-Subject: [PATCH 2/8] ASoC: pcm030-audio-fabric: fix resource leak in
-	pcm030_fabric_init error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jon Smirl <jonsmirl@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1290668785.30158.7.camel@mola>
-References: <1290668785.30158.7.camel@mola>
-Content-Type: text/plain
-Date: Thu, 25 Nov 2010 15:08:31 +0800
-Message-Id: <1290668911.30158.10.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Thu, 25 Nov 2010 02:04:18 -0500
+Message-ID: <4CEE0A66.6000409@dcl.info.waseda.ac.jp>
+Date: Thu, 25 Nov 2010 16:04:06 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] perf bench: print both of prefaulted and no prefaulted
+ results
+References: <4CDD56E3.5030303@dcl.info.waseda.ac.jp> <1289574158-6959-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20101118075816.GG32621@elte.hu>
+In-Reply-To: <20101118075816.GG32621@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing platform_device_put() if platform_device_add() failed.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/fsl/pcm030-audio-fabric.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Really sorry for my late reply..
 
-diff --git a/sound/soc/fsl/pcm030-audio-fabric.c b/sound/soc/fsl/pcm030-audio-fabric.c
-index 25f27ec..ba4d85e 100644
---- a/sound/soc/fsl/pcm030-audio-fabric.c
-+++ b/sound/soc/fsl/pcm030-audio-fabric.c
-@@ -76,6 +76,7 @@ static __init int pcm030_fabric_init(void)
- 	rc = platform_device_add(pdev);
- 	if (rc) {
- 		pr_err("pcm030_fabric_init: platform_device_add() failed\n");
-+		platform_device_put(pdev);
- 		return -ENODEV;
- 	}
- 	return 0;
--- 
-1.7.2
+On 11/18/10 16:58, Ingo Molnar wrote:
+ >
+ > * Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>  wrote:
+ >
+ >> After applying this patch, perf bench mem memcpy prints
+ >> both of prefualted and without prefaulted score of memcpy().
+ >>
+ >> New options --no-prefault and --only-prefault are added
+ >> for printing single result, mainly for scripting usage.
+ >
+ > Ok. Mind resending the whole series once all review feedback has been 
+incorporated?
+ >
 
+OK, I'll send the patch series for prefaulting and
+porting memcpy_64.S to perf bench later.
+This series do some dirty things especially in Makefile
+of perf and defining ENTRY(). So I'd like to hear your comment.
+Could you review these?
 
+And I have another problem. I cannot see the name of
+memcpy based on rep prefix because the symbol of it is ".Lmemcpy_c".
+It seems that the symbol name start from "." cannot be seen
+from other object files. So I have to seek the way to
+find the name of rep memcpy...
 
+Thanks,
+	Hitoshi
