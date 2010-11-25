@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab0KYTJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 14:09:54 -0500
-Received: from webmail10.mail.sp.isp-net.nl ([217.149.192.62]:61265 "EHLO
-	webmail10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751747Ab0KYTJx (ORCPT
+	id S1752146Ab0KYTKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 14:10:38 -0500
+Received: from pfepb.post.tele.dk ([195.41.46.236]:51403 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab0KYTKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 14:09:53 -0500
-Message-ID: <4CEEB4A9.3090808@xmsnet.nl>
-Date: Thu, 25 Nov 2010 20:10:33 +0100
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 25 Nov 2010 14:10:37 -0500
+Date: Thu, 25 Nov 2010 20:10:35 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: Re: [PATCH] kbuild, deb-pkg: support overriding userland
+	architecture
+Message-ID: <20101125191035.GB20087@merkur.ravnborg.org>
+References: <4CD5A6C8.8030603@asbjorn.biz> <1289070320-20726-1-git-send-email-asbjorn@asbjorn.biz> <20101125143739.GC8192@sepie.suse.cz>
 MIME-Version: 1.0
-To: Mike Caoco <caoco2002@yahoo.com>
-CC: Netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Unplug ethernet cable, the route persists.  Why?
-References: <242082.99180.qm@web63407.mail.re1.yahoo.com>
-In-Reply-To: <242082.99180.qm@web63407.mail.re1.yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Language-Detected: en
-X-Spam-Scanned: InterNLnet Mail Scan System V2.03
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101125143739.GC8192@sepie.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 08:48 PM, Mike Caoco wrote:
-> Hello,
->
-> This may have been discussed, but all search engines couldn't give me a good answer...
->
-> I notice that when an interface is up/running, a local route is in the routing table:
->
-> $ ifconfig eth1
-> eth1      Link encap:Ethernet  HWaddr 00:13:20:0e:2f:ed
->            inet addr:192.168.1.125  Bcast:192.168.1.255  Mask:255.255.255.0
->            inet6 addr: fe80::213:20ff:fe0e:2fed/64 Scope:Link
->            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
->            RX packets:35984995 errors:0 dropped:0 overruns:0 frame:0
->            TX packets:7409151 errors:0 dropped:0 overruns:0 carrier:0
->            collisions:0 txqueuelen:1000
->            RX bytes:3252413825 (3.2 GB)  TX bytes:1340077250 (1.3 GB)
->
-> $ ip route
-> 192.168.20.0/24 dev eth0  proto kernel  scope link  src 192.168.20.120
-> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.125
-> default via 192.168.20.254 dev eth1  metric 100
->
-> After I unplug the cable from eth1, the RUNNING flag disappears, but the route is still there:
->
-> $ ifconfig eth1
-> eth1      Link encap:Ethernet  HWaddr 00:13:20:0e:2f:ed
->            inet addr:192.168.1.125  Bcast:192.168.1.255  Mask:255.255.255.0
->            inet6 addr: fe80::213:20ff:fe0e:2fed/64 Scope:Link
->            UP BROADCAST MULTICAST  MTU:1500  Metric:1
->            RX packets:35985023 errors:0 dropped:0 overruns:0 frame:0
->            TX packets:7409151 errors:0 dropped:0 overruns:0 carrier:0
->            collisions:0 txqueuelen:1000
->            RX bytes:3252415633 (3.2 GB)  TX bytes:1340077250 (1.3 GB)
->
-> $ ip route
-> 192.168.20.0/24 dev eth0  proto kernel  scope link  src 192.168.20.120
-> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.125
-> default via 192.168.20.254 dev eth1  metric 100
->
-> And that *prevents* from using the default route to reach 192.168.1/24 subnet after eth1 is out.
+On Thu, Nov 25, 2010 at 03:37:39PM +0100, Michal Marek wrote:
+> On Sat, Nov 06, 2010 at 07:05:20PM +0000, Asbjoern Sloth Toennesen wrote:
+> > Usefull if building for sparc64 userland, because the
+> > sparc and sparc64 userlands use the same 64-bit kernel,
+> > making it impossible to always select the correct userland
+> > architecture for the resulting debian package.
+> > 
+> > Might also be usefull, if you want a i386 userland with a amd64 kernel.
+> > 
+> > Example usage:
+> > 	make DEBARCH=i386 deb-pkg
+> 
+> This variable deserves a mention in Documentation/kbuild/kbuild.txt not
+> just in the commit log. Otherwise the patch is OK with me.  
+kbuild related variables is usually named KBUILD_* - but not all of them.
 
-Well suppose the default route is used, and the source address is of the 
-packets stay 192.168.1.125, then there is no way for the peers to 
-respond to the packets. I do not know wat sets the source address in 
-linux, but on windows it will allway's be the one you do not want.
-
--- 
-Hans
-
-
+	Sam
