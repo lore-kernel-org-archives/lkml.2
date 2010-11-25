@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab0KYOHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 09:07:22 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49716 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752328Ab0KYOHU (ORCPT
+	id S1753451Ab0KYOHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 09:07:30 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:46450 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab0KYOH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 09:07:20 -0500
-Date: Thu, 25 Nov 2010 14:03:54 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv5 05/17] tty: don't allow ldisc dcd_change() after ldisc
- halt
-Message-ID: <20101125140354.27ffca55@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101125163035.3105747b@desktopvm.lvknet>
-References: <cover.1290599843.git.lasaine@lvk.cs.msu.su>
-	<48e935cac42ae455e2ef8fc45f7eef7631eece6b.1290599844.git.lasaine@lvk.cs.msu.su>
-	<20101124164329.75368d71@lxorguk.ukuu.org.uk>
-	<20101125013812.0dc828ad@tornado.gnet>
-	<20101124223600.5eb8476f@bob.linux.org.uk>
-	<20101125163035.3105747b@desktopvm.lvknet>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Nov 2010 09:07:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=JOiNKhxpUy8ozVZ/zdtz9gc9yh71sdm0jqM37YzomRS8YajPGdsT80iFjzeoXnZOgt
+         7s6tNMVhaPyTo7OMWefw==
+MIME-Version: 1.0
+In-Reply-To: <1290693720.2145.34.camel@laptop>
+References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+	<1290666760.2072.539.camel@laptop>
+	<AANLkTinTNAwMCe_zu1snG1U5hSRafdBHQdzAr4e9nuWO@mail.gmail.com>
+	<1290693720.2145.34.camel@laptop>
+Date: Thu, 25 Nov 2010 15:07:25 +0100
+Message-ID: <AANLkTinyL2eEfWoLoZqU-CFwC6Z3hGd0=9HgBhC_+Uef@mail.gmail.com>
+Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to "perf stat"
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt@console-pimps.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Didn't know that current design is crap. :)
-
-It's based on the old big kernel lock and it has lots of horrors when
-used from interrupt paths as a result. A big chunk of it can in time I
-think move to just having a per tty ldisc lock that covers all changes
-etc, but we aren't there yet.
-
-> Ok, I think I'll add a new waitqueue and a new bit (TTY_LDISC_NOREF)
-
-We've got the wait queue already
-
-My first guess would be something like
-
-static struct tty_ldisc *tty_ldisc_irqget(struct tty_struct *tty)
-{
-        unsigned long flags;
-        struct tty_ldisc *ld;
-   
-        spin_lock_irqsave(&tty_ldisc_lock, flags);
-        ld = NULL;
-        if (test_bit(TTY_LDISC, &tty->flags)) {
-                ld = get_ldisc(tty->ldisc);
-		WARN_ON(test_and_set_bit(TTY_LDISC_IRQ, &tty->flags));
-	}
-        spin_unlock_irqrestore(&tty_ldisc_lock, flags);
-        return ld;
-}
-
-static struct tty_ldisc *tty_ldisc_irqput(struct tty_ldisc *ld)
-{
-	clear_bit(TTY_LDISC_IRQ, &tty->flags);
-	tty_ldisc_put(ld);
-}
-
-(and I think you can then wait on tty_ldisc_idle for the flag to go clear
-after clearing TTY_LDISC)
-
-It might be better to make it a count of course in case there are later
-multiple users of this ?
-
-Alan
-
+On Thu, Nov 25, 2010 at 3:02 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2010-11-25 at 14:19 +0100, Stephane Eranian wrote:
+>
+>> I think using PERF_SAMPLE_READ may expose a problem in the
+>> perf.data format. To correctly parse a sample created with SAMPLE_READ,
+>> you need to know the attr.read_format. But for that you need to know the
+>> event which caused the sample, but for that you need the SAMPLE_ID,
+>> and you don't know if it's there or not. In other words, there is a chicken
+>> and egg problem.
+>>
+>> I think the issue is that PERF_RECORD_SAMPLE is missing a mandatory
+>> piece of information: overflow event ID. This must a mandatory field, not
+>> optional as it is today. It is okay when you have only one group, but we'd
+>> like to go beyond that.
+>
+>
+>
+> I'm not sure I get it, there's both PERF_FORMAT_ID and PERF_SAMPLE_ID,
+> so afaict there's a working combination for what you want to do.
+>
+Ok, I had forgotten about PERF_SAMPLE_ID. But that means that if the
+number of groups > 1, then if you use PERF_SAMPLE_READ, you MUST
+also use PERF_SAMPLE_ID. Otherwise you cannot get back to the event
+that generated the sample and thus attr.read_format.
