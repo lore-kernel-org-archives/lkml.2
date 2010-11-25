@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab0KYLG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:06:59 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34153 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab0KYLG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:06:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [resend][PATCH 4/4] oom: don't ignore rss in nascent mm
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>
-In-Reply-To: <20101124110915.GA20452@redhat.com>
-References: <20101124085022.7BDF.A69D9226@jp.fujitsu.com> <20101124110915.GA20452@redhat.com>
-Message-Id: <20101125092237.F43A.A69D9226@jp.fujitsu.com>
+	id S1752702Ab0KYLHQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:07:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752675Ab0KYLHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 06:07:15 -0500
+Date: Thu, 25 Nov 2010 12:00:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: rcu_read_lock/unlock protect find_task_by_vpid call in
+	posix_cpu_timer_create
+Message-ID: <20101125110013.GA19031@redhat.com>
+References: <20101125010948.GA1371@redhat.com> <1290674436.2072.562.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 25 Nov 2010 20:06:51 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290674436.2072.562.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Stupid question.
-> > >
-> > > Can't we just account these allocations in the old -mm temporary?
-> > >
-> > > IOW. Please look at the "patch" below. It is of course incomplete
-> > > and wrong (to the point inc_mm_counter() is not safe without
-> > > SPLIT_RSS_COUNTING), and copy_strings/flush_old_exec are not the
-> > > best places to play with mm-counters, just to explain what I mean.
-> > >
-> > > It is very simple. copy_strings() increments MM_ANONPAGES every
-> > > time we add a new page into bprm->vma. This makes this memory
-> > > visible to select_bad_process().
-> > >
-> > > When exec changes ->mm (or if it fails), we change MM_ANONPAGES
-> > > counter back.
-> > >
-> > > Most probably I missed something, but what do you think?
+(add Sergey)
+
+On 11/25, Peter Zijlstra wrote:
+>
+> On Wed, 2010-11-24 at 20:09 -0500, Dave Jones wrote:
+> > --- a/kernel/posix-cpu-timers.c
+> > +++ b/kernel/posix-cpu-timers.c
+> > @@ -391,6 +391,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+> >  	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
 > >
-> > Because, If the pages of argv is swapping out when processing execve,
-> > This accouing doesn't work.
-> 
-> Why?
-> 
-> If copy_strings() inserts the new page into bprm->vma and then
-> this page is swapped out, inc_mm_counter(current->mm, MM_ANONPAGES)
-> becomes incorrect, yes. And we can't turn it into MM_SWAPENTS.
-> 
-> But does this really matter? oom_badness() counts MM_ANONPAGES +
-> MM_SWAPENTS, and result is the same.
+> >  	read_lock(&tasklist_lock);
+> > +	rcu_read_lock();
+> >  	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
+> >  		if (pid == 0) {
+> >  			p = current;
+> > @@ -414,6 +415,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+> >  	} else {
+> >  		ret = -EINVAL;
+> >  	}
+> > +	rcu_read_unlock();
+> >  	read_unlock(&tasklist_lock);
+> >
+> >  	return ret;
+>
+> Do we still need the tasklist_lock in this case?
 
-Ah, I got it. I did too strongly get stucked correct accounting. but
-you mean it's not must.
+No. posix-cpu-timer.c shouldn't use tasklist at all. But it is not
+completely trivial to remove it.
 
-Okey, I'll tackle this one at this weekend hopefully.
+In particular, this patch is not exactly right, we can't trust
+thread_group_leader() without tasklist.
 
+Sergey already sent the patch which removes tasklist from
+posix_cpu_timer_create() and posix_cpu_timer_create(), and iirc
+Thomas queued it.
 
+> Also, why is that think complaining, surely the tasklist_lock pins any
+> and all PID objects?
 
-> > Is this enough explanation? Please don't hesitate say "no". If people
-> > don't like my approach, I don't hesitate change my thinking.
-> 
-> Well, certainly I can't say no ;)
-> 
-> But it would be nice to find a more simple fix (if it can work,
-> of course).
-> 
-> 
-> And. I need a simple solution for the older kernels.
+The only problem is: if copy_process() fails, it does free_pid()
+lockless. This means, without rcu lock it is not safe to scan the
+rcu-protected lists.
 
-Alright. It is certinally considerable one.
+We can change copy_process() (in fact I sent the patch several
+years ago), but everybody think that find_pid/etc should always
+take rcu_read_lock() instead. I tend to agree.
 
+Oleg.
 
