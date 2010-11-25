@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab0KYE1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 23:27:20 -0500
-Received: from vms173001pub.verizon.net ([206.46.173.1]:45965 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab0KYE1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 23:27:18 -0500
-Date: Wed, 24 Nov 2010 23:27:01 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
+	id S1751854Ab0KYEfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 23:35:21 -0500
+Received: from mga14.intel.com ([143.182.124.37]:59268 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593Ab0KYEfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 23:35:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,252,1288594800"; 
+   d="scan'208";a="353034086"
+Subject: Re: [PATCH 0/2] Generic hardware error reporting support
+From: Huang Ying <ying.huang@intel.com>
 To: Mark Lord <kernel@teksavvy.com>
-Cc: Huang Ying <ying.huang@intel.com>,
-        huang ying <huang.ying.caritas@gmail.com>,
+Cc: huang ying <huang.ying.caritas@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andi Kleen <andi@firstfloor.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
@@ -21,38 +22,64 @@ Cc: Huang Ying <ying.huang@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-In-reply-to: <4CEDCCF5.5030308@teksavvy.com>
-Message-id: <alpine.LFD.2.00.1011242320000.637@x980>
+In-Reply-To: <4CEDCCF5.5030308@teksavvy.com>
 References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
- <AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
- <AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
- <AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
- <AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
- <AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>
- <AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com>
- <AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
- <AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
- <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
- <4CEB0037.3000303@teksavvy.com> <1290472198.2903.156.camel@yhuang-dev>
- <4CEDCCF5.5030308@teksavvy.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	 <AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
+	 <AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
+	 <AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
+	 <AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
+	 <AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>
+	 <AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com>
+	 <AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
+	 <AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
+	 <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
+	 <4CEB0037.3000303@teksavvy.com> <1290472198.2903.156.camel@yhuang-dev>
+	 <4CEDCCF5.5030308@teksavvy.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Nov 2010 12:35:15 +0800
+Message-ID: <1290659715.2903.299.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ... most *NIX tools store and manage data in _text_ form.
+On Thu, 2010-11-25 at 10:41 +0800, Mark Lord wrote:
+> On 10-11-22 07:29 PM, Huang Ying wrote:
+> > On Tue, 2010-11-23 at 07:43 +0800, Mark Lord wrote:
+> >> On 10-11-20 08:06 PM, huang ying wrote:
+> >>>
+> >>> I have no objection to report hardware errors in system logs too. So
+> >>> these people can get the information too. I just want to add another
+> >>> tool oriented interface too. So that some other users (like cluster
+> >>> administrator) can get their work done better too.
+> >>
+> >> So, use the standard interface for the tool:  syslog.
+> >
+> > Although it may be possible to extract some information from syslog and
+> > parse it in a fault tolerant way, we can only use that human oriented
+> > interface for a tool? That sounds like hack.
+> 
+> No, that sounds like the *NIX programming philosophy.
+> 
+> You may have already noticed that most *NIX tools store
+> and manage data in _text_ form.  That makes it easy to
+> understand, easy to parse/process, and generally better
+> in almost every respect.
 
-If the hardware error dump is complicated there is a trade-off
-between making things human readable and putting a lot of
-comlicated parsing code into the kernel.  Maybe the kernel
-should just dump hex "text" in some cases and let a user-program
-parse the syslog?
+I have no objection to text form interface.  I said printk is not a tool
+oriented interface not because it is a text form interface but some
+other issues.  For example, messages from different CPU/context may be
+interleaved; all kinds information mixed together, without overall
+format or meta-data, etc.
 
-What do do if the hardware error log is very large?
-Is there a limit on how much is practical to send through syslog?
+> Other platforms (GNOME, MS-Windows) prefer a binary format
+> that requires special tools to view/access.  Ugh.
 
-thanks,
--Len Brown, Intel Open Source Technology Center
+Linux kernel uses binary format interfaces too.
+
+Best Regards,
+Huang Ying
+
+
