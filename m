@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab0KYWSn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 17:18:43 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46524 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab0KYWSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 17:18:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=G1GNjrpUjI3ertoH/SO9YMAfSBylAer+2vr5aK0zlYbiHt+ehEOfLp91CvrcG38alQ
-         TGwIS4JGAmlst225J7yzMtkQMb0lMDSeqzfRCuQSTVKtU26p+PTLv5UhvvZTDCfuXj6b
-         oYsJgZrnAS4v1K1p7mSjH2vbiA8k8rMWY4k1Q=
-Message-ID: <4CEEE0BB.6020509@gmail.com>
-Date: Thu, 25 Nov 2010 23:18:35 +0100
-From: Jarek Poplawski <jarkao2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.13) Gecko/20100916 SeaMonkey/2.0.8
-MIME-Version: 1.0
-To: Ben Gamari <bgamari@gmail.com>
-CC: Mike Caoco <caoco2002@yahoo.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Unplug ethernet cable, the route persists.  Why?
-References: <144174.46619.qm@web63401.mail.re1.yahoo.com> <87bp5df9j9.fsf@gmail.com>
-In-Reply-To: <87bp5df9j9.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752625Ab0KYWbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 17:31:18 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:45501 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752259Ab0KYWbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 17:31:17 -0500
+Date: Fri, 26 Nov 2010 09:31:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: Tree for November 25
+Message-Id: <20101126093107.e54847da.sfr@canb.auug.org.au>
+In-Reply-To: <20101125132518.1c7ebed1@lxorguk.ukuu.org.uk>
+References: <20101125164929.3a719716.sfr@canb.auug.org.au>
+	<20101125132518.1c7ebed1@lxorguk.ukuu.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Nov_2010_09_31_07_+1100_6PxXM7gDnykB9.cD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Gamari wrote:
-> On Wed, 24 Nov 2010 12:29:43 -0800 (PST), Mike Caoco <caoco2002@yahoo.com> wrote:
->> So if you rely on NetworkManager or Connman or Quagga to remove the
->> route, the routing daemons will recompute the route table anyway.  So
->> why cannot this be done in the kernel?
-> 
-> This is policy. In the Linux world we generally strive to separate
-> policy from mechanism, leaving the former to userspace. This allows
-> (potentially complex) policy decisions to be made in user-space. The
-> reason for this is two-fold: First, every line of kernel code introduces
-> the potentially for a bug and error handling in the kernel is generally
-> more complex than it is in user-space. Secondly, allowing user-space to
-> handle policy allows users to do things with the kernel that kernel
-> developers did not envision. This flexibility is one reason why the
-> kernel is so suited for running on anything from your cell-phone to 4000
-> processor big iron.
+--Signature=_Fri__26_Nov_2010_09_31_07_+1100_6PxXM7gDnykB9.cD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Secondly and a half, if you add a specific route you may really
-mean it, and prefer not to send at all than use default.
+Hi Alan,
 
+On Thu, 25 Nov 2010 13:25:18 +0000 Alan Cox <alan@lxorguk.ukuu.org.uk> wrot=
+e:
+>
+> Umm where did all the x86 changes go ?
+>=20
+> I was going to look at SEP and fixing it but I can't even build a base
+> test tree from -next because all the x86 work seems to be missing from
+> the tree from 23rd onwards.
+
+You need to ask the x86, staging and tip maintainers ...  There was a
+build failure in tip tree on Nov 23 after which the tip tree was rebuilt
+without some of its branches.  Also, there is a boot failure caused by
+the sep driver (which I see one of your patches should fix).
+
+I did not remove any of the code.
+
+--=20
 Cheers,
-Jarek P.
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__26_Nov_2010_09_31_07_+1100_6PxXM7gDnykB9.cD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM7uOrAAoJEDMEi1NhKgbseuYIAIwQP9I5gHx03Jb4Qgu0AtKB
+0GEc9C0ltibffVsa2TJUnGDeOHm061hJ8RGX/jvYcJJZJB3PpCvDorF9JOpgxbgc
+OG0qN0Ydd5u2GfztoUQFZLtxU8ZZL6m4JFH0ROuEQbw+VwuekW3TMeq8Ke8Z3nH8
+JPevZzE7liYiuvfg6ux2tB4J0gFXj3MtJYHMm4HSkz7qoUvfIWjIE2TjnitoUCDg
+aCtIxL4Fofp9cw+GkxXa/mc1kyULIZRW0dLljX8vBYgqVo7zdeUgLSkXzGXX6I2y
+Z1cLlk7L9kybynFyLyWrFTf3V7WGboewl7epwJfkCU488W+IwzuaVqoUi8uFx4U=
+=nnIl
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Nov_2010_09_31_07_+1100_6PxXM7gDnykB9.cD--
