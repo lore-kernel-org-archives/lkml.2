@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab0KYHOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 02:14:46 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:49249 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab0KYHOp (ORCPT
+	id S1751810Ab0KYHSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 02:18:14 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:46831 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab0KYHSN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 02:14:45 -0500
-Date: Thu, 25 Nov 2010 16:15:08 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH] ARM: s3x24xx: Fix gpiochip_add complaining.
-In-reply-to: <201011191253.58812.anarsoul@gmail.com>
-To: "'Vasily Khoruzhick'" <anarsoul@gmail.com>,
-        "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: linux-arm-kernel@lists.infradead.org, "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Marek Belisko'" <marek.belisko@open-nandra.com>,
-        linux-kernel@vger.kernel.org
-Message-id: <00b201cb8c70$7ff96e30$7fec4a90$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcuH2BcTf70IWHV8T0uO6eHfFhXIqwEk+Jpw
-References: <1290158139-16105-1-git-send-email-marek.belisko@open-nandra.com>
- <201011191123.22255.anarsoul@gmail.com> <4CE6547A.9070309@metafoo.de>
- <201011191253.58812.anarsoul@gmail.com>
+	Thu, 25 Nov 2010 02:18:13 -0500
+Subject: Re: [PATCH 2/5] MIPS/Perf-events: Work with the new PMU interface
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Cc: ralf@linux-mips.org, fweisbec@gmail.com, will.deacon@arm.com,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
+In-Reply-To: <1290063401-25440-3-git-send-email-dengcheng.zhu@gmail.com>
+References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
+	 <1290063401-25440-3-git-send-email-dengcheng.zhu@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 25 Nov 2010 08:01:09 +0100
+Message-ID: <1290668469.2072.550.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasily Khoruzhick wrote:
+On Thu, 2010-11-18 at 14:56 +0800, Deng-Cheng Zhu wrote:
 > 
-> On Friday 19 November 2010 12:42:02 Lars-Peter Clausen wrote:
-> > Hi
-> >
-Hi all,
-
-> > Well it actually causes problems on systems with external gpio
-expanders,
-> > because now the additional banks will take up the space which was meant
-> > for the gpio expander chip and peripherals connected to it wont be
-> > accessible.
+> This is the MIPS part of the following commits by Peter Zijlstra:
 > 
-> Ok, but it would be nice to see some runtime soc-type detection for
-gpiolib.
-
-Yeah, I agree. We need to check SoC type for it during booting...
-
-> s3c2410/s3c2440/s3c2442 doesn't differ too much (actually, they're same in
-> gpiopart, s3c2410 lacks some gpiobanks that s3c244[0,2] have, and
-difference
-> in pull-up/pull-down on s3c2440 and s3c2442).
-> I think it's not good to make artificial restrictions for building single
-> binary kernel for these socs.
+> a4eaf7f14675cb512d69f0c928055e73d0c6d252
+>         perf: Rework the PMU methods
+> 33696fc0d141bbbcb12f75b69608ea83282e3117
+>         perf: Per PMU disable
+> 24cd7f54a0d47e1d5b3de29e2456bfbd2d8447b7
+>         perf: Reduce perf_disable() usage
+> b0a873ebbf87bf38bf70b5e39a7cadc96099fa13
+>         perf: Register PMU implementations
+> 51b0fe39549a04858001922919ab355dee9bdfcf
+>         perf: Deconstify struct pmu
 > 
-> > I sent a patch[1] about this some time ago, but I guess it was never
-> > applied...
-
-Maybe you missed my e-mail...or..I missed?...anyway...
-Could you please re-send it so that can get the patch via e-mail?
-
 > 
-> Try pinging Ben or Kukjin :)
-> 
-Thanks...
+I'll not ACK this as I've no clue how the MIPS PMU(s) work, but the
+shape looks ok :-)
 
-Basically, I'd like to keep single binary for S3C24XX, maybe Ben also agree
-with this. But also there is some side effects, i.e., according to
-mach-s3c2410/Makefile.boot, zreladdr is different. But only selected
-0x30108000 as zreladdr when build time because selected CONFIG_PM_H1940 with
-s3c2410_defconfig if there is no changes kernel configuration. This is just
-simple example. Maybe There are many similar examples.
-
-Hmm...anyway, we need to sort it out with keeping S3C24XX single binary.
-Will think some method for this...
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
 
