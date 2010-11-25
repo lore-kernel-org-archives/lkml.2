@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab0KYGI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 01:08:58 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54555 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab0KYGI5 convert rfc822-to-8bit (ORCPT
+	id S1751228Ab0KYGJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 01:09:49 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49677 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab0KYGJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 01:08:57 -0500
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <1290644675.2405.90.camel@minggr.sh.intel.com>
-References: <1290340877.2245.124.camel@localhost>
-	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
-	 <1290348259.2245.172.camel@localhost>	<1290361473.2153.39.camel@laptop>
-	 <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
-	 <1290644675.2405.90.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 25 Nov 2010 07:09:10 +0100
-Message-ID: <1290665350.2072.521.camel@laptop>
+	Thu, 25 Nov 2010 01:09:48 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Mike Galbraith <efault@gmx.de>
+Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-11-23 + autogroups -> inconsistent lock state
+In-Reply-To: Your message of "Wed, 24 Nov 2010 13:25:25 MST."
+             <1290630325.4050.12.camel@maggy.simson.net>
+From: Valdis.Kletnieks@vt.edu
+References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org> <6003.1290574869@localhost>
+            <1290630325.4050.12.camel@maggy.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: multipart/signed; boundary="==_Exmh_1290665343_5841P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 25 Nov 2010 01:09:03 -0500
+Message-ID: <5990.1290665343@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A02020A.4CEDFD80.00EC,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-25 at 08:24 +0800, Lin Ming wrote:
-> On Tue, 2010-11-23 at 18:00 +0800, Stephane Eranian wrote:
-> > On Sun, Nov 21, 2010 at 6:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
-> > >> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
-> > >> > >
-> > >> > > 2. Uncore pmu NMI handling
-> > >> > >
-> > >> > > All the 4 cores are programmed to receive uncore counter overflow
-> > >> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
-> > >> > > counters enabled by all 4 cores.
-> > >> >
-> > >> > Really for uncore monitoring there is no need to use an NMI handler.
-> > >> > You can't profile a core anyways, so you can just delay the reporting
-> > >> > a little bit. It may simplify the code to not use one here
-> > >> > and just use an ordinary handler.
-> > >>
-> > >> OK, I can use on ordinary interrupt handler here.
-> > >
-> > > Does the hardware actually allow using a different interrupt source?
-> > >
-> > It does not. It's using whatever you've programmed into the APIC
-> > LVT vector, AFAIK. Uncore interrupt mode is enabled via
-> > IA32_DEBUGCTL. Regarless of sampling or not, you need the interrupt
-> > to virtualize the counters to 64 bits.
+--==_Exmh_1290665343_5841P
+Content-Type: text/plain; charset=us-ascii
+
+On Wed, 24 Nov 2010 13:25:25 MST, Mike Galbraith said:
+> On Wed, 2010-11-24 at 00:01 -0500, Valdis.Kletnieks@vt.edu wrote:
+> > On Tue, 23 Nov 2010 16:13:06 PST, akpm@linux-foundation.org said:
+> > > The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+> > > 
+> > >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > (I appear to be on a roll tonight - 3 splats before I even had a chance to login. :)
+> > 
+> > mmotm + Ingo's cleanup of Mike's autogroups patch.
+> ...
 > 
-> If only counting(perf stat) makes sense for uncore events, do we still
-> need an interrupt handler?
+> Sorry for slow response, been trying to use some of my last few vacation
+> days on vacation stuff ;-)
+> 
+> The below should run gripe free.  Suppose I should learn to turn on
+> lockdep and whatnot when tinkering/testing.
 
-Yep, I see no reason to dis-allow sampling. Sure its hard to make sense
-of it, but since there are people who offline all but one cpu of a
-package, I bet there are people who will run just one task on a package
-as well.
+Yes, this version runs quietly, thanks.
 
-Just because it doesn't make sense in general doesn't mean there isn't
-anybody who'd want to do it and actually knows wth he's doing.
 
-> 48 bits counter is not that easy to overflow in practice.
+--==_Exmh_1290665343_5841P
+Content-Type: application/pgp-signature
 
-Still..
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFM7f1/cC3lWbTT17ARAginAKC3C2GmY8SqekMlUrSs07yVyw8RmQCg2IXy
+Lgk6PmE9ILGcMbQYlbW2vLE=
+=Elzs
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1290665343_5841P--
+
