@@ -1,135 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab0KYKRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 05:17:47 -0500
-Received: from 31.mail-out.ovh.net ([213.186.62.10]:39262 "HELO
-	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751374Ab0KYKRp (ORCPT
+	id S1752086Ab0KYKSy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 05:18:54 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48645 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab0KYKSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 05:17:45 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Nov 2010 05:17:44 EST
-Message-ID: <4CEE3632.6020502@armadeus.com>
-Date: Thu, 25 Nov 2010 11:10:58 +0100
-From: Fabien Marteau <fabien.marteau@armadeus.com>
-Reply-To: fabien.marteau@armadeus.com
-Organization: ARMadeus Systems
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Thu, 25 Nov 2010 05:18:52 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Simon Kirby <sim@hostway.ca>
+Subject: Re: Free memory never fully used, swapping
+Cc: kosaki.motohiro@jp.fujitsu.com, Shaohua Li <shaohua.li@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+In-Reply-To: <20101125090328.GB14180@hostway.ca>
+References: <1290647274.12777.3.camel@sli10-conroe> <20101125090328.GB14180@hostway.ca>
+Message-Id: <20101125191759.F465.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Scott Moreau <oreaus@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: joystick:   Adding Austria Microsystem AS5011
- joystick driver
-References: <4CEBED7E.7010101@armadeus.com> <20101124195523.GF27368@core.coreip.homeip.net>
-In-Reply-To: <20101124195523.GF27368@core.coreip.homeip.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3905465302302810523
-X-Ovh-Remote: 82.232.255.99 (arc68-6-82-232-255-99.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 25 Nov 2010 19:18:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-Thank you for yours comments, it's my first kernel driver patch and your advices
-are really helpful.
-
-On 24/11/2010 20:55, Dmitry Torokhov wrote:
-> Hi Fabien,
+> There are actually a few problems here.  I think they are worth looking
+> at them separately, unless "don't use order 3 allocations" is a valid
+> statement, in which case we should fix slub.
 > 
-> On Tue, Nov 23, 2010 at 05:36:14PM +0100, Fabien Marteau wrote:
->> Driver for EasyPoint AS5011 2 axis joystick chip. This chip is plugged
->> on an I2C bus. It as been tested on ARM processor (i.MX27).
->>
-> 
-> Thank you for the patch. In addiitoon to comments you got from the other
-> reviewers I'd recommend switching to threaded IRQ instead of using a
-> separate workqueue, it greatly simplifies the code.
+> The funny thing here is that slub.c's allocate_slab() calls alloc_pages()
+> with flags | __GFP_NOWARN | __GFP_NORETRY, and intentionally tries a
+> lower order allocation automatically if it fails.  This is why there is
+> no allocation failure warning when this happens.  However, it is too late
+> -- kswapd is woken and it ties to bring order 3 up to the watermark. 
+> If we hacked __alloc_pages_slowpath() to not wake kswapd when
+> __GFP_NOWARN is set, we would never see this problem and the slub
+> optimization might still mostly work.  Either way, we should "fix" slub
+> or "fix" order-3 allocations, so that other people who are using slub
+> don't hit the same problem.
 
-Ok I will see it.
+This?
 
-> 
->> +
->> +static irqreturn_t button_interrupt(int irq, void *dev_id)
->> +{
->> +	struct as5011_platform_data *plat_dat =
->> +		(struct as5011_platform_data *)dev_id;
->> +	int ret;
->> +
->> +	ret = gpio_get_value(plat_dat->button_gpio);
->> +	if (ret)
->> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 0);
->> +	else
->> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 1);
->> +	input_sync(plat_dat->input_dev);
->> +	return IRQ_HANDLED;
-> 
-> That appears to be a hard IRQ; are you sure that gpio_get_value will not
-> sleep?
 
-For my platform, yes I'm sure … but if somebody else use this driver with
-gpio that can sleep, it can be a bad idea of course.
-I did it because it's under an interrupt call, then we can't sleep.
-I will see how to use  a threaded IRQ to avoid it.
 
-> 
->> +
->> +	plat_dat->input_dev->name = "Austria Microsystem as5011 joystick";
->> +	plat_dat->input_dev->uniq = "Austria0";
->> +	plat_dat->input_dev->id.bustype = BUS_I2C;
->> +	plat_dat->input_dev->phys = "/dev/input/event0";
-> 
-> Phys is not the path in device tree but rather physical device
-> connection path within the system. If there is not known connection path
-> it is better just leave it as NULL.
 
-Ok, done.
+Subject: [PATCH] slub: use no __GFP_WAIT instead __GFP_NORETRY
 
-> 
->> +	plat_dat->input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
->> +	plat_dat->input_dev->keybit[BIT_WORD(BTN_JOYSTICK)] =
->> +					BIT_MASK(BTN_JOYSTICK);
->> +
->> +	input_set_abs_params(plat_dat->input_dev,
->> +			     ABS_X,
->> +			     AS5011_MIN_AXIS,
->> +			     AS5011_MAX_AXIS,
->> +			     AS5011_FUZZ,
->> +			     AS5011_FLAT);
->> +	input_set_abs_params(plat_dat->input_dev,
->> +			     ABS_Y,
->> +			     AS5011_MIN_AXIS,
->> +			     AS5011_MAX_AXIS,
->> +			     AS5011_FUZZ,
->> +			     AS5011_FLAT);
->> +
->> +	plat_dat->button_irq_name =
->> +		kmalloc(sizeof(unsigned char)*SIZE_NAME,
->> +					 GFP_KERNEL);
-> 
-> Just why does it have to be separately allocated? I'd even stick with
-> "as5011" for all IRQ names.
+---
+ mm/slub.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I thought that irq name should be different for each IRQ used under device and
-for each device used in system. I can use the same irq name if I've got several
-as5011 joystick in the same system ?
+diff --git a/mm/slub.c b/mm/slub.c
+index 8c66aef..0c77399 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1134,7 +1134,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 	 * Let the initial higher-order allocation fail under memory pressure
+ 	 * so we fall-back to the minimum order allocation.
+ 	 */
+-	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
++	alloc_gfp = (flags | __GFP_NOWARN) & ~(__GFP_NOFAIL | __GFP_WAIT);
+ 
+ 	page = alloc_slab_page(alloc_gfp, node, oo);
+ 	if (unlikely(!page)) {
+-- 
+1.6.5.2
 
-> 
->> +
->> +	queue_work(plat_dat->workqueue, &plat_dat->update_axes_work);
->> +
-> 
-> The device is quite likely not opened here so why do you want to send
-> events?
-It was a mistake.
 
-> 
-> Thanks.
-> 
 
-Thanks too.
-Fabien
+
