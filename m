@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab0KYSIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 13:08:51 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:4520 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab0KYSIu convert rfc822-to-8bit (ORCPT
+	id S1754494Ab0KYSJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 13:09:49 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51428 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab0KYSJr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 13:08:50 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
- a=dPnxFd8_iYEA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VwQbUJbxAAAA:8 a=wc6DhzEo1zFAyykfiEEA:9
- a=jGJZYycv87Mi4yxxqvsA:7 a=L84e0MIl-bp4eU1GyLX1YU70JQYA:4 a=CjuIK1q_8ugA:10
- a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH] fcntl: Add the F_READAHEAD command
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20101125095437.GA3409@ping.uio.no>
-Date: Thu, 25 Nov 2010 11:08:45 -0700
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+	Thu, 25 Nov 2010 13:09:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hJoaB9hHCxRK+HkWBn3IQMx14ki+ZMVcD4KpMr2dg60CSh2FklINi1iuzOcqiRtdKt
+         wKY25eh78WUCnpBwGHiq4aXOP8jAmPuApBDau5drXWIkmnJn7ZimlaS14lViFsMfjgO8
+         jDqMzin3s2M/22zwHsXnPiJaU41M4KGIFTD6s=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=eTvdfPjgd0pGVmBx6zCB8yL3qNVq0MR1wH88b@mail.gmail.com>
+References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
+	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
+	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
+	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>
+	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>
+	<20101122135715.121b5eb7.sfr@canb.auug.org.au>
+	<AANLkTi=io3tsuL8Hd2a0y8PyBYYAzb-gkJo1GfmpcF+L@mail.gmail.com>
+	<AANLkTi=eTvdfPjgd0pGVmBx6zCB8yL3qNVq0MR1wH88b@mail.gmail.com>
+Date: Thu, 25 Nov 2010 13:09:46 -0500
+Message-ID: <AANLkTik-vnDTRTshpXE7ufjCM9AcfLGQV5v9CcjV=zJx@mail.gmail.com>
+Subject: Re: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
+        randy.dunlap@oracle.com, linux-kbuild@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xiyou.wangcong@gmail.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <DEAF94DC-08D0-42D2-A6E9-62B1B9C39D40@dilger.ca>
-References: <20101125095437.GA3409@ping.uio.no>
-To: Morten Hustveit <mortehu@ping.uio.no>
-X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-25, at 02:54, Morten Hustveit wrote:
-> +static int f_readahead(struct file *filp, unsigned long arg)
-> +{
-> +	if (arg) {
-> +		filp->f_ra.ra_pages = (arg + PAGE_SIZE - 1) >> PAGE_SHIFT;
+Hi,
 
-Functionality itself is fine, but it would be clearer if you used a better variable name than "arg" here.  Something like "readahead_bytes" or similar would make it immediately clear what the parameter is.
+On Thu, Nov 25, 2010 at 12:43 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> Now, commenting on your patches, you added a new statement, 'visible
+> if...' for menus. Can we not change it to something like:
+>
+> -menu "I2C Algorithms"
+> -       depends on !I2C_HELPER_AUTO
+> +menu "I2C Algorithms" if !I2C_HELPER_AUTO
+>
+no because if_expr are translated internally in term of dependency,
+which we don't want.
 
-> +		spin_lock(&filp->f_lock);
-> +		filp->f_mode &= ~FMODE_RANDOM;
-> +		spin_unlock(&filp->f_lock);
-> +	} else {
-> +		spin_lock(&filp->f_lock);
-> +		filp->f_mode |= FMODE_RANDOM;
-> +		spin_unlock(&filp->f_lock);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
-> 		struct file *filp)
-> {
-> @@ -420,6 +445,9 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
-> 	case F_GETPIPE_SZ:
-> 		err = pipe_fcntl(filp, cmd, arg);
-> 		break;
-> +	case F_READAHEAD:
-> +		err = f_readahead(filp, arg);
-> +		break;
-> 	default:
-> 		break;
-> 	}
-> diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-> index afc00af..69d8e4d 100644
-> --- a/include/linux/fcntl.h
-> +++ b/include/linux/fcntl.h
-> @@ -28,6 +28,11 @@
-> #define F_GETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 8)
-> 
-> /*
-> + * Set read-ahead buffer size
-> + */
-> +#define F_READAHEAD	(F_LINUX_SPECIFIC_BASE + 9)
-> +
-> +/*
-> * Types of directory notifications that may be requested.
-> */
-> #define DN_ACCESS	0x00000001	/* File accessed */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-Cheers, Andreas
-
-
-
-
-
+ - Arnaud
