@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab0KYEY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 23:24:58 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23118 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab0KYEY5 (ORCPT
+	id S1751928Ab0KYE1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 23:27:20 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:45965 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab0KYE1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 23:24:57 -0500
+	Wed, 24 Nov 2010 23:27:18 -0500
+Date: Wed, 24 Nov 2010 23:27:01 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
 To: Mark Lord <kernel@teksavvy.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
-	<20101118141957.GK6178@parisc-linux.org>
-	<20101118142918.GA18510@infradead.org>
-	<1290100750.3041.72.camel@mulgrave.site>
-	<alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
-	<1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com>
-	<20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com>
-	<alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com>
-	<20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com>
-Date: Wed, 24 Nov 2010 23:23:34 -0500
-In-Reply-To: <4CEDCE60.9050109@teksavvy.com> (Mark Lord's message of "Wed, 24
-	Nov 2010 21:48:00 -0500")
-Message-ID: <yq18w0ini9l.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Cc: Huang Ying <ying.huang@intel.com>,
+        huang ying <huang.ying.caritas@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/2] Generic hardware error reporting support
+In-reply-to: <4CEDCCF5.5030308@teksavvy.com>
+Message-id: <alpine.LFD.2.00.1011242320000.637@x980>
+References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+ <AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
+ <AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
+ <AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
+ <AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
+ <AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>
+ <AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com>
+ <AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
+ <AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
+ <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
+ <4CEB0037.3000303@teksavvy.com> <1290472198.2903.156.camel@yhuang-dev>
+ <4CEDCCF5.5030308@teksavvy.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mark" == Mark Lord <kernel@teksavvy.com> writes:
+> ... most *NIX tools store and manage data in _text_ form.
 
-Mark> But mke2fs probably is NOT doing a "single big discard", because
-Mark> for SATA the TRIM command is limited to 64K sectors per
-Mark> range.. and the in-kernel TRIM code only ever does single ranges..
+If the hardware error dump is complicated there is a trade-off
+between making things human readable and putting a lot of
+comlicated parsing code into the kernel.  Maybe the kernel
+should just dump hex "text" in some cases and let a user-program
+parse the syslog?
 
-How many times must I reiterate that this is not true?
+What do do if the hardware error log is very large?
+Is there a limit on how much is practical to send through syslog?
 
-Due to various limitations in the way the block layer works we can not
-clear LBA 10 to 20 and LBA 40 to 50 in one command. We don't have an
-infrastructure in place that allows us to operate on several discrete
-areas in one request.
-
-But for contiguous areas we will cram as many ranges entries in as we
-can fit in the TRIM payload. This means we'll issue one TRIM command for
-every 2 GiB minus change (65535*64*512 / 1048576 = 2047 MiB).
-
-In your example above blkdev_issue_discard() will loop over the 100 GiB
-range requested by the caller (filesystem or BLKDISCARD ioctl) and issue
-about fifty TRIM commands to the drive.
-
-Large discards are a best-case scenario (short of SECURE ERASE). So if
-your drive takes forever to perform this operation then all bets are
-off in the TRIM department.
-
-
-Mark> So doing a discard over an entire drive-encompassing partition,
-Mark> say.. 100GB, will require 3000+ individual TRIM commands. 
-
-No.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+thanks,
+-Len Brown, Intel Open Source Technology Center
