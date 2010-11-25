@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab0KYGwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 01:52:39 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52451 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab0KYGwi convert rfc822-to-8bit (ORCPT
+	id S1752039Ab0KYGxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 01:53:42 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44666 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab0KYGxi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 01:52:38 -0500
-Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
- label key entries
-From: Peter Zijlstra <peterz@infradead.org>
-To: michael@ellerman.id.au
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1290652762.18088.4.camel@concordia>
-References: <cover.1290546539.git.jbaron@redhat.com>
-	 <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com>
-	 <1290586809.2072.424.camel@laptop> <20101124145401.GA2815@redhat.com>
-	 <1290611478.2072.482.camel@laptop> <20101124151936.GB2815@redhat.com>
-	 <1290612245.2072.486.camel@laptop>  <20101124154200.GD2815@redhat.com>
-	 <1290613997.30543.529.camel@gandalf.stny.rr.com>
-	 <1290652762.18088.4.camel@concordia>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 25 Nov 2010 01:53:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=q0jQZ9Jiddwalusz5W7im8m7a/ArGaz75ErT3ErGcW/6wm+wcCJdQ2gY5lDTzE/fKH
+         t1gwYE+M2eqHzjXiR0YpHPAhVdMxePGGY/D9xyzdWgkVHfb8PM0DET7OY6bMmKUrvtps
+         m4epNJuVTwNk8B1dKnjYh2ORdf2/z1MkfSCl4=
+MIME-Version: 1.0
+In-Reply-To: <6340.1290665937@localhost>
+References: <6340.1290665937@localhost>
+Date: Thu, 25 Nov 2010 14:53:37 +0800
+Message-ID: <AANLkTim2_eEMsryEh0GXk8d-v_ZSOvqJ3-xSf55xCc5L@mail.gmail.com>
+Subject: Re: 2.6.37-rc3-mmotm1123 - arch/x86/kernel/cpu/mcheck/mce.c:1628
+ invoked rcu_dereference_check() without protection!
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 25 Nov 2010 07:52:30 +0100
-Message-ID: <1290667950.2072.545.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-25 at 13:39 +1100, Michael Ellerman wrote:
-> > > arch/powerpc/lib/code-patching.c:
-> > > 
-> > > void patch_instruction(unsigned int *addr, unsigned int instr)
-> > > {
-> > >         *addr = instr;
-> > >         asm ("dcbst 0, %0; sync; icbi 0,%0; sync; isync" : : "r"
-> > > (addr));
-> > > }
-> > 
-> > Is this ever called outside of boot up? After SMP is enabled? (besides
-> > for creating trampolines, before they are used).
-> 
-> It is now :)
-> 
-> AFAIK it works fine, the icbi invalidates across all processors. The
-> only issue is that it's not precise, ie. another CPU might not see the
-> update immediately, but as soon as it takes an interrupt or something it
-> will.
+On Thu, Nov 25, 2010 at 2:18 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> (Appears to have been present in -rc2-mmotm1117 as well, and maybe earlier. I
+> suspect mcelog wasn't getting run at boot due to my fighting with systemd, so I
+> didn't see it).
+>
+> [  146.195836] ===================================================
+> [  146.195839] [ INFO: suspicious rcu_dereference_check() usage. ]
+> [  146.195841] ---------------------------------------------------
+> [  146.195844] arch/x86/kernel/cpu/mcheck/mce.c:1628 invoked rcu_dereference_check() without protection!
 
-Ooh, nice, so the CPUs won't get all confused because you change code
-from under their ifetch cache?
+The warning comes from the rcu_dereference_check_mce() in mce_poll().
+It seems that we do not need rcu_dereference_check_mce() here. Because
+we only check the value of mcelog.next, but do not use that value to
+access the content of the array.
 
-How expensive is this icbi ins?
+Best Regards,
+Huang Ying
 
-> What would suit us would be to have an arch callback that is called
-> after all the transforms for a particular jump label key have been made.
-> That way we could optimise the individual patches, and do a sync step at
-> the end, ie. when we want the effect of the patching to be globally
-> visible. 
-
-I think such a sync-barrier is desired (possibly only on the enable
-path) so we can actually say the tracepoints are on.
-
-Which would mean sending IPIs to all CPUs and waiting for them to
-acknowledge them. Which, while not quite as expensive as stop_machine,
-its not really cheap either.
-
-
+> [  146.195847]
+> [  146.195847] other info that might help us debug this:
+> [  146.195848]
+> [  146.195850]
+> [  146.195850] rcu_scheduler_active = 1, debug_locks = 1
+> [  146.195853] no locks held by mcelog/3806.
+> [  146.195855]
+> [  146.195855] stack backtrace:
+> [  146.195858] Pid: 3806, comm: mcelog Tainted: G        W   2.6.37-rc3-mmotm1123 #4
+> [  146.195860] Call Trace:
+> [  146.195869]  [<ffffffff81069538>] lockdep_rcu_dereference+0x9d/0xa5
+> [  146.195875]  [<ffffffff810139ea>] mce_poll+0x66/0x74
+> [  146.195880]  [<ffffffff8110a62e>] do_sys_poll+0x23b/0x3a5
+> [  146.195885]  [<ffffffff811095ad>] ? __pollwait+0x0/0xc7
+> [  146.195889]  [<ffffffff81109674>] ? pollwake+0x0/0x4f
+> [  146.195893]  [<ffffffff81109674>] ? pollwake+0x0/0x4f
+> [  146.195898]  [<ffffffff81094c0e>] ? __rcu_read_unlock+0x28f/0x2ab
+> [  146.195903]  [<ffffffff810d565f>] ? __do_fault+0x256/0x3e5
+> [  146.195908]  [<ffffffff81068775>] ? look_up_lock_class+0x5f/0xc4
+> [  146.195912]  [<ffffffff810d565f>] ? __do_fault+0x256/0x3e5
+> [  146.195916]  [<ffffffff81068c42>] ? register_lock_class+0x1e/0x2d3
+> [  146.195921]  [<ffffffff810a5c05>] ? trace_preempt_on+0x15/0x28
+> [  146.195925]  [<ffffffff810d5755>] ? __do_fault+0x34c/0x3e5
+> [  146.195931]  [<ffffffff8155adbc>] ? _raw_spin_unlock+0x30/0x69
+> [  146.195935]  [<ffffffff8106a45e>] ? mark_lock+0x2d/0x1d8
+> [  146.195940]  [<ffffffff810ba69c>] ? unlock_page+0x25/0x2a
+> [  146.195944]  [<ffffffff8106ab57>] ? __lock_acquire+0x54e/0xd4e
+> [  146.195948]  [<ffffffff810d790d>] ? handle_mm_fault+0x193/0x7c3
+> [  146.195953]  [<ffffffff8104acaa>] ? sigprocmask+0x2f/0xc5
+> [  146.195957]  [<ffffffff8104acaa>] ? sigprocmask+0x2f/0xc5
+> [  146.195962]  [<ffffffff810d4cc0>] ? might_fault+0x4e/0x9e
+> [  146.195966]  [<ffffffff8155aea0>] ? _raw_spin_unlock_irq+0x2b/0x70
+> [  146.195970]  [<ffffffff810a5c05>] ? trace_preempt_on+0x15/0x28
+> [  146.195974]  [<ffffffff8104ad35>] ? sigprocmask+0xba/0xc5
+> [  146.195978]  [<ffffffff8155aeab>] ? _raw_spin_unlock_irq+0x36/0x70
+> [  146.195983]  [<ffffffff8155e378>] ? sub_preempt_count+0x35/0x49
+> [  146.195987]  [<ffffffff8155aed7>] ? _raw_spin_unlock_irq+0x62/0x70
+> [  146.195992]  [<ffffffff8110a973>] sys_ppoll+0xd3/0x13c
+> [  146.195996]  [<ffffffff8106bc89>] ? trace_hardirqs_on_caller+0x117/0x13b
+> [  146.196087]  [<ffffffff8155a60b>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [  146.196094]  [<ffffffff8100277b>] system_call_fastpath+0x16/0x1b
+>
+>
