@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab0KYEUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 23:20:54 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:10331 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab0KYEUx (ORCPT
+	id S1751728Ab0KYEY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 23:24:58 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23118 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab0KYEY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 23:20:53 -0500
-Date: Thu, 25 Nov 2010 13:21:16 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: [GIT PULL] Samsung fixes for 2.6.37-rc4
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
-Message-id: <008201cb8c58$363980e0$a2ac82a0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcuMWDOSTi8f/+1qQ+GT4jFAQPisng==
+	Wed, 24 Nov 2010 23:24:57 -0500
+To: Mark Lord <kernel@teksavvy.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+	<20101118141957.GK6178@parisc-linux.org>
+	<20101118142918.GA18510@infradead.org>
+	<1290100750.3041.72.camel@mulgrave.site>
+	<alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
+	<1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com>
+	<20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com>
+	<alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com>
+	<20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com>
+Date: Wed, 24 Nov 2010 23:23:34 -0500
+In-Reply-To: <4CEDCE60.9050109@teksavvy.com> (Mark Lord's message of "Wed, 24
+	Nov 2010 21:48:00 -0500")
+Message-ID: <yq18w0ini9l.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+>>>>> "Mark" == Mark Lord <kernel@teksavvy.com> writes:
 
-Please pull Samsung fixes from:
+Mark> But mke2fs probably is NOT doing a "single big discard", because
+Mark> for SATA the TRIM command is limited to 64K sectors per
+Mark> range.. and the in-kernel TRIM code only ever does single ranges..
 
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
+How many times must I reiterate that this is not true?
 
-These things are for small fix on 2.6.37-rc4.
-If any problems, please let me know.
+Due to various limitations in the way the block layer works we can not
+clear LBA 10 to 20 and LBA 40 to 50 in one command. We don't have an
+infrastructure in place that allows us to operate on several discrete
+areas in one request.
 
-Thanks.
+But for contiguous areas we will cram as many ranges entries in as we
+can fit in the TRIM payload. This means we'll issue one TRIM command for
+every 2 GiB minus change (65535*64*512 / 1048576 = 2047 MiB).
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+In your example above blkdev_issue_discard() will loop over the 100 GiB
+range requested by the caller (filesystem or BLKDISCARD ioctl) and issue
+about fifty TRIM commands to the drive.
 
-The following changes since commit 3561d43fd289f590fdae672e5eb831b8d5cf0bf6:
+Large discards are a best-case scenario (short of SECURE ERASE). So if
+your drive takes forever to perform this operation then all bets are
+off in the TRIM department.
 
-  Linux 2.6.37-rc3 (2010-11-21 15:18:56 -0800)
 
-are available in the git repository at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
+Mark> So doing a discard over an entire drive-encompassing partition,
+Mark> say.. 100GB, will require 3000+ individual TRIM commands. 
 
-Abhilash Kesavan (3):
-      ARM: S3C24XX: Fix Demux error in UART3 irqs on S3C2443 and S3C2416
-      ARM: S3C24XX: Fix UART3 submask on S3C2416 and S3C2443
-      ARM: S5PV210: Fix sysdev related warning messages
+No.
 
-Darius Augulis (1):
-      ARM: S3C64XX: fix uart clock setup for mini6410/real6410
-
-Kukjin Kim (1):
-      ARM: S3C24XX: Fix wrong s3c_gpio_cfgpull
-
-Vasily Khoruzhick (1):
-      ARM: S3C2410: Adapt h1940-bluetooth to gpiolib changes
-
- arch/arm/mach-s3c2410/h1940-bluetooth.c      |    8 ++++----
- arch/arm/mach-s3c2416/irq.c                  |    5 ++---
- arch/arm/mach-s3c2443/irq.c                  |    5 ++---
- arch/arm/mach-s3c64xx/mach-mini6410.c        |    2 +-
- arch/arm/mach-s3c64xx/mach-real6410.c        |    2 +-
- arch/arm/mach-s5pv210/mach-smdkc110.c        |    1 +
- arch/arm/mach-s5pv210/mach-smdkv210.c        |    1 +
- arch/arm/plat-s3c24xx/spi-bus0-gpe11_12_13.c |    6 +++---
- arch/arm/plat-s3c24xx/spi-bus1-gpd8_9_10.c   |    6 +++---
- arch/arm/plat-s3c24xx/spi-bus1-gpg5_6_7.c    |    6 +++---
- 10 files changed, 21 insertions(+), 21 deletions(-)
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
