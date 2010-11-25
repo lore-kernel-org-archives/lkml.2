@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab0KYQOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:14:00 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44934 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab0KYQN7 convert rfc822-to-8bit (ORCPT
+	id S1753912Ab0KYQOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:14:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50482 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab0KYQOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:13:59 -0500
+	Thu, 25 Nov 2010 11:14:36 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=YYyHsWd4c3itgO/8e/sJ+Tqqeyd4w456z6eFaWfo5bCE1Y9/rSCseNu+zFipEpSMlj
-         2cOfvFfZXuFuJ+YK+P3TETI7nPpSHgdLBAwHNMv6QDqeztv+I0AcESJcOJcBrQOpi3C9
-         O27stVRkPdNDgW3w/9bblT4DilTSos1SZaDkg=
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TaCdZ+/yeN1rEnAjL584zonmNl0OuYCskSIUiSe9WD9DBDNDMbXZLbXD3YRwQqkvK3
+         /lDooYOcrgaOaiUQLjF0+bTaCL+gFKQriF9hR5HLi6UD9xdmx2KRXDeP8ansKaOIDy7p
+         02HiYLSYP9Fvob1wSfN+vR/C3g/MXhT4S11qk=
+Message-ID: <4CEE8B67.2050701@gmail.com>
+Date: Thu, 25 Nov 2010 21:14:31 +0500
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101029 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTin4r6-No01A_KNr8aNuYpyWTvmuA3LTDRZ5Lag6@mail.gmail.com>
-References: <AANLkTimahUpEL3cV6pFhkN8KqrphfVMSOw8xAN2=9jPy@mail.gmail.com>
-	<AANLkTin4r6-No01A_KNr8aNuYpyWTvmuA3LTDRZ5Lag6@mail.gmail.com>
-Date: Thu, 25 Nov 2010 17:13:58 +0100
-Message-ID: <AANLkTimLOeZ=sWLP=nM_vSqR1jPDXtR1Dp2Eor+Xfosf@mail.gmail.com>
-Subject: Re: [PATCH 0/13] ACPI / PM: Rework power resources management
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Nobody cared about IRQs at shutdown
+References: <Pine.LNX.4.44L0.1011251056530.22247-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011251056530.22247-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 10:41 AM, Sedat Dilek
-<sedat.dilek@googlemail.com> wrote:
-> On Thu, Nov 25, 2010 at 10:11 AM, Sedat Dilek
-> <sedat.dilek@googlemail.com> wrote:
->> Hi Rafael,
+25.11.2010 21:06, Alan Stern wrote:
+> On Thu, 25 Nov 2010, Alexander E. Patrakov wrote:
+>
+>> Hello.
 >>
-[ ... ]
->> # grep "error:" build_linux-next_next20101124.dileks.2.log
->> /home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/fujitsu-laptop.c:692:
->> error: implicit declaration of function ‘acpi_bus_get_power’
-[ ... ]
->
-> Guess this is conflicting with your patch
-> "12-13-ACPI-PM-Drop-acpi_bus_get_power.patch".
->
-> - Sedat -
->
-> P.S.: Note to myself, add the following snippet for testing purposes:
->
-> [ debian/config/i386/none/config.686 ]
-> ...
-> ##
-> ## file: drivers/platform/x86/Kconfig
-> ##
-> # CONFIG_FUJITSU_LAPTOP is not set
-> - EOT -
->
+>> After switching my Gentoo desktop from sysvinit + openrc to systemd, I
+>> started getting "nobody cared" messages about IRQs 16 and 19 (common
+>> thing: they are assigned to the USB controllers, that's why CC:
+> According to your listing, they are used by uhci-hcd.  Do the messages
+> go away if you unload uhci-hcd before shutting down?
 
-Applied on top of linux-next (next-20101125) and running.
+It is not a module here, so I have to recompile the kernel in order to 
+try this. Will do that tomorrow.
 
-     Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> You may need to debug the uhci-hcd driver. Look into
+> drivers/usb/host/uhci-hcd.c; the uhci_shutdown() routine ought to be
+> called and it ought to call uhci_hc_died(), which in turn calls
+> uhci_reset_hc() in pci-quirks.c, which is supposed to prevent the
+> controller from generating any IRQs.
 
-- Sedat -
+OK, tomorrow I will add some printks there.
+
+> Do you have any USB devices attached to bus 3 or bus 6?
+
+Yes:
+
+Bus 006 Device 002: ID 05d8:4002 Ultima Electronics Corp. Artec Ultima 
+2000 (GT6801 based)/Lifetec LT9385/ScanMagic 1200 UB Plus Scanner
+
+Should I unplug it and retest the bug now?
+
+-- 
+Alexander E. Patrakov
