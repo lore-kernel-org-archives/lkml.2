@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab0KYIsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 03:48:50 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:4763 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab0KYIst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 03:48:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ky0gsK4BTX20C76CYxoANfggez2RdPkguBErJYNJZ4D8VaGmb7qB/sRzfk1LLp2aiH
-         cKw3qOarc5hCxX+Bfgmg==
+	id S1752025Ab0KYItg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 03:49:36 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57126 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337Ab0KYItf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 03:49:35 -0500
+Message-ID: <4CEE1FD2.7040707@cn.fujitsu.com>
+Date: Thu, 25 Nov 2010 16:35:30 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1290665350.2072.521.camel@laptop>
-References: <1290340877.2245.124.camel@localhost>
-	<8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
-	<1290348259.2245.172.camel@localhost>
-	<1290361473.2153.39.camel@laptop>
-	<AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
-	<1290644675.2405.90.camel@minggr.sh.intel.com>
-	<1290665350.2072.521.camel@laptop>
-Date: Thu, 25 Nov 2010 09:48:46 +0100
-Message-ID: <AANLkTimZaNC4_O5p=Deq9eBxMCm_GfK+tF0pgpncnfoA@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/2] rcu: Fix series of spurious RCU softirqs
+References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com> <4CEDDB2A.2020807@cn.fujitsu.com> <20101125073857.GB2538@nowhere>
+In-Reply-To: <20101125073857.GB2538@nowhere>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-25 16:34:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-25 16:49:50,
+	Serialize complete at 2010-11-25 16:49:50
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 7:09 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2010-11-25 at 08:24 +0800, Lin Ming wrote:
->> On Tue, 2010-11-23 at 18:00 +0800, Stephane Eranian wrote:
->> > On Sun, Nov 21, 2010 at 6:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > > On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
->> > >> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
->> > >> > >
->> > >> > > 2. Uncore pmu NMI handling
->> > >> > >
->> > >> > > All the 4 cores are programmed to receive uncore counter overflow
->> > >> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
->> > >> > > counters enabled by all 4 cores.
->> > >> >
->> > >> > Really for uncore monitoring there is no need to use an NMI handler.
->> > >> > You can't profile a core anyways, so you can just delay the reporting
->> > >> > a little bit. It may simplify the code to not use one here
->> > >> > and just use an ordinary handler.
->> > >>
->> > >> OK, I can use on ordinary interrupt handler here.
->> > >
->> > > Does the hardware actually allow using a different interrupt source?
->> > >
->> > It does not. It's using whatever you've programmed into the APIC
->> > LVT vector, AFAIK. Uncore interrupt mode is enabled via
->> > IA32_DEBUGCTL. Regarless of sampling or not, you need the interrupt
->> > to virtualize the counters to 64 bits.
+On 11/25/2010 03:38 PM, Frederic Weisbecker wrote:
+> On Thu, Nov 25, 2010 at 11:42:34AM +0800, Lai Jiangshan wrote:
+>> On 11/24/2010 08:31 AM, Frederic Weisbecker wrote:
+>>> Hi,
+>>>
+>>> I've observed some not so unfrequent series of spurious rcu
+>>> softirqs, sometimes happening at each ticks for a random
+>>> while.
+>>>
+>>> These patches aims at fixing them.
+>>>
+>>> Thanks.
+>>>
+>>> Frederic Weisbecker (2):
+>>>   rcu: Don't chase unnecessary quiescent states after extended grace periods
+>>>   rcu: Stop checking quiescent states after grace period completion from remote
+>>>
 >>
->> If only counting(perf stat) makes sense for uncore events, do we still
->> need an interrupt handler?
->
-> Yep, I see no reason to dis-allow sampling. Sure its hard to make sense
-> of it, but since there are people who offline all but one cpu of a
-> package, I bet there are people who will run just one task on a package
-> as well.
->
-> Just because it doesn't make sense in general doesn't mean there isn't
-> anybody who'd want to do it and actually knows wth he's doing.
->
->> 48 bits counter is not that easy to overflow in practice.
->
-> Still..
->
-Agreed.
+>> If we ensure rdp->gpnum >= rdp->completed is always true, the problems as
+>> you described will not be existed. Or maybe I misunderstand you.
+>>
+>> rdp->gpnum >= rdp->completed is a very important guarantee I think.
+>> (In my RCURING, it is guaranteed.) I'm afraid there are some other
+>> problems still hidden if it is not guaranteed.
+>>
+>> so I recommend: (code is better than words)
+>>
+>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>> index d5bc439..af4e87a 100644
+>> --- a/kernel/rcutree.c
+>> +++ b/kernel/rcutree.c
+>> @@ -648,6 +648,13 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+>>  
+>>  		/* Remember that we saw this grace-period completion. */
+>>  		rdp->completed = rnp->completed;
+>> +
+>> +		/* Ensure ->gpnum >= ->completed after NO_HZ */
+>> +		if (unlikely(rnp->completed - rdp->gpnum > 0
+>> +				|| rdp->gpnum - rnp->gpnum > 0)) {
+>> +			rdp->gpnum = rnp->completed;
+>> +			rdp->qs_pending = 0;
+> 
+> 
+> That's an alternative to my first patch yeah.
+
+Since rdp->gpnum >= rdp->completed is guaranteed.
+your second patch is not needed, the problem is also fixed.
+
+if rnp->gpnum == rnp->completed, rcu_report_qs_rdp() will not be called.
+it is because rdp->qs_pending == 0 when rnp->gpnum == rnp->completed.
+
+
+And if rdp->gpnum >= rdp->completed
+> must be a guarantee outside the rnp lock, then it's certainly better because
+> the lock is relaxed between rcu_process_gp_end() and note_new_gpnum(), and
+> both values are async in this lockless frame.
+> 
+> But perhaps this shouldn't touch rdp->qs_pending:
+
+if rdp->gpnum == rnp->completed, it means we don't need a qs for rdp->gpnum,
+it is completed. so we must set rdp->qs_pending = 0;
+
+when we really need a qs, rdp->qs_pending will be fixed in note_new_gp_new().
+
+> 
+> "if (rnp->completed > rdp->gpnum || rdp->gpnum > rnp->gpnum)" is not
+> a guarantee that we don't need to find quiescent states.
+> 
+> but rnp->completed == rnp->gpnum would provide that guarantee.
+> That said, note_new_gp_new() would fix the value of rdp->qs_pending.
+> 
+> Thanks.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
