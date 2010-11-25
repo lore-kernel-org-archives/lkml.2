@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab0KYIGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 03:06:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36659 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab0KYIGK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 03:06:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Dr+vEaroDsWmw3PuoVktTZVKu7pnwkyQAMFt5mKVidG+XzwRfM1so4U4m0ieX1tPL8
-         RShN3D7743EgvFtcrDQvq6yxC8hfC4XFTo4o98SSwVi1kbypnlT1nKu/gDoi5Tm3Lwqb
-         Vvdxj0wVJTXHifqYIGz7piH2WgHnVk4igoIZw=
-Date: Thu, 25 Nov 2010 10:06:04 +0200
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 6/8] ASoC: simone: fix resource leak in simone_init
-	error path
-Message-ID: <20101125080604.GL14080@gw.healthdatacare.com>
-References: <1290668785.30158.7.camel@mola> <1290669150.30158.18.camel@mola>
+	id S1751658Ab0KYIHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 03:07:10 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:57083 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab0KYIHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 03:07:09 -0500
+X-ASG-Debug-ID: 1290672427-6da359860001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CEE1928.3080809@fusionio.com>
+Date: Thu, 25 Nov 2010 09:07:04 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290669150.30158.18.camel@mola>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block bits for 2.6.37-rc3
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] block bits for 2.6.37-rc3
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1290672427
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.1851 1.0000 -0.9073
+X-Barracuda-Spam-Score: -0.91
+X-Barracuda-Spam-Status: No, SCORE=-0.91 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.47618
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 03:12:30PM +0800, Axel Lin wrote:
-> Fix the error path to properly free allocated resources.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi Linus,
 
-Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+The "big" part here is the xen/blkfront transition to a
+functional barrier replacement setup. Other than that,
+a few fixes for build warnings/breaks, one more RCU fix
+for the ioprio code, and a fix for a bug in the
+blk-throttle code.
 
-Thanks for catching this.
+Please pull.
 
-> ---
->  sound/soc/ep93xx/simone.c |   18 ++++++++++--------
->  1 files changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/sound/soc/ep93xx/simone.c b/sound/soc/ep93xx/simone.c
-> index 4b0d199..2868179 100644
-> --- a/sound/soc/ep93xx/simone.c
-> +++ b/sound/soc/ep93xx/simone.c
-> @@ -54,24 +54,26 @@ static int __init simone_init(void)
->  
->  	ret = platform_device_add(simone_snd_ac97_device);
->  	if (ret)
-> -		goto fail;
-> +		goto fail1;
->  
->  	simone_snd_device = platform_device_alloc("soc-audio", -1);
->  	if (!simone_snd_device) {
->  		ret = -ENOMEM;
-> -		goto fail;
-> +		goto fail2;
->  	}
->  
->  	platform_set_drvdata(simone_snd_device, &snd_soc_simone);
->  	ret = platform_device_add(simone_snd_device);
-> -	if (ret) {
-> -		platform_device_put(simone_snd_device);
-> -		goto fail;
-> -	}
-> +	if (ret)
-> +		goto fail3;
->  
-> -	return ret;
-> +	return 0;
->  
-> -fail:
-> +fail3:
-> +	platform_device_put(simone_snd_device);
-> +fail2:
-> +	platform_device_del(simone_snd_ac97_device);
-> +fail1:
->  	platform_device_put(simone_snd_ac97_device);
->  	return ret;
->  }
-> -- 
-> 1.7.2
-> 
-> 
+  git://git.kernel.dk/linux-2.6-block.git for-linus
+
+Greg Thelen (1):
+      ioprio: grab rcu_read_lock in sys_ioprio_{set,get}()
+
+Jens Axboe (2):
+      Merge branch 'upstream/blkfront' of git://git.kernel.org/.../jeremy/xen into for-linus
+      cciss: fix build for PROC_FS disabled
+
+Jeremy Fitzhardinge (4):
+      xen/blkfront: map REQ_FLUSH into a full barrier
+      xen/blkfront: change blk_shadow.request to proper pointer
+      xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
+      xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
+
+Vivek Goyal (2):
+      blk-throttle: Fix calculation of max number of WRITES to be dispatched
+      block: fix amiga and atari floppy driver compile warning
+
+ block/blk-throttle.c         |    2 +-
+ drivers/block/amiflop.c      |    2 +-
+ drivers/block/ataflop.c      |    2 +-
+ drivers/block/cciss.c        |    3 +-
+ drivers/block/xen-blkfront.c |   55 +++++++++++++++++++++++++----------------
+ fs/ioprio.c                  |   31 ++++-------------------
+ 6 files changed, 43 insertions(+), 52 deletions(-)
+
+-- 
+Jens Axboe
+
