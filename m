@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab0KYKsL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 05:48:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62187 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab0KYKsJ (ORCPT
+	id S1752543Ab0KYKs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 05:48:26 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38104 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab0KYKsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 05:48:09 -0500
-Subject: Re: [PATCH] ASoC: neo1973_gta02_wm8753: fix wrong parameter for
- snd_soc_register_dai and snd_soc_unregister_dai
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Graeme Gregory <graeme@openmoko.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1290675056.1928.1.camel@mola>
-References: <1290675056.1928.1.camel@mola>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Nov 2010 10:48:05 +0000
-Message-ID: <1290682085.3302.15.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Nov 2010 05:48:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=RMotp0mjyBm5iM74YjlmKo8HtaB/sGQH+OmY7CsFCXCu+qWlVdF7r9MIyZ/hNu2qQF
+         f5LbQ2VMkDvm3xY/keHoB597w6XbH47d6uvaN37itZC4lhhpnUGvHH/3oIkpFw3YiAbo
+         0QqSpnP01UIZAa0qOnvT+PFyMtAFmx+8ITiZo=
+Date: Thu, 25 Nov 2010 13:48:17 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Lin Mac <mkl0301@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] ARM: cns3xxx: Add architecture definition for
+ EHCI/OHCI controller
+Message-ID: <20101125104817.GA31779@oksana.dev.rtsoft.ru>
+References: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
+ <1290443565-20766-3-git-send-email-mkl0301@gmail.com>
+ <20101124161122.GA15902@oksana.dev.rtsoft.ru>
+ <AANLkTimMEALmH08RKQet_MGiyEFYpD2kVtPtmKJpmhtZ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimMEALmH08RKQet_MGiyEFYpD2kVtPtmKJpmhtZ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-25 at 16:50 +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/samsung/neo1973_gta02_wm8753.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+On Thu, Nov 25, 2010 at 03:25:38PM +0800, Lin Mac wrote:
+[...]
+> >  #include <linux/module.h>
+> >  #include <linux/io.h>
+> >  #include <linux/delay.h>
+> > +#include <asm/atomic.h>
+> It's not necessary for mach/pm.h already included it, right?
+
+Technically, it's not necessary. But in Linux we don't rely on
+headers including other headers. Think that someday mach/pm.h
+may not include asm/atomic.h, so the build will break.
+
+Thanks,
+
 > 
-> diff --git a/sound/soc/samsung/neo1973_gta02_wm8753.c b/sound/soc/samsung/neo1973_gta02_wm8753.c
-> index 920e8d1..8c65b63 100644
-> --- a/sound/soc/samsung/neo1973_gta02_wm8753.c
-> +++ b/sound/soc/samsung/neo1973_gta02_wm8753.c
-> @@ -438,7 +438,7 @@ static int __init neo1973_gta02_init(void)
->  		return -ENOMEM;
->  
->  	/* register bluetooth DAI here */
-> -	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, -1, &bt_dai);
-> +	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, &bt_dai);
->  	if (ret) {
->  		platform_device_put(neo1973_gta02_snd_device);
->  		return ret;
-> @@ -491,7 +491,7 @@ module_init(neo1973_gta02_init);
->  
->  static void __exit neo1973_gta02_exit(void)
->  {
-> -	snd_soc_unregister_dai(&neo1973_gta02_snd_device->dev, -1);
-> +	snd_soc_unregister_dai(&neo1973_gta02_snd_device->dev);
->  	platform_device_unregister(neo1973_gta02_snd_device);
->  	gpio_free(GTA02_GPIO_HP_IN);
->  	gpio_free(GTA02_GPIO_AMP_SHUT);
+> >  #include <mach/system.h>
+> >  #include <mach/cns3xxx.h>
+> >  #include <mach/pm.h>
+> > @@ -117,3 +118,6 @@ int cns3xxx_cpu_clock(void)
+> >        return cpu;
+> >  }
+> >  EXPORT_SYMBOL(cns3xxx_cpu_clock);
+> > +
+> > +atomic_t usb_pwr_ref = ATOMIC_INIT(0);
+> > +EXPORT_SYMBOL(usb_pwr_ref);
 
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
