@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab0KYCa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 21:30:27 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35125 "EHLO
+	id S1756739Ab0KYCad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 21:30:33 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:35128 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab0KYCaZ (ORCPT
+	with ESMTP id S1756651Ab0KYCac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 21:30:25 -0500
+	Wed, 24 Nov 2010 21:30:32 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: sakari.ailus@maxwell.research.nokia.com,
         broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-Subject: [RFC/PATCH v6 06/12] media: Media device information query
-Date: Thu, 25 Nov 2010 03:28:13 +0100
-Message-Id: <1290652099-15102-7-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [RFC/PATCH v6 07/12] media: Entities, pads and links enumeration
+Date: Thu, 25 Nov 2010 03:28:14 +0100
+Message-Id: <1290652099-15102-8-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,185 +22,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create the following ioctl and implement it at the media device level to
-query device information.
+Create the following two ioctls and implement them at the media device
+level to enumerate entities, pads and links.
 
-- MEDIA_IOC_DEVICE_INFO: Query media device information
+- MEDIA_IOC_ENUM_ENTITIES: Enumerate entities and their properties
+- MEDIA_IOC_ENUM_LINKS: Enumerate all pads and links for a given entity
 
-The ioctl and its data structure are defined in the new kernel header
-linux/media.h available to userspace applications.
+Entity IDs can be non-contiguous. Userspace applications should
+enumerate entities using the MEDIA_ENTITY_ID_FLAG_NEXT flag. When the
+flag is set in the entity ID, the MEDIA_IOC_ENUM_ENTITIES will return
+the next entity with an ID bigger than the requested one.
+
+Only forward links that originate at one of the entity's source pads are
+returned during the enumeration process.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 ---
- Documentation/DocBook/media-entities.tmpl          |   12 ++
- Documentation/DocBook/v4l/media-controller.xml     |   10 ++
- Documentation/DocBook/v4l/media-func-close.xml     |   59 +++++++++
- Documentation/DocBook/v4l/media-func-ioctl.xml     |  116 +++++++++++++++++
- Documentation/DocBook/v4l/media-func-open.xml      |   94 ++++++++++++++
- .../DocBook/v4l/media-ioc-device-info.xml          |  132 ++++++++++++++++++++
- drivers/media/media-device.c                       |   57 +++++++++
- include/linux/Kbuild                               |    1 +
- include/linux/media.h                              |   45 +++++++
- include/media/media-device.h                       |    3 +
- 10 files changed, 529 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/DocBook/v4l/media-func-close.xml
- create mode 100644 Documentation/DocBook/v4l/media-func-ioctl.xml
- create mode 100644 Documentation/DocBook/v4l/media-func-open.xml
- create mode 100644 Documentation/DocBook/v4l/media-ioc-device-info.xml
- create mode 100644 include/linux/media.h
+ Documentation/DocBook/media-entities.tmpl          |    8 +
+ Documentation/DocBook/v4l/media-controller.xml     |    2 +
+ .../DocBook/v4l/media-ioc-device-info.xml          |    3 +-
+ .../DocBook/v4l/media-ioc-enum-entities.xml        |  287 ++++++++++++++++++++
+ Documentation/DocBook/v4l/media-ioc-enum-links.xml |  202 ++++++++++++++
+ drivers/media/media-device.c                       |  123 +++++++++
+ include/linux/media.h                              |   81 ++++++
+ include/media/media-entity.h                       |   24 +--
+ 8 files changed, 706 insertions(+), 24 deletions(-)
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-links.xml
 
 diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
-index 61d6f11..6af3375 100644
+index 6af3375..6e7dae4 100644
 --- a/Documentation/DocBook/media-entities.tmpl
 +++ b/Documentation/DocBook/media-entities.tmpl
-@@ -11,6 +11,10 @@
- <!ENTITY func-select "<link linkend='func-select'><function>select()</function></link>">
- <!ENTITY func-write "<link linkend='func-write'><function>write()</function></link>">
- 
-+<!ENTITY media-func-close "<link linkend='media-func-close'><function>close()</function></link>">
-+<!ENTITY media-func-ioctl "<link linkend='media-func-ioctl'><function>ioctl()</function></link>">
-+<!ENTITY media-func-open "<link linkend='media-func-open'><function>open()</function></link>">
-+
- <!-- Ioctls -->
- <!ENTITY VIDIOC-CROPCAP "<link linkend='vidioc-cropcap'><constant>VIDIOC_CROPCAP</constant></link>">
- <!ENTITY VIDIOC-DBG-G-CHIP-IDENT "<link linkend='vidioc-dbg-g-chip-ident'><constant>VIDIOC_DBG_G_CHIP_IDENT</constant></link>">
-@@ -87,6 +91,8 @@
- <!ENTITY VIDIOC-TRY-FMT "<link linkend='vidioc-g-fmt'><constant>VIDIOC_TRY_FMT</constant></link>">
+@@ -92,6 +92,8 @@
  <!ENTITY VIDIOC-UNSUBSCRIBE-EVENT "<link linkend='vidioc-subscribe-event'><constant>VIDIOC_UNSUBSCRIBE_EVENT</constant></link>">
  
-+<!ENTITY MEDIA-IOC-DEVICE-INFO "<link linkend='media-ioc-device-info'><constant>MEDIA_IOC_DEVICE_INFO</constant></link>">
-+
+ <!ENTITY MEDIA-IOC-DEVICE-INFO "<link linkend='media-ioc-device-info'><constant>MEDIA_IOC_DEVICE_INFO</constant></link>">
++<!ENTITY MEDIA-IOC-ENUM-ENTITIES "<link linkend='media-ioc-enum-entities'><constant>MEDIA_IOC_ENUM_ENTITIES</constant></link>">
++<!ENTITY MEDIA-IOC-ENUM-LINKS "<link linkend='media-ioc-enum-links'><constant>MEDIA_IOC_ENUM_LINKS</constant></link>">
+ 
  <!-- Types -->
  <!ENTITY v4l2-std-id "<link linkend='v4l2-std-id'>v4l2_std_id</link>">
- 
-@@ -181,6 +187,8 @@
- <!ENTITY v4l2-vbi-format "struct&nbsp;<link linkend='v4l2-vbi-format'>v4l2_vbi_format</link>">
+@@ -188,6 +190,10 @@
  <!ENTITY v4l2-window "struct&nbsp;<link linkend='v4l2-window'>v4l2_window</link>">
  
-+<!ENTITY media-device-info "struct&nbsp;<link linkend='media-device-info'>media_device_info</link>">
-+
+ <!ENTITY media-device-info "struct&nbsp;<link linkend='media-device-info'>media_device_info</link>">
++<!ENTITY media-entity-desc "struct&nbsp;<link linkend='media-entity-desc'>media_entity_desc</link>">
++<!ENTITY media-links-enum "struct&nbsp;<link linkend='media-links-enum'>media_links_enum</link>">
++<!ENTITY media-pad-desc "struct&nbsp;<link linkend='media-pad-desc'>media_pad_desc</link>">
++<!ENTITY media-link-desc "struct&nbsp;<link linkend='media-link-desc'>media_link_desc</link>">
+ 
  <!-- Error Codes -->
  <!ENTITY EACCES "<errorcode>EACCES</errorcode> error code">
- <!ENTITY EAGAIN "<errorcode>EAGAIN</errorcode> error code">
-@@ -322,6 +330,10 @@
- <!ENTITY sub-media-indices SYSTEM "media-indices.tmpl">
- 
- <!ENTITY sub-media-controller SYSTEM "v4l/media-controller.xml">
-+<!ENTITY sub-media-open SYSTEM "v4l/media-func-open.xml">
-+<!ENTITY sub-media-close SYSTEM "v4l/media-func-close.xml">
-+<!ENTITY sub-media-ioctl SYSTEM "v4l/media-func-ioctl.xml">
-+<!ENTITY sub-media-ioc-device-info SYSTEM "v4l/media-ioc-device-info.xml">
+@@ -334,6 +340,8 @@
+ <!ENTITY sub-media-close SYSTEM "v4l/media-func-close.xml">
+ <!ENTITY sub-media-ioctl SYSTEM "v4l/media-func-ioctl.xml">
+ <!ENTITY sub-media-ioc-device-info SYSTEM "v4l/media-ioc-device-info.xml">
++<!ENTITY sub-media-ioc-enum-entities SYSTEM "v4l/media-ioc-enum-entities.xml">
++<!ENTITY sub-media-ioc-enum-links SYSTEM "v4l/media-ioc-enum-links.xml">
  
  <!-- Function Reference -->
  <!ENTITY close SYSTEM "v4l/func-close.xml">
 diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
-index f89228d..a46b786 100644
+index a46b786..2c4fd2b 100644
 --- a/Documentation/DocBook/v4l/media-controller.xml
 +++ b/Documentation/DocBook/v4l/media-controller.xml
-@@ -74,3 +74,13 @@
-     pad to a sink pad.</para>
-   </section>
- </chapter>
-+
-+<appendix id="media-user-func">
-+  <title>Function Reference</title>
-+  <!-- Keep this alphabetically sorted. -->
-+  &sub-media-open;
-+  &sub-media-close;
-+  &sub-media-ioctl;
-+  <!-- All ioctls go here. -->
-+  &sub-media-ioc-device-info;
-+</appendix>
-diff --git a/Documentation/DocBook/v4l/media-func-close.xml b/Documentation/DocBook/v4l/media-func-close.xml
+@@ -83,4 +83,6 @@
+   &sub-media-ioctl;
+   <!-- All ioctls go here. -->
+   &sub-media-ioc-device-info;
++  &sub-media-ioc-enum-entities;
++  &sub-media-ioc-enum-links;
+ </appendix>
+diff --git a/Documentation/DocBook/v4l/media-ioc-device-info.xml b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+index ffd0fb8..aa25c31 100644
+--- a/Documentation/DocBook/v4l/media-ioc-device-info.xml
++++ b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+@@ -27,7 +27,8 @@
+       <varlistentry>
+ 	<term><parameter>fd</parameter></term>
+ 	<listitem>
+-	  <para>&fd;</para>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
+ 	</listitem>
+       </varlistentry>
+       <varlistentry>
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-entities.xml b/Documentation/DocBook/v4l/media-ioc-enum-entities.xml
 new file mode 100644
-index 0000000..be149c8
+index 0000000..edb1acc
 --- /dev/null
-+++ b/Documentation/DocBook/v4l/media-func-close.xml
-@@ -0,0 +1,59 @@
-+<refentry id="media-func-close">
++++ b/Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+@@ -0,0 +1,287 @@
++<refentry id="media-ioc-enum-entities">
 +  <refmeta>
-+    <refentrytitle>media close()</refentrytitle>
++    <refentrytitle>ioctl MEDIA_IOC_ENUM_ENTITIES</refentrytitle>
 +    &manvol;
 +  </refmeta>
 +
 +  <refnamediv>
-+    <refname>media-close</refname>
-+    <refpurpose>Close a media device</refpurpose>
++    <refname>MEDIA_IOC_ENUM_ENTITIES</refname>
++    <refpurpose>Enumerate entities and their properties</refpurpose>
 +  </refnamediv>
 +
 +  <refsynopsisdiv>
 +    <funcsynopsis>
-+      <funcsynopsisinfo>#include &lt;unistd.h&gt;</funcsynopsisinfo>
-+      <funcprototype>
-+	<funcdef>int <function>close</function></funcdef>
-+	<paramdef>int <parameter>fd</parameter></paramdef>
-+      </funcprototype>
-+    </funcsynopsis>
-+  </refsynopsisdiv>
-+
-+  <refsect1>
-+    <title>Arguments</title>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><parameter>fd</parameter></term>
-+	<listitem>
-+	  <para>&fd;</para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Description</title>
-+
-+    <para>Closes the media device. Resources associated with the file descriptor
-+    are freed. The device configuration remain unchanged.</para>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Return Value</title>
-+
-+    <para><function>close</function> returns 0 on success. On error, -1 is
-+    returned, and <varname>errno</varname> is set appropriately. Possible error
-+    codes are:</para>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><errorcode>EBADF</errorcode></term>
-+	<listitem>
-+	  <para><parameter>fd</parameter> is not a valid open file descriptor.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+</refentry>
-diff --git a/Documentation/DocBook/v4l/media-func-ioctl.xml b/Documentation/DocBook/v4l/media-func-ioctl.xml
-new file mode 100644
-index 0000000..bda8604
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-func-ioctl.xml
-@@ -0,0 +1,116 @@
-+<refentry id="media-func-ioctl">
-+  <refmeta>
-+    <refentrytitle>media ioctl()</refentrytitle>
-+    &manvol;
-+  </refmeta>
-+
-+  <refnamediv>
-+    <refname>media-ioctl</refname>
-+    <refpurpose>Control a media device</refpurpose>
-+  </refnamediv>
-+
-+  <refsynopsisdiv>
-+    <funcsynopsis>
-+      <funcsynopsisinfo>#include &lt;sys/ioctl.h&gt;</funcsynopsisinfo>
 +      <funcprototype>
 +	<funcdef>int <function>ioctl</function></funcdef>
 +	<paramdef>int <parameter>fd</parameter></paramdef>
 +	<paramdef>int <parameter>request</parameter></paramdef>
-+	<paramdef>void *<parameter>argp</parameter></paramdef>
++	<paramdef>struct media_entity_desc *<parameter>argp</parameter></paramdef>
 +      </funcprototype>
 +    </funcsynopsis>
 +  </refsynopsisdiv>
@@ -212,20 +144,20 @@ index 0000000..bda8604
 +      <varlistentry>
 +	<term><parameter>fd</parameter></term>
 +	<listitem>
-+	  <para>&fd;</para>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
 +	</listitem>
 +      </varlistentry>
 +      <varlistentry>
 +	<term><parameter>request</parameter></term>
 +	<listitem>
-+	  <para>Media ioctl request code as defined in the media.h header file,
-+	  for example MEDIA_IOC_SETUP_LINK.</para>
++	  <para>MEDIA_IOC_ENUM_ENTITIES</para>
 +	</listitem>
 +      </varlistentry>
 +      <varlistentry>
 +	<term><parameter>argp</parameter></term>
 +	<listitem>
-+	  <para>Pointer to a request-specific structure.</para>
++	  <para></para>
 +	</listitem>
 +      </varlistentry>
 +    </variablelist>
@@ -233,186 +165,258 @@ index 0000000..bda8604
 +
 +  <refsect1>
 +    <title>Description</title>
-+    <para>The <function>ioctl()</function> function manipulates media device
-+    parameters. The argument <parameter>fd</parameter> must be an open file
-+    descriptor.</para>
-+    <para>The ioctl <parameter>request</parameter> code specifies the media
-+    function to be called. It has encoded in it whether the argument is an
-+    input, output or read/write parameter, and the size of the argument
-+    <parameter>argp</parameter> in bytes.</para>
-+    <para>Macros and structures definitions specifying media ioctl requests and
-+    their parameters are located in the media.h header file. All media ioctl
-+    requests, their respective function and parameters are specified in
-+    <xref linkend="media-user-func" />.</para>
++    <para>To query the attributes of an entity, applications set the id field
++    of a &media-entity-desc; structure and call the MEDIA_IOC_ENUM_ENTITIES
++    ioctl with a pointer to this structure. The driver fills the rest of the
++    structure or returns an &EINVAL; when the id is invalid.</para>
++    <para>Entities can be enumerated by or'ing the id with the
++    <constant>MEDIA_ENTITY_ID_FLAG_NEXT</constant> flag. The driver will return
++    information about the entity with the smallest id strictly larger than the
++    requested one ('next entity'), or the &EINVAL; if there is none.</para>
++    <para>Entity IDs can be non-contiguous. Applications must
++    <emphasis>not</emphasis> try to enumerate entities by calling
++    MEDIA_IOC_ENUM_ENTITIES with increasing id's until they get an error.</para>
++    <para>Two or more entities that share a common non-zero
++    <structfield>group_id</structfield> value are considered as logically
++    grouped. Groups are used to report
++    <itemizedlist>
++      <listitem>ALSA, VBI and video nodes that carry the same media
++      stream</listitem>
++      <listitem>lens and flash controllers associated with a sensor</listitem>
++    </itemizedlist>
++    </para>
++
++    <table pgwide="1" frame="none" id="media-entity-desc">
++      <title>struct <structname>media_entity_desc</structname></title>
++      <tgroup cols="5">
++	<colspec colname="c1" />
++	<colspec colname="c2" />
++	<colspec colname="c3" />
++	<colspec colname="c4" />
++	<colspec colname="c5" />
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>id</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity id, set by the application. When the id is or'ed with
++	    <constant>MEDIA_ENTITY_ID_FLAG_NEXT</constant>, the driver clears
++	    the flag and returns the first entity with a larger id.</entry>
++	  </row>
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>name</structfield>[32]</entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity name as an UTF-8 NULL-terminated string.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>type</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity type, see <xref linkend="media-entity-type" /> for details.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>revision</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity revision in a driver/hardware specific format.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity flags, see <xref linkend="media-entity-flag" /> for details.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>group_id</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity group ID</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>pads</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Number of pads</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>links</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Total number of outbound links. Inbound links are not counted
++	    in this field.</entry>
++	  </row>
++	  <row>
++	    <entry>union</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>v4l</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for V4L sub-devices and nodes only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>major</structfield></entry>
++	    <entry>V4L device node major number. For V4L sub-devices with no
++	    device node, set by the driver to 0.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>minor</structfield></entry>
++	    <entry>V4L device node minor number. For V4L sub-devices with no
++	    device node, set by the driver to 0.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>fb</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for frame buffer nodes only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>major</structfield></entry>
++	    <entry>Frame buffer device node major number.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>minor</structfield></entry>
++	    <entry>Frame buffer device node minor number.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>int</entry>
++	    <entry><structfield>alsa</structfield></entry>
++	    <entry></entry>
++	    <entry>ALSA card number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>int</entry>
++	    <entry><structfield>dvb</structfield></entry>
++	    <entry></entry>
++	    <entry>DVB card number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>__u8</entry>
++	    <entry><structfield>raw</structfield>[184]</entry>
++	    <entry></entry>
++	    <entry></entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-entity-type">
++      <title>Media entity types</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_NODE</constant></entry>
++	    <entry>Unknown device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_NODE_V4L</constant></entry>
++	    <entry>V4L video, radio or vbi device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_NODE_FB</constant></entry>
++	    <entry>Frame buffer device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_NODE_ALSA</constant></entry>
++	    <entry>ALSA card</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_NODE_DVB</constant></entry>
++	    <entry>DVB card</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_SUBDEV</constant></entry>
++	    <entry>Unknown V4L sub-device</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_SUBDEV_SENSOR</constant></entry>
++	    <entry>Video sensor</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_SUBDEV_FLASH</constant></entry>
++	    <entry>Flash controller</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_SUBDEV_LENS</constant></entry>
++	    <entry>Lens controller</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-entity-flag">
++      <title>Media entity flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_FLAG_DEFAULT</constant></entry>
++	    <entry>Default entity for its type. Used to discover the default
++	    audio, VBI and video devices, the default camera sensor, ...</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
 +  </refsect1>
 +
 +  <refsect1>
-+    <title>Return Value</title>
-+
-+    <para><function>ioctl()</function> returns <returnvalue>0</returnvalue> on
-+    success. On failure, <returnvalue>-1</returnvalue> is returned, and the
-+    <varname>errno</varname> variable is set appropriately. Generic error codes
-+    are listed below, and request-specific error codes are listed in the
-+    individual requests descriptions.</para>
-+    <para>When an ioctl that takes an output or read/write parameter fails,
-+    the parameter remains unmodified.</para>
++    &return-value;
 +
 +    <variablelist>
-+      <varlistentry>
-+	<term><errorcode>EBADF</errorcode></term>
-+	<listitem>
-+	  <para><parameter>fd</parameter> is not a valid open file descriptor.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>EFAULT</errorcode></term>
-+	<listitem>
-+	  <para><parameter>argp</parameter> references an inaccessible memory
-+	  area.</para>
-+	</listitem>
-+      </varlistentry>
 +      <varlistentry>
 +	<term><errorcode>EINVAL</errorcode></term>
 +	<listitem>
-+	  <para>The <parameter>request</parameter> or the data pointed to by
-+	  <parameter>argp</parameter> is not valid. This is a very common error
-+	  code, see the individual ioctl requests listed in
-+	  <xref linkend="media-user-func" /> for actual causes.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENOMEM</errorcode></term>
-+	<listitem>
-+	  <para>Insufficient kernel memory was available to complete the
-+	  request.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENOTTY</errorcode></term>
-+	<listitem>
-+	  <para><parameter>fd</parameter> is  not  associated  with  a character
-+	  special device.</para>
++	  <para>The &media-entity-desc; <structfield>id</structfield> references
++	  a non-existing entity.</para>
 +	</listitem>
 +      </varlistentry>
 +    </variablelist>
 +  </refsect1>
 +</refentry>
-diff --git a/Documentation/DocBook/v4l/media-func-open.xml b/Documentation/DocBook/v4l/media-func-open.xml
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-links.xml b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
 new file mode 100644
-index 0000000..f7df034
+index 0000000..ede6d73
 --- /dev/null
-+++ b/Documentation/DocBook/v4l/media-func-open.xml
-@@ -0,0 +1,94 @@
-+<refentry id="media-func-open">
++++ b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+@@ -0,0 +1,202 @@
++<refentry id="media-ioc-enum-links">
 +  <refmeta>
-+    <refentrytitle>media open()</refentrytitle>
++    <refentrytitle>ioctl MEDIA_IOC_ENUM_LINKS</refentrytitle>
 +    &manvol;
 +  </refmeta>
 +
 +  <refnamediv>
-+    <refname>media-open</refname>
-+    <refpurpose>Open a media device</refpurpose>
-+  </refnamediv>
-+
-+  <refsynopsisdiv>
-+    <funcsynopsis>
-+      <funcsynopsisinfo>#include &lt;fcntl.h&gt;</funcsynopsisinfo>
-+      <funcprototype>
-+	<funcdef>int <function>open</function></funcdef>
-+	<paramdef>const char *<parameter>device_name</parameter></paramdef>
-+	<paramdef>int <parameter>flags</parameter></paramdef>
-+      </funcprototype>
-+    </funcsynopsis>
-+  </refsynopsisdiv>
-+
-+  <refsect1>
-+    <title>Arguments</title>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><parameter>device_name</parameter></term>
-+	<listitem>
-+	  <para>Device to be opened.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><parameter>flags</parameter></term>
-+	<listitem>
-+	  <para>Open flags. Access mode must be either <constant>O_RDONLY</constant>
-+	  or <constant>O_RDWR</constant>. Other flags have no effect.</para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+  <refsect1>
-+    <title>Description</title>
-+    <para>To open a media device applications call <function>open()</function>
-+    with the desired device name. The function has no side effects; the device
-+    configuration remain unchanged.</para>
-+    <para>When the device is opened in read-only mode, attemps to modify its
-+    configuration will result in an error, and <varname>errno</varname> will be
-+    set to <errorcode>EBADF</errorcode>.</para>
-+  </refsect1>
-+  <refsect1>
-+    <title>Return Value</title>
-+
-+    <para><function>open</function> returns the new file descriptor on success.
-+    On error, -1 is returned, and <varname>errno</varname> is set appropriately.
-+    Possible error codes are:</para>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><errorcode>EACCES</errorcode></term>
-+	<listitem>
-+	  <para>The requested access to the file is not allowed.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>EMFILE</errorcode></term>
-+	<listitem>
-+	  <para>The  process  already  has  the  maximum number of files open.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENFILE</errorcode></term>
-+	<listitem>
-+	  <para>The system limit on the total number of open files has been
-+	  reached.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENOMEM</errorcode></term>
-+	<listitem>
-+	  <para>Insufficient kernel memory was available.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENXIO</errorcode></term>
-+	<listitem>
-+	  <para>No device corresponding to this device special file exists.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+</refentry>
-diff --git a/Documentation/DocBook/v4l/media-ioc-device-info.xml b/Documentation/DocBook/v4l/media-ioc-device-info.xml
-new file mode 100644
-index 0000000..ffd0fb8
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-ioc-device-info.xml
-@@ -0,0 +1,132 @@
-+<refentry id="media-ioc-device-info">
-+  <refmeta>
-+    <refentrytitle>ioctl MEDIA_IOC_DEVICE_INFO</refentrytitle>
-+    &manvol;
-+  </refmeta>
-+
-+  <refnamediv>
-+    <refname>MEDIA_IOC_DEVICE_INFO</refname>
-+    <refpurpose>Query device information</refpurpose>
++    <refname>MEDIA_IOC_ENUM_LINKS</refname>
++    <refpurpose>Enumerate all pads and links for a given entity</refpurpose>
 +  </refnamediv>
 +
 +  <refsynopsisdiv>
@@ -421,7 +425,7 @@ index 0000000..ffd0fb8
 +	<funcdef>int <function>ioctl</function></funcdef>
 +	<paramdef>int <parameter>fd</parameter></paramdef>
 +	<paramdef>int <parameter>request</parameter></paramdef>
-+	<paramdef>struct media_device_info *<parameter>argp</parameter></paramdef>
++	<paramdef>struct media_links_enum *<parameter>argp</parameter></paramdef>
 +      </funcprototype>
 +    </funcsynopsis>
 +  </refsynopsisdiv>
@@ -433,13 +437,14 @@ index 0000000..ffd0fb8
 +      <varlistentry>
 +	<term><parameter>fd</parameter></term>
 +	<listitem>
-+	  <para>&fd;</para>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
 +	</listitem>
 +      </varlistentry>
 +      <varlistentry>
 +	<term><parameter>request</parameter></term>
 +	<listitem>
-+	  <para>MEDIA_IOC_DEVICE_INFO</para>
++	  <para>MEDIA_IOC_ENUM_LINKS</para>
 +	</listitem>
 +      </varlistentry>
 +      <varlistentry>
@@ -454,240 +459,425 @@ index 0000000..ffd0fb8
 +  <refsect1>
 +    <title>Description</title>
 +
-+    <para>All media devices must support the <constant>MEDIA_IOC_DEVICE_INFO</constant>
-+    ioctl. To query device information, applications call the ioctl with a
-+    pointer to a &media-device-info;. The driver fills the structure and returns
-+    the information to the application.
-+    The ioctl never fails.</para>
++    <para>To enumerate pads and/or links for a given entity, applications set
++    the entity field of a &media-links-enum; structure and initialize the
++    &media-pad-desc; and &media-link-desc; structure arrays pointed by the
++    <structfield>pads</structfield> and <structfield>links</structfield> fields.
++    They then call the MEDIA_IOC_ENUM_LINKS ioctl with a pointer to this
++    structure.</para>
++    <para>If the <structfield>pads</structfield> field is not NULL, the driver
++    fills the <structfield>pads</structfield> array with information about the
++    entity's pads. The array must have enough room to store all the entity's
++    pads. The number of pads can be retrieved with the &MEDIA-IOC-ENUM-ENTITIES;
++    ioctl.</para>
++    <para>If the <structfield>links</structfield> field is not NULL, the driver
++    fills the <structfield>links</structfield> array with information about the
++    entity's outbound links. The array must have enough room to store all the
++    entity's outbound links. The number of outbound links can be retrieved with
++    the &MEDIA-IOC-ENUM-ENTITIES; ioctl.</para>
++    <para>Only forward links that originate at one of the entity's source pads
++    are returned during the enumeration process.</para>
 +
-+    <table pgwide="1" frame="none" id="media-device-info">
-+      <title>struct <structname>media_device_info</structname></title>
++    <table pgwide="1" frame="none" id="media-links-enum">
++      <title>struct <structname>media_links_enum</structname></title>
 +      <tgroup cols="3">
-+	&cs-str;
++        &cs-str;
 +	<tbody valign="top">
 +	  <row>
-+	    <entry>__u8</entry>
-+	    <entry><structfield>driver</structfield>[16]</entry>
-+	    <entry><para>Name of the driver implementing the media API as a
-+	    NUL-terminated ASCII string. The driver version is stored in the
-+	    <structfield>driver_version</structfield> field.</para>
-+	    <para>Driver specific applications can use this information to
-+	    verify the driver identity. It is also useful to work around
-+	    known bugs, or to identify drivers in error reports.</para></entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u8</entry>
-+	    <entry><structfield>model</structfield>[32]</entry>
-+	    <entry>Device model name as a NUL-terminated UTF-8 string. The
-+	    device version is stored in the <structfield>device_version</structfield>
-+	    field and is not be appended to the model name.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u8</entry>
-+	    <entry><structfield>serial</structfield>[40]</entry>
-+	    <entry>Serial number as a NUL-terminated ASCII string.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u8</entry>
-+	    <entry><structfield>bus_info</structfield>[32]</entry>
-+	    <entry>Location of the device in the system as a NUL-terminated
-+	    ASCII string. This includes the bus type name (PCI, USB, ...) and a
-+	    bus-specific identifier.</entry>
-+	  </row>
-+	  <row>
 +	    <entry>__u32</entry>
-+	    <entry><structfield>media_version</structfield></entry>
-+	    <entry>Media API version, formatted with the
-+	    <constant>KERNEL_VERSION()</constant> macro.</entry>
++	    <entry><structfield>entity</structfield></entry>
++	    <entry>Entity id, set by the application.</entry>
 +	  </row>
 +	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>hw_revision</structfield></entry>
-+	    <entry>Hardware device revision in a driver-specific format.</entry>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry>*<structfield>pads</structfield></entry>
++	    <entry>Pointer to a pads array allocated by the application. Ignored
++	    if NULL.</entry>
 +	  </row>
 +	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>media_version</structfield></entry>
-+	    <entry>Media device driver version, formatted with the
-+	    <constant>KERNEL_VERSION()</constant> macro. Together with the
-+	    <structfield>driver</structfield> field this identifies a particular
-+	    driver.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>reserved</structfield>[31]</entry>
-+	    <entry>Reserved for future extensions. Drivers and applications must
-+	    set this array to zero.</entry>
++	    <entry>struct &media-link-desc;</entry>
++	    <entry>*<structfield>links</structfield></entry>
++	    <entry>Pointer to a links array allocated by the application. Ignored
++	    if NULL.</entry>
 +	  </row>
 +	</tbody>
 +      </tgroup>
 +    </table>
-+    <para>The <structfield>serial</structfield> and <structfield>bus_info</structfield>
-+    fields can be used to distinguish between multiple instances of otherwise
-+    identical hardware. The serial number takes precedence when provided and can
-+    be assumed to be unique. If the serial number is an empty string, the
-+    <structfield>bus_info</structfield> field can be used instead. The
-+    <structfield>bus_info</structfield> field is guaranteed to be unique, but
-+    can vary across reboots or device unplug/replug.</para>
++
++    <table pgwide="1" frame="none" id="media-pad-desc">
++      <title>struct <structname>media_pad_desc</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>entity</structfield></entry>
++	    <entry>ID of the entity this pad belongs to.</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>index</structfield></entry>
++	    <entry>0-based pad index.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry>Pad flags, see <xref linkend="media-pad-flag" /> for more details.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-pad-flag">
++      <title>Media pad flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_PAD_FLAG_INPUT</constant></entry>
++	    <entry>Input pad, relative to the entity. Input pads sink data and
++	    are targets of links.</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_PAD_FLAG_OUTPUT</constant></entry>
++	    <entry>Output pad, relative to the entity. Output pads source data
++	    and are origins of links.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table pgwide="1" frame="none" id="media-link-desc">
++      <title>struct <structname>media_links_enum</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry><structfield>source</structfield></entry>
++	    <entry>Pad at the origin of this link.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry><structfield>sink</structfield></entry>
++	    <entry>Pad at the target of this link.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry>Link flags, see <xref linkend="media-link-flag" /> for more details.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-link-flag">
++      <title>Media link flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_LINK_FLAG_ACTIVE</constant></entry>
++	    <entry>The link is active and can be used to transfer media data.
++	    When two or more links target a sink pad, only one of them can be
++	    active at a time.</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_LINK_FLAG_IMMUTABLE</constant></entry>
++	    <entry>The link active state can't be modified at runtime. An
++	    immutable link is always active.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++    <para>One and only one of <constant>MEDIA_PAD_FLAG_INPUT</constant> and
++    <constant>MEDIA_PAD_FLAG_OUTPUT</constant> must be set for every pad.</para>
 +  </refsect1>
 +
 +  <refsect1>
-+    <title>Return value</title>
-+    <para>This function doesn't return specific error codes.</para>
++    &return-value;
++
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EINVAL</errorcode></term>
++	<listitem>
++	  <para>The &media-links-enum; <structfield>id</structfield> references
++	  a non-existing entity.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
 +  </refsect1>
 +</refentry>
 diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-index 52e5985..d02038a 100644
+index d02038a..2e4fe0c 100644
 --- a/drivers/media/media-device.c
 +++ b/drivers/media/media-device.c
-@@ -22,13 +22,70 @@
+@@ -61,6 +61,117 @@ static int media_device_get_info(struct media_device *dev,
+ 	return copy_to_user(__info, &info, sizeof(*__info));
+ }
  
- #include <linux/types.h>
- #include <linux/ioctl.h>
-+#include <linux/media.h>
- 
- #include <media/media-device.h>
- #include <media/media-devnode.h>
- #include <media/media-entity.h>
- 
-+/* -----------------------------------------------------------------------------
-+ * Userspace API
-+ */
-+
-+static int media_device_open(struct file *filp)
++static struct media_entity *find_entity(struct media_device *mdev, u32 id)
 +{
-+	return 0;
-+}
++	struct media_entity *entity;
++	int next = id & MEDIA_ENTITY_ID_FLAG_NEXT;
 +
-+static int media_device_close(struct file *filp)
-+{
-+	return 0;
-+}
++	id &= ~MEDIA_ENTITY_ID_FLAG_NEXT;
 +
-+static int media_device_get_info(struct media_device *dev,
-+				 struct media_device_info __user *__info)
-+{
-+	struct media_device_info info;
++	spin_lock(&mdev->lock);
 +
-+	memset(&info, 0, sizeof(info));
-+
-+	strlcpy(info.driver, dev->dev->driver->name, sizeof(info.driver));
-+	strlcpy(info.model, dev->model, sizeof(info.model));
-+	strlcpy(info.serial, dev->serial, sizeof(info.serial));
-+	strlcpy(info.bus_info, dev->bus_info, sizeof(info.bus_info));
-+
-+	info.media_version = MEDIA_API_VERSION;
-+	info.hw_revision = dev->hw_revision;
-+	info.driver_version = dev->driver_version;
-+
-+	return copy_to_user(__info, &info, sizeof(*__info));
-+}
-+
-+static long media_device_ioctl(struct file *filp, unsigned int cmd,
-+			       unsigned long arg)
-+{
-+	struct media_devnode *devnode = media_devnode_data(filp);
-+	struct media_device *dev = to_media_device(devnode);
-+	long ret;
-+
-+	switch (cmd) {
-+	case MEDIA_IOC_DEVICE_INFO:
-+		ret = media_device_get_info(dev,
-+				(struct media_device_info __user *)arg);
-+		break;
-+
-+	default:
-+		ret = -ENOIOCTLCMD;
++	media_device_for_each_entity(entity, mdev) {
++		if ((entity->id == id && !next) ||
++		    (entity->id > id && next)) {
++			spin_unlock(&mdev->lock);
++			return entity;
++		}
 +	}
 +
-+	return ret;
++	spin_unlock(&mdev->lock);
++
++	return NULL;
 +}
 +
- static const struct media_file_operations media_device_fops = {
- 	.owner = THIS_MODULE,
-+	.open = media_device_open,
-+	.ioctl = media_device_ioctl,
-+	.release = media_device_close,
++static long media_device_enum_entities(struct media_device *mdev,
++				       struct media_entity_desc __user *uent)
++{
++	struct media_entity *ent;
++	struct media_entity_desc u_ent;
++
++	if (copy_from_user(&u_ent.id, &uent->id, sizeof(u_ent.id)))
++		return -EFAULT;
++
++	ent = find_entity(mdev, u_ent.id);
++
++	if (ent == NULL)
++		return -EINVAL;
++
++	u_ent.id = ent->id;
++	u_ent.name[0] = '\0';
++	if (ent->name)
++		strlcpy(u_ent.name, ent->name, sizeof(u_ent.name));
++	u_ent.type = ent->type;
++	u_ent.revision = ent->revision;
++	u_ent.flags = ent->flags;
++	u_ent.group_id = ent->group_id;
++	u_ent.pads = ent->num_pads;
++	u_ent.links = ent->num_links - ent->num_backlinks;
++	u_ent.v4l.major = ent->v4l.major;
++	u_ent.v4l.minor = ent->v4l.minor;
++	if (copy_to_user(uent, &u_ent, sizeof(u_ent)))
++		return -EFAULT;
++	return 0;
++}
++
++static void media_device_kpad_to_upad(const struct media_pad *kpad,
++				      struct media_pad_desc *upad)
++{
++	upad->entity = kpad->entity->id;
++	upad->index = kpad->index;
++	upad->flags = kpad->flags;
++}
++
++static long media_device_enum_links(struct media_device *mdev,
++				    struct media_links_enum __user *ulinks)
++{
++	struct media_entity *entity;
++	struct media_links_enum links;
++
++	if (copy_from_user(&links, ulinks, sizeof(links)))
++		return -EFAULT;
++
++	entity = find_entity(mdev, links.entity);
++	if (entity == NULL)
++		return -EINVAL;
++
++	if (links.pads) {
++		unsigned int p;
++
++		for (p = 0; p < entity->num_pads; p++) {
++			struct media_pad_desc pad;
++			media_device_kpad_to_upad(&entity->pads[p], &pad);
++			if (copy_to_user(&links.pads[p], &pad, sizeof(pad)))
++				return -EFAULT;
++		}
++	}
++
++	if (links.links) {
++		struct media_link_desc __user *ulink;
++		unsigned int l;
++
++		for (l = 0, ulink = links.links; l < entity->num_links; l++) {
++			struct media_link_desc link;
++
++			/* Ignore backlinks. */
++			if (entity->links[l].source->entity != entity)
++				continue;
++
++			media_device_kpad_to_upad(entity->links[l].source,
++						  &link.source);
++			media_device_kpad_to_upad(entity->links[l].sink,
++						  &link.sink);
++			link.flags = entity->links[l].flags;
++			if (copy_to_user(ulink, &link, sizeof(*ulink)))
++				return -EFAULT;
++			ulink++;
++		}
++	}
++	if (copy_to_user(ulinks, &links, sizeof(*ulinks)))
++		return -EFAULT;
++	return 0;
++}
++
+ static long media_device_ioctl(struct file *filp, unsigned int cmd,
+ 			       unsigned long arg)
+ {
+@@ -74,6 +185,18 @@ static long media_device_ioctl(struct file *filp, unsigned int cmd,
+ 				(struct media_device_info __user *)arg);
+ 		break;
+ 
++	case MEDIA_IOC_ENUM_ENTITIES:
++		ret = media_device_enum_entities(dev,
++				(struct media_entity_desc __user *)arg);
++		break;
++
++	case MEDIA_IOC_ENUM_LINKS:
++		mutex_lock(&dev->graph_mutex);
++		ret = media_device_enum_links(dev,
++				(struct media_links_enum __user *)arg);
++		mutex_unlock(&dev->graph_mutex);
++		break;
++
+ 	default:
+ 		ret = -ENOIOCTLCMD;
+ 	}
+diff --git a/include/linux/media.h b/include/linux/media.h
+index 8108fe9..2f6a81c 100644
+--- a/include/linux/media.h
++++ b/include/linux/media.h
+@@ -40,6 +40,87 @@ struct media_device_info {
+ 	__u32 reserved[31];
  };
  
- /* -----------------------------------------------------------------------------
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 97319a8..26e0a7f 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -228,6 +228,7 @@ header-y += magic.h
- header-y += major.h
- header-y += map_to_7segment.h
- header-y += matroxfb.h
-+header-y += media.h
- header-y += mempolicy.h
- header-y += meye.h
- header-y += mii.h
-diff --git a/include/linux/media.h b/include/linux/media.h
-new file mode 100644
-index 0000000..8108fe9
---- /dev/null
-+++ b/include/linux/media.h
-@@ -0,0 +1,45 @@
-+/*
-+ * Multimedia device API
-+ *
-+ * Copyright (C) 2010 Nokia Corporation
-+ *
-+ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+ *	     Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
++#define MEDIA_ENTITY_ID_FLAG_NEXT		(1 << 31)
 +
-+#ifndef __LINUX_MEDIA_H
-+#define __LINUX_MEDIA_H
++#define MEDIA_ENTITY_TYPE_SHIFT			16
++#define MEDIA_ENTITY_TYPE_MASK			0x00ff0000
++#define MEDIA_ENTITY_SUBTYPE_MASK		0x0000ffff
 +
-+#include <linux/ioctl.h>
-+#include <linux/types.h>
-+#include <linux/version.h>
++#define MEDIA_ENTITY_TYPE_NODE			(1 << MEDIA_ENTITY_TYPE_SHIFT)
++#define MEDIA_ENTITY_TYPE_NODE_V4L		(MEDIA_ENTITY_TYPE_NODE + 1)
++#define MEDIA_ENTITY_TYPE_NODE_FB		(MEDIA_ENTITY_TYPE_NODE + 2)
++#define MEDIA_ENTITY_TYPE_NODE_ALSA		(MEDIA_ENTITY_TYPE_NODE + 3)
++#define MEDIA_ENTITY_TYPE_NODE_DVB		(MEDIA_ENTITY_TYPE_NODE + 4)
 +
-+#define MEDIA_API_VERSION	KERNEL_VERSION(0, 1, 0)
++#define MEDIA_ENTITY_TYPE_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
++#define MEDIA_ENTITY_TYPE_SUBDEV_SENSOR		(MEDIA_ENTITY_TYPE_SUBDEV + 1)
++#define MEDIA_ENTITY_TYPE_SUBDEV_FLASH		(MEDIA_ENTITY_TYPE_SUBDEV + 2)
++#define MEDIA_ENTITY_TYPE_SUBDEV_LENS		(MEDIA_ENTITY_TYPE_SUBDEV + 3)
 +
-+struct media_device_info {
-+	__u8 driver[16];
-+	__u8 model[32];
-+	__u8 serial[40];
-+	__u8 bus_info[32];
-+	__u32 media_version;
-+	__u32 hw_revision;
-+	__u32 driver_version;
-+	__u32 reserved[31];
++#define MEDIA_ENTITY_FLAG_DEFAULT		(1 << 0)
++
++struct media_entity_desc {
++	__u32 id;
++	char name[32];
++	__u32 type;
++	__u32 revision;
++	__u32 flags;
++	__u32 group_id;
++	__u16 pads;
++	__u16 links;
++
++	__u32 reserved[4];
++
++	union {
++		/* Node specifications */
++		struct {
++			__u32 major;
++			__u32 minor;
++		} v4l;
++		struct {
++			__u32 major;
++			__u32 minor;
++		} fb;
++		int alsa;
++		int dvb;
++
++		/* Sub-device specifications */
++		/* Nothing needed yet */
++		__u8 raw[184];
++	};
 +};
 +
-+#define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
++#define MEDIA_PAD_FLAG_INPUT			(1 << 0)
++#define MEDIA_PAD_FLAG_OUTPUT			(1 << 1)
 +
-+#endif /* __LINUX_MEDIA_H */
-diff --git a/include/media/media-device.h b/include/media/media-device.h
-index 461cb29..bf2eb2c 100644
---- a/include/media/media-device.h
-+++ b/include/media/media-device.h
-@@ -75,6 +75,9 @@ struct media_device {
- 	struct mutex graph_mutex;
- };
- 
-+/* media_devnode to media_device */
-+#define to_media_device(node) container_of(node, struct media_device, devnode)
++struct media_pad_desc {
++	__u32 entity;		/* entity ID */
++	__u16 index;		/* pad index */
++	__u32 flags;		/* pad flags */
++	__u32 reserved[2];
++};
 +
- int __must_check media_device_register(struct media_device *mdev);
- void media_device_unregister(struct media_device *mdev);
++#define MEDIA_LINK_FLAG_ACTIVE			(1 << 0)
++#define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
++
++struct media_link_desc {
++	struct media_pad_desc source;
++	struct media_pad_desc sink;
++	__u32 flags;
++	__u32 reserved[2];
++};
++
++struct media_links_enum {
++	__u32 entity;
++	/* Should have enough room for pads elements */
++	struct media_pad_desc __user *pads;
++	/* Should have enough room for links elements */
++	struct media_link_desc __user *links;
++	__u32 reserved[4];
++};
++
+ #define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
++#define MEDIA_IOC_ENUM_ENTITIES		_IOWR('M', 2, struct media_entity_desc)
++#define MEDIA_IOC_ENUM_LINKS		_IOWR('M', 3, struct media_links_enum)
  
+ #endif /* __LINUX_MEDIA_H */
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index b9694b5..42ea2af 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -24,29 +24,7 @@
+ #define _MEDIA_ENTITY_H
+ 
+ #include <linux/list.h>
+-
+-#define MEDIA_ENTITY_TYPE_SHIFT			16
+-#define MEDIA_ENTITY_TYPE_MASK			0x00ff0000
+-#define MEDIA_ENTITY_SUBTYPE_MASK		0x0000ffff
+-
+-#define MEDIA_ENTITY_TYPE_NODE			(1 << MEDIA_ENTITY_TYPE_SHIFT)
+-#define MEDIA_ENTITY_TYPE_NODE_V4L		(MEDIA_ENTITY_TYPE_NODE + 1)
+-#define MEDIA_ENTITY_TYPE_NODE_FB		(MEDIA_ENTITY_TYPE_NODE + 2)
+-#define MEDIA_ENTITY_TYPE_NODE_ALSA		(MEDIA_ENTITY_TYPE_NODE + 3)
+-#define MEDIA_ENTITY_TYPE_NODE_DVB		(MEDIA_ENTITY_TYPE_NODE + 4)
+-
+-#define MEDIA_ENTITY_TYPE_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
+-#define MEDIA_ENTITY_TYPE_SUBDEV_SENSOR		(MEDIA_ENTITY_TYPE_SUBDEV + 1)
+-#define MEDIA_ENTITY_TYPE_SUBDEV_FLASH		(MEDIA_ENTITY_TYPE_SUBDEV + 2)
+-#define MEDIA_ENTITY_TYPE_SUBDEV_LENS		(MEDIA_ENTITY_TYPE_SUBDEV + 3)
+-
+-#define MEDIA_ENTITY_FLAG_DEFAULT		(1 << 0)
+-
+-#define MEDIA_LINK_FLAG_ACTIVE			(1 << 0)
+-#define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
+-
+-#define MEDIA_PAD_FLAG_INPUT			(1 << 0)
+-#define MEDIA_PAD_FLAG_OUTPUT			(1 << 1)
++#include <linux/media.h>
+ 
+ struct media_link {
+ 	struct media_pad *source;	/* Source pad */
 -- 
 1.7.2.2
 
