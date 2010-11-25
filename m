@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab0KYOKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 09:10:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54708 "EHLO mx1.redhat.com"
+	id S1753445Ab0KYOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 09:11:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752490Ab0KYOKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 09:10:00 -0500
-Date: Thu, 25 Nov 2010 15:02:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>
-Subject: Re: [resend][PATCH 4/4] oom: don't ignore rss in nascent mm
-Message-ID: <20101125140253.GA29371@redhat.com>
-References: <20101124085022.7BDF.A69D9226@jp.fujitsu.com> <20101124110915.GA20452@redhat.com> <20101125092237.F43A.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101125092237.F43A.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752328Ab0KYOLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 09:11:24 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, sandeen@redhat.com, lczerner@redhat.com
+Subject: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
+Date: Thu, 25 Nov 2010 15:11:17 +0100
+Message-Id: <1290694277-29462-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25, KOSAKI Motohiro wrote:
->
-> > > > It is very simple. copy_strings() increments MM_ANONPAGES every
-> > > > time we add a new page into bprm->vma. This makes this memory
-> > > > visible to select_bad_process().
-> > > >
-> > > > When exec changes ->mm (or if it fails), we change MM_ANONPAGES
-> > > > counter back.
-> > > >
-> > > > Most probably I missed something, but what do you think?
-> > >
-> > > Because, If the pages of argv is swapping out when processing execve,
-> > > This accouing doesn't work.
-> >
-> > Why?
-> >
-> > If copy_strings() inserts the new page into bprm->vma and then
-> > this page is swapped out, inc_mm_counter(current->mm, MM_ANONPAGES)
-> > becomes incorrect, yes. And we can't turn it into MM_SWAPENTS.
-> >
-> > But does this really matter? oom_badness() counts MM_ANONPAGES +
-> > MM_SWAPENTS, and result is the same.
->
-> Ah, I got it. I did too strongly get stucked correct accounting. but
-> you mean it's not must.
+When determining last group through ext4_get_group_no_and_offset() the
+result may be wrong in cases when range->start and range-len are too
+big, because it may overflow when summing up those two numbers.
 
-Yes. In fact, I _think_ this patch makes accounting better, even if
-the extra MM_ANONPAGES numbers are not 100% correct.
+Fix that by checking range->len and limit its value to
+ext4_blocks_count(). This commit was tested by myself with expected
+result.
 
-Even if we add signal->in_exec_mm, nobody except oom_badness() will
-look at it.
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+---
+ fs/ext4/mballoc.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-With this patch, say, /proc/pid/statm or /proc/pid/status will report
-the memory allocated by the execing task. Even if technically this is
-not correct (and 'swap' part may be wrong), this makes sense imho.
-Otherwise, there is no way to see that this task allocates (may be
-a lot) of memory.
-
-This can "confuse" update_hiwater_rss(), but imho this is fine too.
-
-
-> > > Is this enough explanation? Please don't hesitate say "no". If people
-> > > don't like my approach, I don't hesitate change my thinking.
-> >
-> > Well, certainly I can't say no ;)
-> >
-> > But it would be nice to find a more simple fix (if it can work,
-> > of course).
-> >
-> >
-> > And. I need a simple solution for the older kernels.
->
-> Alright. It is certinally considerable one.
-
-Great! I'll send the patch tomorrow.
-
-Even if you prefer another fix for 2.6.37/stable, I'd like to see
-your review to know if it is correct or not (for backporting).
-
-Oleg.
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 5b4d4e3..7b05d92 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4819,6 +4819,7 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
+ 	ext4_group_t group, ngroups = ext4_get_groups_count(sb);
+ 	ext4_grpblk_t cnt = 0, first_block, last_block;
+ 	uint64_t start, len, minlen, trimmed;
++	ext4_fsblk_t blocks_count = ext4_blocks_count(EXT4_SB(sb)->s_es);
+ 	int ret = 0;
+ 
+ 	start = range->start >> sb->s_blocksize_bits;
+@@ -4826,6 +4827,9 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
+ 	minlen = range->minlen >> sb->s_blocksize_bits;
+ 	trimmed = 0;
+ 
++	if (len > blocks_count)
++		len = blocks_count - start;
++
+ 	if (unlikely(minlen > EXT4_BLOCKS_PER_GROUP(sb)))
+ 		return -EINVAL;
+ 
+-- 
+1.7.2.3
 
