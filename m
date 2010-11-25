@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab0KYLJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:09:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab0KYLJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:09:17 -0500
-Date: Thu, 25 Nov 2010 12:02:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: rcu_read_lock/unlock protect find_task_by_vpid call in
-	posix_cpu_timer_create
-Message-ID: <20101125110230.GB19031@redhat.com>
-References: <20101125010948.GA1371@redhat.com> <1290674436.2072.562.camel@laptop>
+	id S1752675Ab0KYLK7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:10:59 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13554 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621Ab0KYLK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 06:10:57 -0500
+Message-ID: <001c01cb8c91$6e93aef0$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
+References: <4CED023E.1070009@dsn.okisemi.com> <4CED13B5.5020309@pengutronix.de>
+Subject: Re: [PATCH net-next-2.6 6/17 v3] can: EG20T PCH: Fix endianness issue
+Date: Thu, 25 Nov 2010 20:10:53 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290674436.2072.562.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(another try, actually add Sergey)
+On Wednesday, November 24, 2010 10:31 PM,  Marc Kleine-Budde wrote :
 
-On 11/25, Peter Zijlstra wrote:
->
-> On Wed, 2010-11-24 at 20:09 -0500, Dave Jones wrote:
-> > --- a/kernel/posix-cpu-timers.c
-> > +++ b/kernel/posix-cpu-timers.c
-> > @@ -391,6 +391,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
-> >  	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
-> >
-> >  	read_lock(&tasklist_lock);
-> > +	rcu_read_lock();
-> >  	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
-> >  		if (pid == 0) {
-> >  			p = current;
-> > @@ -414,6 +415,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
-> >  	} else {
-> >  		ret = -EINVAL;
-> >  	}
-> > +	rcu_read_unlock();
-> >  	read_unlock(&tasklist_lock);
-> >
-> >  	return ret;
->
-> Do we still need the tasklist_lock in this case?
+>> For easy to read, some sub-functions are created.
+>>
+>>
+>> Modify complex "goto" to do~while.
+>What about the next_flag in the rx_normal function? Can you get rid of
+>it, too?
+Subsequent Patch (11/17 Delete unnecessary ...) deletes "next_flag" in the rx_normal function.
 
-No. posix-cpu-timer.c shouldn't use tasklist at all. But it is not
-completely trivial to remove it.
+---
+Thanks,
 
-In particular, this patch is not exactly right, we can't trust
-thread_group_leader() without tasklist.
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
-Sergey already sent the patch which removes tasklist from
-posix_cpu_timer_create() and posix_cpu_timer_create(), and iirc
-Thomas queued it.
+----- Original Message ----- 
+From: "Marc Kleine-Budde" <mkl@pengutronix.de>
+To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>; "Wolfram Sang" <w.sang@pengutronix.de>; "Christian Pellegrin"
+<chripell@fsfe.org>; "Barry Song" <21cnbao@gmail.com>; "Samuel Ortiz" <sameo@linux.intel.com>;
+<socketcan-core@lists.berlios.de>; <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>; "David S. Miller"
+<davem@davemloft.net>; <andrew.chih.howe.khor@intel.com>; <qi.wang@intel.com>; <margie.foster@intel.com>;
+<yong.y.wang@intel.com>; <kok.howg.ewe@intel.com>; <joel.clark@intel.com>
+Sent: Wednesday, November 24, 2010 10:31 PM
+Subject: Re: [PATCH net-next-2.6 6/17 v3] can: EG20T PCH: Fix endianness issue
 
-> Also, why is that think complaining, surely the tasklist_lock pins any
-> and all PID objects?
-
-The only problem is: if copy_process() fails, it does free_pid()
-lockless. This means, without rcu lock it is not safe to scan the
-rcu-protected lists.
-
-We can change copy_process() (in fact I sent the patch several
-years ago), but everybody think that find_pid/etc should always
-take rcu_read_lock() instead. I tend to agree.
-
-Oleg.
 
