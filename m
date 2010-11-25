@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab0KYEN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 23:13:26 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57330 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab0KYENY (ORCPT
+	id S1751794Ab0KYETs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 23:19:48 -0500
+Received: from vms173017pub.verizon.net ([206.46.173.17]:56951 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab0KYETq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 23:13:24 -0500
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Cc: tom.leiming@gmail.com, Ian Munsie <imunsie@au1.ibm.com>
-Subject: [PATCH 2/3] perf: Allow strong and weak functions in LIB_OBJS
-Date: Thu, 25 Nov 2010 15:12:54 +1100
-Message-Id: <1290658375-10342-2-git-send-email-imunsie@au1.ibm.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1290658375-10342-1-git-send-email-imunsie@au1.ibm.com>
-References: <1290658375-10342-1-git-send-email-imunsie@au1.ibm.com>
+	Wed, 24 Nov 2010 23:19:46 -0500
+Date: Wed, 24 Nov 2010 23:19:08 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Mark Lord <kernel@teksavvy.com>
+Cc: huang ying <huang.ying.caritas@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/2] Generic hardware error reporting support
+In-reply-to: <4CE7CF95.2040608@teksavvy.com>
+Message-id: <alpine.LFD.2.00.1011242316390.637@x980>
+References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+ <AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
+ <AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
+ <AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
+ <AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
+ <4CE7CF95.2040608@teksavvy.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
 
-When we build perf we place all of the .o files from the library files
-(util, arch/x/util, etc) into libperf.a which is then linked into perf.
-The problem is that the linker will by default only consider .o files
-within the .a archive if they are necessary to satisfy an unresolved
-symbol. As weak functions are not unresolved, it will not consider a .o
-file from the archive containing the strong versions of weak functions
-unless it requires it for another reason.
+> If you (and the code) are absolutely certain that a particular error instance
+> is totally due to the BIOS, then stick the words "BIOS ERROR" into the 
+> printk().
 
-This patch adds the --whole-archive flags to the linker when passing in
-the libperf.a file to ensure that it will consider every .o file in the
-archive, not just what it believes that it needs. The end result is that
-weak functions can now be overridden by strong variants of them in the
-libperf.a file.
+FYI, trenn added some printk prefixes for this case a while back;
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
- tools/perf/Makefile |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+#define FW_BUG          "[Firmware Bug]: "
+#define FW_WARN         "[Firmware Warn]: "
+#define FW_INFO         "[Firmware Info]: "
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2d414b3..c5f7b7f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -940,7 +940,8 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 
- $(OUTPUT)perf$X: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
--               $(BUILTIN_OBJS) $(LIBS) -o $@
-+               $(BUILTIN_OBJS) -Wl,--whole-archive $(LIBS) \
-+	       -Wl,--no-whole-archive -o $@
- 	@rm -f trace
- 	@ln perf$X trace 2>/dev/null
- 
--- 
-1.7.2.3
+cheers,
+-Len Brown, Intel Open Source Technology Center
 
