@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0KYRns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 12:43:48 -0500
-Received: from www.tglx.de ([62.245.132.106]:50921 "EHLO www.tglx.de"
+	id S1754632Ab0KYRnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 12:43:53 -0500
+Received: from www.tglx.de ([62.245.132.106]:50930 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753518Ab0KYRnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 12:43:47 -0500
+	id S1753518Ab0KYRnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 12:43:51 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: sodaville@linutronix.de, x86@kernel.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         devicetree-discuss@lists.ozlabs.org,
         Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 02/11] x86: Add device tree support
-Date: Thu, 25 Nov 2010 18:39:52 +0100
-Message-Id: <1290706801-7323-3-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+Date: Thu, 25 Nov 2010 18:39:53 +0100
+Message-Id: <1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
 References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
@@ -22,289 +22,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds minimal support for device tree support on x86. It will
-be passed to the kernel via setup_data which requires atleast boot
-protocol 2.09.
-Memory size, restricted memory regions, boot arguments are gathered the
-traditional way so things like cmd_line are just here to let the code
-compile.
-The current plan is use the device tree as an extension and to gather
-informations from it which can not be enumerated and have to be
-hardcoded otherwise. This includes things like
-- which devices are on this I2C/ SPI bus?
-- how are the interrupts wired to IO APIC?
-- where could my hpet be?
-
-Dirk is working on some patches which provide generic infrastructure for
-linking the dtb into the kernel. Once this is it its final shape, we
-will relocate the device tree unconditionally. This will remove the
-requirement for the boot loader to locate the device tree within lowmem.
-
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 CC: x86@kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- Documentation/x86/boot_with_dtb.txt |   20 +++++++++++
- arch/x86/Kconfig                    |    7 ++++
- arch/x86/include/asm/bootparam.h    |    1 +
- arch/x86/include/asm/prom.h         |   60 +++++++++++++++++++++++++++++++++++
- arch/x86/kernel/Makefile            |    1 +
- arch/x86/kernel/irqinit.c           |    7 ++++
- arch/x86/kernel/prom.c              |   60 +++++++++++++++++++++++++++++++++++
- arch/x86/kernel/setup.c             |    4 ++
- 8 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/x86/boot_with_dtb.txt
- create mode 100644 arch/x86/include/asm/prom.h
- create mode 100644 arch/x86/kernel/prom.c
+ arch/x86/platform/ce4100/ce4100.dts |  210 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 210 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/platform/ce4100/ce4100.dts
 
-diff --git a/Documentation/x86/boot_with_dtb.txt b/Documentation/x86/boot_with_dtb.txt
+diff --git a/arch/x86/platform/ce4100/ce4100.dts b/arch/x86/platform/ce4100/ce4100.dts
 new file mode 100644
-index 0000000..3ba42b4
+index 0000000..2901882
 --- /dev/null
-+++ b/Documentation/x86/boot_with_dtb.txt
-@@ -0,0 +1,20 @@
-+  Booting x86 with device tree
-+=================================
-+
-+1. Introduction
-+~~~~~~~~~~~~~~~
-+This document contains device tree informations which are specific to
-+the x86 platform. Generic informations as bindings can be found in
-+Documentation/powerpc/dts-bindings/
-+
-+2. Passing the device tree
-+~~~~~~~~~~~~~~~~~~~~~~~~~~
-+The pointer to the device tree block (dtb) is passed via setup_data
-+(see [0]) which requires atleast boot protocol 2.09. The type filed is
-+defined as
-+
-+#define SETUP_DTB                      2
-+
-+The setup_data struct has to be placed in lowmem.
-+
-+[0] Documentation/x86/boot.txt
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6ab6310..6c9ab9e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -299,6 +299,13 @@ config X86_BIGSMP
- 	---help---
- 	  This option is needed for the systems that have more than 8 CPUs
- 
-+config X86_OF
-+	bool "Support for device tree"
-+	select OF
-+	select OF_FLATTREE
-+	---help---
-+	  Device tree support on X86.
-+
- if X86_32
- config X86_EXTENDED_PLATFORM
- 	bool "Support for extended (non-PC) x86 platforms"
-diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
-index c8bfe63..e020d88 100644
---- a/arch/x86/include/asm/bootparam.h
-+++ b/arch/x86/include/asm/bootparam.h
-@@ -12,6 +12,7 @@
- /* setup data types */
- #define SETUP_NONE			0
- #define SETUP_E820_EXT			1
-+#define SETUP_DTB			2
- 
- /* extensible setup data list node */
- struct setup_data {
-diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-new file mode 100644
-index 0000000..8fdb0d2
---- /dev/null
-+++ b/arch/x86/include/asm/prom.h
-@@ -0,0 +1,60 @@
++++ b/arch/x86/platform/ce4100/ce4100.dts
+@@ -0,0 +1,210 @@
 +/*
-+ * Definitions for Device tree / OpenFirmware handling on X86
++ * CE4100 on Falcon Falls
 + *
-+ * based on arch/powerpc/include/asm/prom.h which is
-+ *         Copyright (C) 1996-2005 Paul Mackerras.
++ * (c) Copyright 2010 Intel Corporation
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
 + */
++/dts-v1/;
++/ {
++	model = "x86,CE4100";
++	compatible = "x86,CE4100";
++	#address-cells = <1>;
++	#size-cells = <1>;
 +
-+#ifndef _ASM_X86_PROM_H
-+#define _ASM_X86_PROM_H
-+#ifdef __KERNEL__
-+#ifndef __ASSEMBLY__
++	cpus {
++		x86,Atom@0 {
++			device_type = "cpu";
++		};
++	};
 +
-+#include <linux/of.h>
-+#include <linux/types.h>
-+#include <asm/irq.h>
-+#include <asm/atomic.h>
-+#include <asm/setup.h>
++	atom@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		device_type = "soc";
++		compatible = "simple-bus";
++		ranges;
 +
-+#ifdef CONFIG_OF
-+extern void init_dtb(void);
-+extern void add_dtb(u64 data);
-+#else
-+static inline void init_dtb(void) { }
-+static inline void add_dtb(u64 data) { }
-+#endif
++		/* Local APIC */
++		lapic@fee00000 {
++			compatible = "intel,lapic";
++			reg = <0xfee00000 0x1000>;
++			phys_reg = <0xfee00000>;
++		};
++		/* Primary IO-APIC */
++		ioapic1: pic@fec00000 {
++			#interrupt-cells = <2>;
++			compatible = "intel,ioapic";
++			interrupt-controller;
++			device_type = "interrupt-controller";
++			id = <1>;
++			reg = <0xfec00000 0x1000>;
++			phys_reg = <0xfec00000>;
++		};
 +
-+extern char cmd_line[COMMAND_LINE_SIZE];
-+/* This number is used when no interrupt has been assigned */
-+#define NO_IRQ		(-1)
++		hpet@fed00000 {
++			compatible = "intel,hpet";
++			reg = <0xfed00000 0x200>;
++			phys_reg = <0xfed00000>;
++		};
++	};
 +
-+/**
-+ * irq_dispose_mapping - Unmap an interrupt
-+ * @virq: linux virq number of the interrupt to unmap
-+ *
-+ * FIXME: We really should implement proper virq handling like power,
-+ * but that's going to be major surgery.
-+ */
-+static inline void irq_dispose_mapping(unsigned int virq) { }
++	isa@legacy {
++		device_type = "isa";
++		compatible = "simple-bus";
++		#address-cells = <2>;
++		#size-cells = <1>;
++		ranges = <0 0 0 0x400>;
 +
-+#define HAVE_ARCH_DEVTREE_FIXUPS
++		rtc@legacy {
++			compatible = "motorola,mc146818";
++			interrupts = <8 3>;
++			interrupt-parent = <&ioapic1>;
++			ctrl_reg = <2>;
++			freq_reg = <0x26>;
++			reg = <1 0x70 2>;
++		};
 +
-+#endif /* __ASSEMBLY__ */
-+#endif /* __KERNEL__ */
++		pci@3fc {
++			#address-cells = <3>;
++			#interrupt-cells = <1>;
++			#size-cells = <1>;
++			compatible = "intel,ce4100-pci";
++			device_type = "pci";
++			bus-range = <0 0>;
 +
-+/*
-+ * These includes are put at the bottom because they may contain things
-+ * that are overridden by this file.  Ideally they shouldn't be included
-+ * by this file, but there are a bunch of .c files that currently depend
-+ * on it.  Eventually they will be cleaned up.
-+ */
-+#include <linux/of_fdt.h>
-+#include <linux/of_irq.h>
-+#include <linux/platform_device.h>
++			/* Secondary IO-APIC */
++			ioapic2: pic@bffff000 {
++				#interrupt-cells = <2>;
++				compatible = "intel,ioapic";
++				interrupt-controller;
++				device_type = "interrupt-controller";
++				id = <2>;
++				reg = <0x100 0x0 0x0 0x0>;
++				phys_reg = <0xbffff000>;
++			};
 +
-+#endif
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9e13763..e0a00c5 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -109,6 +109,7 @@ obj-$(CONFIG_MICROCODE)			+= microcode.o
- obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
- 
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
-+obj-$(CONFIG_X86_OF)			+= prom.o
- 
- ###
- # 64 bit specific files
-diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
-index c752e97..d5970e2 100644
---- a/arch/x86/kernel/irqinit.c
-+++ b/arch/x86/kernel/irqinit.c
-@@ -25,6 +25,7 @@
- #include <asm/setup.h>
- #include <asm/i8259.h>
- #include <asm/traps.h>
-+#include <asm/prom.h>
- 
- /*
-  * ISA PIC or low IO-APIC triggered (INTA-cycle or APIC) interrupts:
-@@ -118,6 +119,12 @@ void __init init_IRQ(void)
- 	int i;
- 
- 	/*
-+	 * We probably need a better place for this, but it works for
-+	 * now ...
-+	 */
-+	init_dtb();
++			pci@av {
++				#address-cells = <3>;
++				#interrupt-cells = <1>;
++				#size-cells = <1>;
++				compatible = "intel,ce4100-pci";
++				device_type = "pci";
++				bus-range = <1 1>;
++				interrupt-map-mask = <0xffffff 0x0 0x0 0x0>;
++				interrupt-map = <
++					/* GFX: 0x2E5B */
++					0x11000 0x0 0x0 0x0 &ioapic2 0 0x1
++					/* ***** FIXME ****** Compositing Engine: 0x2E72 */
++					/* 0x11100 0x0 0x0 0x1 &ioapic2 0 0x1 */
++					/* MFD: 0x2E5C */
++					0x11800 0x0 0x0 0x0 &ioapic2 2 0x1
++					/* TS Prefilter: 0x2E5D */
++					0x12000 0x0 0x0 0x0 &ioapic2 4 0x1
++					/* TS Demux: 0x2E5E */
++					0x12100 0x0 0x0 0x0 &ioapic2 5 0x1
++					/* ***** FIXME ***** Audio DSP: 0x2E5F */
++					/* 0x13000 0x0 0x0 0x1 &ioapic2 0 0x1 */
++					/* Audio Interfaces: 0x2E60 */
++					0x13200 0x0 0x0 0x0 &ioapic2 8 0x1
++					/* VDC: 0x2E61 */
++					0x14000 0x0 0x0 0x0 &ioapic2 9 0x1
++					/* DPE: 0x2E62 */
++					0x14100 0x0 0x0 0x0 &ioapic2 10 0x1
++					/* HDMI Tx: 0x2E63 */
++					0x14200 0x0 0x0 0x0 &ioapic2 11 0x1
++					/* SEC: 0x2E64 */
++					0x14800 0x0 0x0 0x0 &ioapic2 12 0x1
++					/* EXP: 0x2E65 */
++					0x15000 0x0 0x0 0x0 &ioapic2 13 0x1
++					/* UART0/1: 0x2E66 */
++					0x15800 0x0 0x0 0x0 &ioapic2 14 0x1
++					/* GPIO: 0x2E67 */
++					0x15900 0x0 0x0 0x0 &ioapic2 15 0x1
++					/* I2C0/1/2: 0x2E68 */
++					0x15a00 0x0 0x0 0x0 &ioapic2 16 0x1
++					/* Smart Card 0/1: 0x2E69 */
++					0x15b00 0x0 0x0 0x0 &ioapic2 15 0x1
++					/* SPI: 0x2E6A */
++					0x15c00 0x0 0x0 0x0 &ioapic2 15 0x1
++					/* MSPOD: 0x2E6B */
++					0x15d00 0x0 0x0 0x0 &ioapic2 19 0x1
++					/* IR: 0x2E6C */
++					0x15e00 0x0 0x0 0x0 &ioapic2 16 0x1
++					/* **** FIXME ***** DFX: 0x2E6D */
++					/* 0x15f00 0x0 0x0 0x1 &ioapic2 0x0 0x1 */
++					/* Gig Ethernet: 0x2E6E */
++					0x16000 0x0 0x0 0x0 &ioapic2 21 0x1
++					/* IEEE1588 and Clock Recovery Unit: 0x2E6F */
++					0x16100 0x0 0x0 0x0 &ioapic2 3 0x1
++					/* USB0: 0x2E70 */
++					0x16800 0x0 0x0 0x0 &ioapic2 22 0x3
++					/* USB1: 0x2E70 */
++					0x16900 0x0 0x0 0x0 &ioapic2 22 0x3
++					/* SATA: 0x2E71 */
++					0x17000 0x0 0x0 0x0 &ioapic2 23 0x3
++					>;
 +
-+	/*
- 	 * On cpu 0, Assign IRQ0_VECTOR..IRQ15_VECTOR's to IRQ 0..15.
- 	 * If these IRQ's are handled by legacy interrupt-controllers like PIC,
- 	 * then this configuration will likely be static after the boot. If
-diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
-new file mode 100644
-index 0000000..ba9a096
---- /dev/null
-+++ b/arch/x86/kernel/prom.c
-@@ -0,0 +1,60 @@
-+/*
-+ * Architecture specific OF callbacks.
-+ */
++				i2c@15a00 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <0x15a00 0x0 0x0 0x0>;
 +
-+#include <linux/io.h>
-+#include <linux/list.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/slab.h>
 +
-+char __initdata cmd_line[COMMAND_LINE_SIZE];
++					i2c@0 {
++						reg = <0>;
++					};
 +
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+		const u32 *intspec, unsigned int intsize)
-+{
-+	return intspec[0];
++					i2c@1 {
++						#address-cells = <1>;
++						#size-cells = <0>;
++						reg = <1>;
 +
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
++						pcf8575@26 {
++							compatible = "ti,pcf8575";
++							reg = <0x26>;
++						};
++					};
 +
-+unsigned long pci_address_to_pio(phys_addr_t address)
-+{
-+	BUG();
-+}
-+EXPORT_SYMBOL_GPL(pci_address_to_pio);
++					i2c@2 {
++						#address-cells = <1>;
++						#size-cells = <0>;
++						reg = <2>;
 +
-+void __init early_init_dt_scan_chosen_arch(unsigned long node)
-+{
-+	BUG();
-+}
++						pcf8575@26 {
++							compatible = "ti,pcf8575";
++							reg = <0x26>;
++						};
++					};
++				};
 +
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-+{
-+	BUG();
-+}
++				spi@15c00 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <0x15c00 0x0 0x0 0x0>;
 +
-+u64 __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-+{
-+	void *mem;
++					pcm1755@0 {
++						compatible = "ti,pcm1755";
++						reg = <0>;
++						spi-max-frequency = <115200>;
++					};
 +
-+	mem = kmalloc(size + align, GFP_KERNEL);
-+	BUG_ON(!mem);
-+	mem = PTR_ALIGN(mem, align);
-+	return virt_to_phys(mem);
-+}
++					pcm1609a@1 {
++						compatible = "ti,pcm1609a";
++						reg = <1>;
++						spi-max-frequency = <115200>;
++					};
 +
-+void __init add_dtb(u64 data)
-+{
-+	initial_boot_params = (struct boot_param_header *)
-+		phys_to_virt((u64) (u32) data +
-+				offsetof(struct setup_data, data));
-+}
-+
-+void __init init_dtb(void)
-+{
-+	if (!initial_boot_params)
-+		return;
-+
-+	unflatten_device_tree();
-+}
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 52f10e6..b1e1bcb 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -113,6 +113,7 @@
- #endif
- #include <asm/mce.h>
- #include <asm/alternative.h>
-+#include <asm/prom.h>
- 
- /*
-  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-@@ -441,6 +442,9 @@ static void __init parse_setup_data(void)
- 		case SETUP_E820_EXT:
- 			parse_e820_ext(data);
- 			break;
-+		case SETUP_DTB:
-+			add_dtb(pa_data);
-+			break;
- 		default:
- 			break;
- 		}
++					at93c46@2 {
++						compatible = "atmel,at93c46";
++						reg = <2>;
++						spi-max-frequency = <115200>;
++					};
++				};
++			};
++		};
++	};
++};
 -- 
 1.7.3.2
 
