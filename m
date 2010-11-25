@@ -1,154 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab0KYO32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 09:29:28 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42471 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab0KYO30 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 09:29:26 -0500
+	id S1752478Ab0KYObZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 09:31:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752045Ab0KYObY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 09:31:24 -0500
+Date: Thu, 25 Nov 2010 15:23:44 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 1/4] taskstats: Introduce "struct cdata"
+Message-ID: <20101125142344.GA31508@redhat.com>
+References: <20101119201108.269346583@linux.vnet.ibm.com> <20101119201143.787050299@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.224.233]
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB5930247931C4B@dbde02.ent.ti.com>
-References: <1290526740-27624-1-git-send-email-ohad@wizery.com>
- <1290526740-27624-2-git-send-email-ohad@wizery.com> <B85A65D85D7EB246BE421B3FB0FBB59302479315FB@dbde02.ent.ti.com>
- <AANLkTi=JSuJCqceJ3iw3TnV5OeJd+e5T3CyHtWVzBRu_@mail.gmail.com> <B85A65D85D7EB246BE421B3FB0FBB5930247931C4B@dbde02.ent.ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 25 Nov 2010 16:29:05 +0200
-Message-ID: <AANLkTikBQsBLxo7SG38UOs7ZeU+_XdEtT67Ogxpijmq=@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-To: "Kamoolkar, Mugdha" <mugdha@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Kanigeri, Hari" <h-kanigeri2@ti.com>, "Anna, Suman" <s-anna@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101119201143.787050299@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 8:05 AM, Kamoolkar, Mugdha <mugdha@ti.com> wrote:
-> Consider a software module on top of the hwspinlock, which provides a
-> generic way for multi-core critical section, say GateMP. This module enables
-> users to create critical section objects by name. Any other client can open
-> the critical section by name and get a handle to it. I would expect this
-> module to make a call to request a resource when creating the GateMP object.
-> Suppose that the object is actually created by the remote core, and the call
-> comes to Linux on the host processor to allocate the system resource (as the
-> owner of the system resources). It will call hwspinlock_request, get a
-> handle, get the ID from it, and return the ID to the remote processor. There
-> is no point in the remote processor holding the handle that's not valid in
-> its virtual space. The ID, in this case, is the single portable value that
-> every processor understands in a different way. When this object were being
-> deleted, the ID would be passed to Linux, and a corresponding Linux entity
-> would then have to get the handle from the ID and call _free.
-
-How is it different from any other hardware resource that the host
-will allocate on behalf of the slaves ? Do we have such _open API for,
-e.g., dmtimer ?
-
-It looks like this is a broader problem that needs to be solved by the
-kernel module that will manage the resources of the remote processors.
-
+On 11/19, Michael Holzheu wrote:
 >
-> Similarly, suppose the creation is happening from user-space, the user-space
-> object should store the ID in the user object, and get the handle from the
-> ID when performing any actions on the lock from kernel-side.
-
-The user space interface is not yet defined, but -
-
-One option is to expose a char device for every hwspinlock device,
-that can only be opened by a single user (which, after successfully
-opening it, will become its owner). Once that user will close the
-device (either consciously or by crashing), the kernel will free the
-resource. It doesn't look like an _open API is needed here.
-
->> > For example:
->> > struct hwspinlock *hwspinlock_get_handle(unsigned int id);
->>
->> I'm afraid such an API will be easily abused, e.g., drivers that will
->> try to use a predefined hwspinlock id without taking care of reserving
->> it early enough will probably use it to overcome an "oops this
->> hwspinlock has already been assigned to someone else".
->>
-> Really? Why would they intentionally destabilize the system like this???
-
-These things just happen.. even by mistake.
-
-But I rather focus on the "why yes" rather than on the "why not".
-Let's define the problem exactly, and then see how to solve it
-correctly. Btw it might still end up being an _open API if we find it
-as the best solution (but let's first see that we understand the
-problem first).
-
-> No real issues with this, just seems less intuitive. I just expected all the
-> module APIs to follow same convention <module>_API to make them more
-> intuitive.
-
-Then I'll change it, it does might look better.
-
->> >> +int __hwspin_lock_timeout(struct hwspinlock *hwlock, unsigned long to,
->> >> +                                     int mode, unsigned long *flags)
->> >> +{
->> >> +     int ret;
->> >> +
->> >> +     for (;;) {
->> >> +             /* Try to take the hwspinlock */
->> >> +             ret = __hwspin_trylock(hwlock, mode, flags);
->> >> +             if (ret != -EBUSY)
->> >> +                     break;
->> >> +
->> >> +             /*
->> >> +              * The lock is already taken, let's check if the user
->> wants
->> >> +              * us to try again
->> >> +              */
->> >> +             if (to && time_is_before_eq_jiffies(to))
->> >> +                     return -ETIMEDOUT;
->> >> +
->> >> +             /*
->> >> +              * Allow platform-specific relax handlers to prevent
->> >> +              * hogging the interconnect (no sleeping, though)
->> >> +              */
->> >> +             if (hwlock->ops->relax)
->> >> +                     hwlock->ops->relax(hwlock);
->> > There should be a way to have an escape mechanism for the case where a
->> deadlock
->> > has occurred due to remote side taking the spinlock and crashing.
->>
->> This is exactly what the timeout parameter is for..
->>
-> I was looking at the situation where someone does not use the lock with
-> timeout.
-> In that case, do we say that there's no way out?
-
-If one decides to use the simple _lock version, then yes (just like
-with spin_lock()).
-
-But if the user cares about an optional crash of the remote task, then
-definitely the _timeout version should be used - that's why we
-provided it.
-
-We can remove the _lock version altogether, but I don't think it's a
-good thing. A user can still use the _timeout version with infinite
-timeout, which would yield the same result. The _lock version is
-provided for simple cases, where a timeout isn't required.
-
-Thanks,
-Ohad.
-
-> And the system
-> will hang and need a re-boot? Or do we still want to enable some way to
-> forcibly break the wait after it has happened for an unreasonably long time?
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 >
->> Thanks,
->> Ohad.
+> This patch introduces a new structure "struct cdata" that is used to
+> store cumulative resource counters for dead child processes and threads.
 >
+> Note that there is one asymmetry:
+> For "struct task_io_accounting" (ioc) there is no extra accounting field for
+> dead threads. One field is used for both, dead processes and threads.
+>
+> This patch introduces no functional change.
+>
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  fs/binfmt_elf.c           |    4 +-
+>  fs/exec.c                 |    2 -
+>  fs/proc/array.c           |   16 ++++----
+>  include/linux/sched.h     |   22 +++++++----
+>  kernel/exit.c             |   86 ++++++++++++++++++++++++----------------------
+>  kernel/posix-cpu-timers.c |   12 +++---
+>  kernel/sys.c              |   44 ++++++++++++-----------
+>  7 files changed, 100 insertions(+), 86 deletions(-)
+
+Looks good. In fact, to me it looks like a cleanup.
+
+But. You seem to forgot to change kernel/signal.c, no?
+
+And cosmetic nit,
+
+>  void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+>  {
+> -	struct signal_struct *sig = tsk->signal;
+> +	struct cdata *tcd = &tsk->signal->cdata_threads;
+>  	struct task_struct *t;
+>
+> -	times->utime = sig->utime;
+> -	times->stime = sig->stime;
+> -	times->sum_exec_runtime = sig->sum_sched_runtime;
+> +	times->utime = tcd->utime;
+> +	times->stime = tcd->stime;
+> +	times->sum_exec_runtime = tsk->signal->sum_sched_runtime;
+
+Feel free to ignore, but I don't understand why you removed "sig".
+Afaics,
+
+	-     times->utime = sig->utime;
+	-     times->stime = sig->stime;
+	+     times->utime = sig->cdata_threads->utime;
+	+     times->stime = sig->cdata_threads->stime;
+
+looks a bit better.
+
+Oleg.
+
