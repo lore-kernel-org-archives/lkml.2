@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab0KYQtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:49:49 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48188 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab0KYQts (ORCPT
+	id S1754377Ab0KYQtx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:49:53 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59835 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab0KYQtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:49:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:x-url:user-agent;
-        b=BMNYZMVo+0x+IsHh/Xb0CtZ955tvs2N1uWeY1+AbTRie1X4laNCAJdm+IFihTK70RE
-         adpr6v0wTbVWKdcTPDGfKUk1BGX0dn5yA9T/OK1Vz47G8q+qwXj3dl7trr4XUHuvFdoa
-         yZfxseE12H6p07zUdX3bCr+fBHLKZHFkfAdhE=
-Date: Thu, 25 Nov 2010 14:49:40 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt@console-pimps.org>
-Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to
-	"perf stat"
-Message-ID: <20101125164939.GG28916@ghostprotocols.net>
-References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com> <1290666760.2072.539.camel@laptop> <AANLkTinTNAwMCe_zu1snG1U5hSRafdBHQdzAr4e9nuWO@mail.gmail.com> <1290693720.2145.34.camel@laptop> <AANLkTinyL2eEfWoLoZqU-CFwC6Z3hGd0=9HgBhC_+Uef@mail.gmail.com> <1290694348.2145.37.camel@laptop> <AANLkTin0jv_ka9Bw0mZCeuxTWZfdLOseYdza_3e9vMi+@mail.gmail.com>
+	Thu, 25 Nov 2010 11:49:51 -0500
+Date: Thu, 25 Nov 2010 17:49:24 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Raoul Bhatia [IPAX]" <r.bhatia@ipax.at>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Subject: Re: [PATCH] trivial: fix typos in Documentation/edac.txt
+Message-ID: <20101125164923.GA32383@aftab>
+References: <4CEA729A.2070300@ipax.at>
+ <20101122144702.GA2704@kryptos.osrc.amd.com>
+ <4CEE7FF0.4090605@ipax.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin0jv_ka9Bw0mZCeuxTWZfdLOseYdza_3e9vMi+@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4CEE7FF0.4090605@ipax.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 25, 2010 at 03:18:58PM +0100, Stephane Eranian escreveu:
-> On Thu, Nov 25, 2010 at 3:12 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > perf-record already does that:
-> >
-> >        if (nr_counters > 1)
-> >                attr->sample_type |= PERF_SAMPLE_ID;
-> >
-> Ok, that's good.
-> The other thing I saw, is that perf report assumes that sample_type is the
-> same for all events, otherwise it dies.
+On Thu, Nov 25, 2010 at 10:25:36AM -0500, Raoul Bhatia [IPAX] wrote:
+> Fixing trivial typos in edac.txt.
+> patch for linux-2.6.36.1.
+> 
+> Signed-off-by: Raoul Bhatia <r.bhatia@ipax.at>
 
-Right, we need to have object attributes, and then pass them to
-perf_session__new, so that it creates the counters, etc, instead of
-having top, record, etc doing it in ad hoc ways.
+Ok, this is on its way of getting better but I still couldn't apply the
+patch and had to edit it by hand because it was garbled - maybe because
+you're using the browser to send email:
 
-I'll try to attack this soon, after tinishing the sample_type_id_all,
-that in the kernel is per attribute, but in the tooling side suffers
-from the one sample_type per session, not per attribute problem too.
+user-agent: Mozilla/5.0 (X11; U; Linux x86_64; de-DE; rv:1.9.2.13pre) Gecko/20101113 Shredder/3.1.7pre
 
-- Arnaldo
+and it obviously fiddles with whitespace.
+
+For the future, please take a look at <Documentation/email-clients.txt>
+for a good mail client to use when sending patches to LKML and after
+you've configured it, send the patch yourself first and try applying
+the received copy on another kernel repo (not the one you've used for
+creating the patch, of course; or create a new git branch and try
+applying it there). If it applies fine, your patch sending process works
+and you can send the patch now to LKML :)
+
+Anyway, applied.
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
