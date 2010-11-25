@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab0KYNhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 08:37:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39412 "EHLO mx2.suse.de"
+	id S1753013Ab0KYNjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 08:39:52 -0500
+Received: from borg.medozas.de ([188.40.89.202]:37253 "EHLO borg.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab0KYNhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 08:37:15 -0500
-Date: Thu, 25 Nov 2010 14:37:12 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Pavel Machek <pma@sysgo.com>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kdump: update kexec-tools URL and Vivek's email
-In-Reply-To: <1290648612-14964-1-git-send-email-horms@verge.net.au>
-Message-ID: <alpine.LNX.2.00.1011251437030.18801@pobox.suse.cz>
-References: <1290648612-14964-1-git-send-email-horms@verge.net.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751685Ab0KYNju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 08:39:50 -0500
+Date: Thu, 25 Nov 2010 14:39:49 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/2] Prepare the tree for un-inlined jhash.
+In-Reply-To: <1290690908-794-2-git-send-email-kadlec@blackhole.kfki.hu>
+Message-ID: <alpine.LNX.2.01.1011251439160.21752@obet.zrqbmnf.qr>
+References: <1290690908-794-1-git-send-email-kadlec@blackhole.kfki.hu> <1290690908-794-2-git-send-email-kadlec@blackhole.kfki.hu>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Nov 2010, Simon Horman wrote:
+On Thursday 2010-11-25 14:15, Jozsef Kadlecsik wrote:
 
-> Signed-off-by: Simon Horman <horms@verge.net.au>
-> ---
->  Documentation/kdump/kdump.txt |   15 +++++++++------
->  1 files changed, 9 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-> index cab61d8..7a9e0b4 100644
-> --- a/Documentation/kdump/kdump.txt
-> +++ b/Documentation/kdump/kdump.txt
-> @@ -65,18 +65,21 @@ Install kexec-tools
->  
->  2) Download the kexec-tools user-space package from the following URL:
->  
-> -http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/kexec-tools.tar.gz
-> +http://kernel.org/pub/linux/utils/kernel/kexec/kexec-tools.tar.gz
->  
->  This is a symlink to the latest version.
->  
->  The latest kexec-tools git tree is available at:
->  
-> -git://git.kernel.org/pub/scm/linux/kernel/git/horms/kexec-tools.git
-> -or
-> -http://www.kernel.org/git/?p=linux/kernel/git/horms/kexec-tools.git
-> +git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
-> +and
-> +http://www.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
-> +
-> +There is also a gitweb interface available at
-> +http://www.kernel.org/git/?p=utils/kernel/kexec/kexec-tools.git
->  
->  More information about kexec-tools can be found at
-> -http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/README.html
-> +http://www.kernel.org/pub/linux/utils/kernel/kexec/README.html
->  
->  3) Unpack the tarball with the tar command, as follows:
->  
-> @@ -439,6 +442,6 @@ To Do
->  Contact
->  =======
->  
-> -Vivek Goyal (vgoyal@in.ibm.com)
-> +Vivek Goyal (vgoyal@redhat.com)
->  Maneesh Soni (maneesh@in.ibm.com)
+>jhash is widely used in the kernel and because the functions
+>are inlined, the cost in size is significant. Also, the new jhash
+>functions are slightly larger than the previous ones so better un-inline.
+>As a preparation step, the calls to the internal macros are replaced
+>with the plain jhash function calls.
 
-Applied, thank you.
+Do you have a non-normative allyesconfig/allmodconfig build whose 
+size(1) you can run on, to show approximately just how much it differs?
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+
+thanks,
+Jan
