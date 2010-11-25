@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab0KYQow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:44:52 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61971 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab0KYQov (ORCPT
+	id S1754277Ab0KYQpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:45:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44357 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab0KYQoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:44:51 -0500
+	Thu, 25 Nov 2010 11:44:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UpgnHodHxvLHIZbUapvkf1is8nPq5EKKcSJhXxa+x5JSGJdSm+nxevTtkHFWkJKAaQ
-         ZF8MxogRB32IrbOlqmzyrcBMF7vF8/zctImW4eQAdSwsLMHpwmh/aZitQXTeTOpxcQyG
-         zP9Wa/GeIRq8KJ22sYj6xuYpM1K9vBeYmM26U=
-Subject: Re: TCP_MAXSEG vs TCP/generic segmentation offload (tso/gso)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Niels =?ISO-8859-1?Q?M=F6ller?= <nisse@lysator.liu.se>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <nn1v69qsjd.fsf@stalhein.lysator.liu.se>
-References: <nny68hqzzn.fsf@stalhein.lysator.liu.se>
-	 <1290695253.2858.336.camel@edumazet-laptop>
-	 <nnaakxqw1u.fsf@stalhein.lysator.liu.se>
-	 <1290698312.2858.341.camel@edumazet-laptop>
-	 <nn1v69qsjd.fsf@stalhein.lysator.liu.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Nov 2010 17:44:45 +0100
-Message-ID: <1290703485.2858.360.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=IKt0WLMPwBA1jj9MYGCGRbsoeJCm19aH748mXrggqLhCx9IPuA7utl3731I6Ci3qWp
+         veNyVxF81A5cr/Hza+Z1a/+VD7I8D5UJ/RlRGxi+WKZAtKWSvIg5huy9lq1p2J0qVeJZ
+         P4tNvGDU0LIet0i+X5IQcJ6tTvGsL32dgZhDU=
+Message-ID: <4CEE9280.9050504@suse.cz>
+Date: Thu, 25 Nov 2010 17:44:48 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>
+Subject: Re: mmotm 2010-11-23 - WARNING: at drivers/tty/tty_io.c:1331
+References: <201011240045.oAO0jYQ5016010@imap1.linux-foundation.org> <5747.1290574539@localhost> <20101125151436.GG22651@bombadil.infradead.org>
+In-Reply-To: <20101125151436.GG22651@bombadil.infradead.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 25 novembre 2010 à 17:25 +0100, Niels Möller a écrit :
-
-
+On 11/25/2010 04:14 PM, Kyle McMartin wrote:
+> On Tue, Nov 23, 2010 at 11:55:39PM -0500, Valdis.Kletnieks@vt.edu wrote:
+>> On Tue, 23 Nov 2010 16:13:06 PST, akpm@linux-foundation.org said:
+>>> The mm-of-the-moment snapshot 2010-11-23-16-12 has been uploaded to
+>>>
+>>>    http://userweb.kernel.org/~akpm/mmotm/
+>>
+>> Seen during boot:
+>>
+>> [   23.015448] Modules linked in:
+>> [   23.015453] Pid: 1207, comm: plymouthd Not tainted 2.6.37-rc3-mmotm1123 #3
+>> [   23.015455] Call Trace:
 > 
-> I was under the impression that TSO (and maybe GSO) implied more
-> cleverness in the network card; that the network card more or less gets
-> to decide by itself how to divide a tcp stream into segments. And for
-> example in the atl1c driver which I looked a bit into, this was what the
-> REG_MTU register was for. Seems I have gotten this totally wrong.
+> I've been trying to figure this one out for a while, without much luck.
+> (Users are seeing it in 2.6.36 as well.)
 > 
-
-You were not totally wrong, but device does not use its own MTU to
-perform the split : We give it the MSS of the flow.
-
-You can have multiple flows in parallel, each with its own MSS, while
-device has a single MTU.
-
-> Maybe Documentation/networking/netdevices.txt could clarify how it
-> works. Currently, it says
+> I *think* (I added a rawhide debugging patch to print the tty->name)
+> that plymouth is always opening tty7 to cause this. My guess is the BKL
+> removal has exposed some kind of race, but it's not obvious to me (and
+> there's many other bugs to sort through too. :(
 > 
-> : Segmentation Offload (GSO, TSO) is an exception to this rule.  The
-> : upper layer protocol may pass a large socket buffer to the device
-> : transmit routine, and the device will break that up into separate
-> : packets based on the current MTU.
+> CC-ing Jiri since he seems to be the poor guy who's been poking this
+> recently (there's a good few threads about this (though the others look
+> like an ldisc attach race...)) I wouldn't think that's the case here
+> since N_TTY is the default...
 
+Ok, tty_reopen is called without TTY_LDISC set. For further
+considerations, note tty_lock is held in tty_open. TTY_LDISC is cleared in:
 
-MTU means : maximum transmission unit. But each layer has its own :)
+1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+section tty_lock is held.
 
-In this context, TCP protocol, so MSS should be taken into account.
+2) tty_release via tty_ldisc_release till the end of tty existence. If
+tty->count <= 1, tty_lock is taken, TTY_CLOSING bit set and then
+tty_ldisc_release called. tty_reopen checks TTY_CLOSING before checking
+TTY_LDISC.
 
-By default, MSS derives from device MTU  (ipv4 without options case :
-MSS = MTU - 40), but user can change it with TCP_MAXSEG.
+3) tty_set_ldisc from tty_ldisc_halt to tty_ldisc_enable. We take
+tty_lock, set TTY_LDISC_CHANGING, put tty_lock, do some other work, take
+tty_lock, call tty_ldisc_enable, put tty_lock.
 
+So the only option I see is 3) and we should do:
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1310,7 +1310,8 @@ static int tty_reopen(struct tty_struct *tty)
+ {
+        struct tty_driver *driver = tty->driver;
 
+-       if (test_bit(TTY_CLOSING, &tty->flags))
++       if (test_bit(TTY_CLOSING, &tty->flags) ||
++                       test_bit(TTY_LDISC_CHANGING, &tty->flags))
+                return -EIO;
 
+        if (driver->type == TTY_DRIVER_TYPE_PTY &&
+
+Alan, Greg?
+
+thanks,
+-- 
+js
+suse labs
