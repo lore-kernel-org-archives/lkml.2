@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab0KYNgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 08:36:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37048 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752338Ab0KYNgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 08:36:43 -0500
-Date: Thu, 25 Nov 2010 13:36:50 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
-        lennart@poettering.net
-Subject: Re: [RFC/PATCH v6 03/12] media: Entities, pads and links
-Message-ID: <20101125133650.GA24208@opensource.wolfsonmicro.com>
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
- <1290652099-15102-4-git-send-email-laurent.pinchart@ideasonboard.com>
+	id S1753098Ab0KYNhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 08:37:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39412 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752328Ab0KYNhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 08:37:15 -0500
+Date: Thu, 25 Nov 2010 14:37:12 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Pavel Machek <pma@sysgo.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kdump: update kexec-tools URL and Vivek's email
+In-Reply-To: <1290648612-14964-1-git-send-email-horms@verge.net.au>
+Message-ID: <alpine.LNX.2.00.1011251437030.18801@pobox.suse.cz>
+References: <1290648612-14964-1-git-send-email-horms@verge.net.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290652099-15102-4-git-send-email-laurent.pinchart@ideasonboard.com>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 03:28:10AM +0100, Laurent Pinchart wrote:
+On Thu, 25 Nov 2010, Simon Horman wrote:
 
-> +Links have flags that describe the link capabilities and state.
-
-> +	MEDIA_LINK_FLAG_ACTIVE indicates that the link is active and can be
-> +	used to transfer media data. When two or more links target a sink pad,
-> +	only one of them can be active at a time.
-
-Is this supposed to reflect the current state (if the link is carrying
-data right now) or if it's possible for the link to carry data?
-
-> +struct media_entity {
-> +	struct list_head list;
-> +	struct media_device *parent;	/* Media device this entity belongs to*/
-> +	u32 id;				/* Entity ID, unique in the parent media
-> +					 * device context */
-> +	const char *name;		/* Entity name */
-> +	u32 type;			/* Entity type (MEDIA_ENTITY_TYPE_*) */
-> +	u32 revision;			/* Entity revision, driver specific */
-> +	unsigned long flags;		/* Entity flags (MEDIA_ENTITY_FLAG_*) */
-> +	u32 group_id;			/* Entity group ID */
+> Signed-off-by: Simon Horman <horms@verge.net.au>
+> ---
+>  Documentation/kdump/kdump.txt |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+> index cab61d8..7a9e0b4 100644
+> --- a/Documentation/kdump/kdump.txt
+> +++ b/Documentation/kdump/kdump.txt
+> @@ -65,18 +65,21 @@ Install kexec-tools
+>  
+>  2) Download the kexec-tools user-space package from the following URL:
+>  
+> -http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/kexec-tools.tar.gz
+> +http://kernel.org/pub/linux/utils/kernel/kexec/kexec-tools.tar.gz
+>  
+>  This is a symlink to the latest version.
+>  
+>  The latest kexec-tools git tree is available at:
+>  
+> -git://git.kernel.org/pub/scm/linux/kernel/git/horms/kexec-tools.git
+> -or
+> -http://www.kernel.org/git/?p=linux/kernel/git/horms/kexec-tools.git
+> +git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
+> +and
+> +http://www.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
 > +
-> +	u16 num_pads;			/* Number of input and output pads */
-> +	u16 num_links;			/* Number of existing links, both active
-> +					 * and inactive */
-> +	u16 num_backlinks;		/* Number of backlinks */
-> +	u16 max_links;			/* Maximum number of links */
-> +
-> +	struct media_pad *pads;		/* Pads array (num_pads elements) */
-> +	struct media_link *links;	/* Links array (max_links elements)*/
+> +There is also a gitweb interface available at
+> +http://www.kernel.org/git/?p=utils/kernel/kexec/kexec-tools.git
+>  
+>  More information about kexec-tools can be found at
+> -http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/README.html
+> +http://www.kernel.org/pub/linux/utils/kernel/kexec/README.html
+>  
+>  3) Unpack the tarball with the tar command, as follows:
+>  
+> @@ -439,6 +442,6 @@ To Do
+>  Contact
+>  =======
+>  
+> -Vivek Goyal (vgoyal@in.ibm.com)
+> +Vivek Goyal (vgoyal@redhat.com)
+>  Maneesh Soni (maneesh@in.ibm.com)
 
-Hrm.  This is getting kind of large, especially considering the volume
-of data we're holding per node and link already in ASoC.  On the other
-hand we may over time be able to refactor some of the existing stuff
-(especially the link management) to use this structure.
+Applied, thank you.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
