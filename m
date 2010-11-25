@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0KYQ2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:28:42 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64465 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab0KYQ2k (ORCPT
+	id S1754155Ab0KYQeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:34:15 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:49446 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab0KYQeO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:28:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YHhRl85WFKNA+hvVGGmEWM/29CsCJuBDWEDxroXxVq5TtwpmiNK7pUlit8ojwKwYDb
-         vw0++f2PE2NcKU0K7h3mlpGkynLtT7hoJ/2xx2V0uWNSWBHdCh5RBWMMwm8/l5pmC8OI
-         M4bpfF4vCz29f9lQIHUbv/BPMmal6CPv9A1zo=
-MIME-Version: 1.0
-In-Reply-To: <4CEE84B1.4070301@suse.cz>
-References: <20101029054310.790179545@goodmis.org>
-	<20101029054423.498608001@goodmis.org>
-	<AANLkTi=a8dp-WUNHAkx2fZ5GgNHmDw+ee7MDeUSL44Z0@mail.gmail.com>
-	<1288402042.29632.50.camel@gandalf.stny.rr.com>
-	<AANLkTi=JXFppmiyyo=Hc614=FpDhOO4h8SLTs=CUOvQv@mail.gmail.com>
-	<1289263747.12418.78.camel@gandalf.stny.rr.com>
-	<4CEE84B1.4070301@suse.cz>
-Date: Thu, 25 Nov 2010 11:21:51 -0500
-Message-ID: <AANLkTinZtnyL9CX8yHyXGN6S_2OHSEC-oJ_+eyNRApwE@mail.gmail.com>
-Subject: Re: [PATCH 1/5] [PATCH 1/5] kconfig: Make localmodconfig handle
- environment variables
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        Roman Zippel <zippel@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Nov 2010 11:34:14 -0500
+Subject: Re: [RFC][PATCH 2/8] perf, arch: Use early_initcall() for all arch
+ pmu implementations
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kyle Moffett <kyle@moffetthome.net>, linux-kernel@vger.kernel.org,
+        davem <davem@davemloft.net>, Michael Cree <mcree@orcon.net.nz>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>, Don Zickus <dzickus@redhat.com>
+In-Reply-To: <1290702150.2059.10.camel@e102144-lin.cambridge.arm.com>
+References: <20101117221730.002627458@chello.nl>
+	 <20101117222056.040309789@chello.nl>  <1290680713.2145.18.camel@laptop>
+	 <1290696476.2145.46.camel@laptop>
+	 <1290702150.2059.10.camel@e102144-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 25 Nov 2010 17:34:12 +0100
+Message-ID: <1290702852.2145.60.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2010-11-25 at 16:22 +0000, Will Deacon wrote:
+> What tree/branch are these patches taken against? They don't seem
+> to apply against -rc3 or tip/master.
 
-On Thu, Nov 25, 2010 at 10:45 AM, Michal Marek <mmarek@suse.cz> wrote:
-> What information does localmodconfig need? A list of config options and
-> their computed dependencies and a flag for each option if it has prompt,
-> anything else? So a scripts/kconfig/conf --dump-kconfig that would
-> produce such flat list should suffice, without the complexity of having
-> to build a perl binding first (and would be usable from bash/awk/python
-> scripts as well). What do you think?
->
-Just as a FYI, the output of zconfdump() does not respect the kconfig
-syntax. I've got some patches to fix that, but I've not been able to
-touch them since a few weeks now.
+tip/master + my quilt queue
 
- - Arnaud
+>  Anyway, I currently have some
+> pending patches to split up the monolithic perf_event.c we have for ARM
+> so that different PMU implementations can live in different files (in
+> the same way that x86 does it). This might mean that your initcall patch
+> no longer applies because it will be a couple of thousand lines higher
+> up in the file. 
+
+That's ok, I'm sure we can sort that out when I've got stuff working ;-)
