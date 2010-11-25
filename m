@@ -1,284 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab0KYCci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 21:32:38 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:43448 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631Ab0KYCcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 21:32:36 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-Subject: [RFC/PATCH v6 12/12] v4l: Make v4l2_subdev inherit from media_entity
-Date: Thu, 25 Nov 2010 03:28:19 +0100
-Message-Id: <1290652099-15102-13-git-send-email-laurent.pinchart@ideasonboard.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	id S1756724Ab0KYCjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 21:39:25 -0500
+Received: from ozlabs.org ([203.10.76.45]:49109 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756686Ab0KYCjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Nov 2010 21:39:24 -0500
+Subject: Re: [PATCH 1/3] jump label: add enabled/disabled state to jump
+ label key entries
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1290613997.30543.529.camel@gandalf.stny.rr.com>
+References: <cover.1290546539.git.jbaron@redhat.com>
+	 <d03959060763fecdf2523a3f1353e1fc59f8f4a1.1290546539.git.jbaron@redhat.com>
+	 <1290586809.2072.424.camel@laptop> <20101124145401.GA2815@redhat.com>
+	 <1290611478.2072.482.camel@laptop> <20101124151936.GB2815@redhat.com>
+	 <1290612245.2072.486.camel@laptop>  <20101124154200.GD2815@redhat.com>
+	 <1290613997.30543.529.camel@gandalf.stny.rr.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-59KmcWMqFJUlOFs4/H2l"
+Date: Thu, 25 Nov 2010 13:39:22 +1100
+Message-ID: <1290652762.18088.4.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V4L2 subdevices are media entities. As such they need to inherit from
-(include) the media_entity structure.
 
-When registering/unregistering the subdevice, the media entity is
-automatically registered/unregistered. The entity is acquired on device
-open and released on device close.
+--=-59KmcWMqFJUlOFs4/H2l
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
----
- Documentation/video4linux/v4l2-framework.txt |   23 ++++++++++++++
- drivers/media/video/v4l2-device.c            |   39 ++++++++++++++++++++----
- drivers/media/video/v4l2-subdev.c            |   41 ++++++++++++++++++++++++-
- include/media/v4l2-subdev.h                  |   10 ++++++
- 4 files changed, 104 insertions(+), 9 deletions(-)
+On Wed, 2010-11-24 at 10:53 -0500, Steven Rostedt wrote:
+> On Wed, 2010-11-24 at 10:42 -0500, Jason Baron wrote:
+>=20
+> > > And I think the only arch where you can do text pokes without cross-c=
+pu
+> > > synchronization is one that doesn't have SMP support.
+> > >=20
+> > >=20
+> >=20
+> > is this really true?
+> >=20
+> > The powerpc implementation uses patch_instruction():
+> >=20
+> >=20
+> > arch/powerpc/lib/code-patching.c:
+> >=20
+> > void patch_instruction(unsigned int *addr, unsigned int instr)
+> > {
+> >         *addr =3D instr;
+> >         asm ("dcbst 0, %0; sync; icbi 0,%0; sync; isync" : : "r"
+> > (addr));
+> > }
+>=20
+> Is this ever called outside of boot up? After SMP is enabled? (besides
+> for creating trampolines, before they are used).
 
-diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
-index f231bc20..d0fb880 100644
---- a/Documentation/video4linux/v4l2-framework.txt
-+++ b/Documentation/video4linux/v4l2-framework.txt
-@@ -268,6 +268,26 @@ A sub-device driver initializes the v4l2_subdev struct using:
- Afterwards you need to initialize subdev->name with a unique name and set the
- module owner. This is done for you if you use the i2c helper functions.
- 
-+If integration with the media framework is needed, you must initialize the
-+media_entity struct embedded in the v4l2_subdev struct (entity field) by
-+calling media_entity_init():
-+
-+	struct media_pad *pads = &my_sd->pads;
-+	int err;
-+
-+	err = media_entity_init(&sd->entity, npads, pads, 0);
-+
-+The pads array must have been previously initialized. There is no need to
-+manually set the struct media_entity type and name fields, but the revision
-+field must be initialized if needed.
-+
-+A reference to the entity will be automatically acquired/released when the
-+subdev device node (if any) is opened/closed.
-+
-+Don't forget to cleanup the media entity before the sub-device is destroyed:
-+
-+	media_entity_cleanup(&sd->entity);
-+
- A device (bridge) driver needs to register the v4l2_subdev with the
- v4l2_device:
- 
-@@ -277,6 +297,9 @@ This can fail if the subdev module disappeared before it could be registered.
- After this function was called successfully the subdev->dev field points to
- the v4l2_device.
- 
-+If the v4l2_device parent device has a non-NULL mdev field, the sub-device
-+entity will be automatically registered with the media device.
-+
- You can unregister a sub-device using:
- 
- 	v4l2_device_unregister_subdev(sd);
-diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
-index 8447466..7ac4d0f 100644
---- a/drivers/media/video/v4l2-device.c
-+++ b/drivers/media/video/v4l2-device.c
-@@ -115,8 +115,11 @@ void v4l2_device_unregister(struct v4l2_device *v4l2_dev)
- EXPORT_SYMBOL_GPL(v4l2_device_unregister);
- 
- int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
--						struct v4l2_subdev *sd)
-+				struct v4l2_subdev *sd)
- {
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	struct media_entity *entity = &sd->entity;
-+#endif
- 	struct video_device *vdev;
- 	int err;
- 
-@@ -134,7 +137,16 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
- 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler);
- 	if (err)
- 		return err;
--
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	/* Register the entity. */
-+	if (v4l2_dev->mdev) {
-+		err = media_device_register_entity(v4l2_dev->mdev, entity);
-+		if (err < 0) {
-+			module_put(sd->owner);
-+			return err;
-+		}
-+	}
-+#endif
- 	sd->v4l2_dev = v4l2_dev;
- 	spin_lock(&v4l2_dev->lock);
- 	list_add_tail(&sd->list, &v4l2_dev->subdevs);
-@@ -149,26 +161,39 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
- 	if (sd->flags & V4L2_SUBDEV_FL_HAS_DEVNODE) {
- 		err = __video_register_device(vdev, VFL_TYPE_SUBDEV, -1, 1,
- 					      sd->owner);
--		if (err < 0)
-+		if (err < 0) {
- 			v4l2_device_unregister_subdev(sd);
-+			return err;
-+		}
- 	}
--
--	return err;
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	entity->v4l.major = VIDEO_MAJOR;
-+	entity->v4l.minor = vdev->minor;
-+#endif
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(v4l2_device_register_subdev);
- 
- void v4l2_device_unregister_subdev(struct v4l2_subdev *sd)
- {
-+	struct v4l2_device *v4l2_dev;
-+
- 	/* return if it isn't registered */
- 	if (sd == NULL || sd->v4l2_dev == NULL)
- 		return;
- 
--	spin_lock(&sd->v4l2_dev->lock);
-+	v4l2_dev = sd->v4l2_dev;
-+
-+	spin_lock(&v4l2_dev->lock);
- 	list_del(&sd->list);
--	spin_unlock(&sd->v4l2_dev->lock);
-+	spin_unlock(&v4l2_dev->lock);
- 	sd->v4l2_dev = NULL;
- 
- 	module_put(sd->owner);
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	if (v4l2_dev->mdev)
-+		media_device_unregister_entity(&sd->entity);
-+#endif
- 	video_unregister_device(&sd->devnode);
- }
- EXPORT_SYMBOL_GPL(v4l2_device_unregister_subdev);
-diff --git a/drivers/media/video/v4l2-subdev.c b/drivers/media/video/v4l2-subdev.c
-index 002281c..3f09e23 100644
---- a/drivers/media/video/v4l2-subdev.c
-+++ b/drivers/media/video/v4l2-subdev.c
-@@ -34,7 +34,10 @@ static int subdev_open(struct file *file)
- {
- 	struct video_device *vdev = video_devdata(file);
- 	struct v4l2_subdev *sd = vdev_to_v4l2_subdev(vdev);
--	struct v4l2_fh *vfh;
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	struct media_entity *entity;
-+#endif
-+	struct v4l2_fh *vfh = NULL;
- 	int ret;
- 
- 	if (!sd->initialized)
-@@ -60,11 +63,20 @@ static int subdev_open(struct file *file)
- 		v4l2_fh_add(vfh);
- 		file->private_data = vfh;
- 	}
--
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	if (sd->v4l2_dev->mdev) {
-+		entity = media_entity_get(&sd->entity);
-+		if (!entity) {
-+			ret = -EBUSY;
-+			goto err;
-+		}
-+	}
-+#endif
- 	return 0;
- 
- err:
- 	if (vfh != NULL) {
-+		v4l2_fh_del(vfh);
- 		v4l2_fh_exit(vfh);
- 		kfree(vfh);
- 	}
-@@ -74,8 +86,16 @@ err:
- 
- static int subdev_close(struct file *file)
- {
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	struct video_device *vdev = video_devdata(file);
-+	struct v4l2_subdev *sd = vdev_to_v4l2_subdev(vdev);
-+#endif
- 	struct v4l2_fh *vfh = file->private_data;
- 
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	if (sd->v4l2_dev->mdev)
-+		media_entity_put(&sd->entity);
-+#endif
- 	if (vfh != NULL) {
- 		v4l2_fh_del(vfh);
- 		v4l2_fh_exit(vfh);
-@@ -175,5 +195,22 @@ void v4l2_subdev_init(struct v4l2_subdev *sd, const struct v4l2_subdev_ops *ops)
- 	sd->dev_priv = NULL;
- 	sd->host_priv = NULL;
- 	sd->initialized = 1;
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	sd->entity.name = sd->name;
-+	sd->entity.type = MEDIA_ENTITY_TYPE_SUBDEV;
-+#endif
- }
- EXPORT_SYMBOL(v4l2_subdev_init);
-+
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+int v4l2_subdev_set_power(struct media_entity *entity, int power)
-+{
-+	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
-+
-+	dev_dbg(entity->parent->dev,
-+		"%s power%s\n", entity->name, power ? "on" : "off");
-+
-+	return v4l2_subdev_call(sd, core, s_power, power);
-+}
-+EXPORT_SYMBOL_GPL(v4l2_subdev_set_power);
-+#endif
-diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
-index 68cbe48..7d55b0c 100644
---- a/include/media/v4l2-subdev.h
-+++ b/include/media/v4l2-subdev.h
-@@ -21,6 +21,7 @@
- #ifndef _V4L2_SUBDEV_H
- #define _V4L2_SUBDEV_H
- 
-+#include <media/media-entity.h>
- #include <media/v4l2-common.h>
- #include <media/v4l2-dev.h>
- #include <media/v4l2-mediabus.h>
-@@ -437,6 +438,9 @@ struct v4l2_subdev_ops {
-    stand-alone or embedded in a larger struct.
-  */
- struct v4l2_subdev {
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	struct media_entity entity;
-+#endif
- 	struct list_head list;
- 	struct module *owner;
- 	u32 flags;
-@@ -458,6 +462,8 @@ struct v4l2_subdev {
- 	unsigned int nevents;
- };
- 
-+#define media_entity_to_v4l2_subdev(ent) \
-+	container_of(ent, struct v4l2_subdev, entity)
- #define vdev_to_v4l2_subdev(vdev) \
- 	container_of(vdev, struct v4l2_subdev, devnode)
- 
-@@ -486,6 +492,10 @@ static inline void *v4l2_get_subdev_hostdata(const struct v4l2_subdev *sd)
- void v4l2_subdev_init(struct v4l2_subdev *sd,
- 		      const struct v4l2_subdev_ops *ops);
- 
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+int v4l2_subdev_set_power(struct media_entity *entity, int power);
-+#endif
-+
- /* Call an ops of a v4l2_subdev, doing the right checks against
-    NULL pointers.
- 
--- 
-1.7.2.2
+It is now :)
+
+AFAIK it works fine, the icbi invalidates across all processors. The
+only issue is that it's not precise, ie. another CPU might not see the
+update immediately, but as soon as it takes an interrupt or something it
+will.
+
+What would suit us would be to have an arch callback that is called
+after all the transforms for a particular jump label key have been made.
+That way we could optimise the individual patches, and do a sync step at
+the end, ie. when we want the effect of the patching to be globally
+visible.
+
+cheers
+
+
+
+--=-59KmcWMqFJUlOFs4/H2l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkztzFcACgkQdSjSd0sB4dL2JgCgtIA/d3vWKNTYOu/C8VG8z2HV
+5SQAoMAqdfV6gDRb1evbUZMgvwPCuGGY
+=bimi
+-----END PGP SIGNATURE-----
+
+--=-59KmcWMqFJUlOFs4/H2l--
 
