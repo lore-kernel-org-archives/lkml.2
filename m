@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab0KYRVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 12:21:24 -0500
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:35483 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab0KYRVV (ORCPT
+	id S1753891Ab0KYRa3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 12:30:29 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44548 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab0KYRa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 12:21:21 -0500
-Subject: Re: [patch 4/4] taskstats: Export "cdata_acct" with taskstats
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-In-Reply-To: <20101125132639.GB25836@redhat.com>
-References: <20101119201108.269346583@linux.vnet.ibm.com>
-	 <20101119201144.871656307@linux.vnet.ibm.com>
-	 <20101125132639.GB25836@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Thu, 25 Nov 2010 18:21:15 +0100
-Message-ID: <1290705675.1941.73.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 25 Nov 2010 12:30:28 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Subject: Re: [RFC/PATCH v6 02/12] media: Media device
+Date: Thu, 25 Nov 2010 18:30:39 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
+Cc: Clemens Ladisch <clemens@ladisch.de>, linux-media@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sakari.ailus@maxwell.research.nokia.com,
+        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
+References: <1q7hf5w7lvslx3nba6ooh9j2.1290705631030@email.android.com>
+In-Reply-To: <1q7hf5w7lvslx3nba6ooh9j2.1290705631030@email.android.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011251830.40522.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oleg,
+Hi Andy,
 
-On Thu, 2010-11-25 at 14:26 +0100, Oleg Nesterov wrote:
-> On 11/19, Michael Holzheu wrote:
-> >
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> >
-> > With this patch the (full) cumulative CPU time is added to "struct taskstats".
-> > The CPU time is only returned for the thread group leader.
-> >
-> > ...
-> >
-> > +	if (tsk->tgid == tsk->pid
+On Thursday 25 November 2010 18:20:31 Andy Walls wrote:
+> The signedness of char is ambiguous for 8 bit data, which is why an API
+> would normally use u8 (or s8, I guess).
 > 
-> thread_group_leader() ?
+> Since this is known to be character data, I would think char would be fine.
 
-Yes, that's better.
+I think so too.
 
-> > && lock_task_sighand(tsk, &flags)) {
-> 
-> Do you really need ->siglock? Starting from 2.6.35 it is always
-> safe to access ->signal.
+> I am assuming C compilers would never assume multibyte "char"s.
 
-Hmmm, if you say that...
+Not on sane platforms I guess. We would have problems much worse than MC API 
+breakage in that case anyway :-)
 
-I just did it like it is done in e.g. fs/proc/base.c (proc_pid_limits).
-Can we remove the locking there, too?
+-- 
+Regards,
 
-Michael
-
+Laurent Pinchart
