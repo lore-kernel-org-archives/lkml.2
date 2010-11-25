@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab0KYNjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 08:39:52 -0500
-Received: from borg.medozas.de ([188.40.89.202]:37253 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab0KYNju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 08:39:50 -0500
-Date: Thu, 25 Nov 2010 14:39:49 +0100 (CET)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/2] Prepare the tree for un-inlined jhash.
-In-Reply-To: <1290690908-794-2-git-send-email-kadlec@blackhole.kfki.hu>
-Message-ID: <alpine.LNX.2.01.1011251439160.21752@obet.zrqbmnf.qr>
-References: <1290690908-794-1-git-send-email-kadlec@blackhole.kfki.hu> <1290690908-794-2-git-send-email-kadlec@blackhole.kfki.hu>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1753185Ab0KYNkI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 08:40:08 -0500
+Received: from mailhost-y4-m4.nerim.net ([78.40.49.241]:24196 "EHLO
+	smtp-delay2.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752824Ab0KYNkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 08:40:06 -0500
+X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Nov 2010 08:40:06 EST
+Date: Thu, 25 Nov 2010 14:31:06 +0100
+From: Damien Wyart <damien.wyart@free.fr>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tmhikaru@gmail.com, Venkatesh Pallipadi <venki@google.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+Message-ID: <20101125133106.GA12914@brouette>
+References: <1287788622-25860-1-git-send-email-venki@google.com>
+ <1288001573.15336.52.camel@twins>
+ <1288097074.15336.211.camel@twins>
+ <1288101958.15336.284.camel@twins>
+ <1288381343.1988.12.camel@laptop>
+ <20101109185516.GQ8332@bombadil.infradead.org>
+ <1289329348.2191.69.camel@laptop>
+ <20101110034507.GV8332@bombadil.infradead.org>
+ <1289390424.2191.98.camel@laptop>
+ <20101114051406.GA2050@roll>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101114051406.GA2050@roll>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 2010-11-25 14:15, Jozsef Kadlecsik wrote:
+Hi Peter,
 
->jhash is widely used in the kernel and because the functions
->are inlined, the cost in size is significant. Also, the new jhash
->functions are slightly larger than the previous ones so better un-inline.
->As a preparation step, the calls to the internal macros are replaced
->with the plain jhash function calls.
+Do you have a plan about solving this problem in the coming weeks or
+will it still be present in 2.6.37 final? I am not implying any critic
+in any way, just want to know a status because compared to other bugs
+discussed in lkml, this one has seen very little technical proposals
+towards a resolution (except your attempts). People who signed off the
+discussed commit did not make any technical analysis about the bug
+reported and this gives a strange feeling. Earth will not stop rotating
+if it is not solved, but I still this it is quite important and affects
+many users.
 
-Do you have a non-normative allyesconfig/allmodconfig build whose 
-size(1) you can run on, to show approximately just how much it differs?
+> [74f5187ac873042f502227701ed1727e7c5fbfa9] sched: Cure load average vs> NO_HZ woes
 
+> We've gone through two kernel releases with this commit, and I think
+> I'm understandably curious why it's not been reverted if it's causing
+> problems with no solution in sight.
 
-thanks,
-Jan
+Even with this commit reverted, the load is incorrect in NO_HZ mode, so
+revert only is not enough.
+
+-- 
+Damien Wyart
