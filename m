@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0KYRa3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 12:30:29 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:44548 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab0KYRa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 12:30:28 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Andy Walls <awalls@md.metrocast.net>
-Subject: Re: [RFC/PATCH v6 02/12] media: Media device
-Date: Thu, 25 Nov 2010 18:30:39 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-media@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-References: <1q7hf5w7lvslx3nba6ooh9j2.1290705631030@email.android.com>
-In-Reply-To: <1q7hf5w7lvslx3nba6ooh9j2.1290705631030@email.android.com>
+	id S1753681Ab0KYRga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 12:36:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179Ab0KYRg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 12:36:29 -0500
+Date: Thu, 25 Nov 2010 18:35:18 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 17 of 66] add pmd mangling generic functions
+Message-ID: <20101125173518.GR6118@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <6022613f956ee326d9b6.1288798072@v2.random>
+ <20101118125249.GN8135@csn.ul.ie>
+ <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011251830.40522.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Thu, Nov 18, 2010 at 09:32:36AM -0800, Linus Torvalds wrote:
+> I dunno. Those macros are _way_ too big and heavy to be macros or
+> inline functions. Why aren't pmdp_splitting_flush() etc just
+> functions?
 
-On Thursday 25 November 2010 18:20:31 Andy Walls wrote:
-> The signedness of char is ambiguous for 8 bit data, which is why an API
-> would normally use u8 (or s8, I guess).
+That's because ptep_clear_flush and everything else in that file named
+with ptep_* and doing expensive tlb flushes was a macro.
+
 > 
-> Since this is known to be character data, I would think char would be fine.
+> There is no performance advantage to inlining them - the TLB flush is
+> going to be expensive enough that there's no point in avoiding a
+> function call. And that header file really does end up being _really_
+> ugly.
 
-I think so too.
+I agree but to me it looks like your compliant applies to the current
+include/asm-generic/pgtable.h. My changes that simply mirrors closely
+the style of that file to avoid altering coding style just for the new
+stuff. That is compact code that I'm not even sure if anybody is
+using, most certainly x86 isn't using that code so the .text bloat
+isn't a practical concern.
 
-> I am assuming C compilers would never assume multibyte "char"s.
-
-Not on sane platforms I guess. We would have problems much worse than MC API 
-breakage in that case anyway :-)
-
--- 
-Regards,
-
-Laurent Pinchart
+Do you like me to do a cleanup of the asm-generic/pgtable.h and move
+the tlb flushes to lib/pgtable.c? (ideally the pgtable.o file should
+be empty after the preprocessor runs on x86*)
