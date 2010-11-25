@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab0KYT0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 14:26:00 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42382 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab0KYTZ7 (ORCPT
+	id S1752242Ab0KYT0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 14:26:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53453 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab0KYT0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 14:25:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=DelmF+VUlpk8153x8Vyeo8TNDSVVedSokwU+8P4SPNdRzzCEWy/OvFE5BgtWPTJX32
-         faL3vPHrDtEX9Cg7/oDABqXrYRGuo3uTHkLQ9xbUJ2vErZ5U6KWbCNmSCfu89930l3Z/
-         +AmHGNTNdHrci89noVnfYvQzIjFoeCJAbkGVE=
-Date: Thu, 25 Nov 2010 22:25:45 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Andy Whitcroft <apw@canonical.com>, joe@perches.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [patch] checkpatch.pl: discourage pointless changes
-Message-ID: <20101125192545.GV1522@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andy Whitcroft <apw@canonical.com>, joe@perches.com,
-	linux-kernel@vger.kernel.org
+	Thu, 25 Nov 2010 14:26:53 -0500
+Message-ID: <4CEEB86F.8070105@infradead.org>
+Date: Thu, 25 Nov 2010 17:26:39 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
+        randy.dunlap@oracle.com, catalin.marinas@arm.com,
+        linux-kbuild@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xiyou.wangcong@gmail.com
+Subject: Re: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
+References: <20101011145930.11fe570c.randy.dunlap@oracle.com>	<1286889586-13483-1-git-send-email-mmarek@suse.cz>	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>	<20101122135715.121b5eb7.sfr@canb.auug.org.au> <AANLkTi=io3tsuL8Hd2a0y8PyBYYAzb-gkJo1GfmpcF+L@mail.gmail.com>
+In-Reply-To: <AANLkTi=io3tsuL8Hd2a0y8PyBYYAzb-gkJo1GfmpcF+L@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a message when people use the --file option to checkpatch.pl:
+Em 25-11-2010 15:16, Arnaud Lacombe escreveu:
+> Hi,
+> 
+> On Sun, Nov 21, 2010 at 9:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi,
+>>
+>> On Sun, 21 Nov 2010 20:58:54 -0500 Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>>
+>>> There is 2 patches which fixes that by adding to the kconfig language
+>>> a "visible" property to menus, 1 revert of "another" solution (which
+>>> works but does not scale) and 2 patch which makes usage of the new
+>>> property. Ack-ed and complemented by Mauro, but still waiting
+>>> review/blessing by Michal.
+>>>
+>>> The core change is available here: https://patchwork.kernel.org/patch/306412/
+>>>
+>>> Alternatively, if you don't care about the menu structure, Randy
+>>> proposed a one-liner.
+>>
+>> OK, good to know it is being worked on.  Thanks.
+>>
+> FYI, I withdrawn the patches and ask for them not to be merged[0], as
+> there is a clear lack of interest to see this issue resolved.
+> 
+> Mauro, may I ask you to remove my patches from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-next.git
+> kconfig_fixes
+> 
+> please ?
 
-NOTE: Checkpatch is a only a tool.
-      Only send patches which make the code unambiguously more readable.
-      Don't waste maintainer time.
+I prefer to have them there, while the issue remains at .37/-next builds.
 
-Most people use checkpatch.pl to check patches which they have written,
-but newbies use it with the --file option to find things to change.
->From the newbie perspective, we wrote checkpatch.pl so we should 
-obviously be happy to fix all the errors it reports.  But actually 
-maitainers get cranky and that makes the newbies sad and everyone has
-a bad day.
+It is a pain to see all those warnings polluting my console, every time 
+I recompile things, and I can't simply do a grep to discard MEDIA 
+warnings/errors (as someone proposed), as this may prevent me to get real
+errors at media builds.
 
-The message is quite blunt, but probably if people's feelings are hurt
-by a print from a script that means they are taking the script too
-seriously.
+The better is to give more time to Marek/Sam to review your patch
+series and ack or, if they don't agree, to send an alternative patchset
+to fix the issues or to revert the changeset that started to produce 
+those troubles.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e3c7fc0..36f95c1 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2937,6 +2937,13 @@ sub process {
- 		}
- 	}
- 
-+	if ($file && $clean == 0 && $quiet == 0) {
-+		print "NOTE: Checkpatch is a only a tool.\n";
-+		print "      Only send patches which make the code unambiguously more readable.\n";
-+		print "      Don't waste maintainer time.\n";
-+		print "\n";
-+	}
-+
- 	if ($clean == 1 && $quiet == 0) {
- 		print "$vname has no obvious style problems and is ready for submission.\n"
- 	}
+Cheers,
+Mauro
