@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab0KYHFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 02:05:13 -0500
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:52046 "EHLO
+	id S1752006Ab0KYHFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 02:05:11 -0500
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:52033 "EHLO
 	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0KYHFJ (ORCPT
+	with ESMTP id S1751374Ab0KYHFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Nov 2010 02:05:09 -0500
 From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH v2 1/2] perf bench: print both of prefaulted and no prefaulted results
-Date: Thu, 25 Nov 2010 16:04:52 +0900
-Message-Id: <1290668693-27068-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+Subject: [PATCH v2 2/2] perf bench: port arch/x86/lib/memcpy_64.S to perf bench mem memcpy
+Date: Thu, 25 Nov 2010 16:04:53 +0900
+Message-Id: <1290668693-27068-2-git-send-email-mitake@dcl.info.waseda.ac.jp>
 X-Mailer: git-send-email 1.6.5.2
 In-Reply-To: <4CEE0A66.6000409@dcl.info.waseda.ac.jp>
 References: <4CEE0A66.6000409@dcl.info.waseda.ac.jp>
@@ -29,29 +29,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After applying this patch, perf bench mem memcpy prints
-both of prefualted and without prefaulted score of memcpy().
+This patch ports arch/x86/lib/memcpy_64.S to perf bench mem memcpy
+for benchmarking memcpy() in userland with tricky and dirty way.
 
-New options --no-prefault and --only-prefault are added
-to print single result, mainly for scripting usage.
+util/include/asm/cpufeature.h, util/include/asm/dwarf2.h, and
+util/include/linux/linkage.h are dummy (but do a little work) for
+including memcpy_64.S without modification to it (e.g. defining ENTRY()).
 
-Example of usage:
-| mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB
-| # Running mem/memcpy benchmark...
-| # Copying 500MB Bytes ...
-|
-|      634.969014 MB/Sec
-|        4.828062 GB/Sec (with prefault)
-| mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB --only-prefault
-| # Running mem/memcpy benchmark...
-| # Copying 500MB Bytes ...
-|
-|        4.705192 GB/Sec (with prefault)
-| mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB --no-prefault
-| # Running mem/memcpy benchmark...
-| # Copying 500MB Bytes ...
-|
-|      642.725568 MB/Sec
+This makes checkpatch.pl angry like this:
+\#177: FILE: tools/perf/util/include/linux/linkage.h:7:
++#define ENTRY(name)                            \
++       .globl name;                            \
++       name:
+
+WARNING: labels should not be indented
+\#179: FILE: tools/perf/util/include/linux/linkage.h:9:
++       name:
+
+because checkpatch.pl treat this file as the file written in C.
+But I think this can be forgived because original include/linux/linkage.h
+is doing the similar thing.
 
 Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Miao Xie <miaox@cn.fujitsu.com>
@@ -66,303 +63,166 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 ---
- tools/perf/bench/mem-memcpy.c |  219 ++++++++++++++++++++++++++++++-----------
- 1 files changed, 162 insertions(+), 57 deletions(-)
+ tools/perf/Makefile                          |   11 +++++++++++
+ tools/perf/bench/mem-memcpy-arch.h           |   12 ++++++++++++
+ tools/perf/bench/mem-memcpy-x86-64-asm-def.h |    4 ++++
+ tools/perf/bench/mem-memcpy-x86-64-asm.S     |    2 ++
+ tools/perf/util/include/asm/cpufeature.h     |    9 +++++++++
+ tools/perf/util/include/asm/dwarf2.h         |   11 +++++++++++
+ tools/perf/util/include/linux/linkage.h      |   13 +++++++++++++
+ 7 files changed, 62 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/bench/mem-memcpy-arch.h
+ create mode 100644 tools/perf/bench/mem-memcpy-x86-64-asm-def.h
+ create mode 100644 tools/perf/bench/mem-memcpy-x86-64-asm.S
+ create mode 100644 tools/perf/util/include/asm/cpufeature.h
+ create mode 100644 tools/perf/util/include/asm/dwarf2.h
+ create mode 100644 tools/perf/util/include/linux/linkage.h
 
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 38dae74..db82021 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -12,6 +12,7 @@
- #include "../util/parse-options.h"
- #include "../util/header.h"
- #include "bench.h"
-+#include "mem-memcpy-arch.h"
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2d414b3..b3e6bc6 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -185,7 +185,10 @@ ifeq ($(ARCH),i386)
+         ARCH := x86
+ endif
+ ifeq ($(ARCH),x86_64)
++	RAW_ARCH := x86_64
+         ARCH := x86
++	ARCH_CFLAGS := -DARCH_X86_64
++	ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S
+ endif
  
- #include <stdio.h>
- #include <stdlib.h>
-@@ -23,8 +24,10 @@
+ # CFLAGS and LDFLAGS are for the users to override from the command line.
+@@ -375,6 +378,7 @@ LIB_H += util/include/linux/prefetch.h
+ LIB_H += util/include/linux/rbtree.h
+ LIB_H += util/include/linux/string.h
+ LIB_H += util/include/linux/types.h
++LIB_H += util/include/linux/linkage.h
+ LIB_H += util/include/asm/asm-offsets.h
+ LIB_H += util/include/asm/bug.h
+ LIB_H += util/include/asm/byteorder.h
+@@ -383,6 +387,8 @@ LIB_H += util/include/asm/swab.h
+ LIB_H += util/include/asm/system.h
+ LIB_H += util/include/asm/uaccess.h
+ LIB_H += util/include/dwarf-regs.h
++LIB_H += util/include/asm/dwarf2.h
++LIB_H += util/include/asm/cpufeature.h
+ LIB_H += perf.h
+ LIB_H += util/cache.h
+ LIB_H += util/callchain.h
+@@ -417,6 +423,7 @@ LIB_H += util/probe-finder.h
+ LIB_H += util/probe-event.h
+ LIB_H += util/pstack.h
+ LIB_H += util/cpumap.h
++LIB_H += $(ARCH_INCLUDE)
  
- static const char	*length_str	= "1MB";
- static const char	*routine	= "default";
--static bool		use_clock	= false;
-+static bool		use_clock;
- static int		clock_fd;
-+static bool		only_prefault;
-+static bool		no_prefault;
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -472,6 +479,9 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
++ifeq ($(RAW_ARCH),x86_64)
++BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
++endif
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
  
- static const struct option options[] = {
- 	OPT_STRING('l', "length", &length_str, "1MB",
-@@ -34,19 +37,33 @@ static const struct option options[] = {
- 		    "Specify routine to copy"),
- 	OPT_BOOLEAN('c', "clock", &use_clock,
- 		    "Use CPU clock for measuring"),
-+	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
-+		    "Show only the result with page faults before memcpy()"),
-+	OPT_BOOLEAN('n', "no-prefault", &no_prefault,
-+		    "Show only the result without page faults before memcpy()"),
- 	OPT_END()
- };
+ BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+@@ -909,6 +919,7 @@ BASIC_CFLAGS += -DSHA1_HEADER='$(SHA1_HEADER_SQ)' \
+ LIB_OBJS += $(COMPAT_OBJS)
  
-+typedef void *(*memcpy_t)(void *, const void *, size_t);
+ ALL_CFLAGS += $(BASIC_CFLAGS)
++ALL_CFLAGS += $(ARCH_CFLAGS)
+ ALL_LDFLAGS += $(BASIC_LDFLAGS)
+ 
+ export TAR INSTALL DESTDIR SHELL_PATH
+diff --git a/tools/perf/bench/mem-memcpy-arch.h b/tools/perf/bench/mem-memcpy-arch.h
+new file mode 100644
+index 0000000..a72e36c
+--- /dev/null
++++ b/tools/perf/bench/mem-memcpy-arch.h
+@@ -0,0 +1,12 @@
 +
- struct routine {
- 	const char *name;
- 	const char *desc;
--	void * (*fn)(void *dst, const void *src, size_t len);
-+	memcpy_t fn;
- };
- 
- struct routine routines[] = {
- 	{ "default",
- 	  "Default memcpy() provided by glibc",
- 	  memcpy },
 +#ifdef ARCH_X86_64
 +
-+#define MEMCPY_FN(fn, name, desc) { name, desc, fn },
++#define MEMCPY_FN(fn, name, desc)		\
++	extern void *fn(void *, const void *, size_t);
++
 +#include "mem-memcpy-x86-64-asm-def.h"
++
 +#undef MEMCPY_FN
 +
 +#endif
 +
- 	{ NULL,
- 	  NULL,
- 	  NULL   }
-@@ -89,29 +106,98 @@ static double timeval2double(struct timeval *ts)
- 		(double)ts->tv_usec / (double)1000000;
- }
- 
-+static void alloc_mem(void **dst, void **src, size_t length)
-+{
-+	*dst = zalloc(length);
-+	if (!dst)
-+		die("memory allocation failed - maybe length is too large?\n");
+diff --git a/tools/perf/bench/mem-memcpy-x86-64-asm-def.h b/tools/perf/bench/mem-memcpy-x86-64-asm-def.h
+new file mode 100644
+index 0000000..d588b87
+--- /dev/null
++++ b/tools/perf/bench/mem-memcpy-x86-64-asm-def.h
+@@ -0,0 +1,4 @@
 +
-+	*src = zalloc(length);
-+	if (!src)
-+		die("memory allocation failed - maybe length is too large?\n");
-+}
++MEMCPY_FN(__memcpy,
++	"x86-64-unrolled",
++	"unrolled memcpy() in arch/x86/lib/memcpy_64.S")
+diff --git a/tools/perf/bench/mem-memcpy-x86-64-asm.S b/tools/perf/bench/mem-memcpy-x86-64-asm.S
+new file mode 100644
+index 0000000..a57b66e
+--- /dev/null
++++ b/tools/perf/bench/mem-memcpy-x86-64-asm.S
+@@ -0,0 +1,2 @@
 +
-+static u64 do_memcpy_clock(memcpy_t fn, size_t len, bool prefault)
-+{
-+	u64 clock_start = 0ULL, clock_end = 0ULL;
-+	void *src = NULL, *dst = NULL;
++#include "../../../arch/x86/lib/memcpy_64.S"
+diff --git a/tools/perf/util/include/asm/cpufeature.h b/tools/perf/util/include/asm/cpufeature.h
+new file mode 100644
+index 0000000..acffd5e
+--- /dev/null
++++ b/tools/perf/util/include/asm/cpufeature.h
+@@ -0,0 +1,9 @@
 +
-+	alloc_mem(&src, &dst, len);
++#ifndef PERF_CPUFEATURE_H
++#define PERF_CPUFEATURE_H
 +
-+	if (prefault)
-+		fn(dst, src, len);
++/* cpufeature.h ... dummy header file for including arch/x86/lib/memcpy_64.S */
 +
-+	clock_start = get_clock();
-+	fn(dst, src, len);
-+	clock_end = get_clock();
++#define X86_FEATURE_REP_GOOD 0
 +
-+	free(src);
-+	free(dst);
-+	return clock_end - clock_start;
-+}
++#endif	/* PERF_CPUFEATURE_H */
+diff --git a/tools/perf/util/include/asm/dwarf2.h b/tools/perf/util/include/asm/dwarf2.h
+new file mode 100644
+index 0000000..bb4198e
+--- /dev/null
++++ b/tools/perf/util/include/asm/dwarf2.h
+@@ -0,0 +1,11 @@
 +
-+static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
-+{
-+	struct timeval tv_start, tv_end, tv_diff;
-+	void *src = NULL, *dst = NULL;
++#ifndef PERF_DWARF2_H
++#define PERF_DWARF2_H
 +
-+	alloc_mem(&src, &dst, len);
++/* dwarf2.h ... dummy header file for including arch/x86/lib/memcpy_64.S */
 +
-+	if (prefault)
-+		fn(dst, src, len);
++#define CFI_STARTPROC
++#define CFI_ENDPROC
 +
-+	BUG_ON(gettimeofday(&tv_start, NULL));
-+	fn(dst, src, len);
-+	BUG_ON(gettimeofday(&tv_end, NULL));
++#endif	/* PERF_DWARF2_H */
 +
-+	timersub(&tv_end, &tv_start, &tv_diff);
+diff --git a/tools/perf/util/include/linux/linkage.h b/tools/perf/util/include/linux/linkage.h
+new file mode 100644
+index 0000000..06387cf
+--- /dev/null
++++ b/tools/perf/util/include/linux/linkage.h
+@@ -0,0 +1,13 @@
 +
-+	free(src);
-+	free(dst);
-+	return (double)((double)len / timeval2double(&tv_diff));
-+}
++#ifndef PERF_LINUX_LINKAGE_H_
++#define PERF_LINUX_LINKAGE_H_
 +
-+#define pf (no_prefault ? 0 : 1)
++/* linkage.h ... for including arch/x86/lib/memcpy_64.S */
 +
-+#define print_bps(x) do {					\
-+		if (x < K)					\
-+			printf(" %14lf B/Sec", x);		\
-+		else if (x < K * K)				\
-+			printf(" %14lfd KB/Sec", x / K);	\
-+		else if (x < K * K * K)				\
-+			printf(" %14lf MB/Sec", x / K / K);	\
-+		else						\
-+			printf(" %14lf GB/Sec", x / K / K / K); \
-+	} while (0)
++#define ENTRY(name)				\
++	.globl name;				\
++	name:
 +
- int bench_mem_memcpy(int argc, const char **argv,
- 		     const char *prefix __used)
- {
- 	int i;
--	void *dst, *src;
--	size_t length;
--	double bps = 0.0;
--	struct timeval tv_start, tv_end, tv_diff;
--	u64 clock_start, clock_end, clock_diff;
-+	size_t len;
-+	double result_bps[2];
-+	u64 result_clock[2];
- 
--	clock_start = clock_end = clock_diff = 0ULL;
- 	argc = parse_options(argc, argv, options,
- 			     bench_mem_memcpy_usage, 0);
- 
--	tv_diff.tv_sec = 0;
--	tv_diff.tv_usec = 0;
--	length = (size_t)perf_atoll((char *)length_str);
-+	if (use_clock)
-+		init_clock();
++#define ENDPROC(name)
 +
-+	len = (size_t)perf_atoll((char *)length_str);
- 
--	if ((s64)length <= 0) {
-+	result_clock[0] = result_clock[1] = 0ULL;
-+	result_bps[0] = result_bps[1] = 0.0;
-+
-+	if ((s64)len <= 0) {
- 		fprintf(stderr, "Invalid length:%s\n", length_str);
- 		return 1;
- 	}
- 
-+	/* same to without specifying either of prefault and no-prefault */
-+	if (only_prefault && no_prefault)
-+		only_prefault = no_prefault = false;
-+
- 	for (i = 0; routines[i].name; i++) {
- 		if (!strcmp(routines[i].name, routine))
- 			break;
-@@ -126,61 +212,80 @@ int bench_mem_memcpy(int argc, const char **argv,
- 		return 1;
- 	}
- 
--	dst = zalloc(length);
--	if (!dst)
--		die("memory allocation failed - maybe length is too large?\n");
--
--	src = zalloc(length);
--	if (!src)
--		die("memory allocation failed - maybe length is too large?\n");
--
--	if (bench_format == BENCH_FORMAT_DEFAULT) {
--		printf("# Copying %s Bytes from %p to %p ...\n\n",
--		       length_str, src, dst);
--	}
--
--	if (use_clock) {
--		init_clock();
--		clock_start = get_clock();
--	} else {
--		BUG_ON(gettimeofday(&tv_start, NULL));
--	}
--
--	routines[i].fn(dst, src, length);
-+	if (bench_format == BENCH_FORMAT_DEFAULT)
-+		printf("# Copying %s Bytes ...\n\n", length_str);
- 
--	if (use_clock) {
--		clock_end = get_clock();
--		clock_diff = clock_end - clock_start;
-+	if (!only_prefault && !no_prefault) {
-+		/* show both of results */
-+		if (use_clock) {
-+			result_clock[0] =
-+				do_memcpy_clock(routines[i].fn, len, false);
-+			result_clock[1] =
-+				do_memcpy_clock(routines[i].fn, len, true);
-+		} else {
-+			result_bps[0] =
-+				do_memcpy_gettimeofday(routines[i].fn,
-+						len, false);
-+			result_bps[1] =
-+				do_memcpy_gettimeofday(routines[i].fn,
-+						len, true);
-+		}
- 	} else {
--		BUG_ON(gettimeofday(&tv_end, NULL));
--		timersub(&tv_end, &tv_start, &tv_diff);
--		bps = (double)((double)length / timeval2double(&tv_diff));
-+		if (use_clock) {
-+			result_clock[pf] =
-+				do_memcpy_clock(routines[i].fn,
-+						len, only_prefault);
-+		} else {
-+			result_bps[pf] =
-+				do_memcpy_gettimeofday(routines[i].fn,
-+						len, only_prefault);
-+		}
- 	}
- 
- 	switch (bench_format) {
- 	case BENCH_FORMAT_DEFAULT:
--		if (use_clock) {
--			printf(" %14lf Clock/Byte\n",
--			       (double)clock_diff / (double)length);
--		} else {
--			if (bps < K)
--				printf(" %14lf B/Sec\n", bps);
--			else if (bps < K * K)
--				printf(" %14lfd KB/Sec\n", bps / 1024);
--			else if (bps < K * K * K)
--				printf(" %14lf MB/Sec\n", bps / 1024 / 1024);
--			else {
--				printf(" %14lf GB/Sec\n",
--				       bps / 1024 / 1024 / 1024);
-+		if (!only_prefault && !no_prefault) {
-+			if (use_clock) {
-+				printf(" %14lf Clock/Byte\n",
-+					(double)result_clock[0]
-+					/ (double)len);
-+				printf(" %14lf Clock/Byte (with prefault)\n",
-+					(double)result_clock[1]
-+					/ (double)len);
-+			} else {
-+				print_bps(result_bps[0]);
-+				printf("\n");
-+				print_bps(result_bps[1]);
-+				printf(" (with prefault)\n");
- 			}
-+		} else {
-+			if (use_clock) {
-+				printf(" %14lf Clock/Byte",
-+					(double)result_clock[pf]
-+					/ (double)len);
-+			} else
-+				print_bps(result_bps[pf]);
-+
-+			printf("%s\n", only_prefault ? " (with prefault)" : "");
- 		}
- 		break;
- 	case BENCH_FORMAT_SIMPLE:
--		if (use_clock) {
--			printf("%14lf\n",
--			       (double)clock_diff / (double)length);
--		} else
--			printf("%lf\n", bps);
-+		if (!only_prefault && !no_prefault) {
-+			if (use_clock) {
-+				printf("%lf %lf\n",
-+					(double)result_clock[0] / (double)len,
-+					(double)result_clock[1] / (double)len);
-+			} else {
-+				printf("%lf %lf\n",
-+					result_bps[0], result_bps[1]);
-+			}
-+		} else {
-+			if (use_clock) {
-+				printf("%lf\n", (double)result_clock[pf]
-+					/ (double)len);
-+			} else
-+				printf("%lf\n", result_bps[pf]);
-+		}
- 		break;
- 	default:
- 		/* reaching this means there's some disaster: */
++#endif	/* PERF_LINUX_LINKAGE_H_ */
 -- 
 1.6.5.2
 
