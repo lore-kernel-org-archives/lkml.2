@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab0KYP3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 10:29:42 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56906 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab0KYP3k (ORCPT
+	id S1753491Ab0KYPdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 10:33:04 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39069 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab0KYPdC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 10:29:40 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [RFC/PATCH v6 03/12] [alsa-devel] media: Entities, pads and links
-Date: Thu, 25 Nov 2010 16:29:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-media@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
-        lennart@poettering.net
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <4CEE2E7D.6060608@ladisch.de> <20101125134135.GB24208@opensource.wolfsonmicro.com>
-In-Reply-To: <20101125134135.GB24208@opensource.wolfsonmicro.com>
+	Thu, 25 Nov 2010 10:33:02 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011251629.54575.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <1290619929.10586.6.camel@nimitz>
+References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+	<20101122161158.02699d10.akpm@linux-foundation.org>
+	<1290501502.2390.7029.camel@nimitz>
+	<AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com>
+	<1290529171.2390.7994.camel@nimitz>
+	<AANLkTikCn-YvORocXSJ1Z+ovYNMhKF7TaX=BHWKwrQup@mail.gmail.com>
+	<AANLkTi=mgTHPEYFsryDYnxPa78f-Nr+H7i4+0KPZbxh3@mail.gmail.com>
+	<1290619929.10586.6.camel@nimitz>
+Date: Thu, 25 Nov 2010 16:33:01 +0100
+Message-ID: <AANLkTikT-svqverRLr7Mf6s-17VrOcP_BpyXFpDV=_7s@mail.gmail.com>
+Subject: Re: Sudden and massive page cache eviction
+From: =?UTF-8?Q?Peter_Sch=C3=BCller?= <scode@spotify.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Mattias de Zalenski <zalenski@spotify.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+> simple thing to do in any case.  You can watch the entries in slabinfo
+> and see if any of the ones with sizes over 4096 bytes are getting used
+> often.  You can also watch /proc/buddyinfo and see how often columns
+> other than the first couple are moving around.
 
-On Thursday 25 November 2010 14:41:35 Mark Brown wrote:
-> On Thu, Nov 25, 2010 at 10:38:05AM +0100, Clemens Ladisch wrote:
-> > In USB and HD audio devices, all links are immutable, and the routing
-> > is controlled by 'selector' entities that activate exactly one of their
-> > input pads.  In userspace, this entity shows up as a mixer control.
-> > I guess it would be possible to map the ACTIVE flag onto these controls.
-> 
-> Ditto for ASoC, mostly.
-> 
-> > Alternatively, entities can have 'mute' mixer controls associated with
-> > their pads.  In this case, multiple unmuted inputs would be mixed
-> > together.
-> > 
-> > ALSA has PCM and MIDI devices, and several types of mixer controls.
-> > (It also has hardware dependent and timer devices, but I don't think
-> > 
-> > these would need topology information.)  So we need at least these:
-> >   MEDIA_ENTITY_TYPE_NODE_ALSA_PCM
-> >   MEDIA_ENTITY_TYPE_NODE_ALSA_MIDI
-> >   MEDIA_ENTITY_TYPE_SUBDEV_ALSA_CONTROL
-> > 
-> > Furthermore, topology information is also needed for entities not
-> > associated with a mixer control, such as microphones, speakers, jacks/
-> > connectors, and effect units.  These entities are defined in the USB and
-> > HD audio specifications, but are not yet handled by ALSA.
-> 
-> All this and more in the embedded case - digital audio link nodes and DSP
-> I/O nodes (could possibly do those as digital audio ones) spring to
-> mind.  Also bear in mind that embedded devices can get *very* large - a
-> mobile phone audio system can have of the order of 100 nodes in the
-> graph.
+I collected some information from
+/proc/{buddyinfo,meminfo,slabinfo,vmstat} and let it sit, polling
+approximately once per minute. I have some results correlated with
+another page eviction in graphs. The graph is here:
 
-It depends on how you define nodes. I can certainly imagine a graph with 100 
-controls, but maybe several controls can be part of the same node ? On the 
-video side we've decided to split entities depending on the possible data 
-paths configurations. As I'm not a fluent ascii-art speaker, please have a 
-look at pages 4 and 5 of http://www.ideasonboard.org/media/20101103-lpc-
-media.pdf
+   http://files.spotify.com/memcut/memgraph-20101124.png
 
-Page 4 shows the internal topology of the OMAP3 ISP. The major blocks in that 
-diagram are reported as entities. Page 5 shows the internal topology of one of 
-the blocks, the OMAP3 ISP preview engine. As you can see the pipeline is made 
-of sub-blocks that implement a single image processing function. As the 
-pipeline is linear (don't worry about the non-linear part in the beginning, 
-it's just there to take into account link configurability at the higher level) 
-we don't export all the sub-blocks as entities, but we expose the controls on 
-the preview engine entity instead.
+The last sudden eviction there occurred somewhere between 22:30 and
+22:45. Some URL:s that can be compared for those periods:
 
-> > ALSA devices are not addressed by their device node but with card/device/
-> > 
-> > subdevice numbers; mixer controls have numeric IDs, unique per card:
-> > 		struct {
-> > 		
-> > 			int card;
-> > 			int device;
-> > 			int subdevice;
-> > 		
-> > 		} alsa_device;
-> > 		struct {
-> > 		
-> > 			int card;
-> > 			int numid;
-> > 		
-> > 		} alsa_control;
-> 
-> For the embedded stuff we also have a bunch of stuff in the graph which
-> may not be visible to userspace at all at present and would just have a
-> string based identifier.
+   Before:
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/vmstat
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/buddyinfo
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/meminfo
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/slabinfo
 
-That could be easily added (provided the string is not too long).
+   After:
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/vmstat
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/buddyinfo
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/meminfo
+   http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/slabinfo
+
+A more complete set of files for several minutes before/after/during
+is in this tarball:
+
+   http://files.spotify.com/memcut/memgraph-20101124.tar.gz
+
+Diffing the two slabinfos above yields among other things the
+following expected or at least plausible decreases since they
+correlate with the symptomes:
+
+-ext3_inode_cache  254638 693552    760   43    8 : tunables    0    0
+   0 : slabdata  16130  16130      0
++ext3_inode_cache   81698 468958    760   43    8 : tunables    0    0
+   0 : slabdata  10906  10906      0
+-dentry             96504 344232    192   42    2 : tunables    0    0
+   0 : slabdata   8196   8196      0
++dentry             55628 243810    192   42    2 : tunables    0    0
+   0 : slabdata   5805   5805      0
+
+And if my understanding is correct, buffer_head would be meta-data
+associated with cached pages and thus be expected to drop in
+correlation with less data cached:
+
+-buffer_head       2109250 4979052    104   39    1 : tunables    0
+0    0 : slabdata 127668 127668      0
++buffer_head       838859 4059822    104   39    1 : tunables    0
+0    0 : slabdata 104098 104098      0
+
+My knowledge of the implementation is lacking far too much to know
+where best to look for the likely culprit in terms of the root cause
+of the eviction. The one thing I thought looked suspicious was the
+kmalloc increases:
+
+-kmalloc-4096         301    328   4096    8    8 : tunables    0    0
+   0 : slabdata     41     41      0
++kmalloc-4096         637    680   4096    8    8 : tunables    0    0
+   0 : slabdata     85     85      0
+-kmalloc-2048       18215  19696   2048   16    8 : tunables    0    0
+   0 : slabdata   1231   1231      0
++kmalloc-2048       41908  51792   2048   16    8 : tunables    0    0
+   0 : slabdata   3237   3237      0
+-kmalloc-1024       85444  97280   1024   32    8 : tunables    0    0
+   0 : slabdata   3040   3040      0
++kmalloc-1024      267031 327104   1024   32    8 : tunables    0    0
+   0 : slabdata  10222  10222      0
+-kmalloc-512         1988   2176    512   32    4 : tunables    0    0
+   0 : slabdata     68     68      0
++kmalloc-512         1692   2080    512   32    4 : tunables    0    0
+   0 : slabdata     65     65      0
+-kmalloc-256       102588 119776    256   32    2 : tunables    0    0
+   0 : slabdata   3743   3743      0
++kmalloc-256       308470 370720    256   32    2 : tunables    0    0
+   0 : slabdata  11585  11585      0
+-kmalloc-128         8435   9760    128   32    1 : tunables    0    0
+   0 : slabdata    305    305      0
++kmalloc-128         8524   9760    128   32    1 : tunables    0    0
+   0 : slabdata    305    305      0
+-kmalloc-64         96176 405440     64   64    1 : tunables    0    0
+   0 : slabdata   6335   6335      0
++kmalloc-64         50001 352448     64   64    1 : tunables    0    0
+   0 : slabdata   5507   5507      0
+
+If my interpretation and understanding is correct, this indicates that
+for example, ~3000 to ~10000 3-order allocations resulting from 1 kb
+kmalloc():s. Meaning about 0.2 gig ( 7000*4*8*1024/1024/1024). Add the
+other ones and we get some more, but only a few hundred megs in total.
+
+Going by the hypothesis that we are seeing the same thing as reported
+by Simon Kirby (I'll respond to that E-Mail separately), the total
+amount is (as far as I understand) not the important part, but the
+fact that we saw a non-trivial increase in 3-order allocations would
+perhaps be a consistent observation in that frequent 3-order
+allocations might be more likely to trigger the behavior Simon
+reports.
+
+I can do additional post-processing on the data that was dumped (such
+as graphing it), but I'm not sure which parts would be the most
+interesting for figuring out what is going on. Is there something else
+I should be collecting for that matter, than the
+vmstat/slabinfo/buddyinfo/meminfo?
 
 -- 
-Regards,
-
-Laurent Pinchart
+/ Peter Schuller aka scode
