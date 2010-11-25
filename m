@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab0KYHOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 02:14:11 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43603 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab0KYHOI (ORCPT
+	id S1752120Ab0KYHOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 02:14:46 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:49249 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab0KYHOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 02:14:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=V191ynILg3+urYu/y3LkjN1oqA7Hv0BCiCZwsHkTaZR6FxdLMzTjqqRdXYOSkZRgB5
-         53D+tPMj4B1sTwcuUdgok7HT9zQwcSdIq12YH8UK8Lt9IYlm2VNlVaeXB/FnuFcTQWVn
-         DYaKNiyG1Y9tMn0H4SmsxX0B0yTyn2VbjMK4M=
-Subject: Re: Simple kernel attack using socketpair. easy, 100%
- reproductiblle, works under guest. no way to protect :(
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?UTF-8?Q?=D0=9C=D0=B0=D1=80=D0=BA_?=
-	 =?UTF-8?Q?=D0=9A=D0=BE=D1=80=D0=B5=D0=BD=D0=B1=D0=B5=D1=80=D0=B3?= 
-	<socketpair@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-In-Reply-To: <1290666501.2798.84.camel@edumazet-laptop>
-References: <AANLkTikCeddPFRGojPGuB6oq3xGYgovtm8r4=WhjEDpe@mail.gmail.com>
-	 <1290666501.2798.84.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Nov 2010 08:14:02 +0100
-Message-ID: <1290669242.2798.110.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 25 Nov 2010 02:14:45 -0500
+Date: Thu, 25 Nov 2010 16:15:08 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] ARM: s3x24xx: Fix gpiochip_add complaining.
+In-reply-to: <201011191253.58812.anarsoul@gmail.com>
+To: "'Vasily Khoruzhick'" <anarsoul@gmail.com>,
+        "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: linux-arm-kernel@lists.infradead.org, "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Marek Belisko'" <marek.belisko@open-nandra.com>,
+        linux-kernel@vger.kernel.org
+Message-id: <00b201cb8c70$7ff96e30$7fec4a90$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuH2BcTf70IWHV8T0uO6eHfFhXIqwEk+Jpw
+References: <1290158139-16105-1-git-send-email-marek.belisko@open-nandra.com>
+ <201011191123.22255.anarsoul@gmail.com> <4CE6547A.9070309@metafoo.de>
+ <201011191253.58812.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 25 novembre 2010 à 07:28 +0100, Eric Dumazet a écrit :
+Vasily Khoruzhick wrote:
+> 
+> On Friday 19 November 2010 12:42:02 Lars-Peter Clausen wrote:
+> > Hi
+> >
+Hi all,
+
+> > Well it actually causes problems on systems with external gpio
+expanders,
+> > because now the additional banks will take up the space which was meant
+> > for the gpio expander chip and peripherals connected to it wont be
+> > accessible.
+> 
+> Ok, but it would be nice to see some runtime soc-type detection for
+gpiolib.
+
+Yeah, I agree. We need to check SoC type for it during booting...
+
+> s3c2410/s3c2440/s3c2442 doesn't differ too much (actually, they're same in
+> gpiopart, s3c2410 lacks some gpiobanks that s3c244[0,2] have, and
+difference
+> in pull-up/pull-down on s3c2440 and s3c2442).
+> I think it's not good to make artificial restrictions for building single
+> binary kernel for these socs.
+> 
+> > I sent a patch[1] about this some time ago, but I guess it was never
+> > applied...
+
+Maybe you missed my e-mail...or..I missed?...anyway...
+Could you please re-send it so that can get the patch via e-mail?
 
 > 
-> Since you obviously read recent mails on this subject yesterday, why
-> dont you Cc netdev ?
+> Try pinging Ben or Kukjin :)
 > 
-> There is a very easy way to protect against this actually.
-> 
-> A patch was posted yesterday, and need some adjustements.
-> 
-> 
-> diff --git a/net/unix/garbage.c b/net/unix/garbage.c
-> index c8df6fd..40df93d 100644
-> --- a/net/unix/garbage.c
-> +++ b/net/unix/garbage.c
-> @@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
->  }
->  
->  static bool gc_in_progress = false;
-> +#define UNIX_INFLIGHT_TRIGGER_GC 2000
->  
->  void wait_for_unix_gc(void)
->  {
-> +	/*
-> +	 * If number of inflight sockets is insane,
-> +	 * force a garbage collect right now.
-> +	 */
-> +	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
-> +		unix_gc();
->  	wait_event(unix_gc_wait, gc_in_progress == false);
->  }
->  
-> 
+Thanks...
 
-Hmm... it seems its another problem, chains are very long so we hit a
-NMI watchdog.
+Basically, I'd like to keep single binary for S3C24XX, maybe Ben also agree
+with this. But also there is some side effects, i.e., according to
+mach-s3c2410/Makefile.boot, zreladdr is different. But only selected
+0x30108000 as zreladdr when build time because selected CONFIG_PM_H1940 with
+s3c2410_defconfig if there is no changes kernel configuration. This is just
+simple example. Maybe There are many similar examples.
 
-I guess we should limit to a very small number, like 64, or rewrite the
-garbage collector to a better algo.
+Hmm...anyway, we need to sort it out with keeping S3C24XX single binary.
+Will think some method for this...
 
-
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
