@@ -1,131 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab0KYQEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:04:33 -0500
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:39744 "EHLO
-	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab0KYQEc (ORCPT
+	id S1753681Ab0KYQGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:06:06 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:40637 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752742Ab0KYQGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:04:32 -0500
-Date: Thu, 25 Nov 2010 11:04:16 -0500 (EST)
-From: Oren Laadan <orenl@cs.columbia.edu>
-X-X-Sender: orenl@takamine.ncl.cs.columbia.edu
-To: Kapil Arya <kapil@ccs.neu.edu>
-cc: Gene Cooperman <gene@ccs.neu.edu>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, xemul@sw.ru,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-In-Reply-To: <AANLkTinXZ-xO0h7DPB7YrdWhDBNmWM7jg74XT9bWrshK@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1011251049350.3051@takamine.ncl.cs.columbia.edu>
-References: <4CD72150.9070705@cs.columbia.edu> <4CE3C334.9080401@kernel.org>
- <20101117153902.GA1155@hallyn.com> <4CE3F8D1.10003@kernel.org>
- <20101119041045.GC24031@hallyn.com> <4CE683E1.6010500@kernel.org>
- <4CE69B8C.6050606@cs.columbia.edu> <Pine.LNX.4.64.1011201312470.15662@takamine.ncl.cs.columbia.edu>
- <4CE8228C.3000108@kernel.org> <20101121081853.GA21672@sundance.ccs.neu.edu>
- <20101121082143.GB21672@sundance.ccs.neu.edu>
- <Pine.LNX.4.64.1011231234410.11731@takamine.ncl.cs.columbia.edu>
- <AANLkTinXZ-xO0h7DPB7YrdWhDBNmWM7jg74XT9bWrshK@mail.gmail.com>
+	Thu, 25 Nov 2010 11:06:04 -0500
+Date: Thu, 25 Nov 2010 11:06:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
+Subject: Re: Nobody cared about IRQs at shutdown
+In-Reply-To: <4CEE8604.4040506@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1011251056530.22247-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="998262290-1606244456-1290701056=:3051"
-X-No-Spam-Score: Local
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, 25 Nov 2010, Alexander E. Patrakov wrote:
 
---998262290-1606244456-1290701056=:3051
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 23 Nov 2010, Kapil Arya wrote:
-
-> OL> Even if it did - the question is not how to deal with "glue"
-> OL> (you demonstrated quite well how to do that with DMTCP), but
-> OL> how should teh basic, core c/r functionality work - which is
-> OL> below, and orthogonal to the "glue".
+> Hello.
 > 
-> There seems to be an implicit assumption that it is easy to separate the DMTCP
-> "glue code" from the DMTCP C/R engine as separate modules. DMTCP is modular but
-> it splits the problems into modules along a different line than Linux C/R. We
-> look forward to the joint experiment in which we would try to combine DMTCP
-> with Linux C/R. This will help answer the question in our mind.
+> After switching my Gentoo desktop from sysvinit + openrc to systemd, I 
+> started getting "nobody cared" messages about IRQs 16 and 19 (common 
+> thing: they are assigned to the USB controllers, that's why CC: 
 
-I apologize for being blunt - but this is probably an issue specific to 
-DMTCP's engineering...
+According to your listing, they are used by uhci-hcd.  Do the messages 
+go away if you unload uhci-hcd before shutting down?
 
-> In order to explore the issue, let's imagine that we have a successful merge of
-> DMTCP and Linux C/R. The following are some user-space glue issues. It's not
-> obvious to us how the merged software will handle these issues.
+> linux-usb) at shutdown. Also, instead of shutting down immediately, the 
+> kernel started waiting for something to time out (and after the timeout, 
+> it does power off the computer). Adding the "irqpoll" parameter does 
+> work around the issue. A screen photo illustrating the problem and the 
+> kernel config are attached.
 > 
-> 1. Sockets -- DMTCP handles all sockets in a common manner through a single
-> module. Sockets are checkpointed independently of whether they are local or
-> remote. In a merger of DMTCP and Linux C/R, what does Linux C/R do when it sees
-> remote sockets? Or should DMTCP take down all remote sockets before
-> checkpointing? If DMTCP has to do this, it would be less efficient than the
-> current design which keeps the remote sockets connections alive during
-> checkpoint.
-
-What is a "local" socket ?  af_unix, or locally connected af_inet ?
-
-Anyway, with linux-cr you'd do what's needed after the restarted tasks are
-created, but before their state is restored. For each such "old" socket
-that you want to replace, you'd create (in userspace with arbitrary glue" 
-code!) a new socket, and use this socket when restoring the state of the
-task. Similarly, you could replace any other resource, not only sockets.
-
+> I didn't try to bisect because there is no known good kernel. I.e., the 
+> issue doesn't exist without systemd, and I didn't run systemd with 
+> earlier kernels.
 > 
-> 2. XLib and X11-server -- Consider checkpointing a single X11 app without the
-> X11-server and without VNC. This is something we intend to add to DMTCP in the
-> next few months. We have already mapped out the design in our minds. An X11
-> application includes the Xlib library. The data of an X11 window is, by
-> default, contained in the X11 library -- not in the X11-server. The application
-> communicates with the X11-server using socket connections, which would be
-> considered a leak by Linux C/R. At restart time, DMTCP will ask the
-> X11-server to create a bare window and then make the appropriate Xlib call to
-> repaint the window based on the data stored in the Xlib  library.
-> For checkpoint/resume, the window stays up and does not has to be repainted.
-> How will the combined DMTCP/Linux C/R work? Will DMTCP have to take
-> down the window prior to Linux C/R and paint a new window at resume time?
-> Doesn't this add inefficiency?
-
-Repainting during restart is the least of your problems.
-
-Leak detection is not a problem: 
-If the socket connects out of the containers (like af_inet) - then it is 
-not a leak, andyou treat it as described above.
-If the sockets connects within the container but you don't checkpoint the
-"peer" process - then it is not a container-c/r (in which case you don't 
-look for leaks).
-
-Also, the application could mark resources to not be checkpointed (e.g. 
-scratch memory to save storage, or sockets to not count as leaks).
-
-I don't see any problem with X11 or any other library and "glue".
-
+> Please help diagnosing and, if possible, fixing this problem.
 > 
-> 3. Checkpointing a single process (e.g. a bash shell) talking to an xterm via
-> a pty -- We assume that from the viewpoint of Linux C/R a pty is a leak since
-> there is a second process operating the master end of the pty. In this
-> case we are
-> guessing that Linux C/R would checkpoint and restart without the gurantees of
-> reliability. We are guessing that Linux C/R would not save and restore the pty,
-> instead it would be the responsibility of DMTCP to restore the current settings
-> of the pty (e.g. packet mode vs. regular mode). Is our understanding correct?
-> Would this work?
+> The broken image at the top of the screen is from extlinux (I use it to 
+> boot the kernel because I don't like grub).
 
-I explain again - in case it wasn't clear from my 3-part post: leak 
-detection is relevant _only_ for full container-c/r. It doesn't make 
-sense otherwise.
+You may need to debug the uhci-hcd driver.  Look into
+drivers/usb/host/uhci-hcd.c; the uhci_shutdown() routine ought to be
+called and it ought to call uhci_hc_died(), which in turn calls
+uhci_reset_hc() in pci-quirks.c, which is supposed to prevent the
+controller from generating any IRQs.
 
-If you want to checkpoint individual components of an application,
-then it's up to userspace to produce/provide the relevant "glue" to
-make it "make sense" when those components restart without their 
-original eco-system.
+Do you have any USB devices attached to bus 3 or bus 6?
 
-Thanks,
+Alan Stern
 
-Oren.
---998262290-1606244456-1290701056=:3051--
