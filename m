@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab0KYQYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:24:45 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51861 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab0KYQYn convert rfc822-to-8bit (ORCPT
+	id S1754090Ab0KYQZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:25:45 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:42143 "EHLO
+	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab0KYQZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:24:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wp/HdY7YmC7jHdRvOpM6ZwLp87S7am7Ngd4j+pvCRzhgfNYqjTjsZEkyAWZCC7rdwm
-         T9x2mR0CTKWNiEOLrKRj60fU1ZZTtc4Xm3D4mAG6SmJ3l9J1FmH2aJngQIJsHkXvinWm
-         AfFsI7FyOayd/Y7BWawpQIWyGUBzwceIZmic8=
+	Thu, 25 Nov 2010 11:25:44 -0500
+From: nisse@lysator.liu.se (Niels =?iso-8859-1?Q?M=F6ller?=)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: Re: TCP_MAXSEG vs TCP/generic segmentation offload (tso/gso)
+References: <nny68hqzzn.fsf@stalhein.lysator.liu.se>
+	<1290695253.2858.336.camel@edumazet-laptop>
+	<nnaakxqw1u.fsf@stalhein.lysator.liu.se>
+	<1290698312.2858.341.camel@edumazet-laptop>
+Date: Thu, 25 Nov 2010 17:25:42 +0100
+In-Reply-To: <1290698312.2858.341.camel@edumazet-laptop> (Eric Dumazet's
+	message of "Thu, 25 Nov 2010 16:18:31 +0100")
+Message-ID: <nn1v69qsjd.fsf@stalhein.lysator.liu.se>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (usg-unix-v)
 MIME-Version: 1.0
-In-Reply-To: <4CEE7884.5010007@teksavvy.com>
-References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
- <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
- <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com>
- <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com>
- <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com>
- <20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com>
- <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com> <4CEE7884.5010007@teksavvy.com>
-From: Greg Freemyer <greg.freemyer@gmail.com>
-Date: Thu, 25 Nov 2010 11:24:22 -0500
-Message-ID: <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com>
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-To: Mark Lord <kernel@teksavvy.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 9:53 AM, Mark Lord <kernel@teksavvy.com> wrote:
-> On 10-11-24 11:41 PM, Greg Freemyer wrote:
->>
->> If you see a significant speed difference between mke2fs and running
->> wiper.sh on that same filesystem immediately after formatting, then
->> their is likely a bug worth chasing.
->
->
-> You're right.  They're both equally slow on a blank Sandforce drive,
-> taking about 83-90 seconds to TRIM 100GB.
->
-> The difference being that mke2fs just sits there with zero indication
-> or information as to what the huge delay is.
->
-> It's a pity the TRIM commands are so sluggish on the Sandforce.
-> It's a generation newer than the original Vertex, and TRIM is way faster
-> on the older Vertex.  Not that either of them do it quickly enough that
-> I'd ever want the kernel doing it automatically "on my behalf".
->
-> The strange thing, is that when we TRIM the entire raw device,
-> using ATA SECURITY ERASE, it takes less than 2 seconds.
->
-> Cheers
+Eric Dumazet <eric.dumazet@gmail.com> writes:
 
-Mark,
+> I believe TCP_MAXSEG is working fine, but GRO/GSO dont care at all :
+> They coalesce frames whatever their size is.
 
-I'm away from my systems today, but is there an easy way to tweak
-wiper.sh or hdparm to cause only a single range per trim command.
+I was under the impression that TSO (and maybe GSO) implied more
+cleverness in the network card; that the network card more or less gets
+to decide by itself how to divide a tcp stream into segments. And for
+example in the atl1c driver which I looked a bit into, this was what the
+REG_MTU register was for. Seems I have gotten this totally wrong.
 
-I'm curious if for the Sandforce that would still be in the 90 second
-range, or closer to 64x that.
+Maybe Documentation/networking/netdevices.txt could clarify how it
+works. Currently, it says
 
-Or if there is a readily available userspace tool to invoke FITRIM and
-you have a 2.6.37-rc? kernel, you could just time that on a newly
-formatted drive.
+: Segmentation Offload (GSO, TSO) is an exception to this rule.  The
+: upper layer protocol may pass a large socket buffer to the device
+: transmit routine, and the device will break that up into separate
+: packets based on the current MTU.
 
-Greg
+Regards, and thanks for your patience,
+/Niels
+
+-- 
+Niels Möller. PGP-encrypted email is preferred. Keyid C0B98E26.
+Internet email is subject to wholesale government surveillance.
