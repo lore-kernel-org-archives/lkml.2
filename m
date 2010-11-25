@@ -1,134 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0KYL1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:27:23 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33643 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab0KYL1W (ORCPT
+	id S1752728Ab0KYL1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:27:39 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46425 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab0KYL1h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:27:22 -0500
+	Thu, 25 Nov 2010 06:27:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pZ9e//JfcZ0i5oDJqO+sf5oH5bqVVsJnezppcc6v4im8+urDVkax37JvA0xUHppuMb
-         IxvX4ZCNfDrPWJymLZDXHuBg9/58zsZKoUEjlc2u9D67oWK+s5s+0qvRz6HEV3nl9IQ+
-         /CR63EvOin3X3D3qi13RXLcmj0t5U7hgB+2oQ=
-Date: Thu, 25 Nov 2010 13:28:00 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: rcu_read_lock/unlock protect find_task_by_vpid call in
- posix_cpu_timer_create
-Message-ID: <20101125112800.GA4126@swordfish.minsk.epam.com>
-References: <20101125010948.GA1371@redhat.com>
- <1290674436.2072.562.camel@laptop>
- <20101125110230.GB19031@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
-Content-Disposition: inline
-In-Reply-To: <20101125110230.GB19031@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=date:from:to:cc:subject:message-id:organization:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=hAWhHTI3H82LJGtWEUykQrhWq29oOO/fO51B07YvCmTGyYyb67kvZmeBIi8VD4Z/60
+         ZdTktvM9hEocvBNSJ+jYWScX0JImC7fBcWgLlLzbVeQIy5P5nXj9fehL3RKJQGoh5XQk
+         +uVSs6c9wv8Bm9kNvNw9xOdpfI49fEeNEKssQ=
+Date: Thu, 25 Nov 2010 19:27:25 +0800
+From: Ming Lei <tom.leiming@gmail.com>
+To: acme@ghostprotocols.net
+Cc: Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] perf:tools: figure out start address of kernel map from
+ /proc/kallsyms(v1)
+Message-ID: <20101125192725.62d31b42@tom-lei>
+Organization: private
+X-Mailer: Claws Mail 3.7.3 (GTK+ 2.16.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 5dffda5978f0cae0b390e01957e49522a60324ac Mon Sep 17 00:00:00 2001
+From: Ming Lei <tom.leiming@gmail.com>
+Date: Wed, 24 Nov 2010 16:31:15 +0800
+Subject: [PATCH] perf:tools: figure out start address of kernel map from /proc/kallsyms(v1)
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On ARM, module symbol start address is ahead of kernel symbol start
+address, so we can't suppose that the start address of kenerl map
+always is zero, otherwise may cause incorrect .start and .end of kernel map
+(caused by fixup) when there are modules loaded, then map_groups__find
+may return incorrect map for symbol query.
 
-Hello,
+This patch always figures out the start address of kernel map from
+/proc/kallsyms if the file is available, so fix the issues on ARM for
+module loaded case.
 
-On (11/25/10 12:02), Oleg Nesterov wrote:
-> (another try, actually add Sergey)
->
-Thank you.
-=20
-> On 11/25, Peter Zijlstra wrote:
-> >
-> > On Wed, 2010-11-24 at 20:09 -0500, Dave Jones wrote:
-> > > --- a/kernel/posix-cpu-timers.c
-> > > +++ b/kernel/posix-cpu-timers.c
-> > > @@ -391,6 +391,7 @@ int posix_cpu_timer_create(struct k_itimer *new_t=
-imer)
-> > >  	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
-> > >
-> > >  	read_lock(&tasklist_lock);
-> > > +	rcu_read_lock();
-> > >  	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
-> > >  		if (pid =3D=3D 0) {
-> > >  			p =3D current;
-> > > @@ -414,6 +415,7 @@ int posix_cpu_timer_create(struct k_itimer *new_t=
-imer)
-> > >  	} else {
-> > >  		ret =3D -EINVAL;
-> > >  	}
-> > > +	rcu_read_unlock();
-> > >  	read_unlock(&tasklist_lock);
-> > >
-> > >  	return ret;
-> >
-> > Do we still need the tasklist_lock in this case?
->=20
-> No. posix-cpu-timer.c shouldn't use tasklist at all. But it is not
-> completely trivial to remove it.
->=20
-> In particular, this patch is not exactly right, we can't trust
-> thread_group_leader() without tasklist.
->=20
-> Sergey already sent the patch which removes tasklist from
-> posix_cpu_timer_create() and posix_cpu_timer_create(), and iirc
-> Thomas queued it.
->=20
+This patch fixes the following issues on ARM when modules are loaded:
 
-You're right, Oleg.
+	- vmlinux symbol can't be found by kallsyms maps doing 'perf test'
+	- module symbols are parsed mistakenlly when doing 'perf top'/'perf report'
 
-Commit-ID:  c0deae8c9587419ab13874b74425ce2eb2e18508
-Gitweb:     http://git.kernel.org/tip/c0deae8c9587419ab13874b74425ce2eb2e18=
-508
-Author:     Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-AuthorDate: Wed, 3 Nov 2010 18:52:56 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 10 Nov 2010 13:07:06 +0100
+Cc: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+v1: use kallsyms__parse, suggested by Arnaldo
+---
+ tools/perf/util/symbol.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 43 insertions(+), 1 deletions(-)
 
-posix-cpu-timers: Rcu_read_lock/unlock protect find_task_by_vpid call
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 2af4d7d..00189d1 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -2131,14 +2131,56 @@ static struct dso *machine__create_kernel(struct machine *self)
+ 	return kernel;
+ }
+ 
++struct process_args {
++	u64 start;
++};
++
++static int find_kernel_start(void *arg, const char *name,
++			char type __attribute__((__unused__)), u64 start)
++{
++	struct process_args *args = arg;
++
++	if (strchr(name, '['))
++		return 0;
++
++	args->start = start;
++	return 1;
++}
++
++/*figure out the start address of kernel map from /proc/kallsyms*/
++static u64 __machine_get_kernel_start_addr(struct machine *machine)
++{
++	const char *filename;
++	char path[PATH_MAX];
++	struct process_args args;
++
++	if (machine__is_host(machine)) {
++		filename = "/proc/kallsyms";
++	} else {
++		if (machine__is_default_guest(machine))
++			filename = (char *) symbol_conf.default_guest_kallsyms;
++		else {
++			sprintf(path, "%s/proc/kallsyms", machine->root_dir);
++			filename = path;
++		}
++	}
++
++	if (kallsyms__parse(filename, &args, find_kernel_start) <= 0)
++		return 0;
++
++	return args.start;
++}
++
+ int __machine__create_kernel_maps(struct machine *self, struct dso *kernel)
+ {
+ 	enum map_type type;
++	u64 start;
+ 
++	start = __machine_get_kernel_start_addr(self);
+ 	for (type = 0; type < MAP__NR_TYPES; ++type) {
+ 		struct kmap *kmap;
+ 
+-		self->vmlinux_maps[type] = map__new2(0, kernel, type);
++		self->vmlinux_maps[type] = map__new2(start, kernel, type);
+ 		if (self->vmlinux_maps[type] == NULL)
+ 			return -1;
+ 
+-- 
+1.7.3
 
-queued (15 days so far).
-
-
-> > Also, why is that think complaining, surely the tasklist_lock pins any
-> > and all PID objects?
->=20
-> The only problem is: if copy_process() fails, it does free_pid()
-> lockless. This means, without rcu lock it is not safe to scan the
-> rcu-protected lists.
->=20
-> We can change copy_process() (in fact I sent the patch several
-> years ago), but everybody think that find_pid/etc should always
-> take rcu_read_lock() instead. I tend to agree.
->=20
-> Oleg.
->=20
-
-	Sergey
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAkzuSEAACgkQfKHnntdSXjSp6wQA1TChd/MfycYlsRxVKOvrA+NM
-htZqb1PTUqCzKB6sDfmYVk10xSfrY0KLQP7coBeo9lVj7WI8a+NLgXRXGKHPDCjF
-r+wqcUBCI3jto90mS3wvcpvD0LqJ5jhNQmg0bVvjFCMZTIuTUOQrDehn3tYlgwAX
-2w9ocWbxCNfnxQWzK9E=
-=jsav
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
