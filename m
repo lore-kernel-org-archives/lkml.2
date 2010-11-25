@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab0KYOLZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 09:11:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab0KYOLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 09:11:24 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, sandeen@redhat.com, lczerner@redhat.com
-Subject: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
-Date: Thu, 25 Nov 2010 15:11:17 +0100
-Message-Id: <1290694277-29462-1-git-send-email-lczerner@redhat.com>
+	id S1753478Ab0KYOMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 09:12:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44107 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab0KYOMX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 09:12:23 -0500
+Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to
+ "perf stat"
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <AANLkTinyL2eEfWoLoZqU-CFwC6Z3hGd0=9HgBhC_+Uef@mail.gmail.com>
+References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+	 <1290666760.2072.539.camel@laptop>
+	 <AANLkTinTNAwMCe_zu1snG1U5hSRafdBHQdzAr4e9nuWO@mail.gmail.com>
+	 <1290693720.2145.34.camel@laptop>
+	 <AANLkTinyL2eEfWoLoZqU-CFwC6Z3hGd0=9HgBhC_+Uef@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 25 Nov 2010 15:12:28 +0100
+Message-ID: <1290694348.2145.37.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When determining last group through ext4_get_group_no_and_offset() the
-result may be wrong in cases when range->start and range-len are too
-big, because it may overflow when summing up those two numbers.
+On Thu, 2010-11-25 at 15:07 +0100, Stephane Eranian wrote:
+> On Thu, Nov 25, 2010 at 3:02 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Thu, 2010-11-25 at 14:19 +0100, Stephane Eranian wrote:
+> >
+> >> I think using PERF_SAMPLE_READ may expose a problem in the
+> >> perf.data format. To correctly parse a sample created with SAMPLE_READ,
+> >> you need to know the attr.read_format. But for that you need to know the
+> >> event which caused the sample, but for that you need the SAMPLE_ID,
+> >> and you don't know if it's there or not. In other words, there is a chicken
+> >> and egg problem.
+> >>
+> >> I think the issue is that PERF_RECORD_SAMPLE is missing a mandatory
+> >> piece of information: overflow event ID. This must a mandatory field, not
+> >> optional as it is today. It is okay when you have only one group, but we'd
+> >> like to go beyond that.
+> >
+> >
+> >
+> > I'm not sure I get it, there's both PERF_FORMAT_ID and PERF_SAMPLE_ID,
+> > so afaict there's a working combination for what you want to do.
+> >
+> Ok, I had forgotten about PERF_SAMPLE_ID. But that means that if the
+> number of groups > 1, then if you use PERF_SAMPLE_READ, you MUST
+> also use PERF_SAMPLE_ID. Otherwise you cannot get back to the event
+> that generated the sample and thus attr.read_format.
 
-Fix that by checking range->len and limit its value to
-ext4_blocks_count(). This commit was tested by myself with expected
-result.
+perf-record already does that:
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
----
- fs/ext4/mballoc.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+        if (nr_counters > 1)
+                attr->sample_type |= PERF_SAMPLE_ID;
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 5b4d4e3..7b05d92 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4819,6 +4819,7 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
- 	ext4_group_t group, ngroups = ext4_get_groups_count(sb);
- 	ext4_grpblk_t cnt = 0, first_block, last_block;
- 	uint64_t start, len, minlen, trimmed;
-+	ext4_fsblk_t blocks_count = ext4_blocks_count(EXT4_SB(sb)->s_es);
- 	int ret = 0;
- 
- 	start = range->start >> sb->s_blocksize_bits;
-@@ -4826,6 +4827,9 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
- 	minlen = range->minlen >> sb->s_blocksize_bits;
- 	trimmed = 0;
- 
-+	if (len > blocks_count)
-+		len = blocks_count - start;
-+
- 	if (unlikely(minlen > EXT4_BLOCKS_PER_GROUP(sb)))
- 		return -EINVAL;
- 
--- 
-1.7.2.3
+
 
