@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab0KYRoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 12:44:21 -0500
-Received: from www.tglx.de ([62.245.132.106]:50957 "EHLO www.tglx.de"
+	id S1754665Ab0KYRn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 12:43:58 -0500
+Received: from www.tglx.de ([62.245.132.106]:50934 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab0KYRoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 12:44:19 -0500
+	id S1754609Ab0KYRnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 12:43:53 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: sodaville@linutronix.de, x86@kernel.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 10/11] x86/io_apic: add simply id set
-Date: Thu, 25 Nov 2010 18:40:00 +0100
-Message-Id: <1290706801-7323-11-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 01/11] x86/kernel: remove conditional early remap in parse_e820_ext
+Date: Thu, 25 Nov 2010 18:39:51 +0100
+Message-Id: <1290706801-7323-2-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
 References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
@@ -21,84 +21,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one goes through the registered IO-APICs and sets the id which the
-core code is using.
+parse_setup_data() uses early_memremap() for a PAGE_SIZE mapping in
+order to figure out the type & size. If this mapping is not large enough
+then parse_e820_ext() will remap this area again via early_ioremap()
+since the first mapping is still in use.
+
+This patch attempts to simplify the handling and parse_e820_ext() does
+not need to worry about the mapping anymore.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 CC: x86@kernel.org
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- arch/x86/include/asm/io_apic.h |    1 +
- arch/x86/kernel/apic/io_apic.c |   44 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/e820.h |    2 +-
+ arch/x86/kernel/e820.c      |    8 +-------
+ arch/x86/kernel/setup.c     |   11 +++++++++--
+ 3 files changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index dc1169f..c920657 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -170,6 +170,7 @@ extern int restore_IO_APIC_setup(struct IO_APIC_route_entry **ioapic_entries);
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 5be1542..e956492 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -93,7 +93,7 @@ extern void e820_setup_gap(void);
+ extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
+ 			unsigned long start_addr, unsigned long long end_addr);
+ struct setup_data;
+-extern void parse_e820_ext(struct setup_data *data, unsigned long pa_data);
++extern void parse_e820_ext(struct setup_data *data);
  
- extern int get_nr_irqs_gsi(void);
- extern void setup_ioapic_ids_from_mpc(void);
-+void setup_ioapic_ids_from_apicid(void);
+ #if defined(CONFIG_X86_64) || \
+ 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 0c2b7ef..33f6361 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -666,21 +666,15 @@ __init void e820_setup_gap(void)
+  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
+  * linked list of struct setup_data, which is parsed here.
+  */
+-void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
++void __init parse_e820_ext(struct setup_data *sdata)
+ {
+-	u32 map_len;
+ 	int entries;
+ 	struct e820entry *extmap;
  
- struct mp_ioapic_gsi{
- 	u32 gsi_base;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 27a5709..74cfe9b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2047,6 +2047,50 @@ void __init setup_ioapic_ids_from_mpc(void)
- 			apic_printk(APIC_VERBOSE, " ok.\n");
+ 	entries = sdata->len / sizeof(struct e820entry);
+-	map_len = sdata->len + sizeof(struct setup_data);
+-	if (map_len > PAGE_SIZE)
+-		sdata = early_ioremap(pa_data, map_len);
+ 	extmap = (struct e820entry *)(sdata->data);
+ 	__append_e820_map(extmap, entries);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+-	if (map_len > PAGE_SIZE)
+-		early_iounmap(sdata, map_len);
+ 	printk(KERN_INFO "extended physical RAM map:\n");
+ 	e820_print_map("extended");
+ }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 000e4a1..52f10e6 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -429,16 +429,23 @@ static void __init parse_setup_data(void)
+ 		return;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
++		u32 len;
++
+ 		data = early_memremap(pa_data, PAGE_SIZE);
++		len = data->len + sizeof(struct setup_data);
++		early_iounmap(data, PAGE_SIZE);
++
++		data = early_memremap(pa_data, len);
++
+ 		switch (data->type) {
+ 		case SETUP_E820_EXT:
+-			parse_e820_ext(data, pa_data);
++			parse_e820_ext(data);
+ 			break;
+ 		default:
+ 			break;
+ 		}
+ 		pa_data = data->next;
+-		early_iounmap(data, PAGE_SIZE);
++		early_iounmap(data, len);
  	}
  }
-+/*
-+ * We assume here that the ids in mp_ioapics are correct but not yet
-+ * written to the ioapic. While doing so we verify that those ids are
-+ * unique.
-+ */
-+static __initdata DECLARE_BITMAP(apic_id_mask, MAX_APICS);
-+void __init setup_ioapic_ids_from_apicid(void)
-+{
-+	union IO_APIC_reg_00 reg_00;
-+	int apic_id;
-+	unsigned long flags;
-+
-+	for (apic_id = 0; apic_id < nr_ioapics; apic_id++) {
-+
-+		if (mp_ioapics[apic_id].apicid > MAX_APICS) {
-+			WARN_ON(1);
-+			continue;
-+		}
-+
-+		if (test_bit(mp_ioapics[apic_id].apicid, apic_id_mask)) {
-+			WARN_ON(1);
-+			continue;
-+		}
-+
-+		set_bit(mp_ioapics[apic_id].apicid, apic_id_mask);
-+
-+		raw_spin_lock_irqsave(&ioapic_lock, flags);
-+		reg_00.raw = io_apic_read(apic_id, 0);
-+		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-+
-+		if (reg_00.bits.ID == mp_ioapics[apic_id].apicid)
-+			continue;
-+
-+		reg_00.bits.ID = mp_ioapics[apic_id].apicid;
-+		raw_spin_lock_irqsave(&ioapic_lock, flags);
-+		io_apic_write(apic_id, 0, reg_00.raw);
-+		reg_00.raw = io_apic_read(apic_id, 0);
-+		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-+
-+		if (reg_00.bits.ID != mp_ioapics[apic_id].apicid)
-+			printk(KERN_ERR "Could not update id of IOAPIC %d\n",
-+					mp_ioapics[apic_id].apicid);
-+	}
-+}
- #endif
  
- int no_timer_check __initdata;
 -- 
 1.7.3.2
 
