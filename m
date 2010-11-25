@@ -1,119 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab0KYNYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 08:24:32 -0500
-Received: from smtp2.kfki.hu ([148.6.0.28]:36212 "EHLO smtp2.kfki.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab0KYNYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 08:24:31 -0500
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Subject: [PATCH 1/2] Prepare the tree for un-inlined jhash.
-Date: Thu, 25 Nov 2010 14:15:07 +0100
-Message-Id: <1290690908-794-2-git-send-email-kadlec@blackhole.kfki.hu>
-X-Mailer: git-send-email 1.5.3.4
-In-Reply-To: <1290690908-794-1-git-send-email-kadlec@blackhole.kfki.hu>
-References: <1290690908-794-1-git-send-email-kadlec@blackhole.kfki.hu>
+	id S1752862Ab0KYN02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 08:26:28 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57681 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752092Ab0KYN01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 08:26:27 -0500
+Date: Thu, 25 Nov 2010 13:25:18 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 25
+Message-ID: <20101125132518.1c7ebed1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101125164929.3a719716.sfr@canb.auug.org.au>
+References: <20101125164929.3a719716.sfr@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jhash is widely used in the kernel and because the functions
-are inlined, the cost in size is significant. Also, the new jhash
-functions are slightly larger than the previous ones so better un-inline.
-As a preparation step, the calls to the internal macros are replaced
-with the plain jhash function calls.
+Umm where did all the x86 changes go ?
 
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
----
- net/ipv6/inet6_connection_sock.c |   18 ++++++++----------
- net/ipv6/reassembly.c            |   36 ++++++++++++++++--------------------
- 2 files changed, 24 insertions(+), 30 deletions(-)
+I was going to look at SEP and fixing it but I can't even build a base
+test tree from -next because all the x86 work seems to be missing from
+the tree from 23rd onwards.
 
-diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
-index 8a16280..861d252 100644
---- a/net/ipv6/inet6_connection_sock.c
-+++ b/net/ipv6/inet6_connection_sock.c
-@@ -60,18 +60,16 @@ EXPORT_SYMBOL_GPL(inet6_csk_bind_conflict);
- static u32 inet6_synq_hash(const struct in6_addr *raddr, const __be16 rport,
- 			   const u32 rnd, const u16 synq_hsize)
- {
--	u32 a = (__force u32)raddr->s6_addr32[0];
--	u32 b = (__force u32)raddr->s6_addr32[1];
--	u32 c = (__force u32)raddr->s6_addr32[2];
--
--	a += JHASH_GOLDEN_RATIO;
--	b += JHASH_GOLDEN_RATIO;
--	c += rnd;
--	__jhash_mix(a, b, c);
--
--	a += (__force u32)raddr->s6_addr32[3];
--	b += (__force u32)rport;
--	__jhash_mix(a, b, c);
-+	u32 c;
-+
-+	c = jhash_3words((__force u32)raddr->s6_addr32[0],
-+			 (__force u32)raddr->s6_addr32[1],
-+			 (__force u32)raddr->s6_addr32[2],
-+			 rnd);
-+
-+	c = jhash_2words((__force u32)raddr->s6_addr32[3],
-+			 (__force u32)rport,
-+			 c);
- 
- 	return c & (synq_hsize - 1);
- }
-diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
-index c7ba314..5e57490 100644
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -104,26 +104,22 @@ static int ip6_frag_reasm(struct frag_queue *fq, struct sk_buff *prev,
- unsigned int inet6_hash_frag(__be32 id, const struct in6_addr *saddr,
- 			     const struct in6_addr *daddr, u32 rnd)
- {
--	u32 a, b, c;
--
--	a = (__force u32)saddr->s6_addr32[0];
--	b = (__force u32)saddr->s6_addr32[1];
--	c = (__force u32)saddr->s6_addr32[2];
--
--	a += JHASH_GOLDEN_RATIO;
--	b += JHASH_GOLDEN_RATIO;
--	c += rnd;
--	__jhash_mix(a, b, c);
--
--	a += (__force u32)saddr->s6_addr32[3];
--	b += (__force u32)daddr->s6_addr32[0];
--	c += (__force u32)daddr->s6_addr32[1];
--	__jhash_mix(a, b, c);
--
--	a += (__force u32)daddr->s6_addr32[2];
--	b += (__force u32)daddr->s6_addr32[3];
--	c += (__force u32)id;
--	__jhash_mix(a, b, c);
-+	u32 c;
-+
-+	c = jhash_3words((__force u32)saddr->s6_addr32[0],
-+			 (__force u32)saddr->s6_addr32[1],
-+			 (__force u32)saddr->s6_addr32[2],
-+			 rnd);
-+
-+	c = jhash_3words((__force u32)saddr->s6_addr32[3],
-+			 (__force u32)daddr->s6_addr32[0],
-+			 (__force u32)daddr->s6_addr32[1],
-+			 c);
-+
-+	c =  jhash_3words((__force u32)daddr->s6_addr32[2],
-+			  (__force u32)daddr->s6_addr32[3],
-+			  (__force u32)id,
-+			  c);
- 
- 	return c & (INETFRAGS_HASHSZ - 1);
- }
--- 
-1.7.0.4
+Alan
+
 
