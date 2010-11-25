@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab0KYPJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 10:09:51 -0500
-Received: from mail.lysator.liu.se ([130.236.254.3]:52272 "EHLO
-	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab0KYPJu (ORCPT
+	id S1753534Ab0KYPKj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 10:10:39 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43244 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab0KYPKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 10:09:50 -0500
-From: nisse@lysator.liu.se (Niels =?iso-8859-1?Q?M=F6ller?=)
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: TCP_MAXSEG vs TCP/generic segmentation offload (tso/gso)
-References: <nny68hqzzn.fsf@stalhein.lysator.liu.se>
-	<1290695253.2858.336.camel@edumazet-laptop>
-Date: Thu, 25 Nov 2010 16:09:49 +0100
-In-Reply-To: <1290695253.2858.336.camel@edumazet-laptop> (Eric Dumazet's
-	message of "Thu, 25 Nov 2010 15:27:33 +0100")
-Message-ID: <nnaakxqw1u.fsf@stalhein.lysator.liu.se>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (usg-unix-v)
+	Thu, 25 Nov 2010 10:10:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.102.204.37]
+In-Reply-To: <1290694979.2145.38.camel@laptop>
+References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+	<1290666760.2072.539.camel@laptop>
+	<AANLkTinTNAwMCe_zu1snG1U5hSRafdBHQdzAr4e9nuWO@mail.gmail.com>
+	<1290693720.2145.34.camel@laptop>
+	<AANLkTinyL2eEfWoLoZqU-CFwC6Z3hGd0=9HgBhC_+Uef@mail.gmail.com>
+	<1290694348.2145.37.camel@laptop>
+	<AANLkTin0jv_ka9Bw0mZCeuxTWZfdLOseYdza_3e9vMi+@mail.gmail.com>
+	<1290694979.2145.38.camel@laptop>
+Date: Thu, 25 Nov 2010 23:10:37 +0800
+Message-ID: <AANLkTik9APXMPKJtQh8wVPexZaCzT5TjAbOBJGWn-NNL@mail.gmail.com>
+Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to "perf stat"
+From: Lin Ming <lin@ming.vg>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt@console-pimps.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> writes:
+On Thu, Nov 25, 2010 at 10:22 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2010-11-25 at 15:18 +0100, Stephane Eranian wrote:
+>> The other thing I saw, is that perf report assumes that sample_type is the
+>> same for all events, otherwise it dies.
+>
+> Yeah, event parsing in general needs some TLC..
 
-> So... there is no 'bug', unless you trust too much tcpdump output.
-
-I really expected tcpdump -e to display the actual values in the link
-layer header, including the correct frame size. It's more than a bit
-confusing if that is not the case...
-
-In the future, I will try to remember to always run tcpdump on a network
-node which (i) is different from the sending one, and (ii) has GRO
-disabled (and hence will discard packets if it has trouble processing
-them all, rather than coalesce them).
-
-What about the TCP_MAXSEG socket option, should that work? From a quick
-look at driver source code, I could only see the handling of the
-per-interface MTU, no per-socket segment size.
-
-Thanks for the quick reply,
-/Niels
-
--- 
-Niels Möller. PGP-encrypted email is preferred. Keyid C0B98E26.
-Internet email is subject to wholesale government surveillance.
+Just curious, what does "TLC" stand for?
