@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab0KYHqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 02:46:37 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61944 "EHLO
+	id S1751528Ab0KYHr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 02:47:57 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62611 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab0KYHqg (ORCPT
+	with ESMTP id S1750738Ab0KYHr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 02:46:36 -0500
+	Thu, 25 Nov 2010 02:47:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=glL5F6LyiJ+rHbOQrbgBH5bcXPJPzpJYqA0e3fgGe2szsejJvyhShqEyf2Y1TKlney
-         MkZDBvmehDYWKrsj2NIVv21Wom9kXi3yhcYnLZIHu1w2RXaA0HTlY7Twi24RQQ6a1sl2
-         yzdmEsbZjqVHhPBs4KrzigDTh7MK/qmrPvWrk=
-Date: Thu, 25 Nov 2010 08:46:31 +0100
+        b=gXKAoSxZ6Kgwv0Z3Jv8Ab/VM7/RmwmFIT8I+jrZqps/Y9g+XyJbD/OlHSwtWtPxoVN
+         lpWs+8CSPjDCcrsTa5B6/Em4WU/GrGLvlrOmRjAzd0lvgPWZYCUzIB3DDMiMp0b4h+wS
+         NrvD80QXgraqtEF0JCsPxsNra25BQiVMKjDV4=
+Date: Thu, 25 Nov 2010 08:47:50 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Julia Lawall <julia@diku.dk>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt@console-pimps.org>
-Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to
- "perf stat"
-Message-ID: <20101125074629.GC2538@nowhere>
-References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com>
- <1290666760.2072.539.camel@laptop>
+To: Michael Stefaniuc <mstefani@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Alexandre Julliard <julliard@winehq.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "All since 2.6.33.x" <stable@kernel.org>
+Subject: Re: [PATCH 1/2] x86: Ignore trap bits on single step exceptions
+Message-ID: <20101125074747.GD2538@nowhere>
+References: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com>
+ <1289684273-26770-2-git-send-regression-fweisbec@gmail.com>
+ <4CED7642.8070600@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290666760.2072.539.camel@laptop>
+In-Reply-To: <4CED7642.8070600@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 07:32:40AM +0100, Peter Zijlstra wrote:
-> On Wed, 2010-11-24 at 17:54 -0800, Corey Ashford wrote:
-> > Add the ability to create multiple event groups, each with their own leader
-> > using the existing "-e <event>[,<event> ...] [-e <event>[,<event>]]"
-> > syntax.  Each additional -e switch creates a new group, and each event
-> > listed within a -e switch is within that group.
-> > 
-> > Changes since v1:
-> > - Because of a flub, v2 did not contain the changes I had intended to make,
-> > and instead, v2 had the same patch contents as v1.
-> > - When perf stat is not supplied any events on the command line, put
-> > each default event in its own group.
+On Wed, Nov 24, 2010 at 09:32:02PM +0100, Michael Stefaniuc wrote:
+> Hello Frederic,
 > 
-> I like this, but could you also extend this to perf-record? its a bit
-> odd to diverge between the two.
+> On 11/13/2010 10:37 PM, Frederic Weisbecker wrote:
+> >When a single step exception fires, the trap bits, used to
+> >signal hardware breakpoints, are in a random state.
+> >
+> >These trap bits might be set if another exception will follow,
+> >like a breakpoint in the next instruction, or a watchpoint in the
+> >previous one. Or there can be any junk there.
+> >
+> >So if we handle these trap bits during the single step exception,
+> >we are going to handle an exception twice, or we are going to
+> >handle junk.
+> >
+> >Just ignore them in this case.
+> >
+> >This fixes https://bugzilla.kernel.org/show_bug.cgi?id=21332
+> sorry for the delay in testing this.
 > 
-> Using Stephane's latest syntax changes you could actually do something
-> like:
+> I have cherry-picked this patch on top of v2.6.37-rc3-102-gea49b16
+> and the ntdll/exception tests pass now.
 > 
-> perf record -e task-clock:freq=1000,cycles:period=0
+> Many thanks
+> bye
+> 	michael
 
-Wouldn't this syntax clash with the flags we have on events already?
-
-the u,k,p flags?
-
-
-
-
-> 
-> Which would create a group with 1 sampling counter and a counting
-> counter (at which point we should probably start flipping
-> PERF_SAMPLE_READ).
-> 
-> Matt was working on supporting that (although not through cmdline
-> syntax) and teaching perf-report to cope with such output.
-> 
+Thanks for testing!
