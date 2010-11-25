@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab0KYTjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 14:39:45 -0500
-Received: from home.keithp.com ([63.227.221.253]:33700 "EHLO keithp.com"
+	id S1752336Ab0KYToc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 14:44:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37484 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606Ab0KYTjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 14:39:44 -0500
-X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Nov 2010 14:39:44 EST
-From: Keith Packard <keithp@keithp.com>
-To: Nick Bowler <nbowler@elliptictech.com>, Michal Hocko <mhocko@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, intel-gfx@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: i915: display doesn't get on back after returning from standby in 2.6.27-rc*
-In-Reply-To: <20101125161058.GA5831@elliptictech.com>
-References: <20101123123234.GA3791@tiehlicka.suse.cz> <20101125155828.GC9754@tiehlicka.suse.cz> <20101125161058.GA5831@elliptictech.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
-Date: Thu, 25 Nov 2010 11:31:04 -0800
-Message-ID: <yunr5e9qjyf.fsf@aiko.keithp.com>
+	id S1751893Ab0KYTob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 14:44:31 -0500
+Date: Thu, 25 Nov 2010 20:36:59 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>
+Subject: Re: [resend][PATCH 4/4] oom: don't ignore rss in nascent mm
+Message-ID: <20101125193659.GA14510@redhat.com>
+References: <20101124085022.7BDF.A69D9226@jp.fujitsu.com> <20101124110915.GA20452@redhat.com> <20101125092237.F43A.A69D9226@jp.fujitsu.com> <20101125140253.GA29371@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101125140253.GA29371@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On 11/25, Oleg Nesterov wrote:
+>
+> Great! I'll send the patch tomorrow.
+>
+> Even if you prefer another fix for 2.6.37/stable, I'd like to see
+> your review to know if it is correct or not (for backporting).
 
-On Thu, 25 Nov 2010 11:10:58 -0500, Nick Bowler <nbowler@elliptictech.com> =
-wrote:
-> On 2010-11-25 16:58 +0100, Michal Hocko wrote:
-> > [Let's add Rafael for regression tracking]
-> >=20
-> > On Tue 23-11-10 13:32:34, Michal Hocko wrote:
-> > > Hi,
-> > > since early 2.6.37 (I haven't bisected when exactly) my screen doesn't
-> > > get on after it got into standby mode. I have to either change to a
-> > > text console and back (if it gets to standby by the screen saver) or
-> > > close the lid on my laptop if I try:
-> > > xset dpms force standby
-> [...]
-> > > Is this a known issue?
->=20
-> I suspect that all of the following are the same issue:
->=20
->   https://bugzilla.kernel.org/show_bug.cgi?id=3D23122
->   https://bugzilla.kernel.org/show_bug.cgi?id=3D23472
->   https://bugs.freedesktop.org/show_bug.cgi?id=3D31803
+OK, what do you think about the patch below?
 
-I've provided a couple of fixes that might be relevant here -- neither
-kernel nor user mode were setting the tracked DPMS state of the outputs
-to ON when doing mode setting, which caused all kinds of comedy. These
-should fix 23472 and 31803. I'm not entirely sure what's up with 23122,
-but it's possible that it's the same issue.
+Seems to work, with this patch the test-case doesn't kill the
+system (sysctl_oom_kill_allocating_task == 0).
 
-The user mode DPMS tracking fix is in xf86-video-intel master, the
-kernel DPMS tracking fix was sent to Chris last week.
+I didn't dare to change !CONFIG_MMU case, I do not know how to
+test it.
 
-=2D-=20
-keith.packard@intel.com
+The patch is not complete, compat_copy_strings() needs changes.
+But, shouldn't it use get_arg_page() too? Otherwise, where do
+we check RLIMIT_STACK?
 
---=-=-=
-Content-Type: application/pgp-signature
+The patch asks for the cleanups. In particular, I think exec_mmap()
+should accept bprm, not mm. But I'd prefer to do this later.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Oleg.
 
-iD8DBQFM7rl4Qp8BWwlsTdMRAqynAJ4zeaowLccJANKqm/Y3MlHUCqB4AwCgrp20
-gAu0YEYDRUwDhtlEDUC60yc=
-=CYWG
------END PGP SIGNATURE-----
---=-=-=--
+ include/linux/binfmts.h |    1 +
+ fs/exec.c               |   28 ++++++++++++++++++++++++++--
+ 2 files changed, 27 insertions(+), 2 deletions(-)
+
+--- K/include/linux/binfmts.h~acct_exec_mem	2010-08-19 11:35:00.000000000 +0200
++++ K/include/linux/binfmts.h	2010-11-25 20:19:33.000000000 +0100
+@@ -33,6 +33,7 @@ struct linux_binprm{
+ # define MAX_ARG_PAGES	32
+ 	struct page *page[MAX_ARG_PAGES];
+ #endif
++	unsigned long vma_pages;
+ 	struct mm_struct *mm;
+ 	unsigned long p; /* current top of mem */
+ 	unsigned int
+--- K/fs/exec.c~acct_exec_mem	2010-11-25 15:16:56.000000000 +0100
++++ K/fs/exec.c	2010-11-25 20:20:49.000000000 +0100
+@@ -162,6 +162,25 @@ out:
+   	return error;
+ }
+ 
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++	struct mm_struct *mm = current->mm;
++	long diff = pages - bprm->vma_pages;
++
++	if (!mm || !diff)
++		return;
++
++	bprm->vma_pages += diff;
++
++#ifdef SPLIT_RSS_COUNTING
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++#else
++	spin_lock(&mm->page_table_lock);
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++	spin_unlock(&mm->page_table_lock);
++#endif
++}
++
+ #ifdef CONFIG_MMU
+ 
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+@@ -186,6 +205,8 @@ static struct page *get_arg_page(struct 
+ 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
+ 		struct rlimit *rlim;
+ 
++		acct_arg_size(bprm, size / PAGE_SIZE);
++
+ 		/*
+ 		 * We've historically supported up to 32 pages (ARG_MAX)
+ 		 * of argument strings even with small stacks
+@@ -1003,6 +1024,7 @@ int flush_old_exec(struct linux_binprm *
+ 	/*
+ 	 * Release all of the old mmap stuff
+ 	 */
++	acct_arg_size(bprm, 0);
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
+@@ -1426,8 +1448,10 @@ int do_execve(const char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput (bprm->mm);
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
++		mmput(bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+
