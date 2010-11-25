@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab0KYRnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 12:43:19 -0500
-Received: from www.tglx.de ([62.245.132.106]:50856 "EHLO www.tglx.de"
+	id S1754550Ab0KYRnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 12:43:33 -0500
+Received: from www.tglx.de ([62.245.132.106]:50892 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985Ab0KYRnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 12:43:13 -0500
+	id S1754422Ab0KYRn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 12:43:28 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: sodaville@linutronix.de, x86@kernel.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 04/11] x86/dtb: add irq host abstraction
-Date: Thu, 25 Nov 2010 18:39:54 +0100
-Message-Id: <1290706801-7323-5-git-send-email-bigeasy@linutronix.de>
+        devicetree-discuss@lists.ozlabs.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 09/11] x86/ioapic: Add OF bindings for IO-APIC
+Date: Thu, 25 Nov 2010 18:39:59 +0100
+Message-Id: <1290706801-7323-10-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
 References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
@@ -21,126 +22,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The here introduced irq_host abstraction represents a generic irq_host.
-The xlate callback is resposible to parse irq informations like irq type
-and number and returns the hardware irq number which is reported by the
-hardware as active.
+ioapic_xlate provides a translation from the information in device tree
+to ioapic related informations. This includes
+- obtaining hw irq which is the vector number "=> pin number + gsi"
+- obtaining type (level/edge/..)
+- programming this information into ioapic
+
+ioapic_add_ofnode adds an irq_host based on informations from the device
+tree. The memory address is obtained from the phys_reg property instead
+of reg. On the PCI bus we use reg property for the PCI address. We can't
+use the PCI functions because we need the ioapic before the PCI bus is
+up. This information (irq_host) is required  in order to map a device to
+its proper interrupt controller.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 CC: x86@kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org
-Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- arch/x86/include/asm/irq_controller.h |   12 ++++++++
- arch/x86/include/asm/prom.h           |    2 +
- arch/x86/kernel/prom.c                |   47 ++++++++++++++++++++++++++++++++-
- 3 files changed, 60 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/include/asm/irq_controller.h
+ arch/x86/include/asm/io_apic.h |    7 +++
+ arch/x86/kernel/apic/io_apic.c |  100 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/prom.c         |    8 +++
+ 3 files changed, 115 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq_controller.h b/arch/x86/include/asm/irq_controller.h
-new file mode 100644
-index 0000000..1cbbfd0
---- /dev/null
-+++ b/arch/x86/include/asm/irq_controller.h
-@@ -0,0 +1,12 @@
-+#ifndef __IRQ_CONTROLLER__
-+#define __IRQ_CONTROLLER__
-+
-+struct irq_host {
-+	int (*xlate)(struct irq_host *h, const u32 *intspec, u32 intsize,
-+			u32 *out_hwirq, u32 *out_type);
-+	void *priv;
-+	struct device_node *controller;
-+	struct list_head l;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index d854b90..dc1169f 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -175,6 +175,13 @@ struct mp_ioapic_gsi{
+ 	u32 gsi_base;
+ 	u32 gsi_end;
+ };
++#ifdef CONFIG_X86_OF
++struct mp_of_ioapic {
++	struct device_node *node;
 +};
-+
++extern struct mp_of_ioapic mp_of_ioapic[MAX_IO_APICS];
++void __init ioapic_add_ofnode(struct device_node *np);
 +#endif
-diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-index 8fdb0d2..6c80e53 100644
---- a/arch/x86/include/asm/prom.h
-+++ b/arch/x86/include/asm/prom.h
-@@ -20,10 +20,12 @@
- #include <asm/irq.h>
- #include <asm/atomic.h>
- #include <asm/setup.h>
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+ extern u32 gsi_top;
+ int mp_find_ioapic(u32 gsi);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ea51151..27a5709 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -43,6 +43,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/dmar.h>
+ #include <linux/hpet.h>
++#include <linux/of_address.h>
+ 
+ #include <asm/idle.h>
+ #include <asm/io.h>
+@@ -60,6 +61,7 @@
+ #include <asm/irq_remapping.h>
+ #include <asm/hpet.h>
+ #include <asm/hw_irq.h>
 +#include <asm/irq_controller.h>
  
- #ifdef CONFIG_OF
- extern void init_dtb(void);
- extern void add_dtb(u64 data);
-+void add_interrupt_host(struct irq_host *ih);
- #else
- static inline void init_dtb(void) { }
- static inline void add_dtb(u64 data) { }
-diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
-index ba9a096..996fd05 100644
---- a/arch/x86/kernel/prom.c
-+++ b/arch/x86/kernel/prom.c
-@@ -3,18 +3,63 @@
-  */
+ #include <asm/apic.h>
  
- #include <linux/io.h>
-+#include <linux/interrupt.h>
- #include <linux/list.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/slab.h>
+@@ -88,6 +90,10 @@ int nr_ioapics;
+ /* IO APIC gsi routing info */
+ struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
  
-+#include <asm/irq_controller.h>
-+
- char __initdata cmd_line[COMMAND_LINE_SIZE];
-+static LIST_HEAD(irq_hosts);
-+static DEFINE_RAW_SPINLOCK(big_irq_lock);
-+
-+void add_interrupt_host(struct irq_host *ih)
++#ifdef CONFIG_X86_OF
++/* OF -> IO APIC lookup */
++struct mp_of_ioapic mp_of_ioapic[MAX_IO_APICS];
++#endif
+ /* The one past the highest gsi number used */
+ u32 gsi_top;
+ 
+@@ -4052,6 +4058,100 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	nr_ioapics++;
+ }
+ 
++#ifdef CONFIG_X86_OF
++static int ioapic_xlate(struct irq_host *h, const u32 *intspec, u32 intsize,
++		u32 *out_hwirq, u32 *out_type)
 +{
-+	unsigned long flags;
++	u32 line;
++	u32 idx;
++	u32 type;
++	u32 trigger;
++	u32 polarity;
++	struct irq_cfg *cfg;
++	struct irq_desc *desc;
 +
-+	raw_spin_lock_irqsave(&big_irq_lock, flags);
-+	list_add(&ih->l, &irq_hosts);
-+	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
++	if (intsize < 1)
++		return -EINVAL;
++
++	line = *intspec;
++	idx = (u32) h->priv;
++	*out_hwirq = line + mp_gsi_routing[idx].gsi_base;
++	if (intsize > 1) {
++		intspec++;
++		type = *intspec;
++		switch (type) {
++		case 0:
++			*out_type = IRQ_TYPE_EDGE_RISING;
++			trigger = IOAPIC_EDGE;
++			polarity = 1;
++			break;
++		case 1:
++			*out_type = IRQ_TYPE_LEVEL_LOW;
++			trigger = IOAPIC_LEVEL;
++			polarity = 0;
++			break;
++		case 2:
++			*out_type = IRQ_TYPE_LEVEL_HIGH;
++			trigger = IOAPIC_LEVEL;
++			polarity = 1;
++			break;
++		case 3:
++			*out_type = IRQ_TYPE_EDGE_FALLING;
++			trigger = IOAPIC_EDGE;
++			polarity = 0;
++			break;
++		default:
++			*out_type = IRQ_TYPE_NONE;
++			trigger = IOAPIC_AUTO;
++			polarity = 0;
++			break;
++		};
++	} else {
++		*out_type = IRQ_TYPE_NONE;
++		trigger = IOAPIC_AUTO;
++		polarity = 0;
++	}
++	/* And now tell the IO APIC to make the line ready */
++	desc = irq_to_desc_alloc_node(*out_hwirq, 0);
++	cfg = irq_cfg(*out_hwirq);
++	add_pin_to_irq_node(cfg, 0, idx, line);
++	/* make it edge by default, settype will update it */
++	setup_ioapic_irq(idx, line, *out_hwirq, cfg, trigger, polarity);
++	return 0;
 +}
 +
-+static struct irq_host *get_ih_from_node(struct device_node *controller)
++void __init ioapic_add_ofnode(struct device_node *np)
 +{
-+	struct irq_host *ih, *found = NULL;
-+	unsigned long flags;
++	int i;
++	const __be32 *prop;
++	u32 addr;
 +
-+	raw_spin_lock_irqsave(&big_irq_lock, flags);
-+	list_for_each_entry(ih, &irq_hosts, l) {
-+		if (ih->controller ==  controller) {
-+			found = ih;
-+			break;
++	prop = of_get_property(np, "phys_reg", NULL);
++	if (!prop) {
++		printk(KERN_ERR "IO APIC %s missing phys_reg property.\n",
++				np->full_name);
++		return;
++	}
++	addr = be32_to_cpup(prop);
++
++	for (i = 0; i < nr_ioapics; i++) {
++		if (addr == mp_ioapics[i].apicaddr) {
++			struct irq_host *ih;
++
++			mp_of_ioapic[i].node = np;
++			ih = kzalloc(sizeof(*ih), GFP_KERNEL);
++			BUG_ON(!ih);
++			ih->controller = np;
++			ih->xlate = ioapic_xlate;
++			ih->priv = (void *)i;
++			add_interrupt_host(ih);
++			return;
 +		}
 +	}
-+	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
-+	return found;
++	printk(KERN_ERR "IO APIC at 0x%08x is not registered.\n", addr);
 +}
- 
- unsigned int irq_create_of_mapping(struct device_node *controller,
- 		const u32 *intspec, unsigned int intsize)
++#endif
++
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
  {
--	return intspec[0];
-+	struct irq_host *ih;
-+	u32 virq;
-+	u32 type;
-+	int ret;
+diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
+index bbd6064..e9ff517 100644
+--- a/arch/x86/kernel/prom.c
++++ b/arch/x86/kernel/prom.c
+@@ -9,9 +9,11 @@
+ #include <linux/of_platform.h>
+ #include <linux/slab.h>
+ #include <linux/pci.h>
++#include <linux/of_fdt.h>
  
-+	ih = get_ih_from_node(controller);
-+	if (!ih)
-+		return -ENODEV;
-+	ret = ih->xlate(ih, intspec, intsize, &virq, &type);
-+	if (ret)
-+		return ret;
-+	if (type == IRQ_TYPE_NONE)
-+		return virq;
-+	/* set the mask if it is different from current */
-+	if (type == (irq_to_desc(virq)->status & IRQF_TRIGGER_MASK))
-+		set_irq_type(virq, type);
-+	return virq;
+ #include <asm/hpet.h>
+ #include <asm/irq_controller.h>
++#include <asm/apic.h>
+ #include <asm/io_apic.h>
+ #include <asm/pci_x86.h>
+ 
+@@ -355,8 +357,14 @@ void __init x86_early_of_parse(void)
+ 
+ void __init init_dtb(void)
+ {
++	struct device_node *dp;
++
+ 	if (!initial_boot_params)
+ 		return;
+ 
+ 	unflatten_device_tree();
++	for_each_node_by_type(dp, "interrupt-controller") {
++		if (of_device_is_compatible(dp, "intel,ioapic"))
++			ioapic_add_ofnode(dp);
++	}
  }
- EXPORT_SYMBOL_GPL(irq_create_of_mapping);
- 
 -- 
 1.7.3.2
 
