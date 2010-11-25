@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab0KYQXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:23:19 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:44128
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752546Ab0KYQXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:23:17 -0500
-X-SpamScore: -33
-X-BigFish: VPS-33(zzbb2dK1432N98dN9371P10d1Izz1202hzz15d4Rz32i691h637h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCG86L-02-4NG-02
-X-M-MSG: 
-Date: Thu, 25 Nov 2010 17:23:13 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] KVM: Make the instruction emulator aware of Nested
- Virtualization
-Message-ID: <20101125162313.GA9411@amd.com>
-References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
- <4CED63DC.20608@redhat.com>
- <20101125114640.GC6031@amd.com>
- <20101125131351.GA9382@amd.com>
- <4CEE7E21.3060007@redhat.com>
+	id S1754057Ab0KYQXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:23:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752546Ab0KYQXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 11:23:49 -0500
+Date: Thu, 25 Nov 2010 17:21:58 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 05 of 66] compound_lock
+Message-ID: <20101125162158.GO6118@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <fc2579c9bddbfcf78d72.1288798060@v2.random>
+ <20101118114902.GJ8135@csn.ul.ie>
+ <AANLkTik9U_r7tqdDYw24xwTgvp5c740Z9eMQeh8y4Hpi@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4CEE7E21.3060007@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik9U_r7tqdDYw24xwTgvp5c740Z9eMQeh8y4Hpi@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 10:17:53AM -0500, Avi Kivity wrote:
-> On 11/25/2010 03:13 PM, Roedel, Joerg wrote:
-> > On Thu, Nov 25, 2010 at 12:46:40PM +0100, Roedel, Joerg wrote:
-> > >  We basically have two choices here:
-> > >
-> > >  	a) We expose svm internals into the emulator
-> > >  	b) We expose emulator internals into svm
-> > >
-> > >  Both choices are not really good from a software-design point-of-view.
-> > >  But I think option b) is the better one because it is easier to cope with
-> > >  and thus less likely to break when changing the emulator code.
+On Thu, Nov 18, 2010 at 09:28:27AM -0800, Linus Torvalds wrote:
+> On Thu, Nov 18, 2010 at 3:49 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> >> +
+> >> +static inline void compound_lock_irqsave(struct page *page,
+> >> +                                      unsigned long *flagsp)
+> >> +{
+> >> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> >> +     unsigned long flags;
+> >> +     local_irq_save(flags);
+> >> +     compound_lock(page);
+> >> +     *flagsp = flags;
+> >> +#endif
+> >> +}
+> >> +
 > >
-> > What we could do probably is to define the interface between the
-> > emulator and the architecture code in a better way. This would take the
-> > burden of going into architecture code for emulator changes away.
+> > The pattern for spinlock irqsave passes in unsigned long, not unsigned
+> > long *. It'd be nice if they matched.
 > 
-> What about things like adding instructions and forgetting to add the 
-> corresponding svm.c code?
+> Indeed. Just make the thing return the flags the way the normal
+> spin_lock_irqsave() function does.
 
-Cannot happen. Every instruction that can be intercepted with SVM is
-already handled in this patch-set.
+Done.
 
-> Good idea.  Needed for the decode bits thing as well.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -320,15 +320,14 @@ static inline void compound_unlock(struc
+ #endif
+ }
+ 
+-static inline void compound_lock_irqsave(struct page *page,
+-					 unsigned long *flagsp)
++static inline unsigned long compound_lock_irqsave(struct page *page)
+ {
++	unsigned long uninitialized_var(flags);
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	unsigned long flags;
+ 	local_irq_save(flags);
+ 	compound_lock(page);
+-	*flagsp = flags;
+ #endif
++	return flags;
+ }
+ 
+ static inline void compound_unlock_irqrestore(struct page *page,
 
-Especially needed to not kill the L1 guest when an L2 instruction
-emulation fails :)
 
-	Joerg
+diff --git a/mm/swap.c b/mm/swap.c
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -94,7 +94,7 @@ static void put_compound_page(struct pag
+ 			 */
+ 			smp_mb();
+ 			/* page_head wasn't a dangling pointer */
+-			compound_lock_irqsave(page_head, &flags);
++			flags = compound_lock_irqsave(page_head);
+ 			if (unlikely(!PageTail(page))) {
+ 				/* __split_huge_page_refcount run before us */
+ 				compound_unlock_irqrestore(page_head, flags);
 
--- 
-AMD Operating System Research Center
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Thanks,
+Andrea
