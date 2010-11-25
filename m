@@ -1,136 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab0KYJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 04:27:15 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41168 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab0KYJ1N (ORCPT
+	id S1752061Ab0KYJ2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 04:28:22 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:17342 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab0KYJ2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 04:27:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cKv0iSLhqYasABxRJ/O5j3KA44kGjllhd72GHsMn4sI2O/HFyoNJ1bs/iGoig/X4Mt
-         sVIOJeW1dlwMAr/QotBkjhWjz39SfTLQ4TyTJ8bfLGRgjXCmpszrpxdF0qALIXUqEHPt
-         6r5OltAZIdDnmmrJyEukTVArzo46rk8MClY4I=
-Date: Thu, 25 Nov 2010 10:27:08 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 0/2] rcu: Fix series of spurious RCU softirqs
-Message-ID: <20101125092706.GH2538@nowhere>
-References: <1290558673-23580-1-git-send-crap-fweisbec@gmail.com>
- <4CEDDB2A.2020807@cn.fujitsu.com>
- <20101125073857.GB2538@nowhere>
- <4CEE1FD2.7040707@cn.fujitsu.com>
+	Thu, 25 Nov 2010 04:28:20 -0500
+Message-ID: <4CEE2C2E.4010003@panasas.com>
+Date: Thu, 25 Nov 2010 11:28:14 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CEE1FD2.7040707@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nick Piggin <npiggin@kernel.dk>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Possible data integrity problems in lots of filesystems?
+References: <20101125074909.GA4160@amd>
+In-Reply-To: <20101125074909.GA4160@amd>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Nov 2010 09:28:18.0792 (UTC) FILETIME=[1862BE80:01CB8C83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 04:35:30PM +0800, Lai Jiangshan wrote:
-> On 11/25/2010 03:38 PM, Frederic Weisbecker wrote:
-> > On Thu, Nov 25, 2010 at 11:42:34AM +0800, Lai Jiangshan wrote:
-> >> On 11/24/2010 08:31 AM, Frederic Weisbecker wrote:
-> >>> Hi,
-> >>>
-> >>> I've observed some not so unfrequent series of spurious rcu
-> >>> softirqs, sometimes happening at each ticks for a random
-> >>> while.
-> >>>
-> >>> These patches aims at fixing them.
-> >>>
-> >>> Thanks.
-> >>>
-> >>> Frederic Weisbecker (2):
-> >>>   rcu: Don't chase unnecessary quiescent states after extended grace periods
-> >>>   rcu: Stop checking quiescent states after grace period completion from remote
-> >>>
-> >>
-> >> If we ensure rdp->gpnum >= rdp->completed is always true, the problems as
-> >> you described will not be existed. Or maybe I misunderstand you.
-> >>
-> >> rdp->gpnum >= rdp->completed is a very important guarantee I think.
-> >> (In my RCURING, it is guaranteed.) I'm afraid there are some other
-> >> problems still hidden if it is not guaranteed.
-> >>
-> >> so I recommend: (code is better than words)
-> >>
-> >> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> >> index d5bc439..af4e87a 100644
-> >> --- a/kernel/rcutree.c
-> >> +++ b/kernel/rcutree.c
-> >> @@ -648,6 +648,13 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
-> >>  
-> >>  		/* Remember that we saw this grace-period completion. */
-> >>  		rdp->completed = rnp->completed;
-> >> +
-> >> +		/* Ensure ->gpnum >= ->completed after NO_HZ */
-> >> +		if (unlikely(rnp->completed - rdp->gpnum > 0
-> >> +				|| rdp->gpnum - rnp->gpnum > 0)) {
-> >> +			rdp->gpnum = rnp->completed;
-> >> +			rdp->qs_pending = 0;
-> > 
-> > 
-> > That's an alternative to my first patch yeah.
+On 11/25/2010 09:49 AM, Nick Piggin wrote:
+> This is a call for review and comments from all filesystem developers.
+> Not just those cced, but everyone who maintains a filesystem[*], because
+> I wasn't able to put in a lot of time to understand the more complex
+> filesystems.
 > 
-> Since rdp->gpnum >= rdp->completed is guaranteed.
-> your second patch is not needed, the problem is also fixed.
+> [*] You all read linux-fsdevel anyway, right? If not, please do, it's
+> pretty low volume and high s/n.
 > 
-> if rnp->gpnum == rnp->completed, rcu_report_qs_rdp() will not be called.
-> it is because rdp->qs_pending == 0 when rnp->gpnum == rnp->completed.
-
-
-Aaah...
-
-
+> So there seem to be several problems with inode data and metadata
+> synchronization. Some of it is bugs in core code, but also a couple
+> of oft repeated bugs in filesystems.
 > 
-> And if rdp->gpnum >= rdp->completed
-> > must be a guarantee outside the rnp lock, then it's certainly better because
-> > the lock is relaxed between rcu_process_gp_end() and note_new_gpnum(), and
-> > both values are async in this lockless frame.
-> > 
-> > But perhaps this shouldn't touch rdp->qs_pending:
+> http://marc.info/?l=linux-fsdevel&m=129052164315259&w=2
 > 
-> if rdp->gpnum == rnp->completed, it means we don't need a qs for rdp->gpnum,
-> it is completed. so we must set rdp->qs_pending = 0;
+> Basically 2 patterns of problem.
 > 
-> when we really need a qs, rdp->qs_pending will be fixed in note_new_gp_new().
+> First is checking inode dirty bits
+> (I_DIRTY/I_DIRTY_SYNC/I_DIRTY_DATASYNC) without locking. What happens is
+> that other paths (async writeout or even a concurrent sync or fsync) can
+> clear these bits with the data not being on platter.
+> 
+> * solution: must wait on I_SYNC before testing these things. See my
+>   patch in above linked series. I think I covered everyone here, but
+>   please double check.
+> 
+> * There is opportunity in some filesystems for clearing inode dirty bits
+>   in fsync, and for checking and avoiding fsync work if dirty bits are
+>   not sure.
+> 
+> Second is confusing sync and async inode metadata writeout
+> Core code clears I_DIRTY_SYNC and I_DIRTY_DATASYNC before calling
+> ->write_inode *regardless* of whether it is a for-integrity call or
+> not. This means background writeback can clear it, and subsequent
+> sync_inode_metadata or sync(2) call will skip the next ->write_inode
+> completely.
+> 
+> * solution: for fsync, you must ensure that everything that a
+>   synchronous ->write_inode call does is also done by an
+>   asynchronous ->write_inode call *plus* a subsequent fsync.
+> 
+>   So if a synchronous ->write_inode syncs a bh, but an async one
+>   just marks it dirty, your .fsync would have to sync the bh.
+> 
+> * solution: for sync(2), you must ensure that everything that a
+>   synchronous ->write_inode call does is also done by an
+>   asynchronous ->write_inode call plus a subsequent ->sync_fs
+>   call, plus __sync_blockdev call on the buffer mapping.
+> 
+>   Many simple filesystems just go via buffer mapping, and
+>   ->write_inode simply dirties the inode's bh. These guys are
+>   fine here (although most are broken wrt fsync).
+> 
+> If you need any more state bits in your inode to work out what is going
+> on, Christoph's recent hfsplus fsync optimisation patches has a good
+> example of how it can be done.
+> 
+> The ext2 fix below is an example of how we can do this nicely, the
+> rest of the filesystems I note when it looks like they went wrong, and
+> band aid fixed it.
+> 
+> Index: linux-2.6/fs/exofs/inode.c
+> ===================================================================
+> --- linux-2.6.orig/fs/exofs/inode.c	2010-11-25 17:25:54.000000000 +1100
+> +++ linux-2.6/fs/exofs/inode.c	2010-11-25 17:36:32.000000000 +1100
+> @@ -1273,7 +1273,7 @@ static int exofs_update_inode(struct ino
+>  
+>  int exofs_write_inode(struct inode *inode, struct writeback_control *wbc)
+>  {
+> -	return exofs_update_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+> +	return exofs_update_inode(inode, 1 /* XXX: fix fsync and use wbc->sync_mode == WB_SYNC_ALL */ );
+>  }
+>  
+>  /*
 
+Hi Nick.
+Thanks for digging into this issue, I bet it's causing pain. Which
+I totally missed in my tests. I wish I had a better xsync+reboot
+tests for all this.
 
-Ok that makes all sense now!
+So in that previous patch you had:
+> Index: linux-2.6/fs/exofs/file.c
+> ===================================================================
+> --- linux-2.6.orig/fs/exofs/file.c	2010-11-19 16:50:00.000000000 +1100
+> +++ linux-2.6/fs/exofs/file.c	2010-11-19 16:50:07.000000000 +1100
+> @@ -48,11 +48,6 @@ static int exofs_file_fsync(struct file
+>  	struct inode *inode = filp->f_mapping->host;
+>  	struct super_block *sb;
+>  
+> -	if (!(inode->i_state & I_DIRTY))
+> -		return 0;
+> -	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
+> -		return 0;
+> -
+>  	ret = sync_inode_metadata(inode, 1);
+>  
+>  	/* This is a good place to write the sb */
+> 
 
-I'm just not sure about your check above.
+Is that a good enough fix for the issue in your opinion?
+Or is there more involved?
 
-(rdp->gpnum - rnp->gpnum > 0) can never happen, right?
+In exofs there is nothing special to do other than VFS
+managment and the final call, by vfs, to .write_inode.
 
-Also perhaps we should set rdp->qs_pending = 0 only if
-rnp->completed == rdp->completed?
+I wish we had a simple_file_fsync() from VFS that does
+what the VFS expects us to do. So when code evolves it
+does not need to change all FSs. This is the third time
+I'm fixing this code trying to second guess the VFS.
 
-Which in the end would be:
+Actually the only other thing I need to do in file_fsync
+today is sb_sync. But this is a stupidity (and a bug) that
+I'm fixing soon. So that theoretical simple_file_fsync()
+would be all I need.
 
-	/* Remember that we saw this grace-period completion. */
-	rdp->completed = rnp->completed;
+Please advise?
+BTW: Do you want that I take the changes through my tree?
 
-+	if (rdp->gpnum < rdp->completed)
-+		rdp->gpnum = rdp->completed;
-+
-+	if (rdp->gpnum == rdp->completed)
-+		rdp->qs_pending = 0;
-
-
-And then if there is a new grace period to handle, this will
-be done through note_new_pgnum().
-
-Hm?
-
-
+Thanks for taking care of this
+Boaz
