@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab0KYLca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:32:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62214 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab0KYLc3 (ORCPT
+	id S1752765Ab0KYLhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:37:47 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46744 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab0KYLhq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:32:29 -0500
+	Thu, 25 Nov 2010 06:37:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=PUtFFBXSewJQnJv0WJvaIM3XnHb11ux1Y2fJUe4/q+0nv6zb+buP83cS3Ca9NGKTUW
-         8d7aBBCO5zU8Lx2z8jEsYnkdoh7nEewd8zo/jVX+qbo4me1OxucRYXMtkvThiEsp2GMO
-         hm+2hKH1C3jwtWSItebfvjuGSKLDoOn6+f5B8=
+         :cc:content-type:content-transfer-encoding;
+        b=CMGCoHCKVVrj6aNAaWYj8BbHVQ3dX1hISyRg9Gd/MRPpw6eY+9nEJYKgRYfSYmJRVi
+         1ReXCmbblK/oD74HS+RhWmo7GmSHXTAjuPw+LAxtFYCIZp9+DZgmXhp1R2AF+L1ma9gN
+         YiIMJxLckU6LLEu49IVQokVusHUV2VQhRGCEY=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikb1FUCT8V+kig1jUqJ8XfFOFecVODadm_XCCzz@mail.gmail.com>
-References: <AANLkTikBeyM3Y2PZ_ZkMxsO0uLvqYq=BGWQpAis4MyHp@mail.gmail.com>
-	<AANLkTikXcz8WP5+Pp0W5PNrAaNsUUZWtGAAozT2HfvXM@mail.gmail.com>
-	<AANLkTikb1FUCT8V+kig1jUqJ8XfFOFecVODadm_XCCzz@mail.gmail.com>
-Date: Thu, 25 Nov 2010 12:32:28 +0100
-Message-ID: <AANLkTi=2Q5msQ=pmOTND-JHkH==Qb-NDXCh9nhkyts_s@mail.gmail.com>
-Subject: Re: [driver] Marvell 9128
-From: Alessandro Tagliapietra <tagliapietra.alessandro@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1290642894-4577-1-git-send-email-jslaby@suse.cz>
+References: <1290642894-4577-1-git-send-email-jslaby@suse.cz>
+Date: Thu, 25 Nov 2010 22:37:44 +1100
+Message-ID: <AANLkTi=DEHOKkrvzHUBnW+rAkGz-uhizRqZb2PAuh4k-@mail.gmail.com>
+Subject: Re: [PATCH 1/1] NET: wan/x25_asy, move lapb_unregister to x25_asy_close_tty
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, slapin@ossfans.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/25 Alessandro Tagliapietra <tagliapietra.alessandro@gmail.com>:
-> Hi, i've a asus p6x58d-e motherboard with a Marver 9128 (1b4b:91a3)
-> Sata-6 controller. I've tried both ubuntu and fedora (that has newer
-> kernel) and both can't find the 2 western digital sata-6 drives
-> configured in raid0.
->
-> I've also searched in the lastest kernel source and i can't find
-> support for that piece of hardware.
->
-> I'm new to the kernel mailing list, what are the next steps?
->
-> Best regards
->
-> Alessandro Tagliapietra
+Sorry I haven't used this driver so can't fully test it. Looks
+straightforward and compile tested ok.
 
-
-Bad way to report this?
+On Thu, Nov 25, 2010 at 10:54 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> We register lapb when tty is created, but unregister it only when the
+> device is UP. So move the lapb_unregister to x25_asy_close_tty after
+> the device is down.
+>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Reported-by: Sergey Lapin <slapin@ossfans.org>
+> Cc: Andrew Hendry <andrew.hendry@gmail.com>
+> ---
+>  drivers/net/wan/x25_asy.c |   11 ++++++-----
+>  1 files changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/net/wan/x25_asy.c b/drivers/net/wan/x25_asy.c
+> index 66cda25..24297b2 100644
+> --- a/drivers/net/wan/x25_asy.c
+> +++ b/drivers/net/wan/x25_asy.c
+> @@ -498,7 +498,6 @@ norbuff:
+>  static int x25_asy_close(struct net_device *dev)
+>  {
+>        struct x25_asy *sl = netdev_priv(dev);
+> -       int err;
+>
+>        spin_lock(&sl->lock);
+>        if (sl->tty)
+> @@ -507,10 +506,6 @@ static int x25_asy_close(struct net_device *dev)
+>        netif_stop_queue(dev);
+>        sl->rcount = 0;
+>        sl->xleft  = 0;
+> -       err = lapb_unregister(dev);
+> -       if (err != LAPB_OK)
+> -               printk(KERN_ERR "x25_asy_close: lapb_unregister error -%d\n",
+> -                       err);
+>        spin_unlock(&sl->lock);
+>        return 0;
+>  }
+> @@ -595,6 +590,7 @@ static int x25_asy_open_tty(struct tty_struct *tty)
+>  static void x25_asy_close_tty(struct tty_struct *tty)
+>  {
+>        struct x25_asy *sl = tty->disc_data;
+> +       int err;
+>
+>        /* First make sure we're connected. */
+>        if (!sl || sl->magic != X25_ASY_MAGIC)
+> @@ -605,6 +601,11 @@ static void x25_asy_close_tty(struct tty_struct *tty)
+>                dev_close(sl->dev);
+>        rtnl_unlock();
+>
+> +       err = lapb_unregister(sl->dev);
+> +       if (err != LAPB_OK)
+> +               printk(KERN_ERR "x25_asy_close: lapb_unregister error -%d\n",
+> +                       err);
+> +
+>        tty->disc_data = NULL;
+>        sl->tty = NULL;
+>        x25_asy_free(sl);
+> --
+> 1.7.3.1
+>
+>
+>
