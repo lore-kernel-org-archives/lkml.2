@@ -1,46 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0KYP5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 10:57:03 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54012 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab0KYP5B (ORCPT
+	id S1753451Ab0KYP62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 10:58:28 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58033 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab0KYP61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 10:57:01 -0500
+	Thu, 25 Nov 2010 10:58:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:in-reply-to:references:user-agent:date:message-id
-         :mime-version:content-type;
-        b=rusjTl+O+QCdLOcF9ryXIhOD6jQS+98Cwl86BWCHciWDTymDEbGUNJUR+Us571c20x
-         8YTkL1o9ni8HVQKvq01IekCq1mYlMVvW3OHFsOhGPpWEhOlC/Y4mHJ8MpG03I1XtPH37
-         9WIKv7BYAt+zPZ9NOdS3JDSOIglJflJ3o1oHI=
-From: Ben Gamari <bgamari@gmail.com>
-To: Niels =?utf-8?Q?M=C3=B6ller?= <nisse@lysator.liu.se>,
-        linux-kernel@vger.kernel.org
-Subject: Re: TCP_MAXSEG vs TCP/generic segmentation offload (tso/gso)
-In-Reply-To: <nny68hqzzn.fsf@stalhein.lysator.liu.se>
-References: <nny68hqzzn.fsf@stalhein.lysator.liu.se>
-User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Thu, 25 Nov 2010 10:56:57 -0500
-Message-ID: <874ob55rcm.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jbuk5fDBQcbln02qwr1MPmVz5x6kBSSi5QklNoYND8usK5p9/UAxN7EPu9dZFS2AOe
+         kQc/6bcXAVdzy1Ar3ZDqLbxCYMtgPgK8i0r5ls2f5yBQtxuZrirkvNHDdl20Hj1Zd0Nd
+         JgRb/8pP71q5MLyZt35IawdqYJ9HhQk0cMBwQ=
+From: mkl0301@gmail.com
+To: cbouatmailru@gmail.com, avorontsov@mvista.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
+Cc: Mac Lin <mkl0301@gmail.com>
+Subject: [PATCH v3 1/1] USB: cns3xxx: Add EHCI and OHCI bus glue for cns3xxx SOCs
+Date: Thu, 25 Nov 2010 23:58:00 +0800
+Message-Id: <1290700680-20066-1-git-send-email-mkl0301@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have spent some time searching the documentation and the net for
-> answers, without result, hence I'm posting to this list. I'm not
-> subscribed, so please cc any replies.
-> 
-You may find that responses are more forthcoming if you include the
-maintainers for the tcp subsystem and a few of the relevant
-drivers. This will ensure that they see your message. The LKML is a
-pretty high-traffic list and it is frequently that messages simply
-aren't seen. Also, I would definitely start by filing bug reports
-against individual drivers; as you said producing packets larger than
-the maximum segment size definitely seems like buggy behavior. A bug
-report will ensure that the problem doesn't fall through the cracks.
-Good luck,
+From: Mac Lin <mkl0301@gmail.com>
 
-- Ben
+The CNS3XXX SOC has include USB EHCI and OHCI compatible controllers. This
+patch adds the necessary glue logic to allow ehci-hcd and ohci-hcd drivers to
+work on CNS3XXX
+
+The EHCI and OHCI controllers share a common clock control and reset bit,
+therefore additional check for the timming of enabling and disabling is
+required. The USB bit of PLL Power Down Control is also shared by OTG, 24MHz
+UART clock, Crypto clock, PCIe reference clock, and Clock Scale Generator.
+Therefore we only ensure it is enabled, while not disabling it.
+
+Signed-off-by: Mac Lin <mkl0301@gmail.com>
+---
+ drivers/usb/Kconfig             |    2 +
+ drivers/usb/host/Kconfig        |   15 ++++
+ drivers/usb/host/ehci-cns3xxx.c |  171 +++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/ehci-hcd.c     |    5 +
+ drivers/usb/host/ohci-cns3xxx.c |  165 +++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/ohci-hcd.c     |    5 +
+ 6 files changed, 363 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/usb/host/ehci-cns3xxx.c
+ create mode 100644 drivers/usb/host/ohci-cns3xxx.c
+
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index 67eb377..5a7c8f1 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -41,6 +41,7 @@ config USB_ARCH_HAS_OHCI
+ 	default y if MFD_TC6393XB
+ 	default y if ARCH_W90X900
+ 	default y if ARCH_DAVINCI_DA8XX
++	default y if ARCH_CNS3XXX
+ 	# PPC:
+ 	default y if STB03xxx
+ 	default y if PPC_MPC52xx
+@@ -66,6 +67,7 @@ config USB_ARCH_HAS_EHCI
+ 	default y if ARCH_AT91SAM9G45
+ 	default y if ARCH_MXC
+ 	default y if ARCH_OMAP3
++	default y if ARCH_CNS3XXX
+ 	default PCI
+ 
+ # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 6f4f8e6..f8970d1 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -147,6 +147,14 @@ config USB_W90X900_EHCI
+ 	---help---
+ 		Enables support for the W90X900 USB controller
+ 
++config USB_CNS3XXX_EHCI
++	bool "Cavium CNS3XXX EHCI Module"
++	depends on USB_EHCI_HCD && ARCH_CNS3XXX
++	---help---
++	  Enable support for the CNS3XXX SOC's on-chip EHCI controller.
++	  It is needed for high-speed (480Mbit/sec) USB 2.0 device
++	  support.
++
+ config USB_OXU210HP_HCD
+ 	tristate "OXU210HP HCD support"
+ 	depends on USB
+@@ -286,6 +294,13 @@ config USB_OHCI_HCD_SSB
+ 
+ 	  If unsure, say N.
+ 
++config USB_CNS3XXX_OHCI
++	bool "Cavium CNS3XXX OHCI Module"
++	depends on USB_OHCI_HCD && ARCH_CNS3XXX
++	---help---
++	  Enable support for the CNS3XXX SOC's on-chip OHCI controller.
++	  It is needed for low-speed USB 1.0 device support.
++
+ config USB_OHCI_BIG_ENDIAN_DESC
+ 	bool
+ 	depends on USB_OHCI_HCD
+diff --git a/drivers/usb/host/ehci-cns3xxx.c b/drivers/usb/host/ehci-cns3xxx.c
+new file mode 100644
+index 0000000..9cf6696
+--- /dev/null
++++ b/drivers/usb/host/ehci-cns3xxx.c
+@@ -0,0 +1,171 @@
++/*
++ * Copyright 2008 Cavium Networks
++ *
++ * This file is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, Version 2, as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/atomic.h>
++#include <mach/cns3xxx.h>
++#include <mach/pm.h>
++
++static int cns3xxx_ehci_init(struct usb_hcd *hcd)
++{
++	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
++	int retval;
++
++	/*
++	 * EHCI and OHCI share the same clock and power,
++	 * resetting twice would cause the 1st controller been reset.
++	 * Therefore only do power up  at the first up device, and
++	 * power down at the last down device.
++	 *
++	 * Set USB AHB INCR length to 16
++	 */
++	if (atomic_inc_return(&usb_pwr_ref) == 0) {
++		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
++		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
++		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
++		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
++			MISC_CHIP_CONFIG_REG);
++	}
++
++	ehci->caps = hcd->regs;
++	ehci->regs = hcd->regs
++		+ HC_LENGTH(ehci_readl(ehci, &ehci->caps->hc_capbase));
++	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
++
++	hcd->has_tt = 0;
++	ehci_reset(ehci);
++
++	retval = ehci_init(hcd);
++	if (retval)
++		return retval;
++
++	ehci_port_power(ehci, 0);
++
++	return retval;
++}
++
++static const struct hc_driver cns3xxx_ehci_hc_driver = {
++	.description		= hcd_name,
++	.product_desc		= "CNS3XXX EHCI Host Controller",
++	.hcd_priv_size		= sizeof(struct ehci_hcd),
++	.irq			= ehci_irq,
++	.flags			= HCD_MEMORY | HCD_USB2,
++	.reset			= cns3xxx_ehci_init,
++	.start			= ehci_run,
++	.stop			= ehci_stop,
++	.shutdown		= ehci_shutdown,
++	.urb_enqueue		= ehci_urb_enqueue,
++	.urb_dequeue		= ehci_urb_dequeue,
++	.endpoint_disable	= ehci_endpoint_disable,
++	.endpoint_reset		= ehci_endpoint_reset,
++	.get_frame_number	= ehci_get_frame,
++	.hub_status_data	= ehci_hub_status_data,
++	.hub_control		= ehci_hub_control,
++#ifdef CONFIG_PM
++	.bus_suspend		= ehci_bus_suspend,
++	.bus_resume		= ehci_bus_resume,
++#endif
++	.relinquish_port	= ehci_relinquish_port,
++	.port_handed_over	= ehci_port_handed_over,
++
++	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
++};
++
++static int cns3xxx_ehci_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct usb_hcd *hcd;
++	const struct hc_driver *driver = &cns3xxx_ehci_hc_driver;
++	struct resource *res;
++	int irq;
++	int retval;
++
++	if (usb_disabled())
++		return -ENODEV;
++
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res) {
++		dev_err(dev, "Found HC with no IRQ.\n");
++		return -ENODEV;
++	}
++	irq = res->start;
++
++	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
++	if (!hcd)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(dev, "Found HC with no register addr.\n");
++		retval = -ENODEV;
++		goto err1;
++	}
++
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = res->end - res->start + 1;
++
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
++				driver->description)) {
++		dev_dbg(dev, "controller already in use\n");
++		retval = -EBUSY;
++		goto err1;
++	}
++
++	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	if (hcd->regs == NULL) {
++		dev_dbg(dev, "error mapping memory\n");
++		retval = -EFAULT;
++		goto err2;
++	}
++
++	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
++	if (retval == 0)
++		return retval;
++
++	iounmap(hcd->regs);
++err2:
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++err1:
++	usb_put_hcd(hcd);
++
++	return retval;
++}
++
++static int cns3xxx_ehci_remove(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++
++	usb_remove_hcd(hcd);
++	iounmap(hcd->regs);
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++
++	/*
++	 * EHCI and OHCI share the same clock and power,
++	 * resetting twice would cause the 1st controller been reset.
++	 * Therefore only do power up  at the first up device, and
++	 * power down at the last down device.
++	 */
++	if (atomic_dec_return(&usb_pwr_ref) == 0)
++		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
++
++	usb_put_hcd(hcd);
++
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++MODULE_ALIAS("platform:cns3xxx-ehci");
++
++static struct platform_driver cns3xxx_ehci_driver = {
++	.probe = cns3xxx_ehci_probe,
++	.remove = cns3xxx_ehci_remove,
++	.driver = {
++		.name = "cns3xxx-ehci",
++	},
++};
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 502a7e6..c5dd1c3 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1216,6 +1216,11 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+ #endif
+ 
++#ifdef CONFIG_USB_CNS3XXX_EHCI
++#include "ehci-cns3xxx.c"
++#define PLATFORM_DRIVER     cns3xxx_ehci_driver
++#endif
++
+ #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
+     !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
+     !defined(XILINX_OF_PLATFORM_DRIVER)
+diff --git a/drivers/usb/host/ohci-cns3xxx.c b/drivers/usb/host/ohci-cns3xxx.c
+new file mode 100644
+index 0000000..f05ef87
+--- /dev/null
++++ b/drivers/usb/host/ohci-cns3xxx.c
+@@ -0,0 +1,165 @@
++/*
++ * Copyright 2008 Cavium Networks
++ *
++ * This file is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, Version 2, as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/atomic.h>
++#include <mach/cns3xxx.h>
++#include <mach/pm.h>
++
++static int __devinit
++cns3xxx_ohci_start(struct usb_hcd *hcd)
++{
++	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
++	int ret;
++
++	/*
++	 * EHCI and OHCI share the same clock and power,
++	 * resetting twice would cause the 1st controller been reset.
++	 * Therefore only do power up  at the first up device, and
++	 * power down at the last down device.
++	 *
++	 * Set USB AHB INCR length to 16
++	 */
++	if (atomic_inc_return(&usb_pwr_ref) == 1) {
++		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
++		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
++		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
++		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
++			MISC_CHIP_CONFIG_REG);
++	}
++
++	ret = ohci_init(ohci);
++	if (ret < 0)
++		return ret;
++
++	ohci->num_ports = 1;
++
++	ret = ohci_run(ohci);
++	if (ret < 0) {
++		err("can't start %s", hcd->self.bus_name);
++		ohci_stop(hcd);
++		return ret;
++	}
++	return 0;
++}
++
++static const struct hc_driver cns3xxx_ohci_hc_driver = {
++	.description		= hcd_name,
++	.product_desc		= "CNS3XXX OHCI Host controller",
++	.hcd_priv_size		= sizeof(struct ohci_hcd),
++	.irq			= ohci_irq,
++	.flags			= HCD_USB11 | HCD_MEMORY,
++	.start			= cns3xxx_ohci_start,
++	.stop			= ohci_stop,
++	.shutdown		= ohci_shutdown,
++	.urb_enqueue		= ohci_urb_enqueue,
++	.urb_dequeue		= ohci_urb_dequeue,
++	.endpoint_disable	= ohci_endpoint_disable,
++	.get_frame_number	= ohci_get_frame,
++	.hub_status_data	= ohci_hub_status_data,
++	.hub_control		= ohci_hub_control,
++#ifdef CONFIG_PM
++	.bus_suspend		= ohci_bus_suspend,
++	.bus_resume		= ohci_bus_resume,
++#endif
++	.start_port_reset	= ohci_start_port_reset,
++};
++
++static int cns3xxx_ohci_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct usb_hcd *hcd;
++	const struct hc_driver *driver = &cns3xxx_ohci_hc_driver;
++	struct resource *res;
++	int irq;
++	int retval;
++
++	if (usb_disabled())
++		return -ENODEV;
++
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res) {
++		dev_err(dev, "Found HC with no IRQ.\n");
++		return -ENODEV;
++	}
++	irq = res->start;
++
++	hcd = usb_create_hcd(driver, dev, dev_name(dev));
++	if (!hcd)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(dev, "Found HC with no register addr.\n");
++		retval = -ENODEV;
++		goto err1;
++	}
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = res->end - res->start + 1;
++
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
++			driver->description)) {
++		dev_dbg(dev, "controller already in use\n");
++		retval = -EBUSY;
++		goto err1;
++	}
++
++	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	if (!hcd->regs) {
++		dev_dbg(dev, "error mapping memory\n");
++		retval = -EFAULT;
++		goto err2;
++	}
++
++	ohci_hcd_init(hcd_to_ohci(hcd));
++
++	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
++	if (retval == 0)
++		return retval;
++
++	iounmap(hcd->regs);
++err2:
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++err1:
++	usb_put_hcd(hcd);
++	return retval;
++}
++
++static int cns3xxx_ohci_remove(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++
++	usb_remove_hcd(hcd);
++	iounmap(hcd->regs);
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++
++	/*
++	 * EHCI and OHCI share the same clock and power,
++	 * resetting twice would cause the 1st controller been reset.
++	 * Therefore only do power up  at the first up device, and
++	 * power down at the last down device.
++	 */
++	if (atomic_dec_return(&usb_pwr_ref) == 0)
++		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
++
++	usb_put_hcd(hcd);
++
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++MODULE_ALIAS("platform:cns3xxx-ohci");
++
++static struct platform_driver ohci_hcd_cns3xxx_driver = {
++	.probe = cns3xxx_ohci_probe,
++	.remove = cns3xxx_ohci_remove,
++	.driver = {
++		.name = "cns3xxx-ohci",
++	},
++};
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index 5179acb..5cb6731 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -1111,6 +1111,11 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ohci_octeon_driver
+ #endif
+ 
++#ifdef CONFIG_USB_CNS3XXX_OHCI
++#include "ohci-cns3xxx.c"
++#define PLATFORM_DRIVER		ohci_hcd_cns3xxx_driver
++#endif
++
+ #if	!defined(PCI_DRIVER) &&		\
+ 	!defined(PLATFORM_DRIVER) &&	\
+ 	!defined(OMAP1_PLATFORM_DRIVER) &&	\
+-- 
+1.7.3
+
