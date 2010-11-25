@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab0KYCsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 21:48:04 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:53635 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754332Ab0KYCsC (ORCPT
+	id S1756738Ab0KYDCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Nov 2010 22:02:21 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48048 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402Ab0KYDCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 21:48:02 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAMBc7UxLd/sX/2dsb2JhbAAHg0jNApBogSGBU4FgcwSEW4sYhgY
-X-IronPort-AV: E=Sophos;i="4.59,251,1288584000"; 
-   d="scan'208";a="83532824"
-Message-ID: <4CEDCE60.9050109@teksavvy.com>
-Date: Wed, 24 Nov 2010 21:48:00 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com> <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com> <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com> <20101119163013.GJ10039@thunk.org>
-In-Reply-To: <20101119163013.GJ10039@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Nov 2010 22:02:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=QFCRkytqvyDBK5liP6SFUS18PBh7CT6PPYoEKIPrTB/06005743S8gT1RBeV82Luo0
+         9nEMGzWhPWjrDZ/+pndN8i9aFHHHt9vi3kYfNsnXnUNU4wI7aT4P8ssg/uy2ND7O8j2t
+         pu0lwR+fLKSw53bNWPx3Vos9mrkfBpE1+hLFY=
+From: Andrea Gelmini <andrea.gelmini@gelma.net>
+To: linux-kernel@vger.kernel.org
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [PATCH] init: Kconfig: fix typo
+Date: Thu, 25 Nov 2010 04:02:10 +0100
+Message-Id: <1290654130-26114-1-git-send-email-andrea.gelmini@gelma.net>
+X-Mailer: git-send-email 1.7.3.2.316.g4da1c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-19 11:30 AM, Ted Ts'o wrote:
-> On Fri, Nov 19, 2010 at 04:44:33PM +0100, Lukas Czerner wrote:
->>>
->>> But, oddly, it _is_ the default for mke2fs -t ext4,
->>> which really threw me for a loop recently.
->>>
->>> I though my system had locked up when suddenly everything
->>> went dead for a very long time (many minutes) while installing a
->>> new system.
->
-> Yeah, the assumption was doing a single big discard (which is all
-> mke2fs is doing) should be fast.  At least on sanely implemented SSD's
-> (i.e., like the Intel X25-M) it should be, since all that should
-> require is a flash write to the global mapping table, declaring all of
-> the blocks as free.
+s/feautre/feature/
 
-But mke2fs probably is NOT doing a "single big discard", because for SATA the
-TRIM command is limited to 64K sectors per range.. and the in-kernel TRIM
-code only ever does single ranges..
+Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+---
+ init/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-So doing a discard over an entire drive-encompassing partition, say.. 100GB,
-will require 3000+ individual TRIM commands.  At (say) 200msecs each, that
-adds up to about ten minutes of execution time.  Or less if the drive is
-faster than that.
+diff --git a/init/Kconfig b/init/Kconfig
+index c972899..dd43d8e 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -620,7 +620,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+ 	help
+ 	  Memory Resource Controller Swap Extension comes with its price in
+ 	  a bigger memory consumption. General purpose distribution kernels
+-	  which want to enable the feautre but keep it disabled by default
++	  which want to enable the feature but keep it disabled by default
+ 	  and let the user enable it by swapaccount boot command line
+ 	  parameter should have this option unselected.
+ 	  For those who want to have the feature enabled by default should
+-- 
+1.7.3.2.316.g4da1c
 
-Whereas.. grouping them into 64-ranges per trim, could reduce the execution
-time down to perhaps 1/50th of that, or in the range of 10-20 seconds instead.
-
-Cheers
