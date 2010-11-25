@@ -1,258 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab0KYQS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:18:27 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36737 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab0KYQSY convert rfc822-to-8bit (ORCPT
+	id S1753993Ab0KYQWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:22:07 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63616 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab0KYQWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:18:24 -0500
+	Thu, 25 Nov 2010 11:22:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=djcm6evCir8AsZQzRKGhkLZqp0B87IxBmNsMvL0MYdqz0KRywX7QwhZ1N+IFdg+P8p
+         ZjluWPJWAYTGuz+JIgCFZzNAYm7ugZedX3idyJr++Y6QrCzldyeKPRYi14EdlJDiACJe
+         rrN/GbbIubfDFKOoFYUCGv8YU6Uzs015Kqx0g=
+Date: Thu, 25 Nov 2010 19:21:58 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: mkl0301@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH v3 1/1] USB: cns3xxx: Add EHCI and OHCI bus glue for
+ cns3xxx SOCs
+Message-ID: <20101125162158.GB2580@oksana.dev.rtsoft.ru>
+References: <1290700680-20066-1-git-send-email-mkl0301@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1290692075.689.20.camel@concordia>
-References: <1290607413.12457.44.camel@concordia> <1290692075.689.20.camel@concordia>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 25 Nov 2010 09:17:59 -0700
-X-Google-Sender-Auth: STLccsBRy_JQO_-jBtMTxeJsW9s
-Message-ID: <AANLkTiknyKi1pzvUP2WnasudZwH27-a0FxCX0BSHBdQp@mail.gmail.com>
-Subject: Re: RFC: Mega rename of device tree routines from of_*() to dt_*()
-To: michael@ellerman.id.au
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        sparclinux@vger.kernel.org,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1290700680-20066-1-git-send-email-mkl0301@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 6:34 AM, Michael Ellerman
-<michael@ellerman.id.au> wrote:
-> On Thu, 2010-11-25 at 01:03 +1100, Michael Ellerman wrote:
->> Hi all,
->>
->> There were some murmurings on IRC last week about renaming the of_*()
->> routines.
-> ...
->> The thinking is that on many platforms that use the of_() routines
->> OpenFirmware is not involved at all, this is true even on many powerpc
->> platforms. Also for folks who don't know the OpenFirmware connection
->> it reads as "of", as in "a can of worms".
-> ...
->> So I'm hoping people with either say "YES this is a great idea", or "NO
->> this is stupid".
->
-> I'm still hoping, but so far it seems most people have got better things
-> to do, and of those that do have an opinion the balance is slightly
-> positive.
+On Thu, Nov 25, 2010 at 11:58:00PM +0800, mkl0301@gmail.com wrote:
+> From: Mac Lin <mkl0301@gmail.com>
+> 
+> The CNS3XXX SOC has include USB EHCI and OHCI compatible controllers. This
+> patch adds the necessary glue logic to allow ehci-hcd and ohci-hcd drivers to
+> work on CNS3XXX
+> 
+> The EHCI and OHCI controllers share a common clock control and reset bit,
+> therefore additional check for the timming of enabling and disabling is
+> required. The USB bit of PLL Power Down Control is also shared by OTG, 24MHz
+> UART clock, Crypto clock, PCIe reference clock, and Clock Scale Generator.
+> Therefore we only ensure it is enabled, while not disabling it.
+> 
+> Signed-off-by: Mac Lin <mkl0301@gmail.com>
 
-I assume you'll be also publishing the script that you use for
-generating the massive patch.  I expect that there will be a few
-iterations of running the rename script to convert over all the
-stragglers.  It should also be negotiated with Linus about when this
-patch should get applied.  I do NOT want to cause massive merge pain
-during the merge window.
+Thanks for the patch!
 
-Andrew/Linus: Before Michael proceeds too far with this rename, are
-you okay with a mass rename of the device tree functions from of_* to
-dt_*?  Nobody likes the ambiguous 'of_' prefix ("of?  of what?"), but
-to fix it means large cross-tree patches and potential merge
-conflicts.
+Cc'ing Greg.
 
-> So here's a first cut of a patch to add the new names. I've not touched
-> of_platform because that is supposed to go away. That will lead to some
-> odd looking code in the interim, but I think is the right approach.
+Greg, the patch doesn't touch any sensitive parts of EHCI and OHCI
+drivers, can I take it via ARM subtree? This is to not introduce
+cross-tree dependencies (the patch depends on some arch-specific
+changes).
 
-I would split it up into separate dt*.h files, one for each of*.h file
-so that the #include lines can be changed in the C code at the same
-time.  Each dt*.h file would include it's of*.h counterpart.  Then
-after the code is renamed, and a release or two has passed to catch
-the majority of users, the old definitions can be moved into the dt*.h
-files.
+Thanks!
 
-However, it may be better to move and rename the definitions
-immediately, and leave "#define of_*  dt_*" macros in the old of*.h
-files which can be removed with a simple patch after all the users are
-converted.  That would have a smaller impact in the cleanup stage.
-
-> Most of these are straight renames, but some have changed more
-> substantially. The routines for the flat tree have all become fdt_foo().
-> I'd be inclined to drop "early_init" from them too, because they're
-> basically all about early init, but Grant said he'd prefer not to I
-> think. I've also renamed the flat tree tag constants to match libfdt.
-
-It is all about early init now in Linus' tree, but Stephen
-Neuendorffer has patches that use the fdt code at driver probe time
-for parsing device tree fragments that describe an FPGA add-in board.
-
->
-> I've left for_each_child_of_node(), because I read it as "of", but maybe
-> it's "OF"?
-
-hahaha!  I never considered that it might be OF, but now I probably
-won't be able to help but read it that way!  I like Geert's suggestion
-of dt_for_each_child_node
-
-g.
-
->
-> cheers
->
-> #ifndef __DT_H
-> #define __DT_H
->
-> /* include/linux/device.h */
-> #define dt_match_table                  of_match_table
-> #define dt_node                         of_node
-
-This could be very messy.  I've nervous about using #define to rename
-structure members.  You'll need to check that any structure members
-that use the same name as a global symbol are handled appropriately.
-
->
-> /* include/linux/mod_devicetable.h */
-> #define dt_device_id                    of_device_id
->
-> /* include/linux/of.h */
-> #define dt_node_to_nid                  of_node_to_nid
-> #define dt_chosen                       of_chosen
-> #define dt_node_is_root                 of_node_is_root
-> #define dt_node_check_flag              of_node_check_flag
-> #define dt_node_set_flag                of_node_set_flag
-> #define dt_find_all_nodes               of_find_all_nodes
-> #define dt_node_get                     of_node_get
-> #define dt_node_put                     of_node_put
-> #define dt_read_number                  of_read_number
-> #define dt_read_ulong                   of_read_ulong
-> #define dt_find_node_by_name            of_find_node_by_name
-> #define dt_find_node_by_type            of_find_node_by_type
-> #define dt_find_compatible_node         of_find_compatible_node
-> #define dt_find_matching_node           of_find_matching_node
-> #define dt_find_node_by_path            of_find_node_by_path
-> #define dt_find_node_by_phandle         of_find_node_by_phandle
-> #define dt_get_parent                   of_get_parent
-> #define dt_get_next_parent              of_get_next_parent
-> #define dt_get_next_child               of_get_next_child
-> #define dt_find_node_with_property      of_find_node_with_property
-> #define dt_device_is_compatible         of_device_is_compatible
-> #define dt_device_is_available          of_device_is_available
-> #define dt_get_property                 of_get_property
-> #define dt_n_addr_cells                 of_n_addr_cells
-> #define dt_n_size_cells                 of_n_size_cells
-> #define dt_match_node                   of_match_node
-> #define dt_modalias_node                of_modalias_node
-> #define dt_parse_phandle                of_parse_phandle
-> #define dt_parse_phandles_with_args     of_parse_phandles_with_args
-> #define dt_machine_is_compatible        of_machine_is_compatible
-> #define dt_attach_node                  of_attach_node
-> #define dt_detach_node                  of_detach_node
-> #define dt_find_property                of_find_property
->
-> /* include/linux/of_fdt.h */
-> #define fdt_find_string                 find_flat_dt_string
-> #define fdt_scan                        of_scan_flat_dt
-> #define fdt_get_prop                    of_get_flat_dt_prop
-> #define fdt_is_compatible               of_flat_dt_is_compatible
-> #define fdt_get_root                    of_get_flat_dt_root
-> #define fdt_early_init_scan_chosen      early_init_dt_scan_chosen
-> #define fdt_early_init_check_for_initrd early_init_dt_check_for_initrd
-> #define fdt_early_init_scan_memory      early_init_dt_scan_memory
-> #define fdt_early_init_add_memory_arch  early_init_dt_add_memory_arch
-> #define fdt_early_init_alloc_memory_arch early_init_dt_alloc_memory_arch
-> #define fdt_early_init_setup_initrd_arch early_init_dt_setup_initrd_arch
-> #define fdt_early_init_scan_root        early_init_dt_scan_root
-> #define fdt_unflatten                   unflatten_device_tree
-> #define fdt_early_init                  early_init_devtree
-> #define FDT_MAGIC                       OF_DT_HEADER
-> #define FDT_BEGIN_NODE                  OF_DT_BEGIN_NODE
-> #define FDT_END_NODE                    OF_DT_END_NODE
-> #define FDT_PROP                        OF_DT_PROP
-> #define FDT_NOP                         OF_DT_NOP
-> #define FDT_END                         OF_DT_END
-> #define FDT_VERSION                     OF_DT_VERSION
->
-> /* include/linux/of_address.h */
-> #define dt_translate_address            of_translate_address
-> #define dt_address_to_resource          of_address_to_resource
-> #define dt_iomap                        of_iomap
-> #define dt_get_address                  of_get_address
-> #define dt_get_pci_address              of_get_pci_address
-> #define dt_pci_address_to_resource      of_pci_address_to_resource
->
-> /* include/linux/of_device.h */
-> #define dt_match_device                 of_match_device
-> #define dt_device_make_bus_id           of_device_make_bus_id
-> #define dt_driver_match_device          of_driver_match_device
-> #define dt_dev_get                      of_dev_get
-> #define dt_dev_put                      of_dev_put
-> #define dt_device_add                   of_device_add
-> #define dt_device_register              of_device_register
-> #define dt_device_unregister            of_device_unregister
-> #define dt_device_get_modalias          of_device_get_modalias
-> #define dt_device_uevent                of_device_uevent
-> #define dt_device_node_put              of_device_node_put
->
-> /* include/linux/of_irq.h */
-> #define dt_irq                          of_irq
-> #define dt_irq_parse_and_map            irq_of_parse_and_map
-> #define dt_irq_workarounds              of_irq_workarounds
-> #define dt_irq_dflt_pic                 of_irq_dflt_pic
-> #define dt_irq_map_oldworld             of_irq_map_oldworld
-> #define dt_irq_map_raw                  of_irq_map_raw
-> #define dt_irq_map_one                  of_irq_map_one
-> #define dt_irq_create_mapping           irq_create_of_mapping
-> #define dt_irq_to_resource              of_irq_to_resource
-> #define dt_irq_count                    of_irq_count
-> #define dt_irq_to_resource_table        of_irq_to_resource_table
-> #define DT_IRQ_MAX_SPEC                 OF_MAX_IRQ_SPEC
-> #define DT_IRQ_QUIRK_OLDWORLD_MAC       OF_IMAP_OLDWORLD_MAC
-> #define DT_IRQ_QUIRK_NO_PHANDLE         OF_IMAP_NO_PHANDLE
->
-> /* include/linux/of_mdio.h */
-> #define dt_mdiobus_register             of_mdiobus_register
-> #define dt_phy_find_device              of_phy_find_device
-> #define dt_phy_connect                  of_phy_connect
-> #define dt_phy_connect_fixed_link       of_phy_connect_fixed_link
->
-> /* include/linux/of_spi.h */
-> #define dt_register_spi_devices         of_register_spi_devices
->
-> /* include/linux/of_gpio.h */
-> #define dt_gpio_flags                   of_gpio_flags
-> #define DT_GPIO_ACTIVE_LOW              OF_GPIO_ACTIVE_LOW
-> #define dt_mm_gpio_chip                 of_mm_gpio_chip
-> #define to_dt_mm_gpio_chip              to_of_mm_gpio_chip
-> #define dt_get_gpio_flags               of_get_gpio_flags
-> #define dt_gpio_count                   of_gpio_count
-> #define dt_mm_gpiochip_add              of_mm_gpiochip_add
-> #define dt_gpiochip_add                 of_gpiochip_add
-> #define dt_gpiochip_remove              of_gpiochip_remove
-> #define dt_node_to_gpiochip             of_node_to_gpiochip
-> #define dt_get_gpio                     of_get_gpio
->
-> /* include/linux/dt_i2c.h */
-> #define dt_i2c_register_devices         of_i2c_register_devices
-> #define dt_find_i2c_device_by_node      of_find_i2c_device_by_node
->
-> #endif /* __DT_H */
->
->
->
->
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
->
->
-
-
+> ---
+>  drivers/usb/Kconfig             |    2 +
+>  drivers/usb/host/Kconfig        |   15 ++++
+>  drivers/usb/host/ehci-cns3xxx.c |  171 +++++++++++++++++++++++++++++++++++++++
+>  drivers/usb/host/ehci-hcd.c     |    5 +
+>  drivers/usb/host/ohci-cns3xxx.c |  165 +++++++++++++++++++++++++++++++++++++
+>  drivers/usb/host/ohci-hcd.c     |    5 +
+>  6 files changed, 363 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/usb/host/ehci-cns3xxx.c
+>  create mode 100644 drivers/usb/host/ohci-cns3xxx.c
+> 
+> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+> index 67eb377..5a7c8f1 100644
+> --- a/drivers/usb/Kconfig
+> +++ b/drivers/usb/Kconfig
+> @@ -41,6 +41,7 @@ config USB_ARCH_HAS_OHCI
+>  	default y if MFD_TC6393XB
+>  	default y if ARCH_W90X900
+>  	default y if ARCH_DAVINCI_DA8XX
+> +	default y if ARCH_CNS3XXX
+>  	# PPC:
+>  	default y if STB03xxx
+>  	default y if PPC_MPC52xx
+> @@ -66,6 +67,7 @@ config USB_ARCH_HAS_EHCI
+>  	default y if ARCH_AT91SAM9G45
+>  	default y if ARCH_MXC
+>  	default y if ARCH_OMAP3
+> +	default y if ARCH_CNS3XXX
+>  	default PCI
+>  
+>  # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 6f4f8e6..f8970d1 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -147,6 +147,14 @@ config USB_W90X900_EHCI
+>  	---help---
+>  		Enables support for the W90X900 USB controller
+>  
+> +config USB_CNS3XXX_EHCI
+> +	bool "Cavium CNS3XXX EHCI Module"
+> +	depends on USB_EHCI_HCD && ARCH_CNS3XXX
+> +	---help---
+> +	  Enable support for the CNS3XXX SOC's on-chip EHCI controller.
+> +	  It is needed for high-speed (480Mbit/sec) USB 2.0 device
+> +	  support.
+> +
+>  config USB_OXU210HP_HCD
+>  	tristate "OXU210HP HCD support"
+>  	depends on USB
+> @@ -286,6 +294,13 @@ config USB_OHCI_HCD_SSB
+>  
+>  	  If unsure, say N.
+>  
+> +config USB_CNS3XXX_OHCI
+> +	bool "Cavium CNS3XXX OHCI Module"
+> +	depends on USB_OHCI_HCD && ARCH_CNS3XXX
+> +	---help---
+> +	  Enable support for the CNS3XXX SOC's on-chip OHCI controller.
+> +	  It is needed for low-speed USB 1.0 device support.
+> +
+>  config USB_OHCI_BIG_ENDIAN_DESC
+>  	bool
+>  	depends on USB_OHCI_HCD
+> diff --git a/drivers/usb/host/ehci-cns3xxx.c b/drivers/usb/host/ehci-cns3xxx.c
+> new file mode 100644
+> index 0000000..9cf6696
+> --- /dev/null
+> +++ b/drivers/usb/host/ehci-cns3xxx.c
+> @@ -0,0 +1,171 @@
+> +/*
+> + * Copyright 2008 Cavium Networks
+> + *
+> + * This file is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, Version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/atomic.h>
+> +#include <mach/cns3xxx.h>
+> +#include <mach/pm.h>
+> +
+> +static int cns3xxx_ehci_init(struct usb_hcd *hcd)
+> +{
+> +	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+> +	int retval;
+> +
+> +	/*
+> +	 * EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 *
+> +	 * Set USB AHB INCR length to 16
+> +	 */
+> +	if (atomic_inc_return(&usb_pwr_ref) == 0) {
+> +		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
+> +		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
+> +		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
+> +			MISC_CHIP_CONFIG_REG);
+> +	}
+> +
+> +	ehci->caps = hcd->regs;
+> +	ehci->regs = hcd->regs
+> +		+ HC_LENGTH(ehci_readl(ehci, &ehci->caps->hc_capbase));
+> +	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+> +
+> +	hcd->has_tt = 0;
+> +	ehci_reset(ehci);
+> +
+> +	retval = ehci_init(hcd);
+> +	if (retval)
+> +		return retval;
+> +
+> +	ehci_port_power(ehci, 0);
+> +
+> +	return retval;
+> +}
+> +
+> +static const struct hc_driver cns3xxx_ehci_hc_driver = {
+> +	.description		= hcd_name,
+> +	.product_desc		= "CNS3XXX EHCI Host Controller",
+> +	.hcd_priv_size		= sizeof(struct ehci_hcd),
+> +	.irq			= ehci_irq,
+> +	.flags			= HCD_MEMORY | HCD_USB2,
+> +	.reset			= cns3xxx_ehci_init,
+> +	.start			= ehci_run,
+> +	.stop			= ehci_stop,
+> +	.shutdown		= ehci_shutdown,
+> +	.urb_enqueue		= ehci_urb_enqueue,
+> +	.urb_dequeue		= ehci_urb_dequeue,
+> +	.endpoint_disable	= ehci_endpoint_disable,
+> +	.endpoint_reset		= ehci_endpoint_reset,
+> +	.get_frame_number	= ehci_get_frame,
+> +	.hub_status_data	= ehci_hub_status_data,
+> +	.hub_control		= ehci_hub_control,
+> +#ifdef CONFIG_PM
+> +	.bus_suspend		= ehci_bus_suspend,
+> +	.bus_resume		= ehci_bus_resume,
+> +#endif
+> +	.relinquish_port	= ehci_relinquish_port,
+> +	.port_handed_over	= ehci_port_handed_over,
+> +
+> +	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+> +};
+> +
+> +static int cns3xxx_ehci_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct usb_hcd *hcd;
+> +	const struct hc_driver *driver = &cns3xxx_ehci_hc_driver;
+> +	struct resource *res;
+> +	int irq;
+> +	int retval;
+> +
+> +	if (usb_disabled())
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +	if (!res) {
+> +		dev_err(dev, "Found HC with no IRQ.\n");
+> +		return -ENODEV;
+> +	}
+> +	irq = res->start;
+> +
+> +	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+> +	if (!hcd)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(dev, "Found HC with no register addr.\n");
+> +		retval = -ENODEV;
+> +		goto err1;
+> +	}
+> +
+> +	hcd->rsrc_start = res->start;
+> +	hcd->rsrc_len = res->end - res->start + 1;
+> +
+> +	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+> +				driver->description)) {
+> +		dev_dbg(dev, "controller already in use\n");
+> +		retval = -EBUSY;
+> +		goto err1;
+> +	}
+> +
+> +	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
+> +	if (hcd->regs == NULL) {
+> +		dev_dbg(dev, "error mapping memory\n");
+> +		retval = -EFAULT;
+> +		goto err2;
+> +	}
+> +
+> +	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+> +	if (retval == 0)
+> +		return retval;
+> +
+> +	iounmap(hcd->regs);
+> +err2:
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +err1:
+> +	usb_put_hcd(hcd);
+> +
+> +	return retval;
+> +}
+> +
+> +static int cns3xxx_ehci_remove(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +
+> +	usb_remove_hcd(hcd);
+> +	iounmap(hcd->regs);
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +
+> +	/*
+> +	 * EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 */
+> +	if (atomic_dec_return(&usb_pwr_ref) == 0)
+> +		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +
+> +	usb_put_hcd(hcd);
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	return 0;
+> +}
+> +
+> +MODULE_ALIAS("platform:cns3xxx-ehci");
+> +
+> +static struct platform_driver cns3xxx_ehci_driver = {
+> +	.probe = cns3xxx_ehci_probe,
+> +	.remove = cns3xxx_ehci_remove,
+> +	.driver = {
+> +		.name = "cns3xxx-ehci",
+> +	},
+> +};
+> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> index 502a7e6..c5dd1c3 100644
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -1216,6 +1216,11 @@ MODULE_LICENSE ("GPL");
+>  #define PLATFORM_DRIVER		ehci_octeon_driver
+>  #endif
+>  
+> +#ifdef CONFIG_USB_CNS3XXX_EHCI
+> +#include "ehci-cns3xxx.c"
+> +#define PLATFORM_DRIVER     cns3xxx_ehci_driver
+> +#endif
+> +
+>  #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
+>      !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
+>      !defined(XILINX_OF_PLATFORM_DRIVER)
+> diff --git a/drivers/usb/host/ohci-cns3xxx.c b/drivers/usb/host/ohci-cns3xxx.c
+> new file mode 100644
+> index 0000000..f05ef87
+> --- /dev/null
+> +++ b/drivers/usb/host/ohci-cns3xxx.c
+> @@ -0,0 +1,165 @@
+> +/*
+> + * Copyright 2008 Cavium Networks
+> + *
+> + * This file is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, Version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/atomic.h>
+> +#include <mach/cns3xxx.h>
+> +#include <mach/pm.h>
+> +
+> +static int __devinit
+> +cns3xxx_ohci_start(struct usb_hcd *hcd)
+> +{
+> +	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
+> +	int ret;
+> +
+> +	/*
+> +	 * EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 *
+> +	 * Set USB AHB INCR length to 16
+> +	 */
+> +	if (atomic_inc_return(&usb_pwr_ref) == 1) {
+> +		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
+> +		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
+> +		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
+> +			MISC_CHIP_CONFIG_REG);
+> +	}
+> +
+> +	ret = ohci_init(ohci);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ohci->num_ports = 1;
+> +
+> +	ret = ohci_run(ohci);
+> +	if (ret < 0) {
+> +		err("can't start %s", hcd->self.bus_name);
+> +		ohci_stop(hcd);
+> +		return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static const struct hc_driver cns3xxx_ohci_hc_driver = {
+> +	.description		= hcd_name,
+> +	.product_desc		= "CNS3XXX OHCI Host controller",
+> +	.hcd_priv_size		= sizeof(struct ohci_hcd),
+> +	.irq			= ohci_irq,
+> +	.flags			= HCD_USB11 | HCD_MEMORY,
+> +	.start			= cns3xxx_ohci_start,
+> +	.stop			= ohci_stop,
+> +	.shutdown		= ohci_shutdown,
+> +	.urb_enqueue		= ohci_urb_enqueue,
+> +	.urb_dequeue		= ohci_urb_dequeue,
+> +	.endpoint_disable	= ohci_endpoint_disable,
+> +	.get_frame_number	= ohci_get_frame,
+> +	.hub_status_data	= ohci_hub_status_data,
+> +	.hub_control		= ohci_hub_control,
+> +#ifdef CONFIG_PM
+> +	.bus_suspend		= ohci_bus_suspend,
+> +	.bus_resume		= ohci_bus_resume,
+> +#endif
+> +	.start_port_reset	= ohci_start_port_reset,
+> +};
+> +
+> +static int cns3xxx_ohci_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct usb_hcd *hcd;
+> +	const struct hc_driver *driver = &cns3xxx_ohci_hc_driver;
+> +	struct resource *res;
+> +	int irq;
+> +	int retval;
+> +
+> +	if (usb_disabled())
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +	if (!res) {
+> +		dev_err(dev, "Found HC with no IRQ.\n");
+> +		return -ENODEV;
+> +	}
+> +	irq = res->start;
+> +
+> +	hcd = usb_create_hcd(driver, dev, dev_name(dev));
+> +	if (!hcd)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(dev, "Found HC with no register addr.\n");
+> +		retval = -ENODEV;
+> +		goto err1;
+> +	}
+> +	hcd->rsrc_start = res->start;
+> +	hcd->rsrc_len = res->end - res->start + 1;
+> +
+> +	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+> +			driver->description)) {
+> +		dev_dbg(dev, "controller already in use\n");
+> +		retval = -EBUSY;
+> +		goto err1;
+> +	}
+> +
+> +	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
+> +	if (!hcd->regs) {
+> +		dev_dbg(dev, "error mapping memory\n");
+> +		retval = -EFAULT;
+> +		goto err2;
+> +	}
+> +
+> +	ohci_hcd_init(hcd_to_ohci(hcd));
+> +
+> +	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+> +	if (retval == 0)
+> +		return retval;
+> +
+> +	iounmap(hcd->regs);
+> +err2:
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +err1:
+> +	usb_put_hcd(hcd);
+> +	return retval;
+> +}
+> +
+> +static int cns3xxx_ohci_remove(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +
+> +	usb_remove_hcd(hcd);
+> +	iounmap(hcd->regs);
+> +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+> +
+> +	/*
+> +	 * EHCI and OHCI share the same clock and power,
+> +	 * resetting twice would cause the 1st controller been reset.
+> +	 * Therefore only do power up  at the first up device, and
+> +	 * power down at the last down device.
+> +	 */
+> +	if (atomic_dec_return(&usb_pwr_ref) == 0)
+> +		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+> +
+> +	usb_put_hcd(hcd);
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	return 0;
+> +}
+> +
+> +MODULE_ALIAS("platform:cns3xxx-ohci");
+> +
+> +static struct platform_driver ohci_hcd_cns3xxx_driver = {
+> +	.probe = cns3xxx_ohci_probe,
+> +	.remove = cns3xxx_ohci_remove,
+> +	.driver = {
+> +		.name = "cns3xxx-ohci",
+> +	},
+> +};
+> diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+> index 5179acb..5cb6731 100644
+> --- a/drivers/usb/host/ohci-hcd.c
+> +++ b/drivers/usb/host/ohci-hcd.c
+> @@ -1111,6 +1111,11 @@ MODULE_LICENSE ("GPL");
+>  #define PLATFORM_DRIVER		ohci_octeon_driver
+>  #endif
+>  
+> +#ifdef CONFIG_USB_CNS3XXX_OHCI
+> +#include "ohci-cns3xxx.c"
+> +#define PLATFORM_DRIVER		ohci_hcd_cns3xxx_driver
+> +#endif
+> +
+>  #if	!defined(PCI_DRIVER) &&		\
+>  	!defined(PLATFORM_DRIVER) &&	\
+>  	!defined(OMAP1_PLATFORM_DRIVER) &&	\
+> -- 
+> 1.7.3
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
