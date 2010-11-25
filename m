@@ -1,352 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab0KYQvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:51:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754253Ab0KYQvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:51:07 -0500
-Date: Thu, 25 Nov 2010 17:49:16 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 06 of 66] alter compound get_page/put_page
-Message-ID: <20101125164916.GP6118@random.random>
-References: <patchbomb.1288798055@v2.random>
- <a5372413f6faf8c52784.1288798061@v2.random>
- <20101118123705.GK8135@csn.ul.ie>
+	id S1754447Ab0KYQzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:55:48 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51735 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab0KYQzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 11:55:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NRSsdYwVh8x1GNEPBRLZ5Dr952tZ7+maApNZVYc02+389KULMQL+ez6lzeiSzq1LBD
+         QEUTIgKPSvquAJGGUcsa3fZ4MZEHLiXvgfxdh6XCeIkLPF1ri2NMI9lG9b828U0Yny2B
+         aL3IQisk6q2ys4lwBDxquXSsJPs3RS9WWTAOI=
+Date: Fri, 26 Nov 2010 00:55:27 +0800
+From: "ZHANG, Le" <r0bertz@gentoo.org>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
+Subject: Re: [PATCH] ipv4: mitigate an integer underflow when comparing tcp
+ timestamps
+Message-ID: <20101125165525.GA4480@adriano>
+References: <1289720156-30118-1-git-send-email-r0bertz@gentoo.org>
+ <1289724745.2743.61.camel@edumazet-laptop>
+ <20101114.115536.71112799.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
 Content-Disposition: inline
-In-Reply-To: <20101118123705.GK8135@csn.ul.ie>
+In-Reply-To: <20101114.115536.71112799.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 12:37:05PM +0000, Mel Gorman wrote:
-> On Wed, Nov 03, 2010 at 04:27:41PM +0100, Andrea Arcangeli wrote:
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > Alter compound get_page/put_page to keep references on subpages too, in order
-> > to allow __split_huge_page_refcount to split an hugepage even while subpages
-> > have been pinned by one of the get_user_pages() variants.
-> > 
-> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > ---
-> > 
-> > diff --git a/arch/powerpc/mm/gup.c b/arch/powerpc/mm/gup.c
-> > --- a/arch/powerpc/mm/gup.c
-> > +++ b/arch/powerpc/mm/gup.c
-> > @@ -16,6 +16,16 @@
-> >  
-> >  #ifdef __HAVE_ARCH_PTE_SPECIAL
-> >  
-> > +static inline void pin_huge_page_tail(struct page *page)
-> > +{
-> 
-> Minor nit, but get_huge_page_tail?
-> 
-> Even though "pin" is what it does, pin isn't used elsewhere in naming.
 
-Agreed.
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/powerpc/mm/gup.c b/arch/powerpc/mm/gup.c
---- a/arch/powerpc/mm/gup.c
-+++ b/arch/powerpc/mm/gup.c
-@@ -16,7 +16,7 @@
- 
- #ifdef __HAVE_ARCH_PTE_SPECIAL
- 
--static inline void pin_huge_page_tail(struct page *page)
-+static inline void get_huge_page_tail(struct page *page)
- {
- 	/*
- 	 * __split_huge_page_refcount() cannot run
-@@ -58,7 +58,7 @@ static noinline int gup_pte_range(pmd_t 
- 			return 0;
- 		}
- 		if (PageTail(page))
--			pin_huge_page_tail(page);
-+			get_huge_page_tail(page);
- 		pages[*nr] = page;
- 		(*nr)++;
- 
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -105,7 +105,7 @@ static inline void get_head_page_multipl
- 	atomic_add(nr, &page->_count);
- }
- 
--static inline void pin_huge_page_tail(struct page *page)
-+static inline void get_huge_page_tail(struct page *page)
- {
- 	/*
- 	 * __split_huge_page_refcount() cannot run
-@@ -139,7 +139,7 @@ static noinline int gup_huge_pmd(pmd_t p
- 		VM_BUG_ON(compound_head(page) != head);
- 		pages[*nr] = page;
- 		if (PageTail(page))
--			pin_huge_page_tail(page);
-+			get_huge_page_tail(page);
- 		(*nr)++;
- 		page++;
- 		refs++;
+On 11:55 Sun 14 Nov     , David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Sun, 14 Nov 2010 09:52:25 +0100
+>=20
+> > Really, if you have multiple clients behind a common NAT, you cannot use
+> > this code at all, since NAT doesnt usually change TCP timestamps.
+>=20
+> NAT is %100 incompatible with TW recycling, full stop.
+>=20
+> There is no maybe, or maybe not.
+>=20
+> If you are behind NAT you must not turn this feature on, ever.
 
+Sorry, this question may be OT on this list, but I am just curious:
 
-> > diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-> > --- a/arch/x86/mm/gup.c
-> > +++ b/arch/x86/mm/gup.c
-> > @@ -105,6 +105,16 @@ static inline void get_head_page_multipl
-> >  	atomic_add(nr, &page->_count);
-> >  }
-> >  
-> > +static inline void pin_huge_page_tail(struct page *page)
-> > +{
-> > +	/*
-> > +	 * __split_huge_page_refcount() cannot run
-> > +	 * from under us.
-> > +	 */
-> > +	VM_BUG_ON(atomic_read(&page->_count) < 0);
-> > +	atomic_inc(&page->_count);
-> > +}
-> > +
-> 
-> This is identical to the x86 implementation. Any possibility they can be
-> shared?
+Is there any other OS has implemented this feature like Linux?
 
-There is no place for me today to put gup_fast "equal" bits so I'd
-need to create it and just doing it for a single inline function
-sounds overkill. I could add a asm-generic/gup_fast.h add move that
-function there and include the asm-generic/gup_fast.h from
-asm*/include/gup_fast.h, is that what we want just for one function?
-With all #ifdefs included I would end up writing more code than the
-function itself. No problem with me in doing it though.
+To be very specific, by this feature, I mean rejecting old duplicates based
+on per-host cache of last timestamp received from any connections.
+As suggested in RFC1323 Appendix B.2 (b).
 
-> >  static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
-> >  		unsigned long end, int write, struct page **pages, int *nr)
-> >  {
-> > @@ -128,6 +138,8 @@ static noinline int gup_huge_pmd(pmd_t p
-> >  	do {
-> >  		VM_BUG_ON(compound_head(page) != head);
-> >  		pages[*nr] = page;
-> > +		if (PageTail(page))
-> > +			pin_huge_page_tail(page);
-> >  		(*nr)++;
-> >  		page++;
-> >  		refs++;
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -351,9 +351,17 @@ static inline int page_count(struct page
-> >  
-> >  static inline void get_page(struct page *page)
-> >  {
-> > -	page = compound_head(page);
-> > -	VM_BUG_ON(atomic_read(&page->_count) == 0);
-> > +	VM_BUG_ON(atomic_read(&page->_count) < !PageTail(page));
-> 
-> Oof, this might need a comment. It's saying that getting a normal page or the
-> head of a compound page must already have an elevated reference count. If
-> we are getting a tail page, the reference count is stored in both the head
-> and the tail so the BUG check does not apply.
+Does anyone, by any chance, know the answer? Thanks in advance!
 
-Ok.
+--=20
+ZHANG, Le
+http://zhangle.is-a-geek.org
+0260 C902 B8F8 6506 6586 2B90 BC51 C808 1E4E 2973
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -353,8 +353,20 @@ static inline int page_count(struct page
- 
- static inline void get_page(struct page *page)
- {
-+	/*
-+	 * Getting a normal page or the head of a compound page
-+	 * requires to already have an elevated page->_count. Only if
-+	 * we're getting a tail page, the elevated page->_count is
-+	 * required only in the head page, so for tail pages the
-+	 * bugcheck only verifies that the page->_count isn't
-+	 * negative.
-+	 */
- 	VM_BUG_ON(atomic_read(&page->_count) < !PageTail(page));
- 	atomic_inc(&page->_count);
-+	/*
-+	 * Getting a tail page will elevate both the head and tail
-+	 * page->_count(s).
-+	 */
- 	if (unlikely(PageTail(page))) {
- 		/*
- 		 * This is safe only because
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature
 
-> > diff --git a/mm/swap.c b/mm/swap.c
-> > --- a/mm/swap.c
-> > +++ b/mm/swap.c
-> > @@ -56,17 +56,83 @@ static void __page_cache_release(struct 
-> >  		del_page_from_lru(zone, page);
-> >  		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> >  	}
-> > +}
-> > +
-> > +static void __put_single_page(struct page *page)
-> > +{
-> > +	__page_cache_release(page);
-> >  	free_hot_cold_page(page, 0);
-> >  }
-> >  
-> > +static void __put_compound_page(struct page *page)
-> > +{
-> > +	compound_page_dtor *dtor;
-> > +
-> > +	__page_cache_release(page);
-> > +	dtor = get_compound_page_dtor(page);
-> > +	(*dtor)(page);
-> > +}
-> > +
-> >  static void put_compound_page(struct page *page)
-> >  {
-> > -	page = compound_head(page);
-> > -	if (put_page_testzero(page)) {
-> > -		compound_page_dtor *dtor;
-> > -
-> > -		dtor = get_compound_page_dtor(page);
-> > -		(*dtor)(page);
-> > +	if (unlikely(PageTail(page))) {
-> > +		/* __split_huge_page_refcount can run under us */
-> 
-> So what? The fact you check PageTail twice is a hint as to what is
-> happening and that we are depending on the order of when the head and
-> tails bits get cleared but it's hard to be certain of that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
-This is correct, we depend on the split_huge_page_refcount to clear
-PageTail before overwriting first_page.
+iEYEARECAAYFAkzulP0ACgkQvFHICB5OKXOFDwCePUeeQBOqYiZ9rOD431KDYeii
+srgAnjkB94rmiHblPYdghTZcttb/JT4B
+=76O/
+-----END PGP SIGNATURE-----
 
-+	 	/*
-+		 * 1) clear PageTail before overwriting first_page
-+		 * 2) clear PageTail before clearing PageHead for VM_BUG_ON
-+		 */
-+		smp_wmb();
-
-The first PageTail check is just to define the fast path and skip
-reading page->first_page and doing smb_rmb() for the much more common
-head pages (we're in unlikely branch).
-
-So then we read first_page, we smb_rmb() and if pagetail is still set
-after that, we can be sure first_page isn't a dangling pointer.
-
-> 
-> > +		struct page *page_head = page->first_page;
-> > +		smp_rmb();
-> > +		if (likely(PageTail(page) && get_page_unless_zero(page_head))) {
-> > +			unsigned long flags;
-> > +			if (unlikely(!PageHead(page_head))) {
-> > +				/* PageHead is cleared after PageTail */
-> > +				smp_rmb();
-> > +				VM_BUG_ON(PageTail(page));
-> > +				goto out_put_head;
-> > +			}
-> > +			/*
-> > +			 * Only run compound_lock on a valid PageHead,
-> > +			 * after having it pinned with
-> > +			 * get_page_unless_zero() above.
-> > +			 */
-> > +			smp_mb();
-> > +			/* page_head wasn't a dangling pointer */
-> > +			compound_lock_irqsave(page_head, &flags);
-> > +			if (unlikely(!PageTail(page))) {
-> > +				/* __split_huge_page_refcount run before us */
-> > +				compound_unlock_irqrestore(page_head, flags);
-> > +				VM_BUG_ON(PageHead(page_head));
-> > +			out_put_head:
-> > +				if (put_page_testzero(page_head))
-> > +					__put_single_page(page_head);
-> > +			out_put_single:
-> > +				if (put_page_testzero(page))
-> > +					__put_single_page(page);
-> > +				return;
-> > +			}
-> > +			VM_BUG_ON(page_head != page->first_page);
-> > +			/*
-> > +			 * We can release the refcount taken by
-> > +			 * get_page_unless_zero now that
-> > +			 * split_huge_page_refcount is blocked on the
-> > +			 * compound_lock.
-> > +			 */
-> > +			if (put_page_testzero(page_head))
-> > +				VM_BUG_ON(1);
-> > +			/* __split_huge_page_refcount will wait now */
-> > +			VM_BUG_ON(atomic_read(&page->_count) <= 0);
-> > +			atomic_dec(&page->_count);
-> > +			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
-> > +			compound_unlock_irqrestore(page_head, flags);
-> > +			if (put_page_testzero(page_head))
-> > +				__put_compound_page(page_head);
-> > +		} else {
-> > +			/* page_head is a dangling pointer */
-> > +			VM_BUG_ON(PageTail(page));
-> > +			goto out_put_single;
-> > +		}
-> > +	} else if (put_page_testzero(page)) {
-> > +		if (PageHead(page))
-> > +			__put_compound_page(page);
-> > +		else
-> > +			__put_single_page(page);
-> >  	}
-> >  }
-> >  
-> > @@ -75,7 +141,7 @@ void put_page(struct page *page)
-> >  	if (unlikely(PageCompound(page)))
-> >  		put_compound_page(page);
-> >  	else if (put_page_testzero(page))
-> > -		__page_cache_release(page);
-> > +		__put_single_page(page);
-> >  }
-> >  EXPORT_SYMBOL(put_page);
-> >  
-> 
-> Functionally, I don't see a problem so
-> 
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> but some expansion on the leader and the comment, even if done as a
-> follow-on patch, would be nice.
-
-diff --git a/mm/swap.c b/mm/swap.c
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -79,8 +79,18 @@ static void put_compound_page(struct pag
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = page->first_page;
- 		smp_rmb();
-+		/*
-+		 * If PageTail is still set after smp_rmb() we can be sure
-+		 * that the page->first_page we read wasn't a dangling pointer.
-+		 * See __split_huge_page_refcount() smp_wmb().
-+		 */
- 		if (likely(PageTail(page) && get_page_unless_zero(page_head))) {
- 			unsigned long flags;
-+			/*
-+			 * Verify that our page_head wasn't converted
-+			 * to a a regular page before we got a
-+			 * reference on it.
-+			 */
- 			if (unlikely(!PageHead(page_head))) {
- 				/* PageHead is cleared after PageTail */
- 				smp_rmb();
+--+QahgC5+KEYLbs62--
