@@ -1,105 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab0KYKGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 05:06:13 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:37406 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750997Ab0KYKGL (ORCPT
+	id S1752027Ab0KYKRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 05:17:47 -0500
+Received: from 31.mail-out.ovh.net ([213.186.62.10]:39262 "HELO
+	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751374Ab0KYKRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 05:06:11 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAF/D7Ux5LcZJ/2dsb2JhbACjCHK9WYVHBA
-Date: Thu, 25 Nov 2010 21:06:03 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Roman Zippel <zippel@linux-m68k.org>,
-        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC][PATCH] Possible data integrity problems in lots of
- filesystems?
-Message-ID: <20101125100603.GA3164@amd>
-References: <20101125074909.GA4160@amd>
- <4CEE2C2E.4010003@panasas.com>
+	Thu, 25 Nov 2010 05:17:45 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Nov 2010 05:17:44 EST
+Message-ID: <4CEE3632.6020502@armadeus.com>
+Date: Thu, 25 Nov 2010 11:10:58 +0100
+From: Fabien Marteau <fabien.marteau@armadeus.com>
+Reply-To: fabien.marteau@armadeus.com
+Organization: ARMadeus Systems
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CEE2C2E.4010003@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Scott Moreau <oreaus@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: joystick:   Adding Austria Microsystem AS5011
+ joystick driver
+References: <4CEBED7E.7010101@armadeus.com> <20101124195523.GF27368@core.coreip.homeip.net>
+In-Reply-To: <20101124195523.GF27368@core.coreip.homeip.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 3905465302302810523
+X-Ovh-Remote: 82.232.255.99 (arc68-6-82-232-255-99.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 11:28:14AM +0200, Boaz Harrosh wrote:
-> Hi Nick.
-> Thanks for digging into this issue, I bet it's causing pain. Which
-> I totally missed in my tests. I wish I had a better xsync+reboot
-> tests for all this.
+Hi Dmitry,
 
-That's no problem, thanks for looking.
+Thank you for yours comments, it's my first kernel driver patch and your advices
+are really helpful.
 
-
-> So in that previous patch you had:
-> > Index: linux-2.6/fs/exofs/file.c
-> > ===================================================================
-> > --- linux-2.6.orig/fs/exofs/file.c	2010-11-19 16:50:00.000000000 +1100
-> > +++ linux-2.6/fs/exofs/file.c	2010-11-19 16:50:07.000000000 +1100
-> > @@ -48,11 +48,6 @@ static int exofs_file_fsync(struct file
-> >  	struct inode *inode = filp->f_mapping->host;
-> >  	struct super_block *sb;
-> >  
-> > -	if (!(inode->i_state & I_DIRTY))
-> > -		return 0;
-> > -	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
-> > -		return 0;
-> > -
-> >  	ret = sync_inode_metadata(inode, 1);
-> >  
-> >  	/* This is a good place to write the sb */
-> > 
+On 24/11/2010 20:55, Dmitry Torokhov wrote:
+> Hi Fabien,
 > 
-> Is that a good enough fix for the issue in your opinion?
-> Or is there more involved?
-
-For the inode dirty bit race problem, yes it should fix it.
-sync_inode_metadata basically makes the same checks without
-races (in a subsequent patch I re-introduced the datasync
-optimisation).
-
- 
-> In exofs there is nothing special to do other than VFS
-> managment and the final call, by vfs, to .write_inode.
+> On Tue, Nov 23, 2010 at 05:36:14PM +0100, Fabien Marteau wrote:
+>> Driver for EasyPoint AS5011 2 axis joystick chip. This chip is plugged
+>> on an I2C bus. It as been tested on ARM processor (i.MX27).
+>>
 > 
-> I wish we had a simple_file_fsync() from VFS that does
-> what the VFS expects us to do. So when code evolves it
-> does not need to change all FSs. This is the third time
-> I'm fixing this code trying to second guess the VFS.
+> Thank you for the patch. In addiitoon to comments you got from the other
+> reviewers I'd recommend switching to threaded IRQ instead of using a
+> separate workqueue, it greatly simplifies the code.
 
-Well in your fsync, you need to wait for inode writeback
-that might have been started by an asynchronous write_inode.
+Ok I will see it.
 
-Also, with your sync_inode_metadata call, you shouldn't need the
-sync_inode call by the looks.
- 
-> Actually the only other thing I need to do in file_fsync
-> today is sb_sync. But this is a stupidity (and a bug) that
-> I'm fixing soon. So that theoretical simple_file_fsync()
-> would be all I need.
 > 
-> Please advise?
-> BTW: Do you want that I take the changes through my tree?
+>> +
+>> +static irqreturn_t button_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct as5011_platform_data *plat_dat =
+>> +		(struct as5011_platform_data *)dev_id;
+>> +	int ret;
+>> +
+>> +	ret = gpio_get_value(plat_dat->button_gpio);
+>> +	if (ret)
+>> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 0);
+>> +	else
+>> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 1);
+>> +	input_sync(plat_dat->input_dev);
+>> +	return IRQ_HANDLED;
+> 
+> That appears to be a hard IRQ; are you sure that gpio_get_value will not
+> sleep?
 
-At this point I'd just like some review and feedback, we
-might get some other opinions on how to fix it, so don't
-take the changes quite yet.
+For my platform, yes I'm sure … but if somebody else use this driver with
+gpio that can sleep, it can be a bad idea of course.
+I did it because it's under an interrupt call, then we can't sleep.
+I will see how to use  a threaded IRQ to avoid it.
 
-I'll cc you again with a broken out patch.
+> 
+>> +
+>> +	plat_dat->input_dev->name = "Austria Microsystem as5011 joystick";
+>> +	plat_dat->input_dev->uniq = "Austria0";
+>> +	plat_dat->input_dev->id.bustype = BUS_I2C;
+>> +	plat_dat->input_dev->phys = "/dev/input/event0";
+> 
+> Phys is not the path in device tree but rather physical device
+> connection path within the system. If there is not known connection path
+> it is better just leave it as NULL.
 
-Thanks,
-Nick
+Ok, done.
 
+> 
+>> +	plat_dat->input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+>> +	plat_dat->input_dev->keybit[BIT_WORD(BTN_JOYSTICK)] =
+>> +					BIT_MASK(BTN_JOYSTICK);
+>> +
+>> +	input_set_abs_params(plat_dat->input_dev,
+>> +			     ABS_X,
+>> +			     AS5011_MIN_AXIS,
+>> +			     AS5011_MAX_AXIS,
+>> +			     AS5011_FUZZ,
+>> +			     AS5011_FLAT);
+>> +	input_set_abs_params(plat_dat->input_dev,
+>> +			     ABS_Y,
+>> +			     AS5011_MIN_AXIS,
+>> +			     AS5011_MAX_AXIS,
+>> +			     AS5011_FUZZ,
+>> +			     AS5011_FLAT);
+>> +
+>> +	plat_dat->button_irq_name =
+>> +		kmalloc(sizeof(unsigned char)*SIZE_NAME,
+>> +					 GFP_KERNEL);
+> 
+> Just why does it have to be separately allocated? I'd even stick with
+> "as5011" for all IRQ names.
+
+I thought that irq name should be different for each IRQ used under device and
+for each device used in system. I can use the same irq name if I've got several
+as5011 joystick in the same system ?
+
+> 
+>> +
+>> +	queue_work(plat_dat->workqueue, &plat_dat->update_axes_work);
+>> +
+> 
+> The device is quite likely not opened here so why do you want to send
+> events?
+It was a mistake.
+
+> 
+> Thanks.
+> 
+
+Thanks too.
+Fabien
