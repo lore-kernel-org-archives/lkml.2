@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab0KYIHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 03:07:10 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:57083 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab0KYIHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 03:07:09 -0500
-X-ASG-Debug-ID: 1290672427-6da359860001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4CEE1928.3080809@fusionio.com>
-Date: Thu, 25 Nov 2010 09:07:04 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751550Ab0KYIKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 03:10:16 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64196 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab0KYIKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 03:10:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mSWgKGXJGesFmAN26sSZ/V4VAYGHkZ1/T0lvbfxh6LBxJFHrpSb79ccZC996ARRtIl
+         DXAi4Iwjiu9UH/AGNT0/u5ydH6rFQyTXrXAp4EjhDLDxle+r1guu6qQzFglfOGIDnBoH
+         MMppcL6qEe6EO6TZjYR6JOouYgsThTRNyIbeY=
+Date: Thu, 25 Nov 2010 09:10:11 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Julia Lawall <julia@diku.dk>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt@console-pimps.org>
+Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to
+ "perf stat"
+Message-ID: <20101125081008.GE2538@nowhere>
+References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+ <1290666760.2072.539.camel@laptop>
+ <20101125074629.GC2538@nowhere>
+ <1290672009.2072.558.camel@laptop>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block bits for 2.6.37-rc3
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] block bits for 2.6.37-rc3
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1290672427
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.1851 1.0000 -0.9073
-X-Barracuda-Spam-Score: -0.91
-X-Barracuda-Spam-Status: No, SCORE=-0.91 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.47618
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290672009.2072.558.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Nov 25, 2010 at 09:00:09AM +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-25 at 08:46 +0100, Frederic Weisbecker wrote:
+> > > perf record -e task-clock:freq=1000,cycles:period=0
+> > 
+> > Wouldn't this syntax clash with the flags we have on events already?
+> > 
+> > the u,k,p flags? 
+> 
+> From stephane's email (to which you were CC'ed) http://lkml.org/lkml/2010/11/23/303
 
-The "big" part here is the xen/blkfront transition to a
-functional barrier replacement setup. Other than that,
-a few fixes for build warnings/breaks, one more RCU fix
-for the ioprio code, and a fix for a bug in the
-blk-throttle code.
+Right, I'm going look at this.
 
-Please pull.
+ 
+> > $ perf record -e cycles:u:period=100000,instructions:k:freq=1500 -a -- sleep 5
+> 
+> The parser isn't particularly pretty, maybe its time to think about a parser generator?
 
-  git://git.kernel.dk/linux-2.6-block.git for-linus
-
-Greg Thelen (1):
-      ioprio: grab rcu_read_lock in sys_ioprio_{set,get}()
-
-Jens Axboe (2):
-      Merge branch 'upstream/blkfront' of git://git.kernel.org/.../jeremy/xen into for-linus
-      cciss: fix build for PROC_FS disabled
-
-Jeremy Fitzhardinge (4):
-      xen/blkfront: map REQ_FLUSH into a full barrier
-      xen/blkfront: change blk_shadow.request to proper pointer
-      xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
-      xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
-
-Vivek Goyal (2):
-      blk-throttle: Fix calculation of max number of WRITES to be dispatched
-      block: fix amiga and atari floppy driver compile warning
-
- block/blk-throttle.c         |    2 +-
- drivers/block/amiflop.c      |    2 +-
- drivers/block/ataflop.c      |    2 +-
- drivers/block/cciss.c        |    3 +-
- drivers/block/xen-blkfront.c |   55 +++++++++++++++++++++++++----------------
- fs/ioprio.c                  |   31 ++++-------------------
- 6 files changed, 43 insertions(+), 52 deletions(-)
-
--- 
-Jens Axboe
-
+May be yeah.
