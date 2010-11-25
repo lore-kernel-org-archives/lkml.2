@@ -1,49 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab0KYJdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 04:33:16 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33874 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab0KYJdO (ORCPT
+	id S1752111Ab0KYJf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 04:35:58 -0500
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:44724 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab0KYJf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 04:33:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=thoECHVTGbr/wrEegTnRnpy4JJSGMsr//Pn7sL/xxnUuLvMfmBNOL2Lgnac6EJk7Pg
-         S+HarVTEPjks66ZtyLr7/JTLj+bsPNFlzIDlMsI0B/5k2cyb3CqJEAjorCPl2me3866R
-         X7iRUHSX+V9BJVkPAxrx6gMmzVn6z9khEOSxc=
-Date: Thu, 25 Nov 2010 12:33:01 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: chris@chris-wilson.co.uk
-Cc: mjg@redhat.com, rpurdie@rpsys.net, kernelorg@bof.de,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: back light conflict i915 vs dell-laptop
-Message-ID: <20101125093301.GT1522@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	chris@chris-wilson.co.uk, mjg@redhat.com, rpurdie@rpsys.net,
-	kernelorg@bof.de, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
+	Thu, 25 Nov 2010 04:35:56 -0500
+Message-ID: <4CEE2E7D.6060608@ladisch.de>
+Date: Thu, 25 Nov 2010 10:38:05 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sakari.ailus@maxwell.research.nokia.com,
+        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
+Subject: Re: [RFC/PATCH v6 03/12] [alsa-devel] media: Entities, pads and links
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <1290652099-15102-4-git-send-email-laurent.pinchart@ideasonboard.com>
+In-Reply-To: <1290652099-15102-4-git-send-email-laurent.pinchart@ideasonboard.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patrick Schaaf has reported that the i915 driver is setting his
-backlight very dim when he starts GDM.
+Laurent Pinchart wrote:
+> A link is a point-to-point oriented connection between two pads, either
+> on the same entity or on different entities. Data flows from a source
+> pad to a sink pad.
+> 
+> Links are stored in the source entity.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=23472
+In the descriptors of USB Audio and HDAudio devices, the links are
+stored only in the sink.  But AFAICS this doesn't matter in the media
+driver API.
 
-It should be the dell-laptop platform driver controlling his backlight.
+> +Links have flags that describe the link capabilities and state.
+> +
+> +	MEDIA_LINK_FLAG_ACTIVE indicates that the link is active and can be
+> +	used to transfer media data. When two or more links target a sink pad,
+> +	only one of them can be active at a time.
+> +	MEDIA_LINK_FLAG_IMMUTABLE indicates that the link active state can't
+> +	be modified at runtime. If MEDIA_LINK_FLAG_IMMUTABLE is set, then
+> +	MEDIA_LINK_FLAG_ACTIVE must also be set since an immutable link is
+> +	always active.
 
-Gnome tries to restore the backlight settings through the dell_laptop
-interface in sysfs but it fails.  (Because the platform hardware refuses
-to set the settings to what it thinks they already are).
+So the intended userspace API for controlling routing is to change the
+ACTIVE flag of links?
 
-regards,
-dan carpenter
+In USB and HD audio devices, all links are immutable, and the routing
+is controlled by 'selector' entities that activate exactly one of their
+input pads.  In userspace, this entity shows up as a mixer control.
+I guess it would be possible to map the ACTIVE flag onto these controls.
 
+Alternatively, entities can have 'mute' mixer controls associated with
+their pads.  In this case, multiple unmuted inputs would be mixed
+together.
+
+> +#define MEDIA_ENTITY_TYPE_MASK               0x00ff0000
+> +#define MEDIA_ENTITY_SUBTYPE_MASK            0x0000ffff
+> +
+> +#define MEDIA_ENTITY_TYPE_NODE               (1 << MEDIA_ENTITY_TYPE_SHIFT)
+> ...
+> +#define MEDIA_ENTITY_TYPE_NODE_ALSA          (MEDIA_ENTITY_TYPE_NODE + 3)
+
+ALSA has PCM and MIDI devices, and several types of mixer controls.
+(It also has hardware dependent and timer devices, but I don't think
+these would need topology information.)  So we need at least these:
+  MEDIA_ENTITY_TYPE_NODE_ALSA_PCM
+  MEDIA_ENTITY_TYPE_NODE_ALSA_MIDI
+  MEDIA_ENTITY_TYPE_SUBDEV_ALSA_CONTROL
+
+Furthermore, topology information is also needed for entities not
+associated with a mixer control, such as microphones, speakers, jacks/
+connectors, and effect units.  These entities are defined in the USB and
+HD audio specifications, but are not yet handled by ALSA.
+
+> +struct media_entity {
+> ...
+> +	union {
+> +		/* Node specifications */
+> +		struct {
+> +			u32 major;
+> +			u32 minor;
+> +		} v4l;
+> +		struct {
+> +			u32 major;
+> +			u32 minor;
+> +		} fb;
+> +		int alsa;
+> +		int dvb;
+> +
+> +		/* Sub-device specifications */
+> +		/* Nothing needed yet */
+> +	};
+
+ALSA devices are not addressed by their device node but with card/device/
+subdevice numbers; mixer controls have numeric IDs, unique per card:
+
+		struct {
+			int card;
+			int device;
+			int subdevice;
+		} alsa_device;
+		struct {
+			int card;
+			int numid;
+		} alsa_control;
+
+
+Regards,
+Clemens
