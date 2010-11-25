@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab0KYNOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 08:14:14 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:26909
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751606Ab0KYNON (ORCPT
+	id S1752174Ab0KYNSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 08:18:48 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:50909 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab0KYNSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 08:14:13 -0500
-X-SpamScore: -25
-X-BigFish: VPS-25(zz146fK1432N98dN10d1Izz1202hzz15d4Rz32i691h637h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCFZF0-01-DWS-02
-X-M-MSG: 
-Date: Thu, 25 Nov 2010 14:13:51 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] KVM: Make the instruction emulator aware of Nested
- Virtualization
-Message-ID: <20101125131351.GA9382@amd.com>
-References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
- <4CED63DC.20608@redhat.com>
- <20101125114640.GC6031@amd.com>
+	Thu, 25 Nov 2010 08:18:47 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ian Kent <raven@themaw.net>
+Subject: Re: autofs4 hang in 2.6.37-rc1
+Date: Thu, 25 Nov 2010 14:17:51 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Avi Kivity <avi@redhat.com>, autofs@linux.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4CDFDC2B.6040205@redhat.com> <201011150954.34289.arnd@arndb.de> <1290052468.2465.7.camel@perseus.themaw.net>
+In-Reply-To: <1290052468.2465.7.camel@perseus.themaw.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20101125114640.GC6031@amd.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011251417.52010.arnd@arndb.de>
+X-Provags-ID: V02:K0:fUGqbrLdE1/8m/jLhzMI69HyPILLrSf6Gyp5itvyWf3
+ 4RndUi2ADeMiDmczB4W20G98pClr5jY/0zLyDUb0M2oYrXppDS
+ s0yNNLxlwJQXF/L97659JH1q4PF/r7qSolkinMiXyhzPBLFO6p
+ Yp4ErgmK+tgWZ7sNVgUE7p66A8L5B+iKXXqi9uvTtqhS4ZPaPs
+ RUHWqDdQuMIQEITZgcUjg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 12:46:40PM +0100, Roedel, Joerg wrote:
-> We basically have two choices here:
+On Thursday 18 November 2010, Ian Kent wrote:
+> But the important thing to notice is that the new ioctl interface (in
+> fs/autofs4/dev-ioctl.c) used the unlocked_ioctl method since it was
+> merged in 2.6.28 and that calls back into the core ioctl code for its
+> major functionality. So the core function of the ioctl interface has
+> been used without the BKL for quite a while now and has been heavily
+> exercised in subsequent testing since the new ioctl interface has been
+> in place.
 > 
-> 	a) We expose svm internals into the emulator
-> 	b) We expose emulator internals into svm
-> 
-> Both choices are not really good from a software-design point-of-view.
-> But I think option b) is the better one because it is easier to cope with
-> and thus less likely to break when changing the emulator code.
+> I can't see any reason for keeping the autofs4_ioctl_mutex.
 
-What we could do probably is to define the interface between the
-emulator and the architecture code in a better way. This would take the
-burden of going into architecture code for emulator changes away.
+Ok. Are you submitting a patch to remove it? Your reasoning absolutely
+makes sense and we need to fix this regression.
 
-The current patch-set only needs a subset of the decode-cache (in the
-future probably also a subset of the fetch-cache). We could put this
-information into a seperate struct and give it to the architecture code.
-
-I planned to make the guest_mode flag a generic x86 vcpu property
-anyway, so building this structure could be limited to instructions
-emulated while the vcpu is in guest mode thus avoiding the overhead for
-the default case.
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	Arnd
