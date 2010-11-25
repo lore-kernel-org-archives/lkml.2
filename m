@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab0KYQzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:55:48 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51735 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab0KYQzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:55:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NRSsdYwVh8x1GNEPBRLZ5Dr952tZ7+maApNZVYc02+389KULMQL+ez6lzeiSzq1LBD
-         QEUTIgKPSvquAJGGUcsa3fZ4MZEHLiXvgfxdh6XCeIkLPF1ri2NMI9lG9b828U0Yny2B
-         aL3IQisk6q2ys4lwBDxquXSsJPs3RS9WWTAOI=
-Date: Fri, 26 Nov 2010 00:55:27 +0800
-From: "ZHANG, Le" <r0bertz@gentoo.org>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
-Subject: Re: [PATCH] ipv4: mitigate an integer underflow when comparing tcp
- timestamps
-Message-ID: <20101125165525.GA4480@adriano>
-References: <1289720156-30118-1-git-send-email-r0bertz@gentoo.org>
- <1289724745.2743.61.camel@edumazet-laptop>
- <20101114.115536.71112799.davem@davemloft.net>
+	id S1754522Ab0KYQ5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:57:31 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:57857 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754417Ab0KYQ53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 11:57:29 -0500
+Date: Thu, 25 Nov 2010 22:27:21 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 4/4] taskstats: Export "cdata_acct" with taskstats
+Message-ID: <20101125165721.GE3298@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101119201108.269346583@linux.vnet.ibm.com>
+ <20101119201144.871656307@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101114.115536.71112799.davem@davemloft.net>
+In-Reply-To: <20101119201144.871656307@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-11-19 21:11:12]:
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> With this patch the (full) cumulative CPU time is added to "struct taskstats".
+> The CPU time is only returned for the thread group leader.
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  include/linux/taskstats.h |    7 ++++++-
+>  kernel/tsacct.c           |    7 +++++++
+>  2 files changed, 13 insertions(+), 1 deletion(-)
+> 
+> --- a/include/linux/taskstats.h
+> +++ b/include/linux/taskstats.h
+> @@ -33,7 +33,7 @@
+>   */
+> 
+> 
+> -#define TASKSTATS_VERSION	7
+> +#define TASKSTATS_VERSION	8
+>  #define TS_COMM_LEN		32	/* should be >= TASK_COMM_LEN
+>  					 * in linux/sched.h */
+> 
+> @@ -163,6 +163,11 @@ struct taskstats {
+>  	/* Delay waiting for memory reclaim */
+>  	__u64	freepages_count;
+>  	__u64	freepages_delay_total;
+> +	/* version 7 ends here */
+> +
+> +	/* All cumulative CPU time of dead children */
+> +	__u64	ac_cutime_acct;		/* User CPU time [usec] */
+> +	__u64	ac_cstime_acct;		/* System CPU time [usec] */
+>  };
+> 
+> 
+> --- a/kernel/tsacct.c
+> +++ b/kernel/tsacct.c
+> @@ -31,6 +31,7 @@ void bacct_add_tsk(struct taskstats *sta
+>  	const struct cred *tcred;
+>  	struct timespec uptime, ts;
+>  	u64 ac_etime;
+> +	unsigned long flags;
+> 
+>  	BUILD_BUG_ON(TS_COMM_LEN < TASK_COMM_LEN);
+> 
+> @@ -71,6 +72,12 @@ void bacct_add_tsk(struct taskstats *sta
+>  	stats->ac_majflt = tsk->maj_flt;
+> 
+>  	strncpy(stats->ac_comm, tsk->comm, sizeof(stats->ac_comm));
+> +	if (tsk->tgid == tsk->pid && lock_task_sighand(tsk, &flags)) {
 
-On 11:55 Sun 14 Nov     , David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Sun, 14 Nov 2010 09:52:25 +0100
->=20
-> > Really, if you have multiple clients behind a common NAT, you cannot use
-> > this code at all, since NAT doesnt usually change TCP timestamps.
->=20
-> NAT is %100 incompatible with TW recycling, full stop.
->=20
-> There is no maybe, or maybe not.
->=20
-> If you are behind NAT you must not turn this feature on, ever.
+I don't think referring to tgid and pid is a good idea in the context
+of namespaces, thread_group_leader makes more sense like Oleg pointed
+out.
 
-Sorry, this question may be OT on this list, but I am just curious:
+> +		struct cdata *cd = &tsk->signal->cdata_acct;
+> +		stats->ac_cutime_acct = cputime_to_usecs(cd->utime);
+> +		stats->ac_cstime_acct = cputime_to_usecs(cd->stime);
+> +		unlock_task_sighand(tsk, &flags);
+> +	}
+>  }
+> 
+> 
+> 
 
-Is there any other OS has implemented this feature like Linux?
-
-To be very specific, by this feature, I mean rejecting old duplicates based
-on per-host cache of last timestamp received from any connections.
-As suggested in RFC1323 Appendix B.2 (b).
-
-Does anyone, by any chance, know the answer? Thanks in advance!
-
---=20
-ZHANG, Le
-http://zhangle.is-a-geek.org
-0260 C902 B8F8 6506 6586 2B90 BC51 C808 1E4E 2973
-
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEARECAAYFAkzulP0ACgkQvFHICB5OKXOFDwCePUeeQBOqYiZ9rOD431KDYeii
-srgAnjkB94rmiHblPYdghTZcttb/JT4B
-=76O/
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
+-- 
+	Three Cheers,
+	Balbir
