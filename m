@@ -1,135 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab0KYLi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:38:29 -0500
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:2169 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab0KYLi2 (ORCPT
+	id S1752882Ab0KYLqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:46:50 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:37908
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752857Ab0KYLqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:38:28 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [RFC/PATCH v6 11/12] v4l: Make video_device inherit from media_entity
-Date: Thu, 25 Nov 2010 12:38:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.32-23-generic; KDE/4.4.5; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, lennart@poettering.net
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <1290652099-15102-12-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1290652099-15102-12-git-send-email-laurent.pinchart@ideasonboard.com>
+	Thu, 25 Nov 2010 06:46:48 -0500
+X-SpamScore: -33
+X-BigFish: VPS-33(zzbb2dK1432N98dN9371P10d1Izz1202hzz15d4Rz32i691h637h668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LCFVDP-01-AMD-02
+X-M-MSG: 
+Date: Thu, 25 Nov 2010 12:46:40 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] KVM: Make the instruction emulator aware of Nested
+ Virtualization
+Message-ID: <20101125114640.GC6031@amd.com>
+References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
+ <4CED63DC.20608@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011251238.15331.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4CED63DC.20608@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 25, 2010 03:28:18 Laurent Pinchart wrote:
-> V4L2 devices are media entities. As such they need to inherit from
-> (include) the media_entity structure.
+On Wed, Nov 24, 2010 at 02:13:32PM -0500, Avi Kivity wrote:
+> On 11/24/2010 08:18 PM, Joerg Roedel wrote:
+> > Hi Avi, Hi Marcelo,
+> >
+> > here is a patch-set to make the instruction emulator aware of nested
+> > virtualization. It basically works by introducing a new callback into
+> > the x86_ops to check if a decoded instruction must be intercepted. If it
+> > is intercepted the instruction emulator returns straight into the guest.
+> >
+> > I am not entirely happy with this solution because it partially
+> > duplicates the code in the x86_emulate_insn function.
 > 
-> When registering/unregistering the device, the media entity is
-> automatically registered/unregistered. The entity is acquired on device
-> open and released on device close.
-> 
-> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-> ---
->  Documentation/video4linux/v4l2-framework.txt |   38 +++++++++++++++++++--
->  drivers/media/video/v4l2-dev.c               |   47 +++++++++++++++++++++++---
->  include/media/v4l2-dev.h                     |    7 ++++
->  3 files changed, 84 insertions(+), 8 deletions(-)
-> 
+> My big worry is that it makes svm.c aware of internal emulator variable, 
+> so it makes it harder to hack on the emulator.
 
-<snip>
+I don't think so, the structure of the code in svm.c follows the same
+structures (even in a simpler way) as in the x86_emulate_insn()
+function. Someone who changes the internal data structures of the
+emulator can easily change svm.c too. This person will even recognize
+the need for this automatically because svm.c will not compile anymore
+when the data structure is changed.
+On the other side, implementing this in the emulator itself would
+require a person to learn about very low-level svm internals to get
+everything right (or the changes easily break the code which is more
+likely).
 
-> diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
-> index 035db52..511e1ee 100644
-> --- a/drivers/media/video/v4l2-dev.c
-> +++ b/drivers/media/video/v4l2-dev.c
-> @@ -278,6 +278,9 @@ static int v4l2_mmap(struct file *filp, struct vm_area_struct *vm)
->  static int v4l2_open(struct inode *inode, struct file *filp)
->  {
->  	struct video_device *vdev;
-> +#if defined(CONFIG_MEDIA_CONTROLLER)
-> +	struct media_entity *entity = NULL;
-> +#endif
->  	int ret = 0;
->  
->  	/* Check if the video device is available */
-> @@ -291,6 +294,16 @@ static int v4l2_open(struct inode *inode, struct file *filp)
->  	/* and increase the device refcount */
->  	video_get(vdev);
->  	mutex_unlock(&videodev_lock);
-> +#if defined(CONFIG_MEDIA_CONTROLLER)
-> +	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev) {
-> +		entity = media_entity_get(&vdev->entity);
-> +		if (!entity) {
-> +			ret = -EBUSY;
-> +			video_put(vdev);
-> +			return ret;
-> +		}
-> +	}
-> +#endif
->  	if (vdev->fops->open) {
->  		if (vdev->lock)
->  			mutex_lock(vdev->lock);
-> @@ -303,8 +316,13 @@ static int v4l2_open(struct inode *inode, struct file *filp)
->  	}
->  
->  	/* decrease the refcount in case of an error */
-> -	if (ret)
-> +	if (ret) {
-> +#if defined(CONFIG_MEDIA_CONTROLLER)
-> +		if (vdev->v4l2_dev && vdev->v4l2_dev->mdev)
-> +			media_entity_put(entity);
-> +#endif
->  		video_put(vdev);
-> +	}
->  	return ret;
->  }
->  
-> @@ -321,7 +339,10 @@ static int v4l2_release(struct inode *inode, struct file *filp)
->  		if (vdev->lock)
->  			mutex_unlock(vdev->lock);
->  	}
-> -
-> +#if defined(CONFIG_MEDIA_CONTROLLER)
-> +	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev)
-> +		media_entity_put(&vdev->entity);
-> +#endif
->  	/* decrease the refcount unconditionally since the release()
->  	   return value is ignored. */
->  	video_put(vdev);
-> @@ -558,12 +579,25 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
->  	if (nr != -1 && nr != vdev->num && warn_if_nr_in_use)
->  		printk(KERN_WARNING "%s: requested %s%d, got %s\n", __func__,
->  			name_base, nr, video_device_node_name(vdev));
-> -
-> -	/* Part 5: Activate this minor. The char device can now be used. */
-> +#if defined(CONFIG_MEDIA_CONTROLLER)
-> +	/* Part 5: Register the entity. */
-> +	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev) {
-> +		vdev->entity.type = MEDIA_ENTITY_TYPE_NODE_V4L;
-> +		vdev->entity.name = vdev->name;
-> +		vdev->entity.v4l.major = VIDEO_MAJOR;
-> +		vdev->entity.v4l.minor = vdev->minor;
-> +		ret = media_device_register_entity(vdev->v4l2_dev->mdev,
-> +			&vdev->entity);
-> +		if (ret < 0)
-> +			printk(KERN_ERR "error\n"); /* TODO */
+> So I don't think there's a problem with coding the svm intercepts in 
+> emulate.c.  This is no different than emulating any AMD-specific 
+> instruction in the emulator - we're emulating an instruction in exactly 
+> the way it is specified in the manual.
 
-Was this forgotten, or will this be fixed in the next version? It looks
-out-of-place...
+That would make sense if the Nested-SVM code is implemented in the
+generic code so that it is usable from VMX too. But that is not the case
+and also not really doable.
 
-> +	}
-> +#endif
+> Something you could do is allocate bits for the intercept bit number and 
+> exit code in opcode->flags.  This way most unconditional intercepts 
+> happen outside the instruction switch: generic code reads the intercept 
+> bit, the intercept word (via a callback), if the bit is set, returns the 
+> exit code.  That should completely kill the diffstat.  We only need to 
+> be careful wrt the order of the intercept check and the other permission 
+> checks.
 
-Regards,
+We have a lot of intercepts where this does not work. There is no 1-1
+mapping between an opcode and an intercept. Some opcodes can result in
+multiple different intercepts (mov cr, mov dr), sometimes multiple
+intructions result in one intercept (rdmsr/wrmsr, in/out). The later
+ones even need special handling because the differences between the
+different instructions are encoded in the exit_info fields. All this
+would expose svm-internals like the vmcb structure into the generic
+code.
+I think hacking all this in the emulator itself also makes it more
+complex than it is today and the changes will likely break at some point
+when somone hacks on the emulator. And the situation will not get better
+when Nested-VMX gets merged and needs to do the same.
 
-	Hans
+We basically have two choices here:
+
+	a) We expose svm internals into the emulator
+	b) We expose emulator internals into svm
+
+Both choices are not really good from a software-design point-of-view.
+But I think option b) is the better one because it is easier to cope with
+and thus less likely to break when changing the emulator code.
+
+	Joerg
 
 -- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
