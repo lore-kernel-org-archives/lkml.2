@@ -1,116 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab0KYLqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 06:46:50 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:37908
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752857Ab0KYLqs (ORCPT
+	id S1752916Ab0KYLrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 06:47:21 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:62928 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752866Ab0KYLrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 06:46:48 -0500
-X-SpamScore: -33
-X-BigFish: VPS-33(zzbb2dK1432N98dN9371P10d1Izz1202hzz15d4Rz32i691h637h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCFVDP-01-AMD-02
-X-M-MSG: 
-Date: Thu, 25 Nov 2010 12:46:40 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] KVM: Make the instruction emulator aware of Nested
- Virtualization
-Message-ID: <20101125114640.GC6031@amd.com>
-References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
- <4CED63DC.20608@redhat.com>
+	Thu, 25 Nov 2010 06:47:19 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALLY7Ux5LcZJ/2dsb2JhbACjCnK+EYVHBA
+Date: Thu, 25 Nov 2010 22:47:11 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Possible data integrity problems in lots of
+ filesystems?
+Message-ID: <20101125114711.GA3622@amd>
+References: <20101125074909.GA4160@amd>
+ <4CEE2C2E.4010003@panasas.com>
+ <20101125100603.GA3164@amd>
+ <4CEE3F9F.9070108@panasas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CED63DC.20608@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+In-Reply-To: <4CEE3F9F.9070108@panasas.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 02:13:32PM -0500, Avi Kivity wrote:
-> On 11/24/2010 08:18 PM, Joerg Roedel wrote:
-> > Hi Avi, Hi Marcelo,
-> >
-> > here is a patch-set to make the instruction emulator aware of nested
-> > virtualization. It basically works by introducing a new callback into
-> > the x86_ops to check if a decoded instruction must be intercepted. If it
-> > is intercepted the instruction emulator returns straight into the guest.
-> >
-> > I am not entirely happy with this solution because it partially
-> > duplicates the code in the x86_emulate_insn function.
+On Thu, Nov 25, 2010 at 12:51:11PM +0200, Boaz Harrosh wrote:
+> On 11/25/2010 12:06 PM, Nick Piggin wrote:
+> > On Thu, Nov 25, 2010 at 11:28:14AM +0200, Boaz Harrosh wrote:
 > 
-> My big worry is that it makes svm.c aware of internal emulator variable, 
-> so it makes it harder to hack on the emulator.
+> >>> Index: linux-2.6/fs/exofs/file.c
+> >>> ===================================================================
+> >>> --- linux-2.6.orig/fs/exofs/file.c	2010-11-19 16:50:00.000000000 +1100
+> >>> +++ linux-2.6/fs/exofs/file.c	2010-11-19 16:50:07.000000000 +1100
+> >>> @@ -48,11 +48,6 @@ static int exofs_file_fsync(struct file
+> >>>  	struct inode *inode = filp->f_mapping->host;
+> >>>  	struct super_block *sb;
+> >>>  
+> >>> -	if (!(inode->i_state & I_DIRTY))
+> >>> -		return 0;
+> >>> -	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
+> >>> -		return 0;
+> >>> -
+> >>>  	ret = sync_inode_metadata(inode, 1);
+> >>>  
+> >>>  	/* This is a good place to write the sb */
+> >>>
+> >>
+> >> Is that a good enough fix for the issue in your opinion?
+> >> Or is there more involved?
+> > 
+> > For the inode dirty bit race problem, yes it should fix it.
+> > sync_inode_metadata basically makes the same checks without
+> > races (in a subsequent patch I re-introduced the datasync
+> > optimisation).
+> > 
+> >  
+> 
+> > 
+> > Well in your fsync, you need to wait for inode writeback
+> > that might have been started by an asynchronous write_inode.
+> > 
+> 
+> All I'm calling is sync_inode_metadata(,1) which calls sync_inode()
+> which calls writeback_single_inode(sync_mode == WB_SYNC_ALL). It gets
+> a little complicated but from the looks of it, even though the
+> call to .write_inode() is not under any lock the state machine there
+> will do inode_wait_for_writeback() if there was one in motion
+> all ready. ?
+> 
+> And it looks like writeback_single_inode() does all the proper
+> checks in the correct order for these flags above.
+> 
+> So current code in exofs_file_fsync() looks scary to me. I would
+> like to push your above patch for this Kernel. (I'll repost it)
 
-I don't think so, the structure of the code in svm.c follows the same
-structures (even in a simpler way) as in the x86_emulate_insn()
-function. Someone who changes the internal data structures of the
-emulator can easily change svm.c too. This person will even recognize
-the need for this automatically because svm.c will not compile anymore
-when the data structure is changed.
-On the other side, implementing this in the emulator itself would
-require a person to learn about very low-level svm internals to get
-everything right (or the changes easily break the code which is more
-likely).
+It does not get it right, because of the situation I described
+above. Background writeout can come in first, and clear the inode
+dirty bits, and call your ->write_inode for async writeout.
 
-> So I don't think there's a problem with coding the svm intercepts in 
-> emulate.c.  This is no different than emulating any AMD-specific 
-> instruction in the emulator - we're emulating an instruction in exactly 
-> the way it is specified in the manual.
+That means you skip doing the exofs_put_io_state(), and (I presume)
+this means you aren't waiting for write completion there.
 
-That would make sense if the Nested-SVM code is implemented in the
-generic code so that it is usable from VMX too. But that is not the case
-and also not really doable.
+What then happens is that sync_inode_metadata() from your fsync
+does not call ->write_inode because the inode dirty bits are clear.
+It's basically a noop. So you need to either make your .write_inode
+always synchronous, or wait for it in your .fsync and .sync_fs.
 
-> Something you could do is allocate bits for the intercept bit number and 
-> exit code in opcode->flags.  This way most unconditional intercepts 
-> happen outside the instruction switch: generic code reads the intercept 
-> bit, the intercept word (via a callback), if the bit is set, returns the 
-> exit code.  That should completely kill the diffstat.  We only need to 
-> be careful wrt the order of the intercept check and the other permission 
-> checks.
 
-We have a lot of intercepts where this does not work. There is no 1-1
-mapping between an opcode and an intercept. Some opcodes can result in
-multiple different intercepts (mov cr, mov dr), sometimes multiple
-intructions result in one intercept (rdmsr/wrmsr, in/out). The later
-ones even need special handling because the differences between the
-different instructions are encoded in the exit_info fields. All this
-would expose svm-internals like the vmcb structure into the generic
-code.
-I think hacking all this in the emulator itself also makes it more
-complex than it is today and the changes will likely break at some point
-when somone hacks on the emulator. And the situation will not get better
-when Nested-VMX gets merged and needs to do the same.
+> > Also, with your sync_inode_metadata call, you shouldn't need the
+> > sync_inode call by the looks.
+> >  
+> 
+> What? I missed you. You mean I don't need to sync_inode_metadata(,wait==1),
+> or what did you mean?
 
-We basically have two choices here:
+Sorry, I was looking at the wrong code, ignore that.
 
-	a) We expose svm internals into the emulator
-	b) We expose emulator internals into svm
-
-Both choices are not really good from a software-design point-of-view.
-But I think option b) is the better one because it is easier to cope with
-and thus less likely to break when changing the emulator code.
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Nick
