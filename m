@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751063Ab0KYFg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 00:36:28 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50356 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab0KYFg1 (ORCPT
+	id S1751374Ab0KYFgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 00:36:37 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35677 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab0KYFge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 00:36:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=T8r9mQt/iOffkOYJstl6NyOi2M03uovmnUSzhC8CAgA+cToI2u9XczCmJgV+eC21fY
-         ygOJ+pmZkHu422OoP6EjJsRpaZaafh7X3+NHBn+Gi+AOSSelA3haOwXi3mpJ+MXe2zJa
-         lYoOCD6yxbufhW6C3JqoyCljqdXtXHik0LgXM=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
-References: <AANLkTinV6r_1yHdxbi+o=_w=pHXrdu4fYXONMjYg0yiG@mail.gmail.com>
-	<alpine.LNX.2.00.1011241051370.23994@swampdragon.chaosbits.net>
-	<AANLkTinOAdDqmVo+zrEk=-EUri-CXBY1kukd96-ocHhL@mail.gmail.com>
-	<AANLkTi=6r_N9wHk1xWQ8Tya34f1eeqjiT5F4jUOf2X8+@mail.gmail.com>
-Date: Thu, 25 Nov 2010 11:36:25 +0600
-Message-ID: <AANLkTin-KUUAx00b3RXAWMM0vBZMWax8kLHYQv8u0A00@mail.gmail.com>
-Subject: Re: [PATCH] x86, dumpstack: Fix unused variable warning.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Nov 2010 00:36:34 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2010-11-09 - lockdep splat in ext4/quota code
+In-Reply-To: Your message of "Sat, 13 Nov 2010 00:33:43 +0100."
+             <20101112233343.GA12153@quack.suse.cz>
+From: Valdis.Kletnieks@vt.edu
+References: <201011100003.oAA03O3c015222@imap1.linux-foundation.org> <19688.1289503541@localhost>
+            <20101112233343.GA12153@quack.suse.cz>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1290663350_4815P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 25 Nov 2010 00:35:50 -0500
+Message-ID: <28481.1290663350@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4CEDF5B8.003D,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 7:01 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Wed, Nov 24, 2010 at 04:26:01PM +0600, Rakib Mullick wrote:
->> On Wed, Nov 24, 2010 at 3:57 PM, Jesper Juhl <jj@chaosbits.net> wrote:
->
-> I think Jesper is confused because your patch applies on -tip (tip/master or
-> tip/perf/core) where we have zapped the bp argument from show_trace() lately.
->
-Yes, the patch was made against tip/master.
+--==_Exmh_1290663350_4815P
+Content-Type: text/plain; charset=us-ascii
 
-> But in the mainline, show_trace() still has the bp argument.
->
+On Sat, 13 Nov 2010 00:33:43 +0100, Jan Kara said:
+
+> > Still seeing this just after quotas get turned on ext4. First seen in
+> > 2.6.36-mmotm1022, but problem has apparently been there since
+> > 2.6.36-rc5-mmotm0922 (oldest kernel I have lying around).
+>   Thanks for the report. In fact, it is a false positive caused by the fact
+> that EXT4(inode)->i_data_sem for quota file inode would need a special
+> locking class (or subclass) but does not have one. I'll have a look into
+> implementing that sometime next week hopefully.
+
+> > [   48.967833] =======================================================
+> > [   48.968162] [ INFO: possible circular locking dependency detected ]
+> > [   48.968411] 2.6.37-rc1-mmotm1109 #1
+
+I haven't spotted the commit that fixed it, but I'm assuming it's in there
+now, as I am not seeing it on 2.6.37-rc3-mmotm1123, thanks.
+
+--==_Exmh_1290663350_4815P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFM7fW2cC3lWbTT17ARAoVxAJ4sLo3KwvJStibz8WBr0DA5w8ouGwCeKiQL
+3IomiXwJ5BKbCi1h2o52/xI=
+=eAcb
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1290663350_4815P--
+
