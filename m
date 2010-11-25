@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab0KYQXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 11:23:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab0KYQXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 11:23:49 -0500
-Date: Thu, 25 Nov 2010 17:21:58 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 05 of 66] compound_lock
-Message-ID: <20101125162158.GO6118@random.random>
-References: <patchbomb.1288798055@v2.random>
- <fc2579c9bddbfcf78d72.1288798060@v2.random>
- <20101118114902.GJ8135@csn.ul.ie>
- <AANLkTik9U_r7tqdDYw24xwTgvp5c740Z9eMQeh8y4Hpi@mail.gmail.com>
+	id S1754033Ab0KYQYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 11:24:45 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51861 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab0KYQYn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 11:24:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wp/HdY7YmC7jHdRvOpM6ZwLp87S7am7Ngd4j+pvCRzhgfNYqjTjsZEkyAWZCC7rdwm
+         T9x2mR0CTKWNiEOLrKRj60fU1ZZTtc4Xm3D4mAG6SmJ3l9J1FmH2aJngQIJsHkXvinWm
+         AfFsI7FyOayd/Y7BWawpQIWyGUBzwceIZmic8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik9U_r7tqdDYw24xwTgvp5c740Z9eMQeh8y4Hpi@mail.gmail.com>
+In-Reply-To: <4CEE7884.5010007@teksavvy.com>
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
+ <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com>
+ <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com>
+ <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com>
+ <20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com>
+ <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com> <4CEE7884.5010007@teksavvy.com>
+From: Greg Freemyer <greg.freemyer@gmail.com>
+Date: Thu, 25 Nov 2010 11:24:22 -0500
+Message-ID: <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+To: Mark Lord <kernel@teksavvy.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 09:28:27AM -0800, Linus Torvalds wrote:
-> On Thu, Nov 18, 2010 at 3:49 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> >> +
-> >> +static inline void compound_lock_irqsave(struct page *page,
-> >> +                                      unsigned long *flagsp)
-> >> +{
-> >> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> >> +     unsigned long flags;
-> >> +     local_irq_save(flags);
-> >> +     compound_lock(page);
-> >> +     *flagsp = flags;
-> >> +#endif
-> >> +}
-> >> +
-> >
-> > The pattern for spinlock irqsave passes in unsigned long, not unsigned
-> > long *. It'd be nice if they matched.
-> 
-> Indeed. Just make the thing return the flags the way the normal
-> spin_lock_irqsave() function does.
+On Thu, Nov 25, 2010 at 9:53 AM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 10-11-24 11:41 PM, Greg Freemyer wrote:
+>>
+>> If you see a significant speed difference between mke2fs and running
+>> wiper.sh on that same filesystem immediately after formatting, then
+>> their is likely a bug worth chasing.
+>
+>
+> You're right.  They're both equally slow on a blank Sandforce drive,
+> taking about 83-90 seconds to TRIM 100GB.
+>
+> The difference being that mke2fs just sits there with zero indication
+> or information as to what the huge delay is.
+>
+> It's a pity the TRIM commands are so sluggish on the Sandforce.
+> It's a generation newer than the original Vertex, and TRIM is way faster
+> on the older Vertex.  Not that either of them do it quickly enough that
+> I'd ever want the kernel doing it automatically "on my behalf".
+>
+> The strange thing, is that when we TRIM the entire raw device,
+> using ATA SECURITY ERASE, it takes less than 2 seconds.
+>
+> Cheers
 
-Done.
+Mark,
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -320,15 +320,14 @@ static inline void compound_unlock(struc
- #endif
- }
- 
--static inline void compound_lock_irqsave(struct page *page,
--					 unsigned long *flagsp)
-+static inline unsigned long compound_lock_irqsave(struct page *page)
- {
-+	unsigned long uninitialized_var(flags);
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	unsigned long flags;
- 	local_irq_save(flags);
- 	compound_lock(page);
--	*flagsp = flags;
- #endif
-+	return flags;
- }
- 
- static inline void compound_unlock_irqrestore(struct page *page,
+I'm away from my systems today, but is there an easy way to tweak
+wiper.sh or hdparm to cause only a single range per trim command.
 
+I'm curious if for the Sandforce that would still be in the 90 second
+range, or closer to 64x that.
 
-diff --git a/mm/swap.c b/mm/swap.c
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -94,7 +94,7 @@ static void put_compound_page(struct pag
- 			 */
- 			smp_mb();
- 			/* page_head wasn't a dangling pointer */
--			compound_lock_irqsave(page_head, &flags);
-+			flags = compound_lock_irqsave(page_head);
- 			if (unlikely(!PageTail(page))) {
- 				/* __split_huge_page_refcount run before us */
- 				compound_unlock_irqrestore(page_head, flags);
+Or if there is a readily available userspace tool to invoke FITRIM and
+you have a 2.6.37-rc? kernel, you could just time that on a newly
+formatted drive.
 
-
-Thanks,
-Andrea
+Greg
