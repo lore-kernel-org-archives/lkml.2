@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0KZDER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 22:04:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46543 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab0KZDEN (ORCPT
+	id S1753578Ab0KZDEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 22:04:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62286 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab0KZDEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 22:04:13 -0500
+	Thu, 25 Nov 2010 22:04:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=OFvuhl1TVulokkZsDTEa7EE6k1aUqHQ6zNZ940NXbE+fpZ7nrqVvUsUCmJwICj9Jd8
-         l6+Ol5U5LgcKiF8h42uz970s97k3zBwcU60DP8uTAqV8gocFt7E9PJP5O3TwnziWr5L8
-         8dUuO6yeeLjZ2D8GAmqaypj2ZSTDUn0IeBOpw=
+        b=IPkDy+cKxkKZfcdbJs66tf6E7W/alEr9CIK1YMW9T3KAMqvs7iPmsxDc4k8y0Rj9CI
+         A87o135b+QmZTZ8f4IobaOpCySDp0BW6YRaZoH/UinE7T4JaqktyTt2gWlfIFNDCp4uy
+         1ixsSsxH3dO/6DIm5Kluz6A7zk74N9sTTm430=
 From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
         will.deacon@arm.com
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
         dengcheng.zhu@gmail.com
-Subject: [PATCH v2 4/5] MIPS/Perf-events: Work with the new callchain interface
-Date: Fri, 26 Nov 2010 11:05:06 +0800
-Message-Id: <1290740707-32586-5-git-send-email-dengcheng.zhu@gmail.com>
+Subject: [PATCH v2 3/5] MIPS/Perf-events: Fix event check in validate_event()
+Date: Fri, 26 Nov 2010 11:05:05 +0800
+Message-Id: <1290740707-32586-4-git-send-email-dengcheng.zhu@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290740707-32586-1-git-send-email-dengcheng.zhu@gmail.com>
 References: <1290740707-32586-1-git-send-email-dengcheng.zhu@gmail.com>
@@ -29,134 +29,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the MIPS part of the following commits by Frederic Weisbecker:
+Ignore events that are in off/error state or belong to a different PMU.
 
-f72c1a931e311bb7780fee19e41a89ac42cab50e
-        perf: Factorize callchain context handling
-56962b4449af34070bb1994621ef4f0265eed4d8
-        perf: Generalize some arch callchain code
-70791ce9ba68a5921c9905ef05d23f62a90bc10c
-        perf: Generalize callchain_store()
-c1a65932fd7216fdc9a0db8bbffe1d47842f862c
-        perf: Drop unappropriate tests on arch callchains
+This patch originates from the following commit for ARM by Will Deacon:
 
-Reported-by: Wu Zhangjin <wuzhangjin@gmail.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+65b4711ff513767341aa1915c822de6ec0de65cb
+	ARM: 6352/1: perf: fix event validation
+
 Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 ---
- arch/mips/kernel/perf_event.c |   63 ++++-------------------------------------
- 1 files changed, 6 insertions(+), 57 deletions(-)
+ arch/mips/kernel/perf_event.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index 3d55761..8f7d2f8 100644
+index 1ee44a3..3d55761 100644
 --- a/arch/mips/kernel/perf_event.c
 +++ b/arch/mips/kernel/perf_event.c
-@@ -534,21 +534,13 @@ handle_associated_event(struct cpu_hw_events *cpuc,
- #include "perf_event_mipsxx.c"
- 
- /* Callchain handling code. */
--static inline void
--callchain_store(struct perf_callchain_entry *entry,
--		u64 ip)
--{
--	if (entry->nr < PERF_MAX_STACK_DEPTH)
--		entry->ip[entry->nr++] = ip;
--}
- 
- /*
-  * Leave userspace callchain empty for now. When we find a way to trace
-  * the user stack callchains, we add here.
-  */
--static void
--perf_callchain_user(struct pt_regs *regs,
--		    struct perf_callchain_entry *entry)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+		    struct pt_regs *regs)
+@@ -486,8 +486,9 @@ static int validate_event(struct cpu_hw_events *cpuc,
  {
- }
+ 	struct hw_perf_event fake_hwc = event->hw;
  
-@@ -561,23 +553,21 @@ static void save_raw_perf_callchain(struct perf_callchain_entry *entry,
- 	while (!kstack_end(sp)) {
- 		addr = *sp++;
- 		if (__kernel_text_address(addr)) {
--			callchain_store(entry, addr);
-+			perf_callchain_store(entry, addr);
- 			if (entry->nr >= PERF_MAX_STACK_DEPTH)
- 				break;
- 		}
- 	}
- }
+-	if (event->pmu && event->pmu != &pmu)
+-		return 0;
++	/* Allow mixed event group. So return 1 to pass validation. */
++	if (event->pmu != &pmu || event->state <= PERF_EVENT_STATE_OFF)
++		return 1;
  
--static void
--perf_callchain_kernel(struct pt_regs *regs,
--		      struct perf_callchain_entry *entry)
-+void perf_callchain_kernel(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs)
- {
- 	unsigned long sp = regs->regs[29];
- #ifdef CONFIG_KALLSYMS
- 	unsigned long ra = regs->regs[31];
- 	unsigned long pc = regs->cp0_epc;
- 
--	callchain_store(entry, PERF_CONTEXT_KERNEL);
- 	if (raw_show_trace || !__kernel_text_address(pc)) {
- 		unsigned long stack_page =
- 			(unsigned long)task_stack_page(current);
-@@ -587,53 +577,12 @@ perf_callchain_kernel(struct pt_regs *regs,
- 		return;
- 	}
- 	do {
--		callchain_store(entry, pc);
-+		perf_callchain_store(entry, pc);
- 		if (entry->nr >= PERF_MAX_STACK_DEPTH)
- 			break;
- 		pc = unwind_stack(current, &sp, pc, &ra);
- 	} while (pc);
- #else
--	callchain_store(entry, PERF_CONTEXT_KERNEL);
- 	save_raw_perf_callchain(entry, sp);
- #endif
+ 	return mipspmu->alloc_counter(cpuc, &fake_hwc) >= 0;
  }
--
--static void
--perf_do_callchain(struct pt_regs *regs,
--		  struct perf_callchain_entry *entry)
--{
--	int is_user;
--
--	if (!regs)
--		return;
--
--	is_user = user_mode(regs);
--
--	if (!current || !current->pid)
--		return;
--
--	if (is_user && current->state != TASK_RUNNING)
--		return;
--
--	if (!is_user) {
--		perf_callchain_kernel(regs, entry);
--		if (current->mm)
--			regs = task_pt_regs(current);
--		else
--			regs = NULL;
--	}
--	if (regs)
--		perf_callchain_user(regs, entry);
--}
--
--static DEFINE_PER_CPU(struct perf_callchain_entry, pmc_irq_entry);
--
--struct perf_callchain_entry *
--perf_callchain(struct pt_regs *regs)
--{
--	struct perf_callchain_entry *entry = &__get_cpu_var(pmc_irq_entry);
--
--	entry->nr = 0;
--	perf_do_callchain(regs, entry);
--	return entry;
--}
 -- 
 1.7.1
 
