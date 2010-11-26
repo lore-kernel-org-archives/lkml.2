@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0KZOqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 09:46:06 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60108 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab0KZOqF (ORCPT
+	id S1754627Ab0KZOuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 09:50:14 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62620 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab0KZOuM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 09:46:05 -0500
+	Fri, 26 Nov 2010 09:50:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=X7+Du6oGqvZBNINrx1Nf8mLeblLkSoeDIN9V/XhmB7EwSkUorfEOv7wCBhc6Ulw6jU
-         8HvVXmN1EG/EK0prWu1FOLSwZrUt6QwqyhKT9FGa3xb5NSrxBMGoZ9pY3KjrRgP8iOm0
-         rzQTyj0RC5dgM8cGaCpzd4xjaIgFD5DJ5b+5s=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=a0x4q/rubVBUjecgku29w35NLv6ACgvq5JkowpNp/AyuRlIWUBRWaWQEG8AAfRlhxC
+         2b2ffmTZIvjBSJ9VcJMKKNrCvH3V5aTIwMQQbvnI8oRKSVjEtuKOCBKbq7A5Fr8UZujS
+         PmKcS2YlfdJ4x+CexF9stT2pS34w+m01DA8NE=
 MIME-Version: 1.0
-Date: Fri, 26 Nov 2010 22:46:01 +0800
-Message-ID: <AANLkTi=aqMR0uNCgz40pdUG1288CMxLRnZdVxzZuBzGw@mail.gmail.com>
-Subject: [PATCH] maximize dispatching in block throttle
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <4CEFB731.4050307@suse.cz>
+References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
+	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
+	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
+	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>
+	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>
+	<20101122135715.121b5eb7.sfr@canb.auug.org.au>
+	<AANLkTi=io3tsuL8Hd2a0y8PyBYYAzb-gkJo1GfmpcF+L@mail.gmail.com>
+	<AANLkTi=eTvdfPjgd0pGVmBx6zCB8yL3qNVq0MR1wH88b@mail.gmail.com>
+	<AANLkTik-vnDTRTshpXE7ufjCM9AcfLGQV5v9CcjV=zJx@mail.gmail.com>
+	<AANLkTimBAx_yg9S1yqKsXeC048WMkus9aBz5RJAUWBpH@mail.gmail.com>
+	<4CEFB731.4050307@suse.cz>
+Date: Fri, 26 Nov 2010 14:50:10 +0000
+X-Google-Sender-Auth: Rf-4kINbL5yd5kV1uiDSMRjCof4
+Message-ID: <AANLkTi=jMWL7z=30AnJ0An2HtygserxDbkzagv5_hU1h@mail.gmail.com>
+Subject: Re: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, randy.dunlap@oracle.com,
+        linux-kbuild@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xiyou.wangcong@gmail.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When dispatching bio, the quantum is divided into read/write budgets,
-and dispatching for write could not exceed the write budget even if
-the read budget is not exhausted, either dispatching for read.
+On 26 November 2010 13:33, Michal Marek <mmarek@suse.cz> wrote:
+> On 26.11.2010 13:33, Catalin Marinas wrote:
+>> On 25 November 2010 18:09, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>> On Thu, Nov 25, 2010 at 12:43 PM, Catalin Marinas
+>>> <catalin.marinas@arm.com> wrote:
+>>>> Now, commenting on your patches, you added a new statement, 'visible
+>>>> if...' for menus. Can we not change it to something like:
+>>>>
+>>>> -menu "I2C Algorithms"
+>>>> -       depends on !I2C_HELPER_AUTO
+>>>> +menu "I2C Algorithms" if !I2C_HELPER_AUTO
+>>>>
+>>> no because if_expr are translated internally in term of dependency,
+>>> which we don't want.
+>>
+>> That's correct but I was wondering whether we could change this kind
+>> of 'if' to a visibility attribute or a weaker dependency and avoid
+>> 'select' warnings. This way we wouldn't introduce new keywords to the
+>> kconfig language.
+>
+> I quite like the "visible if" notation because it makes it explicit that
+> it only affects the display of the menu and does not add any dependency
+> to the data.
 
-It is changed to exhaust the quantum, if possible, in this work for
-dispatching bio.
+That's fine by me. If you like this feature then it could get upstream :)
 
-Though it is hard to understand that 50/50 division is not selected,
-the difference between divisions could impact little on dispatching as
-much as quantum allows then.
-
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
-
---- a/block/blk-throttle.c	2010-11-01 19:54:12.000000000 +0800
-+++ b/block/blk-throttle.c	2010-11-26 21:49:00.000000000 +0800
-@@ -647,11 +647,16 @@ static int throtl_dispatch_tg(struct thr
- 	unsigned int max_nr_reads = throtl_grp_quantum*3/4;
- 	unsigned int max_nr_writes = throtl_grp_quantum - nr_reads;
- 	struct bio *bio;
-+	int read_throttled = 0, write_throttled = 0;
-
- 	/* Try to dispatch 75% READS and 25% WRITES */
--
-+ try_read:
- 	while ((bio = bio_list_peek(&tg->bio_lists[READ]))
--		&& tg_may_dispatch(td, tg, bio, NULL)) {
-+		&& ! read_throttled) {
-+		if (! tg_may_dispatch(td, tg, bio, NULL)) {
-+			read_throttled = 1;
-+			break;
-+		}
-
- 		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
- 		nr_reads++;
-@@ -659,9 +664,15 @@ static int throtl_dispatch_tg(struct thr
- 		if (nr_reads >= max_nr_reads)
- 			break;
- 	}
--
-+	if (! bio)
-+		read_throttled = 1;
-+ try_write:
- 	while ((bio = bio_list_peek(&tg->bio_lists[WRITE]))
--		&& tg_may_dispatch(td, tg, bio, NULL)) {
-+		&& ! write_throttled) {
-+		if (! tg_may_dispatch(td, tg, bio, NULL)) {
-+			write_throttled = 1;
-+			break;
-+		}
-
- 		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
- 		nr_writes++;
-@@ -669,7 +680,23 @@ static int throtl_dispatch_tg(struct thr
- 		if (nr_writes >= max_nr_writes)
- 			break;
- 	}
-+	if (! bio)
-+		write_throttled = 1;
-+
-+	if (write_throttled && read_throttled)
-+		goto out;
-
-+	if (! (throtl_grp_quantum > nr_writes + nr_reads))
-+		goto out;
-+		
-+	if (read_throttled) {
-+		max_nr_writes = throtl_grp_quantum - nr_reads;
-+		goto try_write;
-+	} else {
-+		max_nr_reads = throtl_grp_quantum - nr_writes;
-+		goto try_read;
-+	}
-+ out:
- 	return nr_reads + nr_writes;
- }
+-- 
+Catalin
