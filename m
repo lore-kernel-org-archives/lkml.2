@@ -1,88 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab0KZRTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:19:24 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34877 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab0KZRTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:19:23 -0500
-Message-ID: <4CEFEC17.6060503@kernel.org>
-Date: Fri, 26 Nov 2010 18:19:19 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Tobias Karnat <tobias.karnat@googlemail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: sata_sil24: external raid storage mistaken as port multiplier
-References: <1290461073.12443.21.camel@Tobias-Karnat>	 <1290514125.28293.2.camel@Tobias-Karnat> <1290572588.24847.20.camel@Tobias-Karnat>
-In-Reply-To: <1290572588.24847.20.camel@Tobias-Karnat>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 17:19:21 +0000 (UTC)
+	id S1755597Ab0KZRTs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:19:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45527 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751902Ab0KZRTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 12:19:46 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: Implement runtime PM for WM8994 core driver
+Date: Fri, 26 Nov 2010 17:19:35 +0000
+Message-Id: <1290791975-21160-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1290791975-21160-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1290791975-21160-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 05:23 AM, Tobias Karnat wrote:
-> Hi,
-> 
-> I got it fixed by removing ATA_FLAG_PMP from the SIL24_COMMON_FLAGS.
-> 
-> Could someone turn this into a module option?
-> 
-> The external raid case might in fact has a built-in port multiplier,
-> but the case can only be configured as raid0 and raid1.
-> 
-> I suspect that Linux tries to to access the drives separately, which fails.
+Allow the WM8994 to completely power off, including disabling the LDOs
+if they are software controlled, when it goes idle. The CODEC subdevice
+controls activity for the MFD as a whole.
 
-Hmmm... well, libata is just sending SRST w/ the port number set to 15
-and the device is reporting that it is a port multipler to that.
-Depending on configuration these devices don't work too well when
-commanded as a PMP device.  If you put it into JBOD mode, it will
-probably work fine.  I have no idea why it still reports as a PMP
-device when configured as a virtual device.
+If the GPIOs need to be used while the device is active runtime PM
+should be disabled for the device by machine specific code.
 
-That said, yeah, it probably would be a good idea to add a
-libata.force param.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c |   46 ++++++++++++++++++++++----------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
 
-Can you please apply the following patch and verify that the device
-doesn't work without any parameter but it does with
-"libata.force=nopmp"?
-
-Thanks.
-
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 7f77c67..7423265 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6325,6 +6325,7 @@ static int __init ata_parse_force_one(char **cur,
- 		{ "nohrst",	.lflags		= ATA_LFLAG_NO_HRST },
- 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
-+		{ "nopmp",	.lflags		= ATA_LFLAG_NO_PMP },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index d947b12..6102ba2 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -174,6 +174,7 @@ enum {
- 	ATA_LFLAG_DISABLED	= (1 << 6), /* link is disabled */
- 	ATA_LFLAG_SW_ACTIVITY	= (1 << 7), /* keep activity stats */
- 	ATA_LFLAG_NO_LPM	= (1 << 8), /* disable LPM on this link */
-+	ATA_LFLAG_NO_PMP	= (1 << 9), /* disable PMP support */
-
- 	/* struct ata_port flags */
- 	ATA_FLAG_SLAVE_POSS	= (1 << 0), /* host supports slave dev */
-@@ -1210,7 +1211,8 @@ extern struct device_attribute *ata_common_sdev_attrs[];
- #ifdef CONFIG_SATA_PMP
- static inline bool sata_pmp_supported(struct ata_port *ap)
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 8d221ba..41233c7 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -18,6 +18,7 @@
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
++#include <linux/pm_runtime.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/regulator/machine.h>
+ 
+@@ -169,8 +170,16 @@ out:
+ EXPORT_SYMBOL_GPL(wm8994_set_bits);
+ 
+ static struct mfd_cell wm8994_regulator_devs[] = {
+-	{ .name = "wm8994-ldo", .id = 1 },
+-	{ .name = "wm8994-ldo", .id = 2 },
++	{
++		.name = "wm8994-ldo",
++		.id = 1,
++		.pm_runtime_no_callbacks = true,
++	},
++	{
++		.name = "wm8994-ldo",
++		.id = 2,
++		.pm_runtime_no_callbacks = true,
++	},
+ };
+ 
+ static struct resource wm8994_codec_resources[] = {
+@@ -200,6 +209,7 @@ static struct mfd_cell wm8994_devs[] = {
+ 		.name = "wm8994-gpio",
+ 		.num_resources = ARRAY_SIZE(wm8994_gpio_resources),
+ 		.resources = wm8994_gpio_resources,
++		.pm_runtime_no_callbacks = true,
+ 	},
+ };
+ 
+@@ -231,7 +241,7 @@ static const char *wm8958_main_supplies[] = {
+ };
+ 
+ #ifdef CONFIG_PM
+-static int wm8994_device_suspend(struct device *dev)
++static int wm8994_suspend(struct device *dev)
  {
--	return ap->flags & ATA_FLAG_PMP;
-+	return (ap->flags & ATA_FLAG_PMP) &&
-+		!(ap->link.flags & ATA_LFLAG_NO_PMP);
+ 	struct wm8994 *wm8994 = dev_get_drvdata(dev);
+ 	int ret;
+@@ -261,7 +271,7 @@ static int wm8994_device_suspend(struct device *dev)
+ 	return 0;
  }
+ 
+-static int wm8994_device_resume(struct device *dev)
++static int wm8994_resume(struct device *dev)
+ {
+ 	struct wm8994 *wm8994 = dev_get_drvdata(dev);
+ 	int ret;
+@@ -471,6 +481,9 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		goto err_irq;
+ 	}
+ 
++	pm_runtime_enable(wm8994->dev);
++	pm_runtime_resume(wm8994->dev);
++
+ 	return 0;
+ 
+ err_irq:
+@@ -490,6 +503,7 @@ err:
+ 
+ static void wm8994_device_exit(struct wm8994 *wm8994)
+ {
++	pm_runtime_disable(wm8994->dev);
+ 	mfd_remove_devices(wm8994->dev);
+ 	wm8994_irq_exit(wm8994);
+ 	regulator_bulk_disable(wm8994->num_supplies,
+@@ -573,21 +587,6 @@ static int wm8994_i2c_remove(struct i2c_client *i2c)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
+-static int wm8994_i2c_suspend(struct i2c_client *i2c, pm_message_t state)
+-{
+-	return wm8994_device_suspend(&i2c->dev);
+-}
+-
+-static int wm8994_i2c_resume(struct i2c_client *i2c)
+-{
+-	return wm8994_device_resume(&i2c->dev);
+-}
+-#else
+-#define wm8994_i2c_suspend NULL
+-#define wm8994_i2c_resume NULL
+-#endif
+-
+ static const struct i2c_device_id wm8994_i2c_id[] = {
+ 	{ "wm8994", WM8994 },
+ 	{ "wm8958", WM8958 },
+@@ -595,15 +594,16 @@ static const struct i2c_device_id wm8994_i2c_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, wm8994_i2c_id);
+ 
++UNIVERSAL_DEV_PM_OPS(wm8994_pm_ops, wm8994_suspend, wm8994_resume, NULL);
++
+ static struct i2c_driver wm8994_i2c_driver = {
+ 	.driver = {
+-		   .name = "wm8994",
+-		   .owner = THIS_MODULE,
++		.name = "wm8994",
++		.owner = THIS_MODULE,
++		.pm = &wm8994_pm_ops,
+ 	},
+ 	.probe = wm8994_i2c_probe,
+ 	.remove = wm8994_i2c_remove,
+-	.suspend = wm8994_i2c_suspend,
+-	.resume = wm8994_i2c_resume,
+ 	.id_table = wm8994_i2c_id,
+ };
+ 
+-- 
+1.7.1
 
- static inline bool sata_pmp_attached(struct ata_port *ap)
