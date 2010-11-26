@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab0KZCUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 21:20:09 -0500
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61840 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab0KZCUH (ORCPT
+	id S1753825Ab0KZCUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 21:20:37 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:46955 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753461Ab0KZCUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 21:20:07 -0500
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
-        h.mitake@gmail.com, Arjan van de Ven <arjan@linux.intel.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH] workqueue: check the allocation of system_unbound_wq
-Date: Fri, 26 Nov 2010 11:19:51 +0900
-Message-Id: <1290737991-23163-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Mailer: git-send-email 1.6.5.2
+	Thu, 25 Nov 2010 21:20:36 -0500
+Message-ID: <4CEF1958.1010307@dsn.okisemi.com>
+Date: Fri, 26 Nov 2010 11:20:08 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 12/19 v5] can: EG20T PCH: Fix bit timing calculation
+ issue
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found a trivial bug on initialization of workqueue.
-Current init_workqueues doesn't check the result of
-allocation of system_unbound_wq, this should be checked
-like other queues.
+>From f6e0c08d92460943ec78fa2e49df72e5a911875d Mon Sep 17 00:00:00 2001
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Date: Thu, 18 Nov 2010 17:41:40 +0900
+Subject: [PATCH] CAN : Fix bit timing calculation issue
+ Modify like use calculated value directly passed by CAN core module.
 
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
 ---
- kernel/workqueue.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/net/can/pch_can.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 90db1bd..b60374d 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3692,7 +3692,8 @@ static int __init init_workqueues(void)
- 	system_nrt_wq = alloc_workqueue("events_nrt", WQ_NON_REENTRANT, 0);
- 	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
- 					    WQ_UNBOUND_MAX_ACTIVE);
--	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq);
-+	BUG_ON(!system_wq || !system_long_wq ||
-+		!system_nrt_wq || !system_unbound_wq);
- 	return 0;
- }
- early_initcall(init_workqueues);
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 33c6bc0..b1fde7d 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -797,17 +797,15 @@ static int pch_set_bittiming(struct net_device *ndev)
+ 	const struct can_bittiming *bt = &priv->can.bittiming;
+ 	u32 canbit;
+ 	u32 bepe;
+-	u32 brp;
+ 
+ 	/* Setting the CCE bit for accessing the Can Timing register. */
+ 	pch_can_bit_set(&priv->regs->cont, PCH_CTRL_CCE);
+ 
+-	brp = (bt->tq) / (1000000000/PCH_CAN_CLK) - 1;
+-	canbit = brp & PCH_MSK_BITT_BRP;
++	canbit = (bt->brp - 1) & PCH_MSK_BITT_BRP;
+ 	canbit |= (bt->sjw - 1) << PCH_BIT_SJW_SHIFT;
+ 	canbit |= (bt->phase_seg1 + bt->prop_seg - 1) << PCH_BIT_TSEG1_SHIFT;
+ 	canbit |= (bt->phase_seg2 - 1) << PCH_BIT_TSEG2_SHIFT;
+-	bepe = (brp & PCH_MSK_BRPE_BRPE) >> PCH_BIT_BRPE_BRPE_SHIFT;
++	bepe = ((bt->brp - 1) & PCH_MSK_BRPE_BRPE) >> PCH_BIT_BRPE_BRPE_SHIFT;
+ 	iowrite32(canbit, &priv->regs->bitt);
+ 	iowrite32(bepe, &priv->regs->brpe);
+ 	pch_can_bit_clear(&priv->regs->cont, PCH_CTRL_CCE);
 -- 
-1.6.5.2
-
+1.6.0.6
