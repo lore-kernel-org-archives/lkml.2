@@ -1,180 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab0KZS4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 13:56:11 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:28751 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250Ab0KZS4I convert rfc822-to-8bit (ORCPT
+	id S1755598Ab0KZS4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 13:56:21 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58118 "HELO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755538Ab0KZS4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 13:56:08 -0500
-X-IronPort-AV: E=Sophos;i="4.59,262,1288594800"; 
-   d="scan'208";a="487545816"
-Subject: [GIT PULL] Please pull NFS client bugfixes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 26 Nov 2010 13:56:07 -0500
-Message-ID: <1290797767.4905.11.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 26 Nov 2010 18:56:08.0526 (UTC) FILETIME=[95F156E0:01CB8D9B]
+	Fri, 26 Nov 2010 13:56:18 -0500
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Michal Marek <mmarek@suse.cz>, Roman Zippel <zippel@linux-m68k.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] kbuild: fix interaction of CONFIG_IKCONFIG and KCONFIG_CONFIG
+Date: Fri, 26 Nov 2010 13:56:10 -0500
+Message-Id: <1290797770-22877-1-git-send-email-bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Change the use of .config in kernel/Makefile to $(KCONFIG_CONFIG).
 
-Please pull from the "bugfixes" branch of the repository at
+Currently, if you try to build a kernel with KCONFIG_CONFIG set (to a value
+not equal to .config) and the config file pointed to by KCONFIG_CONFIG sets
+CONFIG_IKCONFIG then the build will fail with:
 
-   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
+make[1]: *** No rule to make target `.config', needed by `kernel/config_data.gz'.  Stop.
 
-This will update the following files through the appended changesets.
+I think this has been present since the introduction of KCONFIG_CONFIG
+in 14cdd3c402bf7c66f0bcd76e290f0770a54a4b21.
 
-  Cheers,
-    Trond
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+CC: Roman Zippel <zippel@linux-m68k.org>
+CC: Michal Marek <mmarek@suse.cz>
 
-----
- fs/nfs/dir.c            |   62 +++++++++++++++++++++++++---------------------
- fs/nfs/direct.c         |    2 +-
- fs/nfs/internal.h       |    9 +++++++
- fs/nfs/nfs2xdr.c        |    4 ++-
- fs/nfs/nfs3xdr.c        |    4 ++-
- fs/nfs/nfs4xdr.c        |    6 ++++-
- include/linux/nfs_xdr.h |    1 +
- net/sunrpc/clnt.c       |   24 +++++++++++-------
- 8 files changed, 71 insertions(+), 41 deletions(-)
+---
+based on 698fd6a2c3ca05ec796072defb5c415289a86cdc of
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
 
-commit 0b26a0bf6ff398185546432420bb772bcfdf8d94
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 14:26:44 2010 -0500
+ kernel/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-    NFS: Ensure we return the dirent->d_type when it is known
-    
-    Store the dirent->d_type in the struct nfs_cache_array_entry so that we
-    can use it in getdents() calls.
-    
-    This fixes a regression with the new readdir code.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 3020093f578fb6c9acc6914dfd887a1ebd1db659
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 15:18:22 2010 -0500
-
-    NFS: Correct the array bound calculation in nfs_readdir_add_to_array
-    
-    It looks as if the array size calculation in MAX_READDIR_ARRAY does not
-    take the alignment of struct nfs_cache_array_entry into account.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit ece0b4233b6b915d1f63add2bd9f2733aec6317a
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 13:55:33 2010 -0500
-
-    NFS: Don't ignore errors from nfs_do_filldir()
-    
-    We should ignore the errors from the filldir callback, and just interpret
-    them as meaning we should exit, however we should definitely pass back
-    ENOMEM errors.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 85f8607e163f8d281fb407357279cb4ac6df12e6
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 13:24:49 2010 -0500
-
-    NFS: Fix the error handling in "uncached_readdir()"
-    
-    Currently, uncached_readdir() is broken because if fails to handle
-    the results from nfs_readdir_xdr_to_array() correctly.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 7a8e1dc34f52fd2927dbf7e520d7cd8eadc51336
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 13:24:46 2010 -0500
-
-    NFS: Fix a page leak in uncached_readdir()
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit e7c58e974a0318fcca5368e7b3570e10e9ae9028
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 13:22:24 2010 -0500
-
-    NFS: Fix a page leak in nfs_do_filldir()
-    
-    nfs_do_filldir() must always free desc->page when it is done, otherwise
-    we end up leaking the page.
-    
-    Also remove unused variable 'dentry'.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 5c346854d8ce6ca91931f8fc9177934257a667d0
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 12:43:45 2010 -0500
-
-    NFS: Assume eof if the server returns no readdir records
-    
-    Some servers are known to be buggy w.r.t. this. Deal with them...
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 463a376eae1c92a66c912af539bfd4bbefa37673
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 12:22:20 2010 -0500
-
-    NFS: Buffer overflow in ->decode_dirent() should not be fatal
-    
-    Overflowing the buffer in the readdir ->decode_dirent() should not lead to
-    a fatal error, but rather to an attempt to reread the record in question.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit b47d19de2c714020ba8f5545a6e7d4968f37eb45
-Author: Arun Bharadwaj <arun@linux.vnet.ibm.com>
-Date:   Thu Nov 18 10:36:43 2010 +0000
-
-    Pure nfs client performance using odirect.
-    
-    When an application opens a file with O_DIRECT flag, if the size of
-    the data that is written is equal to wsize, the client sends a
-    WRITE RPC with stable flag set to UNSTABLE followed by a single
-    COMMIT RPC rather than sending a single WRITE RPC with the stable
-    flag set to FILE_SYNC. This a bug.
-    
-    Patch to fix this.
-    
-    Signed-off-by: Arun R Bharadwaj <arun@linux.vnet.ibm.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 5fc43978a79e8021c189660ab63249fd29c5fb32
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Nov 20 11:13:31 2010 -0500
-
-    SUNRPC: Fix an infinite loop in call_refresh/call_refreshresult
-    
-    If the rpcauth_refreshcred() call returns an error other than
-    EACCES, ENOMEM or ETIMEDOUT, we currently end up looping forever
-    between call_refresh and call_refreshresult.
-    
-    The correct thing to do here is to exit on all errors except
-    EAGAIN and ETIMEDOUT, for which case we retry 3 times, then
-    return EACCES.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0b5ff08..33e0a39 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -121,7 +121,7 @@ $(obj)/configs.o: $(obj)/config_data.h
+ # config_data.h contains the same information as ikconfig.h but gzipped.
+ # Info from config_data can be extracted from /proc/config*
+ targets += config_data.gz
+-$(obj)/config_data.gz: .config FORCE
++$(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
+ 	$(call if_changed,gzip)
+ 
+ quiet_cmd_ikconfiggz = IKCFG   $@
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.0.4
 
