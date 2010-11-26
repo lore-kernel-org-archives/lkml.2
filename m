@@ -1,57 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab0KZNtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:49:07 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44548 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752479Ab0KZNtF (ORCPT
+	id S1755195Ab0KZNun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:50:43 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46093 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab0KZNum convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:49:05 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAB9K70xLd/sX/2dsb2JhbAAHg0nQP5AvgSGDM3MEhFyLGQ
-X-IronPort-AV: E=Sophos;i="4.59,261,1288584000"; 
-   d="scan'208";a="83752662"
-Message-ID: <4CEFBACD.6040603@teksavvy.com>
-Date: Fri, 26 Nov 2010 08:49:01 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Fri, 26 Nov 2010 08:50:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Uh1io6AERjc+KMG9/7wWqM7GwV6y2nQN9Ue008AJ48jguMAwJtdNN73rzvKoN98k/B
+         uwBoJivSYBYY9kdqJ4Q8DOefndg9CA87cO/gRhqoSb5wQpOl+seaFkEAyNb9VqiQWODF
+         GvXQflq8eFAV7FUVoTrVJSaY8oOXk10D65AF4=
 MIME-Version: 1.0
-To: Greg Freemyer <greg.freemyer@gmail.com>
-CC: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com> <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com> <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com> <20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com> <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com> <4CEE7884.5010007@teksavvy.com> <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com>
-In-Reply-To: <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTikG9swqOxF2GwhvKY__Lbgt1+GgRfra-+DrBsk0@mail.gmail.com>
+References: <20101123224601.766827604@openvz.org>
+	<20101123224800.294919307@openvz.org>
+	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
+	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
+	<AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
+	<AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
+	<AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com>
+	<AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com>
+	<AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com>
+	<AANLkTikG9swqOxF2GwhvKY__Lbgt1+GgRfra-+DrBsk0@mail.gmail.com>
+Date: Fri, 26 Nov 2010 16:50:40 +0300
+X-Google-Sender-Auth: R3PjNost-E0XpppVViOKumkX-Og
+Message-ID: <AANLkTi=jLNwKOqUKay9c9aLVd_7do5n1iCYEUkOfS7G+@mail.gmail.com>
+Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, peterz@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-25 11:24 AM, Greg Freemyer wrote:
+On Fri, Nov 26, 2010 at 4:10 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Fri, Nov 26, 2010 at 2:04 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>> On Fri, Nov 26, 2010 at 12:58 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>> wrote:
+>>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>>>> On Fri, Nov 26, 2010 at 12:32 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>>>> wrote:
+>>>>>> On Fri, Nov 26, 2010 at 2:14 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>>>>> wrote:
+>>>>>>> Stephane, this is a misprint, I'll update this comments on format
+>>>>>>> (giod catch btw!). in real low 32 bits are considered as cccr in ht
+>>>>>>> mode. wait a bit, i'll post update.
+>>>>>>>
+>>>>>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>>>>> ...
+>>>>>>>>> + *    Low 32 bits
+>>>>>>>>> + *    -----------
+>>>>>>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>>>>>>> + *     7-11:                    reserved
+>>>>>>>>> + *       12: Active thread
+>>>>>>>>
+>>>>>>>> I don't understand bit 12. In the actual register, it
+>>>>>>>> corresponds to the enable bit. Seems you're overriding
+>>>>>>>> its usage. Do I interpret this as saying: 0 = enable when
+>>>>>>>> running on thread0, 1=monitoring when running on thread1?
+>>>>>>>> And if I don't care?
+>>>>>> ...
+>>>>>> I believe it simply escaped quilt refresh somehow. Here is the
+>>>>>> 'refreshed'
+>>>>>> copy (note the low bits 12-19 updated here).
+>>>>>> ---
+>>>>>> perf, x86: P4 PMU - describe config format v2
+>>>>>>
+>>>>>> Add description of .config in a sake of RAW events.
+>>>>>> At least this should bring some light to those who
+>>>>>> will be reading this code.
+>>>>>>
+>>>>>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>>>>>> CC: Lin Ming <ming.m.lin@intel.com>
+>>>>>> CC: Stephane Eranian <eranian@google.com>
+>>>>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>>>>> ---
+>>>>>>  arch/x86/include/asm/perf_event_p4.h |   63
+>>>>>> ++++++++++++++++++++++++++++++-----
+>>>>>>  1 file changed, 55 insertions(+), 8 deletions(-)
+>>>>>>
+>>>>>> Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>>>>>> ===================================================================
+>>>>>> --- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
+>>>>>> +++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>>>>>> @@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
+>>>>>>  };
+>>>>>>
+>>>>>>  /*
+>>>>>> - * P4 PEBS specifics (Replay Event only)
+>>>>>> - *
+>>>>>> - * Format (bits):
+>>>>>> - *   0-6: metric from P4_PEBS_METRIC enum
+>>>>>> - *    7 : reserved
+>>>>>> - *    8 : reserved
+>>>>>> - * 9-11 : reserved
+>>>>>> - *
+>>>>>>  * Note we have UOP and PEBS bits reserved for now
+>>>>>>  * just in case if we will need them once
+>>>>>>  */
+>>>>>> @@ -788,5 +780,60 @@ enum P4_PEBS_METRIC {
+>>>>>>        P4_PEBS_METRIC__max
+>>>>>>  };
+>>>>>>
+>>>>>> +/*
+>>>>>> + * Notes on internal configuration of ESCR+CCCR tuples
+>>>>>> + *
+>>>>>> + * Since P4 has quite the different architecture of
+>>>>>> + * performance registers in compare with "architectural"
+>>>>>> + * once and we have on 64 bits to keep configuration
+>>>>>> + * of performance event, the following trick is used.
+>>>>>> + *
+>>>>>> + * 1) Since both ESCR and CCCR registers have only low
+>>>>>> + *    32 bits valuable, we pack them into a single 64 bit
+>>>>>> + *    configuration. Low 32 bits of such config correspond
+>>>>>> + *    to low 32 bits of CCCR register and high 32 bits
+>>>>>> + *    correspond to low 32 bits of ESCR register.
+>>>>>> + *
+>>>>>> + * 2) The meaning of every bit of such config field can
+>>>>>> + *    be found in Intel SDM but it should be noted that
+>>>>>> + *    we "borrow" some reserved bits for own usage and
+>>>>>> + *    clean them or set to a proper value when we do
+>>>>>> + *    a real write to hardware registers.
+>>>>>> + *
+>>>>>> + * 3) The format of bits of config is the following
+>>>>>> + *    and should be either 0 or set to some predefined
+>>>>>> + *    values:
+>>>>>> + *
+>>>>>> + *    Low 32 bits
+>>>>>> + *    -----------
+>>>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>>>> + *     7-11:                    reserved
+>>>>>> + *       12:                    reserved (Enable)
+>>>>>> + *    13-15:                    reserved (ESCR select)
+>>>>>> + *    16-17: Active Thread
+>>>>>
+>>>>> HW has the active thread bits reserved to 0x3.
+>>>>> what about you? If not, then explain what they
+>>>>> mean.
+>>>>>
+>>>> hm, not sure i follow, hw allows you to pass any of 4 values for that
+>>>> field, so i simply pass it to kernel and then propagate to real cccr
+>>>> register. if machine is not ht capable it might be a problem, but i
+>>>> left it to a caller to set proper thread value here. i believe that
+>>>> you read cccr spec for non-ht machine while ht machine has a bit more
+>>>> flags to set.
+>>>>
+>>> You're right, I missed Figure-30.29. So you honor the field. The counter
+>>> won't count anything if the task is not running on the corresponding
+>>> HT thread, then.
+>>
+>> no ;) p4 treat this field in different meaning in compare to others
+>> perf archs. the condition is not 'where' but 'when'. ie you can
+>> specify 'when' to run counter: if none therad is active, single any
+>> thread is active, both threads are active and finally any thread is
+>> active (which is exactly 0b11 in single thread machine). i know it's
+>> weird ;)
+>>
+> That is weird indeed.
 >
-> I'm away from my systems today, but is there an easy way to tweak
-> wiper.sh or hdparm to cause only a single range per trim command.
->
-> I'm curious if for the Sandforce that would still be in the 90 second
-> range, or closer to 64x that.
+> I can see this being somewhat useful in per-cpu mode. But this is
+> weird in per-thread mode. That means you will count in your thread
+> (OS and HW) only when the other HW thread runs. I am wondering
+> about the security implications of this. I suspect you'd have to
+> disallow this mode in per-thread mode.
 
-Good question.  The Indilinx based drives would be in the 64x range,
-no doubt there.  But I don't know about the Sandforce.
-
-And I don't think I'm willing to inflict so many life-shortening erase
-cycles onto it just to find out.
-
-One thing to note:  the execution time for TRIM does vary depending upon
-whether the (logical) LBAs are already mostly in a "trimmed" state or not.
-
-So anyone aspiring to benchmark this stuff will need to keep that in mind.
-My timings above were for "already trimmed" cases.  I would expect them
-to be much slower (2x - 3x) if the sectors all held data prior to trim.
-
-Cheers
+No, single thread mode means _any_ single thread is running,
+Stephane I'll describe some more a bit later (as only reach home),
+ok?
