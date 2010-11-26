@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab0KZAHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 19:07:10 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52473 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab0KZAHI (ORCPT
+	id S1752859Ab0KZA2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 19:28:45 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:41657 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab0KZA2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 19:07:08 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: Free memory never fully used, swapping
-Cc: kosaki.motohiro@jp.fujitsu.com, Simon Kirby <sim@hostway.ca>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <20101125180959.F462.A69D9226@jp.fujitsu.com>
-References: <20101125090328.GB14180@hostway.ca> <20101125180959.F462.A69D9226@jp.fujitsu.com>
-Message-Id: <20101126090656.B6C7.A69D9226@jp.fujitsu.com>
+	Thu, 25 Nov 2010 19:28:45 -0500
+Date: Thu, 25 Nov 2010 19:28:40 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Kyle McMartin <kyle@mcmartin.ca>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/1] TTY: don't allow reopen when ldisc is changing
+Message-ID: <20101126002840.GL22651@bombadil.infradead.org>
+References: <4CEE93FF.3040507@suse.cz>
+ <1290705383-6608-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 26 Nov 2010 09:07:03 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290705383-6608-1-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH] vmscan: don't rewakeup kswapd if zone memory was exhaust
-> 
-> ---
->  mm/vmscan.c |   18 +++++++++++-------
->  1 files changed, 11 insertions(+), 7 deletions(-)
+On Thu, Nov 25, 2010 at 06:16:23PM +0100, Jiri Slaby wrote:
+> -	if (test_bit(TTY_CLOSING, &tty->flags))
+> +	if (test_bit(TTY_CLOSING, &tty->flags) ||
+> +			test_bit(TTY_LDISC_CHANGING, &tty->flags))
+>  		return -EIO;
+>  
+>  	if (driver->type == TTY_DRIVER_TYPE_PTY &&
 
-Ugh, this is buggy. please ignore. 
+Unfortunately, users report this doesn't seem to fix things for them
+(built against 2.6.36 (plus another patch you wrote iirc.))
 
-sorry.
+https://bugzilla.redhat.com/show_bug.cgi?id=630464#c27
 
+I tried reverting the TTY patches between 2.6.36 and 2.6.35 and getting
+them to test that, and it seems ok:
 
+https://bugzilla.redhat.com/show_bug.cgi?id=630464#c30
 
+So I guess there must be a race here somewhere... I'll keep looking. :/
+
+I would imagine it's something that's probably existed since the dawn of
+time but the BKL has just papered over entirely.
+
+Thanks for trying!
+  --Kyle
