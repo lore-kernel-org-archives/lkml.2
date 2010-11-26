@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0KZRbz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:31:55 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:55741 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab0KZRby convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:31:54 -0500
-Date: Fri, 26 Nov 2010 18:31:44 +0100
-From: mat <castet.matthieu@free.fr>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX protection
- for kernel data)
-Message-ID: <20101126183144.300a71a4@mat-laptop>
-In-Reply-To: <20101123235527.54293b59@mat-laptop>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
-	<1290431008.2072.119.camel@laptop>
-	<1290443379.4cea9a73cd9ce@imp.free.fr>
-	<1290443758.2072.318.camel@laptop>
-	<20101122164247.GC21836@basil.fritz.box>
-	<20101123235527.54293b59@mat-laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755235Ab0KZRi0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:38:26 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:43855 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753594Ab0KZRiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 12:38:24 -0500
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX18p0iB4kMcpNkxCGGitomo692LWkFP2TSKxTwFyft
+	MRWnySN88QDaD7
+Date: Fri, 26 Nov 2010 18:38:23 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+cc: kernel-janitors@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Magnus Damm <damm@opensource.se>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sh: boards: mach-se: use IS_ERR() instead of NULL check
+In-Reply-To: <1290791190-21358-1-git-send-email-segoon@openwall.com>
+Message-ID: <Pine.LNX.4.64.1011261835500.16655@axis700.grange>
+References: <1290791190-21358-1-git-send-email-segoon@openwall.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Tue, 23 Nov 2010 23:55:27 +0100,
-mat <castet.matthieu@free.fr> a écrit :
+On Fri, 26 Nov 2010, Vasiliy Kulikov wrote:
 
-> Le Mon, 22 Nov 2010 17:42:47 +0100,
-> Andi Kleen <andi@firstfloor.org> a écrit :
+> clk_get() returns ERR_PTR() on error, not NULL.
 > 
-> > > That seems to be a S3 specific code path, that won't fix anything.
-> > > Simply do:
-> > > 
-> > > echo 0 > /sys/devices/system/cpu/cpu1/online;
-> > > echo 1 > /sys/devices/system/cpu/cpu1/online;
-> > > 
-> > > and your machine will explode..
-> > 
-> > The SMP startup trampoline is copied I believe
-> > and only executed in real mode without page tables.
-> > 
-> > So it's perhaps not the trampoline, but the early startup 
-> > code that ends up being broken.
-> yes :
-> acpi wakeup code and smp trampoline are copied in low memory (first
-> 1MB).
-> 
-> So they can't end up int the kernel data mapping ?
-> 
-> So it should something else.
-> 
-> I will try to investigate on this.
-> 
-Unfortunately on my laptop supporting NX, suspend to ram seems broken
-(even without this patch) and I got only one core, so I am unable to
-test it.
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-Does cpu suspend/resume is broken ? Or it is only S3 ?
+Yep, there are, probably, a couple more of these, similar to
 
-If yes, are there any interesting trace if we suspend only one core with
-sysfs.
+http://marc.info/?t=128715350900002&r=1&w=2
 
-Thanks,
+Hardly required, but if you like:
 
-Matthieu
+Reviewed-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+Thanks
+Guennadi
+
+> ---
+>  Cannot compile this driver, so it is not tested at all.
+> 
+>  arch/sh/boards/mach-se/7724/setup.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/sh/boards/mach-se/7724/setup.c b/arch/sh/boards/mach-se/7724/setup.c
+> index c31d228..6735305 100644
+> --- a/arch/sh/boards/mach-se/7724/setup.c
+> +++ b/arch/sh/boards/mach-se/7724/setup.c
+> @@ -871,14 +871,14 @@ static int __init devices_setup(void)
+>  
+>  	/* set SPU2 clock to 83.4 MHz */
+>  	clk = clk_get(NULL, "spu_clk");
+> -	if (clk) {
+> +	if (!IS_ERR(clk)) {
+>  		clk_set_rate(clk, clk_round_rate(clk, 83333333));
+>  		clk_put(clk);
+>  	}
+>  
+>  	/* change parent of FSI A */
+>  	clk = clk_get(NULL, "fsia_clk");
+> -	if (clk) {
+> +	if (!IS_ERR(clk)) {
+>  		clk_register(&fsimcka_clk);
+>  		clk_set_parent(clk, &fsimcka_clk);
+>  		clk_set_rate(clk, 11000);
+> -- 
+> 1.7.0.4
+> 
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
