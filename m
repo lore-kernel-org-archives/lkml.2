@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab0KZPCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:02:19 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40190 "EHLO hera.kernel.org"
+	id S1755551Ab0KZPCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:02:42 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40239 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054Ab0KZPCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:02:16 -0500
-Date: Fri, 26 Nov 2010 15:01:44 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1755530Ab0KZPCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:02:40 -0500
+Date: Fri, 26 Nov 2010 15:02:06 GMT
+From: tip-bot for Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20101126124247.GC7023@osiris.boeblingen.de.ibm.com>
+References: <20101126124247.GC7023@osiris.boeblingen.de.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix the software context switch counter
-Message-ID: <tip-ee6dcfa40a50fe12a3ae0fb4d2653c66c3ed6556@git.kernel.org>
-Git-Commit-ID: ee6dcfa40a50fe12a3ae0fb4d2653c66c3ed6556
+Subject: [tip:sched/urgent] printk: Fix wake_up_klogd() vs cpu hotplug
+Message-ID: <tip-49f4138346b3cec2706adff02658fe27ceb1e46f@git.kernel.org>
+Git-Commit-ID: 49f4138346b3cec2706adff02658fe27ceb1e46f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:01:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:02:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ee6dcfa40a50fe12a3ae0fb4d2653c66c3ed6556
-Gitweb:     http://git.kernel.org/tip/ee6dcfa40a50fe12a3ae0fb4d2653c66c3ed6556
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 26 Nov 2010 13:49:04 +0100
+Commit-ID:  49f4138346b3cec2706adff02658fe27ceb1e46f
+Gitweb:     http://git.kernel.org/tip/49f4138346b3cec2706adff02658fe27ceb1e46f
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Fri, 26 Nov 2010 13:42:47 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 26 Nov 2010 15:00:59 +0100
+CommitDate: Fri, 26 Nov 2010 15:03:11 +0100
 
-perf: Fix the software context switch counter
+printk: Fix wake_up_klogd() vs cpu hotplug
 
-Stephane noticed that because the perf_sw_event() call is inside the
-perf_event_task_sched_out() call it won't get called unless we
-have a per-task counter.
+wake_up_klogd() may get called from preemptible context but uses
+__raw_get_cpu_var() to write to a per cpu variable. If it gets preempted
+between getting the address and writing to it, the cpu in question could be
+offline if the process gets scheduled back and hence writes to the per cpu data
+of an offline cpu.
 
-Reported-by: Stephane Eranian <eranian@google.com>
+This buggy behaviour was introduced with fa33507a "printk: robustify
+printk, fix #2" which was supposed to fix a "using smp_processor_id() in
+preemptible" warning.
+
+Let's use this_cpu_write() instead which disables preemption and makes sure
+that the outlined scenario cannot happen.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
+LKML-Reference: <20101126124247.GC7023@osiris.boeblingen.de.ibm.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |   29 +++++++++++++++--------------
- kernel/perf_event.c        |    2 --
- 2 files changed, 15 insertions(+), 16 deletions(-)
+ kernel/printk.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 142e3d6..de2c417 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -909,20 +909,6 @@ extern int perf_num_counters(void);
- extern const char *perf_pmu_name(void);
- extern void __perf_event_task_sched_in(struct task_struct *task);
- extern void __perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
--
--extern atomic_t perf_task_events;
--
--static inline void perf_event_task_sched_in(struct task_struct *task)
--{
--	COND_STMT(&perf_task_events, __perf_event_task_sched_in(task));
--}
--
--static inline
--void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
--{
--	COND_STMT(&perf_task_events, __perf_event_task_sched_out(task, next));
--}
--
- extern int perf_event_init_task(struct task_struct *child);
- extern void perf_event_exit_task(struct task_struct *child);
- extern void perf_event_free_task(struct task_struct *task);
-@@ -1031,6 +1017,21 @@ have_event:
- 	__perf_sw_event(event_id, nr, nmi, regs, addr);
- }
- 
-+extern atomic_t perf_task_events;
-+
-+static inline void perf_event_task_sched_in(struct task_struct *task)
-+{
-+	COND_STMT(&perf_task_events, __perf_event_task_sched_in(task));
-+}
-+
-+static inline
-+void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
-+{
-+	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
-+
-+	COND_STMT(&perf_task_events, __perf_event_task_sched_out(task, next));
-+}
-+
- extern void perf_event_mmap(struct vm_area_struct *vma);
- extern struct perf_guest_info_callbacks *perf_guest_cbs;
- extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index f365dd8..eac7e33 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1287,8 +1287,6 @@ void __perf_event_task_sched_out(struct task_struct *task,
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 9a2264f..cf7588e 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1088,7 +1088,7 @@ int printk_needs_cpu(int cpu)
+ void wake_up_klogd(void)
  {
- 	int ctxn;
- 
--	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
--
- 	for_each_task_context_nr(ctxn)
- 		perf_event_context_sched_out(task, ctxn, next);
+ 	if (waitqueue_active(&log_wait))
+-		__raw_get_cpu_var(printk_pending) = 1;
++		this_cpu_write(printk_pending, 1);
  }
+ 
+ /**
