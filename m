@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab0KZKK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:10:28 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59119 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753839Ab0KZKK0 (ORCPT
+	id S1754494Ab0KZKL7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:11:59 -0500
+Received: from mx2.sophos.com ([195.166.81.53]:60261 "EHLO mx2.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754250Ab0KZKL5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 05:10:26 -0500
-Date: Fri, 26 Nov 2010 10:09:15 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: microcai@fedoraproject.org
-Cc: linux-console@vger.kernel.org, linux-kernel@vger.kernel.org,
-        brad@neruo.com
-Subject: Re: [PATCH 1/2] Kernel fbcon UNICODE font support
-Message-ID: <20101126100915.66112ee7@lxorguk.ukuu.org.uk>
-In-Reply-To: <1290765760.6087.3.camel@cai.gentoo>
-References: <1290765760.6087.3.camel@cai.gentoo>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Nov 2010 05:11:57 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
+Date: Fri, 26 Nov 2010 10:11:54 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3; KDE/4.5.3; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>, Scott Hassan <hassan@dotfunk.com>,
+        Jan Kara <jack@suse.cz>, "agruen@linbit.com" <agruen@linbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+References: <20101122002747.13674.69384.stgit@zaytsev.su> <20101122003357.13674.30341.stgit@zaytsev.su>
+In-Reply-To: <20101122003357.13674.30341.stgit@zaytsev.su>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201011261011.55266.tvrtko.ursulin@sophos.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  I know there are most people speaking only English, and never meet
-> non-ASCII characters on console. But, hey , what about others ?
+On Monday 22 Nov 2010 00:37:21 Alexey Zaytsev wrote:
+> +struct fanotify_opt_hdr {
+> +       __u8 type;
+> +       __u8 reserved;
+> +       __u16 len;
+> +       /* Payload goes here. */
+> +};
+> +
+> +#define FANOTIFY_METADATA_VERSION      3
+>
+>  struct fanotify_event_metadata {
+> -       __u16 event_len;
+> +       __u16 event_len; /* Including the options */
+>         __u8 vers;
+> -       __u8 reserved;
+> +       __u8 options_offset; /* Aka header length */
+>         __s32 fd;
+>         __aligned_u64 mask;
+>         __s32 pid;
+> +       /* Options go here. */
+>  };
 
-Like the people who have never met Indic languages or half-space using
-languages, or Arabic or right to left/left to right mixed or ...
+I am not 100% comfortable with having 16 bits length fields because I am just
+not sure there is a measurable performance difference versus just going with
+32 bits.
 
->  So, here is the solution: Making framebuffer console handle UNICODE font in
-> kernel.
+Also, options_offset is, if I understood it correctly, basically the lenght of
+fanotify_event_metadata. As such, isn't that field redundant since the lenght
+is implied from the protocol version?
 
-It isn't really a solution - the rendering rules for Unicode are extremely
-complex, this is why things like Pango exist to do it in user space.
+For which it follows that maybe no changes to fanotify_event_metadata are
+needed to grow the protocol in the future. We have the version and total
+lenght. All that is required is that we never change width and position of
+version and lenght field and we should be fine. Later we can define option
+structures each of which will "point" to the next and thats it, no?
 
-Alan
+Tvrtko
+
+Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 991 2418 08.
