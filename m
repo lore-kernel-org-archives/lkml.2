@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab0KZKRD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:17:03 -0500
-Received: from mail-iw0-f194.google.com ([209.85.214.194]:36891 "EHLO
-	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab0KZKRB convert rfc822-to-8bit (ORCPT
+	id S1754544Ab0KZKUS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:20:18 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:61547 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754358Ab0KZKUR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 05:17:01 -0500
+	Fri, 26 Nov 2010 05:20:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Y3WBQKf8hTIke3enHOihnUMB4Dmzedh3qoCX2zQyst3EwotWfAGfuM3GKE3WbrWEra
+         TN33sC3ZFAOP2T1BXT1ttYamnJDmTw0S5G8Vk4vOAB4XFsgKRwJ7VCfJaEmoRwILbgyB
+         MxdIUuMcX3nFWVIq0EIzbcXYQAMi7IVhYlWCA=
 MIME-Version: 1.0
-X-Originating-IP: [93.172.224.233]
-In-Reply-To: <20101126091832.GE9310@n2100.arm.linux.org.uk>
-References: <1290526740-27624-1-git-send-email-ohad@wizery.com>
- <1290526740-27624-2-git-send-email-ohad@wizery.com> <20101126045912.GC6598@lixom.net>
- <AANLkTin5Tfcuy0WcHJ22rWC8niwZCj8SZAMKLz0p9jwc@mail.gmail.com> <20101126091832.GE9310@n2100.arm.linux.org.uk>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 26 Nov 2010 12:16:39 +0200
-Message-ID: <AANLkTimS-cSi1B5LdtwhJWhKDuFKOYG1j_p-iQiH=zRe@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kevin Hilman <khilman@deeprootsystems.com>, akpm@linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20101126100915.66112ee7@lxorguk.ukuu.org.uk>
+References: <1290765760.6087.3.camel@cai.gentoo> <20101126100915.66112ee7@lxorguk.ukuu.org.uk>
+From: microcai <microcai@fedoraproject.org>
+Date: Fri, 26 Nov 2010 18:19:55 +0800
+X-Google-Sender-Auth: dLTGQXLWuOhKe5cHjf66FEc-9Kc
+Message-ID: <AANLkTi=gUrUZv=3=tEhyjtWfwhADLU5heo7+DYTQboQv@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Kernel fbcon UNICODE font support
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-console@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 11:18 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Nov 26, 2010 at 10:53:10AM +0200, Ohad Ben-Cohen wrote:
->> >> +int __hwspin_trylock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
->> >> +{
->> >> +     int ret;
->> >> +
->> >> +     if (unlikely(!hwlock)) {
->> >> +             pr_err("invalid hwlock\n");
->> >
->> > These kind of errors can get very spammy for buggy drivers.
->>
->> Yeah, but that's the purpose - I want to catch such egregious drivers
->> who try to crash the kernel.
+2010/11/26 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+>> Â I know there are most people speaking only English, and never meet
+>> non-ASCII characters on console. But, hey , what about others ?
 >
-> That can be better - because you get a backtrace, and it causes people
-> to report the problem rather than just ignore it.  It may also prevent
-> the driver author releasing his code (as it won't work on their
-> initial testing.)
+> Like the people who have never met Indic languages or half-space using
+> languages, or Arabic or right to left/left to right mixed or ...
 >
-...
+>> Â So, here is the solution: Making framebuffer console handle UNICODE font in
+>> kernel.
 >
-> If it's "extremely buggy behaviour" then the drivers deserve to crash.
-> Such stuff should cause them not to get out the door.  A simple printk
-> with an error return can just be ignored.
+> It isn't really a solution - the rendering rules for Unicode are extremely
+> complex, this is why things like Pango exist to do it in user space.
+>
+> Alan
+>
 
-I like this approach too, but recently we had a few privilege
-escalation exploits which involved NULL dereference kernel bugs
-(process context mapped address 0 despite a positive mmap_min_addr).
-
-Since we can't rely on the oops to always happen, I decided not to
-omit the NULL checks.
-
->
+Hey,  just support very basic rendering. that should fix most situations.
+If ascii fits 90% situations, then this UNICODE support should fit 99%
+situations. It don't make console display urgly glyph. Users who want
+more complex  can simply choose gnome-terminal or konsole or blablalba
+....
+This maks it possible to quickly view an UTF-8 text without boring X.
