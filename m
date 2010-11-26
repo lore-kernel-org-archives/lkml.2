@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0KZTFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 14:05:13 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46274 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab0KZTFL (ORCPT
+	id S1755550Ab0KZTUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 14:20:37 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60122 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab0KZTUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 14:05:11 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <norsk5@yahoo.com>
-Cc: <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 02/16] amd64_edac: Use cached extended CPU model
-Date: Fri, 26 Nov 2010 20:04:09 +0100
-Message-Id: <1290798263-13074-3-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.3.1.50.g1e633
-In-Reply-To: <1290798263-13074-1-git-send-email-bp@amd64.org>
-References: <1290798263-13074-1-git-send-email-bp@amd64.org>
+	Fri, 26 Nov 2010 14:20:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=VQeitJtTGH/16MTgFzc6qWWAe/g/iwsRbSVRpWgCbL3/FpFW7zlYqnAuc42IAhu6nq
+         PFIbXx2+su85JEsTglO9WI+etNvNfbF0qgTCXozcyCw2PYxjI/QaTfFdj2C8c+rpjj/7
+         FAcKBlcPgTBCC9G2ivb7VFdOBCUG+kS/YL6Ek=
+From: Francis Moreau <francis.moro@gmail.com>
+To: mingo@redhat.com
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
+In-Reply-To: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
+	(tip-bot for Peter Zijlstra's message of "Fri, 26 Nov 2010 15:04:56
+	GMT")
+References: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Date: Fri, 26 Nov 2010 20:20:29 +0100
+Message-ID: <m2r5e7dh8i.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Peter,
 
-... instead of computing it needlessly again.
+tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+>
+> perf: Ignore non-sampling overflows
+>
+> Some arch implementations call perf_event_overflow() by 'accident',
+> ignore this.
+>
+> Reported-by: Francis Moreau <francis.moro@gmail.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> LKML-Reference: <new-submission>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  kernel/perf_event.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 98c5549..af1e63f 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4240,6 +4240,13 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
+>  	struct hw_perf_event *hwc = &event->hw;
+>  	int ret = 0;
+>  
+> +	/*
+> +	 * Non-sampling counters might still use the PMI to fold short
+> +	 * hardware counters, ignore those.
+> +	 */
+> +	if (unlikely(!is_sampling_event(event)))
+> +		return 0;
+> +
+>  	if (!throttle) {
+>  		hwc->interrupts++;
+>  	} else {
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/edac/amd64_edac.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Couldn't we place this in perf_event_overflow() instead, like the
+following ?
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index b7bde66..7f3609d 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1046,13 +1046,12 @@ static int k8_early_channel_count(struct amd64_pvt *pvt)
- 	if (err)
- 		return err;
+--8<---------------cut here---------------start------------->8---
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index df27fd8..1dabb54 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4267,7 +4267,9 @@ int perf_event_overflow(struct perf_event *event,
+int nmi,
+                  struct perf_sample_data *data,
+                                            struct pt_regs *regs)
+ {
+-       return __perf_event_overflow(event, nmi, 1, data, regs);
++       if (is_sampling_event(event))
++          return __perf_event_overflow(event, nmi, 1, data, regs);
++          return 0;
+ }
  
--	if ((boot_cpu_data.x86_model >> 4) >= K8_REV_F) {
-+	if (pvt->ext_model >= K8_REV_F)
- 		/* RevF (NPT) and later */
- 		flag = pvt->dclr0 & F10_WIDTH_128;
--	} else {
-+	else
- 		/* RevE and earlier */
- 		flag = pvt->dclr0 & REVE_WIDTH_128;
--	}
- 
- 	/* not used */
- 	pvt->dclr1 = 0;
+ /*
+
+--8<---------------cut here---------------end--------------->8---
+
+thanks,
 -- 
-1.7.3.1.50.g1e633
-
+Francis
