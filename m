@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab0KZRIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:08:07 -0500
-Received: from hera.kernel.org ([140.211.167.34]:48846 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab0KZRIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:08:05 -0500
-Message-ID: <4CEFE958.2020606@kernel.org>
-Date: Fri, 26 Nov 2010 18:07:36 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
+	id S1755309Ab0KZRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:11:27 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:42564 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753724Ab0KZRL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 12:11:26 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: zhDGfpkVM1mIk.sXC7Xcc7NzoXQDRJvRFPt7iZptGzK6KZe
+ BstNIbPSsRKtbp7GaWIMh7HJcv.gZTKpJDaYh0LnmZNDH6pLMHGyJd7kOi6S
+ _gl0SAm0_x7h51CYEeZnGLaWyMz.0_6kV.SRxgnpGX6uts0YAFvuWX2dPAjo
+ yfjMnvTCQBI68Xrg2Ku6G91yU0ke8uPqurEKH9.gvfO3HWln3WdH3QjmBSLc
+ L31vkFHMYIoDNFyXbO3i89_IX82jLzSkjmXt8E7I-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 26 Nov 2010 11:11:22 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
 To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [thiscpuops upgrade 08/10] percpu: generic this_cpu_cmpxchg()
- and this_cpu_cmpxchg_double support
-References: <20101123235139.908255844@linux.com>	 <20101123235200.582485207@linux.com>  <4CEFE583.8070103@kernel.org>	 <1290790569.2855.254.camel@edumazet-laptop>  <4CEFE71F.5090303@kernel.org> <1290790887.2855.260.camel@edumazet-laptop>
-In-Reply-To: <1290790887.2855.260.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 17:07:38 +0000 (UTC)
+cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+Subject: Re: [PATCH] printk: use this_cpu_{read|write} api on
+ printk_pending
+In-Reply-To: <1290790791.2855.259.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1011261109500.13524@router.home>
+References: <20101126120235.406766476@de.ibm.com>  <tip-61ab25447ad6334a74e32f60efb135a3467223f8@git.kernel.org>  <1290788536.2855.237.camel@edumazet-laptop>  <alpine.DEB.2.00.1011261038360.13524@router.home> <1290790791.2855.259.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2010 06:01 PM, Eric Dumazet wrote:
->> What I'm afraid of is generic code switching to use it in very hot
->> paths when a lot of archs can't actually do it leading to performance
->> regressions.  Is this something which is available on most archs?
->>
-> 
-> I would say cmpxchg() has the same problem, some arches dont have a
-> native instruction, yet we use it in some paths.
+On Fri, 26 Nov 2010, Eric Dumazet wrote:
 
-Yeah, well, there's difference between some not having it and only
-x86_64 having it.  cmpxchg was already rather well received when it
-was added even though it wasn't available on all archs.  I'm not
-against it but think we should use some caution here and think about
-the impact of unoptimized cases which can be pretty common (preemption
-toggling isn't too expensive but irq toggling can be quite).
+> I guess you read the changelog too fast ;)
 
-Thanks.
+No I only read the code.... ;-)
 
--- 
-tejun
+> I posted this patch after noticing printk_needs_cpu() was always used
+> for the current cpu.
+
+Ok.
+
+> We have other functions around, that always work for the current cpu.
+
+Ok.
+
+> We pass cpu as a parameter, mostly because smp_processor_id() was a bit
+> expensive in old kernels, and is still expensive because of sanity
+> tests.
+
+I thought sanity tests do not apply for performance testing scenarios?
+
+smp_processor_id() is usually a simple per cpu data access and very fast.
+
