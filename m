@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab0KZQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 11:59:35 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59705 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751627Ab0KZQ7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 11:59:34 -0500
-Message-ID: <4CEFE71F.5090303@kernel.org>
-Date: Fri, 26 Nov 2010 17:58:07 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [thiscpuops upgrade 08/10] percpu: generic this_cpu_cmpxchg()
- and this_cpu_cmpxchg_double support
-References: <20101123235139.908255844@linux.com>	 <20101123235200.582485207@linux.com>  <4CEFE583.8070103@kernel.org> <1290790569.2855.254.camel@edumazet-laptop>
-In-Reply-To: <1290790569.2855.254.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+	id S1755290Ab0KZQ75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 11:59:57 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61338 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab0KZQ74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 11:59:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=xxOhejYymoVorHDXn/gghLVYWXMGMiEoSYO+PBp3xFNhRSLkcAX4rB3diImQR0nxWP
+         jqa9olQLQvMniOAulu+RVuX9cvmhdremyujYyWy74eFhccbqRthAIBS63JYEdqvzqIqf
+         80dfwiX4Vo1Xvw5a/kaO5Zk+4xvn1EpFlCWuo=
+Subject: Re: [PATCH] printk: use this_cpu_{read|write} api on printk_pending
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1011261038360.13524@router.home>
+References: <20101126120235.406766476@de.ibm.com>
+	 <tip-61ab25447ad6334a74e32f60efb135a3467223f8@git.kernel.org>
+	 <1290788536.2855.237.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1011261038360.13524@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 17:59:51 +0100
+Message-ID: <1290790791.2855.259.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 16:58:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2010 05:56 PM, Eric Dumazet wrote:
-> Le vendredi 26 novembre 2010 à 17:51 +0100, Tejun Heo a écrit :
->> On 11/24/2010 12:51 AM, Christoph Lameter wrote:
->>> +/*
->>> + * cmpxchg_double replaces two adjacent scalars at once. The first parameter
->>> + * passed is a percpu pointer, not a scalar like the other this_cpu
->>> + * operations. This is so because the function operates on two scalars
->>> + * (must be of same size). A truth value is returned to indicate success or
->>> + * failure (since a double register result is difficult to handle).
->>> + * There is very limited hardware support for these operations. So only certain
->>> + * sizes may work.
->>> + */
->>> +#define __this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
->>
->> Ah... this is scary.  If it proves to be useful enough, sure, but
->> otherwise I'd like to avoid it.
+Le vendredi 26 novembre 2010 à 10:40 -0600, Christoph Lameter a écrit :
+
+> This only works if printk_needs_cpu is always passed the current cpu. The
+> check for cpu_is_offline suggests that the function is also used for other
+> cpus. The __this_cpu_read() will then get the printk_pending stat for the
+> current cpu and not for the specified cpu.
 > 
-> This is mandatory for several lockless algos, dont be afraid, its a
-> single instruction ;)
+> 
 
-Thanks for holding my hands. :-)
+I guess you read the changelog too fast ;)
 
-What I'm afraid of is generic code switching to use it in very hot
-paths when a lot of archs can't actually do it leading to performance
-regressions.  Is this something which is available on most archs?
+I posted this patch after noticing printk_needs_cpu() was always used
+for the current cpu.
 
-Thanks.
+We have other functions around, that always work for the current cpu.
 
--- 
-tejun
+We pass cpu as a parameter, mostly because smp_processor_id() was a bit
+expensive in old kernels, and is still expensive because of sanity
+tests.
+
+Now we have this_cpu_ api, we probably can do a cleanup to avoid now
+useless parameter passing.
+
+If we had this_cpu_is_online() function, we could avoid (int cpu) param
+in printk_needs_cpu()
+
+
+
