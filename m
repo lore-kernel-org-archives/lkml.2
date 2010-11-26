@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab0KZKuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:50:10 -0500
-Received: from hera.kernel.org ([140.211.167.34]:42295 "EHLO hera.kernel.org"
+	id S1754845Ab0KZKuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:50:21 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42296 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754635Ab0KZKuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 05:50:06 -0500
+	id S1754635Ab0KZKuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 05:50:13 -0500
 From: Tejun Heo <tj@kernel.org>
 To: roland@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         "rjw@sisk.plpavel"@ucw.cz
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/14] ptrace: reorganize __ptrace_unlink() and ptrace_untrace()
-Date: Fri, 26 Nov 2010 11:49:27 +0100
-Message-Id: <1290768569-16224-13-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/14] ptrace: make do_signal_stop() use ptrace_stop() if the task is being ptraced
+Date: Fri, 26 Nov 2010 11:49:23 +0100
+Message-Id: <1290768569-16224-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290768569-16224-1-git-send-email-tj@kernel.org>
 References: <1290768569-16224-1-git-send-email-tj@kernel.org>
@@ -22,91 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Collapse ptrace_untrace() into __ptrace_unlink().
+A ptraced task would still stop at do_signal_stop() when it's stopping
+for stop signals and do_signal_stop() behaves the same whether the
+task is ptraced or not.  However, in addition to stopping,
+ptrace_stop() also does ptrace specific stuff like calling
+architecture specific callbacks, so this behavior makes the code more
+fragile and difficult to understand.
 
-* Always do the whole unlinking inside siglock.
+This patch makes do_signal_stop() test whether the task is ptraced and
+use ptrace_stop() if so.  This renders tracehook_notify_jctl() rather
+pointless as the ptrace notification is now handled by ptrace_stop()
+regardless of the return value from the tracehook.  It probably is a
+good idea to update it.
 
-* Untracing is done before unlinking.
-
-This is to prepare for further changes.  As the whole
-unlinking/tracing is done inside both tasklist lock and siglock, the
-reordering doesn't cause any visible behavior difference.
+This doesn't solve the whole problem as tasks already in stopped state
+would stay in the regular stop when ptrace attached.  That part will
+be handled by the next patch.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Roland McGrath <roland@redhat.com>
 ---
- kernel/ptrace.c |   40 ++++++++++++++++++----------------------
- 1 files changed, 18 insertions(+), 22 deletions(-)
+ kernel/signal.c |   31 ++++++++++++++++++-------------
+ 1 files changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 08b18f2..71141bf 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -38,45 +38,41 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent)
- }
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 3b3e69c..6d78da6 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1788,10 +1788,8 @@ static int do_signal_stop(int signr)
+ 	 * we test GROUP_STOP_PENDING again.  If SIGCONT or SIGKILL
+ 	 * comes in between, it would be clear.
+ 	 */
+-	if (!(current->group_stop & GROUP_STOP_PENDING)) {
+-		spin_unlock_irq(&current->sighand->siglock);
+-		goto out;
+-	}
++	if (!(current->group_stop & GROUP_STOP_PENDING))
++		goto out_unlock;
  
- /*
-- * Turn a tracing stop into a normal stop now, since with no tracer there
-- * would be no way to wake it up with SIGCONT or SIGKILL.  If there was a
-- * signal sent that would resume the child, but didn't because it was in
-- * TASK_TRACED, resume it now.
-- * Requires that irqs be disabled.
-+ * unptrace a task: move it back to its original parent and remove it
-+ * from the ptrace list.
-+ *
-+ * Turn a tracing stop into a normal stop now, since with no tracer
-+ * there would be no way to wake it up with SIGCONT or SIGKILL.  If
-+ * there was a signal sent that would resume the child, but didn't
-+ * because it was in TASK_TRACED, resume it now.  Requires that irqs
-+ * be disabled.
-+ *
-+ * Must be called with the tasklist lock write-held.
-  */
--static void ptrace_untrace(struct task_struct *child)
-+void __ptrace_unlink(struct task_struct *child)
- {
-+	struct signal_struct *sig = child->signal;
+ 	if (consume_group_stop())
+ 		sig->flags = SIGNAL_STOP_STOPPED;
+@@ -1800,17 +1798,24 @@ static int do_signal_stop(int signr)
+ 	current->group_stop &= ~GROUP_STOP_PENDING;
+ 	__set_current_state(TASK_STOPPED);
+ 
+-	spin_unlock_irq(&current->sighand->siglock);
++	if (likely(!task_ptrace(current))) {
++		spin_unlock_irq(&current->sighand->siglock);
+ 
+-	if (notify) {
+-		read_lock(&tasklist_lock);
+-		do_notify_parent_cldstop(current, notify);
+-		read_unlock(&tasklist_lock);
+-	}
++		if (notify) {
++			read_lock(&tasklist_lock);
++			do_notify_parent_cldstop(current, notify);
++			read_unlock(&tasklist_lock);
++		}
 +
-+	BUG_ON(!child->ptrace);
++		/* Now we don't run again until woken by SIGCONT or SIGKILL */
++		schedule();
 +
- 	spin_lock(&child->sighand->siglock);
-+
- 	if (task_is_traced(child)) {
- 		/*
- 		 * If group stop is completed or in progress, the task
- 		 * should enter group stop.  Set GROUP_STOP_PENDING
- 		 * before kicking it.
- 		 */
--		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
--		    child->signal->group_stop_count)
-+		if (sig->flags & SIGNAL_STOP_STOPPED || sig->group_stop_count)
- 			child->group_stop |= GROUP_STOP_PENDING;
- 		signal_wake_up(child, 1);
- 	}
--	spin_unlock(&child->sighand->siglock);
--}
--
--/*
-- * unptrace a task: move it back to its original parent and
-- * remove it from the ptrace list.
-- *
-- * Must be called with the tasklist lock write-held.
-- */
--void __ptrace_unlink(struct task_struct *child)
--{
--	BUG_ON(!child->ptrace);
++		spin_lock_irq(&current->sighand->siglock);
++	} else
++		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
++out_unlock:
++	spin_unlock_irq(&current->sighand->siglock);
  
- 	child->ptrace = 0;
- 	child->parent = child->real_parent;
- 	list_del_init(&child->ptrace_entry);
+-	/* Now we don't run again until woken by SIGCONT or SIGKILL */
+-	schedule();
+-out:
+ 	tracehook_finish_jctl();
+ 	current->exit_code = 0;
  
--	if (task_is_traced(child))
--		ptrace_untrace(child);
-+	spin_unlock(&child->sighand->siglock);
- }
- 
- /*
 -- 
 1.7.1
 
