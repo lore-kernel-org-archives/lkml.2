@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab0KZKzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:55:55 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41437 "EHLO hera.kernel.org"
+	id S1754725Ab0KZK5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:57:39 -0500
+Received: from mga03.intel.com ([143.182.124.21]:42195 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754678Ab0KZKzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 05:55:54 -0500
-Message-ID: <4CEF9225.9030109@kernel.org>
-Date: Fri, 26 Nov 2010 11:55:33 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1754328Ab0KZK5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 05:57:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,260,1288594800"; 
+   d="scan'208";a="353499902"
+Date: Fri, 26 Nov 2010 11:57:18 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, cjb@laptop.org, dsd@laptop.org
+Subject: Re: [PATCH 1/4] MFD: add cs5535-mfd driver for CS5535/CS5536
+ support
+Message-ID: <20101126105717.GF5520@sortiz-mobl>
+References: <20101023004102.674cdc45@queued.net>
 MIME-Version: 1.0
-To: roland@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        pavel@ucw.cz
-Subject: Re: [PATCHSET RFC] ptrace,signal: sane interaction between ptrace
- and job control signals
-References: <1290768569-16224-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1290768569-16224-1-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 10:55:35 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101023004102.674cdc45@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, again.
+Hi Andres,
 
-Ah, crap, I missed a comma between Rafael's and Pavel's email
-addresses.  Sorry about that.  Rafael, Pavel, the thread can be read
-from the following URL.  Probably only patch 02 and 03 are of interest
-to you guys.
+On Sat, Oct 23, 2010 at 12:41:02AM -0700, Andres Salomon wrote:
+> 
+> Add an MFD driver to handle the ISA device on CS5535 and CS5536 southbridges.
+> This ISA bridge is actually multiple devices; GPIOs, MFGPTs, etc.
+The patch looks good, and I applied it.
+I just have one minor nitpick though, that you may want to address with a
+further patch:
 
-  http://thread.gmane.org/gmane.linux.kernel/1068420
+> +config MFD_CS5535
+> +	tristate "Support for CS5535 and CS5536 southbridge core functions"
+An AMD Geode mention should appear here. It might not be obvious to everyone
+where those devices can be found.
 
-Thanks.
+Cheers,
+Samuel.
 
 -- 
-tejun
+Intel Open Source Technology Centre
+http://oss.intel.com/
