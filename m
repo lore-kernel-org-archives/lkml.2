@@ -1,178 +1,911 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab0KZNun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:50:43 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46093 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab0KZNum convert rfc822-to-8bit (ORCPT
+	id S1755245Ab0KZNvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:51:13 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47969 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754259Ab0KZNvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:50:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Uh1io6AERjc+KMG9/7wWqM7GwV6y2nQN9Ue008AJ48jguMAwJtdNN73rzvKoN98k/B
-         uwBoJivSYBYY9kdqJ4Q8DOefndg9CA87cO/gRhqoSb5wQpOl+seaFkEAyNb9VqiQWODF
-         GvXQflq8eFAV7FUVoTrVJSaY8oOXk10D65AF4=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikG9swqOxF2GwhvKY__Lbgt1+GgRfra-+DrBsk0@mail.gmail.com>
-References: <20101123224601.766827604@openvz.org>
-	<20101123224800.294919307@openvz.org>
-	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
-	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
-	<AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
-	<AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
-	<AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com>
-	<AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com>
-	<AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com>
-	<AANLkTikG9swqOxF2GwhvKY__Lbgt1+GgRfra-+DrBsk0@mail.gmail.com>
-Date: Fri, 26 Nov 2010 16:50:40 +0300
-X-Google-Sender-Auth: R3PjNost-E0XpppVViOKumkX-Og
-Message-ID: <AANLkTi=jLNwKOqUKay9c9aLVd_7do5n1iCYEUkOfS7G+@mail.gmail.com>
-Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        ming.m.lin@intel.com, peterz@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Nov 2010 08:51:10 -0500
+From: Ben Hutchings <benh@debian.org>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, 564628@bugs.debian.org
+In-Reply-To: <1290772470-23713-1-git-send-email-hayeswang@realtek.com>
+References: <1290772470-23713-1-git-send-email-hayeswang@realtek.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-YQ9KPPNLkZbg8A+WVmxm"
+Organization: Debian Project
+Date: Fri, 26 Nov 2010 13:50:58 +0000
+Message-ID: <1290779458.3051.45.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: benh@debian.org
+Subject: Re: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 4:10 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Fri, Nov 26, 2010 at 2:04 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
->> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
->>> On Fri, Nov 26, 2010 at 12:58 PM, Cyrill Gorcunov <gorcunov@openvz.org>
->>> wrote:
->>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
->>>>> On Fri, Nov 26, 2010 at 12:32 PM, Cyrill Gorcunov <gorcunov@openvz.org>
->>>>> wrote:
->>>>>> On Fri, Nov 26, 2010 at 2:14 PM, Cyrill Gorcunov <gorcunov@openvz.org>
->>>>>> wrote:
->>>>>>> Stephane, this is a misprint, I'll update this comments on format
->>>>>>> (giod catch btw!). in real low 32 bits are considered as cccr in ht
->>>>>>> mode. wait a bit, i'll post update.
->>>>>>>
->>>>>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
->>>>>> ...
->>>>>>>>> + *    Low 32 bits
->>>>>>>>> + *    -----------
->>>>>>>>> + *      0-6: P4_PEBS_METRIC enum
->>>>>>>>> + *     7-11:                    reserved
->>>>>>>>> + *       12: Active thread
->>>>>>>>
->>>>>>>> I don't understand bit 12. In the actual register, it
->>>>>>>> corresponds to the enable bit. Seems you're overriding
->>>>>>>> its usage. Do I interpret this as saying: 0 = enable when
->>>>>>>> running on thread0, 1=monitoring when running on thread1?
->>>>>>>> And if I don't care?
->>>>>> ...
->>>>>> I believe it simply escaped quilt refresh somehow. Here is the
->>>>>> 'refreshed'
->>>>>> copy (note the low bits 12-19 updated here).
->>>>>> ---
->>>>>> perf, x86: P4 PMU - describe config format v2
->>>>>>
->>>>>> Add description of .config in a sake of RAW events.
->>>>>> At least this should bring some light to those who
->>>>>> will be reading this code.
->>>>>>
->>>>>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
->>>>>> CC: Lin Ming <ming.m.lin@intel.com>
->>>>>> CC: Stephane Eranian <eranian@google.com>
->>>>>> CC: Peter Zijlstra <peterz@infradead.org>
->>>>>> ---
->>>>>>  arch/x86/include/asm/perf_event_p4.h |   63
->>>>>> ++++++++++++++++++++++++++++++-----
->>>>>>  1 file changed, 55 insertions(+), 8 deletions(-)
->>>>>>
->>>>>> Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
->>>>>> ===================================================================
->>>>>> --- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
->>>>>> +++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
->>>>>> @@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
->>>>>>  };
->>>>>>
->>>>>>  /*
->>>>>> - * P4 PEBS specifics (Replay Event only)
->>>>>> - *
->>>>>> - * Format (bits):
->>>>>> - *   0-6: metric from P4_PEBS_METRIC enum
->>>>>> - *    7 : reserved
->>>>>> - *    8 : reserved
->>>>>> - * 9-11 : reserved
->>>>>> - *
->>>>>>  * Note we have UOP and PEBS bits reserved for now
->>>>>>  * just in case if we will need them once
->>>>>>  */
->>>>>> @@ -788,5 +780,60 @@ enum P4_PEBS_METRIC {
->>>>>>        P4_PEBS_METRIC__max
->>>>>>  };
->>>>>>
->>>>>> +/*
->>>>>> + * Notes on internal configuration of ESCR+CCCR tuples
->>>>>> + *
->>>>>> + * Since P4 has quite the different architecture of
->>>>>> + * performance registers in compare with "architectural"
->>>>>> + * once and we have on 64 bits to keep configuration
->>>>>> + * of performance event, the following trick is used.
->>>>>> + *
->>>>>> + * 1) Since both ESCR and CCCR registers have only low
->>>>>> + *    32 bits valuable, we pack them into a single 64 bit
->>>>>> + *    configuration. Low 32 bits of such config correspond
->>>>>> + *    to low 32 bits of CCCR register and high 32 bits
->>>>>> + *    correspond to low 32 bits of ESCR register.
->>>>>> + *
->>>>>> + * 2) The meaning of every bit of such config field can
->>>>>> + *    be found in Intel SDM but it should be noted that
->>>>>> + *    we "borrow" some reserved bits for own usage and
->>>>>> + *    clean them or set to a proper value when we do
->>>>>> + *    a real write to hardware registers.
->>>>>> + *
->>>>>> + * 3) The format of bits of config is the following
->>>>>> + *    and should be either 0 or set to some predefined
->>>>>> + *    values:
->>>>>> + *
->>>>>> + *    Low 32 bits
->>>>>> + *    -----------
->>>>>> + *      0-6: P4_PEBS_METRIC enum
->>>>>> + *     7-11:                    reserved
->>>>>> + *       12:                    reserved (Enable)
->>>>>> + *    13-15:                    reserved (ESCR select)
->>>>>> + *    16-17: Active Thread
->>>>>
->>>>> HW has the active thread bits reserved to 0x3.
->>>>> what about you? If not, then explain what they
->>>>> mean.
->>>>>
->>>> hm, not sure i follow, hw allows you to pass any of 4 values for that
->>>> field, so i simply pass it to kernel and then propagate to real cccr
->>>> register. if machine is not ht capable it might be a problem, but i
->>>> left it to a caller to set proper thread value here. i believe that
->>>> you read cccr spec for non-ht machine while ht machine has a bit more
->>>> flags to set.
->>>>
->>> You're right, I missed Figure-30.29. So you honor the field. The counter
->>> won't count anything if the task is not running on the corresponding
->>> HT thread, then.
->>
->> no ;) p4 treat this field in different meaning in compare to others
->> perf archs. the condition is not 'where' but 'when'. ie you can
->> specify 'when' to run counter: if none therad is active, single any
->> thread is active, both threads are active and finally any thread is
->> active (which is exactly 0b11 in single thread machine). i know it's
->> weird ;)
->>
-> That is weird indeed.
->
-> I can see this being somewhat useful in per-cpu mode. But this is
-> weird in per-thread mode. That means you will count in your thread
-> (OS and HW) only when the other HW thread runs. I am wondering
-> about the security implications of this. I suspect you'd have to
-> disallow this mode in per-thread mode.
 
-No, single thread mode means _any_ single thread is running,
-Stephane I'll describe some more a bit later (as only reach home),
-ok?
+--=-YQ9KPPNLkZbg8A+WVmxm
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 2010-11-26 at 19:54 +0800, Hayes Wang wrote:
+> Correct the binary code (Low pass filter & DLY_CAP fine tune from uC).
+> The incorrect ram code would make the nic working abnormally.
+[...]
+
+I'm glad you finally acknowledge that this is code rather than simple
+register initialisation.
+
+Please can you put the microcontroller firmware under a suitable
+licence, if you are not intending to release its source code.  The GPL
+is not suitable as it requires distributions to provide the source code;
+that makes the firmware strictly undistributable at present.
+
+An example licence for binary-only redistribution is:
+
+    Copyright <date> <company>
+
+    Permission is hereby granted for the distribution of this firmware
+    data in hexadecimal or equivalent format, provided this copyright
+    notice is accompanying it.
+
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/r8169.c |  141 +++++++++++++++++++++++++++++++++++++++++----=
+------
+>  1 files changed, 113 insertions(+), 28 deletions(-)
+>  mode change 100644 =3D> 100755 drivers/net/r8169.c
+>=20
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> old mode 100644
+> new mode 100755
+[...]
+
+Also, please don't add execute permission to source files.
+
+Below are the changes Debian currently applies in preparation for proper
+licencing of the firmware.
+
+Ben.
+
+---
+Subject: [PATCH] r8169: remove firmware for RTL8169D PHY
+
+The recently added support for RTL8169D chips included some machine
+code without accompanying source code.  Replace this with use of the
+firmware loader.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/r8169.c |  717 ++++-------------------------------------------=
+----
+ 1 files changed, 44 insertions(+), 673 deletions(-)
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 7d33ef4..bfc251a 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -24,6 +24,7 @@
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/pm_runtime.h>
++#include <linux/firmware.h>
+=20
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -1383,6 +1384,23 @@ static void rtl_phy_write(void __iomem *ioaddr, cons=
+t struct phy_reg *regs, int
+ 	}
+ }
+=20
++struct phy_reg_le {
++	__le16 reg;
++	__le16 val;
++};
++
++static void rtl_phy_write_fw(void __iomem *ioaddr, const struct firmware *=
+fw)
++{
++	const struct phy_reg_le *regs =3D (const struct phy_reg_le *)fw->data;
++	size_t len =3D fw->size / sizeof(*regs);
++
++	while (len-- > 0) {
++		mdio_write(ioaddr, le16_to_cpu(regs->reg),
++			   le16_to_cpu(regs->val));
++		regs++;
++	}
++}
++
+ static void rtl8169s_hw_phy_config(void __iomem *ioaddr)
+ {
+ 	static const struct phy_reg phy_reg_init[] =3D {
+@@ -1715,7 +1733,7 @@ static void rtl8168c_4_hw_phy_config(void __iomem *io=
+addr)
+ 	rtl8168c_3_hw_phy_config(ioaddr);
+ }
+=20
+-static void rtl8168d_1_hw_phy_config(void __iomem *ioaddr)
++static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init_0[] =3D {
+ 		{ 0x1f, 0x0001 },
+@@ -1743,361 +1761,8 @@ static void rtl8168d_1_hw_phy_config(void __iomem *=
+ioaddr)
+ 		{ 0x05, 0x8332 },
+ 		{ 0x06, 0x5561 }
+ 	};
+-	static const struct phy_reg phy_reg_init_2[] =3D {
+-		{ 0x1f, 0x0005 },
+-		{ 0x05, 0xffc2 },
+-		{ 0x1f, 0x0005 },
+-		{ 0x05, 0x8000 },
+-		{ 0x06, 0xf8f9 },
+-		{ 0x06, 0xfaef },
+-		{ 0x06, 0x59ee },
+-		{ 0x06, 0xf8ea },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0xf8eb },
+-		{ 0x06, 0x00e0 },
+-		{ 0x06, 0xf87c },
+-		{ 0x06, 0xe1f8 },
+-		{ 0x06, 0x7d59 },
+-		{ 0x06, 0x0fef },
+-		{ 0x06, 0x0139 },
+-		{ 0x06, 0x029e },
+-		{ 0x06, 0x06ef },
+-		{ 0x06, 0x1039 },
+-		{ 0x06, 0x089f },
+-		{ 0x06, 0x2aee },
+-		{ 0x06, 0xf8ea },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0xf8eb },
+-		{ 0x06, 0x01e0 },
+-		{ 0x06, 0xf87c },
+-		{ 0x06, 0xe1f8 },
+-		{ 0x06, 0x7d58 },
+-		{ 0x06, 0x409e },
+-		{ 0x06, 0x0f39 },
+-		{ 0x06, 0x46aa },
+-		{ 0x06, 0x0bbf },
+-		{ 0x06, 0x8290 },
+-		{ 0x06, 0xd682 },
+-		{ 0x06, 0x9802 },
+-		{ 0x06, 0x014f },
+-		{ 0x06, 0xae09 },
+-		{ 0x06, 0xbf82 },
+-		{ 0x06, 0x98d6 },
+-		{ 0x06, 0x82a0 },
+-		{ 0x06, 0x0201 },
+-		{ 0x06, 0x4fef },
+-		{ 0x06, 0x95fe },
+-		{ 0x06, 0xfdfc },
+-		{ 0x06, 0x05f8 },
+-		{ 0x06, 0xf9fa },
+-		{ 0x06, 0xeef8 },
+-		{ 0x06, 0xea00 },
+-		{ 0x06, 0xeef8 },
+-		{ 0x06, 0xeb00 },
+-		{ 0x06, 0xe2f8 },
+-		{ 0x06, 0x7ce3 },
+-		{ 0x06, 0xf87d },
+-		{ 0x06, 0xa511 },
+-		{ 0x06, 0x1112 },
+-		{ 0x06, 0xd240 },
+-		{ 0x06, 0xd644 },
+-		{ 0x06, 0x4402 },
+-		{ 0x06, 0x8217 },
+-		{ 0x06, 0xd2a0 },
+-		{ 0x06, 0xd6aa },
+-		{ 0x06, 0xaa02 },
+-		{ 0x06, 0x8217 },
+-		{ 0x06, 0xae0f },
+-		{ 0x06, 0xa544 },
+-		{ 0x06, 0x4402 },
+-		{ 0x06, 0xae4d },
+-		{ 0x06, 0xa5aa },
+-		{ 0x06, 0xaa02 },
+-		{ 0x06, 0xae47 },
+-		{ 0x06, 0xaf82 },
+-		{ 0x06, 0x13ee },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0x0fee },
+-		{ 0x06, 0x834c },
+-		{ 0x06, 0x0fee },
+-		{ 0x06, 0x834f },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0x8351 },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0x834a },
+-		{ 0x06, 0xffee },
+-		{ 0x06, 0x834b },
+-		{ 0x06, 0xffe0 },
+-		{ 0x06, 0x8330 },
+-		{ 0x06, 0xe183 },
+-		{ 0x06, 0x3158 },
+-		{ 0x06, 0xfee4 },
+-		{ 0x06, 0xf88a },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x8be0 },
+-		{ 0x06, 0x8332 },
+-		{ 0x06, 0xe183 },
+-		{ 0x06, 0x3359 },
+-		{ 0x06, 0x0fe2 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0x0c24 },
+-		{ 0x06, 0x5af0 },
+-		{ 0x06, 0x1e12 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x8ce5 },
+-		{ 0x06, 0xf88d },
+-		{ 0x06, 0xaf82 },
+-		{ 0x06, 0x13e0 },
+-		{ 0x06, 0x834f },
+-		{ 0x06, 0x10e4 },
+-		{ 0x06, 0x834f },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x009f },
+-		{ 0x06, 0x0ae0 },
+-		{ 0x06, 0x834f },
+-		{ 0x06, 0xa010 },
+-		{ 0x06, 0xa5ee },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x01e0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7805 },
+-		{ 0x06, 0x9e9a },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x049e },
+-		{ 0x06, 0x10e0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7803 },
+-		{ 0x06, 0x9e0f },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x019e },
+-		{ 0x06, 0x05ae },
+-		{ 0x06, 0x0caf },
+-		{ 0x06, 0x81f8 },
+-		{ 0x06, 0xaf81 },
+-		{ 0x06, 0xa3af },
+-		{ 0x06, 0x81dc },
+-		{ 0x06, 0xaf82 },
+-		{ 0x06, 0x13ee },
+-		{ 0x06, 0x8348 },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0x8349 },
+-		{ 0x06, 0x00e0 },
+-		{ 0x06, 0x8351 },
+-		{ 0x06, 0x10e4 },
+-		{ 0x06, 0x8351 },
+-		{ 0x06, 0x5801 },
+-		{ 0x06, 0x9fea },
+-		{ 0x06, 0xd000 },
+-		{ 0x06, 0xd180 },
+-		{ 0x06, 0x1f66 },
+-		{ 0x06, 0xe2f8 },
+-		{ 0x06, 0xeae3 },
+-		{ 0x06, 0xf8eb },
+-		{ 0x06, 0x5af8 },
+-		{ 0x06, 0x1e20 },
+-		{ 0x06, 0xe6f8 },
+-		{ 0x06, 0xeae5 },
+-		{ 0x06, 0xf8eb },
+-		{ 0x06, 0xd302 },
+-		{ 0x06, 0xb3fe },
+-		{ 0x06, 0xe2f8 },
+-		{ 0x06, 0x7cef },
+-		{ 0x06, 0x325b },
+-		{ 0x06, 0x80e3 },
+-		{ 0x06, 0xf87d },
+-		{ 0x06, 0x9e03 },
+-		{ 0x06, 0x7dff },
+-		{ 0x06, 0xff0d },
+-		{ 0x06, 0x581c },
+-		{ 0x06, 0x551a },
+-		{ 0x06, 0x6511 },
+-		{ 0x06, 0xa190 },
+-		{ 0x06, 0xd3e2 },
+-		{ 0x06, 0x8348 },
+-		{ 0x06, 0xe383 },
+-		{ 0x06, 0x491b },
+-		{ 0x06, 0x56ab },
+-		{ 0x06, 0x08ef },
+-		{ 0x06, 0x56e6 },
+-		{ 0x06, 0x8348 },
+-		{ 0x06, 0xe783 },
+-		{ 0x06, 0x4910 },
+-		{ 0x06, 0xd180 },
+-		{ 0x06, 0x1f66 },
+-		{ 0x06, 0xa004 },
+-		{ 0x06, 0xb9e2 },
+-		{ 0x06, 0x8348 },
+-		{ 0x06, 0xe383 },
+-		{ 0x06, 0x49ef },
+-		{ 0x06, 0x65e2 },
+-		{ 0x06, 0x834a },
+-		{ 0x06, 0xe383 },
+-		{ 0x06, 0x4b1b },
+-		{ 0x06, 0x56aa },
+-		{ 0x06, 0x0eef },
+-		{ 0x06, 0x56e6 },
+-		{ 0x06, 0x834a },
+-		{ 0x06, 0xe783 },
+-		{ 0x06, 0x4be2 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0xe683 },
+-		{ 0x06, 0x4ce0 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0xa000 },
+-		{ 0x06, 0x0caf },
+-		{ 0x06, 0x81dc },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4d10 },
+-		{ 0x06, 0xe483 },
+-		{ 0x06, 0x4dae },
+-		{ 0x06, 0x0480 },
+-		{ 0x06, 0xe483 },
+-		{ 0x06, 0x4de0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7803 },
+-		{ 0x06, 0x9e0b },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x049e },
+-		{ 0x06, 0x04ee },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x02e0 },
+-		{ 0x06, 0x8332 },
+-		{ 0x06, 0xe183 },
+-		{ 0x06, 0x3359 },
+-		{ 0x06, 0x0fe2 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0x0c24 },
+-		{ 0x06, 0x5af0 },
+-		{ 0x06, 0x1e12 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x8ce5 },
+-		{ 0x06, 0xf88d },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x30e1 },
+-		{ 0x06, 0x8331 },
+-		{ 0x06, 0x6801 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x8ae5 },
+-		{ 0x06, 0xf88b },
+-		{ 0x06, 0xae37 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4e03 },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4ce1 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0x1b01 },
+-		{ 0x06, 0x9e04 },
+-		{ 0x06, 0xaaa1 },
+-		{ 0x06, 0xaea8 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4e04 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4f00 },
+-		{ 0x06, 0xaeab },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4f78 },
+-		{ 0x06, 0x039f },
+-		{ 0x06, 0x14ee },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x05d2 },
+-		{ 0x06, 0x40d6 },
+-		{ 0x06, 0x5554 },
+-		{ 0x06, 0x0282 },
+-		{ 0x06, 0x17d2 },
+-		{ 0x06, 0xa0d6 },
+-		{ 0x06, 0xba00 },
+-		{ 0x06, 0x0282 },
+-		{ 0x06, 0x17fe },
+-		{ 0x06, 0xfdfc },
+-		{ 0x06, 0x05f8 },
+-		{ 0x06, 0xe0f8 },
+-		{ 0x06, 0x60e1 },
+-		{ 0x06, 0xf861 },
+-		{ 0x06, 0x6802 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x60e5 },
+-		{ 0x06, 0xf861 },
+-		{ 0x06, 0xe0f8 },
+-		{ 0x06, 0x48e1 },
+-		{ 0x06, 0xf849 },
+-		{ 0x06, 0x580f },
+-		{ 0x06, 0x1e02 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x48e5 },
+-		{ 0x06, 0xf849 },
+-		{ 0x06, 0xd000 },
+-		{ 0x06, 0x0282 },
+-		{ 0x06, 0x5bbf },
+-		{ 0x06, 0x8350 },
+-		{ 0x06, 0xef46 },
+-		{ 0x06, 0xdc19 },
+-		{ 0x06, 0xddd0 },
+-		{ 0x06, 0x0102 },
+-		{ 0x06, 0x825b },
+-		{ 0x06, 0x0282 },
+-		{ 0x06, 0x77e0 },
+-		{ 0x06, 0xf860 },
+-		{ 0x06, 0xe1f8 },
+-		{ 0x06, 0x6158 },
+-		{ 0x06, 0xfde4 },
+-		{ 0x06, 0xf860 },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x61fc },
+-		{ 0x06, 0x04f9 },
+-		{ 0x06, 0xfafb },
+-		{ 0x06, 0xc6bf },
+-		{ 0x06, 0xf840 },
+-		{ 0x06, 0xbe83 },
+-		{ 0x06, 0x50a0 },
+-		{ 0x06, 0x0101 },
+-		{ 0x06, 0x071b },
+-		{ 0x06, 0x89cf },
+-		{ 0x06, 0xd208 },
+-		{ 0x06, 0xebdb },
+-		{ 0x06, 0x19b2 },
+-		{ 0x06, 0xfbff },
+-		{ 0x06, 0xfefd },
+-		{ 0x06, 0x04f8 },
+-		{ 0x06, 0xe0f8 },
+-		{ 0x06, 0x48e1 },
+-		{ 0x06, 0xf849 },
+-		{ 0x06, 0x6808 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x48e5 },
+-		{ 0x06, 0xf849 },
+-		{ 0x06, 0x58f7 },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x48e5 },
+-		{ 0x06, 0xf849 },
+-		{ 0x06, 0xfc04 },
+-		{ 0x06, 0x4d20 },
+-		{ 0x06, 0x0002 },
+-		{ 0x06, 0x4e22 },
+-		{ 0x06, 0x0002 },
+-		{ 0x06, 0x4ddf },
+-		{ 0x06, 0xff01 },
+-		{ 0x06, 0x4edd },
+-		{ 0x06, 0xff01 },
+-		{ 0x05, 0x83d4 },
+-		{ 0x06, 0x8000 },
+-		{ 0x05, 0x83d8 },
+-		{ 0x06, 0x8051 },
+-		{ 0x02, 0x6010 },
+-		{ 0x03, 0xdc00 },
+-		{ 0x05, 0xfff6 },
+-		{ 0x06, 0x00fc },
+-		{ 0x1f, 0x0000 },
+-
+-		{ 0x1f, 0x0000 },
+-		{ 0x0d, 0xf880 },
+-		{ 0x1f, 0x0000 }
+-	};
++	void __iomem *ioaddr =3D tp->mmio_addr;
++	const struct firmware *fw;
+=20
+ 	rtl_phy_write(ioaddr, phy_reg_init_0, ARRAY_SIZE(phy_reg_init_0));
+=20
+@@ -2155,10 +1820,18 @@ static void rtl8168d_1_hw_phy_config(void __iomem *=
+ioaddr)
+ 	mdio_plus_minus(ioaddr, 0x02, 0x0100, 0x0600);
+ 	mdio_plus_minus(ioaddr, 0x03, 0x0000, 0xe000);
+=20
+-	rtl_phy_write(ioaddr, phy_reg_init_2, ARRAY_SIZE(phy_reg_init_2));
++	if (request_firmware(&fw, "rtl8168d-1.fw", &tp->pci_dev->dev) =3D=3D 0) {
++		rtl_phy_write_fw(ioaddr, fw);
++		release_firmware(fw);
++	} else {
++		printk(KERN_WARNING "%s: unable to apply firmware patch\n",
++			tp->dev->name);
++	}
+ }
+=20
+-static void rtl8168d_2_hw_phy_config(void __iomem *ioaddr)
++MODULE_FIRMWARE("rtl8168d-1.fw");
++
++static void rtl8168d_2_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init_0[] =3D {
+ 		{ 0x1f, 0x0001 },
+@@ -2185,318 +1858,8 @@ static void rtl8168d_2_hw_phy_config(void __iomem *=
+ioaddr)
+ 		{ 0x05, 0x8332 },
+ 		{ 0x06, 0x5561 }
+ 	};
+-	static const struct phy_reg phy_reg_init_1[] =3D {
+-		{ 0x1f, 0x0005 },
+-		{ 0x05, 0xffc2 },
+-		{ 0x1f, 0x0005 },
+-		{ 0x05, 0x8000 },
+-		{ 0x06, 0xf8f9 },
+-		{ 0x06, 0xfaee },
+-		{ 0x06, 0xf8ea },
+-		{ 0x06, 0x00ee },
+-		{ 0x06, 0xf8eb },
+-		{ 0x06, 0x00e2 },
+-		{ 0x06, 0xf87c },
+-		{ 0x06, 0xe3f8 },
+-		{ 0x06, 0x7da5 },
+-		{ 0x06, 0x1111 },
+-		{ 0x06, 0x12d2 },
+-		{ 0x06, 0x40d6 },
+-		{ 0x06, 0x4444 },
+-		{ 0x06, 0x0281 },
+-		{ 0x06, 0xc6d2 },
+-		{ 0x06, 0xa0d6 },
+-		{ 0x06, 0xaaaa },
+-		{ 0x06, 0x0281 },
+-		{ 0x06, 0xc6ae },
+-		{ 0x06, 0x0fa5 },
+-		{ 0x06, 0x4444 },
+-		{ 0x06, 0x02ae },
+-		{ 0x06, 0x4da5 },
+-		{ 0x06, 0xaaaa },
+-		{ 0x06, 0x02ae },
+-		{ 0x06, 0x47af },
+-		{ 0x06, 0x81c2 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4e00 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4d0f },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4c0f },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4f00 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x5100 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4aff },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4bff },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x30e1 },
+-		{ 0x06, 0x8331 },
+-		{ 0x06, 0x58fe },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x8ae5 },
+-		{ 0x06, 0xf88b },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x32e1 },
+-		{ 0x06, 0x8333 },
+-		{ 0x06, 0x590f },
+-		{ 0x06, 0xe283 },
+-		{ 0x06, 0x4d0c },
+-		{ 0x06, 0x245a },
+-		{ 0x06, 0xf01e },
+-		{ 0x06, 0x12e4 },
+-		{ 0x06, 0xf88c },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x8daf },
+-		{ 0x06, 0x81c2 },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4f10 },
+-		{ 0x06, 0xe483 },
+-		{ 0x06, 0x4fe0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7800 },
+-		{ 0x06, 0x9f0a },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4fa0 },
+-		{ 0x06, 0x10a5 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4e01 },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x059e },
+-		{ 0x06, 0x9ae0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7804 },
+-		{ 0x06, 0x9e10 },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x039e },
+-		{ 0x06, 0x0fe0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7801 },
+-		{ 0x06, 0x9e05 },
+-		{ 0x06, 0xae0c },
+-		{ 0x06, 0xaf81 },
+-		{ 0x06, 0xa7af },
+-		{ 0x06, 0x8152 },
+-		{ 0x06, 0xaf81 },
+-		{ 0x06, 0x8baf },
+-		{ 0x06, 0x81c2 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4800 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4900 },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x5110 },
+-		{ 0x06, 0xe483 },
+-		{ 0x06, 0x5158 },
+-		{ 0x06, 0x019f },
+-		{ 0x06, 0xead0 },
+-		{ 0x06, 0x00d1 },
+-		{ 0x06, 0x801f },
+-		{ 0x06, 0x66e2 },
+-		{ 0x06, 0xf8ea },
+-		{ 0x06, 0xe3f8 },
+-		{ 0x06, 0xeb5a },
+-		{ 0x06, 0xf81e },
+-		{ 0x06, 0x20e6 },
+-		{ 0x06, 0xf8ea },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0xebd3 },
+-		{ 0x06, 0x02b3 },
+-		{ 0x06, 0xfee2 },
+-		{ 0x06, 0xf87c },
+-		{ 0x06, 0xef32 },
+-		{ 0x06, 0x5b80 },
+-		{ 0x06, 0xe3f8 },
+-		{ 0x06, 0x7d9e },
+-		{ 0x06, 0x037d },
+-		{ 0x06, 0xffff },
+-		{ 0x06, 0x0d58 },
+-		{ 0x06, 0x1c55 },
+-		{ 0x06, 0x1a65 },
+-		{ 0x06, 0x11a1 },
+-		{ 0x06, 0x90d3 },
+-		{ 0x06, 0xe283 },
+-		{ 0x06, 0x48e3 },
+-		{ 0x06, 0x8349 },
+-		{ 0x06, 0x1b56 },
+-		{ 0x06, 0xab08 },
+-		{ 0x06, 0xef56 },
+-		{ 0x06, 0xe683 },
+-		{ 0x06, 0x48e7 },
+-		{ 0x06, 0x8349 },
+-		{ 0x06, 0x10d1 },
+-		{ 0x06, 0x801f },
+-		{ 0x06, 0x66a0 },
+-		{ 0x06, 0x04b9 },
+-		{ 0x06, 0xe283 },
+-		{ 0x06, 0x48e3 },
+-		{ 0x06, 0x8349 },
+-		{ 0x06, 0xef65 },
+-		{ 0x06, 0xe283 },
+-		{ 0x06, 0x4ae3 },
+-		{ 0x06, 0x834b },
+-		{ 0x06, 0x1b56 },
+-		{ 0x06, 0xaa0e },
+-		{ 0x06, 0xef56 },
+-		{ 0x06, 0xe683 },
+-		{ 0x06, 0x4ae7 },
+-		{ 0x06, 0x834b },
+-		{ 0x06, 0xe283 },
+-		{ 0x06, 0x4de6 },
+-		{ 0x06, 0x834c },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4da0 },
+-		{ 0x06, 0x000c },
+-		{ 0x06, 0xaf81 },
+-		{ 0x06, 0x8be0 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0x10e4 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0xae04 },
+-		{ 0x06, 0x80e4 },
+-		{ 0x06, 0x834d },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x4e78 },
+-		{ 0x06, 0x039e },
+-		{ 0x06, 0x0be0 },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x7804 },
+-		{ 0x06, 0x9e04 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4e02 },
+-		{ 0x06, 0xe083 },
+-		{ 0x06, 0x32e1 },
+-		{ 0x06, 0x8333 },
+-		{ 0x06, 0x590f },
+-		{ 0x06, 0xe283 },
+-		{ 0x06, 0x4d0c },
+-		{ 0x06, 0x245a },
+-		{ 0x06, 0xf01e },
+-		{ 0x06, 0x12e4 },
+-		{ 0x06, 0xf88c },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x8de0 },
+-		{ 0x06, 0x8330 },
+-		{ 0x06, 0xe183 },
+-		{ 0x06, 0x3168 },
+-		{ 0x06, 0x01e4 },
+-		{ 0x06, 0xf88a },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x8bae },
+-		{ 0x06, 0x37ee },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x03e0 },
+-		{ 0x06, 0x834c },
+-		{ 0x06, 0xe183 },
+-		{ 0x06, 0x4d1b },
+-		{ 0x06, 0x019e },
+-		{ 0x06, 0x04aa },
+-		{ 0x06, 0xa1ae },
+-		{ 0x06, 0xa8ee },
+-		{ 0x06, 0x834e },
+-		{ 0x06, 0x04ee },
+-		{ 0x06, 0x834f },
+-		{ 0x06, 0x00ae },
+-		{ 0x06, 0xabe0 },
+-		{ 0x06, 0x834f },
+-		{ 0x06, 0x7803 },
+-		{ 0x06, 0x9f14 },
+-		{ 0x06, 0xee83 },
+-		{ 0x06, 0x4e05 },
+-		{ 0x06, 0xd240 },
+-		{ 0x06, 0xd655 },
+-		{ 0x06, 0x5402 },
+-		{ 0x06, 0x81c6 },
+-		{ 0x06, 0xd2a0 },
+-		{ 0x06, 0xd6ba },
+-		{ 0x06, 0x0002 },
+-		{ 0x06, 0x81c6 },
+-		{ 0x06, 0xfefd },
+-		{ 0x06, 0xfc05 },
+-		{ 0x06, 0xf8e0 },
+-		{ 0x06, 0xf860 },
+-		{ 0x06, 0xe1f8 },
+-		{ 0x06, 0x6168 },
+-		{ 0x06, 0x02e4 },
+-		{ 0x06, 0xf860 },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x61e0 },
+-		{ 0x06, 0xf848 },
+-		{ 0x06, 0xe1f8 },
+-		{ 0x06, 0x4958 },
+-		{ 0x06, 0x0f1e },
+-		{ 0x06, 0x02e4 },
+-		{ 0x06, 0xf848 },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x49d0 },
+-		{ 0x06, 0x0002 },
+-		{ 0x06, 0x820a },
+-		{ 0x06, 0xbf83 },
+-		{ 0x06, 0x50ef },
+-		{ 0x06, 0x46dc },
+-		{ 0x06, 0x19dd },
+-		{ 0x06, 0xd001 },
+-		{ 0x06, 0x0282 },
+-		{ 0x06, 0x0a02 },
+-		{ 0x06, 0x8226 },
+-		{ 0x06, 0xe0f8 },
+-		{ 0x06, 0x60e1 },
+-		{ 0x06, 0xf861 },
+-		{ 0x06, 0x58fd },
+-		{ 0x06, 0xe4f8 },
+-		{ 0x06, 0x60e5 },
+-		{ 0x06, 0xf861 },
+-		{ 0x06, 0xfc04 },
+-		{ 0x06, 0xf9fa },
+-		{ 0x06, 0xfbc6 },
+-		{ 0x06, 0xbff8 },
+-		{ 0x06, 0x40be },
+-		{ 0x06, 0x8350 },
+-		{ 0x06, 0xa001 },
+-		{ 0x06, 0x0107 },
+-		{ 0x06, 0x1b89 },
+-		{ 0x06, 0xcfd2 },
+-		{ 0x06, 0x08eb },
+-		{ 0x06, 0xdb19 },
+-		{ 0x06, 0xb2fb },
+-		{ 0x06, 0xfffe },
+-		{ 0x06, 0xfd04 },
+-		{ 0x06, 0xf8e0 },
+-		{ 0x06, 0xf848 },
+-		{ 0x06, 0xe1f8 },
+-		{ 0x06, 0x4968 },
+-		{ 0x06, 0x08e4 },
+-		{ 0x06, 0xf848 },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x4958 },
+-		{ 0x06, 0xf7e4 },
+-		{ 0x06, 0xf848 },
+-		{ 0x06, 0xe5f8 },
+-		{ 0x06, 0x49fc },
+-		{ 0x06, 0x044d },
+-		{ 0x06, 0x2000 },
+-		{ 0x06, 0x024e },
+-		{ 0x06, 0x2200 },
+-		{ 0x06, 0x024d },
+-		{ 0x06, 0xdfff },
+-		{ 0x06, 0x014e },
+-		{ 0x06, 0xddff },
+-		{ 0x06, 0x0100 },
+-		{ 0x05, 0x83d8 },
+-		{ 0x06, 0x8000 },
+-		{ 0x03, 0xdc00 },
+-		{ 0x05, 0xfff6 },
+-		{ 0x06, 0x00fc },
+-		{ 0x1f, 0x0000 },
+-
+-		{ 0x1f, 0x0000 },
+-		{ 0x0d, 0xf880 },
+-		{ 0x1f, 0x0000 }
+-	};
++	void __iomem *ioaddr =3D tp->mmio_addr;
++	const struct firmware *fw;
+=20
+ 	rtl_phy_write(ioaddr, phy_reg_init_0, ARRAY_SIZE(phy_reg_init_0));
+=20
+@@ -2550,9 +1913,17 @@ static void rtl8168d_2_hw_phy_config(void __iomem *i=
+oaddr)
+ 	mdio_write(ioaddr, 0x1f, 0x0002);
+ 	mdio_patch(ioaddr, 0x0f, 0x0017);
+=20
+-	rtl_phy_write(ioaddr, phy_reg_init_1, ARRAY_SIZE(phy_reg_init_1));
++	if (request_firmware(&fw, "rtl8168d-2.fw", &tp->pci_dev->dev) =3D=3D 0) {
++		rtl_phy_write_fw(ioaddr, fw);
++		release_firmware(fw);
++	} else {
++		printk(KERN_WARNING "%s: unable to apply firmware patch\n",
++			tp->dev->name);
++	}
+ }
+=20
++MODULE_FIRMWARE("rtl8168d-2.fw");
++
+ static void rtl8168d_3_hw_phy_config(void __iomem *ioaddr)
+ {
+ 	static const struct phy_reg phy_reg_init[] =3D {
+@@ -2688,10 +2059,10 @@ static void rtl_hw_phy_config(struct net_device *de=
+v)
+ 		rtl8168cp_2_hw_phy_config(ioaddr);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_25:
+-		rtl8168d_1_hw_phy_config(ioaddr);
++		rtl8168d_1_hw_phy_config(tp);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_26:
+-		rtl8168d_2_hw_phy_config(ioaddr);
++		rtl8168d_2_hw_phy_config(tp);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_27:
+ 		rtl8168d_3_hw_phy_config(ioaddr);
+--=20
+1.7.2.3
+
+
+
+--=20
+Ben Hutchings, Debian Developer and kernel team member
+
+
+--=-YQ9KPPNLkZbg8A+WVmxm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATO+7Pee/yOyVhhEJAQJhFw/9GXFQTlCxvzjTM50ZlBgVkEyLrV5qExsn
+Pcfst5bneFeUR89Vg2jmv+4V4VSDqEwCgtTbWXSnkw/s+Jd+ybtYQqS1YIzqR1vU
+xkzR7cdiS93ulb3Rx5w5ZvjAWfBEjJorfbJIOoZUBvCpSlOlsqglKMsAqIozubw6
+l+h/Jrj2X4cZF09l3vrOzXPclucuBzdaRHeKPi6WFnQKSA+6Wr3rBOzc+jnJZClP
+pt9CSjfj5Yw4ZfdlV8ijaoc2KA/UqwRwZoAZAScvLG7bYscryqFnR0qQ9F/beNJL
+Zqgaq/JANxqQsTia1LiQIWtuxRjRDaUdJkcpJJRibXW+pQtX6/UcY4UN67a3yQsL
+79NDlgnFhZ1VY7ReK/ssbi0ou1hElJ6xDBPz5Gh37ed0CjXw6AkhgKbAh2s7Jm3p
+DxFh3sZICKgqiEP/Y0Y9j2VZ9vHrxx2Nl5XHt3oe2crASx/Ue0v8BA5uqTzz+SJZ
+Q717MIoPyJtERWjkvc32Cp0F21yE/pM4v6ViszAmvxGcRN5eJKnPg/FCgmJMT8NE
+UVkSqdPxqhFH0oPjj4KAZTWTFwDPheVjvDeulc28d0PHrc5BkWgHU7Fb7b7gDK5x
+6+QtW+ljotvTtLPr4N3nkELp3axbiO+zyuveCxCuRFtaxXlKdVmtG16dr0qxlSCm
+H7Xhs//MUHQ=
+=w8cN
+-----END PGP SIGNATURE-----
+
+--=-YQ9KPPNLkZbg8A+WVmxm--
