@@ -1,157 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab0KZT14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 14:27:56 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:32988 "EHLO ogre.sisk.pl"
+	id S1755597Ab0KZT3j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 14:29:39 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:43128 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754669Ab0KZT1y convert rfc822-to-8bit (ORCPT
+	id S1753760Ab0KZT3i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 14:27:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: sedat.dilek@gmail.com
-Subject: Re: [PATCH 0/13] ACPI / PM: Rework power resources management
-Date: Fri, 26 Nov 2010 20:26:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Len Brown <lenb@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-References: <AANLkTimahUpEL3cV6pFhkN8KqrphfVMSOw8xAN2=9jPy@mail.gmail.com> <201011252145.19814.rjw@sisk.pl> <AANLkTimcn_3DamzfWaCk6YEfSCvC78ZJGkw-f+01pj2=@mail.gmail.com>
-In-Reply-To: <AANLkTimcn_3DamzfWaCk6YEfSCvC78ZJGkw-f+01pj2=@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Fri, 26 Nov 2010 14:29:38 -0500
+Date: Fri, 26 Nov 2010 11:29:20 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Daniel Drake <dsd@laptop.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v4 resend] OLPC: Add XO-1 suspend/resume support
+Message-ID: <20101126112920.48df6216@debxo>
+In-Reply-To: <AANLkTikRoB2xmtwW=ddjJy-RdEpwrwT+5ngV3HC5t5k9@mail.gmail.com>
+References: <20101118202837.B24899D401B@zog.reactivated.net>
+	<alpine.LFD.2.00.1011261037560.2900@localhost6.localdomain6>
+	<AANLkTikRoB2xmtwW=ddjJy-RdEpwrwT+5ngV3HC5t5k9@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201011262026.55052.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 26, 2010, Sedat Dilek wrote:
-> On Thu, Nov 25, 2010 at 9:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, November 25, 2010, Sedat Dilek wrote:
-> >> On Thu, Nov 25, 2010 at 9:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Thursday, November 25, 2010, Rafael J. Wysocki wrote:
-> >> >> On Thursday, November 25, 2010, Sedat Dilek wrote:
-> >> >> > On Thu, Nov 25, 2010 at 10:41 AM, Sedat Dilek
-> >> >> > <sedat.dilek@googlemail.com> wrote:
-> >> >> > > On Thu, Nov 25, 2010 at 10:11 AM, Sedat Dilek
-> >> >> > > <sedat.dilek@googlemail.com> wrote:
-> >> >> > >> Hi Rafael,
-> >> >> > >>
-> >> >> > [ ... ]
-> >> >> > >> # grep "error:" build_linux-next_next20101124.dileks.2.log
-> >> >> > >> /home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/fujitsu-laptop.c:692:
-> >> >> > >> error: implicit declaration of function â€˜acpi_bus_get_powerâ€™
-> >> >> > [ ... ]
-> >> >> > >
-> >> >> > > Guess this is conflicting with your patch
-> >> >> > > "12-13-ACPI-PM-Drop-acpi_bus_get_power.patch".
-> >> >> > >
-> >> >> > > - Sedat -
-> >> >> > >
-> >> >> > > P.S.: Note to myself, add the following snippet for testing purposes:
-> >> >> > >
-> >> >> > > [ debian/config/i386/none/config.686 ]
-> >> >> > > ...
-> >> >> > > ##
-> >> >> > > ## file: drivers/platform/x86/Kconfig
-> >> >> > > ##
-> >> >> > > # CONFIG_FUJITSU_LAPTOP is not set
-> >> >> > > - EOT -
-> >> >> > >
-> >> >> >
-> >> >> > Applied on top of linux-next (next-20101125) and running.
-> >> >> >
-> >> >> >      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> >> >>
-> >> >> Great, thanks a lot!
-> >> >>
-> >> >> I should have said the patchset is on top of the current Linus' tree.
-> >> >
-> >> > Actually it also breaks with the current Linus' tree, but the appended patch
-> >> > should fix it.
-> >> >
-> >> > Thanks,
-> >> > Rafael
-> >> >
-> >> > ---
-> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >> > Subject: Platform / x86: Make fujitsu_laptop use acpi_bus_update_power()
-> >> >
-> >> > Use the new function acpi_bus_update_power(), which is safer than
-> >> > acpi_bus_get_power(), for getting device power state in
-> >> > acpi_fujitsu_add().
-> >> >
-> >> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >> > ---
-> >> >  drivers/platform/x86/fujitsu-laptop.c |    2 +-
-> >> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >> >
-> >> > Index: linux-2.6/drivers/platform/x86/fujitsu-laptop.c
-> >> > ===================================================================
-> >> > --- linux-2.6.orig/drivers/platform/x86/fujitsu-laptop.c
-> >> > +++ linux-2.6/drivers/platform/x86/fujitsu-laptop.c
-> >> > @@ -689,7 +689,7 @@ static int acpi_fujitsu_add(struct acpi_
-> >> >        if (error)
-> >> >                goto err_free_input_dev;
-> >> >
-> >> > -       result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
-> >> > +       result = acpi_bus_update_power(fujitsu->acpi_handle, &state);
-> >> >        if (result) {
-> >> >                printk(KERN_ERR "Error reading power state\n");
-> >> >                goto err_unregister_input_dev;
-> >> >
-> >>
-> >> Sorry, I crapped my own quotes.
-> >> Missed to catch line #860?
-> >
-> > Indeed, sorry.  Updated patch is appended.
-> >
-> > Rafael
-> >
-> >
-> > ---
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: Platform / x86: Make fujitsu_laptop use acpi_bus_update_power()
-> >
-> > Use the new function acpi_bus_update_power(), which is safer than
-> > acpi_bus_get_power(), for getting device power state in
-> > acpi_fujitsu_add().
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >  drivers/platform/x86/fujitsu-laptop.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > Index: linux-2.6/drivers/platform/x86/fujitsu-laptop.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/platform/x86/fujitsu-laptop.c
-> > +++ linux-2.6/drivers/platform/x86/fujitsu-laptop.c
-> > @@ -689,7 +689,7 @@ static int acpi_fujitsu_add(struct acpi_
-> >        if (error)
-> >                goto err_free_input_dev;
-> >
-> > -       result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
-> > +       result = acpi_bus_update_power(fujitsu->acpi_handle, &state);
-> >        if (result) {
-> >                printk(KERN_ERR "Error reading power state\n");
-> >                goto err_unregister_input_dev;
-> > @@ -857,7 +857,7 @@ static int acpi_fujitsu_hotkey_add(struc
-> >        if (error)
-> >                goto err_free_input_dev;
-> >
-> > -       result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
-> > +       result = acpi_bus_update_power(fujitsu_hotkey->acpi_handle, &state);
-> >        if (result) {
-> >                printk(KERN_ERR "Error reading power state\n");
-> >                goto err_unregister_input_dev;
-> >
-> 
-> Feel free to add for
-> "Platform-x86-Make-fujitsu_laptop-use-acpi_bus_update_power.patch":
-> 
->      Reported-and-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+On Fri, 26 Nov 2010 16:28:51 +0000
+Daniel Drake <dsd@laptop.org> wrote:
 
-Thanks for testing!
+[...]
+> Re. the printk thing, this was your doing:
+> http://dev.laptop.org/git/olpc-2.6/commit/?h=stable&id=b4334e9e1444761f19806f9066c6b38ce23079bf
+[...]
+> ---------- Forwarded message ----------
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: 26 November 2010 09:43
+> Subject: Re: [PATCH v4 resend] OLPC: Add XO-1 suspend/resume support
+> To: Daniel Drake <dsd@laptop.org>
+> Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+> 
+> 
+> On Thu, 18 Nov 2010, Daniel Drake wrote:
+> > Feedback after the first submission was quickly acted upon and I
+> > haven't been able to get a peep since.
+> 
+> Sorry, fell off the radar.
+> 
+> > +
+> > +wakeup_start:
+> > +#    jmp wakeup_start
+> 
+>  Debug leftover ?
 
-Rafael
+
+Leftovers from the original patch; certainly should be removed.
+
+
+> 
+> > +asmlinkage int olpc_xo1_do_sleep(u8 sleep_state)
+> > +{
+> > +     void *pgd_addr = __va(read_cr3());
+> > +     printk(KERN_ERR "xo1_do_sleep!\n"); /* this needs to remain
+> > here so
+> > +                                           * that gcc doesn't
+> > optimize
+> > +                                           * away our __va! */
+> > +
+> 
+>  This looks suspect along with the __volatile__ magic below. Care to
+>  explain, what you fear that gcc is optimizing away ?
+> 
+
+
+I'm working from memory here; in the version of gcc we were using
+at the time (stock FC5 or FC6), setting pgd_addr immediately followed
+by the asm below resulted in gcc optimizing away the __va().  The asm
+turned into simply:
+
+movl %cr3, %eax
+
+With no mention of PAGE_OFFSET.  Messing with 'volatile' didn't help.
+Adding the printk did, as it causes %eax to get clobbered, forcing
+temporary storage of %cr3 into a separate register.  A lot has changed
+since then (compilers, this code, as well as the definition of
+read_cr3()), so I highly suspect that it's no longer needed.
+ 
+
+> > +     /* Enable wakeup through power button */
+> > +     outl((CS5536_PM_PWRBTN << 16) | 0xFFFF, acpi_base + PM1_STS);
+> > +
+> > +     __asm__ __volatile__("movl %0,%%eax" : : "r" (pgd_addr));
+> > +     __asm__("call *(%%edi); cld"
+> > +             : : "D" (&ofw_bios_entry));
+> > +     __asm__ __volatile__("movb $0x34, %al\n\t"
+> > +                          "outb %al, $0x70\n\t"
+> > +                          "movb $0x30, %al\n\t"
+> > +                          "outb %al, $0x71\n\t");
+> 
+> Looks good otherwise.
+> 
+> Thanks,
+> 
+>        tglx
+
