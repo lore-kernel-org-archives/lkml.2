@@ -1,159 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab0KZAdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 19:33:44 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10967 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752242Ab0KZAdn (ORCPT
+	id S1753056Ab0KZAdy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 19:33:54 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53203 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab0KZAdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 19:33:43 -0500
-Message-ID: <4CEF004B.7050701@dsn.okisemi.com>
-Date: Fri, 26 Nov 2010 09:33:15 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Thu, 25 Nov 2010 19:33:53 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Simon Kirby <sim@hostway.ca>
+Subject: Re: Free memory never fully used, swapping
+Cc: kosaki.motohiro@jp.fujitsu.com, Shaohua Li <shaohua.li@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+In-Reply-To: <20101125171313.GA15899@hostway.ca>
+References: <20101125191759.F465.A69D9226@jp.fujitsu.com> <20101125171313.GA15899@hostway.ca>
+Message-Id: <20101126093326.B6D0.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 3/19 v4] can: EG20T PCH: Enumerate LEC macros
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 26 Nov 2010 09:33:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enumerate LEC macros
+> On Thu, Nov 25, 2010 at 07:18:49PM +0900, KOSAKI Motohiro wrote:
+> 
+> > This?
+> 
+> > -	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
+> > +	alloc_gfp = (flags | __GFP_NOWARN) & ~(__GFP_NOFAIL | __GFP_WAIT);
+> 
+> kswapd still gets woken in the !__GFP_WAIT case, which is what I was
+> seeing anyway, because the order-3 allocatons were starting from
+> __alloc_skb().
 
-For easy to readable, LEC is replaced to enums.
+Oops, my fault.
+We also need __GFP_NOKSWAPD. (Proposed by Andrea)
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   77
-++++++++++++++++++++++++---------------------
- 1 files changed, 41 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 982ff2d..2d4ab0f 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -71,21 +71,12 @@
- #define PCH_REC			0x00007f00
- #define PCH_TEC			0x000000ff
-
-+
- #define PCH_TX_OK		BIT(3)
- #define PCH_RX_OK		BIT(4)
- #define PCH_EPASSIV		BIT(5)
- #define PCH_EWARN		BIT(6)
- #define PCH_BUS_OFF		BIT(7)
--#define PCH_LEC0		BIT(0)
--#define PCH_LEC1		BIT(1)
--#define PCH_LEC2		BIT(2)
--#define PCH_LEC_ALL		(PCH_LEC0 | PCH_LEC1 | PCH_LEC2)
--#define PCH_STUF_ERR		PCH_LEC0
--#define PCH_FORM_ERR		PCH_LEC1
--#define PCH_ACK_ERR		(PCH_LEC0 | PCH_LEC1)
--#define PCH_BIT1_ERR		PCH_LEC2
--#define PCH_BIT0_ERR		(PCH_LEC0 | PCH_LEC2)
--#define PCH_CRC_ERR		(PCH_LEC1 | PCH_LEC2)
-
- /* bit position of certain controller bits. */
- #define PCH_BIT_BRP		0
-@@ -117,6 +108,16 @@ enum pch_ifreg {
- 	PCH_TX_IFREG,
- };
-
-+enum pch_can_err {
-+	PCH_STUF_ERR = 1,
-+	PCH_FORM_ERR,
-+	PCH_ACK_ERR,
-+	PCH_BIT1_ERR,
-+	PCH_BIT0_ERR,
-+	PCH_CRC_ERR,
-+	PCH_LEC_ALL,
-+};
-+
- enum pch_can_mode {
- 	PCH_CAN_ENABLE,
- 	PCH_CAN_DISABLE,
-@@ -620,7 +621,7 @@ static void pch_can_error(struct net_device *ndev,
-u32 status)
- 	struct sk_buff *skb;
- 	struct pch_can_priv *priv = netdev_priv(ndev);
- 	struct can_frame *cf;
--	u32 errc;
-+	u32 errc, lec;
- 	struct net_device_stats *stats = &(priv->ndev->stats);
- 	enum can_state state = priv->can.state;
-
-@@ -665,33 +666,37 @@ static void pch_can_error(struct net_device *ndev,
-u32 status)
- 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
- 	}
-
--	if (status & PCH_LEC_ALL) {
-+	lec = status & PCH_LEC_ALL;
-+	switch (lec) {
-+	case PCH_STUF_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_STUFF;
- 		priv->can.can_stats.bus_error++;
- 		stats->rx_errors++;
--		switch (status & PCH_LEC_ALL) {
--		case PCH_STUF_ERR:
--			cf->data[2] |= CAN_ERR_PROT_STUFF;
--			break;
--		case PCH_FORM_ERR:
--			cf->data[2] |= CAN_ERR_PROT_FORM;
--			break;
--		case PCH_ACK_ERR:
--			cf->data[2] |= CAN_ERR_PROT_LOC_ACK |
--				       CAN_ERR_PROT_LOC_ACK_DEL;
--			break;
--		case PCH_BIT1_ERR:
--		case PCH_BIT0_ERR:
--			cf->data[2] |= CAN_ERR_PROT_BIT;
--			break;
--		case PCH_CRC_ERR:
--			cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
--				       CAN_ERR_PROT_LOC_CRC_DEL;
--			break;
--		default:
--			iowrite32(status | PCH_LEC_ALL, &priv->regs->stat);
--			break;
--		}
--
-+		break;
-+	case PCH_FORM_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_FORM;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_ACK_ERR:
-+		cf->can_id |= CAN_ERR_ACK;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_BIT1_ERR:
-+	case PCH_BIT0_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_BIT;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_CRC_ERR:
-+		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-+			       CAN_ERR_PROT_LOC_CRC_DEL;
-+		priv->can.can_stats.bus_error++;
-+		stats->rx_errors++;
-+		break;
-+	case PCH_LEC_ALL: /* Written by CPU. No error status */
-+		break;
- 	}
-
- 	priv->can.state = state;
--- 
-1.6.0.6
