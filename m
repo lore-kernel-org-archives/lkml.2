@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab0KZQZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 11:25:43 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:39815 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab0KZQZm (ORCPT
+	id S1755115Ab0KZQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 11:26:01 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:59317 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918Ab0KZQZ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 11:25:42 -0500
-MIME-Version: 1.0
-X-Originating-IP: [192.102.204.37]
-In-Reply-To: <AANLkTinEW=TKtbJxpS=YmJz1+Obpk7PFGcqDJc+SKLtS@mail.gmail.com>
-References: <1290340877.2245.124.camel@localhost>
-	<AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
-	<AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
-	<AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-	<1290770652.2145.128.camel@laptop>
-	<AANLkTika3r2=gCh4nX-raRU3BoFpWMUEapn3w2bgyGAd@mail.gmail.com>
-	<1290771419.2145.137.camel@laptop>
-	<AANLkTinEW=TKtbJxpS=YmJz1+Obpk7PFGcqDJc+SKLtS@mail.gmail.com>
-Date: Sat, 27 Nov 2010 00:25:36 +0800
-Message-ID: <AANLkTinjOmepMJwGbJAFanoWe6YKyGz+WBdz7CZxoD5o@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Lin Ming <lin@ming.vg>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Nov 2010 11:25:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:content-type:content-transfer-encoding:subject:date:message-id
+         :to:mime-version:x-mailer;
+        b=qH5KnqHqSnFWm0E7a9e7utr58RmhkUyz6Cn11sbXaJ3Wi8BVdtzVxVUxI3Cy3myzv1
+         Tp9fWbETvjQ3YE6ZDdIAoFfGCA+Gbb2gyCUgedK3oSU4oGAibmMqlVbl6WeWiylpjbke
+         cy6wxitpzlg6s3+FYzkFCaMFENAGCVEBscVdI=
+From: Bob Walters <bob.s.walters@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: mlock'ed pages are paging out to shared mapped files?
+Date: Fri, 26 Nov 2010 11:25:55 -0500
+Message-Id: <03A305FE-2E9E-42B0-A06C-564E03295B2A@gmail.com>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1081)
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 7:41 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Fri, Nov 26, 2010 at 12:36 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> On Fri, 2010-11-26 at 12:25 +0100, Stephane Eranian wrote:
->>> On Fri, Nov 26, 2010 at 12:24 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->>> > On Fri, 2010-11-26 at 09:18 +0100, Stephane Eranian wrote:
->>> >
->>> >> In the perf_event model, given that any one of the 4 cores can be used
->>> >> to program uncore events, you have no choice but to broadcast to all
->>> >> 4 cores. Each has to demultiplex and figure out which of its counters
->>> >> have overflowed.
->>> >
->>> > Not really, you can redirect all these events to the first online cpu of
->>> > the node.
->>> >
->>> > You can re-write event->cpu in pmu::event_init(), and register cpu
->>> > hotplug notifiers to migrate the state around.
->>> >
->>> I am sure you could. But then the user thinks the event is controlled
->>> from CPUx when it's actually from CPUz. I am sure it can work but
->>> that's confusing, especially interrupt-wise.
->>
->> Well, its either that or keeping a node wide state like we do for AMD
->> and serialize everything from there.
->>
->> And I'm not sure what's most expensive, steering the interrupt to one
->> core only, or broadcasting every interrupt, I'd favour the first
->> approach.
->
-> I think the one core-only approach will limit the spurious interrupt aspect.
-> In perfmon, that's how I had it setup. The first CPU where uncore is
-> accessed owns the uncore PMU for the socket, thus all interrupts are
-> routed there. What you are proposing is the same. Now you can chose
-> you hardcode which is the default core to handle this, or (better) you
-> use the first core that accesses uncore.
->
->>
->> The whole thing is a node-wide resource, so the user needs to think in
->> nodes anyway, we already do a cpu->node mapping for identifying the
->> thing.
->>
-> Agreed.
->
+Please CC directly, I'm not subscribed.
 
-Hi, all
+I'm writing to determine if observed mlock behavior is a bug or the intended implementation.   The kernel seems to be paging out modifications made to locked pages of a shared (MAP_SHARED) memory mapped regular file, on Linux 2.6.35.6-48 (Fedora 14 distro, x86_64).   Man pages implies that this might be a bug.   I have a repeatable process involving the following test:
 
-Thanks for all the comments.
-I'm on travel Nov 27 to Nov 30.
+	static const int pages = 64;
+	static const size_t pagesize = getpagesize();
+	static char *addr = NULL;
 
-I'll address the comments when I'm back.
+	// Make sure, on Linux, that the process has the capability to lock memory.
+	// See man capability(7)
+	void print_mlock_capability() {
+        	cap_t caps = cap_get_proc();
+        	if (caps == NULL) {
+                	perror("cap_get_proc()");
+                	exit(0);
+        	}
 
-Thanks,
-Lin Ming
+       		cap_flag_value_t value;
+        	cap_get_flag(caps, CAP_IPC_LOCK, CAP_PERMITTED, &value);
+        	cout << "IPC_LOCK Permitted: " << (value == CAP_SET ? "set" : "clear") << endl;
+
+        	cap_get_flag(caps, CAP_IPC_LOCK, CAP_EFFECTIVE, &value);
+        	cout << "IPC_LOCK Effective: " << (value == CAP_SET ? "set" : "clear") << endl;
+	}
+
+	int main(const int argc, const char* argv[]) {
+        	print_mlock_capability();
+
+        	int fd = open("mincore_testmap", O_RDWR | O_CREAT, 0777);
+        	assert(fd != -1);
+
+        	off_t length = pagesize*pages;
+        	char byte=0;
+        	ssize_t written = pwrite(fd, &byte, sizeof(char), length);
+        	assert(written != -1);
+
+        	int prot = PROT_READ|PROT_WRITE;
+        	//int flags = MAP_PRIVATE | MAP_NOCACHE;
+        	int flags = MAP_SHARED;
+        	//int flags = MAP_SHARED | MAP_NORESERVE;
+       		addr = (char*)mmap(0, length, prot, flags, fd, 0);
+        	assert(addr != 0);
+
+        	cout << "Mapping at: " << (void*)addr << endl;
+        	memset(addr,0,pagesize*pages);
+        	msync(addr,length,MS_SYNC);
+
+                cout << "Locking page 0 in memory" << endl;
+                // lock page 0 into memory
+                int rc = mlock(addr, pagesize);
+                if (rc != 0) {
+                        perror("mlock");
+                        exit(0);
+                }
+
+        	// modify page 0 and 1.  1 should page out, but not 0.
+        	memset(addr, 127, pagesize*2);
+
+        	cout << "Page 0 and 1 modified, but not synced.  Waiting...." << endl;
+        	sleep( 300 );
+	}
+
+Output:
+IPC_LOCK Permitted: set
+IPC_LOCK Effective: set
+Mapping at: 0x7fb3b0db7000
+Page 0 and 1 modified, but not synched.  Waiting....
+
+After allowing the process to enter the blocked state (sleep), I wait about a 30-60 seconds, then do a sudden power-off by pulling the plug, not allowing the OS any opportunity to react.  I reboot, and can confirm that after reboot, the modifications made to page 0 are seen on disk (via hexdump of the file mincore_test).  More specifically:  On occasion when doing this, I do reboot and see neither pages 0 and 1 on disk.  That's observed if I kill the power quickly after the process reaches the sleep state.  However, after a longer wait (10 seconds+), I always see 127s for both pages 0 and 1 on disk, never just page 1.  I'm using a journaled ext-4 filesystem.  Have checked the file times, after recovery, to rule out the chance that I am seeing a copy from a previous run of this test.
+
+Tried double checking my permission to lock memory.  Ended up running as root.  capacity(7) shows I have IPC_LOCK permissions.  set ulimit -l unlimited.  mlock return code is 0.  I am running SE linux, changed it's configuration to permissive mode to try to rule it out.  Saw no SE Errors.  Can't identify any reason why I would fail to lock the pages into memory.
+
+Ultimately, was unable to prevent mlock'ed pages from being paged out.  I don't know if this occur with swap as well as mapped files - the problem might be specific to the case of a MAP_SHARED regular file?  Don't know.
+
+Is this a bug, or is this the intended behavior.  Many resources (man/web) imply that mlock keeps a locked page from paging out to disk (swap specifically).  The posix standard seems to imply that it must simply prevents eviction, but is not required to avoid paging out.  It is only required to keep the pages memory resident until unlocked.  It would be really nice, for my purposes, if there was some way to guarantee that modified pages of a mapped file do not page out prior to some point in time.  As a side question: Is there another mechanism which can ensure that.
+
+Best Regards,
+Bob
+
+
+
+
