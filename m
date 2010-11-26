@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0KZJS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 04:18:26 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41191 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab0KZJSY (ORCPT
+	id S1754098Ab0KZJTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 04:19:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45336 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760Ab0KZJTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 04:18:24 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: Free memory never fully used, swapping
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Simon Kirby <sim@hostway.ca>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-In-Reply-To: <1290739243.12777.17.camel@sli10-conroe>
-References: <20101126110244.B6DC.A69D9226@jp.fujitsu.com> <1290739243.12777.17.camel@sli10-conroe>
-Message-Id: <20101126181604.B6E4.A69D9226@jp.fujitsu.com>
+	Fri, 26 Nov 2010 04:19:37 -0500
+Date: Fri, 26 Nov 2010 09:18:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Olof Johansson <olof@lixom.net>, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kevin Hilman <khilman@deeprootsystems.com>, akpm@linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
+Message-ID: <20101126091832.GE9310@n2100.arm.linux.org.uk>
+References: <1290526740-27624-1-git-send-email-ohad@wizery.com> <1290526740-27624-2-git-send-email-ohad@wizery.com> <20101126045912.GC6598@lixom.net> <AANLkTin5Tfcuy0WcHJ22rWC8niwZCj8SZAMKLz0p9jwc@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 26 Nov 2010 18:18:21 +0900 (JST)
+In-Reply-To: <AANLkTin5Tfcuy0WcHJ22rWC8niwZCj8SZAMKLz0p9jwc@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, 2010-11-26 at 10:31 +0800, KOSAKI Motohiro wrote:
-> > > record the order seems not sufficient. in balance_pgdat(), the for look
-> > > exit only when:
-> > > priority <0 or sc.nr_reclaimed >= SWAP_CLUSTER_MAX.
-> > > but we do if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> > >                         order = sc.order = 0;
-> > > this means before we set order to 0, we already reclaimed a lot of
-> > > pages, so I thought we need set order to 0 earlier before there are
-> > > enough free pages. below is a debug patch.
-> > > 
-> > > 
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index d31d7ce..ee5d2ed 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -2117,6 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> > >  }
-> > >  #endif
-> > >  
-> > > +static int all_zone_enough_free_pages(pg_data_t *pgdat)
-> > > +{
-> > > +	int i;
-> > > +
-> > > +	for (i = 0; i < pgdat->nr_zones; i++) {
-> > > +		struct zone *zone = pgdat->node_zones + i;
-> > > +
-> > > +		if (!populated_zone(zone))
-> > > +			continue;
-> > > +
-> > > +		if (zone->all_unreclaimable)
-> > > +			continue;
-> > > +
-> > > +		if (!zone_watermark_ok(zone, 0, high_wmark_pages(zone) * 8,
-> > > +								0, 0))
-> > > +			return 0;
-> > > +	}
-> > > +	return 1;
-> > > +}
-> > > +
-> > >  /* is kswapd sleeping prematurely? */
-> > >  static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> > >  {
-> > > @@ -2355,7 +2375,8 @@ out:
-> > >  		 * back to sleep. High-order users can still perform direct
-> > >  		 * reclaim if they wish.
-> > >  		 */
-> > > -		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> > > +		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX ||
-> > > +		    (order > 0 && all_zone_enough_free_pages(pgdat)))
-> > >  			order = sc.order = 0;
-> > 
-> > Ummm. this doesn't work. this place is processed every 32 pages reclaimed.
-> > (see below code and comment). Theresore your patch break high order reclaim
-> > logic.
-> Yes, this will break high order reclaim, but we need a compromise.
-> wrongly reclaim pages is more worse. could increase the watermark in
-> all_zone_enough_free_pages() better?
+On Fri, Nov 26, 2010 at 10:53:10AM +0200, Ohad Ben-Cohen wrote:
+> >> +int __hwspin_trylock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
+> >> +{
+> >> +     int ret;
+> >> +
+> >> +     if (unlikely(!hwlock)) {
+> >> +             pr_err("invalid hwlock\n");
+> >
+> > These kind of errors can get very spammy for buggy drivers.
 > 
+> Yeah, but that's the purpose - I want to catch such egregious drivers
+> who try to crash the kernel.
 
-Hmm..
-I guess I haven't catch your mention. you wrote 
+That can be better - because you get a backtrace, and it causes people
+to report the problem rather than just ignore it.  It may also prevent
+the driver author releasing his code (as it won't work on their
+initial testing.)
 
-> > > but we do if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> > >                         order = sc.order = 0;
-> > > this means before we set order to 0, we already reclaimed a lot of
-> > > pages
+> > It's likely
+> > more useful to either do a WARN_ON(), and/or move them under a debug
+> > config option.
+> 
+> Why would you prefer to compile out reporting of such extremely buggy
+> behavior ?
 
-and I wrote it's not a lot. So, I don't understand why you are talking
-about watermark increasing now. Personally you seems to talk unrelated
-topic. Can you please elablate your point more?
-
-
-
-
-
-
+If it's "extremely buggy behaviour" then the drivers deserve to crash.
+Such stuff should cause them not to get out the door.  A simple printk
+with an error return can just be ignored.
