@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab0KZNez (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:34:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab0KZNey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:34:54 -0500
-Message-ID: <4CEFB76F.9020902@redhat.com>
-Date: Fri, 26 Nov 2010 14:34:39 +0100
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101122 Fedora/1.0-0.36.b2pre.fc15 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Florian Mickler <florian@mickler.org>
-CC: Chris Vine <chris@cvine.freeserve.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: kernel 2.6.37-rc2 breaks i915 graphics
-References: <20101121102344.7c590b99@laptop.homenet>	<0d30dc$k822nk@orsmga001.jf.intel.com>	<20101121183423.0f7c1872@laptop.homenet> <20101126102341.6d4188af@schatten.dmk.lab>
-In-Reply-To: <20101126102341.6d4188af@schatten.dmk.lab>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754785Ab0KZNgM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:36:12 -0500
+Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:60119 "EHLO
+	homiemail-a1.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752479Ab0KZNgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 08:36:11 -0500
+Subject: Re: [PATCH] perf: add GCC optimization to memory allocating
+ functions
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1290778040.2145.145.camel@laptop>
+References: <1290777864.2373.2.camel@cowboy>
+	 <1290778040.2145.145.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 10:36:02 -0300
+Message-ID: <1290778562.2373.3.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 26.11.2010 10:23, Florian Mickler napsal(a):
-> On Sun, 21 Nov 2010 18:34:23 +0000
-> Chris Vine <chris@cvine.freeserve.co.uk> wrote:
+On Fri, 2010-11-26 at 14:27 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-11-26 at 10:24 -0300, Davidlohr Bueso wrote:
+> > From: Davidlohr Bueso <dave@gnu.org>
+> > 
+> > We can benefit from the alloc_size attribute in xrealloc and zalloc.
 > 
->> On Sun, 21 Nov 2010 10:30:43 +0000
->> Chris Wilson <chris@chris-wilson.co.uk> wrote:
->>
->>> On Sun, 21 Nov 2010 10:23:44 +0000, Chris Vine
->>> <chris@cvine.freeserve.co.uk> wrote:
->>>> Hi,
->>>>
->>>> With kernel 2.6.37-rc2, i915 graphics usually fails on boot-up after
->>>> modesetting with my Lenovo S12 netbook which uses the Intel 945GME
->>>> Express Integrated Graphics Controller.  It displays up to the
->>>> point at which modesetting takes place and then usually goes blank.
->>>>
->>>> There may be some kind of race at work here: first, sometimes
->>>> (maybe 1 times in 4) graphics comes up correctly on a first cold
->>>> boot, but I have never managed to get it to come up on a warm
->>>> reboot. Secondly, graphics can be restored when I know (but cannot
->>>> see) that boot-up has concluded, simply by suspending the laptop
->>>> and then resuming.  Resuming the laptop after a suspend always
->>>> brings up the graphics correctly.
->>>
->>> Add drm.debug=0xe to your boot commandline and compare if there is any
->>> difference between a successful cold boot, a broken cold boot and a
->>> warm boot. Similarly, comparing the output of intel_reg_dumper after
->>> each should yield a few clues as to what stage in the boot process we
->>> fail. -Chris
->>
->> First an additional datum point: 2.6.37-rc1 works normally, so the bug
->> is something introduced between 2.6.37-rc1 and 2.6.37-rc2 (to that
->> extent it may be related to this bug which reports a similar phenomenon:
->> http://lkml.org/lkml/2010/11/21/23 ).
->>
->> Attached is the dmesg output from a successful cold boot with
->> 2.6.37-rc2, an unsuccessful cold boot and an unsuccessful warm boot,
->> each with drm.debug=0xe.
->>
+> What's this alloc_size attribute do?
 > 
-> I trimmed the failure boot logs to the stuff before suspending, in
-> order to only compare the boot sequence. 
-> 
-> Looks like only in failure case there are "pipe b
-> underrun" reported...
-> In success case, no "pipe b underrun" is reported. 
-> 
-> Also in success case connectors are probed much more often:
-> 
-> $ grep drm:drm_helper_probe_single_connector_modes dmesg-2.6.37-rc2.succeed  | wc -l
-> 76
-> $ grep drm:drm_helper_probe_single_connector_modes dmesg-2.6.37-rc2.*.fail  | wc -l
-> 32
-> $ grep drm:drm_helper_probe_single_connector_modes dmesg-2.6.37-rc2.cold.fail  | wc -l
-> 16
-> 
-> 
-> I could not spot any other differences both failure modes have in common against the success case.
-> 
-> If Chris (Wilson) doesn't yet know what could be the bug a bisection 
-> between 2.6.37-rc1 and rc2 might be helpful. 
-> 
->  
->> I can't provide the output of intel_reg_dumper:  I can't compile the
->> latest intel-gpu-tools from git (missing declaration/definition of
->> I915_EXE_BLT).  Probably something in a relevant library is too old.
->>
+Quoting from http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html:
 
-Reminds me - I need to keep drm_kms_helper disabled for reliable
-resume on T61:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=19052
-https://bugzilla.redhat.com/show_bug.cgi?id=617809
-
-Zdenek
+"The alloc_size attribute is used to tell the compiler that the function
+return value points to memory, where the size is given by one or two of
+the functions parameters. GCC uses this information to improve the
+correctness of __builtin_object_size."
 
