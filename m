@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab0KZPnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:43:13 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7032 "EHLO mga14.intel.com"
+	id S1755273Ab0KZPop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:44:45 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55536 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab0KZPnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:43:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,261,1288594800"; 
-   d="scan'208";a="353581372"
-Date: Fri, 26 Nov 2010 16:43:04 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Ludovic Barre <ludovic.barre@stericsson.com>
-Subject: Re: [PATCH] MFD: ab8500 chip id exported to sysfs
-Message-ID: <20101126154303.GC27663@sortiz-mobl>
-References: <1290773125-9031-1-git-send-email-mattias.wallin@stericsson.com>
+	id S1753648Ab0KZPoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:44:44 -0500
+Message-ID: <4CEFD5AF.9060401@kernel.org>
+Date: Fri, 26 Nov 2010 16:43:43 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290773125-9031-1-git-send-email-mattias.wallin@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [thiscpuops upgrade 01/10] percpucounter: Optimize __percpu_counter_add
+ a bit through the use of this_cpu() options.
+References: <20101123235139.908255844@linux.com> <20101123235156.482244613@linux.com>
+In-Reply-To: <20101123235156.482244613@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:43:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mattias,
+On 11/24/2010 12:51 AM, Christoph Lameter wrote:
+> The this_cpu_* options can be used to optimize __percpu_counter_add a bit. Avoids
+> some address arithmetic and saves 12 bytes.
+...
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-On Fri, Nov 26, 2010 at 01:05:25PM +0100, Mattias Wallin wrote:
-> This patch adds a file into sysfs for reading out chip id.
-> It have been requested for modem silent reboot.
-> 
-> Change-Id: I8e2c10e740a90ab210e023df4214b422c01f2efb
-I suppose this is some internal ID ? Please remove it from the Changelog.
-
-
-> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
-> Signed-off-by: Ludovic Barre <ludovic.barre@stericsson.com>
-> ---
->  drivers/mfd/ab8500-core.c |   27 ++++++++++++++++++++++++++-
->  1 files changed, 26 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-> index e64569e..c59e832 100644
-> --- a/drivers/mfd/ab8500-core.c
-> +++ b/drivers/mfd/ab8500-core.c
-> @@ -98,7 +98,7 @@ static int ab8500_get_chip_id(struct device *dev)
->  	if (!dev)
->  		return -EINVAL;
->  	ab8500 = dev_get_drvdata(dev->parent);
-> -	return (int)ab8500->chip_id;
-> +	return ab8500 ? (int)ab8500->chip_id : -EINVAL;
-Here again, you're squeezing some potential bug fix into this patch.
-
-The rest looks just fine.
-
-Cheers,
-Samuel.
+Reviewed-by: Tejun Heo <tj@kernel.org>
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+tejun
