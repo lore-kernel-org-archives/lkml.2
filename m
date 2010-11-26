@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab0KZKvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:51:18 -0500
-Received: from hera.kernel.org ([140.211.167.34]:42321 "EHLO hera.kernel.org"
+	id S1755203Ab0KZKvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:51:51 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42319 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab0KZKu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754860Ab0KZKu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Nov 2010 05:50:26 -0500
 From: Tejun Heo <tj@kernel.org>
 To: roland@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         "rjw@sisk.plpavel"@ucw.cz
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/14] signal: don't notify parent if not stopping after tracehook_notify_jctl() in do_signal_stop()
-Date: Fri, 26 Nov 2010 11:49:19 +0100
-Message-Id: <1290768569-16224-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/14] ptrace: add @why to ptrace_stop()
+Date: Fri, 26 Nov 2010 11:49:22 +0100
+Message-Id: <1290768569-16224-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290768569-16224-1-git-send-email-tj@kernel.org>
 References: <1290768569-16224-1-git-send-email-tj@kernel.org>
@@ -22,78 +22,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_signal_stop() tests sig->group_stop_count one more time after
-calling tracehook_notify_jctl() as it's allowed release siglock.  If
-group_stop_count has changed to zero, it no longer stops but still
-notifies the parent.  For both SIGCONT and KILL which could cause the
-condition, this notification is unnecessary.
-
-SIGCONT will be notified to the parent when the task calls
-get_signal_to_deliver() right after returning from do_signal_stop()
-which will handle the collapsed notification correctly by itself.  The
-notification from do_signal_stop() in this case would only cause
-duplication.  For SIGKILL, the imminent death of the task will be
-notified to parent and it's completely superflous to report the
-skipped stop.
-
-Also, tracehook_notify_jctl() doesn't release siglock, so, currently,
-none of these matters at all.
-
-This patch updates do_signal_stop() such that it jumps out of the
-function if group_stop_count has dropped during
-tracehook_notify_jctl().
-
-This doesn't cause any behavior difference as the condition never
-triggers in the current code.
+To prepare for cleanup of the interaction between group stop and
+ptrace, add @why to ptrace_stop().  Existing users are updateda such
+that there is no behavior change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>
 ---
- kernel/signal.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+ kernel/signal.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 0a6816a..6f7407d 100644
+index b859690..3b3e69c 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -1763,15 +1763,20 @@ static int do_signal_stop(int signr)
- 	notify = tracehook_notify_jctl(notify, CLD_STOPPED);
- 	/*
- 	 * tracehook_notify_jctl() can drop and reacquire siglock, so
--	 * we keep ->group_stop_count != 0 before the call. If SIGCONT
--	 * or SIGKILL comes in between ->group_stop_count == 0.
-+	 * we test ->group_stop_count again.  If SIGCONT or SIGKILL
-+	 * comes in between, ->group_stop_count == 0.
- 	 */
--	if (sig->group_stop_count) {
--		if (!--sig->group_stop_count)
--			sig->flags = SIGNAL_STOP_STOPPED;
--		current->exit_code = sig->group_exit_code;
--		__set_current_state(TASK_STOPPED);
-+	if (!sig->group_stop_count) {
-+		spin_unlock_irq(&current->sighand->siglock);
-+		goto out;
- 	}
-+
-+	if (!--sig->group_stop_count)
-+		sig->flags = SIGNAL_STOP_STOPPED;
-+
-+	current->exit_code = sig->group_exit_code;
-+	__set_current_state(TASK_STOPPED);
-+
+@@ -1633,7 +1633,7 @@ static int sigkill_pending(struct task_struct *tsk)
+  * If we actually decide not to stop at all because the tracer
+  * is gone, we keep current->exit_code unless clear_code.
+  */
+-static void ptrace_stop(int exit_code, int clear_code, siginfo_t *info)
++static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 	__releases(&current->sighand->siglock)
+ 	__acquires(&current->sighand->siglock)
+ {
+@@ -1671,7 +1671,7 @@ static void ptrace_stop(int exit_code, int clear_code, siginfo_t *info)
  	spin_unlock_irq(&current->sighand->siglock);
+ 	read_lock(&tasklist_lock);
+ 	if (may_ptrace_stop()) {
+-		do_notify_parent_cldstop(current, CLD_TRAPPED);
++		do_notify_parent_cldstop(current, why);
+ 		/*
+ 		 * Don't want to allow preemption here, because
+ 		 * sys_ptrace() needs this task to be inactive.
+@@ -1730,7 +1730,7 @@ void ptrace_notify(int exit_code)
  
- 	if (notify) {
-@@ -1782,7 +1787,7 @@ static int do_signal_stop(int signr)
+ 	/* Let the debugger run.  */
+ 	spin_lock_irq(&current->sighand->siglock);
+-	ptrace_stop(exit_code, 1, &info);
++	ptrace_stop(exit_code, CLD_TRAPPED, 1, &info);
+ 	spin_unlock_irq(&current->sighand->siglock);
+ }
  
- 	/* Now we don't run again until woken by SIGCONT or SIGKILL */
- 	schedule();
--
-+out:
- 	tracehook_finish_jctl();
- 	current->exit_code = 0;
+@@ -1826,7 +1826,7 @@ static int ptrace_signal(int signr, siginfo_t *info,
+ 	ptrace_signal_deliver(regs, cookie);
  
+ 	/* Let the debugger run.  */
+-	ptrace_stop(signr, 0, info);
++	ptrace_stop(signr, CLD_TRAPPED, 0, info);
+ 
+ 	/* We're back.  Did the debugger cancel the sig?  */
+ 	signr = current->exit_code;
 -- 
 1.7.1
 
