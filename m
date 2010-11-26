@@ -1,59 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab0KZL5F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:57:05 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62006 "EHLO
+	id S1753960Ab0KZL6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:58:48 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37226 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab0KZL5D convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751302Ab0KZL6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:57:03 -0500
+	Fri, 26 Nov 2010 06:58:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=f47/VjE6C1USv18sroy6BLBLhTd1qf1LSue25cAVUFzEiCfFa1ZasgGtEEllYzGNTe
-         0TSRNSSEt/QD9sPHvGii7lu3nulFdY4H0v5d6/ihTyzSmE3nW6+dCSou64yBUtVjETDL
-         sPYiwwW2TaDlpJND1/g8pk4J9Z4tLF5ygBTB8=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=gMHnhOaGf1H2GHG4TvEogkxSziksnrzsBifAz+m6dIpW1AF9F3gk/iM4iG2HW4hKeB
+         wa1BmaBumWa8ktYue/wtr++Yt45ddggdyEvdZGBoF6myvIkOFQSEDE0GqOpAgyAVJ45+
+         AxQH5I09/Oe944xZ0++rExvydsXMectszCsDE=
 MIME-Version: 1.0
-In-Reply-To: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com>
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com>
-Date: Fri, 26 Nov 2010 12:57:02 +0100
-Message-ID: <AANLkTikkVqWgpYEg505DwQ+pSegQv1g-Q8cDEpE-JCrV@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
+References: <20101123224601.766827604@openvz.org>
+	<20101123224800.294919307@openvz.org>
+	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
+	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
+	<AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
+	<AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
+Date: Fri, 26 Nov 2010 14:58:47 +0300
+X-Google-Sender-Auth: 6P0Gv9dgkOqNfsm4_8btdwg3cFw
+Message-ID: <AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com>
+Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, peterz@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/20 Hans Ulli Kroll <ulli.kroll@googlemail.com>:
-> Add support for PCI Bus on Gemini Devices SL3516
+On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+> On Fri, Nov 26, 2010 at 12:32 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+> wrote:
+>> On Fri, Nov 26, 2010 at 2:14 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>> wrote:
+>>> Stephane, this is a misprint, I'll update this comments on format
+>>> (giod catch btw!). in real low 32 bits are considered as cccr in ht
+>>> mode. wait a bit, i'll post update.
+>>>
+>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>> ...
+>>>>> + *    Low 32 bits
+>>>>> + *    -----------
+>>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>>> + *     7-11:                    reserved
+>>>>> + *       12: Active thread
+>>>>
+>>>> I don't understand bit 12. In the actual register, it
+>>>> corresponds to the enable bit. Seems you're overriding
+>>>> its usage. Do I interpret this as saying: 0 = enable when
+>>>> running on thread0, 1=monitoring when running on thread1?
+>>>> And if I don't care?
+>> ...
+>> I believe it simply escaped quilt refresh somehow. Here is the 'refreshed'
+>> copy (note the low bits 12-19 updated here).
+>> ---
+>> perf, x86: P4 PMU - describe config format v2
+>>
+>> Add description of .config in a sake of RAW events.
+>> At least this should bring some light to those who
+>> will be reading this code.
+>>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> CC: Lin Ming <ming.m.lin@intel.com>
+>> CC: Stephane Eranian <eranian@google.com>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>  arch/x86/include/asm/perf_event_p4.h |   63
+>> ++++++++++++++++++++++++++++++-----
+>>  1 file changed, 55 insertions(+), 8 deletions(-)
+>>
+>> Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>> ===================================================================
+>> --- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
+>> +++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>> @@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
+>>  };
+>>
+>>  /*
+>> - * P4 PEBS specifics (Replay Event only)
+>> - *
+>> - * Format (bits):
+>> - *   0-6: metric from P4_PEBS_METRIC enum
+>> - *    7 : reserved
+>> - *    8 : reserved
+>> - * 9-11 : reserved
+>> - *
+>>  * Note we have UOP and PEBS bits reserved for now
+>>  * just in case if we will need them once
+>>  */
+>> @@ -788,5 +780,60 @@ enum P4_PEBS_METRIC {
+>>        P4_PEBS_METRIC__max
+>>  };
+>>
+>> +/*
+>> + * Notes on internal configuration of ESCR+CCCR tuples
+>> + *
+>> + * Since P4 has quite the different architecture of
+>> + * performance registers in compare with "architectural"
+>> + * once and we have on 64 bits to keep configuration
+>> + * of performance event, the following trick is used.
+>> + *
+>> + * 1) Since both ESCR and CCCR registers have only low
+>> + *    32 bits valuable, we pack them into a single 64 bit
+>> + *    configuration. Low 32 bits of such config correspond
+>> + *    to low 32 bits of CCCR register and high 32 bits
+>> + *    correspond to low 32 bits of ESCR register.
+>> + *
+>> + * 2) The meaning of every bit of such config field can
+>> + *    be found in Intel SDM but it should be noted that
+>> + *    we "borrow" some reserved bits for own usage and
+>> + *    clean them or set to a proper value when we do
+>> + *    a real write to hardware registers.
+>> + *
+>> + * 3) The format of bits of config is the following
+>> + *    and should be either 0 or set to some predefined
+>> + *    values:
+>> + *
+>> + *    Low 32 bits
+>> + *    -----------
+>> + *      0-6: P4_PEBS_METRIC enum
+>> + *     7-11:                    reserved
+>> + *       12:                    reserved (Enable)
+>> + *    13-15:                    reserved (ESCR select)
+>> + *    16-17: Active Thread
 >
-> Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-> ---
-[...]
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index a19a526..5d4b398 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -307,6 +307,7 @@ config ARCH_GEMINI
->        select CPU_FA526
->        select ARCH_REQUIRE_GPIOLIB
->        select ARCH_USES_GETTIMEOFFSET
-> +       select PCI
->        help
->          Support for the Cortina Systems Gemini family SoCs
+> HW has the active thread bits reserved to 0x3.
+> what about you? If not, then explain what they
+> mean.
 >
-[...]
-
-I think it's better to add ARCH_GEMINI to CONFIG_PCI dependencies.
-AFAIK IB-4220B NAS does not use PCI and doesn't need all that code.
-Board support entries could select PCI if the board is useless without
-it.
-
-Best Regards,
-Micha³ Miros³aw
+hm, not sure i follow, hw allows you to pass any of 4 values for that
+field, so i simply pass it to kernel and then propagate to real cccr
+register. if machine is not ht capable it might be a problem, but i
+left it to a caller to set proper thread value here. i believe that
+you read cccr spec for non-ht machine while ht machine has a bit more
+flags to set.
