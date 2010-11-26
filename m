@@ -1,34 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab0KZMXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 07:23:07 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:48777 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750776Ab0KZMXF (ORCPT
+	id S1752857Ab0KZM0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 07:26:44 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55613 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab0KZM0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 07:23:05 -0500
-Date: Fri, 26 Nov 2010 12:23:03 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        will.deacon@arm.com, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, wuzhangjin@gmail.com, paulus@samba.org,
-        mingo@elte.hu, acme@redhat.com
-Subject: Re: [PATCH v2 1/5] MIPS/Perf-events: Work with irq_work
-Message-ID: <20101126122303.GE26549@console-pimps.org>
-References: <1290740707-32586-1-git-send-email-dengcheng.zhu@gmail.com> <1290740707-32586-2-git-send-email-dengcheng.zhu@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290740707-32586-2-git-send-email-dengcheng.zhu@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 26 Nov 2010 07:26:43 -0500
+Subject: Re: [PATCH 0/4] Fixes resource leaks for Samsung SoCs
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Graeme Gregory <graeme@openmoko.org>,
+        Maurus Cuelenaere <mcuelenaere@gmail.com>,
+        Seungwhan Youn <sw.youn@samsung.com>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+In-Reply-To: <1290754245.25125.1.camel@mola>
+References: <1290754245.25125.1.camel@mola>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 12:26:36 +0000
+Message-ID: <1290774396.3298.6.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 11:05:03AM +0800, Deng-Cheng Zhu wrote:
-> This is the MIPS part of the commit:
+On Fri, 2010-11-26 at 14:50 +0800, Axel Lin wrote:
+> This serial of patches fixes resource leaks for Samsung SoCs.
 > 
-> e360adbe29241a0194e10e20595360dd7b98a2b3
+> Axel Lin (4):
+>   ASoC: Fix resource leask in goni_wm8994.c
+>   ASoC: Fix resource leask in neo1973_gta02_init() error path
+>   ASoC: Add missing gpio_free(S3C64XX_GPK(12)) in smartq_exit()
+>   ASoC: Fix resource leask in smdk_spdif.c
+> 
+>  sound/soc/samsung/goni_wm8994.c          |    9 +++++++--
+>  sound/soc/samsung/neo1973_gta02_wm8753.c |   22 +++++++++++-----------
+>  sound/soc/samsung/smartq_wm8987.c        |    1 +
+>  sound/soc/samsung/smdk_spdif.c           |   13 +++++++++----
+>  4 files changed, 28 insertions(+), 17 deletions(-)
+> 
 
-Wouldn't it be a good idea to include the title of the commit here?
+All 
+
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
