@@ -1,172 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0KZNKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:10:19 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:24777 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754530Ab0KZNKR (ORCPT
+	id S1754910Ab0KZNKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:10:46 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:4842 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657Ab0KZNKp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:10:17 -0500
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Nov 2010 08:10:17 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkIAFs+70xFpYat/2dsb2JhbACDUJ4/fHKwCTyGZC6IW4EhgzNzBIRchgWHaA
-X-IronPort-AV: E=Sophos;i="4.59,261,1288584000"; 
-   d="scan'208";a="83749421"
-Message-ID: <4CEFAF8D.3010907@gmail.com>
-Date: Fri, 26 Nov 2010 08:01:01 -0500
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101028 Iceape/2.0.10
+	Fri, 26 Nov 2010 08:10:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CMNjNwHeBw0e+BOhYwcxhfwPN+uXq/KaU4Vgi7OXiUu3cNodkZQtg5HQRfCgernNn9
+         vC+cJaQ4YU+4rbJVChbg==
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jiri Slaby <jslaby@suse.cz>, corentincj@iksaif.net,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: eeepc: rfkill on 900A defunct
-References: <4CED26EF.5000109@suse.cz> <20101124201834.GA7760@srcf.ucam.org>
-In-Reply-To: <20101124201834.GA7760@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com>
+References: <20101123224601.766827604@openvz.org>
+	<20101123224800.294919307@openvz.org>
+	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
+	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
+	<AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
+	<AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
+	<AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com>
+	<AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com>
+	<AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com>
+Date: Fri, 26 Nov 2010 14:10:42 +0100
+Message-ID: <AANLkTikG9swqOxF2GwhvKY__Lbgt1+GgRfra-+DrBsk0@mail.gmail.com>
+Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
+From: Stephane Eranian <eranian@google.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, peterz@infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett wrote:
-> Hm. As a shorter term fix, can you try this (entirely untested!)
-> approach?
+On Fri, Nov 26, 2010 at 2:04 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>> On Fri, Nov 26, 2010 at 12:58 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>> wrote:
+>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>>> On Fri, Nov 26, 2010 at 12:32 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>>> wrote:
+>>>>> On Fri, Nov 26, 2010 at 2:14 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>>>> wrote:
+>>>>>> Stephane, this is a misprint, I'll update this comments on format
+>>>>>> (giod catch btw!). in real low 32 bits are considered as cccr in ht
+>>>>>> mode. wait a bit, i'll post update.
+>>>>>>
+>>>>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>>>> ...
+>>>>>>>> + *    Low 32 bits
+>>>>>>>> + *    -----------
+>>>>>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>>>>>> + *     7-11:                    reserved
+>>>>>>>> + *       12: Active thread
+>>>>>>>
+>>>>>>> I don't understand bit 12. In the actual register, it
+>>>>>>> corresponds to the enable bit. Seems you're overriding
+>>>>>>> its usage. Do I interpret this as saying: 0 = enable when
+>>>>>>> running on thread0, 1=monitoring when running on thread1?
+>>>>>>> And if I don't care?
+>>>>> ...
+>>>>> I believe it simply escaped quilt refresh somehow. Here is the
+>>>>> 'refreshed'
+>>>>> copy (note the low bits 12-19 updated here).
+>>>>> ---
+>>>>> perf, x86: P4 PMU - describe config format v2
+>>>>>
+>>>>> Add description of .config in a sake of RAW events.
+>>>>> At least this should bring some light to those who
+>>>>> will be reading this code.
+>>>>>
+>>>>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>>>>> CC: Lin Ming <ming.m.lin@intel.com>
+>>>>> CC: Stephane Eranian <eranian@google.com>
+>>>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>>>> ---
+>>>>>  arch/x86/include/asm/perf_event_p4.h |   63
+>>>>> ++++++++++++++++++++++++++++++-----
+>>>>>  1 file changed, 55 insertions(+), 8 deletions(-)
+>>>>>
+>>>>> Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>>>>> ===================================================================
+>>>>> --- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
+>>>>> +++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>>>>> @@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
+>>>>>  };
+>>>>>
+>>>>>  /*
+>>>>> - * P4 PEBS specifics (Replay Event only)
+>>>>> - *
+>>>>> - * Format (bits):
+>>>>> - *   0-6: metric from P4_PEBS_METRIC enum
+>>>>> - *    7 : reserved
+>>>>> - *    8 : reserved
+>>>>> - * 9-11 : reserved
+>>>>> - *
+>>>>>  * Note we have UOP and PEBS bits reserved for now
+>>>>>  * just in case if we will need them once
+>>>>>  */
+>>>>> @@ -788,5 +780,60 @@ enum P4_PEBS_METRIC {
+>>>>>        P4_PEBS_METRIC__max
+>>>>>  };
+>>>>>
+>>>>> +/*
+>>>>> + * Notes on internal configuration of ESCR+CCCR tuples
+>>>>> + *
+>>>>> + * Since P4 has quite the different architecture of
+>>>>> + * performance registers in compare with "architectural"
+>>>>> + * once and we have on 64 bits to keep configuration
+>>>>> + * of performance event, the following trick is used.
+>>>>> + *
+>>>>> + * 1) Since both ESCR and CCCR registers have only low
+>>>>> + *    32 bits valuable, we pack them into a single 64 bit
+>>>>> + *    configuration. Low 32 bits of such config correspond
+>>>>> + *    to low 32 bits of CCCR register and high 32 bits
+>>>>> + *    correspond to low 32 bits of ESCR register.
+>>>>> + *
+>>>>> + * 2) The meaning of every bit of such config field can
+>>>>> + *    be found in Intel SDM but it should be noted that
+>>>>> + *    we "borrow" some reserved bits for own usage and
+>>>>> + *    clean them or set to a proper value when we do
+>>>>> + *    a real write to hardware registers.
+>>>>> + *
+>>>>> + * 3) The format of bits of config is the following
+>>>>> + *    and should be either 0 or set to some predefined
+>>>>> + *    values:
+>>>>> + *
+>>>>> + *    Low 32 bits
+>>>>> + *    -----------
+>>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>>> + *     7-11:                    reserved
+>>>>> + *       12:                    reserved (Enable)
+>>>>> + *    13-15:                    reserved (ESCR select)
+>>>>> + *    16-17: Active Thread
+>>>>
+>>>> HW has the active thread bits reserved to 0x3.
+>>>> what about you? If not, then explain what they
+>>>> mean.
+>>>>
+>>> hm, not sure i follow, hw allows you to pass any of 4 values for that
+>>> field, so i simply pass it to kernel and then propagate to real cccr
+>>> register. if machine is not ht capable it might be a problem, but i
+>>> left it to a caller to set proper thread value here. i believe that
+>>> you read cccr spec for non-ht machine while ht machine has a bit more
+>>> flags to set.
+>>>
+>> You're right, I missed Figure-30.29. So you honor the field. The counter
+>> won't count anything if the task is not running on the corresponding
+>> HT thread, then.
 >
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index b2edfdc..8f817d6 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -574,8 +574,9 @@ static bool eeepc_wlan_rfkill_blocked(struct eeepc_laptop *eeepc)
->   	return true;
->   }
+> no ;) p4 treat this field in different meaning in compare to others
+> perf archs. the condition is not 'where' but 'when'. ie you can
+> specify 'when' to run counter: if none therad is active, single any
+> thread is active, both threads are active and finally any thread is
+> active (which is exactly 0b11 in single thread machine). i know it's
+> weird ;)
 >
-> -static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
-> +static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
->   {
-> +	struct pci_dev *port;
->   	struct pci_dev *dev;
->   	struct pci_bus *bus;
->   	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
-> @@ -588,9 +589,17 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
->   	mutex_lock(&eeepc->hotplug_lock);
->
->   	if (eeepc->hotplug_slot) {
-> -		bus = pci_find_bus(0, 1);
-> +		port = acpi_get_pci_dev(handle);
-> +
-> +		if (!port) {
-> +			pr_warning("Unable to find port\n");
-> +			goto out_unlock;
-> +		}
-> +
-> +		bus = port->subordinate;
-> +
->   		if (!bus) {
-> -			pr_warning("Unable to find PCI bus 1?\n");
-> +			pr_warning("Unable to find PCI bus?\n");
->   			goto out_unlock;
->   		}
->
-> @@ -636,6 +645,17 @@ out_unlock:
->   	mutex_unlock(&eeepc->hotplug_lock);
->   }
->
-> +static void eeepc_rfkill_hotplug_update(struct eeepc_laptop *eeepc, char *node)
-> +{
-> +	acpi_status status = AE_OK;
-> +	acpi_handle handle;
-> +
-> +	status = acpi_get_handle(NULL, node,&handle);
-> +
-> +	if (ACPI_SUCCESS(status))
-> +		eeepc_rfkill_hotplug(eeepc, handle);
-> +}
-> +
->   static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
->   {
->   	struct eeepc_laptop *eeepc = data;
-> @@ -643,7 +663,7 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
->   	if (event != ACPI_NOTIFY_BUS_CHECK)
->   		return;
->
-> -	eeepc_rfkill_hotplug(eeepc);
-> +	eeepc_rfkill_hotplug(eeepc, handle);
->   }
->
->   static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
-> @@ -661,6 +681,11 @@ static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
->   						     eeepc);
->   		if (ACPI_FAILURE(status))
->   			pr_warning("Failed to register notify on %s\n", node);
-> +		/*
-> +		 * Refresh pci hotplug in case the rfkill state was
-> +		 * changed during setup.
-> +		 */
-> +		eeepc_rfkill_hotplug(eeepc, handle);
->   	} else
->   		return -ENODEV;
->
-> @@ -682,6 +707,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_laptop *eeepc,
->   		if (ACPI_FAILURE(status))
->   			pr_err("Error removing rfkill notify handler %s\n",
->   				node);
-> +			/*
-> +			 * Refresh pci hotplug in case the rfkill
-> +			 * state was changed after
-> +			 * eeepc_unregister_rfkill_notifier()
-> +			 */
-> +		eeepc_rfkill_hotplug(eeepc, handle);
->   	}
->   }
->
-> @@ -805,11 +836,7 @@ static void eeepc_rfkill_exit(struct eeepc_laptop *eeepc)
->   		rfkill_destroy(eeepc->wlan_rfkill);
->   		eeepc->wlan_rfkill = NULL;
->   	}
-> -	/*
-> -	 * Refresh pci hotplug in case the rfkill state was changed after
-> -	 * eeepc_unregister_rfkill_notifier()
-> -	 */
-> -	eeepc_rfkill_hotplug(eeepc);
-> +
->   	if (eeepc->hotplug_slot)
->   		pci_hp_deregister(eeepc->hotplug_slot);
->
-> @@ -878,11 +905,6 @@ static int eeepc_rfkill_init(struct eeepc_laptop *eeepc)
->   	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P5");
->   	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P6");
->   	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P7");
-> -	/*
-> -	 * Refresh pci hotplug in case the rfkill state was changed during
-> -	 * setup.
-> -	 */
-> -	eeepc_rfkill_hotplug(eeepc);
->
->   exit:
->   	if (result&&  result != -ENODEV)
-> @@ -917,8 +939,11 @@ static int eeepc_hotk_restore(struct device *device)
->   	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
->
->   	/* Refresh both wlan rfkill state and pci hotplug */
-> -	if (eeepc->wlan_rfkill)
-> -		eeepc_rfkill_hotplug(eeepc);
-> +	if (eeepc->wlan_rfkill) {
-> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P5");
-> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P6");
-> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P7");
-> +	}
->
->   	if (eeepc->bluetooth_rfkill)
->   		rfkill_set_sw_state(eeepc->bluetooth_rfkill,
->    
-Did a quick test. The 900A seems printing the "Port not found" warning, 
-but the ath5k comes down and then up OK.
-Mind you, I think they are doing some magic in the BIOS as well, so more 
-testing would be nice ;-)
-If it works, it may be a good candidate for 2.6.36 as well...
+That is weird indeed.
 
-Thanks, Woody
+I can see this being somewhat useful in per-cpu mode. But this is
+weird in per-thread mode. That means you will count in your thread
+(OS and HW) only when the other HW thread runs. I am wondering
+about the security implications of this. I suspect you'd have to
+disallow this mode in per-thread mode.
 
+
+
+
+> thanks for review, Stephane ;)
+>
+>>
+>> The only custom fields are then: 0-6, 25-30. I think that's simple enough.
+>>
+>> Thanks.
+>>
+>
