@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab0KZRTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:19:47 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45525 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751531Ab0KZRTq (ORCPT
+	id S1755518Ab0KZRU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:20:57 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41922 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab0KZRU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:19:46 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] mfd: Provide pm_runtime_no_callbacks flag in cell data
-Date: Fri, 26 Nov 2010 17:19:34 +0000
-Message-Id: <1290791975-21160-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 26 Nov 2010 12:20:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=MRrXTBwLyjAd1Bx9TBLYM3+LziJMq6Xwr47J6X9KhGFWv0e4xuqG4BUx2Xt8TO0KZs
+         Ff8iCFPrfVBESMZCjmQBeS2FnHYL1yBdOPWzoi2wku4rcvA7XOr1fbtzDYYrYH39lbgo
+         3aR8IF2nY50QqesVoom0C6BVUF6btkjmr0wqM=
+Subject: Re: [PATCH] printk: use this_cpu_{read|write} api on printk_pending
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1011261109500.13524@router.home>
+References: <20101126120235.406766476@de.ibm.com>
+	 <tip-61ab25447ad6334a74e32f60efb135a3467223f8@git.kernel.org>
+	 <1290788536.2855.237.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1011261038360.13524@router.home>
+	 <1290790791.2855.259.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1011261109500.13524@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 18:20:51 +0100
+Message-ID: <1290792051.2855.265.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow MFD cells to have pm_runtime_no_callbacks() called on them during
-registration. This causes the runtime PM framework to ignore them,
-allowing use of runtime PM to suspend the device as a whole even if
-not all drivers for the MFD can usefully implement runtime PM. For
-example, RTCs are likely to run continuously regardless of the power
-state of the system.
+Le vendredi 26 novembre 2010 à 11:11 -0600, Christoph Lameter a écrit :
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/mfd-core.c   |    4 ++++
- include/linux/mfd/core.h |    6 ++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+> I thought sanity tests do not apply for performance testing scenarios?
+> 
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index ec99f68..d83ad0f 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -15,6 +15,7 @@
- #include <linux/platform_device.h>
- #include <linux/acpi.h>
- #include <linux/mfd/core.h>
-+#include <linux/pm_runtime.h>
- #include <linux/slab.h>
- 
- static int mfd_add_device(struct device *parent, int id,
-@@ -82,6 +83,9 @@ static int mfd_add_device(struct device *parent, int id,
- 	if (ret)
- 		goto fail_res;
- 
-+	if (cell->pm_runtime_no_callbacks)
-+		pm_runtime_no_callbacks(&pdev->dev);
-+
- 	kfree(res);
- 
- 	return 0;
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index 5582ab3..835996e 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -47,6 +47,12 @@ struct mfd_cell {
- 
- 	/* don't check for resource conflicts */
- 	bool			ignore_resource_conflicts;
-+
-+	/*
-+	 * Disable runtime PM callbacks for this subdevice - see
-+	 * pm_runtime_no_callbacks().
-+	 */
-+	bool			pm_runtime_no_callbacks;
- };
- 
- extern int mfd_add_devices(struct device *parent, int id,
--- 
-1.7.1
+CONFIG_DEBUG_PREEMPT
+
+> smp_processor_id() is usually a simple per cpu data access and very fast.
+> 
+
+Sure, but when its already in a register, its better to use the
+register ;)
+
+
 
