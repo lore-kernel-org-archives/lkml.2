@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab0KZI3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 03:29:44 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39015 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab0KZI3o convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 03:29:44 -0500
+	id S1753767Ab0KZIb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 03:31:28 -0500
+Received: from mail.sysgo.com ([195.145.229.155]:42412 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035Ab0KZIb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 03:31:27 -0500
+Date: Fri, 26 Nov 2010 09:31:25 +0100
+From: Pavel Machek <pma@sysgo.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>, ath9k-devel@venema.h4ckr.net
+Cc: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
+        linux-wireless@vger.kernel.org, rudolf.marek@sysgo.com, cko@sysgo.com,
+        mfa@sysgo.com, anl@sysgo.com
+Subject: ath9k_htc vs. powerpc (was Re: working usb wifi card, that is
+ still possible to buy)
+Message-ID: <20101126083125.GA28982@pma.sysgo.com>
+References: <20101103092431.GA21138@pma.sysgo.com>
+ <20101124081616.GA30595@pma.sysgo.com>
+ <20101124131320.GA2611@pma.sysgo.com>
+ <4CED33E0.5040000@lwfinger.net>
 MIME-Version: 1.0
-X-Originating-IP: [192.102.204.37]
-In-Reply-To: <AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-References: <1290340877.2245.124.camel@localhost>
-	<AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
-	<AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
-	<AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-Date: Fri, 26 Nov 2010 16:29:42 +0800
-Message-ID: <AANLkTiknL9Tfzk0YBJq8PcqTuNehCKJEB6ekAWjT_fui@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Lin Ming <lin@ming.vg>
-To: Stephane Eranian <eranian@google.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CED33E0.5040000@lwfinger.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 4:18 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Fri, Nov 26, 2010 at 6:15 AM, Lin Ming <lin@ming.vg> wrote:
->> On Tue, Nov 23, 2010 at 6:17 PM, Stephane Eranian <eranian@google.com> wrote:
->>> Lin,
->>>
->>> On Sun, Nov 21, 2010 at 1:01 PM, Lin Ming <ming.m.lin@intel.com> wrote:
->>>> +static void uncore_pmu_enable_all(void)
->>>> +{
->>>> +       u64 ctrl;
->>>> +
->>>> +       /*
->>>> +        * (0xFULL << 48): 1 of the 4 cores can receive NMI each time
->>>> +        * but we don't know which core will receive the NMI when overflow happens
->>>> +        */
->>>
->>> That does not sound right. If you set bit 48-51 to 1, then all 4 cores
->>> will receive EVERY
->>> interrupt, i.e., it's a broadcast. That seems to contradict your
->>> comment: 1 of the 4. Unless
->>> you meant, they all get the interrupt and one will handle it, the
->>> other will find nothing to
->>> process. But I don't see the atomic op that would make this true in
->>> uncore_handle_irq().
->>
->> Stephane,
->>
->> The interrupt model is strange, it behaves differently when HT on/off.
->>
->> If HT is off, all 4 cores will receive every interrupt, i.e., it's a broadcast.
->>
-> That's if yo set the mask to 0xf, right?
+Hi!
 
-Right.
+> > | D-Link DWA-131            | 07d1:3303 | realtek?            |                                          |              
+> 
+> This one should work with driver r8712u in staging in kernel 2.6.37-rcX. I don't
+> have this model for testing, but the DWA-130 is rock solid with that driver.
 
->
-> In the perf_event model, given that any one of the 4 cores can be used
-> to program uncore events, you have no choice but to broadcast to all
-> 4 cores. Each has to demultiplex and figure out which of its counters
-> have overflowed.
+Thanks... Yes, it works, but staging scares me.
 
-This is what my upcoming v3 patches doing.
+I found card compatible with ath9k_htc driver, that works well on PC,
+and is even listed as supported by atheros. Good.
 
->
->> If HT is on, only 1 of the 4 cores will receive the interrupt(both
->> Threads in that core receive the interrupt),
->> and it can't be determined which core will receive the interrupt.
->>
->> Did you ever observe this?
->>
-> No because I never set more than one bit in the mask.
->
->> I tried to set the mask 0xff when HT is on, but kernel panics, because
->> the reserve bits are set.
->
-> Let me check on this. It would seem to imply that in HT mode, both threads
-> necessarily receive the interrupts.
->
-> Was that on Nehalem or Westmere?
+Unfortunately, it does not work that well on powerpc mpc5200b. (I'm
+using recent wireless-testing tree).
 
-Nehalem.
+I can do scan just fine, but can not actually asocciate with the
+accesspoint. Nothing too useful in dmesg, only:
 
-Thanks,
-Lin Ming
+Freeing unused kernel memory: 176k init                                         
+warning: `named' uses 32-bit capabilities (legacy support in use)               
+process `named' is using obsolete setsockopt SO_BSDCOMPAT                       
+ieee80211 phy0: device now idle                                                 
+ieee80211 phy0: device no longer idle - scanning                                
+ieee80211 phy0: device now idle                                                 
+ieee80211 phy0: device no longer idle - scanning                                
+wlan0: direct probe to 00:23:f8:5d:76:93 (try 1)                                
+wlan0: direct probe to 00:23:f8:5d:76:93 (try 2)                                
+wlan0: direct probe to 00:23:f8:5d:76:93 (try 3)                                
+wlan0: direct probe to 00:23:f8:5d:76:93 timed out                              
+ieee80211 phy0: device now idle                                                 
+-/bin/sh-3.00# 
+
+Any ideas how to get more verbose debugging?
+
+Diffences to the mpc5200b board are:
+
+a) it is PowerPC, thus big-endian board
+
+b) it only has USB1.1 controller.
+
+								Pavel
