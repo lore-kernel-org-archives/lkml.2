@@ -1,81 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0KZBsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 20:48:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61267 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752950Ab0KZBsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 20:48:51 -0500
-Message-ID: <4CEF1260.4000009@cn.fujitsu.com>
-Date: Fri, 26 Nov 2010 09:50:24 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com, Paul Menage <menage@google.com>,
-        Balbir Singh <balbir@in.ibm.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/2] perf_events: add support for per-cpu per-cgroup monitoring
- (v5)
-References: <4ce510d4.0fedd80a.742c.10b9@mx.google.com> <1290684523.2145.31.camel@laptop>
-In-Reply-To: <1290684523.2145.31.camel@laptop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-26 09:49:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-26 09:49:03,
-	Serialize complete at 2010-11-26 09:49:03
+	id S1753200Ab0KZCAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 21:00:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62158 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752941Ab0KZCAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 21:00:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,258,1288594800"; 
+   d="scan'208";a="577715834"
+Subject: Re: Free memory never fully used, swapping
+From: Shaohua Li <shaohua.li@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Simon Kirby <sim@hostway.ca>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+In-Reply-To: <20101125161524.GE26037@csn.ul.ie>
+References: <1290647274.12777.3.camel@sli10-conroe>
+	 <20101125090328.GB14180@hostway.ca>
+	 <20101125180959.F462.A69D9226@jp.fujitsu.com>
+	 <20101125161524.GE26037@csn.ul.ie>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 10:00:44 +0800
+Message-ID: <1290736844.12777.10.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19:28, Peter Zijlstra wrote:
-> On Thu, 2010-11-18 at 12:40 +0200, Stephane Eranian wrote:
->> This kernel patch adds the ability to filter monitoring based on
->> container groups (cgroups). This is for use in per-cpu mode only.
->>     
->> The cgroup to monitor is passed as a file descriptor in the pid
->> argument to the syscall. The file descriptor must be opened to 
->> the cgroup name in the cgroup filesystem. For instance, if the
->> cgroup name is foo and cgroupfs is mounted in /cgroup, then the
->> file descriptor is opened to /cgroup/foo. Cgroup mode is
->> activated by passing PERF_FLAG_PID_CGROUP in the flags argument
->> to the syscall.
->>
->> For instance to measure in cgroup foo on CPU1 assuming
->> cgroupfs is mounted under /cgroup:
->>
->> struct perf_event_attr attr;
->> int cgroup_fd, fd;
->>
->> cgroup_fd = open("/cgroup/foo", O_RDONLY);
->> fd = perf_event_open(&attr, cgroup_fd, 1, -1, PERF_FLAG_PID_CGROUP);
->> close(cgroup_fd);
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com> 
+On Fri, 2010-11-26 at 00:15 +0800, Mel Gorman wrote:
+> On Thu, Nov 25, 2010 at 07:51:44PM +0900, KOSAKI Motohiro wrote:
+> > > kswapd is throwing out many times what is needed for the order 3
+> > > watermark to be met.  It seems to be not as bad now, but look at these
+> > > pages being reclaimed (200ms intervals, whitespace-packed buddyinfo
+> > > followed by nr_pages_free calculation and final order-3 watermark test,
+> > > kswapd woken after the second sample):
+> > > 
+> > > Normal zone at the same time (shown separately for clarity):
+> > >
+> > >   Zone order:0      1     2     3    4   5  6 7 8 9 A nr_free or3-low-chk
+> > > 
+> > > Normal     452      1     0     0    0   0  0 0 0 0 0     454 -5 <= 238
+> > > Normal     452      1     0     0    0   0  0 0 0 0 0     454 -5 <= 238
+> > > (kswapd wakes)
+> > > Normal    7618     76     0     0    0   0  0 0 0 0 0    7770 145 <= 238
+> > > Normal    8860     73     1     0    0   0  0 0 0 0 0    9010 143 <= 238
+> > > Normal    8929     25     0     0    0   0  0 0 0 0 0    8979 43 <= 238
+> > > Normal    8917      0     0     0    0   0  0 0 0 0 0    8917 -7 <= 238
+> > > Normal    8978     16     0     0    0   0  0 0 0 0 0    9010 25 <= 238
+> > > Normal    9064      4     0     0    0   0  0 0 0 0 0    9072 1 <= 238
+> > > Normal    9068      2     0     0    0   0  0 0 0 0 0    9072 -3 <= 238
+> > > Normal    8992      9     0     0    0   0  0 0 0 0 0    9010 11 <= 238
+> > > Normal    9060      6     0     0    0   0  0 0 0 0 0    9072 5 <= 238
+> > > Normal    9010      0     0     0    0   0  0 0 0 0 0    9010 -7 <= 238
+> > > Normal    8907      5     0     0    0   0  0 0 0 0 0    8917 3 <= 238
+> > > Normal    8576      0     0     0    0   0  0 0 0 0 0    8576 -7 <= 238
+> > > Normal    8018      0     0     0    0   0  0 0 0 0 0    8018 -7 <= 238
+> > > Normal    6778      0     0     0    0   0  0 0 0 0 0    6778 -7 <= 238
+> > > Normal    6189      0     0     0    0   0  0 0 0 0 0    6189 -7 <= 238
+> > > Normal    6220      0     0     0    0   0  0 0 0 0 0    6220 -7 <= 238
+> > > Normal    6096      0     0     0    0   0  0 0 0 0 0    6096 -7 <= 238
+> > > Normal    6251      0     0     0    0   0  0 0 0 0 0    6251 -7 <= 238
+> > > Normal    6127      0     0     0    0   0  0 0 0 0 0    6127 -7 <= 238
+> > > Normal    6218      1     0     0    0   0  0 0 0 0 0    6220 -5 <= 238
+> > > Normal    6034      0     0     0    0   0  0 0 0 0 0    6034 -7 <= 238
+> > > Normal    6065      0     0     0    0   0  0 0 0 0 0    6065 -7 <= 238
+> > > Normal    6189      0     0     0    0   0  0 0 0 0 0    6189 -7 <= 238
+> > > Normal    6189      0     0     0    0   0  0 0 0 0 0    6189 -7 <= 238
+> > > Normal    6096      0     0     0    0   0  0 0 0 0 0    6096 -7 <= 238
+> > > Normal    6127      0     0     0    0   0  0 0 0 0 0    6127 -7 <= 238
+> > > Normal    6158      0     0     0    0   0  0 0 0 0 0    6158 -7 <= 238
+> > > Normal    6127      0     0     0    0   0  0 0 0 0 0    6127 -7 <= 238
+> > > (kswapd sleeps -- maybe too much turkey)
+> > > 
+> > > DMA32 get so much reclaimed that the watermark test succeeded long ago.
+> > > Meanwhile, Normal is being reclaimed as well, but because it's fighting
+> > > with allocations, it tries for a while and eventually succeeds (I think),
+> > > but the 200ms samples didn't catch it.
+> > > 
+> > > KOSAKI Motohiro, I'm interested in your commit 73ce02e9.  This seems
+> > > to be similar to this problem, but your change is not working here. 
+> > > We're seeing kswapd run without sleeping, KSWAPD_SKIP_CONGESTION_WAIT
+> > > is increasing (so has_under_min_watermark_zone is true), and pageoutrun
+> > > increasing all the time.  This means that balance_pgdat() keeps being
+> > > called, but sleeping_prematurely() is returning true, so kswapd() just
+> > > keeps re-calling balance_pgdat().  If your approach is correct to stop
+> > > kswapd here, the problem seems to be that balance_pgdat's copy of order
+> > > and sc.order is being set to 0, but not pgdat->kswapd_max_order, so
+> > > kswapd never really sleeps.  How is this supposed to work?
+> > 
+> > Um. this seems regression since commit f50de2d381 (vmscan: have kswapd sleep 
+> > for a short interval and double check it should be asleep)
+> > 
 > 
-> Could you please split this patch:
->   - pure code movement
->   - time accounting changes
->   - event_filter_match() stuff
->   - cgroup thing
-> 
-> From a quick reading it doesn't look bad, but I want an ACK from the
-> cgroup people -- specifically if they're OK with the filedesc juggling
-> thing, because I know the sysfs people objected to such tricks.
-> 
+> I wrote my own patch before I saw this but for one of the issues we are doing
+> something similar. You are checking if enough pages got reclaimed where as
+> my patch considers any zone being balanced for high-orders being sufficient
+> for kswapd to go to sleep. I think mine is a little stronger because
+> it's checking what state the zones are in for a given order regardless
+> of what has been reclaimed. Lets see what testing has to say.
+record the order seems not sufficient. in balance_pgdat(), the for look
+exit only when:
+priority <0 or sc.nr_reclaimed >= SWAP_CLUSTER_MAX.
+but we do if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+                        order = sc.order = 0;
+this means before we set order to 0, we already reclaimed a lot of
+pages, so I thought we need set order to 0 earlier before there are
+enough free pages. below is a debug patch.
 
-Long long ago, a feature that used this trick was accepted, and that's
-cgroup taskstat.
 
-You get an fd of a cgroup directory and send it to the kernel via netlink,
-and then you'll receive some statistics, such as how many tasks are
-running/interrupted in that cgroup.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d31d7ce..ee5d2ed 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2117,6 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ }
+ #endif
+ 
++static int all_zone_enough_free_pages(pg_data_t *pgdat)
++{
++	int i;
++
++	for (i = 0; i < pgdat->nr_zones; i++) {
++		struct zone *zone = pgdat->node_zones + i;
++
++		if (!populated_zone(zone))
++			continue;
++
++		if (zone->all_unreclaimable)
++			continue;
++
++		if (!zone_watermark_ok(zone, 0, high_wmark_pages(zone) * 8,
++								0, 0))
++			return 0;
++	}
++	return 1;
++}
++
+ /* is kswapd sleeping prematurely? */
+ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ {
+@@ -2355,7 +2375,8 @@ out:
+ 		 * back to sleep. High-order users can still perform direct
+ 		 * reclaim if they wish.
+ 		 */
+-		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
++		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX ||
++		    (order > 0 && all_zone_enough_free_pages(pgdat)))
+ 			order = sc.order = 0;
+ 
+ 		goto loop_again;
 
-> Also, it might make sense to add a CONFIG_PERF_CGROUP, even if you want
-> it automagically set if CONFIG_PERF && CONFIG_CGROUP, its easier to find
-> all related code if its under a single CONFIG_var.
-> 
+
