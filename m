@@ -1,118 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0KZLLV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:11:21 -0500
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:44861 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab0KZLLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:11:19 -0500
-Date: Fri, 26 Nov 2010 12:11:15 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for 2.6.37-rc3
-Message-ID: <20101126121115.1db1848b@mschwide.boeblingen.de.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754922Ab0KZLLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:11:38 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:52052 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754853Ab0KZLLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 06:11:37 -0500
+Date: Fri, 26 Nov 2010 11:11:22 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Simon Kirby <sim@hostway.ca>, Shaohua Li <shaohua.li@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: Free memory never fully used, swapping
+Message-ID: <20101126111122.GK26037@csn.ul.ie>
+References: <20101125090328.GB14180@hostway.ca> <20101125161238.GD26037@csn.ul.ie> <20101126195118.B6E7.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20101126195118.B6E7.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Nov 26, 2010 at 08:03:04PM +0900, KOSAKI Motohiro wrote:
+> Two points.
+> 
+> > @@ -2310,10 +2324,12 @@ loop_again:
+> >  				 * spectulatively avoid congestion waits
+> >  				 */
+> >  				zone_clear_flag(zone, ZONE_CONGESTED);
+> > +				if (i <= pgdat->high_zoneidx)
+> > +					any_zone_ok = 1;
+> >  			}
+> >  
+> >  		}
+> > -		if (all_zones_ok)
+> > +		if (all_zones_ok || (order && any_zone_ok))
+> >  			break;		/* kswapd: all done */
+> >  		/*
+> >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
+> > @@ -2336,7 +2352,7 @@ loop_again:
+> >  			break;
+> >  	}
+> >  out:
+> > -	if (!all_zones_ok) {
+> > +	if (!(all_zones_ok || (order && any_zone_ok))) {
+> 
+> This doesn't work ;)
+> kswapd have to clear ZONE_CONGESTED flag before enter sleeping.
+> otherwise nobody can clear it.
+> 
 
-please pull from 'for-linus' branch of
+Does it not do it earlier in balance_pgdat() here
 
-	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
+                                /*
+                                 * If a zone reaches its high watermark,
+                                 * consider it to be no longer congested. It's
+                                 * possible there are dirty pages backed by
+                                 * congested BDIs but as pressure is
+                                 * relieved, spectulatively avoid congestion waits
+                                 */
+                                zone_clear_flag(zone, ZONE_CONGESTED);
+                                if (i <= pgdat->high_zoneidx)
+                                        any_zone_ok = 1;
 
-to receive the following updates:
+> Say, we have to fill below condition.
+>  - All zone are successing zone_watermark_ok(order-0)
 
-Heiko Carstens (1):
-      [S390] nmi: fix clock comparator revalidation
+We should loop around at least once with order == 0 where all_zones_ok
+is checked.
 
-Jan Glauber (1):
-      [S390] qdio: free indicator after reset is finished
+>  - At least one zone are successing zone_watermark_ok(high-order)
+> 
 
- arch/s390/kernel/nmi.c          |   10 ++++------
- arch/s390/lib/delay.c           |   14 +++++++++-----
- drivers/s390/cio/qdio_thinint.c |    2 +-
- 3 files changed, 14 insertions(+), 12 deletions(-)
+This is preferable but it's possible for kswapd to go to sleep without
+this condition being satisified.
 
-diff --git a/arch/s390/kernel/nmi.c b/arch/s390/kernel/nmi.c
-index ac15139..1995c17 100644
---- a/arch/s390/kernel/nmi.c
-+++ b/arch/s390/kernel/nmi.c
-@@ -95,7 +95,6 @@ EXPORT_SYMBOL_GPL(s390_handle_mcck);
- static int notrace s390_revalidate_registers(struct mci *mci)
- {
- 	int kill_task;
--	u64 tmpclock;
- 	u64 zero;
- 	void *fpt_save_area, *fpt_creg_save_area;
- 
-@@ -214,11 +213,10 @@ static int notrace s390_revalidate_registers(struct mci *mci)
- 			: "0", "cc");
- #endif
- 	/* Revalidate clock comparator register */
--	asm volatile(
--		"	stck	0(%1)\n"
--		"	sckc	0(%1)"
--		: "=m" (tmpclock) : "a" (&(tmpclock)) : "cc", "memory");
--
-+	if (S390_lowcore.clock_comparator == -1)
-+		set_clock_comparator(S390_lowcore.mcck_clock);
-+	else
-+		set_clock_comparator(S390_lowcore.clock_comparator);
- 	/* Check if old PSW is valid */
- 	if (!mci->wp)
- 		/*
-diff --git a/arch/s390/lib/delay.c b/arch/s390/lib/delay.c
-index 752b362..7c37ec3 100644
---- a/arch/s390/lib/delay.c
-+++ b/arch/s390/lib/delay.c
-@@ -29,17 +29,21 @@ static void __udelay_disabled(unsigned long long usecs)
- {
- 	unsigned long mask, cr0, cr0_saved;
- 	u64 clock_saved;
-+	u64 end;
- 
-+	mask = psw_kernel_bits | PSW_MASK_WAIT | PSW_MASK_EXT;
-+	end = get_clock() + (usecs << 12);
- 	clock_saved = local_tick_disable();
--	set_clock_comparator(get_clock() + (usecs << 12));
- 	__ctl_store(cr0_saved, 0, 0);
- 	cr0 = (cr0_saved & 0xffff00e0) | 0x00000800;
- 	__ctl_load(cr0 , 0, 0);
--	mask = psw_kernel_bits | PSW_MASK_WAIT | PSW_MASK_EXT;
- 	lockdep_off();
--	trace_hardirqs_on();
--	__load_psw_mask(mask);
--	local_irq_disable();
-+	do {
-+		set_clock_comparator(end);
-+		trace_hardirqs_on();
-+		__load_psw_mask(mask);
-+		local_irq_disable();
-+	} while (get_clock() < end);
- 	lockdep_on();
- 	__ctl_load(cr0_saved, 0, 0);
- 	local_tick_enable(clock_saved);
-diff --git a/drivers/s390/cio/qdio_thinint.c b/drivers/s390/cio/qdio_thinint.c
-index 752dbee..5d9c666 100644
---- a/drivers/s390/cio/qdio_thinint.c
-+++ b/drivers/s390/cio/qdio_thinint.c
-@@ -292,8 +292,8 @@ void qdio_shutdown_thinint(struct qdio_irq *irq_ptr)
- 		return;
- 
- 	/* reset adapter interrupt indicators */
--	put_indicator(irq_ptr->dsci);
- 	set_subchannel_ind(irq_ptr, 1);
-+	put_indicator(irq_ptr->dsci);
- }
- 
- void __exit tiqdio_unregister_thinints(void)
+> 
+> 
+> > @@ -2417,6 +2439,7 @@ static int kswapd(void *p)
+> >  		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
+> >  		new_order = pgdat->kswapd_max_order;
+> >  		pgdat->kswapd_max_order = 0;
+> > +		pgdat->high_zoneidx = MAX_ORDER;
+> 
+> I don't think MAX_ORDER is correct ;)
+> 
+>         high_zoneidx = pgdat->high_zoneidx;
+>         pgdat->high_zoneidx = pgdat->nr_zones - 1;
+> 
+> ?
+> 
+
+Bah. It should have been MAX_NR_ZONES. This happens to still work because
+MAX_ORDER will always be higher than MAX_NR_ZONES but it's wrong.
+
+> And, we have another kswapd_max_order reading place. (after kswapd_try_to_sleep)
+> We need it too.
+> 
+
+I'm not quite sure what you mean here. kswapd_max_order is read again
+after kswapd tries to sleep (or wakes for that matter) but it'll be in
+response to another caller having tried to wake kswapd indicating that
+those high orders really are needed.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
