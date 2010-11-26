@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab0KZPGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:06:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40164 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755262Ab0KZPBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:01:42 -0500
-Date: Fri, 26 Nov 2010 15:01:06 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, jason.wessel@windriver.com,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-        mingo@elte.hu, dzickus@redhat.com
-In-Reply-To: <1290462923-30734-1-git-send-email-dzickus@redhat.com>
-References: <1290462923-30734-1-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, perf, nmi: Disable perf if counters are not accessible
-Message-ID: <tip-33c6d6a7ad0ffab9b1b15f8e4107a2af072a05a0@git.kernel.org>
-Git-Commit-ID: 33c6d6a7ad0ffab9b1b15f8e4107a2af072a05a0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:01:07 +0000 (UTC)
+	id S1755265Ab0KZPGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:06:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35549 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab0KZPBj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:01:39 -0500
+Message-Id: <20101126143843.801484792@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Fri, 26 Nov 2010 15:38:43 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 00/21] mm: Preemptibility -v6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  33c6d6a7ad0ffab9b1b15f8e4107a2af072a05a0
-Gitweb:     http://git.kernel.org/tip/33c6d6a7ad0ffab9b1b15f8e4107a2af072a05a0
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Mon, 22 Nov 2010 16:55:23 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 26 Nov 2010 15:00:57 +0100
+This patch-set makes part of the mm a lot more preemptible. It converts
+i_mmap_lock and anon_vma->lock to mutexes and makes mmu_gather fully
+preemptible.
 
-x86, perf, nmi: Disable perf if counters are not accessible
+The main motivation was making mm_take_all_locks() preemptible, since it
+appears people are nesting hundreds of spinlocks there.
 
-In a kvm virt guests, the perf counters are not emulated.  Instead they
-return zero on a rdmsrl. The perf nmi handler uses the fact that crossing
-a zero means the counter overflowed (for those counters that do not have
-specific interrupt bits). Therefore on kvm guests, perf will swallow all
-NMIs thinking the counters overflowed.
+The side-effects are that can finally make mmu_gather preemptible,
+something which lots of people have wanted to do for a long time.
 
-This causes problems for subsystems like kgdb which needs NMIs to do its
-magic. This problem was discovered by running kgdb tests.
+It also gets us anon_vma refcounting, which seems to result in a nice
+cleanup of the anon_vma lifetime rules wrt KSM and compaction.
 
-The solution is to write garbage into a perf counter during the
-initialization and hopefully reading back the same number.  On kvm
-guests, the value will be read back as zero and we disable perf as
-a result.
+This patch-set is build and boot-tested on x86_64 (a previous version was
+also tested on Dave's Niagra2 machines, and I suppose s390 was too when
+Martin provided the conversion patch for his arch).
 
-Reported-by: Jason Wessel <jason.wessel@windriver.com>
-Patch-inspired-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <1290462923-30734-1-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+There are no known architectures left unconverted.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index ed63101..6d75b91 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -381,6 +381,20 @@ static void release_pmc_hardware(void) {}
- 
- #endif
- 
-+static bool check_hw_exists(void)
-+{
-+	u64 val, val_new = 0;
-+	int ret = 0;
-+
-+	val = 0xabcdUL;
-+	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
-+	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
-+	if (ret || val != val_new)
-+		return false;
-+
-+	return true;
-+}
-+
- static void reserve_ds_buffers(void);
- static void release_ds_buffers(void);
- 
-@@ -1372,6 +1386,12 @@ void __init init_hw_perf_events(void)
- 
- 	pmu_check_apic();
- 
-+	/* sanity check that the hardware exists or is emulated */
-+	if (!check_hw_exists()) {
-+		pr_cont("Broken PMU hardware detected, software events only.\n");
-+		return;
-+	}
-+
- 	pr_cont("%s PMU driver.\n", x86_pmu.name);
- 
- 	if (x86_pmu.quirks)
+Yanmin ran the -v3 posting through the comprehensive Intel test farm
+and didn't find any regressions.
+
+( Not included in this posting are the 4 Sparc64 patches that implement
+  gup_fast, those can be applied separately after this series gets
+  anywhere. )
+
+The full series (including the Sparc64 gup_fast bits) also available in -git
+form from (against Linus' tree as of about an hour ago):
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git
+
+Linus seems to want this to get some serious review and be pushed through
+Andrew (well, anybody but me actually, but since Andrew is mm master...)
+
+Ben, Thomas, Andrew, can I trick you guys into looking at this stuff?
+
+
