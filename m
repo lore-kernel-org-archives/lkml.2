@@ -1,75 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab0KZNHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:07:33 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48246 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab0KZNHb (ORCPT
+	id S1754860Ab0KZNKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:10:19 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:24777 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754530Ab0KZNKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:07:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=pWmClrZl0mpT1Qss959sTSgugiGSz+zCJcrAlu0FhjaGzV2yry+uK8xR9ZObqJQXuA
-         JXYPYsQRuph8RYMKNMi4MqSja2BEVOa+Uxux9eSzgJ15xQop9XofYwQ7SRo6nkfWd/NO
-         n6TqXP7n7DAJ2gj+KKC/9bFKT8zEtJ8llmpkA=
+	Fri, 26 Nov 2010 08:10:17 -0500
+X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Nov 2010 08:10:17 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkIAFs+70xFpYat/2dsb2JhbACDUJ4/fHKwCTyGZC6IW4EhgzNzBIRchgWHaA
+X-IronPort-AV: E=Sophos;i="4.59,261,1288584000"; 
+   d="scan'208";a="83749421"
+Message-ID: <4CEFAF8D.3010907@gmail.com>
+Date: Fri, 26 Nov 2010 08:01:01 -0500
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101028 Iceape/2.0.10
 MIME-Version: 1.0
-In-Reply-To: <1290776379.2145.143.camel@laptop>
-References: <20101123224601.766827604@openvz.org>
-	<20101123224800.294919307@openvz.org>
-	<AANLkTikjEDVmQRt4ZxwwXJznX2X3zSqSY=zoPtuN1omY@mail.gmail.com>
-	<1290776379.2145.143.camel@laptop>
-Date: Fri, 26 Nov 2010 16:07:30 +0300
-X-Google-Sender-Auth: Em-DBkFrFyiGXnf_zGLG8RGdz9k
-Message-ID: <AANLkTik6cO+0pLQy0+YXgzEVo1bC0-6_Pemu81P95Yej@mail.gmail.com>
-Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, ming.m.lin@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jiri Slaby <jslaby@suse.cz>, corentincj@iksaif.net,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: eeepc: rfkill on 900A defunct
+References: <4CED26EF.5000109@suse.cz> <20101124201834.GA7760@srcf.ucam.org>
+In-Reply-To: <20101124201834.GA7760@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/10, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-11-26 at 13:48 +0100, Stephane Eranian wrote:
->> Reviewed-by: Stephane Eranian <eranian@google.com>
+Matthew Garrett wrote:
+> Hm. As a shorter term fix, can you try this (entirely untested!)
+> approach?
 >
-> The new one, right? The one that reads:
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index b2edfdc..8f817d6 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -574,8 +574,9 @@ static bool eeepc_wlan_rfkill_blocked(struct eeepc_laptop *eeepc)
+>   	return true;
+>   }
 >
+> -static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
+> +static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+>   {
+> +	struct pci_dev *port;
+>   	struct pci_dev *dev;
+>   	struct pci_bus *bus;
+>   	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
+> @@ -588,9 +589,17 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
+>   	mutex_lock(&eeepc->hotplug_lock);
+>
+>   	if (eeepc->hotplug_slot) {
+> -		bus = pci_find_bus(0, 1);
+> +		port = acpi_get_pci_dev(handle);
+> +
+> +		if (!port) {
+> +			pr_warning("Unable to find port\n");
+> +			goto out_unlock;
+> +		}
+> +
+> +		bus = port->subordinate;
+> +
+>   		if (!bus) {
+> -			pr_warning("Unable to find PCI bus 1?\n");
+> +			pr_warning("Unable to find PCI bus?\n");
+>   			goto out_unlock;
+>   		}
+>
+> @@ -636,6 +645,17 @@ out_unlock:
+>   	mutex_unlock(&eeepc->hotplug_lock);
+>   }
+>
+> +static void eeepc_rfkill_hotplug_update(struct eeepc_laptop *eeepc, char *node)
+> +{
+> +	acpi_status status = AE_OK;
+> +	acpi_handle handle;
+> +
+> +	status = acpi_get_handle(NULL, node,&handle);
+> +
+> +	if (ACPI_SUCCESS(status))
+> +		eeepc_rfkill_hotplug(eeepc, handle);
+> +}
+> +
+>   static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
+>   {
+>   	struct eeepc_laptop *eeepc = data;
+> @@ -643,7 +663,7 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
+>   	if (event != ACPI_NOTIFY_BUS_CHECK)
+>   		return;
+>
+> -	eeepc_rfkill_hotplug(eeepc);
+> +	eeepc_rfkill_hotplug(eeepc, handle);
+>   }
+>
+>   static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
+> @@ -661,6 +681,11 @@ static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
+>   						     eeepc);
+>   		if (ACPI_FAILURE(status))
+>   			pr_warning("Failed to register notify on %s\n", node);
+> +		/*
+> +		 * Refresh pci hotplug in case the rfkill state was
+> +		 * changed during setup.
+> +		 */
+> +		eeepc_rfkill_hotplug(eeepc, handle);
+>   	} else
+>   		return -ENODEV;
+>
+> @@ -682,6 +707,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_laptop *eeepc,
+>   		if (ACPI_FAILURE(status))
+>   			pr_err("Error removing rfkill notify handler %s\n",
+>   				node);
+> +			/*
+> +			 * Refresh pci hotplug in case the rfkill
+> +			 * state was changed after
+> +			 * eeepc_unregister_rfkill_notifier()
+> +			 */
+> +		eeepc_rfkill_hotplug(eeepc, handle);
+>   	}
+>   }
+>
+> @@ -805,11 +836,7 @@ static void eeepc_rfkill_exit(struct eeepc_laptop *eeepc)
+>   		rfkill_destroy(eeepc->wlan_rfkill);
+>   		eeepc->wlan_rfkill = NULL;
+>   	}
+> -	/*
+> -	 * Refresh pci hotplug in case the rfkill state was changed after
+> -	 * eeepc_unregister_rfkill_notifier()
+> -	 */
+> -	eeepc_rfkill_hotplug(eeepc);
+> +
+>   	if (eeepc->hotplug_slot)
+>   		pci_hp_deregister(eeepc->hotplug_slot);
+>
+> @@ -878,11 +905,6 @@ static int eeepc_rfkill_init(struct eeepc_laptop *eeepc)
+>   	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P5");
+>   	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P6");
+>   	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P7");
+> -	/*
+> -	 * Refresh pci hotplug in case the rfkill state was changed during
+> -	 * setup.
+> -	 */
+> -	eeepc_rfkill_hotplug(eeepc);
+>
+>   exit:
+>   	if (result&&  result != -ENODEV)
+> @@ -917,8 +939,11 @@ static int eeepc_hotk_restore(struct device *device)
+>   	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
+>
+>   	/* Refresh both wlan rfkill state and pci hotplug */
+> -	if (eeepc->wlan_rfkill)
+> -		eeepc_rfkill_hotplug(eeepc);
+> +	if (eeepc->wlan_rfkill) {
+> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P5");
+> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P6");
+> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P7");
+> +	}
+>
+>   	if (eeepc->bluetooth_rfkill)
+>   		rfkill_set_sw_state(eeepc->bluetooth_rfkill,
+>    
+Did a quick test. The 900A seems printing the "Port not found" warning, 
+but the ath5k comes down and then up OK.
+Mind you, I think they are doing some magic in the BIOS as well, so more 
+testing would be nice ;-)
+If it works, it may be a good candidate for 2.6.36 as well...
 
-yes, it's updated
+Thanks, Woody
 
-> + *    Low 32 bits
-> + *    -----------
-> + *      0-6: P4_PEBS_METRIC enum
-> + *     7-11:                    reserved
-> + *       12:                    reserved (Enable)
-> + *    13-15:                    reserved (ESCR select)
-> + *    16-17: Active Thread
-> + *       18: Compare
-> + *       19: Complement
-> + *    20-23: Threshold
-> + *       24: Edge
-> + *       25:                    reserved (FORCE_OVF)
-> + *       26:                    reserved (OVF_PMI_T0)
-> + *       27:                    reserved (OVF_PMI_T1)
-> + *    28-29:                    reserved
-> + *       30:                    reserved (Cascade)
-> + *       31:                    reserved (OVF)
-> + *
-> + *    High 32 bits
-> + *    ------------
-> + *        0:                    reserved (T1_USR)
-> + *        1:                    reserved (T1_OS)
-> + *        2:                    reserved (T0_USR)
-> + *        3:                    reserved (T0_OS)
-> + *        4: Tag Enable
-> + *      5-8: Tag Value
-> + *     9-24: Event Mask (may use P4_ESCR_EMASK_BIT helper)
-> + *    25-30: enum P4_EVENTS
-> + *       31:                    reserved (HT thread)
->
->
