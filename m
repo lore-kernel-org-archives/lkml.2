@@ -1,187 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab0KZCTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 21:19:14 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:46617 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753029Ab0KZCTN (ORCPT
+	id S1753839Ab0KZCUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 21:20:09 -0500
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61840 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab0KZCUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 21:19:13 -0500
-Message-ID: <4CEF1905.6050803@dsn.okisemi.com>
-Date: Fri, 26 Nov 2010 11:18:45 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 11/19 v5] can: EG20T PCH: Delete unnecessary/redundant
- code
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Nov 2010 21:20:07 -0500
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
+        h.mitake@gmail.com, Arjan van de Ven <arjan@linux.intel.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH] workqueue: check the allocation of system_unbound_wq
+Date: Fri, 26 Nov 2010 11:19:51 +0900
+Message-Id: <1290737991-23163-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete unnecessary/redundant code
+I found a trivial bug on initialization of workqueue.
+Current init_workqueues doesn't check the result of
+allocation of system_unbound_wq, this should be checked
+like other queues.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: David Howells <dhowells@redhat.com>
 ---
- drivers/net/can/pch_can.c |   89 +++++++++++++++++++--------------------------
- 1 files changed, 37 insertions(+), 52 deletions(-)
+ kernel/workqueue.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index b803fed..33c6bc0 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -447,11 +447,6 @@ static void pch_can_release(struct pch_can_priv *priv)
- /* This function clears interrupt(s) from the CAN device. */
- static void pch_can_int_clr(struct pch_can_priv *priv, u32 mask)
- {
--	if (mask == PCH_STATUS_INT) {
--		ioread32(&priv->regs->stat);
--		return;
--	}
--
- 	/* Clear interrupt for transmit object */
- 	if ((mask >= PCH_RX_OBJ_START) && (mask <= PCH_RX_OBJ_END)) {
- 		/* Setting CMASK for clearing the reception interrupts. */
-@@ -518,8 +513,6 @@ static void pch_can_error(struct net_device *ndev, u32 status)
- 		state = CAN_STATE_BUS_OFF;
- 		cf->can_id |= CAN_ERR_BUSOFF;
- 		can_bus_off(ndev);
--		pch_can_set_run_mode(priv, PCH_CAN_RUN);
--		dev_err(&ndev->dev, "%s -> Bus Off occurres.\n", __func__);
- 	}
- 
- 	errc = ioread32(&priv->regs->errc);
-@@ -655,7 +648,6 @@ static int pch_can_rx_normal(struct net_device *ndev, u32 obj_num, int quota)
- 	canid_t id;
- 	int rcv_pkts = 0;
- 	int rtn;
--	int next_flag = 0;
- 	struct sk_buff *skb;
- 	struct can_frame *cf;
- 	struct pch_can_priv *priv = netdev_priv(ndev);
-@@ -682,50 +674,48 @@ static int pch_can_rx_normal(struct net_device *ndev, u32 obj_num, int quota)
- 				netdev_err(ndev, "Can't get memory\n");
- 			rcv_pkts++;
- 			quota--;
--			next_flag = 1;
--		} else if (!(reg & PCH_IF_MCONT_NEWDAT))
--			next_flag = 1;
--
--		if (!next_flag) {
--			skb = alloc_can_skb(priv->ndev, &cf);
--			if (!skb)
--				return -ENOMEM;
--
--			/* Get Received data */
--			id2 = ioread32(&priv->regs->ifregs[0].id2);
--			if (id2 & PCH_ID2_XTD) {
--				id = (ioread32(&priv->regs->ifregs[0].id1) &
--					       0xffff);
--				id |= (((id2) & 0x1fff) << 16);
--				cf->can_id = id | CAN_EFF_FLAG;
--			} else {
--				id = ((id2 & (CAN_SFF_MASK << 2)) >> 2);
--				cf->can_id = id;
--			}
-+			obj_num++;
-+			continue;
-+		} else if (!(reg & PCH_IF_MCONT_NEWDAT)) {
-+			obj_num++;
-+			continue;
-+		}
- 
--			if (id2 & PCH_ID2_DIR)
--				cf->can_id |= CAN_RTR_FLAG;
-+		skb = alloc_can_skb(priv->ndev, &cf);
-+		if (!skb)
-+			return -ENOMEM;
-+
-+		/* Get Received data */
-+		id2 = ioread32(&priv->regs->ifregs[0].id2);
-+		if (id2 & PCH_ID2_XTD) {
-+			id = (ioread32(&priv->regs->ifregs[0].id1) & 0xffff);
-+			id |= (((id2) & 0x1fff) << 16);
-+			cf->can_id = id | CAN_EFF_FLAG;
-+		} else {
-+			id = ((id2 & (CAN_SFF_MASK << 2)) >> 2);
-+			cf->can_id = id;
-+		}
- 
--			cf->can_dlc = get_can_dlc((ioread32(&priv->regs->
--						   ifregs[0].mcont)) & 0xF);
-+		if (id2 & PCH_ID2_DIR)
-+			cf->can_id |= CAN_RTR_FLAG;
- 
--			for (i = 0; i < cf->can_dlc; i += 2) {
--				data_reg = ioread16(&priv->regs->ifregs[0].
--						    data[i / 2]);
--				cf->data[i] = data_reg & 0xff;
--				cf->data[i + 1] = data_reg >> 8;
--			}
-+		cf->can_dlc = get_can_dlc((ioread32(&priv->regs->
-+						    ifregs[0].mcont)) & 0xF);
- 
--			netif_receive_skb(skb);
--			rcv_pkts++;
--			stats->rx_packets++;
--			quota--;
--			stats->rx_bytes += cf->can_dlc;
--
--			pch_fifo_thresh(priv, obj_num);
-+		for (i = 0; i < cf->can_dlc; i += 2) {
-+			data_reg = ioread16(&priv->regs->ifregs[0].data[i / 2]);
-+			cf->data[i] = data_reg & 0xff;
-+			cf->data[i + 1] = data_reg >> 8;
- 		}
-+
-+		netif_receive_skb(skb);
-+		rcv_pkts++;
-+		stats->rx_packets++;
-+		quota--;
-+		stats->rx_bytes += cf->can_dlc;
-+
-+		pch_fifo_thresh(priv, obj_num);
- 		obj_num++;
--		next_flag = 0;
- 	} while (quota > 0);
- 
- 	return rcv_pkts;
-@@ -761,7 +751,7 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
- 	if (!int_stat)
- 		goto end;
- 
--	if ((int_stat == PCH_STATUS_INT) && (quota > 0)) {
-+	if (int_stat == PCH_STATUS_INT) {
- 		reg_stat = ioread32(&priv->regs->stat);
- 		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
- 			if (reg_stat & PCH_BUS_OFF ||
-@@ -947,10 +937,6 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 		priv->tx_obj++;
- 	}
- 
--	/* Reading the Msg Obj from the Msg RAM to the Interface register. */
--	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[1].cmask);
--	pch_can_rw_msg_obj(&priv->regs->ifregs[1].creq, tx_obj_no);
--
- 	/* Setting the CMASK register. */
- 	pch_can_bit_set(&priv->regs->ifregs[1].cmask, PCH_CMASK_ALL);
- 
-@@ -1080,7 +1066,6 @@ static u32 pch_can_get_rx_buffer_link(struct pch_can_priv *priv, u32 buffer_num)
- 	return link;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 90db1bd..b60374d 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3692,7 +3692,8 @@ static int __init init_workqueues(void)
+ 	system_nrt_wq = alloc_workqueue("events_nrt", WQ_NON_REENTRANT, 0);
+ 	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
+ 					    WQ_UNBOUND_MAX_ACTIVE);
+-	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq);
++	BUG_ON(!system_wq || !system_long_wq ||
++		!system_nrt_wq || !system_unbound_wq);
+ 	return 0;
  }
- 
--
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	int i;			/* Counter variable. */
+ early_initcall(init_workqueues);
 -- 
-1.6.0.6
+1.6.5.2
+
