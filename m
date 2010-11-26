@@ -1,78 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab0KZTWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 14:22:09 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35830 "EHLO e7.ny.us.ibm.com"
+	id S1755672Ab0KZT14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 14:27:56 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:32988 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755429Ab0KZTWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 14:22:07 -0500
-Message-ID: <4CF008D8.2020609@linux.vnet.ibm.com>
-Date: Fri, 26 Nov 2010 11:22:00 -0800
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S1754669Ab0KZT1y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 14:27:54 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: sedat.dilek@gmail.com
+Subject: Re: [PATCH 0/13] ACPI / PM: Rework power resources management
+Date: Fri, 26 Nov 2010 20:26:54 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+References: <AANLkTimahUpEL3cV6pFhkN8KqrphfVMSOw8xAN2=9jPy@mail.gmail.com> <201011252145.19814.rjw@sisk.pl> <AANLkTimcn_3DamzfWaCk6YEfSCvC78ZJGkw-f+01pj2=@mail.gmail.com>
+In-Reply-To: <AANLkTimcn_3DamzfWaCk6YEfSCvC78ZJGkw-f+01pj2=@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt@console-pimps.org>
-Subject: Re: [RFC PATCHv3] perf tools: add event grouping capability to "perf
- stat"
-References: <1290650053-3486-1-git-send-email-cjashfor@linux.vnet.ibm.com> <1290666760.2072.539.camel@laptop>
-In-Reply-To: <1290666760.2072.539.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011262026.55052.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 10:32 PM, Peter Zijlstra wrote:
-> On Wed, 2010-11-24 at 17:54 -0800, Corey Ashford wrote:
->> Add the ability to create multiple event groups, each with their own leader
->> using the existing "-e<event>[,<event>  ...] [-e<event>[,<event>]]"
->> syntax.  Each additional -e switch creates a new group, and each event
->> listed within a -e switch is within that group.
->>
->> Changes since v1:
->> - Because of a flub, v2 did not contain the changes I had intended to make,
->> and instead, v2 had the same patch contents as v1.
->> - When perf stat is not supplied any events on the command line, put
->> each default event in its own group.
->
-> I like this, but could you also extend this to perf-record? its a bit
-> odd to diverge between the two.
->
-> Using Stephane's latest syntax changes you could actually do something
-> like:
->
-> perf record -e task-clock:freq=1000,cycles:period=0
->
-> Which would create a group with 1 sampling counter and a counting
-> counter (at which point we should probably start flipping
-> PERF_SAMPLE_READ).
+On Friday, November 26, 2010, Sedat Dilek wrote:
+> On Thu, Nov 25, 2010 at 9:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, November 25, 2010, Sedat Dilek wrote:
+> >> On Thu, Nov 25, 2010 at 9:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Thursday, November 25, 2010, Rafael J. Wysocki wrote:
+> >> >> On Thursday, November 25, 2010, Sedat Dilek wrote:
+> >> >> > On Thu, Nov 25, 2010 at 10:41 AM, Sedat Dilek
+> >> >> > <sedat.dilek@googlemail.com> wrote:
+> >> >> > > On Thu, Nov 25, 2010 at 10:11 AM, Sedat Dilek
+> >> >> > > <sedat.dilek@googlemail.com> wrote:
+> >> >> > >> Hi Rafael,
+> >> >> > >>
+> >> >> > [ ... ]
+> >> >> > >> # grep "error:" build_linux-next_next20101124.dileks.2.log
+> >> >> > >> /home/sd/src/linux-2.6/linux-2.6.37-rc3/debian/build/source_i386_none/drivers/platform/x86/fujitsu-laptop.c:692:
+> >> >> > >> error: implicit declaration of function ‘acpi_bus_get_power’
+> >> >> > [ ... ]
+> >> >> > >
+> >> >> > > Guess this is conflicting with your patch
+> >> >> > > "12-13-ACPI-PM-Drop-acpi_bus_get_power.patch".
+> >> >> > >
+> >> >> > > - Sedat -
+> >> >> > >
+> >> >> > > P.S.: Note to myself, add the following snippet for testing purposes:
+> >> >> > >
+> >> >> > > [ debian/config/i386/none/config.686 ]
+> >> >> > > ...
+> >> >> > > ##
+> >> >> > > ## file: drivers/platform/x86/Kconfig
+> >> >> > > ##
+> >> >> > > # CONFIG_FUJITSU_LAPTOP is not set
+> >> >> > > - EOT -
+> >> >> > >
+> >> >> >
+> >> >> > Applied on top of linux-next (next-20101125) and running.
+> >> >> >
+> >> >> >      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> >> >>
+> >> >> Great, thanks a lot!
+> >> >>
+> >> >> I should have said the patchset is on top of the current Linus' tree.
+> >> >
+> >> > Actually it also breaks with the current Linus' tree, but the appended patch
+> >> > should fix it.
+> >> >
+> >> > Thanks,
+> >> > Rafael
+> >> >
+> >> > ---
+> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >> > Subject: Platform / x86: Make fujitsu_laptop use acpi_bus_update_power()
+> >> >
+> >> > Use the new function acpi_bus_update_power(), which is safer than
+> >> > acpi_bus_get_power(), for getting device power state in
+> >> > acpi_fujitsu_add().
+> >> >
+> >> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >> > ---
+> >> >  drivers/platform/x86/fujitsu-laptop.c |    2 +-
+> >> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> >
+> >> > Index: linux-2.6/drivers/platform/x86/fujitsu-laptop.c
+> >> > ===================================================================
+> >> > --- linux-2.6.orig/drivers/platform/x86/fujitsu-laptop.c
+> >> > +++ linux-2.6/drivers/platform/x86/fujitsu-laptop.c
+> >> > @@ -689,7 +689,7 @@ static int acpi_fujitsu_add(struct acpi_
+> >> >        if (error)
+> >> >                goto err_free_input_dev;
+> >> >
+> >> > -       result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
+> >> > +       result = acpi_bus_update_power(fujitsu->acpi_handle, &state);
+> >> >        if (result) {
+> >> >                printk(KERN_ERR "Error reading power state\n");
+> >> >                goto err_unregister_input_dev;
+> >> >
+> >>
+> >> Sorry, I crapped my own quotes.
+> >> Missed to catch line #860?
+> >
+> > Indeed, sorry.  Updated patch is appended.
+> >
+> > Rafael
+> >
+> >
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: Platform / x86: Make fujitsu_laptop use acpi_bus_update_power()
+> >
+> > Use the new function acpi_bus_update_power(), which is safer than
+> > acpi_bus_get_power(), for getting device power state in
+> > acpi_fujitsu_add().
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/platform/x86/fujitsu-laptop.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > Index: linux-2.6/drivers/platform/x86/fujitsu-laptop.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/platform/x86/fujitsu-laptop.c
+> > +++ linux-2.6/drivers/platform/x86/fujitsu-laptop.c
+> > @@ -689,7 +689,7 @@ static int acpi_fujitsu_add(struct acpi_
+> >        if (error)
+> >                goto err_free_input_dev;
+> >
+> > -       result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
+> > +       result = acpi_bus_update_power(fujitsu->acpi_handle, &state);
+> >        if (result) {
+> >                printk(KERN_ERR "Error reading power state\n");
+> >                goto err_unregister_input_dev;
+> > @@ -857,7 +857,7 @@ static int acpi_fujitsu_hotkey_add(struc
+> >        if (error)
+> >                goto err_free_input_dev;
+> >
+> > -       result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
+> > +       result = acpi_bus_update_power(fujitsu_hotkey->acpi_handle, &state);
+> >        if (result) {
+> >                printk(KERN_ERR "Error reading power state\n");
+> >                goto err_unregister_input_dev;
+> >
+> 
+> Feel free to add for
+> "Platform-x86-Make-fujitsu_laptop-use-acpi_bus_update_power.patch":
+> 
+>      Reported-and-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 
-Yes, that would be useful.
+Thanks for testing!
 
->
-> Matt was working on supporting that (although not through cmdline
-> syntax) and teaching perf-report to cope with such output.
-
-I did briefly consider adding this capability to perf record, but I knew 
-it would be a lot more complicated.
-
-This perf stat capability is something we added to an internal version, 
-and have been using it for more than 6 months.   It's quite helpful for 
-verifying that the kernel code for an arch is implemented correctly.
-
-As an alternative approach, how about if instead of changing the 
-existing syntax to perf stat, I instead add a -g/--group option which 
-takes groups of events?
-
-That way we won't really be diverging perf record and perf stat; we'll 
-just have a feature that can at some point later in time be added to 
-perf record when all of the details are worked out.
-
-- Corey
+Rafael
