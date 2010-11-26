@@ -1,112 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab0KZCFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 21:05:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43232 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab0KZCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 21:05:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,258,1288594800"; 
-   d="scan'208";a="681142623"
-Subject: Re: Free memory never fully used, swapping
-From: Shaohua Li <shaohua.li@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-In-Reply-To: <20101126012527.GI26037@csn.ul.ie>
-References: <20101115195246.GB17387@hostway.ca>
-	 <20101122154419.ee0e09d2.akpm@linux-foundation.org>
-	 <1290501331.2390.7023.camel@nimitz> <20101124084652.GC25170@hostway.ca>
-	 <1290647274.12777.3.camel@sli10-conroe> <20101125090328.GB14180@hostway.ca>
-	 <20101125161238.GD26037@csn.ul.ie> <1290733556.12777.5.camel@sli10-conroe>
-	 <20101126012527.GI26037@csn.ul.ie>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Nov 2010 10:05:40 +0800
-Message-ID: <1290737140.12777.13.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753489Ab0KZCGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 21:06:48 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:30468 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753088Ab0KZCGr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 21:06:47 -0500
+Message-ID: <4CEF161B.2040703@dsn.okisemi.com>
+Date: Fri, 26 Nov 2010 11:06:19 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 03/19 v5] can: EG20T PCH: Enumerate LEC macros
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 09:25 +0800, Mel Gorman wrote:
-> On Fri, Nov 26, 2010 at 09:05:56AM +0800, Shaohua Li wrote:
-> > > @@ -2168,6 +2180,7 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> > >  static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
-> > >  {
-> > >         int all_zones_ok;
-> > > +       int any_zone_ok;
-> > >         int priority;
-> > >         int i;
-> > >         unsigned long total_scanned;
-> > > @@ -2201,6 +2214,7 @@ loop_again:
-> > >                         disable_swap_token();
-> > > 
-> > >                 all_zones_ok = 1;
-> > > +               any_zone_ok = 0;
-> > > 
-> > >                 /*
-> > >                  * Scan in the highmem->dma direction for the highest
-> > > @@ -2310,10 +2324,12 @@ loop_again:
-> > >                                  * spectulatively avoid congestion waits
-> > >                                  */
-> > >                                 zone_clear_flag(zone, ZONE_CONGESTED);
-> > > +                               if (i <= pgdat->high_zoneidx)
-> > > +                                       any_zone_ok = 1;
-> > >                         }
-> > > 
-> > >                 }
-> > > -               if (all_zones_ok)
-> > > +               if (all_zones_ok || (order && any_zone_ok))
-> > >                         break;          /* kswapd: all done */
-> > >                 /*
-> > >                  * OK, kswapd is getting into trouble.  Take a nap, then take
-> > > @@ -2336,7 +2352,7 @@ loop_again:
-> > >                         break;
-> > >         }
-> > >  out:
-> > > -       if (!all_zones_ok) {
-> > > +       if (!(all_zones_ok || (order && any_zone_ok))) {
-> > >                 cond_resched();
-> > > 
-> > >                 try_to_freeze();
-> > > @@ -2361,7 +2377,13 @@ out:
-> > >                 goto loop_again;
-> > >         }
-> > > 
-> > > -       return sc.nr_reclaimed;
-> > > +       /*
-> > > +        * Return the order we were reclaiming at so sleeping_prematurely()
-> > > +        * makes a decision on the order we were last reclaiming at. However,
-> > > +        * if another caller entered the allocator slow path while kswapd
-> > > +        * was awake, order will remain at the higher level
-> > > +        */
-> > > +       return order;
-> > >  }
-> > This seems always fail. because you have the protect in the kswapd side,
-> > but no in the page allocation side. so every time a high order
-> > allocation occurs, the protect breaks and kswapd keeps running.
-> > 
-> 
-> I don't understand your question. sc.nr_reclaimed was being unused. The
-> point of returning order was to tell kswapd that "the order you were
-> reclaiming at may or may not be still valid, make your decisions on the
-> order I am currently reclaiming at". The key here is if that multiple
-> allocation requests come in for higher orders, kswapd will get reworken
-> multiple times. Unless it gets rewoken multiple times, kswapd is willing
-> to go back to sleep to avoid reclaiming an excessive number of pages.
-yes, I thought is rewoken multiple times, in the workload Simon reported
-Node 0, zone    DMA32  20741  29383   6022    134    272   123 4 0 0 0 0
-Node 0, zone   Normal    453      1      0      0      0     0 0 0 0 0 0
-Node 0, zone    DMA32  20476  29370   6024    117     48   116 4 0 0 0 0
-Node 0, zone   Normal    453      1      0      0      0     0 0 0 0 0 0
-Node 0, zone    DMA32  20343  29369   6020    110     23    10 2 0 0 0 0
-Node 0, zone   Normal    453      1      0      0      0     0 0 0 0 0 0
-Node 0, zone    DMA32  21592  30477   4856     22     10     4 2 0 0 0 0
-order >=3 pages are reduced a lot in a second
+Enumerate LEC macros
 
+For easy to readable, LEC is replaced to enums.
+
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/net/can/pch_can.c |   77 ++++++++++++++++++++++++---------------------
+ 1 files changed, 41 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 982ff2d..2d4ab0f 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -71,21 +71,12 @@
+ #define PCH_REC			0x00007f00
+ #define PCH_TEC			0x000000ff
+ 
++
+ #define PCH_TX_OK		BIT(3)
+ #define PCH_RX_OK		BIT(4)
+ #define PCH_EPASSIV		BIT(5)
+ #define PCH_EWARN		BIT(6)
+ #define PCH_BUS_OFF		BIT(7)
+-#define PCH_LEC0		BIT(0)
+-#define PCH_LEC1		BIT(1)
+-#define PCH_LEC2		BIT(2)
+-#define PCH_LEC_ALL		(PCH_LEC0 | PCH_LEC1 | PCH_LEC2)
+-#define PCH_STUF_ERR		PCH_LEC0
+-#define PCH_FORM_ERR		PCH_LEC1
+-#define PCH_ACK_ERR		(PCH_LEC0 | PCH_LEC1)
+-#define PCH_BIT1_ERR		PCH_LEC2
+-#define PCH_BIT0_ERR		(PCH_LEC0 | PCH_LEC2)
+-#define PCH_CRC_ERR		(PCH_LEC1 | PCH_LEC2)
+ 
+ /* bit position of certain controller bits. */
+ #define PCH_BIT_BRP		0
+@@ -117,6 +108,16 @@ enum pch_ifreg {
+ 	PCH_TX_IFREG,
+ };
+ 
++enum pch_can_err {
++	PCH_STUF_ERR = 1,
++	PCH_FORM_ERR,
++	PCH_ACK_ERR,
++	PCH_BIT1_ERR,
++	PCH_BIT0_ERR,
++	PCH_CRC_ERR,
++	PCH_LEC_ALL,
++};
++
+ enum pch_can_mode {
+ 	PCH_CAN_ENABLE,
+ 	PCH_CAN_DISABLE,
+@@ -620,7 +621,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
+ 	struct sk_buff *skb;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	struct can_frame *cf;
+-	u32 errc;
++	u32 errc, lec;
+ 	struct net_device_stats *stats = &(priv->ndev->stats);
+ 	enum can_state state = priv->can.state;
+ 
+@@ -665,33 +666,37 @@ static void pch_can_error(struct net_device *ndev, u32 status)
+ 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
+ 	}
+ 
+-	if (status & PCH_LEC_ALL) {
++	lec = status & PCH_LEC_ALL;
++	switch (lec) {
++	case PCH_STUF_ERR:
++		cf->data[2] |= CAN_ERR_PROT_STUFF;
+ 		priv->can.can_stats.bus_error++;
+ 		stats->rx_errors++;
+-		switch (status & PCH_LEC_ALL) {
+-		case PCH_STUF_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_STUFF;
+-			break;
+-		case PCH_FORM_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_FORM;
+-			break;
+-		case PCH_ACK_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_LOC_ACK |
+-				       CAN_ERR_PROT_LOC_ACK_DEL;
+-			break;
+-		case PCH_BIT1_ERR:
+-		case PCH_BIT0_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_BIT;
+-			break;
+-		case PCH_CRC_ERR:
+-			cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
+-				       CAN_ERR_PROT_LOC_CRC_DEL;
+-			break;
+-		default:
+-			iowrite32(status | PCH_LEC_ALL, &priv->regs->stat);
+-			break;
+-		}
+-
++		break;
++	case PCH_FORM_ERR:
++		cf->data[2] |= CAN_ERR_PROT_FORM;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_ACK_ERR:
++		cf->can_id |= CAN_ERR_ACK;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_BIT1_ERR:
++	case PCH_BIT0_ERR:
++		cf->data[2] |= CAN_ERR_PROT_BIT;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_CRC_ERR:
++		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
++			       CAN_ERR_PROT_LOC_CRC_DEL;
++		priv->can.can_stats.bus_error++;
++		stats->rx_errors++;
++		break;
++	case PCH_LEC_ALL: /* Written by CPU. No error status */
++		break;
+ 	}
+ 
+ 	priv->can.state = state;
+-- 
+1.6.0.6
