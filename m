@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab0KZQfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 11:35:52 -0500
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:41693 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab0KZQfv (ORCPT
+	id S1755431Ab0KZQgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 11:36:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43155 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab0KZQgC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 11:35:51 -0500
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH] fs/fs-writeback.c: Fix sync_inodes_sb() return value kernel-doc
-Date: Fri, 26 Nov 2010 16:35:10 +0000
-Message-Id: <1290789310-2626-1-git-send-email-stefanha@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 26 Nov 2010 11:36:02 -0500
+Subject: Re: mlock'ed pages are paging out to shared mapped files?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bob Walters <bob.s.walters@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <03A305FE-2E9E-42B0-A06C-564E03295B2A@gmail.com>
+References: <03A305FE-2E9E-42B0-A06C-564E03295B2A@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 26 Nov 2010 17:36:21 +0100
+Message-ID: <1290789381.2145.154.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sync_inodes_sb() function does not have a return value.  Remove the
-outdated documentation comment.
+On Fri, 2010-11-26 at 11:25 -0500, Bob Walters wrote:
+> 
+> Please CC directly, I'm not subscribed.
+> 
+> I'm writing to determine if observed mlock behavior is a bug or the
+> intended implementation.   The kernel seems to be paging out
+> modifications made to locked pages of a shared (MAP_SHARED) memory
+> mapped regular file, on Linux 2.6.35.6-48 (Fedora 14 distro, x86_64).
+> Man pages implies that this might be a bug.   I have a repeatable
+> process involving the following test: 
 
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
----
- fs/fs-writeback.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+That's not paged-out, its a shared mapping (ie a mapped file), you dirty
+the pages, we clean them by writing them out to disk.
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 3d06ccc..13a6b69 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1164,7 +1164,7 @@ EXPORT_SYMBOL(writeback_inodes_sb_nr_if_idle);
-  * @sb: the superblock
-  *
-  * This function writes and waits on any dirty inode belonging to this
-- * super_block. The number of pages synced is returned.
-+ * super_block.
-  */
- void sync_inodes_sb(struct super_block *sb)
- {
--- 
-1.7.2.3
-
+That is the expected behaviour, if the man-page implies anything else
+its bonkers.
