@@ -1,108 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab0KZAgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 19:36:22 -0500
-Received: from ping.uio.no ([193.157.115.196]:45967 "EHLO ping.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab0KZAgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 19:36:20 -0500
-Date: Fri, 26 Nov 2010 01:36:13 +0100
-From: Morten Hustveit <mortehu@ping.uio.no>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>
-Subject: [PATCH v2] fcntl: Add the F_READAHEAD command
-Message-ID: <20101126003613.GA2026@ping.uio.no>
-References: <20101125095437.GA3409@ping.uio.no> <DEAF94DC-08D0-42D2-A6E9-62B1B9C39D40@dilger.ca>
+	id S1752967Ab0KZAhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 19:37:23 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11221 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752815Ab0KZAhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 19:37:22 -0500
+Message-ID: <4CEF0126.8070305@dsn.okisemi.com>
+Date: Fri, 26 Nov 2010 09:36:54 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DEAF94DC-08D0-42D2-A6E9-62B1B9C39D40@dilger.ca>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Exiscan-Spam-Score: -5.0 (-----)
-X-Exiscan-Spam-Report: SpamAssassin 3.2.5 (2008-06-10) on rossum.ping.uio.no
-	Score  Rule
-	* -5.0 PING_UIO_MAIL_IS_INTERNAL Message has never been outside
-	*      129.240.0.0/16 or 193.157.115.0/24
-	* -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 5/19 v4] can: EG20T PCH: Delete unnecessary spin_lock
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow userland applications to control the read-ahead per file descriptor.
+Delete unnecessary spin_lock
+ Delete unnecessary spin_lock for accessing Message Object.
+ Since all message objects are divided into tx/rx area completely,
+ spin_lock processing is unnecessary.
 
-For example, this interface can be used to adjust read sizes in applications
-using sendfile() to serve many streams from disk.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+---
+ drivers/net/can/pch_can.c |   34 ----------------------------------
+ 1 files changed, 0 insertions(+), 34 deletions(-)
 
-The implementation is based on sys_readahead() and sys_fadvise64().
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 8686d93..6437e60 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -71,7 +71,6 @@
+ #define PCH_REC			0x00007f00
+ #define PCH_TEC			0x000000ff
 
-The same interface was added to FreeBSD in 2009.
-
-Signed-off-by: Morten Hustveit <mortehu@ping.uio.no>
---- 
-Changes for v2:
-  - Renamed "arg" to "ra_bytes".  "ra_bytes" was used instead of
-    "readahead_bytes" to keep lines at less than 80 columns, and to be
-    consistent with "ra_pages".
-
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index ecc8b39..9d78274 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -340,6 +340,31 @@ static int f_getown_ex(struct file *filp, unsigned long arg)
- 	return ret;
- }
- 
-+static int f_readahead(struct file *filp, unsigned long ra_bytes)
-+{
-+	struct address_space *mapping;
-+
-+	mapping = filp->f_mapping;
-+	if (!mapping || !mapping->a_ops || !mapping->a_ops->readpage)
-+		return -EINVAL;
-+
-+	if (mapping->a_ops->get_xip_mem)
-+		return 0;
-+
-+	if (ra_bytes) {
-+		filp->f_ra.ra_pages = (ra_bytes + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		spin_lock(&filp->f_lock);
-+		filp->f_mode &= ~FMODE_RANDOM;
-+		spin_unlock(&filp->f_lock);
-+	} else {
-+		spin_lock(&filp->f_lock);
-+		filp->f_mode |= FMODE_RANDOM;
-+		spin_unlock(&filp->f_lock);
-+	}
-+
-+	return 0;
-+}
-+
- static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
- 		struct file *filp)
+-
+ #define PCH_TX_OK		BIT(3)
+ #define PCH_RX_OK		BIT(4)
+ #define PCH_EPASSIV		BIT(5)
+@@ -178,7 +177,6 @@ struct pch_can_priv {
+ 	unsigned int int_enables;
+ 	unsigned int int_stat;
+ 	struct net_device *ndev;
+-	spinlock_t msgif_reg_lock; /* Message Interface Registers Access Lock*/
+ 	unsigned int msg_obj[PCH_TX_OBJ_END];
+ 	struct pch_can_regs __iomem *regs;
+ 	struct napi_struct napi;
+@@ -309,7 +307,6 @@ static void pch_can_check_if_busy(u32 __iomem
+*creq_addr, u32 num)
+ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
+ 			     u32 set, enum pch_ifreg dir)
  {
-@@ -420,6 +445,9 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
- 	case F_GETPIPE_SZ:
- 		err = pipe_fcntl(filp, cmd, arg);
- 		break;
-+	case F_READAHEAD:
-+		err = f_readahead(filp, arg);
-+		break;
- 	default:
- 		break;
+-	unsigned long flags;
+ 	u32 ie;
+
+ 	if (dir)
+@@ -317,7 +314,6 @@ static void pch_can_set_rxtx(struct pch_can_priv
+*priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_RXIE;
+
+-	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 	/* Reading the receive buffer data from RAM to Interface1 registers */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_check_if_busy(&priv->regs->ifregs[dir].creq, buff_num);
+@@ -338,10 +334,8 @@ static void pch_can_set_rxtx(struct pch_can_priv
+*priv, u32 buff_num,
  	}
-diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-index afc00af..69d8e4d 100644
---- a/include/linux/fcntl.h
-+++ b/include/linux/fcntl.h
-@@ -28,6 +28,11 @@
- #define F_GETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 8)
- 
- /*
-+ * Set read-ahead buffer size
-+ */
-+#define F_READAHEAD	(F_LINUX_SPECIFIC_BASE + 9)
-+
-+/*
-  * Types of directory notifications that may be requested.
-  */
- #define DN_ACCESS	0x00000001	/* File accessed */
+
+ 	pch_can_check_if_busy(&priv->regs->ifregs[dir].creq, buff_num);
+-	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ }
+
+-
+ static void pch_can_set_rx_all(struct pch_can_priv *priv, u32 set)
+ {
+ 	int i;
+@@ -363,7 +357,6 @@ static void pch_can_set_tx_all(struct pch_can_priv
+*priv, u32 set)
+ static u32 pch_can_get_rxtx_ir(struct pch_can_priv *priv, u32 buff_num,
+ 			       enum pch_ifreg dir)
+ {
+-	unsigned long flags;
+ 	u32 ie, enable;
+
+ 	if (dir)
+@@ -371,7 +364,6 @@ static u32 pch_can_get_rxtx_ir(struct pch_can_priv
+*priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_TXIE;
+
+-	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_check_if_busy(&priv->regs->ifregs[dir].creq, buff_num);
+
+@@ -381,7 +373,6 @@ static u32 pch_can_get_rxtx_ir(struct pch_can_priv
+*priv, u32 buff_num,
+ 	} else {
+ 		enable = 0;
+ 	}
+-	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ 	return enable;
+ }
+
+@@ -393,9 +384,6 @@ static int pch_can_int_pending(struct pch_can_priv
+*priv)
+ static void pch_can_set_rx_buffer_link(struct pch_can_priv *priv,
+ 				       u32 buffer_num, u32 set)
+ {
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
+ 	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
+ 	iowrite32(PCH_CMASK_RDWR | PCH_CMASK_CTRL,
+@@ -407,15 +395,11 @@ static void pch_can_set_rx_buffer_link(struct
+pch_can_priv *priv,
+ 		pch_can_bit_set(&priv->regs->ifregs[0].mcont, PCH_IF_MCONT_EOB);
+
+ 	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
+-	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ }
+
+ static void pch_can_get_rx_buffer_link(struct pch_can_priv *priv,
+ 				       u32 buffer_num, u32 *link)
+ {
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
+ 	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
+
+@@ -423,7 +407,6 @@ static void pch_can_get_rx_buffer_link(struct
+pch_can_priv *priv,
+ 		*link = PCH_DISABLE;
+ 	else
+ 		*link = PCH_ENABLE;
+-	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ }
+
+ static void pch_can_clear_buffers(struct pch_can_priv *priv)
+@@ -468,9 +451,6 @@ static void pch_can_clear_buffers(struct
+pch_can_priv *priv)
+ static void pch_can_config_rx_tx_buffers(struct pch_can_priv *priv)
+ {
+ 	int i;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+
+ 	for (i = PCH_RX_OBJ_START; i <= PCH_RX_OBJ_END; i++) {
+ 		iowrite32(PCH_CMASK_RX_TX_GET,
+@@ -529,7 +509,6 @@ static void pch_can_config_rx_tx_buffers(struct
+pch_can_priv *priv)
+
+ 		pch_can_check_if_busy(&priv->regs->ifregs[1].creq, i);
+ 	}
+-	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ }
+
+ static void pch_can_init(struct pch_can_priv *priv)
+@@ -845,7 +824,6 @@ static int pch_can_rx_poll(struct napi_struct *napi,
+int quota)
+ 	u32 int_stat;
+ 	int rcv_pkts = 0;
+ 	u32 reg_stat;
+-	unsigned long flags;
+
+ 	int_stat = pch_can_int_pending(priv);
+ 	if (!int_stat)
+@@ -860,12 +838,10 @@ INT_STAT:
+ 		}
+
+ 		if (reg_stat & PCH_TX_OK) {
+-			spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 			iowrite32(PCH_CMASK_RX_TX_GET,
+ 				  &priv->regs->ifregs[1].cmask);
+ 			pch_can_check_if_busy(&priv->regs->ifregs[1].creq,
+ 					       ioread32(&priv->regs->intr));
+-			spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ 			pch_can_bit_clear(&priv->regs->stat, PCH_TX_OK);
+ 		}
+
+@@ -879,22 +855,18 @@ INT_STAT:
+
+ MSG_OBJ:
+ 	if ((int_stat >= PCH_RX_OBJ_START) && (int_stat <= PCH_RX_OBJ_END)) {
+-		spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 		rcv_pkts = pch_can_rx_normal(ndev, int_stat);
+-		spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ 		if (rcv_pkts < 0)
+ 			return 0;
+ 	} else if ((int_stat >= PCH_TX_OBJ_START) &&
+ 		   (int_stat <= PCH_TX_OBJ_END)) {
+ 		/* Handle transmission interrupt */
+ 		can_get_echo_skb(ndev, int_stat - PCH_RX_OBJ_END - 1);
+-		spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+ 		iowrite32(PCH_CMASK_RX_TX_GET | PCH_CMASK_CLRINTPND,
+ 			  &priv->regs->ifregs[1].cmask);
+ 		dlc = ioread32(&priv->regs->ifregs[1].mcont) &
+ 			       PCH_IF_MCONT_DLC;
+ 		pch_can_check_if_busy(&priv->regs->ifregs[1].creq, int_stat);
+-		spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+ 		if (dlc > 8)
+ 			dlc = 8;
+ 		stats->tx_bytes += dlc;
+@@ -1042,7 +1014,6 @@ static int pch_close(struct net_device *ndev)
+ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+ {
+ 	int i, j;
+-	unsigned long flags;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	struct can_frame *cf = (struct can_frame *)skb->data;
+ 	int tx_buffer_avail = 0;
+@@ -1061,9 +1032,6 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb,
+struct net_device *ndev)
+ 		priv->tx_obj++;
+ 	}
+
+-	/* Attaining the lock. */
+-	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
+-
+ 	/* Reading the Msg Obj from the Msg RAM to the Interface register. */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[1].cmask);
+ 	pch_can_check_if_busy(&priv->regs->ifregs[1].creq, tx_buffer_avail);
+@@ -1115,8 +1083,6 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb,
+struct net_device *ndev)
+
+ 	pch_can_check_if_busy(&priv->regs->ifregs[1].creq, tx_buffer_avail);
+
+-	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
+-
+ 	return NETDEV_TX_OK;
+ }
+
+-- 
+1.6.0.6
