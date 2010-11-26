@@ -1,59 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0KZPWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:22:38 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59461 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab0KZPWh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:22:37 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [RESEND][BUG][PATCH]-rc: USB: yurex: add .llseek fop to file_operations
-Date: Fri, 26 Nov 2010 16:22:28 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-References: <4CEE8A99.5020906@gmail.com> <20101125171613.GB18152@suse.de>
-In-Reply-To: <20101125171613.GB18152@suse.de>
+	id S1754786Ab0KZPZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:25:24 -0500
+Received: from mga03.intel.com ([143.182.124.21]:13990 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753583Ab0KZPZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:25:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,261,1288594800"; 
+   d="scan'208";a="353576803"
+Date: Fri, 26 Nov 2010 16:25:19 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] MFD: ab8500 chip version 2
+Message-ID: <20101126152518.GB27663@sortiz-mobl>
+References: <1290773043-8985-1-git-send-email-mattias.wallin@stericsson.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011261622.29100.arnd@arndb.de>
-X-Provags-ID: V02:K0:p8XVkl3186Ha8PDNeTaDxOSqKQsqxNQTvLftxAF1tHN
- LpTPQXrilLYeBV/a5nL/SK6/EgO3ffQK2GX29qdQDZQBvYvJfp
- BYmX2uAdT1tciLwYXYLX0RgCm7Vn6JEwl5GAs79/NQaqAsPXaZ
- AJxQ62Qy67RyO/N6z9JP/9HtNs8d1rXMTsGig0pBnhoM4ud7tv
- 9hV6EdD/Po0TJMSxR1p5Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290773043-8985-1-git-send-email-mattias.wallin@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 November 2010 18:16:13 Greg KH wrote:
-> On Fri, Nov 26, 2010 at 01:11:05AM +0900, Tomoki Sekiyama wrote:
-> > Hi Greg-KH,
-> > Sorry for resending this; To: was not enough.
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=23512
-> > 
-> > Default llseek operation behavior was changed by the patch named
-> > "vfs: make no_llseek the default" after the yurex driver was merged,
-> > so the llseek to yurex is now ignored.
-> > 
-> > This patch add llseek fop with default_llseek to yurex driver
-> > to catch up to the change.
-> > 
-> > Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
-> 
-> It's in my queue, sorry, been without power and water at home for a few
-> days, will catch up on this stuff next week...
+Hi Mattias,
 
-I was out most of the week, so I didn't get to look at it either.
-Is there an actual bug here caused by having no .llseek function?
+On Fri, Nov 26, 2010 at 01:04:03PM +0100, Mattias Wallin wrote:
+> This patch adds support for chip version 2.0.
+> One new event latch register is added to v2 - Latch12.
+> Due to hardware problems reading this address on earlier
+> versions it is treated seperately.
+Fine.
 
-As far as I can tell, you don't really want to seek this file
-anyway, so the default behaviour of disallowing llseek would actually
-make more sense.
 
-	Arnd
+> This patch also adds platform IORESOURCE irq to various
+> subdrivers to make way for their mainlining.
+That deserves a separate patch.
+
+
+> Removing nested interrupts to allow them to be shared
+> is also added.
+Why ? I don't see how that's related to v2 support. If that's the case, please
+prepare an addtional patch as well.
+
+Some more comments:
+
+>  #include <linux/kernel.h>
+>  #include <linux/slab.h>
+>  #include <linux/init.h>
+>  #include <linux/irq.h>
+> -#include <linux/delay.h>
+This is unrelated as well.
+
+
+> @@ -103,7 +94,10 @@ static const int ab8500_irq_regoffset[AB8500_NUM_IRQ_REGS] = {
+>  
+>  static int ab8500_get_chip_id(struct device *dev)
+>  {
+> -	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
+> +	struct ab8500 *ab8500;
+> +	if (!dev)
+> +		return -EINVAL;
+> +	ab8500 = dev_get_drvdata(dev->parent);
+This is a potential bug fix, that should be separated aas well.
+
+
+
+> @@ -303,13 +308,33 @@ static irqreturn_t ab8500_irq(int irq, void *dev)
+>  			continue;
+>  
+>  		do {
+> -			int bit = __ffs(status);
+> +			int bit = __ffs(value);
+Another bug fix squeezed into that patch, it seems.
+
+> diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
+> index d63b605..fc92391 100644
+> --- a/include/linux/mfd/ab8500.h
+> +++ b/include/linux/mfd/ab8500.h
+> @@ -91,23 +91,29 @@
+>  #define AB8500_INT_ID_DET_R4F		93
+>  #define AB8500_INT_USB_CHG_DET_DONE	94
+>  #define AB8500_INT_USB_CH_TH_PROT_F	96
+> -#define AB8500_INT_USB_CH_TH_PROP_R	97
+> -#define AB8500_INT_MAIN_CH_TH_PROP_F	98
+> +#define AB8500_INT_USB_CH_TH_PROT_R    97
+> +#define AB8500_INT_MAIN_CH_TH_PROT_F   98
+This is cleanup, not relevant to this patch.
+
+
+>  #define AB8500_INT_MAIN_CH_TH_PROT_R	99
+>  #define AB8500_INT_USB_CHARGER_NOT_OKF	103
+> +#define AB8500_INT_ADP_SOURCE_ERROR	104
+> +#define AB8500_INT_ADP_SINK_ERROR	105
+> +#define AB8500_INT_ADP_PROBE_PLUG	106
+> +#define AB8500_INT_ADP_PROBE_UNPLUG	107
+> +#define AB8500_INT_ADP_SENSE_OFF	108
+> +#define AB8500_INT_USB_LINK_STATUS	111
+>  
+> -#define AB8500_NR_IRQS			104
+> +#define AB8500_NR_IRQS			112
+>  #define AB8500_NUM_IRQ_REGS		13
+>  
+> -#define AB8500_NUM_REGULATORS   15
+> +#define AB8500_NUM_REGULATORS		15
+Ditto.
+
+
+>  /**
+>   * struct ab8500 - ab8500 internal structure
+>   * @dev: parent device
+>   * @lock: read/write operations lock
+>   * @irq_lock: genirq bus lock
+> - * @revision: chip revision
+>   * @irq: irq line
+> + * @chip_id: chip revision id
+>   * @write: register write
+>   * @read: register read
+>   * @rx_buf: rx buf for SPI
+> @@ -119,7 +125,6 @@ struct ab8500 {
+>  	struct device	*dev;
+>  	struct mutex	lock;
+>  	struct mutex	irq_lock;
+> -	int		revision;
+>  	int		irq_base;
+>  	int		irq;
+>  	u8		chip_id;
+This also is irrelevant to this patch.
+
+Bottom line: Please send properly separated patches. It helps me review them,
+and it will help you debug your code when bisecting your git trees.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
