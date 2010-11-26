@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab0KZNrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:47:52 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45357 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab0KZNrv (ORCPT
+	id S1755187Ab0KZNtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:49:07 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44548 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752479Ab0KZNtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:47:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=NNoNxbiaOZrOtyigONGnwfuN0G+9LaQgG7lWRRZuzRyKtUDcvx6zdV4+KUeHTDS6dF
-         IOGCQIS01jbUom8XIh0OsNkjmvEgEc3JGELr54lFzZ9/mmv4mFvt3AuIEL64MacwpCiN
-         HZLShLdn/jQqDYOEkGRjuNzPoddvLU2F4gaFg=
+	Fri, 26 Nov 2010 08:49:05 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAB9K70xLd/sX/2dsb2JhbAAHg0nQP5AvgSGDM3MEhFyLGQ
+X-IronPort-AV: E=Sophos;i="4.59,261,1288584000"; 
+   d="scan'208";a="83752662"
+Message-ID: <4CEFBACD.6040603@teksavvy.com>
+Date: Fri, 26 Nov 2010 08:49:01 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <1290776807.2145.144.camel@laptop>
-References: <20101123224601.766827604@openvz.org>
-	<20101123224800.294919307@openvz.org>
-	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
-	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
-	<AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
-	<AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
-	<AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com>
-	<AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com>
-	<AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com>
-	<1290776807.2145.144.camel@laptop>
-Date: Fri, 26 Nov 2010 16:47:50 +0300
-X-Google-Sender-Auth: PxhWFCpFH1qAXpoC7jmhGv9P2o8
-Message-ID: <AANLkTi=QAOvkaBGpnVCusKsD1mrfdLDEexbOhokvp0Q2@mail.gmail.com>
-Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, ming.m.lin@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Freemyer <greg.freemyer@gmail.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com> <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com> <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com> <20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com> <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com> <4CEE7884.5010007@teksavvy.com> <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com>
+In-Reply-To: <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 4:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-11-26 at 16:04 +0300, Cyrill Gorcunov wrote:
->> if none therad is active, single any
->> thread is active, both threads are active and finally any thread is
->> active (which is exactly 0b11 in single thread machine). i know it's
->> weird ;)
->>
-> BTW, does P4 mandate SYS_CAP_ADMIN for counting another thread's events?
+On 10-11-25 11:24 AM, Greg Freemyer wrote:
 >
-The events which are shared across threads mandated to have
-SYS_CAP_ADMIN of course.
+> I'm away from my systems today, but is there an easy way to tweak
+> wiper.sh or hdparm to cause only a single range per trim command.
+>
+> I'm curious if for the Sandforce that would still be in the 90 second
+> range, or closer to 64x that.
+
+Good question.  The Indilinx based drives would be in the 64x range,
+no doubt there.  But I don't know about the Sandforce.
+
+And I don't think I'm willing to inflict so many life-shortening erase
+cycles onto it just to find out.
+
+One thing to note:  the execution time for TRIM does vary depending upon
+whether the (logical) LBAs are already mostly in a "trimmed" state or not.
+
+So anyone aspiring to benchmark this stuff will need to keep that in mind.
+My timings above were for "already trimmed" cases.  I would expect them
+to be much slower (2x - 3x) if the sectors all held data prior to trim.
+
+Cheers
