@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab0KZT3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 14:29:39 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:43128 "EHLO lunge.queued.net"
+	id S1753291Ab0KZTlb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 14:41:31 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:33008 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753760Ab0KZT3i convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 14:29:38 -0500
-Date: Fri, 26 Nov 2010 11:29:20 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Daniel Drake <dsd@laptop.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v4 resend] OLPC: Add XO-1 suspend/resume support
-Message-ID: <20101126112920.48df6216@debxo>
-In-Reply-To: <AANLkTikRoB2xmtwW=ddjJy-RdEpwrwT+5ngV3HC5t5k9@mail.gmail.com>
-References: <20101118202837.B24899D401B@zog.reactivated.net>
-	<alpine.LFD.2.00.1011261037560.2900@localhost6.localdomain6>
-	<AANLkTikRoB2xmtwW=ddjJy-RdEpwrwT+5ngV3HC5t5k9@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751249Ab0KZTlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 14:41:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 02/14] freezer: fix a race during freezing of TASK_STOPPED tasks
+Date: Fri, 26 Nov 2010 20:40:27 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: roland@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        "rjw@sisk.plpavel"@ucw.cz
+References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-3-git-send-email-tj@kernel.org>
+In-Reply-To: <1290768569-16224-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011262040.27854.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Nov 2010 16:28:51 +0000
-Daniel Drake <dsd@laptop.org> wrote:
+On Friday, November 26, 2010, Tejun Heo wrote:
+> After calling freeze_task(), try_to_freeze_tasks() see whether the
+> task is stopped or traced and if so, considers it to be frozen;
+> however, nothing guarantees that either the task being frozen sees
+> TIF_FREEZE or the freezer sees TASK_STOPPED -> TASK_RUNNING
+> transition.  The task being frozen may wake up and not see TIF_FREEZE
+> while the freezer fails to notice the transition and believes the task
+> is still stopped.
+> 
+> This patch fixes the race by making freeze_task() always go through
+> fake_signal_wake_up() for applicable tasks.  The function goes through
+> the target task's scheduler lock and thus guarantees that either the
+> target sees TIF_FREEZE or try_to_freeze_task() sees TASK_RUNNING.
 
-[...]
-> Re. the printk thing, this was your doing:
-> http://dev.laptop.org/git/olpc-2.6/commit/?h=stable&id=b4334e9e1444761f19806f9066c6b38ce23079bf
-[...]
-> ---------- Forwarded message ----------
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: 26 November 2010 09:43
-> Subject: Re: [PATCH v4 resend] OLPC: Add XO-1 suspend/resume support
-> To: Daniel Drake <dsd@laptop.org>
-> Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-> 
-> 
-> On Thu, 18 Nov 2010, Daniel Drake wrote:
-> > Feedback after the first submission was quickly acted upon and I
-> > haven't been able to get a peep since.
-> 
-> Sorry, fell off the radar.
-> 
-> > +
-> > +wakeup_start:
-> > +#    jmp wakeup_start
-> 
->  Debug leftover ?
+Looks good.  I'll take this one to my tree, if you don't mind.
+
+Thanks,
+Rafael
 
 
-Leftovers from the original patch; certainly should be removed.
-
-
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  kernel/freezer.c       |    9 +++++++--
+>  kernel/power/process.c |    6 ++++++
+>  2 files changed, 13 insertions(+), 2 deletions(-)
 > 
-> > +asmlinkage int olpc_xo1_do_sleep(u8 sleep_state)
-> > +{
-> > +     void *pgd_addr = __va(read_cr3());
-> > +     printk(KERN_ERR "xo1_do_sleep!\n"); /* this needs to remain
-> > here so
-> > +                                           * that gcc doesn't
-> > optimize
-> > +                                           * away our __va! */
-> > +
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index bd1d42b..66ecd2e 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -104,8 +104,13 @@ bool freeze_task(struct task_struct *p, bool sig_only)
+>  	}
+>  
+>  	if (should_send_signal(p)) {
+> -		if (!signal_pending(p))
+> -			fake_signal_wake_up(p);
+> +		fake_signal_wake_up(p);
+> +		/*
+> +		 * fake_signal_wake_up() goes through p's scheduler
+> +		 * lock and guarantees that TASK_STOPPED/TRACED ->
+> +		 * TASK_RUNNING transition can't race with task state
+> +		 * testing in try_to_freeze_tasks().
+> +		 */
+>  	} else if (sig_only) {
+>  		return false;
+>  	} else {
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index e50b4c1..eb2c88a 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -64,6 +64,12 @@ static int try_to_freeze_tasks(bool sig_only)
+>  			 * perturb a task in TASK_STOPPED or TASK_TRACED.
+>  			 * It is "frozen enough".  If the task does wake
+>  			 * up, it will immediately call try_to_freeze.
+> +			 *
+> +			 * Because freeze_task() goes through p's
+> +			 * scheduler lock after setting TIF_FREEZE, it's
+> +			 * guaranteed that either we see TASK_RUNNING or
+> +			 * try_to_stop() after schedule() in ptrace/signal
+> +			 * stop sees TIF_FREEZE.
+>  			 */
+>  			if (!task_is_stopped_or_traced(p) &&
+>  			    !freezer_should_skip(p))
 > 
->  This looks suspect along with the __volatile__ magic below. Care to
->  explain, what you fear that gcc is optimizing away ?
-> 
-
-
-I'm working from memory here; in the version of gcc we were using
-at the time (stock FC5 or FC6), setting pgd_addr immediately followed
-by the asm below resulted in gcc optimizing away the __va().  The asm
-turned into simply:
-
-movl %cr3, %eax
-
-With no mention of PAGE_OFFSET.  Messing with 'volatile' didn't help.
-Adding the printk did, as it causes %eax to get clobbered, forcing
-temporary storage of %cr3 into a separate register.  A lot has changed
-since then (compilers, this code, as well as the definition of
-read_cr3()), so I highly suspect that it's no longer needed.
- 
-
-> > +     /* Enable wakeup through power button */
-> > +     outl((CS5536_PM_PWRBTN << 16) | 0xFFFF, acpi_base + PM1_STS);
-> > +
-> > +     __asm__ __volatile__("movl %0,%%eax" : : "r" (pgd_addr));
-> > +     __asm__("call *(%%edi); cld"
-> > +             : : "D" (&ofw_bios_entry));
-> > +     __asm__ __volatile__("movb $0x34, %al\n\t"
-> > +                          "outb %al, $0x70\n\t"
-> > +                          "movb $0x30, %al\n\t"
-> > +                          "outb %al, $0x71\n\t");
-> 
-> Looks good otherwise.
-> 
-> Thanks,
-> 
->        tglx
 
