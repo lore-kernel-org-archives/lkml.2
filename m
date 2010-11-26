@@ -1,34 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0KZN1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:27:13 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:37801 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab0KZN1M convert rfc822-to-8bit (ORCPT
+	id S1755078Ab0KZN2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:28:05 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:54948 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab0KZN2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:27:12 -0500
-Subject: Re: [PATCH] perf: add GCC optimization to memory allocating
- functions
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: dave@gnu.org
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1290777864.2373.2.camel@cowboy>
-References: <1290777864.2373.2.camel@cowboy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 26 Nov 2010 14:27:20 +0100
-Message-ID: <1290778040.2145.145.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 26 Nov 2010 08:28:03 -0500
+Date: Fri, 26 Nov 2010 08:27:58 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, gregkh@suse.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/1] TTY: don't allow reopen when ldisc is changing
+Message-ID: <20101126132758.GN22651@bombadil.infradead.org>
+References: <4CEE93FF.3040507@suse.cz>
+ <1290705383-6608-1-git-send-email-jslaby@suse.cz>
+ <20101126002840.GL22651@bombadil.infradead.org>
+ <4CEF65CA.9020403@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CEF65CA.9020403@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 10:24 -0300, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <dave@gnu.org>
+On Fri, Nov 26, 2010 at 08:46:18AM +0100, Jiri Slaby wrote:
+> On 11/26/2010 01:28 AM, Kyle McMartin wrote:
+> > On Thu, Nov 25, 2010 at 06:16:23PM +0100, Jiri Slaby wrote:
+> >> -	if (test_bit(TTY_CLOSING, &tty->flags))
+> >> +	if (test_bit(TTY_CLOSING, &tty->flags) ||
+> >> +			test_bit(TTY_LDISC_CHANGING, &tty->flags))
+> >>  		return -EIO;
+> >>  
+> >>  	if (driver->type == TTY_DRIVER_TYPE_PTY &&
+> > 
+> > Unfortunately, users report this doesn't seem to fix things for them
+> > (built against 2.6.36 (plus another patch you wrote iirc.))
 > 
-> We can benefit from the alloc_size attribute in xrealloc and zalloc.
+> Which patches exactly do you have? You need three of mine in 2.6.36.
+> 
 
-What's this alloc_size attribute do?
+Just tty-restore-tty_ldisc_wait_idle.patch on top of 2.6.36.1, I'll grab
+the other two now.
 
+--Kyle
