@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab0KZW3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 17:29:43 -0500
-Received: from claw.goop.org ([74.207.240.146]:32905 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778Ab0KZW3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 17:29:42 -0500
-Message-ID: <4CF034D4.70005@goop.org>
-Date: Fri, 26 Nov 2010 14:29:40 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1752078Ab0KZWbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 17:31:04 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59951 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751625Ab0KZWbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 17:31:02 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        kvm-devel <kvm@vger.kernel.org>, Glauber Costa <glommer@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Olivier Hanesse <olivier.hanesse@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Eelco Dolstra <e.dolstra@tudelft.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/pvclock-xen: zero last_value on resume
-References: <4CC708DE.1070000@goop.org> <4CEACFAB.90503@goop.org> <20101126104047.GA9798@elte.hu>
-In-Reply-To: <20101126104047.GA9798@elte.hu>
+In-Reply-To: <20101125173518.GR6118@random.random>
+References: <patchbomb.1288798055@v2.random> <6022613f956ee326d9b6.1288798072@v2.random>
+ <20101118125249.GN8135@csn.ul.ie> <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
+ <20101125173518.GR6118@random.random>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 27 Nov 2010 07:24:37 +0900
+Message-ID: <AANLkTinasCexaptMzKkY7CO3SAAUiVvp+W=FAYkk+6+q@mail.gmail.com>
+Subject: Re: [PATCH 17 of 66] add pmd mangling generic functions
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2010 02:40 AM, Ingo Molnar wrote:
-> * Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+On Fri, Nov 26, 2010 at 2:35 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Thu, Nov 18, 2010 at 09:32:36AM -0800, Linus Torvalds wrote:
+>> I dunno. Those macros are _way_ too big and heavy to be macros or
+>> inline functions. Why aren't pmdp_splitting_flush() etc just
+>> functions?
 >
->> On 10/26/2010 09:59 AM, Jeremy Fitzhardinge wrote:
->>> If the guest domain has been suspend/resumed or migrated, then the
->>> system clock backing the pvclock clocksource may revert to a smaller
->>> value (ie, can be non-monotonic across the migration/save-restore).
->>> Make sure we zero last_value in that case so that the domain
->>> continues to see clock updates.
->> Ping?  Looks like this fell through the gaps.
-> Does not apply cleanly here - mind resending the latest version?
+> That's because ptep_clear_flush and everything else in that file named
+> with ptep_* and doing expensive tlb flushes was a macro.
 
-It rebased cleanly to 2.6.37-rc3.  You can pull it from:
+That may be, and you needn't necessarily clean up old use (although
+that might be nice as a separate thing), but I wish we didn't make
+what is already messy bigger and messier.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git pvclock-resume
-
-Jeremy Fitzhardinge (1):
-      x86/pvclock: zero last_value on resume
-
- arch/x86/include/asm/pvclock.h |    1 +
- arch/x86/kernel/pvclock.c      |    5 +++++
- arch/x86/xen/time.c            |    2 ++
- 3 files changed, 8 insertions(+), 0 deletions(-)
-
-Thanks,
-	J
-
-Subject: [PATCH] x86/pvclock: zero last_value on resume
-
-If the guest domain has been suspend/resumed or migrated, then the
-system clock backing the pvclock clocksource may revert to a smaller
-value (ie, can be non-monotonic across the migration/save-restore).
-Make sure we zero last_value in that case so that the domain
-continues to see clock updates.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index 7f7e577..31d84ac 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -11,6 +11,7 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
- void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
- 			    struct timespec *ts);
-+void pvclock_resume(void);
- 
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 008b91e..42eb330 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -83,6 +83,11 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
- 
- static atomic64_t last_value = ATOMIC64_INIT(0);
- 
-+void pvclock_resume(void)
-+{
-+	atomic64_set(&last_value, 0);
-+}
-+
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- {
- 	struct pvclock_shadow_time shadow;
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index b2bb5aa..5da5e53 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -426,6 +426,8 @@ void xen_timer_resume(void)
- {
- 	int cpu;
- 
-+	pvclock_resume();
-+
- 	if (xen_clockevent != &xen_vcpuop_clockevent)
- 		return;
- 
-
-
+         Linus
