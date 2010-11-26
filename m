@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab0KZBZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 20:25:44 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:37843 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752470Ab0KZBZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 20:25:43 -0500
-Date: Fri, 26 Nov 2010 01:25:27 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: Free memory never fully used, swapping
-Message-ID: <20101126012527.GI26037@csn.ul.ie>
-References: <20101115195246.GB17387@hostway.ca> <20101122154419.ee0e09d2.akpm@linux-foundation.org> <1290501331.2390.7023.camel@nimitz> <20101124084652.GC25170@hostway.ca> <1290647274.12777.3.camel@sli10-conroe> <20101125090328.GB14180@hostway.ca> <20101125161238.GD26037@csn.ul.ie> <1290733556.12777.5.camel@sli10-conroe>
+	id S1753125Ab0KZBce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 20:32:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62886 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab0KZBcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 20:32:33 -0500
+Message-ID: <4CEF0F48.8000202@cn.fujitsu.com>
+Date: Fri, 26 Nov 2010 09:37:12 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1290733556.12777.5.camel@sli10-conroe>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] KVM: MMU: fix forgot flush tlbs on sync_page path
+References: <4CE63CF4.80502@cn.fujitsu.com>
+In-Reply-To: <4CE63CF4.80502@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-26 09:32:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-26 09:32:47,
+	Serialize complete at 2010-11-26 09:32:47
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 09:05:56AM +0800, Shaohua Li wrote:
-> > @@ -2168,6 +2180,7 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> >  static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
-> >  {
-> >         int all_zones_ok;
-> > +       int any_zone_ok;
-> >         int priority;
-> >         int i;
-> >         unsigned long total_scanned;
-> > @@ -2201,6 +2214,7 @@ loop_again:
-> >                         disable_swap_token();
-> > 
-> >                 all_zones_ok = 1;
-> > +               any_zone_ok = 0;
-> > 
-> >                 /*
-> >                  * Scan in the highmem->dma direction for the highest
-> > @@ -2310,10 +2324,12 @@ loop_again:
-> >                                  * spectulatively avoid congestion waits
-> >                                  */
-> >                                 zone_clear_flag(zone, ZONE_CONGESTED);
-> > +                               if (i <= pgdat->high_zoneidx)
-> > +                                       any_zone_ok = 1;
-> >                         }
-> > 
-> >                 }
-> > -               if (all_zones_ok)
-> > +               if (all_zones_ok || (order && any_zone_ok))
-> >                         break;          /* kswapd: all done */
-> >                 /*
-> >                  * OK, kswapd is getting into trouble.  Take a nap, then take
-> > @@ -2336,7 +2352,7 @@ loop_again:
-> >                         break;
-> >         }
-> >  out:
-> > -       if (!all_zones_ok) {
-> > +       if (!(all_zones_ok || (order && any_zone_ok))) {
-> >                 cond_resched();
-> > 
-> >                 try_to_freeze();
-> > @@ -2361,7 +2377,13 @@ out:
-> >                 goto loop_again;
-> >         }
-> > 
-> > -       return sc.nr_reclaimed;
-> > +       /*
-> > +        * Return the order we were reclaiming at so sleeping_prematurely()
-> > +        * makes a decision on the order we were last reclaiming at. However,
-> > +        * if another caller entered the allocator slow path while kswapd
-> > +        * was awake, order will remain at the higher level
-> > +        */
-> > +       return order;
-> >  }
-> This seems always fail. because you have the protect in the kswapd side,
-> but no in the page allocation side. so every time a high order
-> allocation occurs, the protect breaks and kswapd keeps running.
+Hi Avi, Marcelo,
+
+What do you think of this patchset? Could you give me some comments please?
+
+Thanks!
+
+On 11/19/2010 05:01 PM, Xiao Guangrong wrote:
+> We should flush all tlbs after drop spte on sync_page path since:
 > 
+> Quote from Avi:
+> | sync_page
+> | drop_spte
+> | kvm_mmu_notifier_invalidate_page
+> | kvm_unmap_rmapp
+> | spte doesn't exist -> no flush
+> | page is freed
+> | guest can write into freed page? 
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/kvm/paging_tmpl.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 590bf12..ca0e5e8 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -786,6 +786,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>  			else
+>  				nonpresent = shadow_notrap_nonpresent_pte;
+>  			drop_spte(vcpu->kvm, &sp->spt[i], nonpresent);
+> +			kvm_flush_remote_tlbs(vcpu->kvm);
+>  			continue;
+>  		}
+>  
 
-I don't understand your question. sc.nr_reclaimed was being unused. The
-point of returning order was to tell kswapd that "the order you were
-reclaiming at may or may not be still valid, make your decisions on the
-order I am currently reclaiming at". The key here is if that multiple
-allocation requests come in for higher orders, kswapd will get reworken
-multiple times. Unless it gets rewoken multiple times, kswapd is willing
-to go back to sleep to avoid reclaiming an excessive number of pages.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
