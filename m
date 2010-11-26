@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0KZD0h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 22:26:37 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:50691 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346Ab0KZD0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 22:26:36 -0500
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: David Strand <dpstrand@gmail.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bonding: check for assigned mac before adopting the slaves mac address
-In-reply-to: <AANLkTi=-DzUmopboX13V_cd=mZnmD=mBNNCuhQYF0PQQ@mail.gmail.com>
-References: <AANLkTinpO=FmoecfV8epubXU4OrhFsXJ7-Kc68yNhMEs@mail.gmail.com> <31169.1290641617@death> <AANLkTi=-DzUmopboX13V_cd=mZnmD=mBNNCuhQYF0PQQ@mail.gmail.com>
-Comments: In-reply-to David Strand <dpstrand@gmail.com>
-   message dated "Wed, 24 Nov 2010 17:45:42 -0800."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
-Date: Thu, 25 Nov 2010 19:26:31 -0800
-Message-ID: <8879.1290741991@death>
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753186Ab0KZD3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 22:29:18 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:43508
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752781Ab0KZD3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 22:29:17 -0500
+Date: Fri, 26 Nov 2010 03:29:33 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        "Christopher J. PeBenito" <cpebenito@tresys.com>
+Subject: Re: [PATCH 1/1] Define CAP_SYSLOG
+Message-ID: <20101126032933.GA31340@mail.hallyn.com>
+References: <20101125171132.GA25703@mail.hallyn.com>
+ <20101125185857.fa237ddf.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101125185857.fa237ddf.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Strand <dpstrand@gmail.com> wrote:
+Quoting Randy Dunlap (rdunlap@xenotime.net):
+> On Thu, 25 Nov 2010 17:11:32 +0000 Serge E. Hallyn wrote:
+> > +			/* remove after 2.6.28 */
+> 
+> 	Is this supposed to say: after 2.6.38 ??
 
->We have a use case where we assign a mac to the bond device, because
->the slave device configuration may change periodically. With older
->kernels, it honored the assigned mac and everything was fine, with
->2.6.36 it now uses the mac of whatever slave device is first instead
->of our assigned one.
->
->ifenslave code and documentation appears to still support the old way,
->where a bond assigned mac will reign supreme, so this patch restores
->that behavior.
+:)  yup - i only noticed this after sending it, looking at
+lkml.org, but didn't have a way of getting to my mail
+server to reply to myself.
 
-	Ok, fair enough.  If we want to get back to the original
-behavior, however, your patch should only test for zero MAC address
-instead of testing for zero MAC address in addition to first slave.
-
-	-J
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+thanks,
+-serge
