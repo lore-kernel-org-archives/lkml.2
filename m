@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab0KZRBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:01:33 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53556 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab0KZRBc (ORCPT
+	id S1754802Ab0KZRCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:02:50 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:47767 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752204Ab0KZRCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:01:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VDJkNPUVNeFT/j/s0D5RxwCvi5R9ChmBmfiZzgbYdFny1S0Md74OWdeWoiQisI7LaK
-         p3whzL2aduq5k5JOlUQjx+kv7e52G0pI6ctd1gj25U+Z7Pu9q/4cE3GFjMDlOkXFt1Kq
-         dsQclYqM2MqKhqCZuDiapRKrPez8XhCdgCE0k=
-Subject: Re: [thiscpuops upgrade 08/10] percpu: generic this_cpu_cmpxchg()
- and this_cpu_cmpxchg_double support
-From: Eric Dumazet <eric.dumazet@gmail.com>
+	Fri, 26 Nov 2010 12:02:49 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: U8DS0IMVM1m5ZjWPsG_a1.BJ6G0RGpoO7isZYAUHtyaZ_3y
+ ZiB4UNgZMinHEqLxzIGPimgFmPm4b1ZO1kReWV4X76zl.KSgkoo_ceW0Nyr_
+ gghs4Itgo7eGZ5QrAhxTtTULrWOyEtwVbcY4CGg6ZLSs6fm_Bxccmx5fHrdt
+ EMhb9cqd5rLr4_O61KGtABEaZWd5iiN0LuR7f5XcdkjGG34KpDMSYSsaGXCY
+ iY8gv_LnGb6Y-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 26 Nov 2010 11:02:45 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
 To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <4CEFE71F.5090303@kernel.org>
-References: <20101123235139.908255844@linux.com>
-	 <20101123235200.582485207@linux.com>  <4CEFE583.8070103@kernel.org>
-	 <1290790569.2855.254.camel@edumazet-laptop>  <4CEFE71F.5090303@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Nov 2010 18:01:27 +0100
-Message-ID: <1290790887.2855.260.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Subject: Re: [thiscpuops upgrade 05/10] x86: Use this_cpu_inc_return for nmi
+ counter
+In-Reply-To: <4CEFE1CB.4050404@kernel.org>
+Message-ID: <alpine.DEB.2.00.1011261047460.13524@router.home>
+References: <20101123235139.908255844@linux.com> <20101123235158.826005750@linux.com> <4CEFE1CB.4050404@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 26 novembre 2010 à 17:58 +0100, Tejun Heo a écrit :
-> On 11/26/2010 05:56 PM, Eric Dumazet wrote:
-> > Le vendredi 26 novembre 2010 à 17:51 +0100, Tejun Heo a écrit :
-> >> On 11/24/2010 12:51 AM, Christoph Lameter wrote:
-> >>> +/*
-> >>> + * cmpxchg_double replaces two adjacent scalars at once. The first parameter
-> >>> + * passed is a percpu pointer, not a scalar like the other this_cpu
-> >>> + * operations. This is so because the function operates on two scalars
-> >>> + * (must be of same size). A truth value is returned to indicate success or
-> >>> + * failure (since a double register result is difficult to handle).
-> >>> + * There is very limited hardware support for these operations. So only certain
-> >>> + * sizes may work.
-> >>> + */
-> >>> +#define __this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-> >>
-> >> Ah... this is scary.  If it proves to be useful enough, sure, but
-> >> otherwise I'd like to avoid it.
-> > 
-> > This is mandatory for several lockless algos, dont be afraid, its a
-> > single instruction ;)
-> 
-> Thanks for holding my hands. :-)
-> 
-> What I'm afraid of is generic code switching to use it in very hot
-> paths when a lot of archs can't actually do it leading to performance
-> regressions.  Is this something which is available on most archs?
-> 
+On Fri, 26 Nov 2010, Tejun Heo wrote:
 
-I would say cmpxchg() has the same problem, some arches dont have a
-native instruction, yet we use it in some paths.
+> > -		__this_cpu_inc(alert_counter);
+> > -		if (__this_cpu_read(alert_counter) == 5 * nmi_hz)
+> > +		if (__this_cpu_inc_return(alert_counter) == 5 * nmi_hz)
+>
+> Hmmm... one worry I have is that xadd, being not a very popular
+> operation, might be slower than add and read.  Using it for atomicity
+> would probably be beneficial in most cases but have you checked this
+> actually is cheaper?
+
+XADD takes 3 uops. INC 1 and MOV 1 uop. So there is an additiona uop.
+
+However, a memory fetch from l1 takes a mininum 4 cycles. Doing that twice
+already ends up with at least 8 cycles.
+
 
 
 
