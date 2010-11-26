@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab0KZPSs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:18:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33888 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752937Ab0KZPSr (ORCPT
+	id S1754856Ab0KZPTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:19:01 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42494 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab0KZPS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:18:47 -0500
-Date: Fri, 26 Nov 2010 15:18:45 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 0/7] Wolfson MFD updates
-Message-ID: <20101126151845.GK30360@rakim.wolfsonmicro.main>
-References: <20101124180055.GO24970@rakim.wolfsonmicro.main>
- <20101126140518.GN5520@sortiz-mobl>
- <20101126140719.GH30360@rakim.wolfsonmicro.main>
- <20101126145151.GA27663@sortiz-mobl>
-MIME-Version: 1.0
+	Fri, 26 Nov 2010 10:18:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=qfWRSTexiqBjhYkMDWi/d0c0x+bTlvZznVj53TLS0wp/5doC3WQfwXriPAOWFrFnQK
+         bmnaCWVfoK36coVZWzdBBugAtsr8wpYxi3iPSEoV/2qAK6WLXcqzMY2E1mfVNgnML9U+
+         auqWhO4qC6XIdVL0dVzaK9McOKOOXB8PiQSF4=
+Date: Fri, 26 Nov 2010 23:18:47 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: john.johansen@canonical.com, apparmor@lists.ubuntu.com,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH] APPARMOR: Fix NULL Pointer dereference while __add_new_profile
+Message-ID: <20101126151847.GA2721@localhost.localdomain>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101126145151.GA27663@sortiz-mobl>
-X-Cookie: Sentient plasmoids are a gas.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 03:51:52PM +0100, Samuel Ortiz wrote:
-> On Fri, Nov 26, 2010 at 02:07:19PM +0000, Mark Brown wrote:
+In aa_replace_profiles(), if __lookup_parent() path failed, policy is set 
+to NULL and goto audit label, old_profile and rename_profile are both NULL,
+__add_new_profile is called, the parameter policy is NULL, it will cause
+NULL pointer dereference via __list_add_profile(&policy->profiles, profile);
 
-> > Would it be OK to apply patch 7 to the ASoC tree?  There's a bunch of
-> > CODEC driver changes to support the WM8958 which depend on it and also
-> > depend on changes in the ASoC tree.
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-> Sure, I'm fine with that.
+---
+ security/apparmor/policy.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-OK, I've gone ahead and done that with your ack added - thanks!
+diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
+index 52cc865..832d9e9 100644
+--- a/security/apparmor/policy.c
++++ b/security/apparmor/policy.c
+@@ -940,6 +940,8 @@ static int replacement_allowed(struct aa_profile *profile, int noreplace,
+ static void __add_new_profile(struct aa_namespace *ns, struct aa_policy *policy,
+ 			      struct aa_profile *profile)
+ {
++	if (!policy)
++		return ;
+ 	if (policy != &ns->base)
+ 		/* released on profile replacement or free_profile */
+ 		profile->parent = aa_get_profile((struct aa_profile *) policy);
+-- 
+1.6.5.3
+
