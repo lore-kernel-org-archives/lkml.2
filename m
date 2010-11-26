@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab0KZR1S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:27:18 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49556 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273Ab0KZR1P (ORCPT
+	id S1755241Ab0KZR1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:27:06 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:45306 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751507Ab0KZR1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:27:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=UgFfGzune+/9vQ/fniraBhUw/PlJWBJ44opJT7MCGvgafS9YNdAe+iw5nkqVDFlqzZ
-         lEcPOEp9O1rQnaRl9bM2ELD8LpJvCXBtA0Fj+eg+Gk8WiE9PnVzRsLYYvrmCMzU5ZsgA
-         +uRPKa6Z1fgcW8xgDPlrVhs6vx0U1STkJHZIw=
+	Fri, 26 Nov 2010 12:27:05 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: QsBlEDsVM1npInlUiQu0GVnjpgcmIzWi100rHv6xAnmbBnk
+ Wm0gf9lNYLyKwlKXZ.Y.dCY1etQMMNdAmC3.2oNqHLow3Ar2y977Ofu6UJRs
+ SQh96iOI6uRGbMIrYrMvUg4b7ZwGa4Fs8FLghj9Euzck4c4txGid9FYO7Vvm
+ R2XacaTNVhDpfXan1jnM3kLfSSxJq8Hff1buIVqk43qPBUUdhqu8Rwjjfm_K
+ .scJ03EG9skdD3P17Is2JfluroQ30Lbs65rMy2K4-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 26 Nov 2010 11:27:00 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+Subject: Re: [PATCH] printk: use this_cpu_{read|write} api on
+ printk_pending
+In-Reply-To: <1290792051.2855.265.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1011261125270.13524@router.home>
+References: <20101126120235.406766476@de.ibm.com>  <tip-61ab25447ad6334a74e32f60efb135a3467223f8@git.kernel.org>  <1290788536.2855.237.camel@edumazet-laptop>  <alpine.DEB.2.00.1011261038360.13524@router.home>  <1290790791.2855.259.camel@edumazet-laptop> 
+ <alpine.DEB.2.00.1011261109500.13524@router.home> <1290792051.2855.265.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201011261757.08303.roucaries.bastien@gmail.com>
-References: <201011181650.00152.roucaries.bastien@gmail.com>
-	<20101118163048.GE5374@nowhere>
-	<201011261757.08303.roucaries.bastien@gmail.com>
-Date: Fri, 26 Nov 2010 18:27:13 +0100
-Message-ID: <AANLkTi=_zh3mG++THk75qChw93Rwb=VULuoJ_qZqPGXS@mail.gmail.com>
-Subject: Re: Reiserfs deadlock in 2.6.36
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-727231372-1290792422=:13524"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 5:57 PM, Bastien ROUCARIES
-<roucaries.bastien@gmail.com> wrote:
-> Dear frederic,
->> Hi Bastien,
->>
->> This really looks like a hung task detector report.
->> Several tasks are stuck in queue_log_writer(), waiting
->> to be woken up on the "journal->j_join_wait" event and
->> that never happens because the waker is also stuck.
->> The problem is your report doesn't show where the waker
->> is stuck, but the hung task detector reports it, it just
->> did before or after the chunk you've posted.
->>
->> If you could provide me the entire report, I could fix this
->> easily.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---1463811839-727231372-1290792422=:13524
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+
+On Fri, 26 Nov 2010, Eric Dumazet wrote:
+
+> Le vendredi 26 novembre 2010 =C3=A0 11:11 -0600, Christoph Lameter a =C3=
+=A9crit :
 >
-> I have manged to reproduce it after six hour of stress. Unfornatly locked was
-> disabled due to a known non bug, in the init sequence. I have used sysrq -t in
-> order to get more information to you.
-
-Without debugging enable lock up take about 30 minutes to occurs but
-are really hard to reproduce with debugging on
-
-Bastien
-
-
-> Do I need to try to reproduce it, with a newer kernel ? Or it is sufficient ?
+> > I thought sanity tests do not apply for performance testing scenarios?
+> >
 >
+> CONFIG_DEBUG_PREEMPT
+
+You really enable that option for performance testing?
+
+> > smp_processor_id() is usually a simple per cpu data access and very fas=
+t.
+> >
+>
+> Sure, but when its already in a register, its better to use the
+> register ;)
+
+Well that increases register pressure in the caller. There may be no need
+to handle the current processor number in the caller.
+
+
+---1463811839-727231372-1290792422=:13524--
