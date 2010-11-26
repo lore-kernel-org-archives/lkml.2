@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0KZRGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:06:17 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34982 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab0KZRGO (ORCPT
+	id S1755486Ab0KZRGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:06:33 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42343 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab0KZRG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:06:14 -0500
+	Fri, 26 Nov 2010 12:06:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=qJE9cCSf80hFmWBnVi0Sr5no+dRJbnKE9xGt3jntQCRj/zP3hAG+/waoCx9UZrJv69
-         SdBaDrEx8Lenr1/tsCTaB/V9iFFmWWIhQpL/Q3OTkSRb5YlKc7d4pegs5c7EHV2VdVGe
-         JQByxagpdNYhLyNt2AdoN9YeQG4Ni5FFyVOUI=
+        b=JTjoEhVh8WhlB1/aI1Q1xyKZq/U/FHdhgczLhwbrckihF/c+hlNqF8Lzz13HUWcoT6
+         1ULXzDp0Dp+xFwVS1a3NX+f8+6FBfQcmDUxYEU46BzoZ9/44ATR85Is2xCtWxSKpRcft
+         ZkTEQZfLRYHNk8JDjJCHs8oRjMOizb7s3VFSo=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Viresh Kumar <viresh.kumar@st.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: plat-spear: time: use IS_ERR() instead of NULL check
-Date: Fri, 26 Nov 2010 20:06:07 +0300
-Message-Id: <1290791168-21255-1-git-send-email-segoon@openwall.com>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] avr32: boards: setup: use IS_ERR() instead of NULL check
+Date: Fri, 26 Nov 2010 20:06:12 +0300
+Message-Id: <1290791179-21298-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,29 +32,92 @@ Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 ---
  Cannot compile this driver, so it is not tested at all.
 
- arch/arm/plat-spear/time.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/avr32/boards/atngw100/setup.c      |    2 +-
+ arch/avr32/boards/atstk1000/atstk1002.c |    2 +-
+ arch/avr32/boards/favr-32/setup.c       |    2 +-
+ arch/avr32/boards/hammerhead/setup.c    |    2 +-
+ arch/avr32/boards/merisc/setup.c        |    2 +-
+ arch/avr32/boards/mimc200/setup.c       |    2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/plat-spear/time.c b/arch/arm/plat-spear/time.c
-index ab21165..678df18 100644
---- a/arch/arm/plat-spear/time.c
-+++ b/arch/arm/plat-spear/time.c
-@@ -229,13 +229,13 @@ void __init spear_setup_timer(void)
- 	}
+diff --git a/arch/avr32/boards/atngw100/setup.c b/arch/avr32/boards/atngw100/setup.c
+index 8c6a244..659d119 100644
+--- a/arch/avr32/boards/atngw100/setup.c
++++ b/arch/avr32/boards/atngw100/setup.c
+@@ -188,7 +188,7 @@ static void __init set_hw_addr(struct platform_device *pdev)
+ 	 */
+ 	regs = (void __iomem __force *)res->start;
+ 	pclk = clk_get(&pdev->dev, "pclk");
+-	if (!pclk)
++	if (IS_ERR(pclk))
+ 		return;
  
- 	gpt_clk = clk_get_sys("gpt0", NULL);
--	if (!gpt_clk) {
-+	if (IS_ERR(gpt_clk)) {
- 		pr_err("%s:couldn't get clk for gpt\n", __func__);
- 		goto err_iomap;
- 	}
+ 	clk_enable(pclk);
+diff --git a/arch/avr32/boards/atstk1000/atstk1002.c b/arch/avr32/boards/atstk1000/atstk1002.c
+index 2adc261..6ce30fb 100644
+--- a/arch/avr32/boards/atstk1000/atstk1002.c
++++ b/arch/avr32/boards/atstk1000/atstk1002.c
+@@ -203,7 +203,7 @@ static void __init set_hw_addr(struct platform_device *pdev)
+ 	 */
+ 	regs = (void __iomem __force *)res->start;
+ 	pclk = clk_get(&pdev->dev, "pclk");
+-	if (!pclk)
++	if (IS_ERR(pclk))
+ 		return;
  
- 	pll3_clk = clk_get(NULL, "pll3_48m_clk");
--	if (!pll3_clk) {
-+	if (IS_ERR(pll3_clk)) {
- 		pr_err("%s:couldn't get PLL3 as parent for gpt\n", __func__);
- 		goto err_iomap;
- 	}
+ 	clk_enable(pclk);
+diff --git a/arch/avr32/boards/favr-32/setup.c b/arch/avr32/boards/favr-32/setup.c
+index 75f19f4..86fab77 100644
+--- a/arch/avr32/boards/favr-32/setup.c
++++ b/arch/avr32/boards/favr-32/setup.c
+@@ -206,7 +206,7 @@ static void __init set_hw_addr(struct platform_device *pdev)
+ 	 */
+ 	regs = (void __iomem __force *)res->start;
+ 	pclk = clk_get(&pdev->dev, "pclk");
+-	if (!pclk)
++	if (IS_ERR(pclk))
+ 		return;
+ 
+ 	clk_enable(pclk);
+diff --git a/arch/avr32/boards/hammerhead/setup.c b/arch/avr32/boards/hammerhead/setup.c
+index dd00987..da14fbd 100644
+--- a/arch/avr32/boards/hammerhead/setup.c
++++ b/arch/avr32/boards/hammerhead/setup.c
+@@ -150,7 +150,7 @@ static void __init set_hw_addr(struct platform_device *pdev)
+ 	regs = (void __iomem __force *)res->start;
+ 	pclk = clk_get(&pdev->dev, "pclk");
+ 
+-	if (!pclk)
++	if (IS_ERR(pclk))
+ 		return;
+ 
+ 	clk_enable(pclk);
+diff --git a/arch/avr32/boards/merisc/setup.c b/arch/avr32/boards/merisc/setup.c
+index 623b077..e61bc94 100644
+--- a/arch/avr32/boards/merisc/setup.c
++++ b/arch/avr32/boards/merisc/setup.c
+@@ -134,7 +134,7 @@ static void __init set_hw_addr(struct platform_device *pdev)
+ 
+ 	regs = (void __iomem __force *)res->start;
+ 	pclk = clk_get(&pdev->dev, "pclk");
+-	if (!pclk)
++	if (IS_ERR(pclk))
+ 		return;
+ 
+ 	clk_enable(pclk);
+diff --git a/arch/avr32/boards/mimc200/setup.c b/arch/avr32/boards/mimc200/setup.c
+index 523d8e1..c4da5cb 100644
+--- a/arch/avr32/boards/mimc200/setup.c
++++ b/arch/avr32/boards/mimc200/setup.c
+@@ -162,7 +162,7 @@ static void __init set_hw_addr(struct platform_device *pdev)
+ 	 */
+ 	regs = (void __iomem __force *)res->start;
+ 	pclk = clk_get(&pdev->dev, "pclk");
+-	if (!pclk)
++	if (IS_ERR(pclk))
+ 		return;
+ 
+ 	clk_enable(pclk);
 -- 
 1.7.0.4
 
