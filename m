@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0KZQ3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 11:29:45 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58597 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab0KZQ3n convert rfc822-to-8bit (ORCPT
+	id S1755304Ab0KZQa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 11:30:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50059 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752160Ab0KZQaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 11:29:43 -0500
-Subject: Re: [PATCH] printk: use this_cpu_{read|write} api on printk_pending
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de, mingo@elte.hu,
-        Christoph Lameter <cl@linux.com>
-In-Reply-To: <1290788536.2855.237.camel@edumazet-laptop>
-References: <20101126120235.406766476@de.ibm.com>
-	 <tip-61ab25447ad6334a74e32f60efb135a3467223f8@git.kernel.org>
-	 <1290788536.2855.237.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 26 Nov 2010 17:29:48 +0100
-Message-ID: <1290788988.2145.152.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 26 Nov 2010 11:30:24 -0500
+Date: Fri, 26 Nov 2010 16:30:22 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 25 (snd/soc/codecs)
+Message-ID: <20101126163021.GL30360@rakim.wolfsonmicro.main>
+References: <20101125164929.3a719716.sfr@canb.auug.org.au>
+ <20101125184513.fdb20279.rdunlap@xenotime.net>
+ <20101126112145.GA30360@rakim.wolfsonmicro.main>
+ <20101126082711.9c362c87.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101126082711.9c362c87.rdunlap@xenotime.net>
+X-Cookie: Sentient plasmoids are a gas.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 17:22 +0100, Eric Dumazet wrote:
-> [PATCH] printk: use this_cpu_{read|write} api on printk_pending
-> 
-> __get_cpu_var() is a bit inefficient, lets use __this_cpu_read() and
-> __this_cpu_write() to manipulate printk_pending.
-> 
-> printk_needs_cpu(cpu) is called only for the current cpu :
-> Use faster __this_cpu_read().
-> 
-> remove the redondant unlikely on (cpu_is_offline(cpu)) test
-> 
-> # size kernel/printk.o*
->    text    data     bss     dec     hex filename
->    9942     756  263488  274186   42f0a kernel/printk.o.new
->    9990     756  263488  274234   42f3a kernel/printk.o.old
+On Fri, Nov 26, 2010 at 08:27:11AM -0800, Randy Dunlap wrote:
 
+> so we can look forward to a patch for this build error?
 
-Thanks, queued!
+> sound/soc/codecs/wm8737.c:563:error: 'i2c_master_send' undeclared (first use in this function)
+
+It's already waiting for the next rebuild of -next.
+
+BTW, please do remember to CC both relevant maintainers and relevant
+mailing lists when reporting things like this.
