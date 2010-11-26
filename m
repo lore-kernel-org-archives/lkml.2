@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab0KZHBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 02:01:33 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36057 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab0KZHBb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 02:01:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sVcwzWX4cSHzj4rWwMBOjcle+Z2M3v/Z4xziKkvvApIjVuMRUIdlppvbNqbvtmYkC5
-         G6ZUA4Rqu7KjgX2wRZNzavQanEYV98mWv12uMRmoWvg9B0I0hnmvrF7Ur46RoWdyaTrv
-         /PNTSFO1YZwEIi0myxz8ay4sOAJJev95tRe8o=
+	id S1752941Ab0KZHDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 02:03:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60331 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860Ab0KZHDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 02:03:35 -0500
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH -tip] Remove unused argument dest_cpu to migrate_task()
+Date: Fri, 26 Nov 2010 12:37:09 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.14-0.4-default; KDE/4.3.5; x86_64; ; )
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20101122003157.13674.42596.stgit@zaytsev.su>
-References: <20101122002747.13674.69384.stgit@zaytsev.su>
-	<20101122003157.13674.42596.stgit@zaytsev.su>
-Date: Fri, 26 Nov 2010 10:01:30 +0300
-Message-ID: <AANLkTin_Ta-Fj2sd+jLSYTaOb0KOpaKdDv5B+2-tTEyG@mail.gmail.com>
-Subject: Re: [PATCH 1/4] fanotify: Shrink struct fanotify_event_metadata by 32 bits
-From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
-        agruen@linbit.com, linux-kernel@vger.kernel.org, stefan@buettcher.org,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011261237.09187.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Eric. Sorry for the noise, but could you please comment at this
-one? Because if it goes, it needs to go soon, before the .37 release,
-or we won't be able change the ABI.
+Remove unused argument, 'dest_cpu' of migrate_task(), and pass runqueue,
+as it is always known at the call site.
 
-The other patches in the series are clearly not .37 material, so no
-problem if you can't look at them right now.
+Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
 
-On Mon, Nov 22, 2010 at 03:33, Alexey Zaytsev <alexey.zaytsev@gmail.com> wrote:
-> And this saves additional 32 bits in the future
->
-> Signed-off-by: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-> ---
->  include/linux/fanotify.h |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-> index 0f01214..9a7986f 100644
-> --- a/include/linux/fanotify.h
-> +++ b/include/linux/fanotify.h
-> @@ -86,10 +86,11 @@
->  #define FANOTIFY_METADATA_VERSION      2
->
->  struct fanotify_event_metadata {
-> -       __u32 event_len;
-> -       __u32 vers;
-> -       __aligned_u64 mask;
-> +       __u16 event_len;
-> +       __u8 vers;
-> +       __u8 reserved;
->        __s32 fd;
-> +       __aligned_u64 mask;
->        __s32 pid;
->  };
->
->
->
+---
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 717bf7d..b6999bc 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2060,10 +2060,8 @@ static int migration_cpu_stop(void *data);
+  * The task's runqueue lock must be held.
+  * Returns true if you have to wait for migration thread.
+  */
+-static bool migrate_task(struct task_struct *p, int dest_cpu)
++static bool migrate_task(struct task_struct *p, struct rq *rq)
+ {
+-	struct rq *rq = task_rq(p);
+-
+ 	/*
+ 	 * If the task is not on a runqueue (and not running), then
+ 	 * the next wake-up will properly place the task.
+@@ -3224,7 +3222,7 @@ void sched_exec(void)
+ 	 * select_task_rq() can race against ->cpus_allowed
+ 	 */
+ 	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
+-	    likely(cpu_active(dest_cpu)) && migrate_task(p, dest_cpu)) {
++	    likely(cpu_active(dest_cpu)) && migrate_task(p, rq)) {
+ 		struct migration_arg arg = { p, dest_cpu };
+ 
+ 		task_rq_unlock(rq, &flags);
+@@ -5505,7 +5503,7 @@ again:
+ 		goto out;
+ 
+ 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
+-	if (migrate_task(p, dest_cpu)) {
++	if (migrate_task(p, rq)) {
+ 		struct migration_arg arg = { p, dest_cpu };
+ 		/* Need help from migration thread: drop lock and wait. */
+ 		task_rq_unlock(rq, &flags);
