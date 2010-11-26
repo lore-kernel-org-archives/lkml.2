@@ -1,183 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab0KZPBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:01:39 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:50067 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab0KZPBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:01:33 -0500
-Message-Id: <20101126145411.215256715@chello.nl>
-User-Agent: quilt/0.47-1
-Date: Fri, 26 Nov 2010 15:39:00 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 17/21] lockdep, mutex: Provide mutex_lock_nest_lock
-References: <20101126143843.801484792@chello.nl>
-Content-Disposition: inline; filename=mutex_lock_nest_lock.patch
+	id S1754477Ab0KZPBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:01:21 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50700 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752545Ab0KZPBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:01:19 -0500
+Date: Fri, 26 Nov 2010 15:00:46 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix inherit vs. context rotation bug
+Message-ID: <tip-dddd3379a619a4cb8247bfd3c94ca9ae3797aa2e@git.kernel.org>
+Git-Commit-ID: dddd3379a619a4cb8247bfd3c94ca9ae3797aa2e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:00:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the mutex_lock_nest_lock() annotation.
+Commit-ID:  dddd3379a619a4cb8247bfd3c94ca9ae3797aa2e
+Gitweb:     http://git.kernel.org/tip/dddd3379a619a4cb8247bfd3c94ca9ae3797aa2e
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 24 Nov 2010 10:05:55 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 26 Nov 2010 15:00:56 +0100
 
+perf: Fix inherit vs. context rotation bug
+
+It was found that sometimes children of tasks with inherited events had
+one extra event. Eventually it turned out to be due to the list rotation
+no being exclusive with the list iteration in the inheritance code.
+
+Cure this by temporarily disabling the rotation while we inherit the events.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Cc: <stable@kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/lockdep.h |    3 +++
- include/linux/mutex.h   |    9 +++++++++
- kernel/mutex.c          |   25 +++++++++++++++++--------
- 3 files changed, 29 insertions(+), 8 deletions(-)
+ include/linux/perf_event.h |    1 +
+ kernel/perf_event.c        |   22 ++++++++++++++++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/include/linux/lockdep.h
-===================================================================
---- linux-2.6.orig/include/linux/lockdep.h
-+++ linux-2.6/include/linux/lockdep.h
-@@ -492,12 +492,15 @@ static inline void print_irqtrace_events
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- # ifdef CONFIG_PROVE_LOCKING
- #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
-+#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
- # else
- #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
-+#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, n, i)
- # endif
- # define mutex_release(l, n, i)			lock_release(l, n, i)
- #else
- # define mutex_acquire(l, s, t, i)		do { } while (0)
-+# define mutex_acquire_nest(l, s, t, n, i)	do { } while (0)
- # define mutex_release(l, n, i)			do { } while (0)
- #endif
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 40150f3..142e3d6 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -850,6 +850,7 @@ struct perf_event_context {
+ 	int				nr_active;
+ 	int				is_active;
+ 	int				nr_stat;
++	int				rotate_disable;
+ 	atomic_t			refcount;
+ 	struct task_struct		*task;
  
-Index: linux-2.6/include/linux/mutex.h
-===================================================================
---- linux-2.6.orig/include/linux/mutex.h
-+++ linux-2.6/include/linux/mutex.h
-@@ -124,6 +124,7 @@ static inline int mutex_is_locked(struct
-  */
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-+extern void _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest_lock);
- extern int __must_check mutex_lock_interruptible_nested(struct mutex *lock,
- 					unsigned int subclass);
- extern int __must_check mutex_lock_killable_nested(struct mutex *lock,
-@@ -132,6 +133,13 @@ extern int __must_check mutex_lock_killa
- #define mutex_lock(lock) mutex_lock_nested(lock, 0)
- #define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
- #define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 671f6c8..f365dd8 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1622,8 +1622,12 @@ static void rotate_ctx(struct perf_event_context *ctx)
+ {
+ 	raw_spin_lock(&ctx->lock);
+ 
+-	/* Rotate the first entry last of non-pinned groups */
+-	list_rotate_left(&ctx->flexible_groups);
++	/*
++	 * Rotate the first entry last of non-pinned groups. Rotation might be
++	 * disabled by the inheritance code.
++	 */
++	if (!ctx->rotate_disable)
++		list_rotate_left(&ctx->flexible_groups);
+ 
+ 	raw_spin_unlock(&ctx->lock);
+ }
+@@ -6162,6 +6166,7 @@ int perf_event_init_context(struct task_struct *child, int ctxn)
+ 	struct perf_event *event;
+ 	struct task_struct *parent = current;
+ 	int inherited_all = 1;
++	unsigned long flags;
+ 	int ret = 0;
+ 
+ 	child->perf_event_ctxp[ctxn] = NULL;
+@@ -6202,6 +6207,15 @@ int perf_event_init_context(struct task_struct *child, int ctxn)
+ 			break;
+ 	}
+ 
++	/*
++	 * We can't hold ctx->lock when iterating the ->flexible_group list due
++	 * to allocations, but we need to prevent rotation because
++	 * rotate_ctx() will change the list from interrupt context.
++	 */
++	raw_spin_lock_irqsave(&parent_ctx->lock, flags);
++	parent_ctx->rotate_disable = 1;
++	raw_spin_unlock_irqrestore(&parent_ctx->lock, flags);
 +
-+#define mutex_lock_nest_lock(lock, nest_lock)				\
-+do {									\
-+	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);		\
-+	_mutex_lock_nest_lock(lock, &(nest_lock)->dep_map);		\
-+} while (0)
+ 	list_for_each_entry(event, &parent_ctx->flexible_groups, group_entry) {
+ 		ret = inherit_task_group(event, parent, parent_ctx,
+ 					 child, ctxn, &inherited_all);
+@@ -6209,6 +6223,10 @@ int perf_event_init_context(struct task_struct *child, int ctxn)
+ 			break;
+ 	}
+ 
++	raw_spin_lock_irqsave(&parent_ctx->lock, flags);
++	parent_ctx->rotate_disable = 0;
++	raw_spin_unlock_irqrestore(&parent_ctx->lock, flags);
 +
- #else
- extern void mutex_lock(struct mutex *lock);
- extern int __must_check mutex_lock_interruptible(struct mutex *lock);
-@@ -140,6 +148,7 @@ extern int __must_check mutex_lock_killa
- # define mutex_lock_nested(lock, subclass) mutex_lock(lock)
- # define mutex_lock_interruptible_nested(lock, subclass) mutex_lock_interruptible(lock)
- # define mutex_lock_killable_nested(lock, subclass) mutex_lock_killable(lock)
-+# define mutex_lock_nest_lock(lock, nest_lock) mutex_lock(lock)
- #endif
+ 	child_ctx = child->perf_event_ctxp[ctxn];
  
- /*
-Index: linux-2.6/kernel/mutex.c
-===================================================================
---- linux-2.6.orig/kernel/mutex.c
-+++ linux-2.6/kernel/mutex.c
-@@ -140,14 +140,14 @@ EXPORT_SYMBOL(mutex_unlock);
-  */
- static inline int __sched
- __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
--	       	unsigned long ip)
-+		    struct lockdep_map *nest_lock, unsigned long ip)
- {
- 	struct task_struct *task = current;
- 	struct mutex_waiter waiter;
- 	unsigned long flags;
- 
- 	preempt_disable();
--	mutex_acquire(&lock->dep_map, subclass, 0, ip);
-+	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
- 
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
- 	/*
-@@ -285,16 +285,25 @@ void __sched
- mutex_lock_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
--	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, _RET_IP_);
-+	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, NULL, _RET_IP_);
- }
- 
- EXPORT_SYMBOL_GPL(mutex_lock_nested);
- 
-+void __sched
-+_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
-+{
-+	might_sleep();
-+	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, nest, _RET_IP_);
-+}
-+
-+EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
-+
- int __sched
- mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
--	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, _RET_IP_);
-+	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, NULL, _RET_IP_);
- }
- EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
- 
-@@ -303,7 +312,7 @@ mutex_lock_interruptible_nested(struct m
- {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
--				   subclass, _RET_IP_);
-+				   subclass, NULL, _RET_IP_);
- }
- 
- EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
-@@ -409,7 +418,7 @@ __mutex_lock_slowpath(atomic_t *lock_cou
- {
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 
--	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, _RET_IP_);
-+	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
- }
- 
- static noinline int __sched
-@@ -417,7 +426,7 @@ __mutex_lock_killable_slowpath(atomic_t 
- {
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 
--	return __mutex_lock_common(lock, TASK_KILLABLE, 0, _RET_IP_);
-+	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
- }
- 
- static noinline int __sched
-@@ -425,7 +434,7 @@ __mutex_lock_interruptible_slowpath(atom
- {
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 
--	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, _RET_IP_);
-+	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
- }
- #endif
- 
-
-
+ 	if (child_ctx && inherited_all) {
