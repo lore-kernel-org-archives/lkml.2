@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab0KZOHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 09:07:22 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35146 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751192Ab0KZOHV (ORCPT
+	id S1754998Ab0KZOHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 09:07:37 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:40863 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760Ab0KZOHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 09:07:21 -0500
-Date: Fri, 26 Nov 2010 14:07:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 0/7] Wolfson MFD updates
-Message-ID: <20101126140719.GH30360@rakim.wolfsonmicro.main>
-References: <20101124180055.GO24970@rakim.wolfsonmicro.main>
- <20101126140518.GN5520@sortiz-mobl>
+	Fri, 26 Nov 2010 09:07:35 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC/PATCH v6 00/12] Media controller (core and V4L2)
+Date: Fri, 26 Nov 2010 15:07:24 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk,
+        sakari.ailus@maxwell.research.nokia.com, lennart@poettering.net
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <20101125142803.GA15099@sirena.org.uk>
+In-Reply-To: <20101125142803.GA15099@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101126140518.GN5520@sortiz-mobl>
-X-Cookie: Sentient plasmoids are a gas.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011261507.30191.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 03:05:19PM +0100, Samuel Ortiz wrote:
-> On Wed, Nov 24, 2010 at 06:00:55PM +0000, Mark Brown wrote:
+Hi Mark,
 
-> > This is a reposting of a number of Wolfson MFD patches previously posted
-> > - I seem to building up a relatively large queue of patches here.
+On Thursday 25 November 2010 15:28:04 Mark Brown wrote:
+> On Thu, Nov 25, 2010 at 03:28:07AM +0100, Laurent Pinchart wrote:
+> > I want to emphasize that the media controller API does *not* replace the
+> > V4L, DVB or ALSA APIs. It complements them.
+> 
+> Overall this looks relatively good and should be mappable onto the
+> embedded audio stack.
 
-> > Patch 1/7 is a bugfix and really ought to go into 2.6.37, patch 7/7
-> > would ideally be merged via ASoC as the bulk of the support for this
-> > device is in the CODEC driver, 2-3 are a new device and 4-6 are some
-> > housekeeping for new kernel APIs.
+Thanks a lot for the review.
 
-> All 7 patches applied, thanks a lot.
+> I'd need to sit down and actually do that to go into too much specific
+> detail but the only real issue I see is working out how the control aspects
+> of this interact with the control in ALSA. The simplest thing would be to
+> have the userspace API be read only for ALSA devices, I guess.
 
-Thanks!
+That sounds good, especially for the first step.
 
-Would it be OK to apply patch 7 to the ASoC tree?  There's a bunch of
-CODEC driver changes to support the WM8958 which depend on it and also
-depend on changes in the ASoC tree.
+-- 
+Regards,
+
+Laurent Pinchart
