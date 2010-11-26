@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab0KZN4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:56:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39033 "EHLO mx1.redhat.com"
+	id S1755241Ab0KZOBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 09:01:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753879Ab0KZN4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:56:45 -0500
-Date: Fri, 26 Nov 2010 14:49:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        "rjw@sisk.plpavel"@ucw.cz
-Subject: Re: [PATCH 01/14] signal: fix SIGCONT notification code
-Message-ID: <20101126134928.GA28177@redhat.com>
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-2-git-send-email-tj@kernel.org>
+	id S1752479Ab0KZOBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 09:01:09 -0500
+Date: Fri, 26 Nov 2010 15:00:49 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: Mark Lord <kernel@teksavvy.com>
+cc: Greg Freemyer <greg.freemyer@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+In-Reply-To: <4CEFBACD.6040603@teksavvy.com>
+Message-ID: <alpine.LFD.2.00.1011261456080.2936@dhcp-lab-213.englab.brq.redhat.com>
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
+ <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com> <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com> <20101119163013.GJ10039@thunk.org> <4CEDCE60.9050109@teksavvy.com>
+ <AANLkTimkGr=mpf6xbjvSFc9hZtf6f+UQ2F-N9aZxBsgb@mail.gmail.com> <4CEE7884.5010007@teksavvy.com> <AANLkTi=J_J68+758XOCYp=+YXaU1+yJjRrvBsAeB5eUi@mail.gmail.com> <4CEFBACD.6040603@teksavvy.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290768569-16224-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26, Tejun Heo wrote:
->
-> get_signal_deliver() should test these flags and then notify
-> accoringly; however, it incorrectly tested SIGNAL_STOP_CONTINUED
-> instead of SIGNAL_CLD_CONTINUED,
+On Fri, 26 Nov 2010, Mark Lord wrote:
 
-OOPS! Yes, typo. Thanks.
-
-This is even documented in prepare_signal(). And it always sets
-SIGNAL_STOP_CONTINUED along with SIGNAL_CLD_*, we shouldn't check
-this bit, of course.
-
-> Fix it by testing SIGNAL_CLD_CONTINUED.  While at it, uncompress the
-> ?: test into if/else clause for better readability.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Roland McGrath <roland@redhat.com>
-
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-
-> ---
->  kernel/signal.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 4e3cff1..fe004b5 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -1853,8 +1853,13 @@ relock:
->  	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
->  	 */
->  	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
-> -		int why = (signal->flags & SIGNAL_STOP_CONTINUED)
-> -				? CLD_CONTINUED : CLD_STOPPED;
-> +		int why;
-> +
-> +		if (signal->flags & SIGNAL_CLD_CONTINUED)
-> +			why = CLD_CONTINUED;
-> +		else
-> +			why = CLD_STOPPED;
-> +
->  		signal->flags &= ~SIGNAL_CLD_MASK;
->  
->  		why = tracehook_notify_jctl(why, CLD_CONTINUED);
-> -- 
-> 1.7.1
+> On 10-11-25 11:24 AM, Greg Freemyer wrote:
+> > 
+> > I'm away from my systems today, but is there an easy way to tweak
+> > wiper.sh or hdparm to cause only a single range per trim command.
+> > 
+> > I'm curious if for the Sandforce that would still be in the 90 second
+> > range, or closer to 64x that.
+> 
+> Good question.  The Indilinx based drives would be in the 64x range,
+> no doubt there.  But I don't know about the Sandforce.
+> 
+> And I don't think I'm willing to inflict so many life-shortening erase
+> cycles onto it just to find out.
+> 
+> One thing to note:  the execution time for TRIM does vary depending upon
+> whether the (logical) LBAs are already mostly in a "trimmed" state or not.
+> 
+> So anyone aspiring to benchmark this stuff will need to keep that in mind.
+> My timings above were for "already trimmed" cases.  I would expect them
+> to be much slower (2x - 3x) if the sectors all held data prior to trim.
+> 
+> Cheers
 > 
 
+I have already did some TRIM benchmarking, but especially regarding trim
+extent size. Also there is a tool test-discard for that purpose, so it
+may be handy for anyone trying to do something similar.
+
+http://people.redhat.com/lczerner/discard/
+
+Thanks!
+
+-Lukas
