@@ -1,171 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab0KZRYJ (ORCPT <rfc822;w@1wt.eu>);
+	id S1755727Ab0KZRYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:24:15 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:38174 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754740Ab0KZRYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Nov 2010 12:24:09 -0500
-Received: from apollon.tauware.de ([213.239.249.222]:35603 "EHLO
-	apollon.tauware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab0KZRYH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:24:07 -0500
-X-Greylist: delayed 1831 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Nov 2010 12:24:07 EST
-From: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
-To: Corentin Chary <corentin.chary@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org,
-        linux acpi <linux-acpi@vger.kernel.org>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Axel Lin <axel.lin@gmail.com>,
-        Thomas Renninger <trenn@suse.de>,
-        daniel.lohmann@informatik.uni-erlangen.de,
-        Julio.Sincero@informatik.uni-erlangen.de
-Cc: Julia Lawall <julia@diku.dk>
-Subject: Re: debugfs_create_dir return value in acer-wmi, intel_ips and ec_sys
-Organization: Uni Erlangen, Informatik 4, Lehrstuhl =?utf-8?Q?f=C3=BCr?=
- Betriebs- und verteile Systeme
-References: <4ceda4f7.0cedd80a.26b4.0222@mx.google.com>
-	<Pine.LNX.4.64.1011250653370.15506@ask.diku.dk>
-	<AANLkTikuHbF5FLT4OB8koZRgQkd5Ye7+O6HLrCY_vnq-@mail.gmail.com>
-	<Pine.LNX.4.64.1011251119290.8543@pc-004.diku.dk>
-X-Url: http://www4.informatik.uni-erlangen.de/~tartler
-Date: Fri, 26 Nov 2010 17:53:30 +0100
-In-Reply-To: <Pine.LNX.4.64.1011251119290.8543@pc-004.diku.dk> (Julia Lawall's
-	message of "Thu, 25 Nov 2010 11:21:20 +0100 (CET)")
-Message-ID: <878w0gvxf9.fsf@faui44a.informatik.uni-erlangen.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Date: Fri, 26 Nov 2010 18:23:55 +0100
+From: mat <castet.matthieu@free.fr>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Kees Cook <kees.cook@canonical.com>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+Message-ID: <20101126182355.62615dff@mat-laptop>
+In-Reply-To: <24422.1290656467@localhost>
+References: <4CE2F914.9070106@free.fr>
+	<24422.1290656467@localhost>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="MP_/u4AfbfrTKD9Qh3gR_9SQMcY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 11:21:20 (CET), Julia Lawall wrote:
+--MP_/u4AfbfrTKD9Qh3gR_9SQMcY
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-> On Thu, 25 Nov 2010, Corentin Chary wrote:
->
->> On Thu, Nov 25, 2010 at 7:01 AM, Julia Lawall <julia@diku.dk> wrote:
->> > On Thu, 25 Nov 2010, Corentin Chary wrote:
->> >
->> >> Hi,
->> >>
->> >> I was checking debugfs code in platform/x86, because I want to add
->> >> some files to eeepc-wmi. And I found something disturbing.
->> >>
->> >> The documentation says:
->> >>
->> >> > This call, if successful, will make a directory called name underneath the
->> >> > indicated parent directory.  If parent is NULL, the directory will be
->> >> > created in the debugfs root.  On success, the return value is a struct
->> >> > dentry pointer which can be used to create files in the directory (and to
->> >> > clean it up at the end).  A NULL return value indicates that something went
->> >> > wrong.  If ERR_PTR(-ENODEV) is returned, that is an indication that the
->> >> > kernel has been built without debugfs support and none of the functions
->> >> > described below will work.
->> >>
->> >> But then, here is the code in acer-wmi:
->> >>
->> >> > static void remove_debugfs(void)
->> >> > {
->> >> >       debugfs_remove(interface->debug.devices);
->> >> >       debugfs_remove(interface->debug.root);
->> >> > }
->> >> >
->> >> > static int create_debugfs(void)
->> >> > {
->> >> >        interface->debug.root = debugfs_create_dir("acer-wmi", NULL);
->> >> >        if (!interface->debug.root) {
->> >> >                printk(ACER_ERR "Failed to create debugfs directory");
->> >> >                return -ENOMEM;
->> >> >        }
->> >>
->> >> this code is *not* inside #ifndef CONFIG_DEBUG_FS, so debugfs_create_dir
->> >> can return ERR_PTR(-ENODEV) right ?
->> >>
->> >> Then, remove_debug() will call debugfs_remove(ERR_PTR(-ENODEV)) right ?
->> >>
->> >> So, acpi-wmi seems to have an issue when debugfs is disabled, that's "ok".
->> >>
->> >> But then I took a look at intel_ips :
->> >>
->> >> >        ips->debug_root = debugfs_create_dir("ips", NULL);
->> >> >        if (!ips->debug_root) {
->> >> >                dev_err(&ips->dev->dev,
->> >> >                        "failed to create debugfs entries: %ld\n",
->> >> >                        PTR_ERR(ips->debug_root));
->> >> >                return;
->> >> >        }
->> >>
->> >> Then PTR_ERR thing is strange, because ips->debug_root can only be NULL
->> >> here...
->> >> But here, it's ok to only check NULL, because it's inside #ifndef
->> >> CONFIG_DEBUG_FS.
->> >>
->> >> So, two drivers checked, to weird error handling code. I did a quick grep and
->> >> opened
->> >> the first result: ec_sys.c.
->> >>
->> >> ec_sys.c depends on CONFIG_ACPI_EC_DEBUGFS but doesn't depend on
->> >> CONFIG_DEBUG_FS.
->> >>
->> >> Here, again, the code only check for != NULL while it could be ERR_PTR(-
->> >> ENODEV):
->> >>
->> >> >        if (ec_device_count == 0) {
->> >> >                acpi_ec_debugfs_dir = debugfs_create_dir("ec", NULL);
->> >> >                if (!acpi_ec_debugfs_dir)
->> >> >                        return -ENOMEM;
->> >> >        }
->> >> >
->> >> >        sprintf(name, "ec%u", ec_device_count);
->> >> >        dev_dir = debugfs_create_dir(name, acpi_ec_debugfs_dir);
->> >>
->> >> Here, acpi_ec_debugfs_dir (that can be an invalid pointer) is used as
->> >> a parent dentry, and will be dereferenced without checks.
->> >>
->> >> I am missing something obvious, or are most of debugfs implementation
->> >> broken when debugfs is disabled ?
->> 
->> Answer to myself, when debugfs is disabled, it's ok to give broken
->> dentry pointers to debugfs functions since they won't do anything.
->> 
->> >> Julia, if I am right, coccinelle could help us right ? Can the tool check
->> >> if the code is between #ifdef CONFIG_DEBUGS_FS ? That would help a lot.
->> >
->> > Unfortunately, at the moment, it can't; there is no matching on #ifdefs.
->> > Perhaps it could be added.
->> 
->> Or better, something to check if a macro is defined in a particular contact ?
->
-> Actually, Daniel Lohmann's group has been working on analyzing #ifdef's.   
-> Perhaps they have a solution to this problem?  I have added them to the CC 
-> list.
+Le Wed, 24 Nov 2010 22:41:07 -0500,
+Valdis.Kletnieks@vt.edu a =E9crit :
 
-Thanks for bringing this thread to our attention, Julia.
+> On Tue, 16 Nov 2010 22:35:16 +0100, matthieu castet said:
+>=20
+> > This patch is a logical extension of the protection provided by
+> > CONFIG_DEBUG_RODATA to LKMs. The protection is provided by splitting
+> > module_core and module_init into three logical parts each and
+> > setting appropriate page access permissions for each individual
+> > section:
+> >=20
+> >  1. Code: RO+X
+> >  2. RO data: RO+NX
+> >  3. RW data: RW+NX
+>=20
+> This is incompatible with CONFIG_JUMP_LABEL:
+>=20
+> [  252.093624] BUG: unable to handle kernel paging request at
+> ffffffffa0680764 [  252.094008] IP: [<ffffffff81225ee0>]
+> generic_swap+0xa/0x1a [  252.094008] PGD 1a1e067 PUD 1a22063 PMD
+> 1093ac067 PTE 8000000109786161 [  252.094008] Oops: 0003 [#1] PREEMPT
+> SMP=20
+>=20
+> [  252.094008] Pid: 3740, comm: modprobe Not tainted
+> 2.6.37-rc3-mmotm1123 #1 0X564R/Latitude E6500 [  252.094008] RIP:
+> 0010:[<ffffffff81225ee0>]  [<ffffffff81225ee0>] generic_swap+0xa/0x1a
+> [  252.094008] RSP: 0018:ffff88011a217d98  EFLAGS: 00010206
+> [  252.094008] RAX: 00000000000000d9 RBX: 0000000000000030 RCX:
+> 000000000000007c [  252.094008] RDX: 0000000000000017 RSI:
+> ffffffffa0680794 RDI: ffffffffa0680764 [  252.094008] RBP:
+> ffff88011a217d98 R08: 0000000000000000 R09: ffff88011a217d38
+> [  252.094008] R10: 0000000000000000 R11: 000000000000013d R12:
+> ffffffffa0680764 [  252.094008] R13: 0000000000000018 R14:
+> 0000000000000018 R15: 0000000000000018 [  252.094008] FS:
+> 00007f6ecb897720(0000) GS:ffff8800df100000(0000)
+> knlGS:0000000000000000 [  252.094008] CS:  0010 DS: 0000 ES: 0000
+> CR0: 000000008005003b [  252.094008] CR2: ffffffffa0680764 CR3:
+> 000000011911e000 CR4: 00000000000406e0 [  252.094008] DR0:
+> 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  252.094008] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> 0000000000000400 [  252.094008] Process modprobe (pid: 3740,
+> threadinfo ffff88011a216000, task ffff88011861e300) [  252.094008]
+> Stack: [  252.094008]  ffff88011a217e28 ffffffff81226007
+> ffffffff81a31158 0000000000000000 [  252.094008]  0000000000000030
+> 0000000000000048 ffffffff8105fa34 ffffffff81225ed6 [  252.094008]
+> ffffffff00000018 ffffffff00000018 0000000000000018 00000030ffffffff
+> [  252.094008] Call Trace: [  252.094008]  [<ffffffff81226007>]
+> sort+0x117/0x1b0 [  252.094008]  [<ffffffff8105fa34>] ?
+> jump_label_cmp+0x0/0x1b [  252.094008]  [<ffffffff81225ed6>] ?
+> generic_swap+0x0/0x1a [  252.094008]  [<ffffffff8105faa6>]
+> sort_jump_label_entries+0x2b/0x2d [  252.094008]
+> [<ffffffff8105feda>] jump_label_module_notify+0x58/0x253
+> [  252.094008]  [<ffffffff8155e816>] notifier_call_chain+0x54/0x81
+> [  252.094008]  [<ffffffff8105d9b2>]
+> __blocking_notifier_call_chain+0x5c/0x79 [  252.094008]
+> [<ffffffff8105d9de>] blocking_notifier_call_chain+0xf/0x11
+> [  252.094008]  [<ffffffff810778cc>] sys_init_module+0x76/0x1f5
+> [  252.094008]  [<ffffffff8100277b>] system_call_fastpath+0x16/0x1b
+> [  252.094008] Code: 05 ff c0 48 29 f7 48 39 f7 73 f6 48 89 3a c9 c3
+> 90 90 90 8b 07 8b 16 55 89 17 48 89 e5 89 06 c9 c3 55 48 89 e5 8a 07
+> 8a 0e ff ca <88> 0f 48 ff c7 88 06 48 ff c6 85 d2 7f ec c9 c3 55 89
+> d0 48 89 [  252.094008] RIP  [<ffffffff81225ee0>]
+> generic_swap+0xa/0x1a [  252.094008]  RSP <ffff88011a217d98>
+> [  252.094008] CR2: ffffffffa0680764 [  252.094008] ---[ end trace
+> f88479be6b01e4c4 ]---
+>=20
+>=20
+> > +config DEBUG_SET_MODULE_RONX
+> > +	bool "Set loadable kernel module data as NX and text as RO"
+> > +	default n
+> > +	depends on X86 && MODULES
+>=20
+> 	depends on X86 && MODULES && !JUMP_LABEL
+could you try the attached patch ?
 
-We indeed do have a tool that is able to calculate the conditions under
-which a line of code is activated or not, taking the constraints from
-Kconfig into account. This allows us e.g. to find nested/broken ifdefs
-like
+on module load, we sort the __jump_table section. So we should make it
+writable.
 
-#ifndef CONFIG_DEBUG_FS
-...
-#ifdef CONFIG_DEBUG_FS
-#else
-#endif
-...
-#endif
 
-because we are taking kconfig into account, the inner CPP item can also
-be some other kconfig item on which CONFIG_DEBUG_FS depends and we would
-still find it.
+Matthieu
 
-I'm not sure yet how to turn this technique into a tool that would be
-helpful to solve this particular problem. Maybe we can integrate this
-somehow in coccinelle?
+--MP_/u4AfbfrTKD9Qh3gR_9SQMcY
+Content-Type: text/x-patch
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename=jmp_label.diff
 
-regards,
-        Reinhard.
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index f52d42e..574dbc2 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -14,7 +14,7 @@
+ 	do {							\
+ 		asm goto("1:"					\
+ 			JUMP_LABEL_INITIAL_NOP			\
+-			".pushsection __jump_table,  \"a\" \n\t"\
++			".pushsection __jump_table,  \"aw\" \n\t"\
+ 			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+ 			".popsection \n\t"			\
+ 			: :  "i" (key) :  : label);		\
 
--- 
-Gruesse/greetings,
-Reinhard Tartler, KeyID 945348A4
+--MP_/u4AfbfrTKD9Qh3gR_9SQMcY--
