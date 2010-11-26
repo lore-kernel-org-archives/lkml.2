@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab0KZPiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:38:11 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51637 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab0KZPiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:38:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=r6kbwSYApCMZ7bftGztMxFnUJocFOD6tbRM9R+vUu/S7TxTiyWmXioPIxEH+GDyKJ/
-         um5tfPAQWxPievPDPxJCM8DdnWqQ3FgyCPIHFlfZx7wsh+Gku1PlfXD+dmxbdFNppuYm
-         3Hkh5b+I/9KuVpTYrLoSxCN9j1mLS+s2IbvjI=
-Subject: Re: [PATCH] mtd: mtdchar: fix information leak to userland
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1289054485-18190-1-git-send-email-segooon@gmail.com>
-References: <1289054485-18190-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Nov 2010 17:37:30 +0200
-Message-ID: <1290785850.2552.18.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1754122Ab0KZPiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:38:00 -0500
+Received: from wrar.name ([109.74.195.39]:50732 "EHLO haley.wrar.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753518Ab0KZPh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:37:59 -0500
+Date: Fri, 26 Nov 2010 20:37:51 +0500
+From: Andrey Rahmatullin <wrar@wrar.name>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [BISECTED] 2.6.36 regression for ALC892
+Message-ID: <20101126153751.GA4185@belkar.wrar.name>
+References: <20101125211803.GA4236@belkar.wrar.name>
+ <s5h7hg0sk04.wl%tiwai@suse.de>
+ <20101126091211.GA3505@belkar.wrar.name>
+ <s5heia8qvry.wl%tiwai@suse.de>
+ <20101126142737.GA3522@belkar.wrar.name>
+ <s5h62vkrw6c.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
+Content-Disposition: inline
+In-Reply-To: <s5h62vkrw6c.wl%tiwai@suse.de>
+X-Operating-System: Debian Sid
+X-Jabber-Id: wrar@altlinux.org
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-06 at 17:41 +0300, Vasiliy Kulikov wrote:
-> Structure mtd_info_user is copied to userland with padding byted
-> between "type" and "flags" fields uninitialized.  It leads to leaking
-> of contents of kernel stack memory.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 
-Pushed to l2-mtd-2.6.git, thanks.
+--AhhlLboLdkugWU4S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+On Fri, Nov 26, 2010 at 03:34:03PM +0100, Takashi Iwai wrote:
+> > > Try the very latest alsa-driver snapshot or sound-2.6 git tree.
+> > > You should have an individual "Headphone" volume as well.
+> > Yes, that makes difference: I was able to use the headphones after rais=
+ing
+> > that new volume.
+> OK, then this should be the patch below.  Care to apply it to 2.6.36
+> and check whether it gives the same result?
+I've applied it to 2.6.36 and got a "Headphone" volume, and it works.
 
+--=20
+WBR, wRAR
+
+--AhhlLboLdkugWU4S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBCAAGBQJM79RJAAoJEOih81koZvPBnrgIAJ8p5bCPqfXgX98xlx38Jwtg
+Regfc+EYxLZEUC4zlc8xkZq1s03OXlxcc3nwqA3j6F0tCAppt/E+Rxz0phpKp+6X
+WHNxD39gHeXrIZ38Ks13XVA/z6lrRD6NDKNMeLobZhpBgleHHwwl2Kua5VIOx9iY
+PchVI6p2ra4WESsiu/pGSnf2eDNLFP1iVC2Z7U2DCOnwCaYRDoGQsuGcdopCIjl8
+NNpODwYR55z+OWjZZbuv108BZNyXt9DedoFLmSz++vK7qXV1JMBL9bE6s9DhYBUx
+hlLr7q8w3AhyeJBC0eGvy1r5AW5iSY79xtftQtt4r1tOGA60hTTz33+sUPdqnpw=
+=pPtr
+-----END PGP SIGNATURE-----
+
+--AhhlLboLdkugWU4S--
