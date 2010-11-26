@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab0KZDEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 22:04:04 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63594 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab0KZDEB (ORCPT
+	id S1753804Ab0KZDER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 22:04:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46543 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab0KZDEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 22:04:01 -0500
+	Thu, 25 Nov 2010 22:04:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=D+vC72AKEHFkYE3AoWcctgIs9lfPXKGPPRoqhS7u+jOIN91vleqegaC9x1fUnnc2XO
-         mxmgsAcQ8YbWJO6hO1zI4Ln4Zfj46d3LnCbnxmiyw6FxJXuBy2brn3M/n/TbaX7685Qs
-         fjCWAcpK3apk6gMO2ueuATA4TYt/2QtRU4Ucs=
+        b=OFvuhl1TVulokkZsDTEa7EE6k1aUqHQ6zNZ940NXbE+fpZ7nrqVvUsUCmJwICj9Jd8
+         l6+Ol5U5LgcKiF8h42uz970s97k3zBwcU60DP8uTAqV8gocFt7E9PJP5O3TwnziWr5L8
+         8dUuO6yeeLjZ2D8GAmqaypj2ZSTDUn0IeBOpw=
 From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
         will.deacon@arm.com
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
         dengcheng.zhu@gmail.com
-Subject: [PATCH v2 2/5] MIPS/Perf-events: Work with the new PMU interface
-Date: Fri, 26 Nov 2010 11:05:04 +0800
-Message-Id: <1290740707-32586-3-git-send-email-dengcheng.zhu@gmail.com>
+Subject: [PATCH v2 4/5] MIPS/Perf-events: Work with the new callchain interface
+Date: Fri, 26 Nov 2010 11:05:06 +0800
+Message-Id: <1290740707-32586-5-git-send-email-dengcheng.zhu@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290740707-32586-1-git-send-email-dengcheng.zhu@gmail.com>
 References: <1290740707-32586-1-git-send-email-dengcheng.zhu@gmail.com>
@@ -29,368 +29,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the MIPS part of the following commits by Peter Zijlstra:
+This is the MIPS part of the following commits by Frederic Weisbecker:
 
-a4eaf7f14675cb512d69f0c928055e73d0c6d252
-	perf: Rework the PMU methods
-33696fc0d141bbbcb12f75b69608ea83282e3117
-	perf: Per PMU disable
-24cd7f54a0d47e1d5b3de29e2456bfbd2d8447b7
-	perf: Reduce perf_disable() usage
-b0a873ebbf87bf38bf70b5e39a7cadc96099fa13
-	perf: Register PMU implementations
-51b0fe39549a04858001922919ab355dee9bdfcf
-	perf: Deconstify struct pmu
+f72c1a931e311bb7780fee19e41a89ac42cab50e
+        perf: Factorize callchain context handling
+56962b4449af34070bb1994621ef4f0265eed4d8
+        perf: Generalize some arch callchain code
+70791ce9ba68a5921c9905ef05d23f62a90bc10c
+        perf: Generalize callchain_store()
+c1a65932fd7216fdc9a0db8bbffe1d47842f862c
+        perf: Drop unappropriate tests on arch callchains
 
 Reported-by: Wu Zhangjin <wuzhangjin@gmail.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 ---
- arch/mips/kernel/perf_event.c        |  275 +++++++++++++++++++---------------
- arch/mips/kernel/perf_event_mipsxx.c |    2 +
- 2 files changed, 158 insertions(+), 119 deletions(-)
+ arch/mips/kernel/perf_event.c |   63 ++++-------------------------------------
+ 1 files changed, 6 insertions(+), 57 deletions(-)
 
 diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index 2b7f3f7..1ee44a3 100644
+index 3d55761..8f7d2f8 100644
 --- a/arch/mips/kernel/perf_event.c
 +++ b/arch/mips/kernel/perf_event.c
-@@ -161,41 +161,6 @@ mipspmu_event_set_period(struct perf_event *event,
- 	return ret;
- }
+@@ -534,21 +534,13 @@ handle_associated_event(struct cpu_hw_events *cpuc,
+ #include "perf_event_mipsxx.c"
  
--static int mipspmu_enable(struct perf_event *event)
+ /* Callchain handling code. */
+-static inline void
+-callchain_store(struct perf_callchain_entry *entry,
+-		u64 ip)
 -{
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--	struct hw_perf_event *hwc = &event->hw;
--	int idx;
--	int err = 0;
--
--	/* To look for a free counter for this event. */
--	idx = mipspmu->alloc_counter(cpuc, hwc);
--	if (idx < 0) {
--		err = idx;
--		goto out;
--	}
--
--	/*
--	 * If there is an event in the counter we are going to use then
--	 * make sure it is disabled.
--	 */
--	event->hw.idx = idx;
--	mipspmu->disable_event(idx);
--	cpuc->events[idx] = event;
--
--	/* Set the period for the event. */
--	mipspmu_event_set_period(event, hwc, idx);
--
--	/* Enable the event. */
--	mipspmu->enable_event(hwc, idx);
--
--	/* Propagate our changes to the userspace mapping. */
--	perf_event_update_userpage(event);
--
--out:
--	return err;
+-	if (entry->nr < PERF_MAX_STACK_DEPTH)
+-		entry->ip[entry->nr++] = ip;
 -}
--
- static void mipspmu_event_update(struct perf_event *event,
- 			struct hw_perf_event *hwc,
- 			int idx)
-@@ -231,32 +196,90 @@ again:
- 	return;
- }
  
--static void mipspmu_disable(struct perf_event *event)
-+static void mipspmu_start(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (!mipspmu)
-+		return;
-+
-+	if (flags & PERF_EF_RELOAD)
-+		WARN_ON_ONCE(!(hwc->state & PERF_HES_UPTODATE));
-+
-+	hwc->state = 0;
-+
-+	/* Set the period for the event. */
-+	mipspmu_event_set_period(event, hwc, hwc->idx);
-+
-+	/* Enable the event. */
-+	mipspmu->enable_event(hwc, hwc->idx);
-+}
-+
-+static void mipspmu_stop(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (!mipspmu)
-+		return;
-+
-+	if (!(hwc->state & PERF_HES_STOPPED)) {
-+		/* We are working on a local event. */
-+		mipspmu->disable_event(hwc->idx);
-+		barrier();
-+		mipspmu_event_update(event, hwc, hwc->idx);
-+		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static int mipspmu_add(struct perf_event *event, int flags)
+ /*
+  * Leave userspace callchain empty for now. When we find a way to trace
+  * the user stack callchains, we add here.
+  */
+-static void
+-perf_callchain_user(struct pt_regs *regs,
+-		    struct perf_callchain_entry *entry)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++		    struct pt_regs *regs)
  {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
--	int idx = hwc->idx;
-+	int idx;
-+	int err = 0;
- 
-+	perf_pmu_disable(event->pmu);
- 
--	WARN_ON(idx < 0 || idx >= mipspmu->num_counters);
-+	/* To look for a free counter for this event. */
-+	idx = mipspmu->alloc_counter(cpuc, hwc);
-+	if (idx < 0) {
-+		err = idx;
-+		goto out;
-+	}
- 
--	/* We are working on a local event. */
-+	/*
-+	 * If there is an event in the counter we are going to use then
-+	 * make sure it is disabled.
-+	 */
-+	event->hw.idx = idx;
- 	mipspmu->disable_event(idx);
-+	cpuc->events[idx] = event;
- 
--	barrier();
--
--	mipspmu_event_update(event, hwc, idx);
--	cpuc->events[idx] = NULL;
--	clear_bit(idx, cpuc->used_mask);
-+	hwc->state = PERF_HES_STOPPED | PERF_HES_UPTODATE;
-+	if (flags & PERF_EF_START)
-+		mipspmu_start(event, PERF_EF_RELOAD);
- 
-+	/* Propagate our changes to the userspace mapping. */
- 	perf_event_update_userpage(event);
-+
-+out:
-+	perf_pmu_enable(event->pmu);
-+	return err;
  }
  
--static void mipspmu_unthrottle(struct perf_event *event)
-+static void mipspmu_del(struct perf_event *event, int flags)
+@@ -561,23 +553,21 @@ static void save_raw_perf_callchain(struct perf_callchain_entry *entry,
+ 	while (!kstack_end(sp)) {
+ 		addr = *sp++;
+ 		if (__kernel_text_address(addr)) {
+-			callchain_store(entry, addr);
++			perf_callchain_store(entry, addr);
+ 			if (entry->nr >= PERF_MAX_STACK_DEPTH)
+ 				break;
+ 		}
+ 	}
+ }
+ 
+-static void
+-perf_callchain_kernel(struct pt_regs *regs,
+-		      struct perf_callchain_entry *entry)
++void perf_callchain_kernel(struct perf_callchain_entry *entry,
++		      struct pt_regs *regs)
  {
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
+ 	unsigned long sp = regs->regs[29];
+ #ifdef CONFIG_KALLSYMS
+ 	unsigned long ra = regs->regs[31];
+ 	unsigned long pc = regs->cp0_epc;
  
--	mipspmu->enable_event(hwc, hwc->idx);
-+	WARN_ON(idx < 0 || idx >= mipspmu->num_counters);
-+
-+	mipspmu_stop(event, PERF_EF_UPDATE);
-+	cpuc->events[idx] = NULL;
-+	clear_bit(idx, cpuc->used_mask);
-+
-+	perf_event_update_userpage(event);
+-	callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	if (raw_show_trace || !__kernel_text_address(pc)) {
+ 		unsigned long stack_page =
+ 			(unsigned long)task_stack_page(current);
+@@ -587,53 +577,12 @@ perf_callchain_kernel(struct pt_regs *regs,
+ 		return;
+ 	}
+ 	do {
+-		callchain_store(entry, pc);
++		perf_callchain_store(entry, pc);
+ 		if (entry->nr >= PERF_MAX_STACK_DEPTH)
+ 			break;
+ 		pc = unwind_stack(current, &sp, pc, &ra);
+ 	} while (pc);
+ #else
+-	callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	save_raw_perf_callchain(entry, sp);
+ #endif
  }
- 
- static void mipspmu_read(struct perf_event *event)
-@@ -270,12 +293,17 @@ static void mipspmu_read(struct perf_event *event)
- 	mipspmu_event_update(event, hwc, hwc->idx);
- }
- 
--static struct pmu pmu = {
--	.enable		= mipspmu_enable,
--	.disable	= mipspmu_disable,
--	.unthrottle	= mipspmu_unthrottle,
--	.read		= mipspmu_read,
--};
-+static void mipspmu_enable(struct pmu *pmu)
-+{
-+	if (mipspmu)
-+		mipspmu->start();
-+}
-+
-+static void mipspmu_disable(struct pmu *pmu)
-+{
-+	if (mipspmu)
-+		mipspmu->stop();
-+}
- 
- static atomic_t active_events = ATOMIC_INIT(0);
- static DEFINE_MUTEX(pmu_reserve_mutex);
-@@ -318,6 +346,82 @@ static void mipspmu_free_irq(void)
- 		perf_irq = save_perf_irq;
- }
- 
-+/*
-+ * mipsxx/rm9000/loongson2 have different performance counters, they have
-+ * specific low-level init routines.
-+ */
-+static void reset_counters(void *arg);
-+static int __hw_perf_event_init(struct perf_event *event);
-+
-+static void hw_perf_event_destroy(struct perf_event *event)
-+{
-+	if (atomic_dec_and_mutex_lock(&active_events,
-+				&pmu_reserve_mutex)) {
-+		/*
-+		 * We must not call the destroy function with interrupts
-+		 * disabled.
-+		 */
-+		on_each_cpu(reset_counters,
-+			(void *)(long)mipspmu->num_counters, 1);
-+		mipspmu_free_irq();
-+		mutex_unlock(&pmu_reserve_mutex);
-+	}
-+}
-+
-+static int mipspmu_event_init(struct perf_event *event)
-+{
-+	int err = 0;
-+
-+	switch (event->attr.type) {
-+	case PERF_TYPE_RAW:
-+	case PERF_TYPE_HARDWARE:
-+	case PERF_TYPE_HW_CACHE:
-+		break;
-+
-+	default:
-+		return -ENOENT;
-+	}
-+
-+	if (!mipspmu || event->cpu >= nr_cpumask_bits ||
-+		(event->cpu >= 0 && !cpu_online(event->cpu)))
-+		return -ENODEV;
-+
-+	if (!atomic_inc_not_zero(&active_events)) {
-+		if (atomic_read(&active_events) > MIPS_MAX_HWEVENTS) {
-+			atomic_dec(&active_events);
-+			return -ENOSPC;
-+		}
-+
-+		mutex_lock(&pmu_reserve_mutex);
-+		if (atomic_read(&active_events) == 0)
-+			err = mipspmu_get_irq();
-+
-+		if (!err)
-+			atomic_inc(&active_events);
-+		mutex_unlock(&pmu_reserve_mutex);
-+	}
-+
-+	if (err)
-+		return err;
-+
-+	err = __hw_perf_event_init(event);
-+	if (err)
-+		hw_perf_event_destroy(event);
-+
-+	return err;
-+}
-+
-+static struct pmu pmu = {
-+	.pmu_enable	= mipspmu_enable,
-+	.pmu_disable	= mipspmu_disable,
-+	.event_init	= mipspmu_event_init,
-+	.add		= mipspmu_add,
-+	.del		= mipspmu_del,
-+	.start		= mipspmu_start,
-+	.stop		= mipspmu_stop,
-+	.read		= mipspmu_read,
-+};
-+
- static inline unsigned int
- mipspmu_perf_event_encode(const struct mips_perf_event *pev)
- {
-@@ -409,73 +513,6 @@ static int validate_group(struct perf_event *event)
- 	return 0;
- }
- 
--/*
-- * mipsxx/rm9000/loongson2 have different performance counters, they have
-- * specific low-level init routines.
-- */
--static void reset_counters(void *arg);
--static int __hw_perf_event_init(struct perf_event *event);
 -
--static void hw_perf_event_destroy(struct perf_event *event)
+-static void
+-perf_do_callchain(struct pt_regs *regs,
+-		  struct perf_callchain_entry *entry)
 -{
--	if (atomic_dec_and_mutex_lock(&active_events,
--				&pmu_reserve_mutex)) {
--		/*
--		 * We must not call the destroy function with interrupts
--		 * disabled.
--		 */
--		on_each_cpu(reset_counters,
--			(void *)(long)mipspmu->num_counters, 1);
--		mipspmu_free_irq();
--		mutex_unlock(&pmu_reserve_mutex);
+-	int is_user;
+-
+-	if (!regs)
+-		return;
+-
+-	is_user = user_mode(regs);
+-
+-	if (!current || !current->pid)
+-		return;
+-
+-	if (is_user && current->state != TASK_RUNNING)
+-		return;
+-
+-	if (!is_user) {
+-		perf_callchain_kernel(regs, entry);
+-		if (current->mm)
+-			regs = task_pt_regs(current);
+-		else
+-			regs = NULL;
 -	}
+-	if (regs)
+-		perf_callchain_user(regs, entry);
 -}
 -
--const struct pmu *hw_perf_event_init(struct perf_event *event)
+-static DEFINE_PER_CPU(struct perf_callchain_entry, pmc_irq_entry);
+-
+-struct perf_callchain_entry *
+-perf_callchain(struct pt_regs *regs)
 -{
--	int err = 0;
+-	struct perf_callchain_entry *entry = &__get_cpu_var(pmc_irq_entry);
 -
--	if (!mipspmu || event->cpu >= nr_cpumask_bits ||
--		(event->cpu >= 0 && !cpu_online(event->cpu)))
--		return ERR_PTR(-ENODEV);
--
--	if (!atomic_inc_not_zero(&active_events)) {
--		if (atomic_read(&active_events) > MIPS_MAX_HWEVENTS) {
--			atomic_dec(&active_events);
--			return ERR_PTR(-ENOSPC);
--		}
--
--		mutex_lock(&pmu_reserve_mutex);
--		if (atomic_read(&active_events) == 0)
--			err = mipspmu_get_irq();
--
--		if (!err)
--			atomic_inc(&active_events);
--		mutex_unlock(&pmu_reserve_mutex);
--	}
--
--	if (err)
--		return ERR_PTR(err);
--
--	err = __hw_perf_event_init(event);
--	if (err)
--		hw_perf_event_destroy(event);
--
--	return err ? ERR_PTR(err) : &pmu;
+-	entry->nr = 0;
+-	perf_do_callchain(regs, entry);
+-	return entry;
 -}
--
--void hw_perf_enable(void)
--{
--	if (mipspmu)
--		mipspmu->start();
--}
--
--void hw_perf_disable(void)
--{
--	if (mipspmu)
--		mipspmu->stop();
--}
--
- /* This is needed by specific irq handlers in perf_event_*.c */
- static void
- handle_associated_event(struct cpu_hw_events *cpuc,
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index fa00edc..c9406d6 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -1045,6 +1045,8 @@ init_hw_perf_events(void)
- 			"CPU, irq %d%s\n", mipspmu->name, counters, irq,
- 			irq < 0 ? " (share with timer interrupt)" : "");
- 
-+	perf_pmu_register(&pmu);
-+
- 	return 0;
- }
- arch_initcall(init_hw_perf_events);
 -- 
 1.7.1
 
