@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0KZQwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 11:52:53 -0500
-Received: from www.tglx.de ([62.245.132.106]:40295 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab0KZQww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 11:52:52 -0500
-Date: Fri, 26 Nov 2010 17:50:20 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: sodaville@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86/io_apic: split setup_ioapic_ids_from_mpc() into a non-checkign version
-Message-ID: <20101126165020.GA26361@www.tglx.de>
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de> <1290706801-7323-11-git-send-email-bigeasy@linutronix.de> <AANLkTikBHcRkgvzCi3jRLiRHLSPT93Gm1Kkwx35fXBeA@mail.gmail.com>
+	id S1754748Ab0KZQ4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 11:56:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42280 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab0KZQ4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 11:56:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=h/Qen2Rt8GCqz05QS5h0PHdek1dy2vjvaAyea/HyMuaPuf4yGSu89gnq7k1p0UTURb
+         vpru0Xy/pGWylqA7lhhpm2GhCH6xchg8+YVYXWUSGmFlkeJah64n0UVijZ6yNtyHMR5M
+         DNssUXe6GrAgez3cYXyEA0wprz0GRlV5FaKlM=
+Subject: Re: [thiscpuops upgrade 08/10] percpu: generic this_cpu_cmpxchg()
+ and this_cpu_cmpxchg_double support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <4CEFE583.8070103@kernel.org>
+References: <20101123235139.908255844@linux.com>
+	 <20101123235200.582485207@linux.com>  <4CEFE583.8070103@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 17:56:09 +0100
+Message-ID: <1290790569.2855.254.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <AANLkTikBHcRkgvzCi3jRLiRHLSPT93Gm1Kkwx35fXBeA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that I need this function to write the APIC id back to the chip
-as it is not initialized at all. apic_version[boot_cpu_physical_apicid]
-return 0x14 and therefore it is skipped. The manual on the other hand
-says that these ids should be uniqe.
+Le vendredi 26 novembre 2010 à 17:51 +0100, Tejun Heo a écrit :
+> On 11/24/2010 12:51 AM, Christoph Lameter wrote:
+> > +/*
+> > + * cmpxchg_double replaces two adjacent scalars at once. The first parameter
+> > + * passed is a percpu pointer, not a scalar like the other this_cpu
+> > + * operations. This is so because the function operates on two scalars
+> > + * (must be of same size). A truth value is returned to indicate success or
+> > + * failure (since a double register result is difficult to handle).
+> > + * There is very limited hardware support for these operations. So only certain
+> > + * sizes may work.
+> > + */
+> > +#define __this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
+> 
+> Ah... this is scary.  If it proves to be useful enough, sure, but
+> otherwise I'd like to avoid it.
+> 
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: x86@kernel.org
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
- arch/x86/include/asm/io_apic.h |    1 +
- arch/x86/kernel/apic/io_apic.c |   28 ++++++++++++++++------------
- 2 files changed, 17 insertions(+), 12 deletions(-)
+This is mandatory for several lockless algos, dont be afraid, its a
+single instruction ;)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index dc1169f..185d484 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -170,6 +170,7 @@ extern int restore_IO_APIC_setup(struct IO_APIC_route_entry **ioapic_entries);
- 
- extern int get_nr_irqs_gsi(void);
- extern void setup_ioapic_ids_from_mpc(void);
-+void setup_ioapic_ids_from_mpc_nocheck(void);
- 
- struct mp_ioapic_gsi{
- 	u32 gsi_base;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 27a5709..56c45ab 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1939,8 +1939,7 @@ void disable_IO_APIC(void)
-  *
-  * by Matt Domsch <Matt_Domsch@dell.com>  Tue Dec 21 12:25:05 CST 1999
-  */
--
--void __init setup_ioapic_ids_from_mpc(void)
-+void __init setup_ioapic_ids_from_mpc_nocheck(void)
- {
- 	union IO_APIC_reg_00 reg_00;
- 	physid_mask_t phys_id_present_map;
-@@ -1949,15 +1948,6 @@ void __init setup_ioapic_ids_from_mpc(void)
- 	unsigned char old_id;
- 	unsigned long flags;
- 
--	if (acpi_ioapic)
--		return;
--	/*
--	 * Don't check I/O APIC IDs for xAPIC systems.  They have
--	 * no meaning without the serial APIC bus.
--	 */
--	if (!(boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
--		|| APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
--		return;
- 	/*
- 	 * This is broken; anything with a real cpu count has to
- 	 * circumvent this idiocy regardless.
-@@ -2011,7 +2001,6 @@ void __init setup_ioapic_ids_from_mpc(void)
- 			physids_or(phys_id_present_map, phys_id_present_map, tmp);
- 		}
- 
--
- 		/*
- 		 * We need to adjust the IRQ routing table
- 		 * if the ID changed.
-@@ -2047,6 +2036,21 @@ void __init setup_ioapic_ids_from_mpc(void)
- 			apic_printk(APIC_VERBOSE, " ok.\n");
- 	}
- }
-+
-+void __init setup_ioapic_ids_from_mpc(void)
-+{
-+
-+	if (acpi_ioapic)
-+		return;
-+	/*
-+	 * Don't check I/O APIC IDs for xAPIC systems.  They have
-+	 * no meaning without the serial APIC bus.
-+	 */
-+	if (!(boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
-+		|| APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
-+		return;
-+	setup_ioapic_ids_from_mpc_nocheck();
-+}
- #endif
- 
- int no_timer_check __initdata;
--- 
-1.7.3.2
+
 
