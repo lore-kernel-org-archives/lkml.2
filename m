@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab0KZMbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 07:31:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57709 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab0KZMbq (ORCPT
+	id S1753208Ab0KZMd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 07:33:57 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51923 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab0KZMdz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 07:31:46 -0500
-Message-ID: <4CEFA8AE.2090804@petalogix.com>
-Date: Fri, 26 Nov 2010 13:31:42 +0100
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Fri, 26 Nov 2010 07:33:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VSOBp57yOeu7ROouIk2Ln8RleHkxK9/XfQZTfefH3U7hmjRZg3F+An6ptjor3FnzEz
+         Hi6ECfCKo/syOPNEVBT3kUwsGum+aop5o6pPdCiJD0Gc7WmeTz29RMDhmj4skcO0cMm4
+         s3C0trxup+jnAQUpWG9Mxde/FFZvvyPlFQoRE=
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        John Williams <john.williams@petalogix.com>,
-        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
-Subject: Flushing whole page instead of work for ptrace
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTik-vnDTRTshpXE7ufjCM9AcfLGQV5v9CcjV=zJx@mail.gmail.com>
+References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
+	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
+	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
+	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>
+	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>
+	<20101122135715.121b5eb7.sfr@canb.auug.org.au>
+	<AANLkTi=io3tsuL8Hd2a0y8PyBYYAzb-gkJo1GfmpcF+L@mail.gmail.com>
+	<AANLkTi=eTvdfPjgd0pGVmBx6zCB8yL3qNVq0MR1wH88b@mail.gmail.com>
+	<AANLkTik-vnDTRTshpXE7ufjCM9AcfLGQV5v9CcjV=zJx@mail.gmail.com>
+Date: Fri, 26 Nov 2010 12:33:54 +0000
+X-Google-Sender-Auth: uCE0qkIVXWq2YHUI2gtI3ejBMFg
+Message-ID: <AANLkTimBAx_yg9S1yqKsXeC048WMkus9aBz5RJAUWBpH@mail.gmail.com>
+Subject: Re: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
+        randy.dunlap@oracle.com, linux-kbuild@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xiyou.wangcong@gmail.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 25 November 2010 18:09, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> On Thu, Nov 25, 2010 at 12:43 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+>> Now, commenting on your patches, you added a new statement, 'visible
+>> if...' for menus. Can we not change it to something like:
+>>
+>> -menu "I2C Algorithms"
+>> -       depends on !I2C_HELPER_AUTO
+>> +menu "I2C Algorithms" if !I2C_HELPER_AUTO
+>>
+> no because if_expr are translated internally in term of dependency,
+> which we don't want.
 
-I have found one problem when I debug multithread application on 
-Microblaze. Let me describe what I discovered.
-
-GDB has internal timeout which is setup to value 3. Which should mean if 
-GDB sends packet and doesn't receive answer for it then after 3 internal 
-timeouts GDB announces "Ignoring packet error, continuing..." and then 
-fail. (communication is done over TCP).
-
-In any older version we could debug multithread application that's why
-I bisected all new patches which I have added to the kernel and I 
-identify that the problem is caused by my patch.
-
-microblaze: Implement flush_dcache_page macro
-sha1(79e87830faf22ca636b1a1d8f4deb430ea6e1c8b)
-
-I had to implemented flush_dcache_page macro for new systems with 
-write-back(WB) cache which is important for several components (for 
-example jffs2 rootfs) to get it work on WB.
-BTW: For systems with write-through(WT) caches I don't need to implement 
-this macro because flushing is done automatically.
-
-Then I replaced macro on WT by udelay loop to find out if the problem is 
-time dependent. I tested it on two hw designs(on the same HZ and cache 
-size) with two different network IPs/drivers (one with DMA and second 
-without) and I found that system with dma network driver can spend more 
-time on dcache flushing before GDB timeout happens because TCP 
-communication is faster. Which means that the problem also depends on 
-cpu speed and cache configuration - size, cache line length.
-
-Then I traced kernel part and I was focused why this macro is causing 
-this problem.
-
-GDB sends symbol-lookup command (qSymbol) and I see a lot of kernel 
-ptrace PEEKTEXT requests. I parse it and here is calling sequence.
-
-(kernel/ptrace.c) sys_ptrace -> 
-(arch/microblaze/kernel/ptrace.c)arch_ptrace -> 
-(kernel/ptrace.c)ptrace_request -> generic_ptrace_peek/poke data/text -> 
-(mm/memory.c) access_process_vm -> get_user_pages -> __get_user_pages -> 
-flush_dcache_page
-
-Function access_process_vm calls __get_user_pages which doesn't work 
-with buffer len (which is for PEEK/POKE TEXT/DATA just 32 bit - for 
-32bit Microblaze) but only with start and PAGE size. There is also 
-called flush_dcache_page macro which takes more time than in past, 
-because was empty. Macro flushes whole page but it is necessary, for 
-this case, just flush one address if is called from ptrace.
-
-What is the best way how to ensure that there will be flush only address 
-instead of whole page for ptrace requests?
-I think that there shouldn't be a reason to flush whole page for ptraces.
-
-Please correct me if I am wrong somewhere.
-
-Thanks,
-Michal
-
+That's correct but I was wondering whether we could change this kind
+of 'if' to a visibility attribute or a weaker dependency and avoid
+'select' warnings. This way we wouldn't introduce new keywords to the
+kconfig language.
 
 -- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
+Catalin
