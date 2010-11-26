@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab0KZCVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 21:21:20 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47053 "EHLO
+	id S1753904Ab0KZCWV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 21:22:21 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47221 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753499Ab0KZCVT (ORCPT
+	by vger.kernel.org with ESMTP id S1753514Ab0KZCWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 21:21:19 -0500
-Message-ID: <4CEF1984.4070908@dsn.okisemi.com>
-Date: Fri, 26 Nov 2010 11:20:52 +0900
+	Thu, 25 Nov 2010 21:22:20 -0500
+Message-ID: <4CEF19C1.7030202@dsn.okisemi.com>
+Date: Fri, 26 Nov 2010 11:21:53 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
@@ -20,34 +20,72 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 13/19 v5] can: EG20T PCH: Fix miss-setting status
- issue
+Subject: [PATCH net-next-2.6 14/19 v5] can: EG20T PCH: Comment optimization
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix miss-setting status issue
- Modify miss-setting status issue at suspend.
+Comment optimization
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/can/pch_can.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index b1fde7d..ff57a67 100644
+index ff57a67..f824a91 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -1078,7 +1078,7 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- 	pch_can_set_run_mode(priv, PCH_CAN_STOP);
+@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_RXIE;
  
- 	/* Indicate that we are aboutto/in suspend */
--	priv->can.state = CAN_STATE_SLEEPING;
-+	priv->can.state = CAN_STATE_STOPPED;
+-	/* Reading the receive buffer data from RAM to Interface1/2 registers */
++	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
  
- 	/* Waiting for all transmission to complete. */
- 	while (counter) {
+@@ -865,7 +865,7 @@ static int pch_can_open(struct net_device *ndev)
+ 		priv->use_msi = 1;
+ 	}
+ 
+-	/* Regsitering the interrupt. */
++	/* Regstering the interrupt. */
+ 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
+ 			     ndev->name, ndev);
+ 	if (retval) {
+@@ -965,7 +965,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 
+ 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
+ 
+-	/* Updating the size of the data. */
++	/* Set the size of the data. Update if2_mcont */
+ 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
+ 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
+ 
+@@ -1066,8 +1066,8 @@ static u32 pch_can_get_rx_buffer_link(struct pch_can_priv *priv, u32 buffer_num)
+ 
+ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+-	int i;			/* Counter variable. */
+-	int retval;		/* Return value. */
++	int i;
++	int retval;
+ 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
+ 	int counter = PCH_COUNTER_LIMIT;
+ 
+@@ -1124,8 +1124,8 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+ 
+ static int pch_can_resume(struct pci_dev *pdev)
+ {
+-	int i;			/* Counter variable. */
+-	int retval;		/* Return variable. */
++	int i;
++	int retval;
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct pch_can_priv *priv = netdev_priv(dev);
+ 
 -- 
 1.6.0.6
