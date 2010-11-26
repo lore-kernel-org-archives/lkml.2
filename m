@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0KZRL1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 12:11:27 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:42564 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753724Ab0KZRL0 (ORCPT
+	id S1754802Ab0KZRQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 12:16:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46054 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035Ab0KZRQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 12:11:26 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: zhDGfpkVM1mIk.sXC7Xcc7NzoXQDRJvRFPt7iZptGzK6KZe
- BstNIbPSsRKtbp7GaWIMh7HJcv.gZTKpJDaYh0LnmZNDH6pLMHGyJd7kOi6S
- _gl0SAm0_x7h51CYEeZnGLaWyMz.0_6kV.SRxgnpGX6uts0YAFvuWX2dPAjo
- yfjMnvTCQBI68Xrg2Ku6G91yU0ke8uPqurEKH9.gvfO3HWln3WdH3QjmBSLc
- L31vkFHMYIoDNFyXbO3i89_IX82jLzSkjmXt8E7I-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 26 Nov 2010 11:11:22 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-Subject: Re: [PATCH] printk: use this_cpu_{read|write} api on
- printk_pending
-In-Reply-To: <1290790791.2855.259.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1011261109500.13524@router.home>
-References: <20101126120235.406766476@de.ibm.com>  <tip-61ab25447ad6334a74e32f60efb135a3467223f8@git.kernel.org>  <1290788536.2855.237.camel@edumazet-laptop>  <alpine.DEB.2.00.1011261038360.13524@router.home> <1290790791.2855.259.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 26 Nov 2010 12:16:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=T0pCRCyjAVI4jEhrr/QfLELG0Ib1jwkiNh+wwBWIJD6TQb+bnCQKdHD6JTzi2m7Z4e
+         nr2iVwIlbyB7GHOas6jgkoY2Y+PMGPO5Frm5JFfpMvB9nBu/3XChiZMbO2jRRJyGO5ou
+         5O3yc+LdxNvqEJQoMOMyuLOE317IaVs5FAVmc=
+Subject: Re: [thiscpuops upgrade 08/10] percpu: generic this_cpu_cmpxchg()
+ and this_cpu_cmpxchg_double support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <4CEFE958.2020606@kernel.org>
+References: <20101123235139.908255844@linux.com>
+	 <20101123235200.582485207@linux.com>  <4CEFE583.8070103@kernel.org>
+	 <1290790569.2855.254.camel@edumazet-laptop>  <4CEFE71F.5090303@kernel.org>
+	 <1290790887.2855.260.camel@edumazet-laptop>  <4CEFE958.2020606@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 18:16:16 +0100
+Message-ID: <1290791776.2855.262.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Nov 2010, Eric Dumazet wrote:
+Le vendredi 26 novembre 2010 à 18:07 +0100, Tejun Heo a écrit :
+> On 11/26/2010 06:01 PM, Eric Dumazet wrote:
+> >> What I'm afraid of is generic code switching to use it in very hot
+> >> paths when a lot of archs can't actually do it leading to performance
+> >> regressions.  Is this something which is available on most archs?
+> >>
+> > 
+> > I would say cmpxchg() has the same problem, some arches dont have a
+> > native instruction, yet we use it in some paths.
+> 
+> Yeah, well, there's difference between some not having it and only
+> x86_64 having it.  cmpxchg was already rather well received when it
+> was added even though it wasn't available on all archs.  I'm not
+> against it but think we should use some caution here and think about
+> the impact of unoptimized cases which can be pretty common (preemption
+> toggling isn't too expensive but irq toggling can be quite).
+> 
 
-> I guess you read the changelog too fast ;)
 
-No I only read the code.... ;-)
+x86_32 has it too
 
-> I posted this patch after noticing printk_needs_cpu() was always used
-> for the current cpu.
+x86_64 uses cmpxchg16b, while x86_32 uses cmpxhg8b
 
-Ok.
 
-> We have other functions around, that always work for the current cpu.
+And I guess it will be used in contexts we had to disable irqs, so it
+will be faster on x86, and same cost on other arches.
 
-Ok.
 
-> We pass cpu as a parameter, mostly because smp_processor_id() was a bit
-> expensive in old kernels, and is still expensive because of sanity
-> tests.
-
-I thought sanity tests do not apply for performance testing scenarios?
-
-smp_processor_id() is usually a simple per cpu data access and very fast.
 
