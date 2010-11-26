@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab0KZLlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:41:37 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:23810 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab0KZLlf (ORCPT
+	id S1753514Ab0KZLlo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:41:44 -0500
+Received: from mx5.sophos.com ([213.31.172.35]:51542 "EHLO mx5.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab0KZLlm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:41:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=sVD0GM/MkjIxtJH3pHsFzpXu/mg+bL4nJyjfRyG4IxDkb5tTSSv84jGhbQAcGhTGaT
-         p3hVIU3JM5vDkctQ/WZg==
+	Fri, 26 Nov 2010 06:41:42 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
+Date: Fri, 26 Nov 2010 11:41:40 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3; KDE/4.5.3; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>, Scott Hassan <hassan@dotfunk.com>,
+        Jan Kara <jack@suse.cz>, "agruen@linbit.com" <agruen@linbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+References: <20101122002747.13674.69384.stgit@zaytsev.su> <201011261011.55266.tvrtko.ursulin@sophos.com> <AANLkTikRDyq4_rA5M7tiAuJJ7aa-pGfRj2YeqAmH5COA@mail.gmail.com>
+In-Reply-To: <AANLkTikRDyq4_rA5M7tiAuJJ7aa-pGfRj2YeqAmH5COA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1290771419.2145.137.camel@laptop>
-References: <1290340877.2245.124.camel@localhost>
-	<AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
-	<AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
-	<AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-	<1290770652.2145.128.camel@laptop>
-	<AANLkTika3r2=gCh4nX-raRU3BoFpWMUEapn3w2bgyGAd@mail.gmail.com>
-	<1290771419.2145.137.camel@laptop>
-Date: Fri, 26 Nov 2010 12:41:32 +0100
-Message-ID: <AANLkTinEW=TKtbJxpS=YmJz1+Obpk7PFGcqDJc+SKLtS@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <lin@ming.vg>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201011261141.40640.tvrtko.ursulin@sophos.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 12:36 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2010-11-26 at 12:25 +0100, Stephane Eranian wrote:
->> On Fri, Nov 26, 2010 at 12:24 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > On Fri, 2010-11-26 at 09:18 +0100, Stephane Eranian wrote:
->> >
->> >> In the perf_event model, given that any one of the 4 cores can be used
->> >> to program uncore events, you have no choice but to broadcast to all
->> >> 4 cores. Each has to demultiplex and figure out which of its counters
->> >> have overflowed.
->> >
->> > Not really, you can redirect all these events to the first online cpu of
->> > the node.
->> >
->> > You can re-write event->cpu in pmu::event_init(), and register cpu
->> > hotplug notifiers to migrate the state around.
->> >
->> I am sure you could. But then the user thinks the event is controlled
->> from CPUx when it's actually from CPUz. I am sure it can work but
->> that's confusing, especially interrupt-wise.
+On Friday 26 Nov 2010 11:21:18 Alexey Zaytsev wrote:
+> On Fri, Nov 26, 2010 at 13:11, Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+wrote:
+> > On Monday 22 Nov 2010 00:37:21 Alexey Zaytsev wrote:
+> >> +struct fanotify_opt_hdr {
+> >> +       __u8 type;
+> >> +       __u8 reserved;
+> >> +       __u16 len;
+> >> +       /* Payload goes here. */
+> >> +};
+> >> +
+> >> +#define FANOTIFY_METADATA_VERSION      3
+> >>
+> >>  struct fanotify_event_metadata {
+> >> -       __u16 event_len;
+> >> +       __u16 event_len; /* Including the options */
+> >>         __u8 vers;
+> >> -       __u8 reserved;
+> >> +       __u8 options_offset; /* Aka header length */
+> >>         __s32 fd;
+> >>         __aligned_u64 mask;
+> >>         __s32 pid;
+> >> +       /* Options go here. */
+> >>  };
+> >
+> > I am not 100% comfortable with having 16 bits length fields because I am
+> > just not sure there is a measurable performance difference versus just
+> > going with 32 bits.
 >
-> Well, its either that or keeping a node wide state like we do for AMD
-> and serialize everything from there.
->
-> And I'm not sure what's most expensive, steering the interrupt to one
-> core only, or broadcasting every interrupt, I'd favour the first
-> approach.
+> I'm not concerned so much with the performance, as with the storage.
+> If we are generating events for every access on a mount point, some
+> consumers might build a considerable backlog over a period of high
+> activity. Would be good if we could cut the event size by 1/3 for
+> free. And I don't see an event growing 64k even with the options. Do
+> you?
 
-I think the one core-only approach will limit the spurious interrupt aspect.
-In perfmon, that's how I had it setup. The first CPU where uncore is
-accessed owns the uncore PMU for the socket, thus all interrupts are
-routed there. What you are proposing is the same. Now you can chose
-you hardcode which is the default core to handle this, or (better) you
-use the first core that accesses uncore.
+I don't but maybe it is just lack of imagination.
 
+My bias is that I am mostly thinking about synchronous events where large
+backlog is not a realistic scenario. How realistic you think is this with
+async events?
+
+> > Also, options_offset is, if I understood it correctly, basically the
+> > lenght of fanotify_event_metadata. As such, isn't that field redundant
+> > since the lenght is implied from the protocol version?
 >
-> The whole thing is a node-wide resource, so the user needs to think in
-> nodes anyway, we already do a cpu->node mapping for identifying the
-> thing.
+> There are two problems there.
 >
-Agreed.
+> 1) You lose backwards-compatibility. It's still an ABI breakage, even
+> if you tell the users about it.
+
+Assuming 2.6.37 release as starting point for ABI considerations?
+
+> 2) You can't build a program to account for different fanotify versions:
+>         if (vers >= N) { use the cool stuff } else if {vers >= N-1}  {
+> still good }
+
+I don't get why not, but maybe I am just slow today. There will always be 1:1
+mapping from version to your options_offset field, no? How does then removing
+options_offset change anything?
+
+Tvrtko
+
+Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 991 2418 08.
