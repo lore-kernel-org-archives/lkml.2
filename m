@@ -1,152 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab0KZLcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:32:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64652 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab0KZLcK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:32:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=uJFQW5Mz12lUd1cOrakFLiOBTnIvcmMJDR+KXM4eIYg30+QNrhtc9KfyPn7At6N9FV
-         0xnJkbn6TivTNEmxF8bap635n4dbSqx4osaCh7EON3pxo40Z06Z/Jz4k3ojBBvyPrcRR
-         GNYHSb0/1RMxBNztbrkkk4N1Z95Enwrdsx02c=
+	id S1752941Ab0KZLfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:35:08 -0500
+Received: from mail.sysgo.com ([195.145.229.155]:57922 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835Ab0KZLfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 06:35:06 -0500
+Date: Fri, 26 Nov 2010 12:35:03 +0100
+From: Pavel Machek <pma@sysgo.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>, ath9k-devel@venema.h4ckr.net,
+        Sujith.Manoharan@atheros.com
+Cc: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
+        linux-wireless@vger.kernel.org, rudolf.marek@sysgo.com, cko@sysgo.com,
+        mfa@sysgo.com, anl@sysgo.com
+Subject: [PATCH] ath9k_htc: cleanup eeprom endiannes handling
+Message-ID: <20101126113503.GA28137@pma.sysgo.com>
+References: <20101103092431.GA21138@pma.sysgo.com>
+ <20101124081616.GA30595@pma.sysgo.com>
+ <20101124131320.GA2611@pma.sysgo.com>
+ <4CED33E0.5040000@lwfinger.net>
+ <20101126083125.GA28982@pma.sysgo.com>
+ <20101126102026.GA11857@pma.sysgo.com>
+ <20101126112737.GB11857@pma.sysgo.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
-References: <20101123224601.766827604@openvz.org>
-	<20101123224800.294919307@openvz.org>
-	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
-	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
-Date: Fri, 26 Nov 2010 14:32:09 +0300
-X-Google-Sender-Auth: zd72UVQaIuAVYpvfMllRbMROAVk
-Message-ID: <AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
-Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        ming.m.lin@intel.com, peterz@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101126112737.GB11857@pma.sysgo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 2:14 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> Stephane, this is a misprint, I'll update this comments on format
-> (giod catch btw!). in real low 32 bits are considered as cccr in ht
-> mode. wait a bit, i'll post update.
->
-> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
-...
->>> + *    Low 32 bits
->>> + *    -----------
->>> + *      0-6: P4_PEBS_METRIC enum
->>> + *     7-11:                    reserved
->>> + *       12: Active thread
->>
->> I don't understand bit 12. In the actual register, it
->> corresponds to the enable bit. Seems you're overriding
->> its usage. Do I interpret this as saying: 0 = enable when
->> running on thread0, 1=monitoring when running on thread1?
->> And if I don't care?
-...
-I believe it simply escaped quilt refresh somehow. Here is the 'refreshed'
-copy (note the low bits 12-19 updated here).
----
-perf, x86: P4 PMU - describe config format v2
 
-Add description of .config in a sake of RAW events.
-At least this should bring some light to those who
-will be reading this code.
+There are already in-place byte swapping macros in Linux, use them.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/include/asm/perf_event_p4.h |   63 ++++++++++++++++++++++++++++++-----
- 1 file changed, 55 insertions(+), 8 deletions(-)
+Signed-off-by: Pavel Machek <pma@sysgo.com>
 
-Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
-===================================================================
---- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
-+++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
-@@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
- };
-
- /*
-- * P4 PEBS specifics (Replay Event only)
-- *
-- * Format (bits):
-- *   0-6: metric from P4_PEBS_METRIC enum
-- *    7 : reserved
-- *    8 : reserved
-- * 9-11 : reserved
-- *
-  * Note we have UOP and PEBS bits reserved for now
-  * just in case if we will need them once
-  */
-@@ -788,5 +780,60 @@ enum P4_PEBS_METRIC {
- 	P4_PEBS_METRIC__max
- };
-
-+/*
-+ * Notes on internal configuration of ESCR+CCCR tuples
-+ *
-+ * Since P4 has quite the different architecture of
-+ * performance registers in compare with "architectural"
-+ * once and we have on 64 bits to keep configuration
-+ * of performance event, the following trick is used.
-+ *
-+ * 1) Since both ESCR and CCCR registers have only low
-+ *    32 bits valuable, we pack them into a single 64 bit
-+ *    configuration. Low 32 bits of such config correspond
-+ *    to low 32 bits of CCCR register and high 32 bits
-+ *    correspond to low 32 bits of ESCR register.
-+ *
-+ * 2) The meaning of every bit of such config field can
-+ *    be found in Intel SDM but it should be noted that
-+ *    we "borrow" some reserved bits for own usage and
-+ *    clean them or set to a proper value when we do
-+ *    a real write to hardware registers.
-+ *
-+ * 3) The format of bits of config is the following
-+ *    and should be either 0 or set to some predefined
-+ *    values:
-+ *
-+ *    Low 32 bits
-+ *    -----------
-+ *      0-6: P4_PEBS_METRIC enum
-+ *     7-11:                    reserved
-+ *       12:                    reserved (Enable)
-+ *    13-15:                    reserved (ESCR select)
-+ *    16-17: Active Thread
-+ *       18: Compare
-+ *       19: Complement
-+ *    20-23: Threshold
-+ *       24: Edge
-+ *       25:                    reserved (FORCE_OVF)
-+ *       26:                    reserved (OVF_PMI_T0)
-+ *       27:                    reserved (OVF_PMI_T1)
-+ *    28-29:                    reserved
-+ *       30:                    reserved (Cascade)
-+ *       31:                    reserved (OVF)
-+ *
-+ *    High 32 bits
-+ *    ------------
-+ *        0:                    reserved (T1_USR)
-+ *        1:                    reserved (T1_OS)
-+ *        2:                    reserved (T0_USR)
-+ *        3:                    reserved (T0_OS)
-+ *        4: Tag Enable
-+ *      5-8: Tag Value
-+ *     9-24: Event Mask (may use P4_ESCR_EMASK_BIT helper)
-+ *    25-30: enum P4_EVENTS
-+ *       31:                    reserved (HT thread)
-+ */
-+
- #endif /* PERF_EVENT_P4_H */
+diff --git a/drivers/net/wireless/ath/ath9k/eeprom_4k.c b/drivers/net/wireless/ath/ath9k/eeprom_4k.c
+index 4fa4d8e..ee4e893 100644
+--- a/drivers/net/wireless/ath/ath9k/eeprom_4k.c
++++ b/drivers/net/wireless/ath/ath9k/eeprom_4k.c
+@@ -117,47 +117,25 @@ static int ath9k_hw_4k_check_eeprom(struct ath_hw *ah)
+ 		sum ^= *eepdata++;
+ 
+ 	if (need_swap) {
+-		u32 integer;
+-		u16 word;
+-
+ 		ath_print(common, ATH_DBG_EEPROM,
+ 			  "EEPROM Endianness is not native.. Changing\n");
+ 
+-		word = swab16(eep->baseEepHeader.length);
+-		eep->baseEepHeader.length = word;
+-
+-		word = swab16(eep->baseEepHeader.checksum);
+-		eep->baseEepHeader.checksum = word;
+-
+-		word = swab16(eep->baseEepHeader.version);
+-		eep->baseEepHeader.version = word;
+-
+-		word = swab16(eep->baseEepHeader.regDmn[0]);
+-		eep->baseEepHeader.regDmn[0] = word;
+-
+-		word = swab16(eep->baseEepHeader.regDmn[1]);
+-		eep->baseEepHeader.regDmn[1] = word;
+-
+-		word = swab16(eep->baseEepHeader.rfSilent);
+-		eep->baseEepHeader.rfSilent = word;
+-
+-		word = swab16(eep->baseEepHeader.blueToothOptions);
+-		eep->baseEepHeader.blueToothOptions = word;
+-
+-		word = swab16(eep->baseEepHeader.deviceCap);
+-		eep->baseEepHeader.deviceCap = word;
+-
+-		integer = swab32(eep->modalHeader.antCtrlCommon);
+-		eep->modalHeader.antCtrlCommon = integer;
++		swab16s(&eep->baseEepHeader.length);
++		swab16s(&eep->baseEepHeader.checksum);
++		swab16s(&eep->baseEepHeader.version);
++		swab16s(&eep->baseEepHeader.regDmn[0]);
++		swab16s(&eep->baseEepHeader.regDmn[1]);
++		swab16s(&eep->baseEepHeader.rfSilent);
++		swab16s(&eep->baseEepHeader.blueToothOptions);
++		swab16s(&eep->baseEepHeader.deviceCap);
++		swab32s(&eep->modalHeader.antCtrlCommon);
+ 
+ 		for (i = 0; i < AR5416_EEP4K_MAX_CHAINS; i++) {
+-			integer = swab32(eep->modalHeader.antCtrlChain[i]);
+-			eep->modalHeader.antCtrlChain[i] = integer;
++			swab32s(&eep->modalHeader.antCtrlChain[i]);
+ 		}
+ 
+ 		for (i = 0; i < AR5416_EEPROM_MODAL_SPURS; i++) {
+-			word = swab16(eep->modalHeader.spurChans[i].spurChan);
+-			eep->modalHeader.spurChans[i].spurChan = word;
++			swab16s(&eep->modalHeader.spurChans[i].spurChan);
+ 		}
+ 	}
+ 
