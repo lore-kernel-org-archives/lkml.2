@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0KZMPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 07:15:50 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49413 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab0KZMPt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754812Ab0KZMP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 07:15:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:54998 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752882Ab0KZMPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Nov 2010 07:15:49 -0500
-Subject: Re: [patch 1/3] printk: fix wake_up_klogd() vs cpu hotplug
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        Horst Hartmann <horsth@linux.vnet.ibm.com>
-In-Reply-To: <20101126121325.GA7023@osiris.boeblingen.de.ibm.com>
-References: <20101126120057.879397696@de.ibm.com>
-	 <20101126120235.091835714@de.ibm.com> <1290773408.2145.138.camel@laptop>
-	 <20101126121325.GA7023@osiris.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 26 Nov 2010 13:15:25 +0100
-Message-ID: <1290773725.2145.141.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,260,1288594800"; 
+   d="scan'208";a="630519055"
+Date: Fri, 26 Nov 2010 13:15:47 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>
+Subject: Re: [PATCH 1/2] rdc321x-gpio: fix null pointer dereference while
+ accessing platform_data
+Message-ID: <20101126121546.GM5520@sortiz-mobl>
+References: <201011261039.54817.florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011261039.54817.florian@openwrt.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 13:13 +0100, Heiko Carstens wrote:
-> > But but but, the cpu can still be offlined between writing this state
-> > and the next tick happening, right?
-> 
-> Yes, that's what the second patch would fix as a side effect. 
+Hi Florian,
 
-Ah, right, ok took them both.
+On Fri, Nov 26, 2010 at 10:39:54AM +0100, Florian Fainelli wrote:
+> rdc321x-gpio currently fetches its driver specific data by using the platform_
+> device->platform_data pointer, this is wrong because the mfd device which
+> registers our platform_device has been added using mfd_add_device() which sets
+> the platform_device->driver_data pointer instead.
+> 
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> CC: stable@kernel.org
+I'll take those 2 patches.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
