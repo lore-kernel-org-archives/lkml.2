@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab0KZH0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 02:26:54 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48696 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab0KZH0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 02:26:53 -0500
-Date: Fri, 26 Nov 2010 08:26:21 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH -tip v4 3/3] kprobes: Support delayed unoptimization
-Message-ID: <20101126072621.GB19589@elte.hu>
-References: <20101119100925.16882.34772.stgit@ltc236.sdl.hitachi.co.jp>
- <20101119100948.16882.24259.stgit@ltc236.sdl.hitachi.co.jp>
+	id S1753291Ab0KZHfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 02:35:16 -0500
+Received: from mail-iw0-f194.google.com ([209.85.214.194]:42969 "EHLO
+	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab0KZHfP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 02:35:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119100948.16882.24259.stgit@ltc236.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Originating-IP: [93.172.224.233]
+In-Reply-To: <1290716548.2529.136.camel@helium>
+References: <AANLkTi=JSuJCqceJ3iw3TnV5OeJd+e5T3CyHtWVzBRu_@mail.gmail.com>
+ <536589.12568.qm@web180310.mail.gq1.yahoo.com> <AANLkTinQdNC0XaOqNyDbdYE6ZcP0QyzpN492j=Kovuea@mail.gmail.com>
+ <1290716548.2529.136.camel@helium>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 26 Nov 2010 09:34:53 +0200
+Message-ID: <AANLkTi=sZ-4BBLAJNU5B41cAxtroGkpNomgEYO4vtx8z@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
+To: David Brownell <david-b@pacbell.net>
+Cc: MugdhaKamoolkar <mugdha@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        BenoitCousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        HariKanigeri <h-kanigeri2@ti.com>, SumanAnna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 25, 2010 at 10:22 PM, David Brownell <david-b@pacbell.net> wrote:
+> So there's no strong reason to think this is
+> actually "ggeneric".  Function names no longer
+> specify OMAP, but without other hardware under
+> the interface, calling it "generic" reflects
+> more optimism than reality.  (That was the
+> implication of my observations...)
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Well, it's not omap-specific anymore. Drivers can stay
+platform-agnostic, and other vendors can plug in anything they need in
+order to use the same drivers (including software implementations as
+mentioned below).
 
-> Unoptimization occurs when a probe is unregistered or disabled, and
-> is heavy because it recovers instructions by using stop_machine().
-> This patch delays unoptimization operations and unoptimize several
-> probes at once by using text_poke_smp_batch().
-> This can avoid unexpected system slowdown coming from stop_machine().
-> 
-> Changes in v2:
-> - Use dynamic allocated buffers and params.
-> 
-> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
-> 
->  arch/x86/include/asm/kprobes.h |    4 
->  arch/x86/kernel/kprobes.c      |   45 ++++
->  include/linux/kprobes.h        |    2 
->  kernel/kprobes.c               |  434 +++++++++++++++++++++++++++-------------
->  4 files changed, 344 insertions(+), 141 deletions(-)
+As I mentioned, the other two options are going back to an omap
+specific driver (which will omapify drivers who use it), or putting
+the driver in the omap arch folders (which some people doesn't seem to
+like, e.g. http://www.spinics.net/lists/linux-arm-msm/msg00324.html).
 
-Hm, this is a scary big patch with non-trivial effects - it should be broken up as 
-much as possible, into successive, bisectable steps. The end result looks mostly 
-fine - it's just this one huge step of a patch that is dangerous.
+Which one of those would you prefer to see ?
 
-Thanks,
+I guess that by now we have all three implementations so it's pretty
+easy to switch :)
 
-	Ingo
+> To find other hardware spinlocks, you might be
+> able to look at fault tolerant multiprocessors.
+> Ages ago I worked with one of those, where any
+> spinlock failures integrated with CPU/OS fault
+> detection; HW cwould yank (checkpointed) CPU boards
+> off the bus so they could be recovered (some
+> might continue later from checkpoints, etc.)...
+
+Is that HW supported by Linux today ?
+
+Any chance you can share a link or any other info about it ?
+
+>> This way platforms [2] can easily plug into the framework anything
+>> they need to achieve multi-core synchronization. E.g., even in case a
+>> platform doesn't have dedicated silicon, but still need this
+>> functionality, it can still plug in an implementation which is based
+>> on Peterson's shared memory mutual exclusion algorithm
+>
+> And maybe also standard Linux spinlocks?
+
+Umm, possibly. Though I admit it sounds awkward a bit. It feels like
+platforms, on which a mere spinlock is enough to achieve multi core
+synchronization, will not really need any of the IPC drivers that are
+going to use this hwspinlock framework. But I guess we need to see a
+use case first.
+
+>
+> I seem to recall some iterations of the real-time patches doing a lot of
+> work to generalize spinlocks, since they needed multiple variants.  It
+> might be worth following in those footsteps.  (Though I'm not sure they
+> were thinking much about hardware support .
+
+Any chance you can point me at a specific discussion or patchset that
+you feel may be relevant ?
+
+Thanks!
+Ohad.
+
+>
+> - Dave
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
