@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab0KZMd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 07:33:57 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51923 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab0KZMdz convert rfc822-to-8bit (ORCPT
+	id S1752473Ab0KZMfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 07:35:17 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57345 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab0KZMfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 07:33:55 -0500
+	Fri, 26 Nov 2010 07:35:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VSOBp57yOeu7ROouIk2Ln8RleHkxK9/XfQZTfefH3U7hmjRZg3F+An6ptjor3FnzEz
-         Hi6ECfCKo/syOPNEVBT3kUwsGum+aop5o6pPdCiJD0Gc7WmeTz29RMDhmj4skcO0cMm4
-         s3C0trxup+jnAQUpWG9Mxde/FFZvvyPlFQoRE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik-vnDTRTshpXE7ufjCM9AcfLGQV5v9CcjV=zJx@mail.gmail.com>
-References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
-	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
-	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
-	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>
-	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com>
-	<20101122135715.121b5eb7.sfr@canb.auug.org.au>
-	<AANLkTi=io3tsuL8Hd2a0y8PyBYYAzb-gkJo1GfmpcF+L@mail.gmail.com>
-	<AANLkTi=eTvdfPjgd0pGVmBx6zCB8yL3qNVq0MR1wH88b@mail.gmail.com>
-	<AANLkTik-vnDTRTshpXE7ufjCM9AcfLGQV5v9CcjV=zJx@mail.gmail.com>
-Date: Fri, 26 Nov 2010 12:33:54 +0000
-X-Google-Sender-Auth: uCE0qkIVXWq2YHUI2gtI3ejBMFg
-Message-ID: <AANLkTimBAx_yg9S1yqKsXeC048WMkus9aBz5RJAUWBpH@mail.gmail.com>
-Subject: Re: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
-        randy.dunlap@oracle.com, linux-kbuild@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xiyou.wangcong@gmail.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=iEtoB/OivSLUxBxEySWxyTESq9y/nJssUWQvlBdTIBJ21Kco/MWMP+Xf2IxxdxkwMz
+         aba12sw+ds6jbXgWsGu6HrxtTpesnFjm3lnmXuqoiarO5E94tfvO2Y2pMQbKue25omNM
+         f3YRXW2kf+MpNcGwDwu5/pf8zA0Yv1m8dokhc=
+Subject: Re: [patch 1/3] printk: fix wake_up_klogd() vs cpu hotplug
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        Horst Hartmann <horsth@linux.vnet.ibm.com>
+In-Reply-To: <20101126120235.091835714@de.ibm.com>
+References: <20101126120057.879397696@de.ibm.com>
+	 <20101126120235.091835714@de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Nov 2010 13:35:09 +0100
+Message-ID: <1290774909.2855.115.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 November 2010 18:09, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> On Thu, Nov 25, 2010 at 12:43 PM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
->> Now, commenting on your patches, you added a new statement, 'visible
->> if...' for menus. Can we not change it to something like:
->>
->> -menu "I2C Algorithms"
->> -       depends on !I2C_HELPER_AUTO
->> +menu "I2C Algorithms" if !I2C_HELPER_AUTO
->>
-> no because if_expr are translated internally in term of dependency,
-> which we don't want.
+Le vendredi 26 novembre 2010 à 13:00 +0100, Heiko Carstens a écrit :
+> pièce jointe document texte brut (001_printk_preempt.diff)
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 
+> wake_up_klogd() may get called from preemtible context but uses
+> __raw_get_cpu_var() to write to a per cpu variable. If it gets preempted between
+> getting the address and writing to it, the cpu in question could be offline if
+> the process gets scheduled back and hence writes to the per cpu data of an offline
+> cpu.
+> 
+> No idea why that behaviour was introduced with fa33507a "printk: robustify
+> printk, fix #2" which was supposed to fix a "using smp_processor_id() in
+> preemptible" warning.
+> 
+> Let's use get_cpu_var() instead which disables preemption and makes sure that
+> the outlined scenario cannot happen.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>  kernel/printk.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -1087,8 +1087,10 @@ int printk_needs_cpu(int cpu)
+>  
+>  void wake_up_klogd(void)
+>  {
+> -	if (waitqueue_active(&log_wait))
+> -		__raw_get_cpu_var(printk_pending) = 1;
+> +	if (waitqueue_active(&log_wait)) {
+> +		get_cpu_var(printk_pending) = 1;
+> +		put_cpu_var(printk_pending);
+> +	}
+>  }
+>  
+>  
 
-That's correct but I was wondering whether we could change this kind
-of 'if' to a visibility attribute or a weaker dependency and avoid
-'select' warnings. This way we wouldn't introduce new keywords to the
-kconfig language.
 
--- 
-Catalin
+Please use :
+
+this_cpu_write(printk_pending, 1);
+
+It is faster on x86, and does the right thing too.
+
+
+
