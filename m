@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab0KZMLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 07:11:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53043 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab0KZMLj convert rfc822-to-8bit (ORCPT
+	id S1754763Ab0KZMMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 07:12:00 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36369 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab0KZML4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 07:11:39 -0500
-Subject: Re: [patch 2/3] nohz: fix printk_needs_cpu() return value on
- offline cpus
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        Horst Hartmann <horsth@linux.vnet.ibm.com>, stable@kernel.org
-In-Reply-To: <20101126120235.406766476@de.ibm.com>
-References: <20101126120057.879397696@de.ibm.com>
-	 <20101126120235.406766476@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 26 Nov 2010 07:11:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OKzceA2tdHEFVlrNspB+aMiRqYjSbdggJJbH8Thp5JsA463vAVecW5uJLidOiR2Eir
+         rDG61vQwc4SkA4CLKq3bYOHuDAPs185Er1dQj96OKfIGXouvRk3I8HvwEHpNPk+ILfQ/
+         TP9QXcvE1nAP2e5drp3bcW2SuzSQRC04MgfzY=
+MIME-Version: 1.0
+In-Reply-To: <201011261141.40640.tvrtko.ursulin@sophos.com>
+References: <20101122002747.13674.69384.stgit@zaytsev.su>
+	<201011261011.55266.tvrtko.ursulin@sophos.com>
+	<AANLkTikRDyq4_rA5M7tiAuJJ7aa-pGfRj2YeqAmH5COA@mail.gmail.com>
+	<201011261141.40640.tvrtko.ursulin@sophos.com>
+Date: Fri, 26 Nov 2010 15:11:55 +0300
+Message-ID: <AANLkTikqs65XOFsN-M5H-wUpnVhxXepDDMBoUstH8WHF@mail.gmail.com>
+Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Eric Paris <eparis@redhat.com>, Scott Hassan <hassan@dotfunk.com>,
+        Jan Kara <jack@suse.cz>, "agruen@linbit.com" <agruen@linbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 26 Nov 2010 13:11:52 +0100
-Message-ID: <1290773512.2145.139.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 13:00 +0100, Heiko Carstens wrote:
-> plain text document attachment (002_printk_needs_cpu.diff)
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> 
-> This patch fixes a hang observed with 2.6.32 kernels where timers got
-> enqueued on offline cpus.
-> 
-> printk_needs_cpu() may return 1 if called on offline cpus. When a cpu gets
-> offlined it schedules the idle process which, before killing its own cpu,
-> will call tick_nohz_stop_sched_tick().
-> That function in turn will call printk_needs_cpu() in order to check if the
-> local tick can be disabled. On offline cpus this function should naturally
-> return 0 since regardless if the tick gets disabled or not the cpu will be
-> dead short after. That is besides the fact that __cpu_disable() should already
-> have made sure that no interrupts on the offlined cpu will be delivered anyway.
-> 
-> In this case it prevents tick_nohz_stop_sched_tick() to call
-> select_nohz_load_balancer(). No idea if that really is a problem. However what
-> made me debug this is that on 2.6.32 the function get_nohz_load_balancer() is
-> used within __mod_timer() to select a cpu on which a timer gets enqueued.
-> If printk_needs_cpu() returns 1 then the nohz_load_balancer cpu doesn't get
-> updated when a cpu gets offlined. It may contain the cpu number of an offline
-> cpu. In turn timers get enqueued on an offline cpu and not very surprisingly
-> they never expire and cause system hangs.
-> 
-> This has been observed 2.6.32 kernels. On current kernels __mod_timer() uses
-> get_nohz_timer_target() which doesn't have that problem. However there might
-> be other problems because of the too early exit tick_nohz_stop_sched_tick()
-> in case a cpu goes offline.
-> 
-> Easiest way to fix this is just to test if the current cpu is offline and
-> call printk_tick() directly which clears the condition.
-> 
-> Alternatively I tried a cpu hotplug notifier which would clear the condition,
-> however between calling the notifier function and printk_needs_cpu() something
-> could have called printk() again and the problem is back again. This seems to
-> be the safest fix.
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  kernel/printk.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -1082,6 +1082,8 @@ void printk_tick(void)
->  
->  int printk_needs_cpu(int cpu)
->  {
-> +	if (unlikely(cpu_is_offline(cpu)))
-> +		printk_tick();
->  	return per_cpu(printk_pending, cpu);
->  }
->  
+On Fri, Nov 26, 2010 at 14:41, Tvrtko Ursulin <tvrtko.ursulin@sophos.com> wrote:
+> On Friday 26 Nov 2010 11:21:18 Alexey Zaytsev wrote:
+>> On Fri, Nov 26, 2010 at 13:11, Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+> wrote:
+>> > On Monday 22 Nov 2010 00:37:21 Alexey Zaytsev wrote:
+>> >> +struct fanotify_opt_hdr {
+>> >> +       __u8 type;
+>> >> +       __u8 reserved;
+>> >> +       __u16 len;
+>> >> +       /* Payload goes here. */
+>> >> +};
+>> >> +
+>> >> +#define FANOTIFY_METADATA_VERSION      3
+>> >>
+>> >>  struct fanotify_event_metadata {
+>> >> -       __u16 event_len;
+>> >> +       __u16 event_len; /* Including the options */
+>> >>         __u8 vers;
+>> >> -       __u8 reserved;
+>> >> +       __u8 options_offset; /* Aka header length */
+>> >>         __s32 fd;
+>> >>         __aligned_u64 mask;
+>> >>         __s32 pid;
+>> >> +       /* Options go here. */
+>> >>  };
+>> >
+>> > I am not 100% comfortable with having 16 bits length fields because I am
+>> > just not sure there is a measurable performance difference versus just
+>> > going with 32 bits.
+>>
+>> I'm not concerned so much with the performance, as with the storage.
+>> If we are generating events for every access on a mount point, some
+>> consumers might build a considerable backlog over a period of high
+>> activity. Would be good if we could cut the event size by 1/3 for
+>> free. And I don't see an event growing 64k even with the options. Do
+>> you?
+>
+> I don't but maybe it is just lack of imagination.
+>
+> My bias is that I am mostly thinking about synchronous events where large
+> backlog is not a realistic scenario. How realistic you think is this with
+> async events?
+>
 
-Nice,.. applied.
+Ok, you are probably right, we can't build a huge backlog, because
+each event carries an open fd with it. So, given the unnoticeable
+performance gain, it might be worth the leave the possibility to pass
+events greater than 64k (with options) in the future, no matter how
+unlikely this looks now. We still could save 32 bit by packing the
+vers and the offset together. The common part of the events
+(options_offset) should not grow over 256 byte, or it would start to
+affect the performance for common events, and I hope that 256 versions
+would also be enough, so we could even reserve 16 bit for further
+extensions.
 
+Eric?
 
+>> > Also, options_offset is, if I understood it correctly, basically the
+>> > lenght of fanotify_event_metadata. As such, isn't that field redundant
+>> > since the lenght is implied from the protocol version?
+>>
+>> There are two problems there.
+>>
+>> 1) You lose backwards-compatibility. It's still an ABI breakage, even
+>> if you tell the users about it.
+>
+> Assuming 2.6.37 release as starting point for ABI considerations?
+
+Yep, that's why I'm asking to include the first patch into .37.
+
+>
+>> 2) You can't build a program to account for different fanotify versions:
+>>         if (vers >= N) { use the cool stuff } else if {vers >= N-1}  {
+>> still good }
+>
+> I don't get why not, but maybe I am just slow today. There will always be 1:1
+> mapping from version to your options_offset field, no? How does then removing
+> options_offset change anything?
+>
+
+You need to get the old version of the ABI definition somewhere. And
+if you need to cast the events to different types, and use different
+versions of FAN_OPTION* depending on the event version, the program
+also becomes a bit complicated.
