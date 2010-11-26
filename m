@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0KZCkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Nov 2010 21:40:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:8913 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752966Ab0KZCkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Nov 2010 21:40:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,258,1288594800"; 
-   d="scan'208";a="630403683"
-Subject: Re: Free memory never fully used, swapping
-From: Shaohua Li <shaohua.li@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Simon Kirby <sim@hostway.ca>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-In-Reply-To: <20101126110244.B6DC.A69D9226@jp.fujitsu.com>
-References: <20101125161524.GE26037@csn.ul.ie>
-	 <1290736844.12777.10.camel@sli10-conroe>
-	 <20101126110244.B6DC.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Nov 2010 10:40:43 +0800
-Message-ID: <1290739243.12777.17.camel@sli10-conroe>
+	id S1753306Ab0KZCpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Nov 2010 21:45:15 -0500
+Received: from xenotime.net ([72.52.115.56]:46013 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752975Ab0KZCpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Nov 2010 21:45:14 -0500
+Date: Thu, 25 Nov 2010 18:45:13 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 25 (snd/soc/codecs)
+Message-Id: <20101125184513.fdb20279.rdunlap@xenotime.net>
+In-Reply-To: <20101125164929.3a719716.sfr@canb.auug.org.au>
+References: <20101125164929.3a719716.sfr@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 10:31 +0800, KOSAKI Motohiro wrote:
-> > record the order seems not sufficient. in balance_pgdat(), the for look
-> > exit only when:
-> > priority <0 or sc.nr_reclaimed >= SWAP_CLUSTER_MAX.
-> > but we do if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> >                         order = sc.order = 0;
-> > this means before we set order to 0, we already reclaimed a lot of
-> > pages, so I thought we need set order to 0 earlier before there are
-> > enough free pages. below is a debug patch.
-> > 
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index d31d7ce..ee5d2ed 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2117,6 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> >  }
-> >  #endif
-> >  
-> > +static int all_zone_enough_free_pages(pg_data_t *pgdat)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; i < pgdat->nr_zones; i++) {
-> > +		struct zone *zone = pgdat->node_zones + i;
-> > +
-> > +		if (!populated_zone(zone))
-> > +			continue;
-> > +
-> > +		if (zone->all_unreclaimable)
-> > +			continue;
-> > +
-> > +		if (!zone_watermark_ok(zone, 0, high_wmark_pages(zone) * 8,
-> > +								0, 0))
-> > +			return 0;
-> > +	}
-> > +	return 1;
-> > +}
-> > +
-> >  /* is kswapd sleeping prematurely? */
-> >  static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> >  {
-> > @@ -2355,7 +2375,8 @@ out:
-> >  		 * back to sleep. High-order users can still perform direct
-> >  		 * reclaim if they wish.
-> >  		 */
-> > -		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> > +		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX ||
-> > +		    (order > 0 && all_zone_enough_free_pages(pgdat)))
-> >  			order = sc.order = 0;
-> 
-> Ummm. this doesn't work. this place is processed every 32 pages reclaimed.
-> (see below code and comment). Theresore your patch break high order reclaim
-> logic.
-Yes, this will break high order reclaim, but we need a compromise.
-wrongly reclaim pages is more worse. could increase the watermark in
-all_zone_enough_free_pages() better?
+On Thu, 25 Nov 2010 16:49:29 +1100 Stephen Rothwell wrote:
 
+> Hi all,
+> 
+> Changes since 20101124:
+
+
+When CONFIG_I2C is not enabled:
+
+sound/soc/codecs/wm8737.c:521:error: 'i2c_master_send' undeclared (first use in this function)
+
+but CONFIG_SND_SOC_I2C_AND_SPI=m
+and CONFIG_SND_SOC_WM8737=m
+
+Should SND_SOC_I2C_AND_SPI depend on I2C && SPI ??
+
+config SND_SOC_I2C_AND_SPI
+	tristate
+	default m if I2C=m
+	default y if I2C=y
+	default y if SPI_MASTER=y
+
+
+This doesn't handle the I2C disabled case, hence the build error.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
