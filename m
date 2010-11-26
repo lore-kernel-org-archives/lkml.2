@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab0KZVL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 16:11:28 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:42978 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751457Ab0KZVJz (ORCPT
+	id S1752117Ab0KZVJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 16:09:56 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:44213 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751540Ab0KZVJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 16:09:55 -0500
+	Fri, 26 Nov 2010 16:09:52 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: eOiSnH8VM1lUSX2KTnEOV0sYvGgOz7H2uNlg5Uoc.9RaEWd
- _F08KAZ5SIkopJGx7CtkDLRDo7sLwGTIlQD1cLU.dId4kvlJ8.dprSsk.Zkh
- kUbBk3YOcr.HX24cphaCqkMpo6hDgPiQur5vKYWNAEKvIMPpsTx5D3MrBMox
- HL7Me5jSOtQmJwuNMbKCZyQhVYDaE_6GgtZhcSm1m8cl5S7MiHDn3bxHt9es
- iP6Y6aJ_vh6DM5jSd9NiKUwWdrlXkA9qHs7giVD.VdyYYzj2o5PWqrKcREd6
- eBM61b7C2303jS9U._FXT
+X-YMail-OSG: y92hvlAVM1mKxGIt5E203o86ZnW.gppLK.YTiLAUNzbuUxn
+ pimqg8_sUAib.JyeAHuSbFO6LWEzl61tI6QdQreLxgnPfmlq1cPU.F_zlgse
+ lFZ8IgDp.EfwwLzBnzXK3IUuWkXdwMmFtzniWfWxqAztsBC0Fjb5EwNptgo3
+ jqvRy2QXOfXbiOhNPCJSES25IeJx1XsIYuHYJZrHIZI89R0VVzITqVOsGCd4
+ QESJ8h3ul1AmXrM7r_CdY_WYxQesryo8NyOP8mrRKfmZF2zOH4IoyCu1z1mI
+ bHcvYWrgmQAgpU7SgZjlZ
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101126210953.591278825@linux.com>
+Message-Id: <20101126210950.142747403@linux.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 26 Nov 2010 15:09:45 -0600
+Date: Fri, 26 Nov 2010 15:09:39 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
@@ -25,228 +25,118 @@ Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [thisops uV2 08/10] percpu: generic this_cpu_cmpxchg() and this_cpu_cmpxchg_double support
+Subject: [thisops uV2 02/10] vmstat: Optimize zone counter modifications through the use of this cpu operations
 References: <20101126210937.383047168@linux.com>
-Content-Disposition: inline; filename=this_cpu_cmpxchg
+Content-Disposition: inline; filename=vmstat_this_cpu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide arch code to create the (local atomic) instructions.
+this cpu operations can be used to slightly optimize the function. The
+changes will avoid some address calculations and replace them with the
+use of the percpu segment register.
+
+If one would have this_cpu_inc_return and this_cpu_dec_return then it
+would be possible to optimize inc_zone_page_state and dec_zone_page_state even
+more.
+
+V1->V2:
+	- Fix __dec_zone_state overflow handling
+	- Use s8 variables for temporary storage.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- include/linux/percpu.h |  179 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 178 insertions(+), 1 deletion(-)
+ mm/vmstat.c |   56 ++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 32 insertions(+), 24 deletions(-)
 
-Index: linux-2.6/include/linux/percpu.h
+Index: linux-2.6/mm/vmstat.c
 ===================================================================
---- linux-2.6.orig/include/linux/percpu.h	2010-11-24 10:37:57.000000000 -0600
-+++ linux-2.6/include/linux/percpu.h	2010-11-24 10:38:11.000000000 -0600
-@@ -254,6 +254,21 @@ extern void __bad_size_call_parameter(vo
- 	pscr_ret__;							\
- })
+--- linux-2.6.orig/mm/vmstat.c	2010-11-24 13:38:34.000000000 -0600
++++ linux-2.6/mm/vmstat.c	2010-11-24 15:03:08.000000000 -0600
+@@ -167,18 +167,20 @@ static void refresh_zone_stat_thresholds
+ void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+ 				int delta)
+ {
+-	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
+-
+-	s8 *p = pcp->vm_stat_diff + item;
++	struct per_cpu_pageset * __percpu pcp = zone->pageset;
++	s8 * __percpu p = pcp->vm_stat_diff + item;
+ 	long x;
++	long t;
++
++	x = delta + __this_cpu_read(*p);
  
-+/* Special handling for cmpxchg_double */
-+#define __pcpu_size_call_return_int(stem, pcp, ...)			\
-+({	int pscr_ret__;							\
-+	__verify_pcpu_ptr(pcp);						\
-+	switch(sizeof(*pcp)) {						\
-+	case 1: pscr_ret__ = stem##1(pcp, __VA_ARGS__);break;		\
-+	case 2: pscr_ret__ = stem##2(pcp, __VA_ARGS__);break;		\
-+	case 4: pscr_ret__ = stem##4(pcp, __VA_ARGS__);break;		\
-+	case 8: pscr_ret__ = stem##8(pcp, __VA_ARGS__);break;		\
-+	default:							\
-+		__bad_size_call_parameter();break;			\
-+	}								\
-+	pscr_ret__;							\
-+})
-+
- #define __pcpu_size_call(stem, variable, ...)				\
- do {									\
- 	__verify_pcpu_ptr(&(variable));					\
-@@ -317,6 +332,134 @@ do {									\
- # define this_cpu_read(pcp)	__pcpu_size_call_return(this_cpu_read_, (pcp))
- #endif
+-	x = delta + *p;
++	t = __this_cpu_read(pcp->stat_threshold);
  
-+#define _this_cpu_generic_cmpxchg(pcp, oval, nval)			\
-+({	typeof(pcp) ret__;						\
-+	preempt_disable();						\
-+	ret__ = __this_cpu_read(pcp);					\
-+	if (ret__ == (oval))						\
-+		__this_cpu_write(pcp, nval);				\
-+	preempt_enable();						\
-+	ret__;								\
-+})
-+
-+#ifndef this_cpu_cmpxchg
-+# ifndef this_cpu_cmpxchg_1
-+#  define this_cpu_cmpxchg_1(pcp, oval, nval)	_this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# ifndef this_cpu_cmpxchg_2
-+#  define this_cpu_cmpxchg_2(pcp, oval, nval)	_this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# ifndef this_cpu_cmpxchg_4
-+#  define this_cpu_cmpxchg_4(pcp, oval, nval)	_this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# ifndef this_cpu_cmpxchg_8
-+#  define this_cpu_cmpxchg_8(pcp, oval, nval)	_this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# define this_cpu_cmpxchg(pcp, oval, nval)	__pcpu_size_call_return2(this_cpu_cmpxchg_, (pcp), oval, nval)
-+#endif
-+
-+#define __this_cpu_generic_cmpxchg(pcp, oval, nval)			\
-+({	typeof(pcp) ret__;						\
-+	ret__ = __this_cpu_read(pcp);					\
-+	if (ret__ == (oval))						\
-+		__this_cpu_write(pcp, nval);				\
-+	ret__;								\
-+})
-+
-+#ifndef __this_cpu_cmpxchg
-+# ifndef __this_cpu_cmpxchg_1
-+#  define __this_cpu_cmpxchg_1(pcp, oval, nval)	__this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# ifndef __this_cpu_cmpxchg_2
-+#  define __this_cpu_cmpxchg_2(pcp, oval, nval)	__this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# ifndef __this_cpu_cmpxchg_4
-+#  define __this_cpu_cmpxchg_4(pcp, oval, nval)	__this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# ifndef __this_cpu_cmpxchg_8
-+#  define __this_cpu_cmpxchg_8(pcp, oval, nval)	__this_cpu_generic_cmpxchg(pcp, oval, nval)
-+# endif
-+# define __this_cpu_cmpxchg(pcp, oval, nval)	__pcpu_size_call_return2(\
-+				__this_cpu_cmpxchg_, (pcp), oval, nval)
-+#endif
-+
-+/*
-+ * cmpxchg_double replaces two adjacent scalars at once. The first parameter
-+ * passed is a percpu pointer, not a scalar like the other this_cpu
-+ * operations. This is so because the function operates on two scalars
-+ * (must be of same size). A truth value is returned to indicate success or
-+ * failure (since a double register result is difficult to handle).
-+ * There is very limited hardware support for these operations. So only certain
-+ * sizes may work.
-+ */
-+#define __this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-+({	typeof(oval2) * __percpu pcp2 = (typeof(oval2) *)((pcp) + 1);	\
-+	int __ret = 0;							\
-+	if (__this_cpu_read(*pcp) == (oval1) &&				\
-+			 __this_cpu_read(*pcp2)  == (oval2)) {		\
-+		__this_cpu_write(*pcp, (nval1));			\
-+		__this_cpu_write(*pcp2, (nval2));			\
-+		__ret = 1;						\
-+	}								\
-+	(__ret);							\
-+})
-+
-+#ifndef __this_cpu_cmpxchg_double
-+# ifndef __this_cpu_cmpxchg_double_1
-+#  define __this_cpu_cmpxchg_double_1(pcp, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_2
-+#  define __this_cpu_cmpxchg_double_2(pcp, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_4
-+#  define __this_cpu_cmpxchg_double_4(pcp, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_8
-+#  define __this_cpu_cmpxchg_double_8(pcp, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# define __this_cpu_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-+	__pcpu_size_call_return_int(__this_cpu_cmpxchg_double_, (pcp),	\
-+					 oval1, oval2, nval1, nval2)
-+#endif
-+
-+#define _this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-+({	int ret__;							\
-+	preempt_disable();						\
-+	ret__ = __this_cpu_generic_cmpxchg_double(pcp,			\
-+			oval1, oval2, nval1, nval2);			\
-+	preempt_enable();						\
-+	ret__;								\
-+})
-+
-+#ifndef this_cpu_cmpxchg_double
-+# ifndef this_cpu_cmpxchg_double_1
-+#  define this_cpu_cmpxchg_double_1(pcp, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_2
-+#  define this_cpu_cmpxchg_double_2(pcp, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_4
-+#  define this_cpu_cmpxchg_double_4(pcp, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_8
-+#  define this_cpu_cmpxchg_double_8(pcp, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# define this_cpu_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-+	__pcpu_size_call_return_int(this_cpu_cmpxchg_double_, (pcp),	\
-+		oval1, oval2, nval1, nval2)
-+#endif
-+
-+
-+
-+
- #define _this_cpu_generic_to_op(pcp, val, op)				\
- do {									\
- 	preempt_disable();						\
-@@ -603,7 +746,7 @@ do {									\
-  * IRQ safe versions of the per cpu RMW operations. Note that these operations
-  * are *not* safe against modification of the same variable from another
-  * processors (which one gets when using regular atomic operations)
-- . They are guaranteed to be atomic vs. local interrupts and
-+ * They are guaranteed to be atomic vs. local interrupts and
-  * preemption only.
+-	if (unlikely(x > pcp->stat_threshold || x < -pcp->stat_threshold)) {
++	if (unlikely(x > t || x < -t)) {
+ 		zone_page_state_add(x, zone, item);
+ 		x = 0;
+ 	}
+-	*p = x;
++	__this_cpu_write(*p, x);
+ }
+ EXPORT_SYMBOL(__mod_zone_page_state);
+ 
+@@ -221,16 +223,19 @@ EXPORT_SYMBOL(mod_zone_page_state);
   */
- #define irqsafe_cpu_generic_to_op(pcp, val, op)				\
-@@ -690,4 +833,38 @@ do {									\
- # define irqsafe_cpu_xor(pcp, val) __pcpu_size_call(irqsafe_cpu_xor_, (val))
- #endif
+ void __inc_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+-	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
+-	s8 *p = pcp->vm_stat_diff + item;
+-
+-	(*p)++;
++	struct per_cpu_pageset * __percpu pcp = zone->pageset;
++	s8 * __percpu p = pcp->vm_stat_diff + item;
++	s8 v, t;
++
++	__this_cpu_inc(*p);
++
++	v = __this_cpu_read(*p);
++	t = __this_cpu_read(pcp->stat_threshold);
++	if (unlikely(v > t)) {
++		s8 overstep = t >> 1;
  
-+#define irqsafe_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-+({	int ret__;							\
-+	unsigned long flags;						\
-+	local_irq_save(flags);						\
-+	ret__ = __this_cpu_generic_cmpxchg_double(pcp,			\
-+			oval1, oval2, nval1, nval2);			\
-+	local_irq_restore(flags);					\
-+	ret__;								\
-+})
+-	if (unlikely(*p > pcp->stat_threshold)) {
+-		int overstep = pcp->stat_threshold / 2;
+-
+-		zone_page_state_add(*p + overstep, zone, item);
+-		*p = -overstep;
++		zone_page_state_add(v + overstep, zone, item);
++		__this_cpu_write(*p, - overstep);
+ 	}
+ }
+ 
+@@ -242,16 +247,19 @@ EXPORT_SYMBOL(__inc_zone_page_state);
+ 
+ void __dec_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+-	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
+-	s8 *p = pcp->vm_stat_diff + item;
+-
+-	(*p)--;
+-
+-	if (unlikely(*p < - pcp->stat_threshold)) {
+-		int overstep = pcp->stat_threshold / 2;
++	struct per_cpu_pageset * __percpu pcp = zone->pageset;
++	s8 * __percpu p = pcp->vm_stat_diff + item;
++	s8 v, t;
 +
-+#ifndef irqsafe_cmpxchg_double
-+# ifndef irqsafe_cmpxchg_double_1
-+#  define irqsafe_cmpxchg_double_1(pcp, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cmpxchg_double_2
-+#  define irqsafe_cmpxchg_double_2(pcp, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cmpxchg_double_4
-+#  define irqsafe_cmpxchg_double_4(pcp, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cmpxchg_double_8
-+#  define irqsafe_cmpxchg_double_8(pcp, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)
-+# endif
-+# define irqsafe_cmpxchg_double(pcp, oval1, oval2, nval1, nval2)	\
-+	__pcpu_size_call_return_int(irqsafe_cmpxchg_double_, (pcp),	\
-+		oval1, oval2, nval1, nval2)
-+#endif
++	__this_cpu_dec(*p);
 +
-+
-+
- #endif /* __LINUX_PERCPU_H */
++	v = __this_cpu_read(*p);
++	t = __this_cpu_read(pcp->stat_threshold);
++	if (unlikely(v < - t)) {
++		s8 overstep = t >> 1;
+ 
+-		zone_page_state_add(*p - overstep, zone, item);
+-		*p = overstep;
++		zone_page_state_add(v - overstep, zone, item);
++		__this_cpu_write(*p, overstep);
+ 	}
+ }
+ 
 
