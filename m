@@ -1,88 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab0KZVKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 16:10:42 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36828 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab0KZVKi (ORCPT
+	id S1751991Ab0KZVJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 16:09:54 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:39669 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751457Ab0KZVJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 16:10:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Bj6ndX8No58UDH7YqJb27JuUJN2hEQI7L7+5D9SaKzXUW2lK8ge8bLNgR9d+GfSUvp
-         Wx/VVa1OkmWLvvv8N5bWC4UFth5s9azZEMKww9QGYRgdXPBFYyG+Nt+NlBDUj1MCpddu
-         Bf3hyUJzGLaSKdHQ9UoPHV1Jy4V04oesW1Uyg=
-Date: Fri, 26 Nov 2010 23:10:33 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
+	Fri, 26 Nov 2010 16:09:52 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: npXvdBMVM1kRM2Ei1YtkTT8fkoZ1DROXZiXZ2zzB_CC2bSR
+ P0UQXKL._njk1N8mP8jY6Wtm03XG2bs_rxbol2CRoYLnecZ_aKS1kMzq8CXt
+ Kg97RJKz6cxOuBx0yXE0tDKuhpZV2gBBKFyk5xl74cdGs1oXuU2HOuzKdRlJ
+ FWwS2V3RQLX4GEYawp.BVStbhF5pTtDYV1I.R5Vxq26Ol189aUPB_On82bmJ
+ 6nPlbteURbaaGq5eX4rezy6wGMEgL_tfDqzx69thQEfA9RTLpd36JKxCiafr
+ Z.zPcQ8ulUl6Epop4Ho0R
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20101126210949.557998171@linux.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 26 Nov 2010 15:09:38 -0600
+From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] proc: make proc entry's len "unsigned int"
-Message-ID: <20101126211033.GA14339@core2.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [thisops uV2 01/10] percpucounter: Optimize __percpu_counter_add a bit through the use of this_cpu() options.
+References: <20101126210937.383047168@linux.com>
+Content-Disposition: inline; filename=percpu_fixes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Space is not really conserved, because of natural alignment for the next field.
+The this_cpu_* options can be used to optimize __percpu_counter_add a bit. Avoids
+some address arithmetic and saves 12 bytes.
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Before:
+
+
+00000000000001d3 <__percpu_counter_add>:
+ 1d3:	55                   	push   %rbp
+ 1d4:	48 89 e5             	mov    %rsp,%rbp
+ 1d7:	41 55                	push   %r13
+ 1d9:	41 54                	push   %r12
+ 1db:	53                   	push   %rbx
+ 1dc:	48 89 fb             	mov    %rdi,%rbx
+ 1df:	48 83 ec 08          	sub    $0x8,%rsp
+ 1e3:	4c 8b 67 30          	mov    0x30(%rdi),%r12
+ 1e7:	65 4c 03 24 25 00 00 	add    %gs:0x0,%r12
+ 1ee:	00 00 
+ 1f0:	4d 63 2c 24          	movslq (%r12),%r13
+ 1f4:	48 63 c2             	movslq %edx,%rax
+ 1f7:	49 01 f5             	add    %rsi,%r13
+ 1fa:	49 39 c5             	cmp    %rax,%r13
+ 1fd:	7d 0a                	jge    209 <__percpu_counter_add+0x36>
+ 1ff:	f7 da                	neg    %edx
+ 201:	48 63 d2             	movslq %edx,%rdx
+ 204:	49 39 d5             	cmp    %rdx,%r13
+ 207:	7f 1e                	jg     227 <__percpu_counter_add+0x54>
+ 209:	48 89 df             	mov    %rbx,%rdi
+ 20c:	e8 00 00 00 00       	callq  211 <__percpu_counter_add+0x3e>
+ 211:	4c 01 6b 18          	add    %r13,0x18(%rbx)
+ 215:	48 89 df             	mov    %rbx,%rdi
+ 218:	41 c7 04 24 00 00 00 	movl   $0x0,(%r12)
+ 21f:	00 
+ 220:	e8 00 00 00 00       	callq  225 <__percpu_counter_add+0x52>
+ 225:	eb 04                	jmp    22b <__percpu_counter_add+0x58>
+ 227:	45 89 2c 24          	mov    %r13d,(%r12)
+ 22b:	5b                   	pop    %rbx
+ 22c:	5b                   	pop    %rbx
+ 22d:	41 5c                	pop    %r12
+ 22f:	41 5d                	pop    %r13
+ 231:	c9                   	leaveq 
+ 232:	c3                   	retq   
+
+
+After:
+
+00000000000001d3 <__percpu_counter_add>:
+ 1d3:	55                   	push   %rbp
+ 1d4:	48 63 ca             	movslq %edx,%rcx
+ 1d7:	48 89 e5             	mov    %rsp,%rbp
+ 1da:	41 54                	push   %r12
+ 1dc:	53                   	push   %rbx
+ 1dd:	48 89 fb             	mov    %rdi,%rbx
+ 1e0:	48 8b 47 30          	mov    0x30(%rdi),%rax
+ 1e4:	65 44 8b 20          	mov    %gs:(%rax),%r12d
+ 1e8:	4d 63 e4             	movslq %r12d,%r12
+ 1eb:	49 01 f4             	add    %rsi,%r12
+ 1ee:	49 39 cc             	cmp    %rcx,%r12
+ 1f1:	7d 0a                	jge    1fd <__percpu_counter_add+0x2a>
+ 1f3:	f7 da                	neg    %edx
+ 1f5:	48 63 d2             	movslq %edx,%rdx
+ 1f8:	49 39 d4             	cmp    %rdx,%r12
+ 1fb:	7f 21                	jg     21e <__percpu_counter_add+0x4b>
+ 1fd:	48 89 df             	mov    %rbx,%rdi
+ 200:	e8 00 00 00 00       	callq  205 <__percpu_counter_add+0x32>
+ 205:	4c 01 63 18          	add    %r12,0x18(%rbx)
+ 209:	48 8b 43 30          	mov    0x30(%rbx),%rax
+ 20d:	48 89 df             	mov    %rbx,%rdi
+ 210:	65 c7 00 00 00 00 00 	movl   $0x0,%gs:(%rax)
+ 217:	e8 00 00 00 00       	callq  21c <__percpu_counter_add+0x49>
+ 21c:	eb 04                	jmp    222 <__percpu_counter_add+0x4f>
+ 21e:	65 44 89 20          	mov    %r12d,%gs:(%rax)
+ 222:	5b                   	pop    %rbx
+ 223:	41 5c                	pop    %r12
+ 225:	c9                   	leaveq 
+ 226:	c3                   	retq   
+
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
 ---
+ lib/percpu_counter.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
- fs/proc/generic.c       |    8 ++++----
- include/linux/proc_fs.h |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+Index: linux-2.6/lib/percpu_counter.c
+===================================================================
+--- linux-2.6.orig/lib/percpu_counter.c	2010-11-03 12:25:37.000000000 -0500
++++ linux-2.6/lib/percpu_counter.c	2010-11-03 12:27:27.000000000 -0500
+@@ -72,18 +72,16 @@ EXPORT_SYMBOL(percpu_counter_set);
+ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
+ {
+ 	s64 count;
+-	s32 *pcount;
+ 
+ 	preempt_disable();
+-	pcount = this_cpu_ptr(fbc->counters);
+-	count = *pcount + amount;
++	count = __this_cpu_read(*fbc->counters) + amount;
+ 	if (count >= batch || count <= -batch) {
+ 		spin_lock(&fbc->lock);
+ 		fbc->count += count;
+-		*pcount = 0;
++		__this_cpu_write(*fbc->counters, 0);
+ 		spin_unlock(&fbc->lock);
+ 	} else {
+-		*pcount = count;
++		__this_cpu_write(*fbc->counters, count);
+ 	}
+ 	preempt_enable();
+ }
 
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -28,7 +28,7 @@
- 
- DEFINE_SPINLOCK(proc_subdir_lock);
- 
--static int proc_match(int len, const char *name, struct proc_dir_entry *de)
-+static int proc_match(unsigned int len, const char *name, struct proc_dir_entry *de)
- {
- 	if (de->namelen != len)
- 		return 0;
-@@ -303,7 +303,7 @@ static int __xlate_proc_name(const char *name, struct proc_dir_entry **ret,
- {
- 	const char     		*cp = name, *next;
- 	struct proc_dir_entry	*de;
--	int			len;
-+	unsigned int		len;
- 
- 	de = *ret;
- 	if (!de)
-@@ -605,7 +605,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
- {
- 	struct proc_dir_entry *ent = NULL;
- 	const char *fn = name;
--	int len;
-+	unsigned int len;
- 
- 	/* make sure name is valid */
- 	if (!name || !strlen(name)) goto out;
-@@ -794,7 +794,7 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
- 	struct proc_dir_entry **p;
- 	struct proc_dir_entry *de = NULL;
- 	const char *fn = name;
--	int len;
-+	unsigned int len;
- 
- 	spin_lock(&proc_subdir_lock);
- 	if (__xlate_proc_name(name, &parent, &fn) != 0) {
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -50,7 +50,7 @@ typedef	int (write_proc_t)(struct file *file, const char __user *buffer,
- 
- struct proc_dir_entry {
- 	unsigned int low_ino;
--	unsigned short namelen;
-+	unsigned int namelen;
- 	const char *name;
- 	mode_t mode;
- 	nlink_t nlink;
