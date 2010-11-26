@@ -1,75 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab0KZHwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 02:52:39 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53162 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753186Ab0KZHwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 02:52:38 -0500
-Date: Fri, 26 Nov 2010 08:51:58 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Marcus Meissner <meissner@suse.de>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@osdl.org, hpa@zytor.com, w@1wt.eu,
-        alan@lxorguk.ukuu.org.uk, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101126075158.GE19589@elte.hu>
-References: <20101116104600.GA24015@suse.de>
- <20101117050759.GE22651@bombadil.infradead.org>
- <20101118074804.GC32621@elte.hu>
- <20101120031820.GC4617@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101120031820.GC4617@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753656Ab0KZIDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 03:03:16 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:33355 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab0KZIDO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 03:03:14 -0500
+Date: Fri, 26 Nov 2010 16:48:25 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: stable@kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: [stable][BUGFIX] memcg: avoid deadlock between move charge and
+ try_charge()
+Message-Id: <20101126164825.24e684ca.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101117092401.61c2117a.nishimura@mxp.nes.nec.co.jp>
+References: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
+	<20101116124117.64608b66.akpm@linux-foundation.org>
+	<20101117092401.61c2117a.nishimura@mxp.nes.nec.co.jp>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Kees Cook <kees.cook@canonical.com> wrote:
-
-> On Thu, Nov 18, 2010 at 08:48:04AM +0100, Ingo Molnar wrote:
-> > Agreed. A few other kernel address things that should be hidden are:
-> > [snip]
+> > > Cc: <stable@kernel.org>
+> > 
+> > The patch doesn't apply well to 2.6.36 so if we do want it backported
+> > then please prepare a tested backport for the -stable guys?
+> > 
+> O.K.
+> I'll test a backported patch for 2.6.36.y and send it after this is merged into mainline.
 > 
-> For reference, here's what GRKERNSEC_HIDESYM looks like in grsecurity.
-> It's quite a sledgehammer, but it does help to point out at least the
-> minimum number of things that need fixing.
+Done.
 
-Yeah, it's a somewhat disgusting patch - but it also looks useful.
+I've tested this backported patch on 2.6.36 and it works properly.
+There is no change in mm/memcontrol.c from v2.6.36 to v2.6.36.1, so
+this can be applied to 2.6.36.1 too.
 
-It would be more palatable for upstream if it was:
+===
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
- - split up
+commit b1dd693e5b9348bd68a80e679e03cf9c0973b01b upstream.
 
- - if all those GRKERNSEC_HIDESYM #ifdefs were removed, either by making the 
-   grsecurity defaults the default behavior, or by intelligently hiding it behinds 
-   wrappers.
+__mem_cgroup_try_charge() can be called under down_write(&mmap_sem)(e.g.
+mlock does it). This means it can cause deadlock if it races with move charge:
 
-I'd suggest a single CONFIG_LEGACY_SYMBOLS=y config option for this, but only used 
-to show those symbols that are absolutely needed for compatibility - like 
-/proc/kallsyms. (Newer distros could disable this option and the kernel could 
-eventually default to it being disabled as well.)
+Ex.1)
+                move charge             |        try charge
+  --------------------------------------+------------------------------
+    mem_cgroup_can_attach()             |  down_write(&mmap_sem)
+      mc.moving_task = current          |    ..
+      mem_cgroup_precharge_mc()         |  __mem_cgroup_try_charge()
+        mem_cgroup_count_precharge()    |    prepare_to_wait()
+          down_read(&mmap_sem)          |    if (mc.moving_task)
+          -> cannot aquire the lock     |    -> true
+                                        |      schedule()
 
-Also, while changing hexa output to symbolic output is fine, changing the oops 
-output is borderline - that is an absolutely useful piece of information that helps 
-us in decoding crashes. So i'd suggest to split that into a super-paranoid option or 
-so.
+Ex.2)
+                move charge             |        try charge
+  --------------------------------------+------------------------------
+    mem_cgroup_can_attach()             |
+      mc.moving_task = current          |
+      mem_cgroup_precharge_mc()         |
+        mem_cgroup_count_precharge()    |
+          down_read(&mmap_sem)          |
+          ..                            |
+          up_read(&mmap_sem)            |
+                                        |  down_write(&mmap_sem)
+    mem_cgroup_move_task()              |    ..
+      mem_cgroup_move_charge()          |  __mem_cgroup_try_charge()
+        down_read(&mmap_sem)            |    prepare_to_wait()
+        -> cannot aquire the lock       |    if (mc.moving_task)
+                                        |    -> true
+                                        |      schedule()
 
-Anyway, after a split-up we'll see how good the individual bits are - it's a bit of 
-a mixed bag right now.
+To avoid this deadlock, we do all the move charge works (both can_attach() and
+attach()) under one mmap_sem section.
+And after this patch, we set/clear mc.moving_task outside mc.lock, because we
+use the lock only to check mc.from/to.
 
-Thanks,
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: <stable@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ mm/memcontrol.c |   43 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 26 insertions(+), 17 deletions(-)
 
-	Ingo
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9be3cf8..e6aadd6 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -269,13 +269,14 @@ enum move_type {
+ 
+ /* "mc" and its members are protected by cgroup_mutex */
+ static struct move_charge_struct {
+-	spinlock_t	  lock; /* for from, to, moving_task */
++	spinlock_t	  lock; /* for from, to */
+ 	struct mem_cgroup *from;
+ 	struct mem_cgroup *to;
+ 	unsigned long precharge;
+ 	unsigned long moved_charge;
+ 	unsigned long moved_swap;
+ 	struct task_struct *moving_task;	/* a task moving charges */
++	struct mm_struct *mm;
+ 	wait_queue_head_t waitq;		/* a waitq for other context */
+ } mc = {
+ 	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
+@@ -4445,7 +4446,7 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
+ 	unsigned long precharge;
+ 	struct vm_area_struct *vma;
+ 
+-	down_read(&mm->mmap_sem);
++	/* We've already held the mmap_sem */
+ 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 		struct mm_walk mem_cgroup_count_precharge_walk = {
+ 			.pmd_entry = mem_cgroup_count_precharge_pte_range,
+@@ -4457,7 +4458,6 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
+ 		walk_page_range(vma->vm_start, vma->vm_end,
+ 					&mem_cgroup_count_precharge_walk);
+ 	}
+-	up_read(&mm->mmap_sem);
+ 
+ 	precharge = mc.precharge;
+ 	mc.precharge = 0;
+@@ -4508,11 +4508,16 @@ static void mem_cgroup_clear_mc(void)
+ 
+ 		mc.moved_swap = 0;
+ 	}
++	if (mc.mm) {
++		up_read(&mc.mm->mmap_sem);
++		mmput(mc.mm);
++	}
+ 	spin_lock(&mc.lock);
+ 	mc.from = NULL;
+ 	mc.to = NULL;
+-	mc.moving_task = NULL;
+ 	spin_unlock(&mc.lock);
++	mc.moving_task = NULL;
++	mc.mm = NULL;
+ 	memcg_oom_recover(from);
+ 	memcg_oom_recover(to);
+ 	wake_up_all(&mc.waitq);
+@@ -4537,26 +4542,37 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
+ 			return 0;
+ 		/* We move charges only when we move a owner of the mm */
+ 		if (mm->owner == p) {
++			/*
++			 * We do all the move charge works under one mmap_sem to
++			 * avoid deadlock with down_write(&mmap_sem)
++			 * -> try_charge() -> if (mc.moving_task) -> sleep.
++			 */
++			down_read(&mm->mmap_sem);
++
+ 			VM_BUG_ON(mc.from);
+ 			VM_BUG_ON(mc.to);
+ 			VM_BUG_ON(mc.precharge);
+ 			VM_BUG_ON(mc.moved_charge);
+ 			VM_BUG_ON(mc.moved_swap);
+ 			VM_BUG_ON(mc.moving_task);
++			VM_BUG_ON(mc.mm);
++
+ 			spin_lock(&mc.lock);
+ 			mc.from = from;
+ 			mc.to = mem;
+ 			mc.precharge = 0;
+ 			mc.moved_charge = 0;
+ 			mc.moved_swap = 0;
+-			mc.moving_task = current;
+ 			spin_unlock(&mc.lock);
++			mc.moving_task = current;
++			mc.mm = mm;
+ 
+ 			ret = mem_cgroup_precharge_mc(mm);
+ 			if (ret)
+ 				mem_cgroup_clear_mc();
+-		}
+-		mmput(mm);
++			/* We call up_read() and mmput() in clear_mc(). */
++		} else
++			mmput(mm);
+ 	}
+ 	return ret;
+ }
+@@ -4644,7 +4660,7 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ 	struct vm_area_struct *vma;
+ 
+ 	lru_add_drain_all();
+-	down_read(&mm->mmap_sem);
++	/* We've already held the mmap_sem */
+ 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 		int ret;
+ 		struct mm_walk mem_cgroup_move_charge_walk = {
+@@ -4663,7 +4679,6 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ 			 */
+ 			break;
+ 	}
+-	up_read(&mm->mmap_sem);
+ }
+ 
+ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
+@@ -4672,17 +4687,11 @@ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
+ 				struct task_struct *p,
+ 				bool threadgroup)
+ {
+-	struct mm_struct *mm;
+-
+-	if (!mc.to)
++	if (!mc.mm)
+ 		/* no need to move charge */
+ 		return;
+ 
+-	mm = get_task_mm(p);
+-	if (mm) {
+-		mem_cgroup_move_charge(mm);
+-		mmput(mm);
+-	}
++	mem_cgroup_move_charge(mc.mm);
+ 	mem_cgroup_clear_mc();
+ }
+ #else	/* !CONFIG_MMU */
+-- 
+1.7.1
+
