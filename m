@@ -1,360 +1,490 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab0KZIxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 03:53:33 -0500
-Received: from mail-iw0-f194.google.com ([209.85.214.194]:65210 "EHLO
-	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab0KZIxc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 03:53:32 -0500
-MIME-Version: 1.0
-X-Originating-IP: [93.172.224.233]
-In-Reply-To: <20101126045912.GC6598@lixom.net>
-References: <1290526740-27624-1-git-send-email-ohad@wizery.com>
- <1290526740-27624-2-git-send-email-ohad@wizery.com> <20101126045912.GC6598@lixom.net>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 26 Nov 2010 10:53:10 +0200
-Message-ID: <AANLkTin5Tfcuy0WcHJ22rWC8niwZCj8SZAMKLz0p9jwc@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Kevin Hilman <khilman@deeprootsystems.com>, akpm@linux-foundation.org,
-        Suman Anna <s-anna@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753904Ab0KZI7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 03:59:06 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60199 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751328Ab0KZI7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 03:59:05 -0500
+From: pavan_savoy@ti.com
+To: padovan@profusion.mobi, marcel@holtmann.org
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH v7] Bluetooth: btwilink driver
+Date: Fri, 26 Nov 2010 04:20:57 -0500
+Message-Id: <1290763257-12382-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 6:59 AM, Olof Johansson <olof@lixom.net> wrote:
->> +#define pr_fmt(fmt)    "%s: " fmt, __func__
->
-> Not used.
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-Yes, it is, check out how the pr_* macros are implemented:
+Marcel, Gustavo,
 
-#define pr_info(fmt, ...) \
-        printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+comments attended to from v5 and v6,
 
-I use it to ensure that the function name is printed with any pr_*
-macro, without having to explicitly specify the __func__ param every
-time.
+1. Inside ti_st_open, I previously only checked for EINPROGRESS & EPERM,
+Now I handle for EINPROGRESS - which is not really an error and
+return during all other error cases.
 
+2. _write is still a function pointer and not an exported function, I
+need to change the underlying driver's code for this.
+However, previous lkml comments on the underlying driver's code
+suggested it to be kept as a function pointer and not EXPORT.
+Gustavo, Marcel - Please comment on this.
+Is this absolutely required? If so why?
 
->> +int __hwspin_trylock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
->> +{
->> +     int ret;
->> +
->> +     if (unlikely(!hwlock)) {
->> +             pr_err("invalid hwlock\n");
->
-> These kind of errors can get very spammy for buggy drivers.
+3. test_and_set_bit of HCI_RUNNING is done at beginning of
+ti_st_open, and did not see issues during firmware download.
+However ideally I would still like to set HCI_RUNNING once the firmware
+download is done, because I don't want to allow a _send_frame during
+firmware download - Marcel, Gustavo - Please comment.
 
-Yeah, but that's the purpose - I want to catch such egregious drivers
-who try to crash the kernel.
+4. test_and_clear of HCI_RUNNING now done @ beginning of close.
 
-> It's likely
-> more useful to either do a WARN_ON(), and/or move them under a debug
-> config option.
+5. EAGAIN on failure of st_write is to suggest to try and write again.
+I have never this happen - However only if UART goes bad this case may
+occur.
 
-Why would you prefer to compile out reporting of such extremely buggy behavior ?
+6. ti_st_tx_complete is very similar to hci_ldisc's tx_complete - in
+fact the code is pretty much borrowed from there.
+Marcel, Gustavo - Please suggest where should it be done? If not here.
 
->
->> +             return -EINVAL;
->> +     }
->> +     if (unlikely(mode == HWLOCK_IRQSTATE && flags == NULL)) {
->> +             pr_err("invalid flags pointer (null)\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     /*
->> +      * This spin_lock{_irq, _irqsave} serves three purposes:
->> +      *
->> +      * 1. Disable preemption, in order to minimize the period of time
->> +      *    in which the hwspinlock is taken. This is important in order
->> +      *    to minimize the possible polling on the hardware interconnect
->> +      *    by a remote user of this lock.
->> +      * 2. Make the hwspinlock SMP-safe (so we can take it from
->> +      *    additional contexts on the local host).
->> +      * 3. Ensure that in_atomic/might_sleep checks catch potential
->> +      *    problems with hwspinlock usage (e.g. scheduler checks like
->> +      *    'scheduling while atomic' etc.)
->> +      */
->> +     if (mode == HWLOCK_IRQSTATE)
->> +             ret = spin_trylock_irqsave(&hwlock->lock, *flags);
->> +     else if (mode == HWLOCK_IRQ)
->> +             ret = spin_trylock_irq(&hwlock->lock);
->> +     else
->> +             ret = spin_trylock(&hwlock->lock);
->> +
->> +     /* is lock already taken by another context on the local cpu ? */
->> +     if (!ret)
->> +             return -EBUSY;
->> +
->> +     /* try to take the hwspinlock device */
->> +     ret = hwlock->ops->trylock(hwlock);
->> +
->> +     /* if hwlock is already taken, undo spin_trylock_* and exit */
->> +     if (!ret) {
->> +             if (mode == HWLOCK_IRQSTATE)
->> +                     spin_unlock_irqrestore(&hwlock->lock, *flags);
->> +             else if (mode == HWLOCK_IRQ)
->> +                     spin_unlock_irq(&hwlock->lock);
->> +             else
->> +                     spin_unlock(&hwlock->lock);
->> +
->> +             return -EBUSY;
->> +     }
->> +
->> +     /*
->> +      * We can be sure the other core's memory operations
->> +      * are observable to us only _after_ we successfully take
->> +      * the hwspinlock, so we must make sure that subsequent memory
->> +      * operations will not be reordered before we actually took the
->> +      * hwspinlock.
->> +      *
->> +      * Note: the implicit memory barrier of the spinlock above is too
->> +      * early, so we need this additional explicit memory barrier.
->> +      */
->> +     mb();
->
-> rmb() should be sufficient here.
+7. comments cleaned-up + hst memory leak fixed when hci_alloc_dev fails.
 
-It's not.
+8. platform_driver registration inside module_init now is similar to
+other drivers.
 
-We need to make sure that our writes, too, will not be reordered
-before that barrier. Otherwise, we might end up changing protected
-shared memory during the critical section of the remote processor
-(before we acquire the lock we must not read from, or write to, the
-protected shared memory).
+9. Dan Carpenter's comments on leaking hst memory on failed
+hci_register_dev and empty space after quotes in debug statements
+fixed.
 
-I guess I need to add a comment about this.
+Thanks for the comments...
+Sorry, for previously not being very clear on which comments were
+handled and which were not.
 
->> +int __hwspin_unlock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
->> +{
->> +     if (unlikely(!hwlock)) {
->> +             pr_err("invalid hwlock\n");
->> +             return -EINVAL;
->> +     }
->> +     if (unlikely(mode == HWLOCK_IRQSTATE && flags == NULL)) {
->> +             pr_err("invalid flags pointer (null)\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     /*
->> +      * We must make sure that memory operations, done before unlocking
->> +      * the hwspinlock, will not be reordered after the lock is released.
->> +      *
->> +      * That's the purpose of this explicit memory barrier.
->> +      *
->> +      * Note: the memory barrier induced by the spin_unlock below is too
->> +      * late; the other core is going to access memory soon after it will
->> +      * take the hwspinlock, and by then we want to be sure our memory
->> +      * operations are already observable.
->> +      */
->> +     mb();
->
-> wmb() should be sufficient here.
+-- patch description --
 
-No - here, too, we need to make sure that also our read operations
-will not be reordered after the barrier. Otherwise, we might end up
-reading memory that has already been changed by a remote processor
-that is just about to acquire the lock.
+This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+Texas Instrument's WiLink chipsets combine wireless technologies
+like BT, FM, GPS and WLAN onto a single chip.
 
->
->> +
->> +     hwlock->ops->unlock(hwlock);
->> +
->> +     /* Undo the spin_trylock{_irq, _irqsave} called while locking */
->> +     if (mode == HWLOCK_IRQSTATE)
->> +             spin_unlock_irqrestore(&hwlock->lock, *flags);
->> +     else if (mode == HWLOCK_IRQ)
->> +             spin_unlock_irq(&hwlock->lock);
->> +     else
->> +             spin_unlock(&hwlock->lock);
->> +
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(__hwspin_unlock);
->> +
+This Bluetooth driver works on top of the TI_ST shared transport
+line discipline driver which also allows other drivers like
+FM V4L2 and GPS character driver to make use of the same UART interface.
 
->> +     /* mark this hwspinlock as available */
->> +     tmp = radix_tree_tag_set(&hwspinlock_tree, hwlock->id,
->> +                                                     HWSPINLOCK_UNUSED);
->> +
->> +     /* this implies an unrecoverable bug. at least rant */
->> +     WARN_ON(tmp != hwlock);
->
-> I don't see how this could ever happen?
+Kconfig and Makefile modifications to enable the Bluetooth
+driver for Texas Instrument's WiLink 7 chipset.
 
-It can't. Unless there's a bug somewhere.
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/bluetooth/Kconfig    |   10 ++
+ drivers/bluetooth/Makefile   |    1 +
+ drivers/bluetooth/btwilink.c |  363 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 374 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/bluetooth/btwilink.c
 
-That's why:
-1. It is a WARN_ON - I don't care if someone compiles this out
-2. There is no error handler for this (simply because there can never
-be an error handler for buggy code). It's just a rant, meant to catch
-an unlikely buggy event.
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 02deef4..8e0de9a 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -219,4 +219,14 @@ config BT_ATH3K
+ 	  Say Y here to compile support for "Atheros firmware download driver"
+ 	  into the kernel or say M to compile it as module (ath3k).
+ 
++config BT_WILINK
++	tristate "Texas Instruments WiLink7 driver"
++	depends on TI_ST
++	help
++	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
++	  combo devices. This makes use of shared transport line discipline
++	  core driver to communicate with the BT core of the combo chip.
++
++	  Say Y here to compile support for Texas Instrument's WiLink7 driver
++	  into the kernel or say M to compile it as module.
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..f4460f4 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
+ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
+ obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
+ obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
++obj-$(CONFIG_BT_WILINK)		+= btwilink.o
+ 
+ btmrvl-y			:= btmrvl_main.o
+ btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
+diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+new file mode 100644
+index 0000000..71e69f8
+--- /dev/null
++++ b/drivers/bluetooth/btwilink.c
+@@ -0,0 +1,363 @@
++/*
++ *  Texas Instrument's Bluetooth Driver For Shared Transport.
++ *
++ *  Bluetooth Driver acts as interface between HCI core and
++ *  TI Shared Transport Layer.
++ *
++ *  Copyright (C) 2009-2010 Texas Instruments
++ *  Author: Raja Mani <raja_mani@ti.com>
++ *	Pavan Savoy <pavan_savoy@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++
++#include <linux/ti_wilink_st.h>
++
++/* Bluetooth Driver Version */
++#define VERSION               "1.0"
++
++/* Number of seconds to wait for registration completion
++ * when ST returns PENDING status.
++ */
++#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
++
++/**
++ * struct ti_st - driver operation structure
++ * @hdev: hci device pointer which binds to bt driver
++ * @reg_status: ST registration callback status
++ * @st_write: write function provided by the ST driver
++ *	to be used by the driver during send_frame.
++ * @wait_reg_completion - completion sync between ti_st_open
++ *	and ti_st_registration_completion_cb.
++ */
++struct ti_st {
++	struct hci_dev *hdev;
++	char reg_status;
++	long (*st_write) (struct sk_buff *);
++	struct completion wait_reg_completion;
++};
++
++/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
++static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
++{
++	struct hci_dev *hdev = hst->hdev;
++
++	/* Update HCI stat counters */
++	switch (pkt_type) {
++	case HCI_COMMAND_PKT:
++		hdev->stat.cmd_tx++;
++		break;
++
++	case HCI_ACLDATA_PKT:
++		hdev->stat.acl_tx++;
++		break;
++
++	case HCI_SCODATA_PKT:
++		hdev->stat.sco_tx++;
++		break;
++	}
++}
++
++/* ------- Interfaces to Shared Transport ------ */
++
++/* Called by ST layer to indicate protocol registration completion
++ * status.ti_st_open() function will wait for signal from this
++ * API when st_register() function returns ST_PENDING.
++ */
++static void st_registration_completion_cb(void *priv_data, char data)
++{
++	struct ti_st *lhst = priv_data;
++
++	/* Save registration status for use in ti_st_open() */
++	lhst->reg_status = data;
++	/* complete the wait in ti_st_open() */
++	complete(&lhst->wait_reg_completion);
++}
++
++/* Called by Shared Transport layer when receive data is
++ * available */
++static long st_receive(void *priv_data, struct sk_buff *skb)
++{
++	struct ti_st *lhst = priv_data;
++	int err;
++
++	if (!skb)
++		return -EFAULT;
++
++	if (!lhst) {
++		kfree_skb(skb);
++		return -EFAULT;
++	}
++
++	skb->dev = (void *) lhst->hdev;
++
++	/* Forward skb to HCI core layer */
++	err = hci_recv_frame(skb);
++	if (err < 0) {
++		BT_ERR("Unable to push skb to HCI core(%d)", err);
++		return err;
++	}
++
++	lhst->hdev->stat.byte_rx += skb->len;
++
++	return 0;
++}
++
++/* ------- Interfaces to HCI layer ------ */
++/* protocol structure registered with shared transport */
++static struct st_proto_s ti_st_proto = {
++	.type = ST_BT,
++	.recv = st_receive,
++	.reg_complete_cb = st_registration_completion_cb,
++};
++
++/* Called from HCI core to initialize the device */
++static int ti_st_open(struct hci_dev *hdev)
++{
++	unsigned long timeleft;
++	struct ti_st *hst;
++	int err;
++
++	BT_DBG("%s %p", hdev->name, hdev);
++	if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
++		BT_ERR("btwilink already opened");
++		return -EBUSY;
++	}
++
++	/* provide contexts for callbacks from ST */
++	hst = hdev->driver_data;
++	ti_st_proto.priv_data = hst;
++
++	err = st_register(&ti_st_proto);
++	if (err == -EINPROGRESS) {
++		/* ST is busy with either protocol registration or firmware
++		 * download.
++		 */
++		/* Prepare wait-for-completion handler data structures.
++		 */
++		init_completion(&hst->wait_reg_completion);
++
++		/* Reset ST registration callback status flag , this value
++		 * will be updated in ti_st_registration_completion_cb()
++		 * function whenever it called from ST driver.
++		 */
++		hst->reg_status = -EINPROGRESS;
++
++		BT_DBG("waiting for registration completion signal from ST");
++		timeleft = wait_for_completion_timeout
++			(&hst->wait_reg_completion,
++			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
++		if (!timeleft) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("Timeout(%d sec),didn't get reg "
++					"completion signal from ST",
++					BT_REGISTER_TIMEOUT / 1000);
++			return -ETIMEDOUT;
++		}
++
++		/* Is ST registration callback called with ERROR status? */
++		if (hst->reg_status != 0) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("ST registration completed with invalid "
++					"status %d", hst->reg_status);
++			return -EAGAIN;
++		}
++		err = 0;
++	} else if (err != 0) {
++		clear_bit(HCI_RUNNING, &hdev->flags);
++		BT_ERR("st_register failed %d", err);
++		return err;
++	}
++
++	/* ti_st_proto.write is filled up by the underlying shared
++	 * transport driver upon registration
++	 */
++	hst->st_write = ti_st_proto.write;
++	if (!hst->st_write) {
++		BT_ERR("undefined ST write function");
++		clear_bit(HCI_RUNNING, &hdev->flags);
++
++		/* Undo registration with ST */
++		err = st_unregister(ST_BT);
++		if (err)
++			BT_ERR("st_unregister() failed with error %d", err);
++
++		hst->st_write = NULL;
++		return err;
++	}
++
++	return err;
++}
++
++/* Close device */
++static int ti_st_close(struct hci_dev *hdev)
++{
++	int err;
++	struct ti_st *hst = hdev->driver_data;
++
++	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
++		return 0;
++
++	/* continue to unregister from transport */
++	err = st_unregister(ST_BT);
++	if (err)
++		BT_ERR("st_unregister() failed with error %d", err);
++
++	hst->st_write = NULL;
++
++	return err;
++}
++
++static int ti_st_send_frame(struct sk_buff *skb)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst;
++	long len;
++
++	hdev = (struct hci_dev *)skb->dev;
++
++	if (!test_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	hst = hdev->driver_data;
++
++	/* Prepend skb with frame type */
++	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
++
++	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
++			skb->len);
++
++	/* Insert skb to shared transport layer's transmit queue.
++	 * Freeing skb memory is taken care in shared transport layer,
++	 * so don't free skb memory here.
++	 */
++	len = hst->st_write(skb);
++	if (len < 0) {
++		kfree_skb(skb);
++		BT_ERR("ST write failed (%ld)", len);
++		/* Try Again, would only fail if UART has gone bad */
++		return -EAGAIN;
++	}
++
++	/* ST accepted our skb. So, Go ahead and do rest */
++	hdev->stat.byte_tx += len;
++	ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
++
++	return 0;
++}
++
++static void ti_st_destruct(struct hci_dev *hdev)
++{
++	BT_DBG("%s", hdev->name);
++	kfree(hdev->driver_data);
++}
++
++static int bt_ti_probe(struct platform_device *pdev)
++{
++	static struct ti_st *hst;
++	struct hci_dev *hdev;
++	int err;
++
++	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
++	if (!hst)
++		return -ENOMEM;
++
++	/* Expose "hciX" device to user space */
++	hdev = hci_alloc_dev();
++	if (!hdev) {
++		kfree(hst);
++		return -ENOMEM;
++	}
++
++	BT_DBG("hdev %p", hdev);
++
++	hst->hdev = hdev;
++	hdev->bus = HCI_UART;
++	hdev->driver_data = hst;
++	hdev->open = ti_st_open;
++	hdev->close = ti_st_close;
++	hdev->flush = NULL;
++	hdev->send = ti_st_send_frame;
++	hdev->destruct = ti_st_destruct;
++	hdev->owner = THIS_MODULE;
++
++	err = hci_register_dev(hdev);
++	if (err < 0) {
++		BT_ERR("Can't register HCI device error %d", err);
++		kfree(hst);
++		hci_free_dev(hdev);
++		return err;
++	}
++
++	BT_DBG("HCI device registered (hdev %p)", hdev);
++
++	dev_set_drvdata(&pdev->dev, hst);
++	return err;
++}
++
++static int bt_ti_remove(struct platform_device *pdev)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst = dev_get_drvdata(&pdev->dev);
++
++	if (!hst)
++		return -EFAULT;
++
++	hdev = hst->hdev;
++	ti_st_close(hdev);
++	hci_unregister_dev(hdev);
++
++	hci_free_dev(hdev);
++	kfree(hst);
++
++	dev_set_drvdata(&pdev->dev, NULL);
++	return 0;
++}
++
++static struct platform_driver btwilink_driver = {
++	.probe = bt_ti_probe,
++	.remove = bt_ti_remove,
++	.driver = {
++		.name = "btwilink",
++		.owner = THIS_MODULE,
++	},
++};
++
++/* ------- Module Init/Exit interfaces ------ */
++static int __init btwilink_init(void)
++{
++	BT_INFO("Bluetooth Driver for TI WiLink - Version %s", VERSION);
++
++	return platform_driver_register(&btwilink_driver);
++}
++
++static void __exit btwilink_exit(void)
++{
++	platform_driver_unregister(&btwilink_driver);
++}
++
++module_init(btwilink_init);
++module_exit(btwilink_exit);
++
++/* ------ Module Info ------ */
++
++MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
++MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
++MODULE_VERSION(VERSION);
++MODULE_LICENSE("GPL");
+-- 
+1.5.6.3
 
-The reason I did this is because I like to check return values. Even
-if it's only for sanity sake.
-
-Since it's not a hot path this shouldn't matter to anyone, but if
-people are still bothered by it, it can be removed.
-
->> +/**
->> + * hwspinlock_unregister() - unregister an hw spinlock
->> + * @id: index of the specific hwspinlock to unregister
->> + *
->> + * This function should be called from the underlying platform-specific
->> + * implementation, to unregister an existing (and unused) hwspinlock.
->> + *
->> + * Can be called from an atomic context (will not sleep) but not from
->> + * within interrupt context.
->> + *
->> + * Returns the address of hwspinlock @id on success, or NULL on failure
->
-> Why not just return int for success / fail and have the driver keep track
-> of the lock pointers too?
-
-Because it's elegant. This way drivers don't need to keep track of the pointers.
-
-It can be changed, with an extra cost of code (duplicated for each
-implementation) and memory, but why would we want to do that ?
-
-> Or, if you for some reason is attached to the ptr-return case, please make it return
-> standard ERR_PTR instead.
-
-ERR_PTR patterns have been reasonably argued against in the previous
-discussion, and I heartily agreed (see
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg37453.html).
-
->> +     /* look for an unused lock */
->> +     ret = radix_tree_gang_lookup_tag(&hwspinlock_tree, (void **)&hwlock,
->> +                                             0, 1, HWSPINLOCK_UNUSED);
->> +     if (ret == 0) {
->> +             pr_warn("a free hwspinlock is not available\n");
->> +             hwlock = NULL;
->> +             goto out;
->> +     }
->> +
->> +     /* sanity check: we shouldn't get more than we requested for */
->> +     WARN_ON(ret > 1);
->
-> No need to check, unless you're debugging the radix code.
-
-Again, this is me preferring to check return values for sanity sake.
-
-The one time that this may yield true (e.g. code has erroneously
-changed) is well worth it.
-
-It shouldn't bother anyone since it's not a hot path, but as I said
-earlier, if people don't like it that much, it can be removed.
-
->
->> +     /* mark as used and power up */
->> +     ret = __hwspinlock_request(hwlock);
->> +     if (ret < 0)
->> +             hwlock = NULL;
->> +
->> +out:
->> +     spin_unlock(&hwspinlock_tree_lock);
->> +     return hwlock;
->> +}
->> +EXPORT_SYMBOL_GPL(hwspinlock_request);
->> +
->
-> [...]
->
->> +/**
->> + * hwspinlock_free() - free a specific hwspinlock
->> + * @hwlock: the specific hwspinlock to free
->> + *
->> + * This function mark @hwlock as free again.
->> + * Should only be called with an @hwlock that was retrieved from
->> + * an earlier call to omap_hwspinlock_request{_specific}.
->> + *
->> + * Can be called from an atomic context (will not sleep) but not from
->> + * within interrupt context (simply because there is no use case for
->> + * that yet).
->> + *
->> + * Returns 0 on success, or an appropriate error code on failure
->> + */
->> +int hwspinlock_free(struct hwspinlock *hwlock)
->> +{
->> +     struct hwspinlock *tmp;
->> +     int ret;
->> +
->> +     if (!hwlock) {
->
-> Some alloc/free APIs will just silently return for these cases.
-
-True.
-
-Some other free API will simply crash.
-
-Does it bother so much if we stick to the safe side here ?
-
->
->> +             pr_err("invalid hwlock\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     spin_lock(&hwspinlock_tree_lock);
->> +
->> +     /* make sure the hwspinlock is used */
->> +     ret = radix_tree_tag_get(&hwspinlock_tree, hwlock->id,
->> +                                                     HWSPINLOCK_UNUSED);
->> +     if (ret == 1) {
->> +             dev_err(hwlock->dev, "%s: hwlock is already free\n", __func__);
->
-> Double free. WARN_ON() seems appropriate?
-
-I don't want that this message will ever get compiled out.
-
->
->> +             ret = -EINVAL;
->> +             goto out;
->> +     }
->> +
->> +     /* notify the underlying device that power is not needed */
->> +     ret = pm_runtime_put(hwlock->dev);
->> +     if (ret < 0)
->> +             goto out;
->> +
->> +     /* mark this hwspinlock as available */
->> +     tmp = radix_tree_tag_set(&hwspinlock_tree, hwlock->id,
->> +                                                     HWSPINLOCK_UNUSED);
->> +
->> +     /* sanity check (this shouldn't happen) */
->> +     WARN_ON(tmp != hwlock);
->
-> No need for this.
-
-Please see explanations above why I added those sanity checks (despite
-my explicit comment saying this shouldn't happen).
-
-
-Thanks!
-Ohad.
-
->
->> +
->> +     module_put(hwlock->owner);
->> +
->> +out:
->> +     spin_unlock(&hwspinlock_tree_lock);
->> +     return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(hwspinlock_free);
->> +
->> +MODULE_LICENSE("GPL v2");
->> +MODULE_DESCRIPTION("Generic hardware spinlock interface");
->> +MODULE_AUTHOR("Ohad Ben-Cohen <ohad@wizery.com>");
->
->
->
->
