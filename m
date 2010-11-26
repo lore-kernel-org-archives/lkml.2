@@ -1,144 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab0KZO7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 09:59:11 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:13738 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab0KZO7J (ORCPT
+	id S1755241Ab0KZPBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:01:39 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:50067 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754920Ab0KZPBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 09:59:09 -0500
-X-IronPort-AV: E=Sophos;i="4.59,261,1288569600"; 
-   d="scan'208";a="3066090"
-Date: Fri, 26 Nov 2010 14:59:10 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: linux-kernel@vger.kernel.org
-CC: xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: [PATCH] xen: fix MSI setup and teardown for PV on HVM guests
-Message-ID: <alpine.DEB.2.00.1011251904370.2373@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 26 Nov 2010 10:01:33 -0500
+Message-Id: <20101126145411.215256715@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Fri, 26 Nov 2010 15:39:00 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 17/21] lockdep, mutex: Provide mutex_lock_nest_lock
+References: <20101126143843.801484792@chello.nl>
+Content-Disposition: inline; filename=mutex_lock_nest_lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xen: fix MSI setup and teardown for PV on HVM guests
+Provide the mutex_lock_nest_lock() annotation.
 
-When remapping MSIs into pirqs for PV on HVM guests, qemu is responsible
-for doing the actual mapping and unmapping.
-We only give qemu the desired pirq number when we ask to do the mapping
-the first time, after that we should be reading back the pirq number
-from qemu every time we want to re-enable the MSI.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/lockdep.h |    3 +++
+ include/linux/mutex.h   |    9 +++++++++
+ kernel/mutex.c          |   25 +++++++++++++++++--------
+ 3 files changed, 29 insertions(+), 8 deletions(-)
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index d7b5109..ff81d67 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -98,8 +98,26 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	struct msi_msg msg;
- 
- 	list_for_each_entry(msidesc, &dev->msi_list, list) {
-+		__read_msi_msg(msidesc, &msg);
-+		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
-+			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
-+		if (xen_irq_from_pirq(pirq) >= 0 &&
-+			msg.data == (MSI_DATA_TRIGGER_EDGE |
-+					     MSI_DATA_LEVEL_ASSERT |
-+						 (3 << 8) |
-+						 MSI_DATA_VECTOR(0))) {
-+			xen_allocate_pirq_msi((type == PCI_CAP_ID_MSIX) ?
-+					"msi-x" : "msi", &irq, &pirq, XEN_ALLOC_IRQ);
-+			if (irq < 0 || pirq < 0)
-+				goto error;
-+			ret = set_irq_msi(irq, msidesc);
-+			if (ret < 0)
-+				goto error_while;
-+			printk(KERN_DEBUG "xen: msi already setup: pirq=%d\n", pirq);
-+			return 0;
-+		}
- 		xen_allocate_pirq_msi((type == PCI_CAP_ID_MSIX) ?
--				"msi-x" : "msi", &irq, &pirq);
-+				"msi-x" : "msi", &irq, &pirq, (XEN_ALLOC_IRQ | XEN_ALLOC_PIRQ));
- 		if (irq < 0 || pirq < 0)
- 			goto error;
- 		printk(KERN_DEBUG "xen: msi --> irq=%d, pirq=%d\n", irq, pirq);
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 6e5dd92..5de6a6c 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -668,17 +668,21 @@ out:
- #include <linux/msi.h>
- #include "../pci/msi.h"
- 
--void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
-+void xen_allocate_pirq_msi(char *name, int *irq, int *pirq, int alloc)
- {
- 	spin_lock(&irq_mapping_update_lock);
- 
--	*irq = find_unbound_irq();
--	if (*irq == -1)
--		goto out;
-+	if (alloc & XEN_ALLOC_IRQ) {
-+		*irq = find_unbound_irq();
-+		if (*irq == -1)
-+			goto out;
-+	}
- 
--	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
--	if (*pirq == -1)
--		goto out;
-+	if (alloc & XEN_ALLOC_PIRQ) {
-+		*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
-+		if (*pirq == -1)
-+			goto out;
-+	}
- 
- 	set_irq_chip_and_handler_name(*irq, &xen_pirq_chip,
- 				      handle_level_irq, name);
-@@ -766,6 +770,7 @@ int xen_destroy_irq(int irq)
- 			printk(KERN_WARNING "unmap irq failed %d\n", rc);
- 			goto out;
- 		}
-+		pirq_to_irq[info->u.pirq.pirq] = -1;
- 	}
- 	irq_info[irq] = mk_unbound_info();
- 
-@@ -786,6 +791,11 @@ int xen_gsi_from_irq(unsigned irq)
- 	return gsi_from_irq(irq);
- }
- 
-+int xen_irq_from_pirq(unsigned pirq)
-+{
-+	return pirq_to_irq[pirq];
-+}
-+
- int bind_evtchn_to_irq(unsigned int evtchn)
- {
- 	int irq;
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 646dd17..00f53dd 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -76,7 +76,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name);
- 
- #ifdef CONFIG_PCI_MSI
- /* Allocate an irq and a pirq to be used with MSIs. */
--void xen_allocate_pirq_msi(char *name, int *irq, int *pirq);
-+#define XEN_ALLOC_PIRQ (1 << 0)
-+#define XEN_ALLOC_IRQ  (1 << 1)
-+void xen_allocate_pirq_msi(char *name, int *irq, int *pirq, int alloc_mask);
- int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type);
+Index: linux-2.6/include/linux/lockdep.h
+===================================================================
+--- linux-2.6.orig/include/linux/lockdep.h
++++ linux-2.6/include/linux/lockdep.h
+@@ -492,12 +492,15 @@ static inline void print_irqtrace_events
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+ #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
++#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
+ # else
+ #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
++#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, n, i)
+ # endif
+ # define mutex_release(l, n, i)			lock_release(l, n, i)
+ #else
+ # define mutex_acquire(l, s, t, i)		do { } while (0)
++# define mutex_acquire_nest(l, s, t, n, i)	do { } while (0)
+ # define mutex_release(l, n, i)			do { } while (0)
  #endif
  
-@@ -89,4 +91,7 @@ int xen_vector_from_irq(unsigned pirq);
- /* Return gsi allocated to pirq */
- int xen_gsi_from_irq(unsigned pirq);
- 
-+/* Return irq from pirq */
-+int xen_irq_from_pirq(unsigned pirq);
+Index: linux-2.6/include/linux/mutex.h
+===================================================================
+--- linux-2.6.orig/include/linux/mutex.h
++++ linux-2.6/include/linux/mutex.h
+@@ -124,6 +124,7 @@ static inline int mutex_is_locked(struct
+  */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
++extern void _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest_lock);
+ extern int __must_check mutex_lock_interruptible_nested(struct mutex *lock,
+ 					unsigned int subclass);
+ extern int __must_check mutex_lock_killable_nested(struct mutex *lock,
+@@ -132,6 +133,13 @@ extern int __must_check mutex_lock_killa
+ #define mutex_lock(lock) mutex_lock_nested(lock, 0)
+ #define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
+ #define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
 +
- #endif	/* _XEN_EVENTS_H */
++#define mutex_lock_nest_lock(lock, nest_lock)				\
++do {									\
++	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);		\
++	_mutex_lock_nest_lock(lock, &(nest_lock)->dep_map);		\
++} while (0)
++
+ #else
+ extern void mutex_lock(struct mutex *lock);
+ extern int __must_check mutex_lock_interruptible(struct mutex *lock);
+@@ -140,6 +148,7 @@ extern int __must_check mutex_lock_killa
+ # define mutex_lock_nested(lock, subclass) mutex_lock(lock)
+ # define mutex_lock_interruptible_nested(lock, subclass) mutex_lock_interruptible(lock)
+ # define mutex_lock_killable_nested(lock, subclass) mutex_lock_killable(lock)
++# define mutex_lock_nest_lock(lock, nest_lock) mutex_lock(lock)
+ #endif
+ 
+ /*
+Index: linux-2.6/kernel/mutex.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex.c
++++ linux-2.6/kernel/mutex.c
+@@ -140,14 +140,14 @@ EXPORT_SYMBOL(mutex_unlock);
+  */
+ static inline int __sched
+ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+-	       	unsigned long ip)
++		    struct lockdep_map *nest_lock, unsigned long ip)
+ {
+ 	struct task_struct *task = current;
+ 	struct mutex_waiter waiter;
+ 	unsigned long flags;
+ 
+ 	preempt_disable();
+-	mutex_acquire(&lock->dep_map, subclass, 0, ip);
++	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+ 	/*
+@@ -285,16 +285,25 @@ void __sched
+ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
+ {
+ 	might_sleep();
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, _RET_IP_);
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, NULL, _RET_IP_);
+ }
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_nested);
+ 
++void __sched
++_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
++{
++	might_sleep();
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, nest, _RET_IP_);
++}
++
++EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
++
+ int __sched
+ mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
+ {
+ 	might_sleep();
+-	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, NULL, _RET_IP_);
+ }
+ EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
+ 
+@@ -303,7 +312,7 @@ mutex_lock_interruptible_nested(struct m
+ {
+ 	might_sleep();
+ 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
+-				   subclass, _RET_IP_);
++				   subclass, NULL, _RET_IP_);
+ }
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
+@@ -409,7 +418,7 @@ __mutex_lock_slowpath(atomic_t *lock_cou
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, _RET_IP_);
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+@@ -417,7 +426,7 @@ __mutex_lock_killable_slowpath(atomic_t 
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	return __mutex_lock_common(lock, TASK_KILLABLE, 0, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+@@ -425,7 +434,7 @@ __mutex_lock_interruptible_slowpath(atom
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ #endif
+ 
+
+
