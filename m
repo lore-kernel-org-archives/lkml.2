@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab0KZVJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 16:09:54 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:39669 "HELO
+	id S1752593Ab0KZVLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 16:11:12 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:39695 "HELO
 	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751457Ab0KZVJw (ORCPT
+	by vger.kernel.org with SMTP id S1752072Ab0KZVJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 16:09:52 -0500
+	Fri, 26 Nov 2010 16:09:56 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: npXvdBMVM1kRM2Ei1YtkTT8fkoZ1DROXZiXZ2zzB_CC2bSR
- P0UQXKL._njk1N8mP8jY6Wtm03XG2bs_rxbol2CRoYLnecZ_aKS1kMzq8CXt
- Kg97RJKz6cxOuBx0yXE0tDKuhpZV2gBBKFyk5xl74cdGs1oXuU2HOuzKdRlJ
- FWwS2V3RQLX4GEYawp.BVStbhF5pTtDYV1I.R5Vxq26Ol189aUPB_On82bmJ
- 6nPlbteURbaaGq5eX4rezy6wGMEgL_tfDqzx69thQEfA9RTLpd36JKxCiafr
- Z.zPcQ8ulUl6Epop4Ho0R
+X-YMail-OSG: hIuGjAUVM1kQ8u6bGDuWZ6e0c1qhRVOt0ICrbKJ9ADok2Rc
+ N3fL.uEZhew.UQrfjIq5uOS.GQfh5sCQMqrgD5d.CG8VQRh1Kbs9FMszYmCR
+ yIJ4VHDVbxDu_naFAM.8oIq_ZaBWu7zsjejhPzmNMUJo_a5J4lWdi6lh5NG1
+ rR820ednJgW40oc4ODDFtfnRB3T8ftNr.gUk2pzWr7GVkW0gXwJdyoH6pWC6
+ Ts1rKZv88UeA08ur0ok0_AZs1vIHxI7qaixVZssCEq3E0RZe_esqUt1eV5EY
+ Jlr.baVZ6oZBLBBmN_oOa
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101126210949.557998171@linux.com>
+Message-Id: <20101126210954.166783984@linux.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 26 Nov 2010 15:09:38 -0600
+Date: Fri, 26 Nov 2010 15:09:46 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
@@ -25,121 +25,243 @@ Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [thisops uV2 01/10] percpucounter: Optimize __percpu_counter_add a bit through the use of this_cpu() options.
+Subject: [thisops uV2 09/10] x86: this_cpu_cmpxchg and this_cpu_cmpxchg_double operations
 References: <20101126210937.383047168@linux.com>
-Content-Disposition: inline; filename=percpu_fixes
+Content-Disposition: inline; filename=this_cpu_cmpxchg_x86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The this_cpu_* options can be used to optimize __percpu_counter_add a bit. Avoids
-some address arithmetic and saves 12 bytes.
+Provide support as far as the hardware capabilities of the x86 cpus
+allow.
 
-Before:
+V1->V2:
+	- Mark %rdx clobbering during cmpxchg16b
+	- Provide emulation of cmpxchg16b for early AMD processors
 
-
-00000000000001d3 <__percpu_counter_add>:
- 1d3:	55                   	push   %rbp
- 1d4:	48 89 e5             	mov    %rsp,%rbp
- 1d7:	41 55                	push   %r13
- 1d9:	41 54                	push   %r12
- 1db:	53                   	push   %rbx
- 1dc:	48 89 fb             	mov    %rdi,%rbx
- 1df:	48 83 ec 08          	sub    $0x8,%rsp
- 1e3:	4c 8b 67 30          	mov    0x30(%rdi),%r12
- 1e7:	65 4c 03 24 25 00 00 	add    %gs:0x0,%r12
- 1ee:	00 00 
- 1f0:	4d 63 2c 24          	movslq (%r12),%r13
- 1f4:	48 63 c2             	movslq %edx,%rax
- 1f7:	49 01 f5             	add    %rsi,%r13
- 1fa:	49 39 c5             	cmp    %rax,%r13
- 1fd:	7d 0a                	jge    209 <__percpu_counter_add+0x36>
- 1ff:	f7 da                	neg    %edx
- 201:	48 63 d2             	movslq %edx,%rdx
- 204:	49 39 d5             	cmp    %rdx,%r13
- 207:	7f 1e                	jg     227 <__percpu_counter_add+0x54>
- 209:	48 89 df             	mov    %rbx,%rdi
- 20c:	e8 00 00 00 00       	callq  211 <__percpu_counter_add+0x3e>
- 211:	4c 01 6b 18          	add    %r13,0x18(%rbx)
- 215:	48 89 df             	mov    %rbx,%rdi
- 218:	41 c7 04 24 00 00 00 	movl   $0x0,(%r12)
- 21f:	00 
- 220:	e8 00 00 00 00       	callq  225 <__percpu_counter_add+0x52>
- 225:	eb 04                	jmp    22b <__percpu_counter_add+0x58>
- 227:	45 89 2c 24          	mov    %r13d,(%r12)
- 22b:	5b                   	pop    %rbx
- 22c:	5b                   	pop    %rbx
- 22d:	41 5c                	pop    %r12
- 22f:	41 5d                	pop    %r13
- 231:	c9                   	leaveq 
- 232:	c3                   	retq   
-
-
-After:
-
-00000000000001d3 <__percpu_counter_add>:
- 1d3:	55                   	push   %rbp
- 1d4:	48 63 ca             	movslq %edx,%rcx
- 1d7:	48 89 e5             	mov    %rsp,%rbp
- 1da:	41 54                	push   %r12
- 1dc:	53                   	push   %rbx
- 1dd:	48 89 fb             	mov    %rdi,%rbx
- 1e0:	48 8b 47 30          	mov    0x30(%rdi),%rax
- 1e4:	65 44 8b 20          	mov    %gs:(%rax),%r12d
- 1e8:	4d 63 e4             	movslq %r12d,%r12
- 1eb:	49 01 f4             	add    %rsi,%r12
- 1ee:	49 39 cc             	cmp    %rcx,%r12
- 1f1:	7d 0a                	jge    1fd <__percpu_counter_add+0x2a>
- 1f3:	f7 da                	neg    %edx
- 1f5:	48 63 d2             	movslq %edx,%rdx
- 1f8:	49 39 d4             	cmp    %rdx,%r12
- 1fb:	7f 21                	jg     21e <__percpu_counter_add+0x4b>
- 1fd:	48 89 df             	mov    %rbx,%rdi
- 200:	e8 00 00 00 00       	callq  205 <__percpu_counter_add+0x32>
- 205:	4c 01 63 18          	add    %r12,0x18(%rbx)
- 209:	48 8b 43 30          	mov    0x30(%rbx),%rax
- 20d:	48 89 df             	mov    %rbx,%rdi
- 210:	65 c7 00 00 00 00 00 	movl   $0x0,%gs:(%rax)
- 217:	e8 00 00 00 00       	callq  21c <__percpu_counter_add+0x49>
- 21c:	eb 04                	jmp    222 <__percpu_counter_add+0x4f>
- 21e:	65 44 89 20          	mov    %r12d,%gs:(%rax)
- 222:	5b                   	pop    %rbx
- 223:	41 5c                	pop    %r12
- 225:	c9                   	leaveq 
- 226:	c3                   	retq   
-
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Reviewed-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- lib/percpu_counter.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/percpu.h |  122 +++++++++++++++++++++++++++++++++++++++++-
+ arch/x86/lib/Makefile         |    1 
+ arch/x86/lib/cmpxchg16b_emu.S |   55 ++++++++++++++++++
+ 3 files changed, 177 insertions(+), 1 deletion(-)
 
-Index: linux-2.6/lib/percpu_counter.c
+Index: linux-2.6/arch/x86/include/asm/percpu.h
 ===================================================================
---- linux-2.6.orig/lib/percpu_counter.c	2010-11-03 12:25:37.000000000 -0500
-+++ linux-2.6/lib/percpu_counter.c	2010-11-03 12:27:27.000000000 -0500
-@@ -72,18 +72,16 @@ EXPORT_SYMBOL(percpu_counter_set);
- void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
- {
- 	s64 count;
--	s32 *pcount;
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-11-26 12:37:37.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2010-11-26 14:42:49.000000000 -0600
+@@ -216,6 +216,41 @@ do {									\
+ 	pfo_ret__ + (val);						\
+ })
  
- 	preempt_disable();
--	pcount = this_cpu_ptr(fbc->counters);
--	count = *pcount + amount;
-+	count = __this_cpu_read(*fbc->counters) + amount;
- 	if (count >= batch || count <= -batch) {
- 		spin_lock(&fbc->lock);
- 		fbc->count += count;
--		*pcount = 0;
-+		__this_cpu_write(*fbc->counters, 0);
- 		spin_unlock(&fbc->lock);
- 	} else {
--		*pcount = count;
-+		__this_cpu_write(*fbc->counters, count);
- 	}
- 	preempt_enable();
- }
++#define percpu_cmpxchg_op(var, oval, nval)				\
++({									\
++	typeof(var) __ret;						\
++	typeof(var) __old = (oval);					\
++	typeof(var) __new = (nval);					\
++	switch (sizeof(var)) {						\
++	case 1:								\
++		asm("cmpxchgb %2, "__percpu_arg(1)			\
++			    : "=a" (__ret), "+m" (&var)			\
++			    : "q" (__new), "0" (__old)			\
++			    : "memory");				\
++		break;							\
++	case 2:								\
++		asm("cmpxchgw %2, "__percpu_arg(1)			\
++			    : "=a" (__ret), "+m" (&var)			\
++			    : "r" (__new), "0" (__old)			\
++			    : "memory");				\
++		break;							\
++	case 4:								\
++		asm("cmpxchgl %2, "__percpu_arg(1)			\
++			    : "=a" (__ret), "+m" (&var)			\
++			    : "r" (__new), "0" (__old)			\
++			    : "memory");				\
++		break;							\
++	case 8:								\
++		asm("cmpxchgq %2, "__percpu_arg(1)			\
++			    : "=a" (__ret), "+m" (&var)			\
++			    : "r" (__new), "0" (__old)			\
++			    : "memory");				\
++		break;							\
++	default: __bad_percpu_size();					\
++	}								\
++	__ret;								\
++})
++
+ #define percpu_from_op(op, var, constraint)		\
+ ({							\
+ 	typeof(var) pfo_ret__;				\
+@@ -346,7 +381,56 @@ do {									\
+ #define this_cpu_add_return_1(pcp, val)		percpu_add_return_op((pcp), val)
+ #define this_cpu_add_return_2(pcp, val)		percpu_add_return_op((pcp), val)
+ #define this_cpu_add_return_4(pcp, val)		percpu_add_return_op((pcp), val)
+-#endif
++
++#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#endif /* !CONFIG_M386 */
++
++#ifdef CONFIG_X86_CMPXCHG64
++#define percpu_cmpxchg8b_double(pcp, o1, o2, n1, n2)			\
++({									\
++	char __ret;							\
++	typeof(o1) __o1 = o1;						\
++	typeof(o1) __n1 = n1;						\
++	typeof(o2) __o2 = o2;						\
++	typeof(o2) __n2 = n2;						\
++	typeof(o2) __dummy = n2;						\
++	asm("cmpxchg8b "__percpu_arg(1)"\n\tsetz %0\n\t"		\
++		    : "=a"(__ret), "=m" (*pcp), "=d"(__dummy)		\
++		    :  "b"(__n1), "c"(__n2), "a"(__o1), "d"(__o2));	\
++	__ret;								\
++})
++#endif /* CONFIG_X86_CMPXCHG64 */
++
++#define __this_cpu_cmpxchg_double_4(pcp, o1, o2, n1, n2) percpu_cmpxchg8b_double((pcp), o1, o2, n1, n2)
++#define this_cpu_cmpxchg_double_4(pcp, o1, o2, n1, n2)	percpu_cmpxchg8b_double((pcp), o1, o2, n1, n2)
++#define irqsafe_cmpxchg_double_4(pcp, o1, o2, n1, n2)	percpu_cmpxchg8b_double((pcp), o1, o2, n1, n2)
++
++#ifndef CONFIG_X86_64
++#ifdef CONFIG_X86_CMPXCHG64
++/* We can support a 8 byte cmpxchg with a special instruction on 32 bit */
++#define __this_cpu_cmpxchg_8(pcp, oval, nval)				\
++({									\
++	typeof(var) __ret;						\
++	typeof(var) __old = (oval);					\
++	typeof(var) __new = (nval);					\
++	asm("cmpxchg8b %2, "__percpu_arg(1)				\
++	    : "=A" (__ret), "+m" (&pcp)					\
++	    : "b" (((u32)new), "c" ((u32)(new >> 32)),  "0" (__old)	\
++	    : "memory");						\
++	__ret;								\
++})
++
++#define this_cpu_cmpxchg_8(pcp, oval, nval)	__this_cpu_cmpxchg_8(pcp, oval, nval)
++#define irqsafe_cmpxchg_8(pcp, oval, nval)	__this_cpu_cmpxchg_8(pcp, oval, nval)
++
++#endif /* CONFIG_X86_CMPXCHG64 */
++#endif /* !CONFIG_X86_64 */
++
+ /*
+  * Per cpu atomic 64 bit operations are only available under 64 bit.
+  * 32 bit must fall back to generic operations.
+@@ -374,6 +458,42 @@ do {									\
+ #define __this_cpu_add_return_8(pcp, val)	percpu_add_return_op((pcp), val)
+ #define this_cpu_add_return_8(pcp, val)	percpu_add_return_op((pcp), val)
+ 
++#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
++
++/*
++ * Pretty complex macro to generate cmpxchg16 instruction. The instruction
++ * is not supported on early AMD64 processors so we must be able to emulate
++ * it in software. The address used in the cmpxchg16 instruction must be
++ * aligned to a 16 byte boundary.
++ */
++
++/*
++ * Something is screwed up with alternate instruction creation. This one
++ * fails with a mysterious asm error about a byte val > 255.
++ */
++#define percpu_cmpxchg16b(pcp, o1, o2, n1, n2)			\
++({									\
++	char __ret;							\
++	typeof(o1) __o1 = o1;						\
++	typeof(o1) __n1 = n1;						\
++	typeof(o2) __o2 = o2;						\
++	typeof(o2) __n2 = n2;						\
++	typeof(o2) __dummy;						\
++	VM_BUG_ON(((unsigned long)pcp) % 16);				\
++	alternative_io("call cmpxchg16b_local\n\t" P6_NOP4,		\
++			"cmpxchg16b %%gs:(%%rsi)\n\tsetz %0\n\t",	\
++			X86_FEATURE_CX16,				\
++		    	ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),	\
++		        "S" (pcp), "b"(__n1), "c"(__n2),		\
++			 "a"(__o1), "d"(__o2));				\
++	__ret;								\
++})
++
++#define __this_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2) percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
++#define this_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2)	percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
++#define irqsafe_cmpxchg_double_8(pcp, o1, o2, n1, n2)	percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
++
+ #endif
+ 
+ /* This is not atomic against other CPUs -- CPU preemption needs to be off */
+Index: linux-2.6/arch/x86/lib/Makefile
+===================================================================
+--- linux-2.6.orig/arch/x86/lib/Makefile	2010-11-26 12:08:33.000000000 -0600
++++ linux-2.6/arch/x86/lib/Makefile	2010-11-26 12:50:50.000000000 -0600
+@@ -42,4 +42,5 @@ else
+         lib-y += memmove_64.o memset_64.o
+         lib-y += copy_user_64.o rwlock_64.o copy_user_nocache_64.o
+ 	lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem_64.o
++	lib-y += cmpxchg16b_emu.o
+ endif
+Index: linux-2.6/arch/x86/lib/cmpxchg16b_emu.S
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-2.6/arch/x86/lib/cmpxchg16b_emu.S	2010-11-26 13:14:02.000000000 -0600
+@@ -0,0 +1,55 @@
++/*
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; version 2
++ *	of the License.
++ *
++ */
++
++#include <linux/linkage.h>
++#include <asm/alternative-asm.h>
++#include <asm/frame.h>
++#include <asm/dwarf2.h>
++
++
++.text
++
++/*
++ * Inputs:
++ * %rsi : memory location to compare
++ * %rax : low 64 bits of old value
++ * %rdx : high 64 bits of old value
++ * %rbx : low 64 bits of new value
++ * %rcx : high 64 bits of new value
++ * %al  : Operation successful
++ */
++ENTRY(cmpxchg16b_local_emu)
++CFI_STARTPROC
++
++#
++# Emulate 'cmpxchg16b %gs:(%rsi)' except we return the result in
++# al not via the ZF. Caller will access al to get result.
++#
++cmpxchg16b_local_emu:
++	pushf
++	cli
++
++	cmpq  %gs:(%rsi), %rax
++	jne not_same
++	cmpq %gs:8(%rsi), %rdx
++	jne not_same
++
++	movq %rbx,  %gs:(%esi)
++	movq %rcx, %gs:8(%esi)
++
++	popf
++	mov $1, %al
++	ret
++
++ not_same:
++	popf
++	xor  %al,%al
++	ret
++
++CFI_ENDPROC
++ENDPROC(cmpxchg16b_local_emu)
 
