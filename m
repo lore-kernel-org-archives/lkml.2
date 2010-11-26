@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab0KZWyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 17:54:15 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53802 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab0KZWyP (ORCPT
+	id S1752994Ab0KZW4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 17:56:46 -0500
+Received: from 103.242.115-78.rev.gaoland.net ([78.115.242.103]:43509 "EHLO
+	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751855Ab0KZW4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 17:54:15 -0500
-Date: Fri, 26 Nov 2010 22:53:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Olof Johansson <olof@lixom.net>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kevin Hilman <khilman@deeprootsystems.com>, akpm@linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-Message-ID: <20101126225339.GA26864@n2100.arm.linux.org.uk>
-References: <1290526740-27624-1-git-send-email-ohad@wizery.com> <1290526740-27624-2-git-send-email-ohad@wizery.com> <20101126045912.GC6598@lixom.net> <AANLkTin5Tfcuy0WcHJ22rWC8niwZCj8SZAMKLz0p9jwc@mail.gmail.com> <20101126091832.GE9310@n2100.arm.linux.org.uk> <AANLkTimS-cSi1B5LdtwhJWhKDuFKOYG1j_p-iQiH=zRe@mail.gmail.com> <20101126104548.GG9310@n2100.arm.linux.org.uk> <AANLkTi=h3gPN63NKKJ4wjumKNx9qDtxCKvOSbtRkr1wx@mail.gmail.com>
+	Fri, 26 Nov 2010 17:56:45 -0500
+X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Nov 2010 17:56:43 EST
+Date: Fri, 26 Nov 2010 23:49:14 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Ben Hutchings <benh@debian.org>
+Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        564628@bugs.debian.org
+Subject: Re: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
+Message-ID: <20101126224914.GA12266@electric-eye.fr.zoreil.com>
+References: <1290772470-23713-1-git-send-email-hayeswang@realtek.com>
+ <1290779458.3051.45.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=h3gPN63NKKJ4wjumKNx9qDtxCKvOSbtRkr1wx@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1290779458.3051.45.camel@localhost>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 12:18:55AM +0200, Ohad Ben-Cohen wrote:
-> But then there's the other (quite reasonable) claim that says we
-> shouldn't crash the machine because of a non fatal bug: if a crappy
-> driver messes up, the user (not the developer) will most probably
-> prefer the machine to keep running with degraded functionality rather
-> than boot.
+Ben Hutchings <benh@debian.org> :
+> On Fri, 2010-11-26 at 19:54 +0800, Hayes Wang wrote:
+> > Correct the binary code (Low pass filter & DLY_CAP fine tune from uC).
+> > The incorrect ram code would make the nic working abnormally.
+> [...]
+> 
+> I'm glad you finally acknowledge that this is code rather than simple
+> register initialisation.
 
-There's also the quite reasonable expectation that we shouldn't corrupt
-user data.  With locking interfaces, if someone abuses them and they
-fail to work, then the risk is data corruption due to races.  The safe
-thing in that case is to panic - terminate that thread before it does
-anything unsafe, thereby preventing data corruption.
+I am not sure that Hayes is a native english speaker.
 
-Yes, it may mean that something becomes unavailable, but that's better
-than corrupting data.
+I am glad to see him posting here.
 
-Take a look at the kernel's own spinlock implementation.  Do we do lots
-of checks in there for things like someone passing a NULL pointer to
-the spinlock, or do we get an oops instead?
+[...]
+> Below are the changes Debian currently applies in preparation for proper
+> licencing of the firmware.
 
-Also look at the list implementation.  Do we check for NULL pointers
-there, or do we get an oops instead?
+Do you have some scripts to convert the data at hand ?
 
-Same for mutex.  The same goes for lots of other infrastructure interfaces.
+I would welcome a clear statement regarding the status of the binary thing
+(code ? data ?) but even without one *now*, I'd like to see it separated
+from the main code : the driver sucks and things will go worse with
+support code for the 8168e.
+
+Is there anybody objecting to it ? I will buy anything be it firmware API
+or plain .h.
+
+-- 
+Ueimor
