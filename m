@@ -1,113 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab0KZLLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:11:38 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:52052 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754853Ab0KZLLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:11:37 -0500
-Date: Fri, 26 Nov 2010 11:11:22 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Simon Kirby <sim@hostway.ca>, Shaohua Li <shaohua.li@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: Free memory never fully used, swapping
-Message-ID: <20101126111122.GK26037@csn.ul.ie>
-References: <20101125090328.GB14180@hostway.ca> <20101125161238.GD26037@csn.ul.ie> <20101126195118.B6E7.A69D9226@jp.fujitsu.com>
+	id S1754903Ab0KZLOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:14:20 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57477 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab0KZLOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 06:14:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=ZjrrZlvJl/EcC7wKvvZlcG9zaasb7Qrcti/5AZeM3tILk9E2etWe+Z3ahImygYKA6H
+         0BNtXUD8IEaH1Cn8YKwl8OKeDCxchZgbLldnUGtdd7rrL9q+NMCKHqZHulLJTjSTlo7R
+         ZYgILMFxaF5kDZjYSr71/sxrkhxruv2+az9P8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101126195118.B6E7.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
+References: <20101123224601.766827604@openvz.org>
+	<20101123224800.294919307@openvz.org>
+	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
+Date: Fri, 26 Nov 2010 14:14:17 +0300
+X-Google-Sender-Auth: lkaEO32TidopMbuzQo3yo7f8vps
+Message-ID: <AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
+Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, peterz@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 08:03:04PM +0900, KOSAKI Motohiro wrote:
-> Two points.
-> 
-> > @@ -2310,10 +2324,12 @@ loop_again:
-> >  				 * spectulatively avoid congestion waits
-> >  				 */
-> >  				zone_clear_flag(zone, ZONE_CONGESTED);
-> > +				if (i <= pgdat->high_zoneidx)
-> > +					any_zone_ok = 1;
-> >  			}
-> >  
-> >  		}
-> > -		if (all_zones_ok)
-> > +		if (all_zones_ok || (order && any_zone_ok))
-> >  			break;		/* kswapd: all done */
-> >  		/*
-> >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> > @@ -2336,7 +2352,7 @@ loop_again:
-> >  			break;
-> >  	}
-> >  out:
-> > -	if (!all_zones_ok) {
-> > +	if (!(all_zones_ok || (order && any_zone_ok))) {
-> 
-> This doesn't work ;)
-> kswapd have to clear ZONE_CONGESTED flag before enter sleeping.
-> otherwise nobody can clear it.
-> 
+Stephane, this is a misprint, I'll update this comments on format
+(giod catch btw!). in real low 32 bits are considered as cccr in ht
+mode. wait a bit, i'll post update.
 
-Does it not do it earlier in balance_pgdat() here
-
-                                /*
-                                 * If a zone reaches its high watermark,
-                                 * consider it to be no longer congested. It's
-                                 * possible there are dirty pages backed by
-                                 * congested BDIs but as pressure is
-                                 * relieved, spectulatively avoid congestion waits
-                                 */
-                                zone_clear_flag(zone, ZONE_CONGESTED);
-                                if (i <= pgdat->high_zoneidx)
-                                        any_zone_ok = 1;
-
-> Say, we have to fill below condition.
->  - All zone are successing zone_watermark_ok(order-0)
-
-We should loop around at least once with order == 0 where all_zones_ok
-is checked.
-
->  - At least one zone are successing zone_watermark_ok(high-order)
-> 
-
-This is preferable but it's possible for kswapd to go to sleep without
-this condition being satisified.
-
-> 
-> 
-> > @@ -2417,6 +2439,7 @@ static int kswapd(void *p)
-> >  		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> >  		new_order = pgdat->kswapd_max_order;
-> >  		pgdat->kswapd_max_order = 0;
-> > +		pgdat->high_zoneidx = MAX_ORDER;
-> 
-> I don't think MAX_ORDER is correct ;)
-> 
->         high_zoneidx = pgdat->high_zoneidx;
->         pgdat->high_zoneidx = pgdat->nr_zones - 1;
-> 
-> ?
-> 
-
-Bah. It should have been MAX_NR_ZONES. This happens to still work because
-MAX_ORDER will always be higher than MAX_NR_ZONES but it's wrong.
-
-> And, we have another kswapd_max_order reading place. (after kswapd_try_to_sleep)
-> We need it too.
-> 
-
-I'm not quite sure what you mean here. kswapd_max_order is read again
-after kswapd tries to sleep (or wakes for that matter) but it'll be in
-response to another caller having tried to wake kswapd indicating that
-those high orders really are needed.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+> On Tue, Nov 23, 2010 at 11:46 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+> wrote:
+>> Add description of .config in a sake of RAW events.
+>> At least this should bring some light to those who
+>> will be reading this code.
+>>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> CC: Lin Ming <ming.m.lin@intel.com>
+>> CC: Stephane Eranian <eranian@google.com>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>  arch/x86/include/asm/perf_event_p4.h |   62
+>> ++++++++++++++++++++++++++++++-----
+>>  1 file changed, 54 insertions(+), 8 deletions(-)
+>>
+>> Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+>> =====================================================================
+>> --- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
+>> +++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+>> @@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
+>>  };
+>>
+>>  /*
+>> - * P4 PEBS specifics (Replay Event only)
+>> - *
+>> - * Format (bits):
+>> - *   0-6: metric from P4_PEBS_METRIC enum
+>> - *    7 : reserved
+>> - *    8 : reserved
+>> - * 9-11 : reserved
+>> - *
+>>  * Note we have UOP and PEBS bits reserved for now
+>>  * just in case if we will need them once
+>>  */
+>> @@ -788,5 +780,59 @@ enum P4_PEBS_METRIC {
+>>        P4_PEBS_METRIC__max
+>>  };
+>>
+>> +/*
+>> + * Notes on internal configuration of ESCR+CCCR tuples
+>> + *
+>> + * Since P4 has quite the different architecture of
+>> + * performance registers in compare with "architectural"
+>> + * once and we have on 64 bits to keep configuration
+>> + * of performance event, the following trick is used.
+>> + *
+>> + * 1) Since both ESCR and CCCR registers have only low
+>> + *    32 bits valuable, we pack them into a single 64 bit
+>> + *    configuration. Low 32 bits of such config correspond
+>> + *    to low 32 bits of CCCR register and high 32 bits
+>> + *    correspond to low 32 bits of ESCR register.
+>> + *
+>> + * 2) The meaning of every bit of such config field can
+>> + *    be found in Intel SDM but it should be noted that
+>> + *    we "borrow" some reserved bits for own usage and
+>> + *    clean them or set to a proper value when we do
+>> + *    a real write to hardware registers.
+>> + *
+>> + * 3) The format of bits of config is the following
+>> + *    and should be either 0 or set to some predefined
+>> + *    values:
+>> + *
+>> + *    Low 32 bits
+>> + *    -----------
+>> + *      0-6: P4_PEBS_METRIC enum
+>> + *     7-11:                    reserved
+>> + *       12: Active thread
+>
+> I don't understand bit 12. In the actual register, it
+> corresponds to the enable bit. Seems you're overriding
+> its usage. Do I interpret this as saying: 0 = enable when
+> running on thread0, 1=monitoring when running on thread1?
+> And if I don't care?
+>
+>
+>
+>> + *    13-15:                    reserved (ESCR select)
+>> + *    16-17: Compare
+>> + *       18: Complement
+>> + *    20-23: Threshold
+>> + *       24: Edge
+>> + *       25:                    reserved (FORCE_OVF)
+>> + *       26:                    reserved (OVF_PMI_T0)
+>> + *       27:                    reserved (OVF_PMI_T1)
+>> + *    28-29:                    reserved
+>> + *       30:                    reserved (Cascade)
+>> + *       31:                    reserved (OVF)
+>> + *
+>> + *    High 32 bits
+>> + *    ------------
+>> + *        0:                    reserved (T1_USR)
+>> + *        1:                    reserved (T1_OS)
+>> + *        2:                    reserved (T0_USR)
+>> + *        3:                    reserved (T0_OS)
+>> + *        4: Tag Enable
+>> + *      5-8: Tag Value
+>> + *     9-24: Event Mask (may use P4_ESCR_EMASK_BIT helper)
+>> + *    25-30: enum P4_EVENTS
+>> + *       31:                    reserved (HT thread)
+>> + */
+>> +
+>>  #endif /* PERF_EVENT_P4_H */
+>>
+>>
+>>
+>
