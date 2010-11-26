@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab0KZOFX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 09:05:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14637 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab0KZOFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 09:05:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,261,1288594800"; 
-   d="scan'208";a="681286627"
-Date: Fri, 26 Nov 2010 15:05:19 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 0/7] Wolfson MFD updates
-Message-ID: <20101126140518.GN5520@sortiz-mobl>
-References: <20101124180055.GO24970@rakim.wolfsonmicro.main>
+	id S1753954Ab0KZOGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 09:06:30 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60888 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161Ab0KZOG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 09:06:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=wA5mHgyRNoWDaqEJUjIko3lo7hIay0ypSB+9171ow3FQNs7jyjtMeggS7c8hob/lgh
+         TTqAiuAKwVSFSFU/izmHCY/dfRILNPl4GZ+2o+wULoFKhhl624Ftzl065ezd1FGmkD2W
+         CobwMqywmh2TqdTsgxIi0xC1BxDhcD1zivZ80=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101124180055.GO24970@rakim.wolfsonmicro.main>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 26 Nov 2010 22:06:27 +0800
+Message-ID: <AANLkTimV=6=Je=k6UW=ivJtmR0ONoTrscM2i8YJd5JjA@mail.gmail.com>
+Subject: [PATCH] add rb_next in block throttle
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+When selecting group for dispatching, the first entry of the service
+tree is sequentially dequeued, then the first entry is recomputed by
+calling rb_first().
 
-On Wed, Nov 24, 2010 at 06:00:55PM +0000, Mark Brown wrote:
-> This is a reposting of a number of Wolfson MFD patches previously posted
-> - I seem to building up a relatively large queue of patches here.
-> 
-> Patch 1/7 is a bugfix and really ought to go into 2.6.37, patch 7/7
-> would ideally be merged via ASoC as the bulk of the support for this
-> device is in the CODEC driver, 2-3 are a new device and 4-6 are some
-> housekeeping for new kernel APIs.
-All 7 patches applied, thanks a lot.
+When the first is removed from service tree, new first could also be
+computed with rb_next(), since it could be faster than rb_first in
+this special environment.
 
-Cheers,
-Samuel.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--- a/block/blk-throttle.c	2010-11-01 19:54:12.000000000 +0800
++++ b/block/blk-throttle.c	2010-11-26 21:27:40.000000000 +0800
+@@ -251,7 +251,7 @@ static void rb_erase_init(struct rb_node
+ static void throtl_rb_erase(struct rb_node *n, struct throtl_rb_root *root)
+ {
+ 	if (root->left == n)
+-		root->left = NULL;
++		root->left = rb_next(n);
+ 	rb_erase_init(n, &root->rb);
+ 	--root->count;
+ }
