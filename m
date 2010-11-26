@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab0KZLrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:47:43 -0500
-Received: from mail.atheros.com ([12.19.149.2]:32537 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab0KZLrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:47:42 -0500
-From: Sujith <Sujith.Manoharan@atheros.com>
+	id S1753389Ab0KZLtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:49:18 -0500
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:1228 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750880Ab0KZLtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 06:49:17 -0500
+Message-ID: <4CEF9E68.9080200@draigBrady.com>
+Date: Fri, 26 Nov 2010 11:47:52 +0000
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <19695.40541.335361.81396@gargle.gargle.HOWL>
-Date: Fri, 26 Nov 2010 17:17:41 +0530
-To: Pavel Machek <pma@sysgo.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>,
-        "ath9k-devel@venema.h4ckr.net" <ath9k-devel@venema.h4ckr.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "chunkeey@googlemail.com" <chunkeey@googlemail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "rudolf.marek@sysgo.com" <rudolf.marek@sysgo.com>,
-        "cko@sysgo.com" <cko@sysgo.com>, "mfa@sysgo.com" <mfa@sysgo.com>,
-        "anl@sysgo.com" <anl@sysgo.com>
-Subject: Re: ath9k_htc vs. powerpc (was Re: working usb wifi card, that is still possible to buy)
-In-Reply-To: <20101126112737.GB11857@pma.sysgo.com>
-References: <20101103092431.GA21138@pma.sysgo.com>
-	<20101124081616.GA30595@pma.sysgo.com>
-	<20101124131320.GA2611@pma.sysgo.com>
-	<4CED33E0.5040000@lwfinger.net>
-	<20101126083125.GA28982@pma.sysgo.com>
-	<20101126102026.GA11857@pma.sysgo.com>
-	<20101126112737.GB11857@pma.sysgo.com>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-unknown-linux-gnu)
+To: "Frank A. Kingswood" <frank@kingswood-consulting.co.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: atomically swap two files
+References: <icmfu2$nga$1@dough.gmane.org>
+In-Reply-To: <icmfu2$nga$1@dough.gmane.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek wrote:
+On 25/11/10 20:11, Frank A. Kingswood wrote:
 > Hi!
 > 
-> Sujith, I see you fought with endianness issues on ath9k_htc
-> driver. Was you able to test it on actual hardware? Should I try the
-> version just after your commit?
+> Is it possible to swap two files in an atomic way, so that after the
+> syscall either the two files have exchanged names or neither has been
+> modified?
+> 
+> I suspect that btrfs could do it, but I'm wondering about ext3/4.
 
-No, I never had a chance to test the driver on a big-endian system.
-I assume you are referring to this commit: "ath9k_htc: Fix sparse endian warnings" ?
+I don't think there is anything equivalent to exchangedata() on Linux
+http://developer.apple.com/library/mac/#DOCUMENTATION/Darwin/Reference/ManPages/man2/exchangedata.2.html
 
-Does using latest wireless-testing help ?
-Or you can try compat-wireless to get the latest code.
+I've written some notes on atomically replacing
+file contents with standard tools here:
+http://www.pixelbeat.org/docs/unix_file_replacement.html
 
-> > Editing ath_print() works. Question is what is relevant debug info for this...?
-
-Please see: http://wireless.kernel.org/en/users/Drivers/ath9k/debug
-'modprobe ath9k_htc debug=0x4601' should give some useful output.
-
-Sujith
+cheers,
+Pádraig.
