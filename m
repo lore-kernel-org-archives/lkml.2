@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab0KZKlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:41:18 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43907 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754546Ab0KZKlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 05:41:17 -0500
-Date: Fri, 26 Nov 2010 11:40:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        kvm-devel <kvm@vger.kernel.org>, Glauber Costa <glommer@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Olivier Hanesse <olivier.hanesse@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Eelco Dolstra <e.dolstra@tudelft.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/pvclock-xen: zero last_value on resume
-Message-ID: <20101126104047.GA9798@elte.hu>
-References: <4CC708DE.1070000@goop.org>
- <4CEACFAB.90503@goop.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CEACFAB.90503@goop.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754653Ab0KZKmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:42:32 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43786 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754579Ab0KZKma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 05:42:30 -0500
+Date: Fri, 26 Nov 2010 10:41:21 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: microcai <microcai@fedoraproject.org>
+Cc: linux-console@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Kernel fbcon UNICODE font support
+Message-ID: <20101126104121.043cd9fb@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=gUrUZv=3=tEhyjtWfwhADLU5heo7+DYTQboQv@mail.gmail.com>
+References: <1290765760.6087.3.camel@cai.gentoo>
+	<20101126100915.66112ee7@lxorguk.ukuu.org.uk>
+	<AANLkTi=gUrUZv=3=tEhyjtWfwhADLU5heo7+DYTQboQv@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> This maks it possible to quickly view an UTF-8 text without boring X.
 
-* Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+You can do that in user space too (see bogl). X boring or otherwise is
+just an interface layer to the video.
 
-> On 10/26/2010 09:59 AM, Jeremy Fitzhardinge wrote:
-> >
-> > If the guest domain has been suspend/resumed or migrated, then the
-> > system clock backing the pvclock clocksource may revert to a smaller
-> > value (ie, can be non-monotonic across the migration/save-restore).
-> > Make sure we zero last_value in that case so that the domain
-> > continues to see clock updates.
-> 
-> Ping?  Looks like this fell through the gaps.
-
-Does not apply cleanly here - mind resending the latest version?
-
-Thanks,
-
-	Ingo
+Alan
