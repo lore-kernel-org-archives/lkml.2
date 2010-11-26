@@ -1,292 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab0KZPCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:02:40 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35658 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755437Ab0KZPB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:01:56 -0500
-Message-Id: <20101126145410.771278578@chello.nl>
-User-Agent: quilt/0.47-1
-Date: Fri, 26 Nov 2010 15:38:52 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 09/21] powerpc: Preemptible mmu_gather
-References: <20101126143843.801484792@chello.nl>
-Content-Disposition: inline; filename=mm-preempt-tlb-gather-power.patch
+	id S1755519Ab0KZPDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:03:18 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40268 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab0KZPDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:03:13 -0500
+Date: Fri, 26 Nov 2010 15:02:45 GMT
+From: tip-bot for Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, gerald.schaefer@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, gerald.schaefer@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1290437256.7455.4.camel@thinkpad>
+References: <1290437256.7455.4.camel@thinkpad>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] mutexes, sched: Introduce arch_mutex_cpu_relax()
+Message-ID: <tip-335d7afbfb71faac833734a94240c1e07cf0ead8@git.kernel.org>
+Git-Commit-ID: 335d7afbfb71faac833734a94240c1e07cf0ead8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:02:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up powerpc to the new mmu_gather stuffs.
+Commit-ID:  335d7afbfb71faac833734a94240c1e07cf0ead8
+Gitweb:     http://git.kernel.org/tip/335d7afbfb71faac833734a94240c1e07cf0ead8
+Author:     Gerald Schaefer <gerald.schaefer@de.ibm.com>
+AuthorDate: Mon, 22 Nov 2010 15:47:36 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 26 Nov 2010 15:05:34 +0100
 
-PPC has an extra batching queue to RCU free the actual pagetable
-allocations, use the ARCH extentions for that for now.
+mutexes, sched: Introduce arch_mutex_cpu_relax()
 
-For the ppc64_tlb_batch, which tracks the vaddrs to unhash from the
-hardware hash-table, keep using per-cpu arrays but flush on context
-switch and use a TLF bit to track the laxy_mmu state.
+The spinning mutex implementation uses cpu_relax() in busy loops as a
+compiler barrier. Depending on the architecture, cpu_relax() may do more
+than needed in this specific mutex spin loops. On System z we also give
+up the time slice of the virtual cpu in cpu_relax(), which prevents
+effective spinning on the mutex.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This patch replaces cpu_relax() in the spinning mutex code with
+arch_mutex_cpu_relax(), which can be defined by each architecture that
+selects HAVE_ARCH_MUTEX_CPU_RELAX. The default is still cpu_relax(), so
+this patch should not affect other architectures than System z for now.
+
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1290437256.7455.4.camel@thinkpad>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/powerpc/include/asm/pgalloc.h     |    4 ++--
- arch/powerpc/include/asm/thread_info.h |    2 ++
- arch/powerpc/include/asm/tlb.h         |   10 ++++++++++
- arch/powerpc/kernel/process.c          |   21 ++++++++++++++++++++-
- arch/powerpc/mm/pgtable.c              |   14 ++++----------
- arch/powerpc/mm/tlb_hash32.c           |    2 +-
- arch/powerpc/mm/tlb_hash64.c           |   12 +++++++-----
- arch/powerpc/mm/tlb_nohash.c           |    2 +-
- 8 files changed, 47 insertions(+), 20 deletions(-)
+ arch/Kconfig                  |    3 +++
+ arch/s390/Kconfig             |    1 +
+ arch/s390/include/asm/mutex.h |    2 ++
+ include/linux/mutex.h         |    4 ++++
+ kernel/mutex.c                |    2 +-
+ kernel/sched.c                |    3 ++-
+ 6 files changed, 13 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/arch/powerpc/include/asm/tlb.h
-===================================================================
---- linux-2.6.orig/arch/powerpc/include/asm/tlb.h
-+++ linux-2.6/arch/powerpc/include/asm/tlb.h
-@@ -28,6 +28,16 @@
- #define tlb_start_vma(tlb, vma)	do { } while (0)
- #define tlb_end_vma(tlb, vma)	do { } while (0)
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 8bf0fa65..f78c2be 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -175,4 +175,7 @@ config HAVE_PERF_EVENTS_NMI
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
  
-+#define HAVE_ARCH_MMU_GATHER 1
++config HAVE_ARCH_MUTEX_CPU_RELAX
++	bool
 +
-+struct pte_freelist_batch;
-+
-+struct arch_mmu_gather {
-+	struct pte_freelist_batch *batch;
-+};
-+
-+#define ARCH_MMU_GATHER_INIT (struct arch_mmu_gather){ .batch = NULL, }
-+
- extern void tlb_flush(struct mmu_gather *tlb);
+ source "kernel/gcov/Kconfig"
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index e0b98e7..6c6d7b3 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -99,6 +99,7 @@ config S390
+ 	select HAVE_KERNEL_LZMA
+ 	select HAVE_KERNEL_LZO
+ 	select HAVE_GET_USER_PAGES_FAST
++	select HAVE_ARCH_MUTEX_CPU_RELAX
+ 	select ARCH_INLINE_SPIN_TRYLOCK
+ 	select ARCH_INLINE_SPIN_TRYLOCK_BH
+ 	select ARCH_INLINE_SPIN_LOCK
+diff --git a/arch/s390/include/asm/mutex.h b/arch/s390/include/asm/mutex.h
+index 458c1f7..688271f 100644
+--- a/arch/s390/include/asm/mutex.h
++++ b/arch/s390/include/asm/mutex.h
+@@ -7,3 +7,5 @@
+  */
  
- /* Get the generic bits... */
-Index: linux-2.6/arch/powerpc/kernel/process.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/kernel/process.c
-+++ linux-2.6/arch/powerpc/kernel/process.c
-@@ -393,6 +393,9 @@ struct task_struct *__switch_to(struct t
- 	struct thread_struct *new_thread, *old_thread;
- 	unsigned long flags;
- 	struct task_struct *last;
-+#ifdef CONFIG_PPC64
-+	struct ppc64_tlb_batch *batch;
+ #include <asm-generic/mutex-dec.h>
++
++#define arch_mutex_cpu_relax()	barrier()
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index f363bc8..94b48bd 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -160,4 +160,8 @@ extern int mutex_trylock(struct mutex *lock);
+ extern void mutex_unlock(struct mutex *lock);
+ extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+ 
++#ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
++#define arch_mutex_cpu_relax()	cpu_relax()
 +#endif
- 
- #ifdef CONFIG_SMP
- 	/* avoid complexity of lazy save/restore of fpu
-@@ -511,7 +514,15 @@ struct task_struct *__switch_to(struct t
- 		old_thread->accum_tb += (current_tb - start_tb);
- 		new_thread->start_tb = current_tb;
- 	}
--#endif
 +
-+	batch = &__get_cpu_var(ppc64_tlb_batch);
-+	if (batch->active) {
-+		current_thread_info()->local_flags |= _TLF_LAZY_MMU;
-+		if (batch->index)
-+			__flush_tlb_pending(batch);
-+		batch->active = 0;
-+	}
-+#endif /* CONFIG_PPC64 */
- 
- 	local_irq_save(flags);
- 
-@@ -527,6 +538,14 @@ struct task_struct *__switch_to(struct t
- 	hard_irq_disable();
- 	last = _switch(old_thread, new_thread);
- 
-+#ifdef CONFIG_PPC64
-+	if (current_thread_info()->local_flags & _TLF_LAZY_MMU) {
-+		current_thread_info()->local_flags &= ~_TLF_LAZY_MMU;
-+		batch = &__get_cpu_var(ppc64_tlb_batch);
-+		batch->active = 1;
-+	}
-+#endif /* CONFIG_PPC64 */
-+
- 	local_irq_restore(flags);
- 
- 	return last;
-Index: linux-2.6/arch/powerpc/mm/pgtable.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/pgtable.c
-+++ linux-2.6/arch/powerpc/mm/pgtable.c
-@@ -33,8 +33,6 @@
- 
- #include "mmu_decl.h"
- 
--DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
--
- #ifdef CONFIG_SMP
- 
- /*
-@@ -43,7 +41,6 @@ DEFINE_PER_CPU(struct mmu_gather, mmu_ga
-  * freeing a page table page that is being walked without locks
-  */
- 
--static DEFINE_PER_CPU(struct pte_freelist_batch *, pte_freelist_cur);
- static unsigned long pte_freelist_forced_free;
- 
- struct pte_freelist_batch
-@@ -97,12 +94,10 @@ static void pte_free_submit(struct pte_f
- 
- void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
- {
--	/* This is safe since tlb_gather_mmu has disabled preemption */
--	struct pte_freelist_batch **batchp = &__get_cpu_var(pte_freelist_cur);
-+	struct pte_freelist_batch **batchp = &tlb->arch.batch;
- 	unsigned long pgf;
- 
--	if (atomic_read(&tlb->mm->mm_users) < 2 ||
--	    cpumask_equal(mm_cpumask(tlb->mm), cpumask_of(smp_processor_id()))){
-+	if (atomic_read(&tlb->mm->mm_users) < 2) {
- 		pgtable_free(table, shift);
- 		return;
+ #endif
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 200407c..a5889fb 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -199,7 +199,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		 * memory barriers as we'll eventually observe the right
+ 		 * values at the cost of a few extra spins.
+ 		 */
+-		cpu_relax();
++		arch_mutex_cpu_relax();
  	}
-@@ -124,10 +119,9 @@ void pgtable_free_tlb(struct mmu_gather 
- 	}
- }
+ #endif
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3e8a7db..abe7aec 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -75,6 +75,7 @@
  
--void pte_free_finish(void)
-+void pte_free_finish(struct mmu_gather *tlb)
- {
--	/* This is safe since tlb_gather_mmu has disabled preemption */
--	struct pte_freelist_batch **batchp = &__get_cpu_var(pte_freelist_cur);
-+	struct pte_freelist_batch **batchp = &tlb->arch.batch;
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
++#include <asm/mutex.h>
  
- 	if (*batchp == NULL)
- 		return;
-Index: linux-2.6/arch/powerpc/mm/tlb_hash64.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_hash64.c
-+++ linux-2.6/arch/powerpc/mm/tlb_hash64.c
-@@ -38,13 +38,11 @@ DEFINE_PER_CPU(struct ppc64_tlb_batch, p
-  * neesd to be flushed. This function will either perform the flush
-  * immediately or will batch it up if the current CPU has an active
-  * batch on it.
-- *
-- * Must be called from within some kind of spinlock/non-preempt region...
-  */
- void hpte_need_flush(struct mm_struct *mm, unsigned long addr,
- 		     pte_t *ptep, unsigned long pte, int huge)
- {
--	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *batch = &get_cpu_var(ppc64_tlb_batch);
- 	unsigned long vsid, vaddr;
- 	unsigned int psize;
- 	int ssize;
-@@ -99,6 +97,7 @@ void hpte_need_flush(struct mm_struct *m
- 	 */
- 	if (!batch->active) {
- 		flush_hash_page(vaddr, rpte, psize, ssize, 0);
-+		put_cpu_var(ppc64_tlb_batch);
- 		return;
+ #include "sched_cpupri.h"
+ #include "workqueue_sched.h"
+@@ -3888,7 +3889,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+ 		if (task_thread_info(rq->curr) != owner || need_resched())
+ 			return 0;
+ 
+-		cpu_relax();
++		arch_mutex_cpu_relax();
  	}
  
-@@ -127,6 +126,7 @@ void hpte_need_flush(struct mm_struct *m
- 	batch->index = ++i;
- 	if (i >= PPC64_TLB_BATCH_NR)
- 		__flush_tlb_pending(batch);
-+	put_cpu_var(ppc64_tlb_batch);
- }
- 
- /*
-@@ -155,7 +155,7 @@ void __flush_tlb_pending(struct ppc64_tl
- 
- void tlb_flush(struct mmu_gather *tlb)
- {
--	struct ppc64_tlb_batch *tlbbatch = &__get_cpu_var(ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *tlbbatch = &get_cpu_var(ppc64_tlb_batch);
- 
- 	/* If there's a TLB batch pending, then we must flush it because the
- 	 * pages are going to be freed and we really don't want to have a CPU
-@@ -164,8 +164,10 @@ void tlb_flush(struct mmu_gather *tlb)
- 	if (tlbbatch->index)
- 		__flush_tlb_pending(tlbbatch);
- 
-+	put_cpu_var(ppc64_tlb_batch);
-+
- 	/* Push out batch of freed page tables */
--	pte_free_finish();
-+	pte_free_finish(tlb);
- }
- 
- /**
-Index: linux-2.6/arch/powerpc/include/asm/thread_info.h
-===================================================================
---- linux-2.6.orig/arch/powerpc/include/asm/thread_info.h
-+++ linux-2.6/arch/powerpc/include/asm/thread_info.h
-@@ -139,10 +139,12 @@ static inline struct thread_info *curren
- #define TLF_NAPPING		0	/* idle thread enabled NAP mode */
- #define TLF_SLEEPING		1	/* suspend code enabled SLEEP mode */
- #define TLF_RESTORE_SIGMASK	2	/* Restore signal mask in do_signal */
-+#define TLF_LAZY_MMU		3	/* tlb_batch is active */
- 
- #define _TLF_NAPPING		(1 << TLF_NAPPING)
- #define _TLF_SLEEPING		(1 << TLF_SLEEPING)
- #define _TLF_RESTORE_SIGMASK	(1 << TLF_RESTORE_SIGMASK)
-+#define _TLF_LAZY_MMU		(1 << TLF_LAZY_MMU)
- 
- #ifndef __ASSEMBLY__
- #define HAVE_SET_RESTORE_SIGMASK	1
-Index: linux-2.6/arch/powerpc/include/asm/pgalloc.h
-===================================================================
---- linux-2.6.orig/arch/powerpc/include/asm/pgalloc.h
-+++ linux-2.6/arch/powerpc/include/asm/pgalloc.h
-@@ -32,13 +32,13 @@ static inline void pte_free(struct mm_st
- 
- #ifdef CONFIG_SMP
- extern void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift);
--extern void pte_free_finish(void);
-+extern void pte_free_finish(struct mmu_gather *tlb);
- #else /* CONFIG_SMP */
- static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
- {
- 	pgtable_free(table, shift);
- }
--static inline void pte_free_finish(void) { }
-+static inline void pte_free_finish(struct mmu_gather *tlb) { }
- #endif /* !CONFIG_SMP */
- 
- static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *ptepage,
-Index: linux-2.6/arch/powerpc/mm/tlb_hash32.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_hash32.c
-+++ linux-2.6/arch/powerpc/mm/tlb_hash32.c
-@@ -73,7 +73,7 @@ void tlb_flush(struct mmu_gather *tlb)
- 	}
- 
- 	/* Push out batch of freed page tables */
--	pte_free_finish();
-+	pte_free_finish(tlb);
- }
- 
- /*
-Index: linux-2.6/arch/powerpc/mm/tlb_nohash.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_nohash.c
-+++ linux-2.6/arch/powerpc/mm/tlb_nohash.c
-@@ -301,7 +301,7 @@ void tlb_flush(struct mmu_gather *tlb)
- 	flush_tlb_mm(tlb->mm);
- 
- 	/* Push out batch of freed page tables */
--	pte_free_finish();
-+	pte_free_finish(tlb);
- }
- 
- /*
-
-
+ 	return 1;
