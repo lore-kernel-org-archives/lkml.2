@@ -1,46 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab0KZLIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 06:08:05 -0500
-Received: from hera.kernel.org ([140.211.167.34]:51096 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754430Ab0KZLID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 06:08:03 -0500
-Message-ID: <4CEF950B.9050608@kernel.org>
-Date: Fri, 26 Nov 2010 12:07:55 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-CC: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] workqueue: check the allocation of system_unbound_wq
-References: <1290737991-23163-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-In-Reply-To: <1290737991-23163-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 11:07:57 +0000 (UTC)
+	id S1754786Ab0KZLKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 06:10:45 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:37602 "EHLO
+	denmail01.apm.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754328Ab0KZLKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 06:10:44 -0500
+Date: Fri, 26 Nov 2010 16:40:23 +0530
+From: Rupjyoti Sarmah <rsarmah@amcc.com>
+Message-Id: <201011261110.oAQBANZL012455@amcc.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] ppc44x:PHY fixup for USB on canyonlands board
+Cc: rsarmah@apm.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
 
-On 11/26/2010 03:19 AM, Hitoshi Mitake wrote:
-> I found a trivial bug on initialization of workqueue.
-> Current init_workqueues doesn't check the result of
-> allocation of system_unbound_wq, this should be checked
-> like other queues.
-> 
-> Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+---
+changes from previous version:
+- moved a Macro from header file to the source file
+- corrected & updated comments 
+- replaced the out_be32 calls by setbits32 calls
+- bootup delay reduced, udelay is replaced by msleep
 
-Queued to wq#for-linus with new line adjustment.
+ arch/powerpc/boot/dts/canyonlands.dts      |   13 +++
+ arch/powerpc/platforms/44x/44x.h           |    4 +
+ arch/powerpc/platforms/44x/Makefile        |    1 +
+ arch/powerpc/platforms/44x/canyonlands.c   |  120 ++++++++++++++++++++++++++++
+ arch/powerpc/platforms/44x/ppc44x_simple.c |    1 -
+ 5 files changed, 138 insertions(+), 1 deletions(-)
+ create mode 100644 arch/powerpc/platforms/44x/canyonlands.c
 
-Thanks a lot. :-)
-
+diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+index a303703..a9f7538 100644
+--- a/arch/powerpc/boot/dts/canyonlands.dts
++++ b/arch/powerpc/boot/dts/canyonlands.dts
+@@ -224,6 +224,13 @@
+ 					};
+ 				};
+ 
++				cpld@2,0 {
++					#address-cells = <1>;
++					#size-cells = <1>;
++					compatible = "apm,ppc460ex-bcsr";
++					reg = <2 0x0 0x9>;
++				};
++
+ 				ndfc@3,0 {
+ 					compatible = "ibm,ndfc";
+ 					reg = <0x00000003 0x00000000 0x00002000>;
+@@ -320,6 +327,12 @@
+ 				interrupts = <0x3 0x4>;
+ 			};
+ 
++			GPIO0: gpio@ef600b00 {
++				compatible = "ibm,ppc4xx-gpio";
++				reg = <0xef600b00 0x00000048>;
++				gpio-controller;
++			};
++
+ 			ZMII0: emac-zmii@ef600d00 {
+ 				compatible = "ibm,zmii-460ex", "ibm,zmii";
+ 				reg = <0xef600d00 0x0000000c>;
+diff --git a/arch/powerpc/platforms/44x/44x.h b/arch/powerpc/platforms/44x/44x.h
+index dbc4d2b..63f703e 100644
+--- a/arch/powerpc/platforms/44x/44x.h
++++ b/arch/powerpc/platforms/44x/44x.h
+@@ -4,4 +4,8 @@
+ extern u8 as1_readb(volatile u8 __iomem  *addr);
+ extern void as1_writeb(u8 data, volatile u8 __iomem *addr);
+ 
++#define GPIO0_OSRH	0xC
++#define GPIO0_TSRH	0x14
++#define GPIO0_ISR1H	0x34
++
+ #endif /* __POWERPC_PLATFORMS_44X_44X_H */
+diff --git a/arch/powerpc/platforms/44x/Makefile b/arch/powerpc/platforms/44x/Makefile
+index 82ff326..6854e73 100644
+--- a/arch/powerpc/platforms/44x/Makefile
++++ b/arch/powerpc/platforms/44x/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_WARP)	+= warp.o
+ obj-$(CONFIG_XILINX_VIRTEX_5_FXT) += virtex.o
+ obj-$(CONFIG_XILINX_ML510) += virtex_ml510.o
+ obj-$(CONFIG_ISS4xx)	+= iss4xx.o
++obj-$(CONFIG_CANYONLANDS)+= canyonlands.o
+diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
+new file mode 100644
+index 0000000..61e80ce
+--- /dev/null
++++ b/arch/powerpc/platforms/44x/canyonlands.c
+@@ -0,0 +1,120 @@
++/*
++ * This contain platform specific code for Canyonlands board based on
++ * APM ppc44x series of processors.
++ *
++ * Copyright (c) 2010, Applied Micro Circuits Corporation
++ * Author: Rupjyoti Sarmah <rsarmah@apm.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ */
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <asm/pci-bridge.h>
++#include <asm/ppc4xx.h>
++#include <asm/udbg.h>
++#include <asm/uic.h>
++#include <linux/of_platform.h>
++#include <linux/delay.h>
++#include "44x.h"
++
++#define BCSR_USB_EN	0x11
++
++static __initdata struct of_device_id ppc44x_of_bus[] = {
++	{ .compatible = "ibm,plb4", },
++	{ .compatible = "ibm,opb", },
++	{ .compatible = "ibm,ebc", },
++	{ .compatible = "simple-bus", },
++	{},
++};
++
++static int __init ppc44x_device_probe(void)
++{
++	of_platform_bus_probe(NULL, ppc44x_of_bus, NULL);
++
++	return 0;
++}
++machine_device_initcall(canyonlands, ppc44x_device_probe);
++
++/* Using this code only for the Canyonlands board.  */
++
++static int __init ppc44x_probe(void)
++{
++	unsigned long root = of_get_flat_dt_root();
++		if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
++			ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
++			return 1;
++		}
++	return 0;
++}
++
++/* USB PHY fixup code on Canyonlands kit. */
++
++static int __init ppc460ex_canyonlands_fixup(void)
++{
++	u8 __iomem *bcsr ;
++	void __iomem *vaddr;
++	struct device_node *np;
++
++	np = of_find_compatible_node(NULL, NULL, "apm,ppc460ex-bcsr");
++	if (!np) {
++		printk(KERN_ERR "failed did not find apm, ppc460ex bcsr node\n");
++		return -ENODEV;
++	}
++
++	bcsr = of_iomap(np, 0);
++	of_node_put(np);
++
++	if (!bcsr) {
++		printk(KERN_CRIT "Could not remap bcsr\n");
++		return -ENODEV;
++	}
++
++	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
++	vaddr = of_iomap(np, 0);
++	if (!vaddr) {
++		printk(KERN_CRIT "Could not get gpio node address\n");
++		return -ENODEV;
++	}
++	/* Disable USB, through the BCSR7 bits */
++	setbits8(&bcsr[7], BCSR_USB_EN);
++
++	/* Wait for a while after reset */
++	msleep(100);
++
++	/* Enable USB here */
++	clrbits8(&bcsr[7], BCSR_USB_EN);
++
++	/*
++	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
++	 * source after USB reset.This configuration is done through GPIO0_TSRH
++	 * and GPIO0_OSRH bits 0:1 and 6:7.
++	 */
++	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
++	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
++	of_node_put(np);
++	return 0;
++}
++machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
++define_machine(canyonlands) {
++	.name = "Canyonlands",
++	.probe = ppc44x_probe,
++	.progress = udbg_progress,
++	.init_IRQ = uic_init_tree,
++	.get_irq = uic_get_irq,
++	.restart = ppc4xx_reset_system,
++	.calibrate_decr = generic_calibrate_decr,
++};
+diff --git a/arch/powerpc/platforms/44x/ppc44x_simple.c b/arch/powerpc/platforms/44x/ppc44x_simple.c
+index 7ddcba3..c81c19c 100644
+--- a/arch/powerpc/platforms/44x/ppc44x_simple.c
++++ b/arch/powerpc/platforms/44x/ppc44x_simple.c
+@@ -53,7 +53,6 @@ static char *board[] __initdata = {
+ 	"amcc,arches",
+ 	"amcc,bamboo",
+ 	"amcc,bluestone",
+-	"amcc,canyonlands",
+ 	"amcc,glacier",
+ 	"ibm,ebony",
+ 	"amcc,eiger",
 -- 
-tejun
+1.5.6.3
+
