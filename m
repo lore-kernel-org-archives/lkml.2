@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab0KZPaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 10:30:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51006 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab0KZPaS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 10:30:18 -0500
-Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
- registers v3
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1290785313.2145.150.camel@laptop>
-References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
-	 <1290077254-12165-4-git-send-email-andi@firstfloor.org>
-	 <1290078779.2109.1341.camel@laptop>
-	 <20101118111630.GB12667@basil.fritz.box>
-	 <1290080774.2109.1378.camel@laptop>  <1290785313.2145.150.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 26 Nov 2010 16:30:24 +0100
-Message-ID: <1290785424.2145.151.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754669Ab0KZPbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 10:31:44 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52155 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab0KZPbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 10:31:43 -0500
+Message-ID: <4CEFD2BA.5090403@kernel.org>
+Date: Fri, 26 Nov 2010 16:31:06 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: lkml <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Dan Carpenter <error27@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Bernd Machenschalk <Bernd.Machenschalk@aei.mpg.de>,
+        Heinz-Bernd Eggenstein <hbeggenst@aol.com>,
+        Oliver Bock <oliver.bock@aei.mpg.de>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Possible FPU context corruption w/ CONFIG_PREEMPT
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 15:31:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 16:28 +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-18 at 12:46 +0100, Peter Zijlstra wrote:
-> > On Thu, 2010-11-18 at 12:16 +0100, Andi Kleen wrote:
-> > > 
-> > > > > + * Runs later because per cpu allocations don't work early on.
-> > > > > + */
-> > > > > +__initcall(init_intel_percore);
-> > > > 
-> > > > I've got a patch moving the whole pmu init to early_initcall(), which is
-> > > > after mm_init() so it would actually work.
-> > > 
-> > > So do you want to make  this patchkit depend on that patch?
-> > > Or just integrate it and then change later? 
-> > 
-> > Doesn't really matter, I can fix it up afterwards, just wanted to let
-> > you know.. I can also flip that enable thing.
-> > 
-> > I'll take these 4 patches and fixup these things and then see what falls
-> > out ;-)
-> 
-> OK, that initcall patch hit -tip and Ingo wants that allocation stuff
-> fixed up before committing those patches.
-> 
-> Could you run another version of these patches (you can ignore the
-> checkpatch output that results from the non-std struct initialization
-> layout)?
-> 
-> Just make the allocation path like the AMD NB stuff, use the cpu_prepare
-> and cpu_dead hooks to alloc/free and add a refcount in the percpu
-> object.
+Hello, guys.
 
-While looking at the AMD code, I think we can do away with amd_nb_lock,
-all the hotplug stuff is serialized on the hotplug mutex anyway.
+Heinz-Bernd Eggenstein reports a possible FPU context corruption w/
+CONFIG_PREEMPT.  Please take a look at the following forum post.
 
+ http://einstein.phys.uwm.edu/forum_thread.php?id=8516
 
+openSUSE 11.3 desktop kernel which has CONFIG_PREEMPT set is
+triggering SIGFPE while the default kernel w/o preemption works fine.
+He also notes that a similar bug was fixed in 2008 by commit 06c38d5e
+(x86-64: fix FPU corruption with signals and preemption) from Suresh.
+Does it ring anyone's bell?
+
+Heinz, is there a simple procedure to reproduce the problem, or would
+it be possible to lure you into bisection?
+
+Thanks.
+
+-- 
+tejun
