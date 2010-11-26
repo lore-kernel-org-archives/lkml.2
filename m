@@ -1,51 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab0KZT7m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 14:59:42 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59628 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab0KZT7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 14:59:41 -0500
-Message-ID: <4CF0118B.1040708@kernel.org>
-Date: Fri, 26 Nov 2010 20:59:07 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1751399Ab0KZULu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 15:11:50 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33160 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab0KZULt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 15:11:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Tb7RsTbhwi/Ux/fwNrurFNRmwaD/rWuvuuRmuV2m3BLHbgpZehwCz3ImxHp2SMi37A
+         TQVXwMPVn9iqVg+uUPDKX8Zl+QPNHB213zNhLEdzhA8YUXEWRs6saMEqL/Up1O2VGhBk
+         1YBb2Do81F2i372cEjvUMQ7VdicxY5geyQaIA=
+Date: Fri, 26 Nov 2010 23:11:43 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, peterz@infradead.org
+Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
+Message-ID: <20101126201143.GC5620@lenovo>
+References: <AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com> <AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com> <AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com> <AANLkTikG9swqOxF2GwhvKY__Lbgt1+GgRfra-+DrBsk0@mail.gmail.com> <AANLkTi=jLNwKOqUKay9c9aLVd_7do5n1iCYEUkOfS7G+@mail.gmail.com> <AANLkTintEs9oM+UDzjymAMGfiYCBxPeEtY-NHA55s-Ge@mail.gmail.com> <20101126152744.GA5620@lenovo> <AANLkTikezMvVLD5vkB6OuLtPOMF1JZRyai09uhoWu=0n@mail.gmail.com> <20101126171642.GB5620@lenovo> <AANLkTi=3BqbTkn90s_fhs0v0tp04SCKTHR2XO1qrrjkW@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: roland@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 02/14] freezer: fix a race during freezing of TASK_STOPPED
- tasks
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-3-git-send-email-tj@kernel.org> <201011262040.27854.rjw@sisk.pl>
-In-Reply-To: <201011262040.27854.rjw@sisk.pl>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 19:59:09 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=3BqbTkn90s_fhs0v0tp04SCKTHR2XO1qrrjkW@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2010 08:40 PM, Rafael J. Wysocki wrote:
-> On Friday, November 26, 2010, Tejun Heo wrote:
->> After calling freeze_task(), try_to_freeze_tasks() see whether the
->> task is stopped or traced and if so, considers it to be frozen;
->> however, nothing guarantees that either the task being frozen sees
->> TIF_FREEZE or the freezer sees TASK_STOPPED -> TASK_RUNNING
->> transition.  The task being frozen may wake up and not see TIF_FREEZE
->> while the freezer fails to notice the transition and believes the task
->> is still stopped.
->>
->> This patch fixes the race by making freeze_task() always go through
->> fake_signal_wake_up() for applicable tasks.  The function goes through
->> the target task's scheduler lock and thus guarantees that either the
->> target sees TIF_FREEZE or try_to_freeze_task() sees TASK_RUNNING.
+On Fri, Nov 26, 2010 at 07:05:17PM +0100, Stephane Eranian wrote:
+...
+> >
+> >  Stephane, could you do a test? We need a pinned event which would be
+> > running on say cpu0 only and if you set P4_CCCR_THREAD_SINGLE in CCCR
+> > and event would be still incrementing -- this mean my theory is correct
+> > and this "thread" field means "when" to count, if not -- you're right
+> > and "thread" field means "where" instead.
+> >
 > 
-> Looks good.  I'll take this one to my tree, if you don't mind.
+> I think we both agree that active_threads determines when to count
+> in your thread based on what is going on in the other thread. It does
+> not allow you to directly count the activity in the other thread (unlike
+> .any).
 
-Sure thing.
+ Stephane, perhaps I simply didn't understand you right in previous mails.
+Yes, AT (active thread) specify "when" to count depending on logical
+cpu activity.
 
-Thanks.
+> 
+> Imagine you measure function foo() at 10k instr retired when running
+> with HT off. You run the same function with HT on and set the mode to
+> 10 (only when both). If you get a lower count, it means there was
+> nothing going on on the other thread. If you get the same, then it
+> means the other thread was busy all along. If you set it to 01 instead
+> and get the same count, then you know the other thread was idle all
+> along.
 
--- 
-tejun
+ Lets do some general overview first so you might check me ;)
+The perf MSRs are shared across threads in core. And events may be either
+Thread Independent [TI] (ie there is no way to qualify event affinity to
+logical cpu, for example FSB bus activity events) and Thread Specific [TS]
+(for example retirement of instructions which could be treated as associated
+ with specific logical cpu).
+
+ For TI events we require CAP_SYS_ADMIN and perf "paranoid" level to be
+granted because this might be security issue (though at moment I can't
+imagine how it's possible to abuse "FSB bus activity", but say for
+"trace cache deliver mode" event you can specify /via ESCR mask/ to count
+event when second logical cpu is in "build mode", not sure if it is
+somehow being abused either).
+
+ So logical cpu filtering is achieved via ESCR Tx bits, and when event
+is scheduled-in to run on specific thread, we simply set proper Tx bits
+on kernel level, the RAW events have no control over them.
+
+ While with "TS events" the events are filtered according to on which cpu they
+are happened I think there is no such way for TI events, and if event
+say happened on cpu 1 but measured on cpu 0 and ESCR has T0_ bits set --
+you'll observe events from another cpu (but, hey, we require the user
+to have special rights to count such events, ie CAP_SYS_ADMIN and perf
+"paranoid").
+
+ For instr-retired example, we need to take into account that this
+is a TS event and we set ESCR Tx's bits according to cpu on which we
+executing, and when event "happens" on different cpu the Tx filer simply
+drop such occurence. But what happens if we set "Active Thread" to 'single'
+on such event -- it will be counted _only_ when cpu is running alone and
+second cpu is in indle state.
+
+> 
+> The question is: does this present a security issue? Can you infer
+> something about what is going on in the other thread. It is clear
+> you can figure out when it did run or not. Is that any different
+> than running top? I suspect not, so I think what you have is
+> probably okay.
+> 
+
+ At moment I can't imagine any issue here.
+
+  Cyrill
