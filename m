@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab0KZVyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 16:54:37 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49064 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab0KZVyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 16:54:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=J1TqikQQfmbTELQIuPLeZ81Z6e8rlN13BtTC+PFVsNJykQjnnHgJ7ivuDW36so/XSM
-         uZxk9fBKLfLFG4WkCmaAfoDH+t+13rq0ENXN3Lk/R7rvaMYvvscFgYdvYGAqkp8AKi1x
-         5B5jdBgvh2U+HBOenRPufZADi5mcKulA9mFXc=
-Date: Fri, 26 Nov 2010 19:54:30 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
-Message-ID: <20101126215430.GA23996@ghostprotocols.net>
-References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
- <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
- <1290510512.2072.387.camel@laptop>
- <20101123124121.GA11101@ghostprotocols.net>
- <20101125154718.GE15875@ghostprotocols.net>
+	id S1752062Ab0KZV4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 16:56:12 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:33232 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751465Ab0KZV4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 16:56:11 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH] Platform / x86: Make fujitsu_laptop use acpi_bus_update_power()
+Date: Fri, 26 Nov 2010 22:55:20 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <201011250001.11297.rjw@sisk.pl>
+In-Reply-To: <201011250001.11297.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101125154718.GE15875@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011262255.20848.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 25, 2010 at 01:47:18PM -0200, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Nov 23, 2010 at 10:41:21AM -0200, Arnaldo Carvalho de Melo escreveu:
-> > Em Tue, Nov 23, 2010 at 12:08:32PM +0100, Peter Zijlstra escreveu:
-> > > Right, so acme had a patch adding:
-> > > PERF_SAMPLE_{TID,TIME,ID,CPU,STREAM_ID}
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> I know of a problem with unconditionally stting attr->sample_type_all
-> and then trying the new perf tool on an older kernel, that will fail
-> with:
-> [root@felicio ~]# perf record -a -g
->   Error: sys_perf_event_open() syscall returned with -1 (Invalid
-> argument).  /bin/dmesg may provide additional information.
->   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> 
-> Because it doesn't expects that extra bit to be set. I'll use that to
-> make sure the binary works on older kernels without this feature.
+Use the new function acpi_bus_update_power(), which is safer than
+acpi_bus_get_power(), for getting device power state in
+acpi_fujitsu_add().
 
-This got fixed.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
 
-http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/sample_id_all.v1
+Hi Len,
 
-Has the latest, that I was about to submit but I'll change it so that
-older perf tools can cope with newer perf.data files, by stashing the
-new fields after the existing layout, not between perf_event_header and
-the mmap/fork/comm/etc specific stuff.
-
-I'll rework that, test newer perf.data files with older perf tools and
-then submit.
+This patch should go after [11/13] in the "ACPI / PM: Rework power resources
+management" series.  I hope Matthew won't mind if it goes in through your tree.
 
 Thanks,
+Rafael
 
-- Arnaldo
+---
+ drivers/platform/x86/fujitsu-laptop.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/drivers/platform/x86/fujitsu-laptop.c
+===================================================================
+--- linux-2.6.orig/drivers/platform/x86/fujitsu-laptop.c
++++ linux-2.6/drivers/platform/x86/fujitsu-laptop.c
+@@ -689,7 +689,7 @@ static int acpi_fujitsu_add(struct acpi_
+ 	if (error)
+ 		goto err_free_input_dev;
+ 
+-	result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
++	result = acpi_bus_update_power(fujitsu->acpi_handle, &state);
+ 	if (result) {
+ 		printk(KERN_ERR "Error reading power state\n");
+ 		goto err_unregister_input_dev;
+@@ -857,7 +857,7 @@ static int acpi_fujitsu_hotkey_add(struc
+ 	if (error)
+ 		goto err_free_input_dev;
+ 
+-	result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
++	result = acpi_bus_update_power(fujitsu_hotkey->acpi_handle, &state);
+ 	if (result) {
+ 		printk(KERN_ERR "Error reading power state\n");
+ 		goto err_unregister_input_dev;
