@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab0KZKqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 05:46:25 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40778 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab0KZKqY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 05:46:24 -0500
-Date: Fri, 26 Nov 2010 10:45:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Olof Johansson <olof@lixom.net>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kevin Hilman <khilman@deeprootsystems.com>, akpm@linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-Message-ID: <20101126104548.GG9310@n2100.arm.linux.org.uk>
-References: <1290526740-27624-1-git-send-email-ohad@wizery.com> <1290526740-27624-2-git-send-email-ohad@wizery.com> <20101126045912.GC6598@lixom.net> <AANLkTin5Tfcuy0WcHJ22rWC8niwZCj8SZAMKLz0p9jwc@mail.gmail.com> <20101126091832.GE9310@n2100.arm.linux.org.uk> <AANLkTimS-cSi1B5LdtwhJWhKDuFKOYG1j_p-iQiH=zRe@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimS-cSi1B5LdtwhJWhKDuFKOYG1j_p-iQiH=zRe@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754730Ab0KZKuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 05:50:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42295 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab0KZKuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 05:50:06 -0500
+From: Tejun Heo <tj@kernel.org>
+To: roland@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        "rjw@sisk.plpavel"@ucw.cz
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 12/14] ptrace: reorganize __ptrace_unlink() and ptrace_untrace()
+Date: Fri, 26 Nov 2010 11:49:27 +0100
+Message-Id: <1290768569-16224-13-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1290768569-16224-1-git-send-email-tj@kernel.org>
+References: <1290768569-16224-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Nov 2010 10:49:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 12:16:39PM +0200, Ohad Ben-Cohen wrote:
-> On Fri, Nov 26, 2010 at 11:18 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Fri, Nov 26, 2010 at 10:53:10AM +0200, Ohad Ben-Cohen wrote:
-> >> >> +int __hwspin_trylock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
-> >> >> +{
-> >> >> +     int ret;
-> >> >> +
-> >> >> +     if (unlikely(!hwlock)) {
-> >> >> +             pr_err("invalid hwlock\n");
-> >> >
-> >> > These kind of errors can get very spammy for buggy drivers.
-> >>
-> >> Yeah, but that's the purpose - I want to catch such egregious drivers
-> >> who try to crash the kernel.
-> >
-> > That can be better - because you get a backtrace, and it causes people
-> > to report the problem rather than just ignore it.  It may also prevent
-> > the driver author releasing his code (as it won't work on their
-> > initial testing.)
-> >
-> ...
-> >
-> > If it's "extremely buggy behaviour" then the drivers deserve to crash.
-> > Such stuff should cause them not to get out the door.  A simple printk
-> > with an error return can just be ignored.
-> 
-> I like this approach too, but recently we had a few privilege
-> escalation exploits which involved NULL dereference kernel bugs
-> (process context mapped address 0 despite a positive mmap_min_addr).
+* Collapse ptrace_untrace() into __ptrace_unlink().
 
-That's not a concern on ARM.  The prevention of having a user page mapped
-at virtual address 0 does not rely on mmap_min_addr - in fact, we can't
-use this as it's tuneable to enforce this requirement.
+* Always do the whole unlinking inside siglock.
 
-It's highly illegal on ARM - as ARM CPUs without vector remap place the
-hardware vectors at virtual address 0, and as such allowing the user to
-map a page there will take the system down.  So we have this code in the
-mmap path:
+* Untracing is done before unlinking.
 
-#define arch_mmap_check(addr, len, flags) \
-        (((flags) & MAP_FIXED && (addr) < FIRST_USER_ADDRESS) ? -EINVAL : 0)
+This is to prepare for further changes.  As the whole
+unlinking/tracing is done inside both tasklist lock and siglock, the
+reordering doesn't cause any visible behavior difference.
 
-which prevents any attempt what so ever, irrespective of the mmap_min_addr
-setting, to create a userspace induced mapping at address 0.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>
+---
+ kernel/ptrace.c |   40 ++++++++++++++++++----------------------
+ 1 files changed, 18 insertions(+), 22 deletions(-)
+
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 08b18f2..71141bf 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -38,45 +38,41 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent)
+ }
+ 
+ /*
+- * Turn a tracing stop into a normal stop now, since with no tracer there
+- * would be no way to wake it up with SIGCONT or SIGKILL.  If there was a
+- * signal sent that would resume the child, but didn't because it was in
+- * TASK_TRACED, resume it now.
+- * Requires that irqs be disabled.
++ * unptrace a task: move it back to its original parent and remove it
++ * from the ptrace list.
++ *
++ * Turn a tracing stop into a normal stop now, since with no tracer
++ * there would be no way to wake it up with SIGCONT or SIGKILL.  If
++ * there was a signal sent that would resume the child, but didn't
++ * because it was in TASK_TRACED, resume it now.  Requires that irqs
++ * be disabled.
++ *
++ * Must be called with the tasklist lock write-held.
+  */
+-static void ptrace_untrace(struct task_struct *child)
++void __ptrace_unlink(struct task_struct *child)
+ {
++	struct signal_struct *sig = child->signal;
++
++	BUG_ON(!child->ptrace);
++
+ 	spin_lock(&child->sighand->siglock);
++
+ 	if (task_is_traced(child)) {
+ 		/*
+ 		 * If group stop is completed or in progress, the task
+ 		 * should enter group stop.  Set GROUP_STOP_PENDING
+ 		 * before kicking it.
+ 		 */
+-		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
+-		    child->signal->group_stop_count)
++		if (sig->flags & SIGNAL_STOP_STOPPED || sig->group_stop_count)
+ 			child->group_stop |= GROUP_STOP_PENDING;
+ 		signal_wake_up(child, 1);
+ 	}
+-	spin_unlock(&child->sighand->siglock);
+-}
+-
+-/*
+- * unptrace a task: move it back to its original parent and
+- * remove it from the ptrace list.
+- *
+- * Must be called with the tasklist lock write-held.
+- */
+-void __ptrace_unlink(struct task_struct *child)
+-{
+-	BUG_ON(!child->ptrace);
+ 
+ 	child->ptrace = 0;
+ 	child->parent = child->real_parent;
+ 	list_del_init(&child->ptrace_entry);
+ 
+-	if (task_is_traced(child))
+-		ptrace_untrace(child);
++	spin_unlock(&child->sighand->siglock);
+ }
+ 
+ /*
+-- 
+1.7.1
+
