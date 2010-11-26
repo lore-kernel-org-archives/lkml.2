@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab0KZJkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 04:40:11 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50839 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab0KZJkJ (ORCPT
+	id S1754059Ab0KZJmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 04:42:08 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:33407 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753760Ab0KZJmG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 04:40:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:date:subject:mime-version:x-tuid:x-uid:x-length
-         :organization:to:cc:content-type:content-transfer-encoding
-         :message-id;
-        b=hch3XhGiziG19J0ifpeD1hWo05tE/b/nMnrFFsx7Fi9KBb++oNcMmYs4OvcSSaxZHK
-         ldsiBaLKflit98x+hK249E8MwOkHThx+0dzxbJxELk8uT0zEAxpp01IXJ4w874jyCT+u
-         NtCSKEaGgHFn+NgR8SqNRq/qKch7xWNzlNsyQ=
-From: Florian Fainelli <florian@openwrt.org>
-Date: Fri, 26 Nov 2010 10:39:54 +0100
-Subject: [PATCH 1/2] rdc321x-gpio: fix null pointer dereference while accessing platform_data
-MIME-Version: 1.0
-X-TUID: 7559ef157b0bfeb6
-X-Length: 1633
-Organization: OpenWrt
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011261039.54817.florian@openwrt.org>
+	Fri, 26 Nov 2010 04:42:06 -0500
+Subject: Re: [RFC][PATCH 2/8] perf, arch: Use early_initcall() for all arch
+ pmu implementations
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kyle Moffett <kyle@moffetthome.net>, linux-kernel@vger.kernel.org,
+        davem <davem@davemloft.net>, Michael Cree <mcree@orcon.net.nz>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>, Don Zickus <dzickus@redhat.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+In-Reply-To: <1290707759.2145.119.camel@laptop>
+References: <20101117221730.002627458@chello.nl>
+	 <20101117222056.040309789@chello.nl>  <1290680713.2145.18.camel@laptop>
+	 <1290707759.2145.119.camel@laptop>
+Date: Fri, 26 Nov 2010 09:41:50 +0000
+Message-ID: <1290764510.24565.6.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 26 Nov 2010 09:41:51.0830 (UTC) FILETIME=[27683F60:01CB8D4E]
+X-MC-Unique: 110112609415901501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rdc321x-gpio currently fetches its driver specific data by using the platform_
-device->platform_data pointer, this is wrong because the mfd device which
-registers our platform_device has been added using mfd_add_device() which sets
-the platform_device->driver_data pointer instead.
+On Thu, 2010-11-25 at 17:55 +0000, Peter Zijlstra wrote:
+> So the perf_event_init() site is _waaay_ to early to init stuff.. I
+> guess I'll move it all to early_initcall() and I'll move the watchdog to
+> an explicit call right after it.
+> 
+> Something like the below,.. now I guess the question to all of you is,
+> can your arch pmu code cope with early_initcall() or does it need to be
+> some other place?
+> 
+The ARM init code basically just parses the CPUID to work out what PMU
+is available, so it should be safe to call it as early as you like.
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-CC: stable@kernel.org
----
-This patch should be applied for the next 2.6.36 stable release.
+Will
 
-diff --git a/drivers/gpio/rdc321x-gpio.c b/drivers/gpio/rdc321x-gpio.c
-index 2762698..897e057 100644
---- a/drivers/gpio/rdc321x-gpio.c
-+++ b/drivers/gpio/rdc321x-gpio.c
-@@ -135,7 +135,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
- 	struct rdc321x_gpio *rdc321x_gpio_dev;
- 	struct rdc321x_gpio_pdata *pdata;
- 
--	pdata = pdev->dev.platform_data;
-+	pdata = platform_get_drvdata(pdev);
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "no platform data supplied\n");
- 		return -ENODEV;
+
