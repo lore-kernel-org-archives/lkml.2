@@ -1,102 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab0KZNB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 08:01:58 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50449 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab0KZNB5 (ORCPT
+	id S1754748Ab0KZNEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 08:04:12 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60804 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab0KZNEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 08:01:57 -0500
+	Fri, 26 Nov 2010 08:04:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=S8GfksnRGQWk9zHPcayfTeAThiON6J1U+QgcRq6ZmRy0uLHAxHX0BhQTX6lIbx5nPW
-         +kIJzr+xtTbBrGIS/Xn5EfpFB2EaiBQJH4boj5l0/hhPhvhxsE07mN4J4v6OGQVcEifu
-         4iyRxO1y/HG3f4hO4r+ptTEZOEeZwE+K/owng=
-Subject: Re: [patch 1/3] printk: fix wake_up_klogd() vs cpu hotplug
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        Horst Hartmann <horsth@linux.vnet.ibm.com>
-In-Reply-To: <20101126124247.GC7023@osiris.boeblingen.de.ibm.com>
-References: <20101126120057.879397696@de.ibm.com>
-	 <20101126120235.091835714@de.ibm.com>
-	 <1290774909.2855.115.camel@edumazet-laptop>
-	 <20101126124247.GC7023@osiris.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Nov 2010 14:01:52 +0100
-Message-ID: <1290776512.2855.117.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=hfvmJhxSp5bAgAl+bP0gMa/8WsJM5J5j8uyH4b7t4wsBobYWLdyzXbGZPMOaYD+crV
+         rRTLy5B7Kcoy03mZR+W4GkDBmFTEeEWQ9WUWa+q6DaNDMQil/NxEDa4orz4FygiP+T31
+         bUt5Rm+qj4ZOyUCCQiQmehKG7x/KXZOFfS1D8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com>
+References: <20101123224601.766827604@openvz.org>
+	<20101123224800.294919307@openvz.org>
+	<AANLkTikjfM=8xa8smgT6D_WTYC_S-JZ69iiqu8gD21sK@mail.gmail.com>
+	<AANLkTin1Q0eo4mFbSCeO4RNrK8Men0Q3r_x9_dCse11Q@mail.gmail.com>
+	<AANLkTimOY=58aW0OsWhTRjc5tgxNApKpReNh0hwK7SJJ@mail.gmail.com>
+	<AANLkTikWB0TbCO1JLCtk03HAV0qEj63fPZ+rzViAZJS4@mail.gmail.com>
+	<AANLkTik1R-4kvoE81oqTrSm6RZdO005kL_xfbqfyrnFm@mail.gmail.com>
+	<AANLkTi=1nxsKR2e9MAEzbPNt66TUD9Ltd+ug+C7Jhk+Y@mail.gmail.com>
+Date: Fri, 26 Nov 2010 16:04:09 +0300
+X-Google-Sender-Auth: kHpMcSsRrDtVL5tGu1t9MjTC6yw
+Message-ID: <AANLkTin63X+2pOuRYHF0ntnB95g-MWjug-sUYAFGFnxa@mail.gmail.com>
+Subject: Re: [rfc 1/3] perf, x86: P4 PMU - describe config format
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        ming.m.lin@intel.com, peterz@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 26 novembre 2010 à 13:42 +0100, Heiko Carstens a écrit :
-> On Fri, Nov 26, 2010 at 01:35:09PM +0100, Eric Dumazet wrote:
-> > Le vendredi 26 novembre 2010 à 13:00 +0100, Heiko Carstens a écrit :
-> > >  void wake_up_klogd(void)
-> > >  {
-> > > -	if (waitqueue_active(&log_wait))
-> > > -		__raw_get_cpu_var(printk_pending) = 1;
-> > > +	if (waitqueue_active(&log_wait)) {
-> > > +		get_cpu_var(printk_pending) = 1;
-> > > +		put_cpu_var(printk_pending);
-> > > +	}
-> > >  }
-> > 
-> > Please use :
-> > 
-> > this_cpu_write(printk_pending, 1);
-> > 
-> > It is faster on x86, and does the right thing too.
-> 
-> Ah, right. I wasn't aware that such a thing even exists.
-> Updated patch below:
-> 
-> Subject: [PATCH] printk: fix wake_up_klogd() vs cpu hotplug
-> 
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> 
-> wake_up_klogd() may get called from preemtible context but uses
-> __raw_get_cpu_var() to write to a per cpu variable. If it gets preempted between
-> getting the address and writing to it, the cpu in question could be offline if
-> the process gets scheduled back and hence writes to the per cpu data of an offline
-> cpu.
-> 
-> No idea why that behaviour was introduced with fa33507a "printk: robustify
-> printk, fix #2" which was supposed to fix a "using smp_processor_id() in
-> preemptible" warning.
-> 
-> Let's use this_cpu_write() instead which disables preemption and makes sure that
-> the outlined scenario cannot happen.
-> 
+On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+> On Fri, Nov 26, 2010 at 12:58 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+> wrote:
+>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>> On Fri, Nov 26, 2010 at 12:32 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>> wrote:
+>>>> On Fri, Nov 26, 2010 at 2:14 PM, Cyrill Gorcunov <gorcunov@openvz.org>
+>>>> wrote:
+>>>>> Stephane, this is a misprint, I'll update this comments on format
+>>>>> (giod catch btw!). in real low 32 bits are considered as cccr in ht
+>>>>> mode. wait a bit, i'll post update.
+>>>>>
+>>>>> On 11/26/10, Stephane Eranian <eranian@google.com> wrote:
+>>>> ...
+>>>>>>> + *    Low 32 bits
+>>>>>>> + *    -----------
+>>>>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>>>>> + *     7-11:                    reserved
+>>>>>>> + *       12: Active thread
+>>>>>>
+>>>>>> I don't understand bit 12. In the actual register, it
+>>>>>> corresponds to the enable bit. Seems you're overriding
+>>>>>> its usage. Do I interpret this as saying: 0 = enable when
+>>>>>> running on thread0, 1=monitoring when running on thread1?
+>>>>>> And if I don't care?
+>>>> ...
+>>>> I believe it simply escaped quilt refresh somehow. Here is the
+>>>> 'refreshed'
+>>>> copy (note the low bits 12-19 updated here).
+>>>> ---
+>>>> perf, x86: P4 PMU - describe config format v2
+>>>>
+>>>> Add description of .config in a sake of RAW events.
+>>>> At least this should bring some light to those who
+>>>> will be reading this code.
+>>>>
+>>>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>>>> CC: Lin Ming <ming.m.lin@intel.com>
+>>>> CC: Stephane Eranian <eranian@google.com>
+>>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>>> ---
+>>>>  arch/x86/include/asm/perf_event_p4.h |   63
+>>>> ++++++++++++++++++++++++++++++-----
+>>>>  1 file changed, 55 insertions(+), 8 deletions(-)
+>>>>
+>>>> Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>>>> ===================================================================
+>>>> --- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
+>>>> +++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+>>>> @@ -744,14 +744,6 @@ enum P4_ESCR_EMASKS {
+>>>>  };
+>>>>
+>>>>  /*
+>>>> - * P4 PEBS specifics (Replay Event only)
+>>>> - *
+>>>> - * Format (bits):
+>>>> - *   0-6: metric from P4_PEBS_METRIC enum
+>>>> - *    7 : reserved
+>>>> - *    8 : reserved
+>>>> - * 9-11 : reserved
+>>>> - *
+>>>>  * Note we have UOP and PEBS bits reserved for now
+>>>>  * just in case if we will need them once
+>>>>  */
+>>>> @@ -788,5 +780,60 @@ enum P4_PEBS_METRIC {
+>>>>        P4_PEBS_METRIC__max
+>>>>  };
+>>>>
+>>>> +/*
+>>>> + * Notes on internal configuration of ESCR+CCCR tuples
+>>>> + *
+>>>> + * Since P4 has quite the different architecture of
+>>>> + * performance registers in compare with "architectural"
+>>>> + * once and we have on 64 bits to keep configuration
+>>>> + * of performance event, the following trick is used.
+>>>> + *
+>>>> + * 1) Since both ESCR and CCCR registers have only low
+>>>> + *    32 bits valuable, we pack them into a single 64 bit
+>>>> + *    configuration. Low 32 bits of such config correspond
+>>>> + *    to low 32 bits of CCCR register and high 32 bits
+>>>> + *    correspond to low 32 bits of ESCR register.
+>>>> + *
+>>>> + * 2) The meaning of every bit of such config field can
+>>>> + *    be found in Intel SDM but it should be noted that
+>>>> + *    we "borrow" some reserved bits for own usage and
+>>>> + *    clean them or set to a proper value when we do
+>>>> + *    a real write to hardware registers.
+>>>> + *
+>>>> + * 3) The format of bits of config is the following
+>>>> + *    and should be either 0 or set to some predefined
+>>>> + *    values:
+>>>> + *
+>>>> + *    Low 32 bits
+>>>> + *    -----------
+>>>> + *      0-6: P4_PEBS_METRIC enum
+>>>> + *     7-11:                    reserved
+>>>> + *       12:                    reserved (Enable)
+>>>> + *    13-15:                    reserved (ESCR select)
+>>>> + *    16-17: Active Thread
+>>>
+>>> HW has the active thread bits reserved to 0x3.
+>>> what about you? If not, then explain what they
+>>> mean.
+>>>
+>> hm, not sure i follow, hw allows you to pass any of 4 values for that
+>> field, so i simply pass it to kernel and then propagate to real cccr
+>> register. if machine is not ht capable it might be a problem, but i
+>> left it to a caller to set proper thread value here. i believe that
+>> you read cccr spec for non-ht machine while ht machine has a bit more
+>> flags to set.
+>>
+> You're right, I missed Figure-30.29. So you honor the field. The counter
+> won't count anything if the task is not running on the corresponding
+> HT thread, then.
 
+no ;) p4 treat this field in different meaning in compare to others
+perf archs. the condition is not 'where' but 'when'. ie you can
+specify 'when' to run counter: if none therad is active, single any
+thread is active, both threads are active and finally any thread is
+active (which is exactly 0b11 in single thread machine). i know it's
+weird ;)
 
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  kernel/printk.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -1088,7 +1088,7 @@ int printk_needs_cpu(int cpu)
->  void wake_up_klogd(void)
->  {
->  	if (waitqueue_active(&log_wait))
-> -		__raw_get_cpu_var(printk_pending) = 1;
-> +		this_cpu_write(printk_pending, 1);
->  }
->  
->  /**
+thanks for review, Stephane ;)
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-
+>
+> The only custom fields are then: 0-6, 25-30. I think that's simple enough.
+>
+> Thanks.
+>
