@@ -1,177 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab0KZVrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 16:47:43 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53115 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab0KZVrl (ORCPT
+	id S1752327Ab0KZVrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 16:47:40 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:57356 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab0KZVrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 16:47:41 -0500
+	Fri, 26 Nov 2010 16:47:39 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Andreas Schwab <schwab@linux-m68k.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/5] perf record: Add option to disable collecting build-ids
-Date: Fri, 26 Nov 2010 19:47:17 -0200
-Message-Id: <1290808041-16535-2-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 5/5] perf trace: Handle DT_UNKNOWN on filesystems that don't support d_type
+Date: Fri, 26 Nov 2010 19:47:21 -0200
+Message-Id: <1290808041-16535-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1290808041-16535-1-git-send-email-acme@infradead.org>
 References: <1290808041-16535-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-Collecting build-ids for long running sessions may take a long time
-because it needs to traverse the whole just collected perf.data stream
-of events, marking the DSOs that had hits and then looking for the
-.note.gnu.build-id ELF section.
+Some filesystems like xfs and reiserfs will return DT_UNKNOWN for the
+d_type.  Handle this case by calling stat() to determine the type.
 
-For things like the 'trace' tool that records and right away consumes
-the data on systems where its unlikely that the DSOs being monitored
-will change while 'trace' runs, it is desirable to remove build id
-collection, so add a -B/--no-buildid option to perf record to allow such
-use case.
-
-Longer term we'll avoid all this if we, at DSO load time, in the kernel,
-take advantage of this slow code path to collect the build-id and stash
-it somewhere, so that we can insert it in the PERF_RECORD_MMAP event.
-
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
+LKML-Reference: <1290355779-3276-1-git-send-email-sbohrer@rgmadvisors.com>
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c            |   14 +++++++++++---
- tools/perf/util/header.c               |   11 +++++++++--
- tools/perf/util/header.h               |    1 +
- tools/perf/util/include/linux/bitops.h |    5 +++++
- 4 files changed, 26 insertions(+), 5 deletions(-)
+ tools/perf/builtin-trace.c |   33 +++++++++++++++++++++++++--------
+ 1 files changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 3d2cb48..024e144 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -61,6 +61,7 @@ static bool			inherit_stat			=  false;
- static bool			no_samples			=  false;
- static bool			sample_address			=  false;
- static bool			no_buildid			=  false;
-+static bool			no_buildid_cache		=  false;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 86cfe38..4783ed8 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -301,17 +301,34 @@ static int parse_scriptname(const struct option *opt __used,
+ 	return 0;
+ }
  
- static long			samples				=      0;
- static u64			bytes_written			=      0;
-@@ -437,7 +438,8 @@ static void atexit_header(void)
- 	if (!pipe_output) {
- 		session->header.data_size += bytes_written;
+-#define for_each_lang(scripts_dir, lang_dirent, lang_next)		\
++/* Helper function for filesystems that return a dent->d_type DT_UNKNOWN */
++static int is_directory(const char *base_path, const struct dirent *dent)
++{
++	char path[PATH_MAX];
++	struct stat st;
++
++	sprintf(path, "%s/%s", base_path, dent->d_name);
++	if (stat(path, &st))
++		return 0;
++
++	return S_ISDIR(st.st_mode);
++}
++
++#define for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next)\
+ 	while (!readdir_r(scripts_dir, &lang_dirent, &lang_next) &&	\
+ 	       lang_next)						\
+-		if (lang_dirent.d_type == DT_DIR &&			\
++		if ((lang_dirent.d_type == DT_DIR ||			\
++		     (lang_dirent.d_type == DT_UNKNOWN &&		\
++		      is_directory(scripts_path, &lang_dirent))) &&	\
+ 		    (strcmp(lang_dirent.d_name, ".")) &&		\
+ 		    (strcmp(lang_dirent.d_name, "..")))
  
--		process_buildids();
-+		if (!no_buildid)
-+			process_buildids();
- 		perf_header__write(&session->header, output, true);
- 		perf_session__delete(session);
- 		symbol__exit();
-@@ -557,6 +559,9 @@ static int __cmd_record(int argc, const char **argv)
+-#define for_each_script(lang_dir, script_dirent, script_next)		\
++#define for_each_script(lang_path, lang_dir, script_dirent, script_next)\
+ 	while (!readdir_r(lang_dir, &script_dirent, &script_next) &&	\
+ 	       script_next)						\
+-		if (script_dirent.d_type != DT_DIR)
++		if (script_dirent.d_type != DT_DIR &&			\
++		    (script_dirent.d_type != DT_UNKNOWN ||		\
++		     !is_directory(lang_path, &script_dirent)))
+ 
+ 
+ #define RECORD_SUFFIX			"-record"
+@@ -466,14 +483,14 @@ static int list_available_scripts(const struct option *opt __used,
+ 	if (!scripts_dir)
  		return -1;
- 	}
  
-+	if (!no_buildid)
-+		perf_header__set_feat(&session->header, HEADER_BUILD_ID);
-+
- 	if (!file_new) {
- 		err = perf_header__read(session, output);
- 		if (err < 0)
-@@ -831,8 +836,10 @@ const struct option record_options[] = {
- 		    "Sample addresses"),
- 	OPT_BOOLEAN('n', "no-samples", &no_samples,
- 		    "don't sample"),
--	OPT_BOOLEAN('N', "no-buildid-cache", &no_buildid,
-+	OPT_BOOLEAN('N', "no-buildid-cache", &no_buildid_cache,
- 		    "do not update the buildid cache"),
-+	OPT_BOOLEAN('B', "no-buildid", &no_buildid,
-+		    "do not collect buildids in perf.data"),
- 	OPT_END()
- };
+-	for_each_lang(scripts_dir, lang_dirent, lang_next) {
++	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s/bin", scripts_path,
+ 			 lang_dirent.d_name);
+ 		lang_dir = opendir(lang_path);
+ 		if (!lang_dir)
+ 			continue;
  
-@@ -857,7 +864,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	}
+-		for_each_script(lang_dir, script_dirent, script_next) {
++		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+ 			script_root = strdup(script_dirent.d_name);
+ 			str = ends_with(script_root, REPORT_SUFFIX);
+ 			if (str) {
+@@ -514,14 +531,14 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 	if (!scripts_dir)
+ 		return NULL;
  
- 	symbol__init();
--	if (no_buildid)
-+
-+	if (no_buildid_cache || no_buildid)
- 		disable_buildid_cache();
+-	for_each_lang(scripts_dir, lang_dirent, lang_next) {
++	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s/bin", scripts_path,
+ 			 lang_dirent.d_name);
+ 		lang_dir = opendir(lang_path);
+ 		if (!lang_dir)
+ 			continue;
  
- 	if (!nr_counters) {
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d7e67b1..f65d7dc 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -152,6 +152,11 @@ void perf_header__set_feat(struct perf_header *self, int feat)
- 	set_bit(feat, self->adds_features);
- }
- 
-+void perf_header__clear_feat(struct perf_header *self, int feat)
-+{
-+	clear_bit(feat, self->adds_features);
-+}
-+
- bool perf_header__has_feat(const struct perf_header *self, int feat)
- {
- 	return test_bit(feat, self->adds_features);
-@@ -431,8 +436,10 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
- 	int idx = 0, err;
- 
- 	session = container_of(self, struct perf_session, header);
--	if (perf_session__read_build_ids(session, true))
--		perf_header__set_feat(self, HEADER_BUILD_ID);
-+
-+	if (perf_header__has_feat(self, HEADER_BUILD_ID &&
-+	    !perf_session__read_build_ids(session, true)))
-+		perf_header__clear_feat(self, HEADER_BUILD_ID);
- 
- 	nr_sections = bitmap_weight(self->adds_features, HEADER_FEAT_BITS);
- 	if (!nr_sections)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 402ac24..ed550bf 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -84,6 +84,7 @@ u64 perf_header__sample_type(struct perf_header *header);
- struct perf_event_attr *
- perf_header__find_attr(u64 id, struct perf_header *header);
- void perf_header__set_feat(struct perf_header *self, int feat);
-+void perf_header__clear_feat(struct perf_header *self, int feat);
- bool perf_header__has_feat(const struct perf_header *self, int feat);
- 
- int perf_header__process_sections(struct perf_header *self, int fd,
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index bb4ac2e..8be0b96 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -13,6 +13,11 @@ static inline void set_bit(int nr, unsigned long *addr)
- 	addr[nr / BITS_PER_LONG] |= 1UL << (nr % BITS_PER_LONG);
- }
- 
-+static inline void clear_bit(int nr, unsigned long *addr)
-+{
-+	addr[nr / BITS_PER_LONG] &= ~(1UL << (nr % BITS_PER_LONG));
-+}
-+
- static __always_inline int test_bit(unsigned int nr, const unsigned long *addr)
- {
- 	return ((1UL << (nr % BITS_PER_LONG)) &
+-		for_each_script(lang_dir, script_dirent, script_next) {
++		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+ 			__script_root = strdup(script_dirent.d_name);
+ 			str = ends_with(__script_root, suffix);
+ 			if (str) {
 -- 
 1.6.2.5
 
