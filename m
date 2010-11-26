@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab0KZVrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 16:47:51 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:57363 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab0KZVrt (ORCPT
+	id S1752744Ab0KZVsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 16:48:05 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53117 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab0KZVrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 16:47:49 -0500
+	Fri, 26 Nov 2010 16:47:42 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Davidlohr Bueso <dave@gnu.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
         Stephane Eranian <eranian@google.com>,
         Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 0/5] perf/core improvements and fixes
-Date: Fri, 26 Nov 2010 19:47:16 -0200
-Message-Id: <1290808041-16535-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/5] perf events: Default to using event__process_lost
+Date: Fri, 26 Nov 2010 19:47:18 -0200
+Message-Id: <1290808041-16535-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+In-Reply-To: <1290808041-16535-1-git-send-email-acme@infradead.org>
+References: <1290808041-16535-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi Ingo,
+Tool developers have to fill in a 'perf_event_ops' method table to
+specify how to handle each event, so far the ones that were not
+explicitely especified would get a stub that would just discard the
+event.
 
-        Please pull from:
+Change that so that tool developers can get the lost event details and
+the total number of such events at the end of 'perf report -D' output.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (2):
-  perf record: Add option to disable collecting build-ids
-  perf events: Default to using event__process_lost
-
-Davidlohr Bueso (1):
-  perf tools: Add GCC optimization to memory allocating functions
-
-Ian Munsie (1):
-  perf symbols: Correct final kernel map guesses
-
-Shawn Bohrer (1):
-  perf trace: Handle DT_UNKNOWN on filesystems that don't support
-    d_type
-
- tools/perf/builtin-record.c            |   14 ++++++++++--
- tools/perf/builtin-trace.c             |   33 ++++++++++++++++++++++++-------
- tools/perf/util/event.c                |    2 +-
- tools/perf/util/header.c               |   11 ++++++++-
- tools/perf/util/header.h               |    1 +
- tools/perf/util/include/linux/bitops.h |    5 ++++
- tools/perf/util/session.c              |    2 +-
- tools/perf/util/symbol.c               |    2 +-
- tools/perf/util/util.h                 |    5 ++-
- 9 files changed, 57 insertions(+), 18 deletions(-)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index fa9d652..3d56047 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -262,7 +262,7 @@ static void perf_event_ops__fill_defaults(struct perf_event_ops *handler)
+ 	if (handler->exit == NULL)
+ 		handler->exit = process_event_stub;
+ 	if (handler->lost == NULL)
+-		handler->lost = process_event_stub;
++		handler->lost = event__process_lost;
+ 	if (handler->read == NULL)
+ 		handler->read = process_event_stub;
+ 	if (handler->throttle == NULL)
+-- 
+1.6.2.5
 
