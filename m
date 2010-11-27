@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab0K0Hlw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 02:41:52 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55719 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0K0Hlt (ORCPT
+	id S1751649Ab0K0HrW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 02:47:22 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49140 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab0K0HrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 02:41:49 -0500
+	Sat, 27 Nov 2010 02:47:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VbGZ+/x++RLaeL8a/qiyiG2VKDrWAekOJAVlEgIqqEy5exXrn5LADfkntRzN07WM2a
-         YQTVhAr1npSVBCsusF8SOVsoSfsWWDC7cKQvEl2vpLlzTRCA/N1L+8dD8eQK4TW+3QwB
-         Qu0qH0hv8gB3oOin/9peoOzBkeQ00tpYiVtd0=
-Subject: Re: [RFC 0/9] Change the copyright info.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Tpw80TSr8zgJeYML6EpvsyEt7MpmCXjarXVkoyKVpNEA4QYjpE7DnAqjv8cIlLwYoG
+         UmPhoe8Iys/sIS6oRX2TxoZj5o5VWR4MGvWkW0mizDKiAEV63wZqrzrhZR3l9my+xHMf
+         Vp5RI13PfdE5Dok7yexN6pt18c0BvQGGDlCnQ=
+Message-ID: <4CF0B781.2080209@gmail.com>
+Date: Fri, 26 Nov 2010 23:47:13 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: trivial@kernel.org, linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-wireless@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
-References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 27 Nov 2010 09:41:42 +0200
-Message-ID: <1290843702.2379.1.camel@koala>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC 0/9] Change the copyright info.
+References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com> <1290843702.2379.1.camel@koala>
+In-Reply-To: <1290843702.2379.1.camel@koala>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 22:21 -0800, Justin P. Mattock wrote:
-> 
+On 11/26/2010 11:41 PM, Artem Bityutskiy wrote:
+> On Fri, 2010-11-26 at 22:21 -0800, Justin P. Mattock wrote:
+>>
+>
+>> Below you will find a set of patches, that update the copyright info from
+>> Sun Microsystems to Oracle.
+>
+> Shouldn't @oracle.com e-mail used for such patches?
+>
 
-> Below you will find a set of patches, that update the copyright info from
-> Sun Microsystems to Oracle.
+yeah was looking at all the @oracle addresses, but thought to just focus 
+on this part, then later send out something for the addresses
 
-Shouldn't @oracle.com e-mail used for such patches?
-
--- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
-
+Justin P. Mattock
