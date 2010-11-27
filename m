@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab0K0Suh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 13:50:37 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:43385 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab0K0Sue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 13:50:34 -0500
-X-ASG-Debug-ID: 1290883832-085313b00001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4CF152F4.6060400@fusionio.com>
-Date: Sat, 27 Nov 2010 19:50:28 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753318Ab0K0S50 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 13:57:26 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44941 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab0K0S5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 13:57:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:in-reply-to:references:user-agent:date:message-id
+         :mime-version:content-type;
+        b=L6oISWnPbEm0sphEX6pAj6qKMcDaAp5s/YD33SJ31q4Q1w4t16H+Jae6LXXnX4YenS
+         pGC50zdLv+rom02kRFd3R+LFMJUnqd70wc1YiUuAt1eTUcW7Awy4gBkT+Ia5cKM2ck9m
+         eU8Wd+5DnJ049HxhN8565STVQ7bYSD8kgXgQg=
+From: Ben Gamari <bgamari@gmail.com>
+To: jason.vas.dias@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: per-chroot clock module ?
+In-Reply-To: <201011271821.35039.jason.vas.dias@gmail.com>
+References: <201011271821.35039.jason.vas.dias@gmail.com>
+User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Sat, 27 Nov 2010 13:57:19 -0500
+Message-ID: <874ob2r3w0.fsf@gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Christoph Hellwig <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET] backing-dev: replace private thread pool with   workqueue
-References: <1283777182-11426-1-git-send-email-tj@kernel.org> <20100907121608.GA26597@lst.de> <4C862DDC.6010702@kernel.org> <4C86303A.90601@fusionio.com> <4C8631BE.9030709@kernel.org> <4CF12BAB.3000704@kernel.org>
-X-ASG-Orig-Subj: Re: [PATCHSET] backing-dev: replace private thread pool with   workqueue
-In-Reply-To: <4CF12BAB.3000704@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1290883832
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.47849
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-27 17:02, Tejun Heo wrote:
-> On 09/07/2010 02:36 PM, Tejun Heo wrote:
->> Hello,
->>
->> On 09/07/2010 02:29 PM, Jens Axboe wrote:
->>> I agree (with both of you). It's definitely too early to convert it
->>> over, but if we can in the longer run, it never hurts to get rid of
->>> code. The writeback threads aren't a typical threadpool, in that the
->>> threads stick around and only go away when idle for too long. If they
->>> stick around, you get the same process hammering IO at your device. So
->>> converting that over to the generic cwq may or may not be at a
->>> performance cost, it'll definitely have to be tested.
->>
->> One thing to try is removing WQ_UNBOUND and see how it affects the
->> performance.  I put WQ_UNBOUND there mainly to keep the behavior about
->> the same as the current code but given what it does I think it would
->> probably fare better with workers bound to CPUs.
+On Sat, 27 Nov 2010 18:21:34 +0000, Jason Vas Dias <jason.vas.dias@gmail.com> wrote:
+> Greetings -
 > 
-> cmwq now seems pretty solid.  There hasn't been any noticeable failure
-> yet.  I think we can move on with this conversion now.  Shall I
-> refresh the patchset against the current block tree?
+> Sorry in advance if this is a stupid idea, but -
+> 
+> I'd really like to be able to set a distinct "clock" for a specific chroot environment, 
+> such that the super-user could call :
+> [snip]
 
-I'd still prefer to wait a while. The writeback code is still very much
-a moving target, so I don't think mixing in a different work queue
-scheme is likely going to do anyone any good at this point in time.
+It certainly doesn't sound like a particularly good idea to me. This
+would add great complexity to the kernel while having very few
+users. Perhaps there's something I haven't considered but I can't think
+of any good applications for this sort of functionality. Do you have
+something in particular in mind?
 
--- 
-Jens Axboe
+It seems like what you want here is simple virtualization. Have you
+considered KVM? The closest thing to your request currently upstream is
+containers, although I'm unsure of whether a container can be created
+with an independent clock. Might be something to look into.
 
+Cheers,
+
+- Ben
