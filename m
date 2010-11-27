@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab0K0GWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 01:22:16 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33249 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab0K0GWE (ORCPT
+	id S1752278Ab0K0GWI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 01:22:08 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:60399 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab0K0GV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 01:22:04 -0500
+	Sat, 27 Nov 2010 01:21:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bzCpSG6qhryBtuL7ZplCQP9kcCkisTfyPbz0mN5Ul6cKo5g7PdvSLVv+AtY1ykixe8
-         OPuZPVOOaxvqrxOckyEaUShNhrk1YLZncO3vUj8nMEY8I+3DyRPC85pQZ8dPmac+o2aI
-         KipDdXduey8Lq/JV3HZ4CfdqSdLIZ2042FTXY=
+        b=kXn3PuBQnGlOLqlO4mAAd9rUg1rwOCw6tfBAW/ssZCE0u/c1T5l1Ms0o4i+A0UEZeW
+         8rFvB1Ty7NREOTev3f6gT8fFsTEcCsXQ8zUpgxMVTFSM3NSJK4zEwFYhomHlgVWGFf6J
+         lMicThJvW0zK4jmy1kej0BxIaap8NYilZOpbI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-wireless@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 6/9]drivers:char:nvram.c Change the copyright info.
-Date: Fri, 26 Nov 2010 22:21:16 -0800
-Message-Id: <1290838879-11038-7-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 3/9]drivers:infiniband:ulp Change the copyright info.
+Date: Fri, 26 Nov 2010 22:21:13 -0800
+Message-Id: <1290838879-11038-4-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
 References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
@@ -34,22 +34,60 @@ Change the copyright info from Sun Microsystems to Oracle since Oracle now owns 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/char/nvram.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/infiniband/ulp/ipoib/ipoib.h           |    2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_ib.c        |    2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_main.c      |    2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_multicast.c |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/nvram.c b/drivers/char/nvram.c
-index 166f1e7..33e8faa 100644
---- a/drivers/char/nvram.c
-+++ b/drivers/char/nvram.c
-@@ -3,7 +3,7 @@
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib.h b/drivers/infiniband/ulp/ipoib/ipoib.h
+index 753a983..bdf2efb 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib.h
++++ b/drivers/infiniband/ulp/ipoib/ipoib.h
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved.
+- * Copyright (c) 2005 Sun Microsystems, Inc. All rights reserved.
++ * Copyright (c) 2005 Oracle and/or its affiliates. All rights reserved.
+  * Copyright (c) 2004 Voltaire, Inc. All rights reserved.
   *
-  * Copyright (C) 1997 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
-  * idea by and with help from Richard Jelinek <rj@suse.de>
-- * Portions copyright (c) 2001,2002 Sun Microsystems (thockin@sun.com)
-+ * Portions copyright (c) 2001,2002 Oracle and/or its affiliates. (thockin@sun.com)
+  * This software is available to you under a choice of one of two
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_ib.c b/drivers/infiniband/ulp/ipoib/ipoib_ib.c
+index dfa7190..87ff9eb 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_ib.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_ib.c
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved.
+- * Copyright (c) 2005 Sun Microsystems, Inc. All rights reserved.
++ * Copyright (c) 2005 Oracle and/or its affiliates. All rights reserved.
+  * Copyright (c) 2005 Mellanox Technologies. All rights reserved.
+  * Copyright (c) 2004, 2005 Voltaire, Inc. All rights reserved.
   *
-  * This driver allows you to access the contents of the non-volatile memory in
-  * the mc146818rtc.h real-time clock. This chip is built into all PCs and into
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+index 9ff7bc7..43df433 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (c) 2004 Topspin Communications.  All rights reserved.
+- * Copyright (c) 2005 Sun Microsystems, Inc. All rights reserved.
++ * Copyright (c) 2005 Oracle and/or its affiliates. All rights reserved.
+  * Copyright (c) 2004 Voltaire, Inc. All rights reserved.
+  *
+  * This software is available to you under a choice of one of two
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
+index 3871ac6..af52828 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved.
+- * Copyright (c) 2005 Sun Microsystems, Inc. All rights reserved.
++ * Copyright (c) 2005 Oracle and/or its affiliates. All rights reserved.
+  * Copyright (c) 2004 Voltaire, Inc. All rights reserved.
+  *
+  * This software is available to you under a choice of one of two
 -- 
 1.7.1
 
