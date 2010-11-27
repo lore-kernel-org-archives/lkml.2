@@ -1,135 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab0K0N2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 08:28:48 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37183 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab0K0N2r (ORCPT
+	id S1752527Ab0K0Nho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 08:37:44 -0500
+Received: from fmmailgate03.web.de ([217.72.192.234]:59117 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab0K0Nhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 08:28:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:message-id:user-agent
-         :mime-version:content-type;
-        b=B0dLHtkyHh4uvVz55UjhOUXPug+PTv744th3pQrS7PNTPkzlyNDgAUh4LARJa4o+88
-         18CALmBbW6kvQt/aHFdegG34pO2I5FZW+8nSOk81t+FklQ/4m0Ku3m4zjTrOyYmfpKeH
-         ZAp0TgEXBzBkMuZHYWguPGO7uaHoYYXWFp7Bc=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Francis Moreau <francis.moro@gmail.com>
-Subject: Re: perf: some questions about perf software events
-References: <m3tyj73qev.fsf@gmail.com> <1290598906.2072.461.camel@laptop>
-Date: Sat, 27 Nov 2010 14:28:41 +0100
-Message-ID: <m3oc9a520m.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	Sat, 27 Nov 2010 08:37:42 -0500
+To: Michal Januszewski <spock@gentoo.org>
+Subject: [PATCH] uvesafb,vesafb: create write-combining or write-back PAT entries
+From: Thomas Schlichter <thomas.schlichter@web.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 27 Nov 2010 14:37:37 +0100
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_imQ8M+A3xhCkXAK"
+Message-Id: <201011271437.38126.thomas.schlichter@web.de>
+X-Provags-ID: V01U2FsdGVkX18mD65AlhIqJHk91eC5Jr1tWijwWvT+7EKAxIs0
+	OxO4VLg72KlVBqCg0pGpa5uO0c754+ydP7wnHjCyGnmohW7r5g
+	OKaa0cOhGoT59uS+fsRg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+--Boundary-00=_imQ8M+A3xhCkXAK
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-> On Wed, 2010-11-24 at 12:35 +0100, Franck Bui-Huu wrote:
+Hi,
 
-[...]
+with an PAT-enabled kernel (tested with 2.6.35, but the problem is still 
+present in current -tip), when using uvesafb or vesafb, these drivers will 
+create uncached-minus PAT entries for the framebuffer memory because they use 
+ioremap() (not the *_cached or *_wc variants). When the framebuffer memory 
+intersects with the video RAM used by Xorg, the complete video RAM will be 
+mapped uncached-minus what results in a serve performance penalty.
 
->> That is for no 'contiguous' events, setting a sampling frequency doesn't
->> really make sense since for example you could set a frequency to 1000 HZ
->> for the software ALIGNMENT_FAULT event and never get any samplings or at
->> least getting sampling but with a totally different rate. And the
->> current code doesn't look to handle sample_freq anyway.
->
-> All the freq bits are in the generic code, it re-computes the rate on
-> the timer-tick as well as on each event occurrence. 
->
-> Freq driven sampling should work just fine with swevents.
->
+Here are the correct MTRR entries created by uvesafb:
+schlicht@netbook:~$ cat /proc/mtrr
+reg00: base=0x000000000 ( 0MB), size= 2048MB, count=1: write-back
+reg01: base=0x06ff00000 ( 1791MB), size= 1MB, count=1: uncachable
+reg02: base=0x070000000 ( 1792MB), size= 256MB, count=1: uncachable
+reg03: base=0x0d0000000 ( 3328MB), size= 16MB, count=1: write-combining
 
-Yes, but how does it behave with ALIGNMENT_FAULTS for example ?
+And here are the problematic PAT entries:
+schlicht@netbook:~$ sudo cat /sys/kernel/debug/x86/pat_memtype_list
+PAT memtype list:
+write-back @ 0x0-0x1000
+uncached-minus @ 0x6fedd000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee3000-0x6fee4000
+uncached-minus @ 0x6fee3000-0x6fee4000
+uncached-minus @ 0x6fee3000-0x6fee4000
+uncached-minus @ 0xd0000000-0xe0000000 <-- created by xserver-xorg
+uncached-minus @ 0xd0000000-0xd1194000 <-- created by uvesafb
+uncached-minus @ 0xf4000000-0xf4009000
+uncached-minus @ 0xf4200000-0xf4400000
+uncached-minus @ 0xf5000000-0xf5010000
+uncached-minus @ 0xf5100000-0xf5104000
+uncached-minus @ 0xf5400000-0xf5404000
+uncached-minus @ 0xf5404000-0xf5405000
+uncached-minus @ 0xf5404000-0xf5405000
+uncached-minus @ 0xfed00000-0xfed01000
 
-Such event may happen at a very disparate rate or it can even never
-happen at all.
+Therefore I created the attached patch for uvesafb which uses ioremap_wc() to 
+create the correct PAT entries, as shown below:
+schlicht@netbook:~$ sudo cat /sys/kernel/debug/x86/pat_memtype_list
+PAT memtype list:
+write-back @ 0x0-0x1000
+uncached-minus @ 0x6fedd000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee2000-0x6fee3000
+uncached-minus @ 0x6fee3000-0x6fee4000
+uncached-minus @ 0x6fee3000-0x6fee4000
+uncached-minus @ 0x6fee3000-0x6fee4000
+write-combining @ 0xd0000000-0xe0000000
+write-combining @ 0xd0000000-0xd1194000
+uncached-minus @ 0xf4000000-0xf4009000
+uncached-minus @ 0xf4200000-0xf4400000
+uncached-minus @ 0xf5000000-0xf5010000
+uncached-minus @ 0xf5100000-0xf5104000
+uncached-minus @ 0xf5400000-0xf5404000
+uncached-minus @ 0xf5404000-0xf5405000
+uncached-minus @ 0xf5404000-0xf5405000
+uncached-minus @ 0xfed00000-0xfed01000
 
->
->> Also I'm currently not seeing any real differences between cpu-clock and
->> task-clock events. They both seem to count the time elapsed when the
->> task is running on a CPU. Am I wrong ?
->
-> No, Francis already noticed that, I probably wrecked it when I added the
-> multi-pmu stuff, its on my todo list to look at (Francis also handed me
-> a little patchlet), but I keep getting distracted with other stuff :/
+This results in a performance gain, objectively measurable with e.g.
+x11perf -comppixwin10 -comppixwin100 -comppixwin500:
+1: x11perf_xaa.log
+2: x11perf_xaa_patched.log
 
-OK.
+    1 2 Operation
+-------- ----------------- -----------------
+124000.0 202000.0 ( 1.63) Composite 10x10 from pixmap to window
+  3340.0 24400.0 ( 7.31) Composite 100x100 from pixmap to window
+   131.0 1150.0 ( 8.78) Composite 500x500 from pixmap to window
 
-Does it make sense to adjust the period for both of them ?
+You can see the serve performance gain when composing larger pixmaps to 
+window.
+Please consider applying the attached patches for uvesafb and vesafb.
 
-Also, when creating a task clock event, passing 'pid=-1' to
-sys_perf_event_open() doesn't really make sense, does it ?
+These patches (for -tip) replace the ioremap() function with the variants 
+matching the mtrr-parameter. To create "write-back" PAT entries, the 
+ioremap_cache() function must be called after creating the MTRR entries, and 
+the ioremap_cache() region must completely fit into the MTRR region, this is 
+why the MTRR region size is now rounded up to the next power-of-two.
 
-Same with cpu clock and 'pid=n': whatever <n> value, the event measure
-the cpu wall time clock.
+Signed-off-by: Thomas Schlichter <thomas.schlichter@web.de>
 
-Perhaps proposing only one clock in the API and internally bind this
-clock to the cpu or task clock depending on pid or cpu parameters would
-have been better ?
+Thank you very much!
 
-Something like the following:
+Kind regards,
+  Thomas
 
+--Boundary-00=_imQ8M+A3xhCkXAK
+Content-Type: text/x-patch;
+  charset="us-ascii";
+  name="vesafb.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+	filename="vesafb.diff"
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index bb1884c..ad50551 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -105,6 +105,7 @@ enum perf_sw_ids {
- 	PERF_COUNT_SW_PAGE_FAULTS_MAJ		= 6,
- 	PERF_COUNT_SW_ALIGNMENT_FAULTS		= 7,
- 	PERF_COUNT_SW_EMULATION_FAULTS		= 8,
-+	PERF_COUNT_SW_CLOCK			= 9,
+diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+index 6a069d0..a99bbe8 100644
+--- a/drivers/video/vesafb.c
++++ b/drivers/video/vesafb.c
+@@ -303,19 +303,6 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 	info->apertures->ranges[0].base = screen_info.lfb_base;
+ 	info->apertures->ranges[0].size = size_total;
  
- 	PERF_COUNT_SW_MAX,			/* non-ABI */
- };
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 1dabb54..f3ff342 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4981,7 +4981,14 @@ static int cpu_clock_event_init(struct perf_event *event)
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
+-	info->screen_base = ioremap(vesafb_fix.smem_start, vesafb_fix.smem_len);
+-	if (!info->screen_base) {
+-		printk(KERN_ERR
+-		       "vesafb: abort, cannot ioremap video memory 0x%x @ 0x%lx\n",
+-			vesafb_fix.smem_len, vesafb_fix.smem_start);
+-		err = -EIO;
+-		goto err;
+-	}
+-
+-	printk(KERN_INFO "vesafb: framebuffer at 0x%lx, mapped to 0x%p, "
+-	       "using %dk, total %dk\n",
+-	       vesafb_fix.smem_start, info->screen_base,
+-	       size_remap/1024, size_total/1024);
+ 	printk(KERN_INFO "vesafb: mode is %dx%dx%d, linelength=%d, pages=%d\n",
+ 	       vesafb_defined.xres, vesafb_defined.yres, vesafb_defined.bits_per_pixel, vesafb_fix.line_length, screen_info.pages);
  
--	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
-+	switch (event->attr.config) {
-+	case PERF_COUNT_SW_CPU_CLOCK:
+@@ -438,8 +425,7 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 			int rc;
+ 
+ 			/* Find the largest power-of-two */
+-			while (temp_size & (temp_size - 1))
+-				temp_size &= (temp_size - 1);
++			temp_size = roundup_pow_of_two(temp_size);
+ 
+ 			/* Try and find a power of two to add */
+ 			do {
+@@ -451,6 +437,34 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 	}
+ #endif
+ 	
++	switch (mtrr) {
++	case 1: /* uncachable */
++		info->screen_base = ioremap_nocache(vesafb_fix.smem_start, vesafb_fix.smem_len);
 +		break;
-+	case PERF_COUNT_SW_CLOCK:
-+		if (!(event->attach_state & PERF_ATTACH_TASK))
-+			break;
-+		/* fall-through */
-+	default:
- 		return -ENOENT;
- 
- 	return 0;
-@@ -5058,8 +5065,16 @@ static int task_clock_event_init(struct perf_event *event)
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
- 
--	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
-+	switch (event->attr.config) {
-+	case PERF_COUNT_SW_TASK_CLOCK:
++	case 2: /* write-back */
++		info->screen_base = ioremap_cache(vesafb_fix.smem_start, vesafb_fix.smem_len);
 +		break;
-+	case PERF_COUNT_SW_CLOCK:
-+		if (event->attach_state & PERF_ATTACH_TASK)
-+			break;
-+		/* fall-through */
++	case 3: /* write-combining */
++		info->screen_base = ioremap_wc(vesafb_fix.smem_start, vesafb_fix.smem_len);
++		break;
++	case 4: /* write-through */
 +	default:
- 		return -ENOENT;
++		info->screen_base = ioremap(vesafb_fix.smem_start, vesafb_fix.smem_len);
++		break;
++	}
++	if (!info->screen_base) {
++		printk(KERN_ERR
++		       "vesafb: abort, cannot ioremap video memory 0x%x @ 0x%lx\n",
++			vesafb_fix.smem_len, vesafb_fix.smem_start);
++		err = -EIO;
++		goto err;
++	}
++
++	printk(KERN_INFO "vesafb: framebuffer at 0x%lx, mapped to 0x%p, "
++	       "using %dk, total %dk\n",
++	       vesafb_fix.smem_start, info->screen_base,
++	       size_remap/1024, size_total/1024);
++
+ 	info->fbops = &vesafb_ops;
+ 	info->var = vesafb_defined;
+ 	info->fix = vesafb_fix;
+
+--Boundary-00=_imQ8M+A3xhCkXAK
+Content-Type: text/x-patch;
+  charset="us-ascii";
+  name="uvesafb.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+	filename="uvesafb.diff"
+
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index 52ec095..5a34bc8 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -1552,8 +1552,7 @@ static void __devinit uvesafb_init_mtrr(struct fb_info *info)
+ 			int rc;
+ 
+ 			/* Find the largest power-of-two */
+-			while (temp_size & (temp_size - 1))
+-				temp_size &= (temp_size - 1);
++			temp_size = roundup_pow_of_two(temp_size);
+ 
+ 			/* Try and find a power of two to add */
+ 			do {
+@@ -1736,15 +1735,37 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
+ 
+ 	uvesafb_init_info(info, mode);
+ 
++	if (!request_region(0x3c0, 32, "uvesafb")) {
++		printk(KERN_ERR "uvesafb: request region 0x3c0-0x3e0 failed\n");
++		err = -EIO;
++		goto out_mode;
++	}
++
+ 	if (!request_mem_region(info->fix.smem_start, info->fix.smem_len,
+ 				"uvesafb")) {
+ 		printk(KERN_ERR "uvesafb: cannot reserve video memory at "
+ 				"0x%lx\n", info->fix.smem_start);
+ 		err = -EIO;
+-		goto out_mode;
++		goto out_reg;
+ 	}
+ 
+-	info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
++	uvesafb_init_mtrr(info);
++
++	switch (mtrr) {
++	case 1: /* uncachable */
++		info->screen_base = ioremap_nocache(info->fix.smem_start, info->fix.smem_len);
++		break;
++	case 2: /* write-back */
++		info->screen_base = ioremap_cache(info->fix.smem_start, info->fix.smem_len);
++		break;
++	case 3: /* write-combining */
++		info->screen_base = ioremap_wc(info->fix.smem_start, info->fix.smem_len);
++		break;
++	case 4: /* write-through */
++	default:
++		info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
++		break;
 +	}
  
+ 	if (!info->screen_base) {
+ 		printk(KERN_ERR
+@@ -1755,20 +1776,13 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
+ 		goto out_mem;
+ 	}
+ 
+-	if (!request_region(0x3c0, 32, "uvesafb")) {
+-		printk(KERN_ERR "uvesafb: request region 0x3c0-0x3e0 failed\n");
+-		err = -EIO;
+-		goto out_unmap;
+-	}
+-
+-	uvesafb_init_mtrr(info);
+ 	platform_set_drvdata(dev, info);
+ 
+ 	if (register_framebuffer(info) < 0) {
+ 		printk(KERN_ERR
+ 			"uvesafb: failed to register framebuffer device\n");
+ 		err = -EINVAL;
+-		goto out_reg;
++		goto out_unmap;
+ 	}
+ 
+ 	printk(KERN_INFO "uvesafb: framebuffer at 0x%lx, mapped to 0x%p, "
+@@ -1785,12 +1799,12 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
+ 
  	return 0;
- }
+ 
+-out_reg:
+-	release_region(0x3c0, 32);
+ out_unmap:
+ 	iounmap(info->screen_base);
+ out_mem:
+ 	release_mem_region(info->fix.smem_start, info->fix.smem_len);
++out_reg:
++	release_region(0x3c0, 32);
+ out_mode:
+ 	if (!list_empty(&info->modelist))
+ 		fb_destroy_modelist(&info->modelist);
 
-
--- 
-		Franck
+--Boundary-00=_imQ8M+A3xhCkXAK--
