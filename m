@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab0K0Otw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 09:49:52 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:43422 "EHLO
+	id S1752715Ab0K0O6M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 09:58:12 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:41304 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752384Ab0K0Otv (ORCPT
+	by vger.kernel.org with ESMTP id S1752384Ab0K0O6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 09:49:51 -0500
-Date: Sat, 27 Nov 2010 09:49:49 -0500
+	Sat, 27 Nov 2010 09:58:09 -0500
+Date: Sat, 27 Nov 2010 09:58:06 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Christoph Lameter <cl@linux.com>
 Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
         linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
         Tejun Heo <tj@kernel.org>
-Subject: Re: [thisops uV2 02/10] vmstat: Optimize zone counter
-	modifications through the use of this cpu operations
-Message-ID: <20101127144949.GC15365@Krystal>
-References: <20101126210937.383047168@linux.com> <20101126210950.142747403@linux.com>
+Subject: Re: [thisops uV2 03/10] percpu: Generic support for
+	this_cpu_add,sub,dec,inc_return
+Message-ID: <20101127145806.GD15365@Krystal>
+References: <20101126210937.383047168@linux.com> <20101126210950.722391707@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101126210950.142747403@linux.com>
+In-Reply-To: <20101126210950.722391707@linux.com>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:43:58 up 3 days, 19:47,  2 users,  load average: 0.03, 0.03,
+X-Uptime: 09:53:08 up 3 days, 19:56,  3 users,  load average: 0.00, 0.00,
 	0.00
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,126 +32,145 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Christoph Lameter (cl@linux.com) wrote:
-> this cpu operations can be used to slightly optimize the function. The
-> changes will avoid some address calculations and replace them with the
-> use of the percpu segment register.
+> Introduce generic support for this_cpu_add_return etc.
 > 
-> If one would have this_cpu_inc_return and this_cpu_dec_return then it
-> would be possible to optimize inc_zone_page_state and dec_zone_page_state even
-> more.
+> The fallback is to realize these operations with __this_cpu_ops.
+> 
+> Reviewed-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
+>  include/linux/percpu.h |   70 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 70 insertions(+)
+> 
+> Index: linux-2.6/include/linux/percpu.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/percpu.h	2010-11-23 17:29:46.000000000 -0600
+> +++ linux-2.6/include/linux/percpu.h	2010-11-23 17:31:14.000000000 -0600
+> @@ -240,6 +240,20 @@ extern void __bad_size_call_parameter(vo
+>  	pscr_ret__;							\
+>  })
+>  
+> +#define __pcpu_size_call_return2(stem, variable, ...)			\
+> +({	typeof(variable) pscr_ret__;					\
 
-Then we might want to directly target the implementation with
-this_cpu_add_return/this_cpu_sub_return (you implement these in patch 03), which
-would not need to disable preemption on the fast path. I think we already
-discussed this in the past. The reason eludes me at the moment, but I remember
-discussing that changing the increment/decrement delta to the nearest powers of
-two would let us deal with overflow cleanly. But it's probably too early in the
-morning for me to wrap my head around the issue at the moment.
+isn't it usual to do ?
+
+( {                               \
+  typeof(variable) pscr_ret__;    \
+
+instead ?
+
+
+> +	__verify_pcpu_ptr(&(variable));					\
+> +	switch(sizeof(variable)) {					\
+> +	case 1: pscr_ret__ = stem##1(variable, __VA_ARGS__);break;	\
+
+;break; at the EOL seems a bit odd. Maybe moving it to the next line ?
+
+> +	case 2: pscr_ret__ = stem##2(variable, __VA_ARGS__);break;	\
+> +	case 4: pscr_ret__ = stem##4(variable, __VA_ARGS__);break;	\
+> +	case 8: pscr_ret__ = stem##8(variable, __VA_ARGS__);break;	\
+> +	default:							\
+> +		__bad_size_call_parameter();break;			\
+> +	}								\
+> +	pscr_ret__;							\
+> +})
+> +
+>  #define __pcpu_size_call(stem, variable, ...)				\
+>  do {									\
+>  	__verify_pcpu_ptr(&(variable));					\
+> @@ -529,6 +543,62 @@ do {									\
+>  # define __this_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
+>  #endif
+>  
+> +#define _this_cpu_generic_add_return(pcp, val)				\
+> +({	typeof(pcp) ret__;						\
+
+add newline after opening ({    \  ?
+
+> +	preempt_disable();						\
+> +	__this_cpu_add((pcp), val);					\
+
+Hrm, you are inconsistent between your macros. Here you use "(pcp), " but above:
+"(variable, ". I think the extra () are not needed in this case, so you might
+want to consider removing these from (pcp).
+
+> +	ret__ = __this_cpu_read((pcp));					\
+
+Same here.
+
+> +	preempt_enable();						\
+> +	ret__;								\
+> +})
+> +
+> +#ifndef this_cpu_add_return
+> +# ifndef this_cpu_add_return_1
+> +#  define this_cpu_add_return_1(pcp, val)	_this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# ifndef this_cpu_add_return_2
+> +#  define this_cpu_add_return_2(pcp, val)	_this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# ifndef this_cpu_add_return_4
+> +#  define this_cpu_add_return_4(pcp, val)	_this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# ifndef this_cpu_add_return_8
+> +#  define this_cpu_add_return_8(pcp, val)	_this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# define this_cpu_add_return(pcp, val)	__pcpu_size_call_return2(this_cpu_add_return_, (pcp), val)
+
+Same here.
+
+> +#endif
+> +
+> +#define this_cpu_sub_return(pcp, val)	this_cpu_add_return(pcp, -(val))
+> +#define this_cpu_inc_return(pcp)	this_cpu_add_return(pcp, 1)
+> +#define this_cpu_dec_return(pcp)	this_cpu_add_return(pcp, -1)
+> +
+> +#define __this_cpu_generic_add_return(pcp, val)				\
+> +({	typeof(pcp) ret__;						\
+> +	__this_cpu_add((pcp), val);					\
+> +	ret__ = __this_cpu_read((pcp));					\
+
+Same for above 2 lines.
+
+> +	ret__;								\
+> +})
+> +
+> +#ifndef __this_cpu_add_return
+> +# ifndef __this_cpu_add_return_1
+> +#  define __this_cpu_add_return_1(pcp, val)	__this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# ifndef __this_cpu_add_return_2
+> +#  define __this_cpu_add_return_2(pcp, val)	__this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# ifndef __this_cpu_add_return_4
+> +#  define __this_cpu_add_return_4(pcp, val)	__this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# ifndef __this_cpu_add_return_8
+> +#  define __this_cpu_add_return_8(pcp, val)	__this_cpu_generic_add_return(pcp, val)
+> +# endif
+> +# define __this_cpu_add_return(pcp, val)	__pcpu_size_call_return2(this_cpu_add_return_, (pcp), val)
+
+Same here.
+
+Other than that:
+
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
 Thanks,
 
 Mathieu
 
-> 
-> V1->V2:
-> 	- Fix __dec_zone_state overflow handling
-> 	- Use s8 variables for temporary storage.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  mm/vmstat.c |   56 ++++++++++++++++++++++++++++++++------------------------
->  1 file changed, 32 insertions(+), 24 deletions(-)
-> 
-> Index: linux-2.6/mm/vmstat.c
-> ===================================================================
-> --- linux-2.6.orig/mm/vmstat.c	2010-11-24 13:38:34.000000000 -0600
-> +++ linux-2.6/mm/vmstat.c	2010-11-24 15:03:08.000000000 -0600
-> @@ -167,18 +167,20 @@ static void refresh_zone_stat_thresholds
->  void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
->  				int delta)
->  {
-> -	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
-> -
-> -	s8 *p = pcp->vm_stat_diff + item;
-> +	struct per_cpu_pageset * __percpu pcp = zone->pageset;
-> +	s8 * __percpu p = pcp->vm_stat_diff + item;
->  	long x;
-> +	long t;
+> +#endif
 > +
-> +	x = delta + __this_cpu_read(*p);
->  
-> -	x = delta + *p;
-> +	t = __this_cpu_read(pcp->stat_threshold);
->  
-> -	if (unlikely(x > pcp->stat_threshold || x < -pcp->stat_threshold)) {
-> +	if (unlikely(x > t || x < -t)) {
->  		zone_page_state_add(x, zone, item);
->  		x = 0;
->  	}
-> -	*p = x;
-> +	__this_cpu_write(*p, x);
->  }
->  EXPORT_SYMBOL(__mod_zone_page_state);
->  
-> @@ -221,16 +223,19 @@ EXPORT_SYMBOL(mod_zone_page_state);
->   */
->  void __inc_zone_state(struct zone *zone, enum zone_stat_item item)
->  {
-> -	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
-> -	s8 *p = pcp->vm_stat_diff + item;
-> -
-> -	(*p)++;
-> +	struct per_cpu_pageset * __percpu pcp = zone->pageset;
-> +	s8 * __percpu p = pcp->vm_stat_diff + item;
-> +	s8 v, t;
+> +#define __this_cpu_sub_return(pcp, val)	this_cpu_add_return(pcp, -(val))
+> +#define __this_cpu_inc_return(pcp)	this_cpu_add_return(pcp, 1)
+> +#define __this_cpu_dec_return(pcp)	this_cpu_add_return(pcp, -1)
 > +
-> +	__this_cpu_inc(*p);
-> +
-> +	v = __this_cpu_read(*p);
-> +	t = __this_cpu_read(pcp->stat_threshold);
-> +	if (unlikely(v > t)) {
-> +		s8 overstep = t >> 1;
->  
-> -	if (unlikely(*p > pcp->stat_threshold)) {
-> -		int overstep = pcp->stat_threshold / 2;
-> -
-> -		zone_page_state_add(*p + overstep, zone, item);
-> -		*p = -overstep;
-> +		zone_page_state_add(v + overstep, zone, item);
-> +		__this_cpu_write(*p, - overstep);
->  	}
->  }
->  
-> @@ -242,16 +247,19 @@ EXPORT_SYMBOL(__inc_zone_page_state);
->  
->  void __dec_zone_state(struct zone *zone, enum zone_stat_item item)
->  {
-> -	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
-> -	s8 *p = pcp->vm_stat_diff + item;
-> -
-> -	(*p)--;
-> -
-> -	if (unlikely(*p < - pcp->stat_threshold)) {
-> -		int overstep = pcp->stat_threshold / 2;
-> +	struct per_cpu_pageset * __percpu pcp = zone->pageset;
-> +	s8 * __percpu p = pcp->vm_stat_diff + item;
-> +	s8 v, t;
-> +
-> +	__this_cpu_dec(*p);
-> +
-> +	v = __this_cpu_read(*p);
-> +	t = __this_cpu_read(pcp->stat_threshold);
-> +	if (unlikely(v < - t)) {
-> +		s8 overstep = t >> 1;
->  
-> -		zone_page_state_add(*p - overstep, zone, item);
-> -		*p = overstep;
-> +		zone_page_state_add(v - overstep, zone, item);
-> +		__this_cpu_write(*p, overstep);
->  	}
->  }
->  
+>  /*
+>   * IRQ safe versions of the per cpu RMW operations. Note that these operations
+>   * are *not* safe against modification of the same variable from another
 > 
 
 -- 
