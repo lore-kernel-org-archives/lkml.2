@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab0K0Ddp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 22:33:45 -0500
-Received: from vsmtp6.jaring.my ([192.228.250.86]:49510 "EHLO vsmtp6.jaring.my"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325Ab0K0Ddn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 22:33:43 -0500
-Message-Id: <201011270331.oAR3VG5r072643@vsmtp6.jaring.my>
-Reply-To: <chngeric@aol.com>
-From: "Eric" <cheung65@web.de>
-Subject: Mr Cheung.
-Date: Sat, 27 Nov 2010 04:28:08 -0800
+	id S1754182Ab0K0Dqt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 22:46:49 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33597 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab0K0Dqs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 22:46:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=W4Vqj9HU5SusuNl6Soa5cXyqEkMqxUiUIJWAcAueveyziQY/USnzMg3qq2I6vk3jbK
+         UgEN0YvBGz9ycfUB5sHGUId8vqd3G1oaB9ca9E5vYf9A9RHyaHYumj19lOxJdBDcK4Kj
+         YKTFeaR4U1sOw5JQodi/mgQbX3pLwwZ01NV4A=
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_003A_01C2A9A6.46BCA030"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: undisclosed-recipients:;
+In-Reply-To: <201011261622.29100.arnd@arndb.de>
+References: <4CEE8A99.5020906@gmail.com>
+	<20101125171613.GB18152@suse.de>
+	<201011261622.29100.arnd@arndb.de>
+Date: Sat, 27 Nov 2010 12:46:47 +0900
+Message-ID: <AANLkTikddbZN2d+WWwJ_k7ZLpM5SS9H+2OLBZ1CgoZrB@mail.gmail.com>
+Subject: Re: [RESEND][BUG][PATCH]-rc: USB: yurex: add .llseek fop to file_operations
+From: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+2010/11/27 Arnd Bergmann <arnd@arndb.de>:
+> On Thursday 25 November 2010 18:16:13 Greg KH wrote:
+>> On Fri, Nov 26, 2010 at 01:11:05AM +0900, Tomoki Sekiyama wrote:
+>> > Hi Greg-KH,
+>> > Sorry for resending this; To: was not enough.
+>> >
+>> > https://bugzilla.kernel.org/show_bug.cgi?id=23512
+>> >
+>> > Default llseek operation behavior was changed by the patch named
+>> > "vfs: make no_llseek the default" after the yurex driver was merged,
+>> > so the llseek to yurex is now ignored.
+>> >
+>> > This patch add llseek fop with default_llseek to yurex driver
+>> > to catch up to the change.
+>> >
+>> > Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+>>
+>> It's in my queue, sorry, been without power and water at home for a few
+>> days, will catch up on this stuff next week...
+>
+> I was out most of the week, so I didn't get to look at it either.
+> Is there an actual bug here caused by having no .llseek function?
+>
+> As far as I can tell, you don't really want to seek this file
+> anyway, so the default behaviour of disallowing llseek would actually
+> make more sense.
 
-------=_NextPart_000_003A_01C2A9A6.46BCA030
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+I need seek because the device notifies the update of the sensor's value
+by fasync, then the user can rewind(seek to 0) and re-read the file.
 
-Eric Cheung.,
-
-Mitt namn är Eric Cheung., Jag jobbar med Hang Seng Bank. Det är summan av
-$ 15,500,000.00 i min bank "Hang Seng Bank, Hong Kong.
-
-Jag vill göra överföringen av $ 15,500,000.00. Jag värva för dig
-hjälp i att sprida denna transaction.I för avsikt att ge 50% av den totala
-ersättningsfonden för din hjälp.
-
-Skulle du vara intresserad så skicka mig ett mail på min privata e-post
-1. Fullständigt namn
-2. Privat telefonnummer
-3. Nuvarande bostadsadress
-(Chngeric@aol.com).
-
-Hälsningar,
-chngeric@aol.com
-Eric Cheung.
-
-------=_NextPart_000_003A_01C2A9A6.46BCA030
-Content-Type: application/octet-stream;
-	name="cheung  small.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="cheung  small.txt"
-
-TXIgRXJpYyBDaGV1bmcuLCANCg0KTXkgbmFtZSBpcyBFcmljIENoZXVuZy4s
-IEkgd29yayB3aXRoIHRoZSBIYW5nIFNlbmcgQmFuay4gVGhlcmUgaXMgdGhl
-IHN1bSBvZg0KJCAxNSw1MDAsMDAwLjAwIGluIG15IGJhbmsgIkhhbmcgU2Vu
-ZyBCYW5rLCBIb25nIEtvbmcuDQoNCkkgd2lzaCB0byBtYWtlIHRoZSB0cmFu
-c2ZlciBvZiB0aGUgJCAxNSw1MDAsMDAwLjAwLiBJIHRvIHNvbGljaXQgZm9y
-IHlvdQ0KYXNzaXN0YW5jZSBpbiBlZmZlY3RpbmcgdGhpcyB0cmFuc2FjdGlv
-bi5JIGludGVuZCB0byBnaXZlIDUwJSBvZiB0aGUgdG90YWwNCnRoZSBjb21w
-ZW5zYXRpb24gZnVuZCBmb3IgeW91ciBhc3Npc3RhbmNlLg0KDQpTaG91bGQg
-eW91IGJlIEludGVyZXN0ZWQgcGxlYXNlIHNlbmQgbWUgYW4gZW1haWwgb24g
-bXkgcHJpdmF0ZSBlbWFpbA0KMS4gRnVsbCBuYW1lcw0KMi4gUHJpdmF0ZSBw
-aG9uZSBudW1iZXINCjMuIEN1cnJlbnQgcmVzaWRlbnRpYWwgYWRkcmVzcw0K
-KGNobmdlcmljQGFvbC5jb20pLg0KDQpSZWdhcmRzLA0KY2huZ2VyaWNAYW9s
-LmNvbQ0KRXJpYyBDaGV1bmcu
-
-------=_NextPart_000_003A_01C2A9A6.46BCA030--
+Thanks,
+--
+Tomoki Sekiyama
