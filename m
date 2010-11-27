@@ -1,22 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab0K0Uep (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 15:34:45 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:25163 "EHLO
+	id S1753528Ab0K0UfV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 15:35:21 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:25183 "EHLO
 	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753380Ab0K0Uen (ORCPT
+	by vger.kernel.org with ESMTP id S1753403Ab0K0UfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 15:34:43 -0500
+	Sat, 27 Nov 2010 15:35:19 -0500
 From: "Scott J. Goldman" <scottjg@vmware.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-next@vger.kernel.org
-Cc: pv-drivers@vmware.com, randy.dunlap@oracle.com
-Subject: [PATCH net-next] vmxnet3: fix compilation when RSS is disabled
-Date: Sat, 27 Nov 2010 12:33:54 -0800
-Message-Id: <1290890035-32285-1-git-send-email-scottjg@vmware.com>
+Cc: pv-drivers@vmware.com, randy.dunlap@oracle.com,
+        "Scott J. Goldman" <scottjg@vmware.com>
+Subject: [PATCH] vmxnet3: fix compilation when RSS is disabled
+Date: Sat, 27 Nov 2010 12:33:55 -0800
+Message-Id: <1290890035-32285-2-git-send-email-scottjg@vmware.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1290890035-32285-1-git-send-email-scottjg@vmware.com>
+References: <1290890035-32285-1-git-send-email-scottjg@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this was reported on linux-next, we may want to merge it there too.
+If RSS is disabled, we can ifdef out some RSS specific code. This fixes
+the compile error found by Randy Dunlap.
+
+Signed-off-by: Scott J. Goldman <scottjg@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_ethtool.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+index 9ddaea6..8e17fc8 100644
+--- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
++++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+@@ -553,7 +553,7 @@ vmxnet3_get_rxnfc(struct net_device *netdev, struct ethtool_rxnfc *info,
+ 	return -EOPNOTSUPP;
+ }
+ 
+-
++#ifdef VMXNET3_RSS
+ static int
+ vmxnet3_get_rss_indir(struct net_device *netdev,
+ 		      struct ethtool_rxfh_indir *p)
+@@ -598,6 +598,7 @@ vmxnet3_set_rss_indir(struct net_device *netdev,
+ 	return 0;
+ 
+ }
++#endif
+ 
+ static struct ethtool_ops vmxnet3_ethtool_ops = {
+ 	.get_settings      = vmxnet3_get_settings,
+@@ -623,8 +624,10 @@ static struct ethtool_ops vmxnet3_ethtool_ops = {
+ 	.get_ringparam     = vmxnet3_get_ringparam,
+ 	.set_ringparam     = vmxnet3_set_ringparam,
+ 	.get_rxnfc         = vmxnet3_get_rxnfc,
++#ifdef VMXNET3_RSS
+ 	.get_rxfh_indir    = vmxnet3_get_rss_indir,
+ 	.set_rxfh_indir    = vmxnet3_set_rss_indir,
++#endif
+ };
+ 
+ void vmxnet3_set_ethtool_ops(struct net_device *netdev)
+-- 
+1.7.0.4
+
