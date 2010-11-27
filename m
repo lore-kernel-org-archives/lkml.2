@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab0K0Vcn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 16:32:43 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44423 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab0K0Vcm (ORCPT
+	id S1753573Ab0K0VyP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 16:54:15 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:50705 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749Ab0K0VyJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 16:32:42 -0500
+	Sat, 27 Nov 2010 16:54:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qTqTIPIWmO5v8vzT6lmLIMF4cAUQmN7Czj4bL91RhGFB1hclkc6zVdkvB5mgWeE2lq
-         bWYluywE88OTP2VLX7GZ757dfOgZjaIL4dN6OCx/YCcu4SdUcLuyZMAZAWn5lzgJMiez
-         rvGy+WXJKRKlOpNRl2/UM6hPZbWzSJC+q5ja8=
-Date: Sun, 28 Nov 2010 00:32:36 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org, brgerst@gmail.com, penberg@kernel.org
-Subject: Re: [PATCH 04/16] x86: Use local variable to cache
-	smp_processor_id() in setup_local_APIC()
-Message-ID: <20101127213236.GA10123@lenovo>
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fCqVlasjQcqxEYlO09LJmJA1sDPJkc/L/gNez68Sk+x/fHCK7WX5YrjfWJi3S0GYc9
+         Oak0uItI3dRub2XvZj8b5uGUy7EdrHEmO40zgdou0QkMkg7ScRnsfKUpBGqA3Env/VnW
+         1q8EDM52qhBJAEj4i+rito1lg9fN/Cf0iNb44=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290871325-3055-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101126132823.7ef94f07.sfr@canb.auug.org.au>
+References: <20101126132823.7ef94f07.sfr@canb.auug.org.au>
+Date: Sat, 27 Nov 2010 22:54:08 +0100
+Message-ID: <AANLkTim1=OijO4f0rk4W=2h1CW_xX27tSbDj8s9af7Xw@mail.gmail.com>
+Subject: Re: linux-next: Tree for November 26
+From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 04:21:53PM +0100, Tejun Heo wrote:
-> This is a trivial clean up.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/kernel/apic/apic.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
+Salve!
 
- Hi Tejun, I belive we should put in change log that it's
-not a trivial change. The cpu gets cached before preemption
-disabled and used after preemption enabled, which is not
-1:1 like it was before.
+2010/11/26 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Hi all,
+>
+> Changes since 20101125:
+>
 
- Though at moment all setup_local_APIC callers have preemption
-disabled this might be changed in future and heck knows what side
-effect we would have :)
+just a reminder - these errors still occur:
 
- Perhaps the easiest would be to make cpu = smp_processor_id()
-after preempt_disable() call and leave the last snippet in this
-function
+WARNING: modpost: Found 10 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+  LD      .tmp_vmlinux1
+arch/x86/built-in.o: In function `kvm_smp_prepare_boot_cpu':
+kvm.c:(.init.text+0xe543): undefined reference to `kvm_register_clock'
+make[1]: *** [.tmp_vmlinux1] Error 1
+make: *** [sub-make] Error 2
 
-#ifdef CONFIG_X86_MCE_INTEL
-	/* Recheck CMCI information after local APIC is up on CPU #0 */
-	if (smp_processor_id() == 0)
-		cmci_recheck();
-#endif
+make[4]: *** No rule to make target
+`drivers/scsi/aic7xxx/aicasm/*.[chyl]', needed by
+`drivers/scsi/aic7xxx/aicasm/aicasm'.  Stop.
+make[3]: *** [drivers/scsi/aic7xxx] Error 2
+make[2]: *** [drivers/scsi] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
 
-untouched.
 
- On the other hands I might be too paranoid ;)
+  CC      sound/oss/aedsp16.o
+make[3]: *** No rule to make target `/etc/sound/dsp001.ld', needed by
+`sound/oss/pss_boot.h'.  Stop.
+make[2]: *** [sound/oss] Error 2
+make[1]: *** [sound] Error 2
+make: *** [sub-make] Error 2
 
-  Cyrill
+  CC [M]  drivers/block/cciss.o
+/home/test/linux-2.6/drivers/block/cciss.c: In function 'cciss_cleanup':
+/home/test/linux-2.6/drivers/block/cciss.c:4929:6: error: 'proc_cciss'
+undeclared (first use in this function)
+/home/test/linux-2.6/drivers/block/cciss.c:4929:6: note: each
+undeclared identifier is reported only once for each function it
+appears in
+make[3]: *** [drivers/block/cciss.o] Error 1
+make[2]: *** [drivers/block] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
+
+
+
+
+-- 
+Slawa!
+Zimny "¯yj i pozwól umrzeæ" Lech z Wawelu
+
+That is not dead which can eternal lie.
+And with strange aeons even death may die.
