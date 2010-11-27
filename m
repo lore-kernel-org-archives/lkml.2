@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0K0Kfb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 05:35:31 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34802 "EHLO
+	id S1754205Ab0K0Kfv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 05:35:51 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34794 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752582Ab0K0K0B (ORCPT
+	by vger.kernel.org with ESMTP id S1752561Ab0K0K0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 05:26:01 -0500
+	Sat, 27 Nov 2010 05:26:00 -0500
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: ApcFAO1p8Ex5Lcx2/2dsb2JhbACVC44Acr12hUcEimGFFA
-Message-Id: <166004d5b1b60f7db3dc2a212871761b0066f585.1290852958.git.npiggin@kernel.dk>
+Message-Id: <bb3f4a29b5a011895e33aba9f5fc2977c43ed0e5.1290852958.git.npiggin@kernel.dk>
 In-Reply-To: <cover.1290852958.git.npiggin@kernel.dk>
 References: <cover.1290852958.git.npiggin@kernel.dk>
 From: Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 27 Nov 2010 20:44:37 +1100
-Subject: [PATCH 07/46] jfs: dont overwrite dentry name in d_revalidate
+Date: Sat, 27 Nov 2010 20:44:36 +1100
+Subject: [PATCH 06/46] cifs: dont overwrite dentry name in d_revalidate
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,52 +27,35 @@ and also gets in the way of doing lock-free path walking.
 
 Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 ---
- fs/jfs/namei.c |   43 +++++++++++++++++++++++++++++++++++--------
- 1 files changed, 35 insertions(+), 8 deletions(-)
+ fs/cifs/dir.c |   43 ++++++++++++++++++++++++-------------------
+ 1 files changed, 24 insertions(+), 19 deletions(-)
 
-diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
-index 231ca4a..2da1546 100644
---- a/fs/jfs/namei.c
-+++ b/fs/jfs/namei.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/fs.h>
-+#include <linux/namei.h>
- #include <linux/ctype.h>
- #include <linux/quotaops.h>
- #include <linux/exportfs.h>
-@@ -1597,21 +1598,47 @@ static int jfs_ci_compare(struct dentry *dir, struct qstr *a, struct qstr *b)
- 			goto out;
+diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+index 3840edd..521d841 100644
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -656,22 +656,34 @@ lookup_out:
+ static int
+ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
+ {
+-	int isValid = 1;
+-
+ 	if (direntry->d_inode) {
+ 		if (cifs_revalidate_dentry(direntry))
+ 			return 0;
+-	} else {
+-		cFYI(1, "neg dentry 0x%p name = %s",
+-			 direntry, direntry->d_name.name);
+-		if (time_after(jiffies, direntry->d_time + HZ) ||
+-			!lookupCacheEnabled) {
+-			d_drop(direntry);
+-			isValid = 0;
+-		}
++		else
++			return 1;
  	}
- 	result = 0;
-+out:
-+	return result;
-+}
  
-+static int jfs_ci_revalidate(struct dentry *dentry, struct nameidata *nd)
-+{
- 	/*
--	 * We want creates to preserve case.  A negative dentry, a, that
--	 * has a different case than b may cause a new entry to be created
--	 * with the wrong case.  Since we can't tell if a comes from a negative
--	 * dentry, we blindly replace it with b.  This should be harmless if
--	 * a is not a negative dentry.
-+	 * This is not negative dentry. Always valid.
-+	 *
-+	 * Note, rename() to existing directory entry will have ->d_inode,
-+	 * and will use existing name which isn't specified name by user.
-+	 *
-+	 * We may be able to drop this positive dentry here. But dropping
-+	 * positive dentry isn't good idea. So it's unsupported like
-+	 * rename("filename", "FILENAME") for now.
- 	 */
--	memcpy((unsigned char *)a->name, b->name, a->len);
--out:
--	return result;
-+	if (dentry->d_inode)
-+		return 1;
-+
+-	return isValid;
 +	/*
 +	 * This may be nfsd (or something), anyway, we can't see the
 +	 * intent of this. So, since this can be for creation, drop it.
@@ -89,15 +72,31 @@ index 231ca4a..2da1546 100644
 +		if (nd->flags & (LOOKUP_CREATE | LOOKUP_RENAME_TARGET))
 +			return 0;
 +	}
++
++	if (time_after(jiffies, direntry->d_time + HZ) || !lookupCacheEnabled)
++		return 0;
++
 +	return 1;
  }
  
- const struct dentry_operations jfs_ci_dentry_operations =
- {
- 	.d_hash = jfs_ci_hash,
- 	.d_compare = jfs_ci_compare,
-+	.d_revalidate = jfs_ci_revalidate,
- };
+ /* static int cifs_d_delete(struct dentry *direntry)
+@@ -709,15 +721,8 @@ static int cifs_ci_compare(struct dentry *dentry, struct qstr *a,
+ 	struct nls_table *codepage = CIFS_SB(dentry->d_inode->i_sb)->local_nls;
+ 
+ 	if ((a->len == b->len) &&
+-	    (nls_strnicmp(codepage, a->name, b->name, a->len) == 0)) {
+-		/*
+-		 * To preserve case, don't let an existing negative dentry's
+-		 * case take precedence.  If a is not a negative dentry, this
+-		 * should have no side effects
+-		 */
+-		memcpy((void *)a->name, b->name, a->len);
++	    (nls_strnicmp(codepage, a->name, b->name, a->len) == 0))
+ 		return 0;
+-	}
+ 	return 1;
+ }
+ 
 -- 
 1.7.1
 
