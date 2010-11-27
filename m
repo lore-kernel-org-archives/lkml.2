@@ -1,43 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab0K0PQO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 10:16:14 -0500
-Received: from fanny.its.uu.se ([130.238.4.241]:4976 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab0K0PQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 10:16:13 -0500
+	id S1752892Ab0K0PQu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 10:16:50 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:55783 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752561Ab0K0PQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 10:16:49 -0500
+Date: Sat, 27 Nov 2010 10:16:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
+Subject: Re: Nobody cared about IRQs at shutdown
+In-Reply-To: <4CF0AF5C.6010003@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1011271011230.23611-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19697.8378.717761.236202@pilspetsen.it.uu.se>
-Date: Sat, 27 Nov 2010 16:16:10 +0100
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scenario is that I do a remote login to an ARM build server,
-use screen to start a sub-shell, in that shell start a largish
-compile job, detach from that screen, and from the original login
-shell I occasionally monitor the compile job with top or ps or
-by attaching to the screen.
+On Sat, 27 Nov 2010, Alexander E. Patrakov wrote:
 
-With kernels 2.6.37-rc2 and -rc3 this causes the machine to become
-very sluggish: top takes forever to start, once started it shows no
-activity from the compile job (it's as if it's sleeping on a lock),
-and ps also takes forever and shows no activity from the compile job.
+> 26.11.2010 01:25, Alan Stern wrote:
+> > On Thu, 25 Nov 2010, Alexander E. Patrakov wrote:
+> >
+> >> 25.11.2010 21:06, Alan Stern wrote:
+> >>> On Thu, 25 Nov 2010, Alexander E. Patrakov wrote:
+> >>>
+> >>>> Hello.
+> >>>>
+> >>>> After switching my Gentoo desktop from sysvinit + openrc to systemd, I
+> >>>> started getting "nobody cared" messages about IRQs 16 and 19 (common
+> >>>> thing: they are assigned to the USB controllers, that's why CC:
+> >>> According to your listing, they are used by uhci-hcd.  Do the messages
+> >>> go away if you unload uhci-hcd before shutting down?
+> >> It is not a module here, so I have to recompile the kernel in order to
+> >> try this. Will do that tomorrow.
+> >>
+> >>> You may need to debug the uhci-hcd driver. Look into
+> >>> drivers/usb/host/uhci-hcd.c; the uhci_shutdown() routine ought to be
+> >>> called and it ought to call uhci_hc_died(), which in turn calls
+> >>> uhci_reset_hc() in pci-quirks.c, which is supposed to prevent the
+> >>> controller from generating any IRQs.
+> >> OK, tomorrow I will add some printks there.
+> 
+> Sorry, I didn't add them due to being busy with a different (non-kernel) 
+> bug. What do you want to know - just the fact that these functions are 
+> called before or after reporting the bad IRQ?
 
-Rebooting into 2.6.36 eliminates these issues.
+They should be called before the bad IRQ is reported.  That's what I 
+want to verify.
 
-I do pretty much the same thing (remote login -> screen -> compile job)
-on other archs, but so far I've only seen the 2.6.37-rc misbehaviour
-on ARM EABI, specifically on an IOP n2100. (I have access to other ARM
-sub-archs, but haven't had time to test 2.6.37-rc on them yet.)
+> > Even without rebuilding the kernel, you can unbind the uhci-hcd driver
+> > from the hardware by going to the /sys/bus/pci/drivers/uhci_hcd
+> > directory and doing:
+> >
+> > 	echo -n device-name>unbind
+> >
+> > where "device-name" is the name of one of the symlinks in that
+> > directory.
+> 
+> Thanks for the tip. Below are the updated test results, including the 
+> ones posted in my first mail, for completeness.
+> 
+> 1. No irqpoll, no unbind: the system reports that nobody cared for IRQs, 
+> then waits, displays SATA errors, waits again, shuts down.
+> 
+> 2. irqpoll, no unbind: the system shuts down without any delays.
+> 
+> 3. No irqpoll, unbind uhci-hcd from everything it controls: the system 
+> reports bad IRQ 19 (consumed by firewire-ohci), waits, displays SATA 
+> errors, waits again, shuts down.
 
-Has anyone else seen this? Any ideas about the cause?
+This suggests that the problem comes from the firewire controller, not 
+the UHCI controller.
 
-/Mikael
+Are you sure that you ever got "nobody cared" reports for IRQ 16?  Your 
+listing showed that uhci-hcd used both 16 and 19 whereas firewire-ohci 
+used only 19.
+
+> 4. No irqpoll, unbind both uhci-hcd and firewire-ohci from everything: 
+> the system does not report any bad IRQs, waits, displays SATA errors, 
+> waits again, shuts down.
+
+And this tends to confirm it.  The SATA errors are probably a separate
+issue.
+
+What happens if you unbind firewire-ohci but not uhci-hcd?
+
+> 5. irqpoll, unbind both uhci-hcd and firewire-ohci from everything: same 
+> as (4).
+> 
+> I have no firewire devices.
+
+Apparently that doesn't stop the controller from misbehaving.  But you 
+need to do more tests to be sure of this.
+
+Alan Stern
+
