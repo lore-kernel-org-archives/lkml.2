@@ -1,77 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab0K0D5F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 22:57:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:6921 "EHLO mga09.intel.com"
+	id S1752223Ab0K0Eoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 23:44:37 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:54246 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab0K0D5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 22:57:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,264,1288594800"; 
-   d="scan'208";a="681417799"
-Date: Sat, 27 Nov 2010 11:56:59 +0800
-From: Yan Li <yan.i.li@intel.com>
-To: linux-input@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        jian-feng.ding@intel.com, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        meego-kernel@lists.meego.com
-Subject: [PATCH] Input: Lenovo S10-3t's touchpad support
-Message-ID: <aefc1833eeede37ae6ea4a9ddeaa602eb7d31101.1290823698.git.yan.i.li@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751657Ab0K0Eog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 23:44:36 -0500
+Date: Fri, 26 Nov 2010 20:44:26 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, dsd@laptop.org, cjb@laptop.org
+Subject: Re: [PATCH 2/4] cs5535-gpio: convert from pci device to platform
+ device
+Message-ID: <20101126204426.162ebc75@debxo>
+In-Reply-To: <20101023004109.319bbdef@queued.net>
+References: <20101023004109.319bbdef@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is for kernel bug #18122 and MeeGo bug #4807.
+Samuel, thanks for applying the mfd patch.  I'm not sure how the rest
+of these should be handled; they depend upon the first patch.  Would you
+prefer they go through the mfd tree, or go in via Andrew's tree?
 
-Current code detects Clickpad by checking the 8 and 20 bits of 0x0c
-cap. However, the code returns true if either of those bits is 1,
-while it should only return true when both are 1. This has lead to the
-touchpad on Lenovo S10-3t be mistakenly recognized as Clickpad and its
-BTN_LEFT and BTN_RIGHT blocked.
+On Sat, 23 Oct 2010 00:41:09 -0700
+Andres Salomon <dilinger@queued.net> wrote:
 
-So far we've found that the S10-3ts are shipped with two slightly
-different models of touchpads, of which the 0x0c cap is either
-0x5a0400 or 0x4a0500. They are not Clickpad and return BTN_LEFT and
-BTN_RIGHT normally.
+> 
+> The cs5535-mfd driver now takes care of the PCI BAR handling; this
+> simplifies the gpio driver a lot.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  drivers/gpio/cs5535-gpio.c |   93
+> +++++++++++++++----------------------------- 1 files changed, 31
+> insertions(+), 62 deletions(-)
+> 
+> diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
+> index e23c068..ea6290f 100644
+> --- a/drivers/gpio/cs5535-gpio.c
+> +++ b/drivers/gpio/cs5535-gpio.c
+> @@ -11,13 +11,12 @@
+>  #include <linux/kernel.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/module.h>
+> -#include <linux/pci.h>
+> +#include <linux/platform_device.h>
+>  #include <linux/gpio.h>
+>  #include <linux/io.h>
+>  #include <linux/cs5535.h>
+>  
+>  #define DRV_NAME "cs5535-gpio"
+> -#define GPIO_BAR 1
+>  
+>  /*
+>   * Some GPIO pins
+> @@ -46,7 +45,7 @@ static struct cs5535_gpio_chip {
+>  	struct gpio_chip chip;
+>  	resource_size_t base;
+>  
+> -	struct pci_dev *pdev;
+> +	struct platform_device *pdev;
+>  	spinlock_t lock;
+>  } cs5535_gpio_chip;
+>  
+> @@ -226,10 +225,10 @@ static struct cs5535_gpio_chip cs5535_gpio_chip
+> = { },
+>  };
+>  
+> -static int __init cs5535_gpio_probe(struct pci_dev *pdev,
+> -		const struct pci_device_id *pci_id)
+> +static int __devinit cs5535_gpio_probe(struct platform_device *pdev)
+>  {
+> -	int err;
+> +	struct resource *res;
+> +	int err = -EIO;
+>  	ulong mask_orig = mask;
+>  
+>  	/* There are two ways to get the GPIO base address; one is by
+> @@ -239,25 +238,24 @@ static int __init cs5535_gpio_probe(struct
+> pci_dev *pdev,
+>  	 * it turns out to be unreliable in the face of crappy
+> BIOSes, we
+>  	 * can always go back to using MSRs.. */
+>  
+> -	err = pci_enable_device_io(pdev);
+> -	if (err) {
+> -		dev_err(&pdev->dev, "can't enable device IO\n");
+> +	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "can't fetch device resource
+> info\n"); goto done;
+>  	}
+>  
+> -	err = pci_request_region(pdev, GPIO_BAR, DRV_NAME);
+> -	if (err) {
+> -		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n",
+> GPIO_BAR);
+> +	if (!request_region(res->start, resource_size(res),
+> pdev->name)) {
+> +		dev_err(&pdev->dev, "can't request region\n");
+>  		goto done;
+>  	}
+>  
+>  	/* set up the driver-specific struct */
+> -	cs5535_gpio_chip.base = pci_resource_start(pdev, GPIO_BAR);
+> +	cs5535_gpio_chip.base = res->start;
+>  	cs5535_gpio_chip.pdev = pdev;
+>  	spin_lock_init(&cs5535_gpio_chip.lock);
+>  
+> -	dev_info(&pdev->dev, "allocated PCI BAR #%d: base 0x%llx\n",
+> GPIO_BAR,
+> -			(unsigned long long) cs5535_gpio_chip.base);
+> +	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n",
+> +			res->start, res->end);
+>  
+>  	/* mask out reserved pins */
+>  	mask &= 0x1F7FFFFF;
+> @@ -275,78 +273,49 @@ static int __init cs5535_gpio_probe(struct
+> pci_dev *pdev, if (err)
+>  		goto release_region;
+>  
+> -	dev_info(&pdev->dev, DRV_NAME ": GPIO support successfully
+> loaded.\n");
+> +	dev_info(&pdev->dev, "GPIO support successfully loaded.\n");
+>  	return 0;
+>  
+>  release_region:
+> -	pci_release_region(pdev, GPIO_BAR);
+> +	release_region(res->start, resource_size(res));
+>  done:
+>  	return err;
+>  }
+>  
+> -static void __exit cs5535_gpio_remove(struct pci_dev *pdev)
+> +static int __devexit cs5535_gpio_remove(struct platform_device *pdev)
+>  {
+> +	struct resource *r;
+>  	int err;
+>  
+>  	err = gpiochip_remove(&cs5535_gpio_chip.chip);
+>  	if (err) {
+>  		/* uhh? */
+>  		dev_err(&pdev->dev, "unable to remove gpio_chip?\n");
+> +		return err;
+>  	}
+> -	pci_release_region(pdev, GPIO_BAR);
+> -}
+> -
+> -static struct pci_device_id cs5535_gpio_pci_tbl[] = {
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_NS,
+> PCI_DEVICE_ID_NS_CS5535_ISA) },
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_AMD,
+> PCI_DEVICE_ID_AMD_CS5536_ISA) },
+> -	{ 0, },
+> -};
+> -MODULE_DEVICE_TABLE(pci, cs5535_gpio_pci_tbl);
+>  
+> -/*
+> - * We can't use the standard PCI driver registration stuff here,
+> since
+> - * that allows only one driver to bind to each PCI device (and we
+> want
+> - * multiple drivers to be able to bind to the device).  Instead,
+> manually
+> - * scan for the PCI device, request a single region, and keep track
+> of the
+> - * devices that we're using.
+> - */
+> -
+> -static int __init cs5535_gpio_scan_pci(void)
+> -{
+> -	struct pci_dev *pdev;
+> -	int err = -ENODEV;
+> -	int i;
+> -
+> -	for (i = 0; i < ARRAY_SIZE(cs5535_gpio_pci_tbl); i++) {
+> -		pdev = pci_get_device(cs5535_gpio_pci_tbl[i].vendor,
+> -				cs5535_gpio_pci_tbl[i].device, NULL);
+> -		if (pdev) {
+> -			err = cs5535_gpio_probe(pdev,
+> &cs5535_gpio_pci_tbl[i]);
+> -			if (err)
+> -				pci_dev_put(pdev);
+> -
+> -			/* we only support a single CS5535/6
+> southbridge */
+> -			break;
+> -		}
+> -	}
+> -
+> -	return err;
+> +	r = platform_get_resource(pdev, IORESOURCE_IO, 0);
+> +	release_region(r->start, resource_size(r));
+> +	return 0;
+>  }
+>  
+> -static void __exit cs5535_gpio_free_pci(void)
+> -{
+> -	cs5535_gpio_remove(cs5535_gpio_chip.pdev);
+> -	pci_dev_put(cs5535_gpio_chip.pdev);
+> -}
+> +static struct platform_driver cs5535_gpio_drv = {
+> +	.driver = {
+> +		.name = DRV_NAME,
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = cs5535_gpio_probe,
+> +	.remove = __devexit_p(cs5535_gpio_remove),
+> +};
+>  
+>  static int __init cs5535_gpio_init(void)
+>  {
+> -	return cs5535_gpio_scan_pci();
+> +	return platform_driver_register(&cs5535_gpio_drv);
+>  }
+>  
+>  static void __exit cs5535_gpio_exit(void)
+>  {
+> -	cs5535_gpio_free_pci();
+> +	platform_driver_unregister(&cs5535_gpio_drv);
+>  }
+>  
+>  module_init(cs5535_gpio_init);
 
-This patch fixed this issue by checking both sign bits are 1. Tested
-on my S10-3t and worked well.
-
-Signed-off-by: Yan Li <yan.i.li@intel.com>
----
- drivers/input/mouse/synaptics.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 613a365..0c1083c 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -51,7 +51,11 @@
- #define SYN_EXT_CAP_REQUESTS(c)		(((c) & 0x700000) >> 20)
- #define SYN_CAP_MULTI_BUTTON_NO(ec)	(((ec) & 0x00f000) >> 12)
- #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
--#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
-+/* Synaptics' ClickPad has both 8th and 20th bits set in the 0x0c
-+ * cap. Other models (like those shipped with Lenovo S10-3t) may have
-+ * either one of them set but not both, and they are *not* ClickPad
-+ * although they look similar. */
-+#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100 == 0x100100)
- #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
- 
- /* synaptics modes query bits */
--- 
-1.7.2.3
-
-
--- 
-Best regards,
-Li, Yan
-
-MeeGo Team, Opensource Technology Center, SSG, Intel
-Office tel.: +86-10-82171695 (inet: 8-758-1695)
-OpenPGP key: 5C6C31EF
-IRC: yanli on network irc.freenode.net
