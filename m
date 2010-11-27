@@ -1,172 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0K0B7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 20:59:34 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59678 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab0K0B7d (ORCPT
+	id S1753773Ab0K0CYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 21:24:09 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:51373 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab0K0CYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 20:59:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=XkcWLOSnB+6oDYa0E4xnQOtIpr12LSzgNgGw6DmAt7xpwG+qsF0x6hBEdcZmiELtjI
-         MGLphhheC31ZrLJtcqPuSOiZPCBTJFaZ/aMiIBqRGl560QLAR0ahHXpxhkov1PB65rTg
-         h2QFsBeNpvQWUbh8LqIsyAesTnuzKAOeN3Z/M=
-Date: Fri, 26 Nov 2010 23:59:26 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] perf tools: Fix lost and unknown events handling
-Message-ID: <20101127015926.GA25407@ghostprotocols.net>
+	Fri, 26 Nov 2010 21:24:08 -0500
+Date: Sat, 27 Nov 2010 11:23:15 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        kernel-janitors@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Magnus Damm <damm@opensource.se>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sh: boards: mach-se: use IS_ERR() instead of NULL check
+Message-ID: <20101127022315.GF7893@linux-sh.org>
+References: <1290791190-21358-1-git-send-email-segoon@openwall.com> <Pine.LNX.4.64.1011261835500.16655@axis700.grange> <20101126174533.GA29507@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101126174533.GA29507@albatros>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-	
-	I added this one and removed the GCC optimization (alloc_size
-attribute), please consider pulling from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-
-	Thomas, I hope this one is better?
-
-	At some point I'll work on i18n these messages...
-
-- Arnaldo
-
----------------------------------------------------------------------------
-
-Fix it by explaining what can be happening and giving the number of processed
-and lost events.
-
-Also holler if unknown events were found, that can be due to processing a
-perf.data file collected using a newer tool where newer events got added on
-reporting using an older perf tool, that or a bug, so ask for a report to be
-made.
-
-Works on both --tui and --stdio.
-
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/debug.c   |   11 +++++++++++
- tools/perf/util/debug.h   |    2 ++
- tools/perf/util/session.c |   18 ++++++++++++++++++
- tools/perf/util/ui/util.c |   16 +++++++++++++++-
- 4 files changed, 46 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index c8d81b0..e5161e8 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -46,6 +46,17 @@ int dump_printf(const char *fmt, ...)
- 	return ret;
- }
- 
-+#ifdef NO_NEWT_SUPPORT
-+void ui__warning(const char *format, ...)
-+{
-+	va_list args;
-+
-+	va_start(args, format);
-+	vfprintf(stderr, format, args);
-+	va_end(args);
-+}
-+#endif
-+
- static int dump_printf_color(const char *fmt, const char *color, ...)
- {
- 	va_list args;
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 7b51408..ca35fd6 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -35,4 +35,6 @@ int ui_helpline__show_help(const char *format, va_list ap);
- #include "ui/progress.h"
- #endif
- 
-+void ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
-+
- #endif	/* __PERF_DEBUG_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3d56047..3ae6955 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -852,6 +852,24 @@ done:
- 	flush_sample_queue(self, ops);
- out_err:
- 	ui_progress__delete(progress);
-+
-+	if (ops->lost == event__process_lost &&
-+	    self->hists.stats.total_lost != 0) {
-+		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
-+			    "Check IO/CPU overload!\n\n",
-+			    self->hists.stats.total_period,
-+			    self->hists.stats.total_lost);
-+	}
-+	
-+	if (self->hists.stats.nr_unknown_events != 0) {
-+		ui__warning("Found %u unknown events!\n\n"
-+			    "Is this an older tool processing a perf.data "
-+			    "file generated by a more recent tool?\n\n"
-+			    "If that is not the case, consider "
-+			    "reporting to linux-kernel@vger.kernel.org.\n\n",
-+			    self->hists.stats.nr_unknown_events);
-+	}
-+		
- 	return err;
- }
- 
-diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
-index 056c695..7b5a892 100644
---- a/tools/perf/util/ui/util.c
-+++ b/tools/perf/util/ui/util.c
-@@ -104,10 +104,24 @@ out_destroy_form:
- 	return rc;
- }
- 
--static const char yes[] = "Yes", no[] = "No";
-+static const char yes[] = "Yes", no[] = "No",
-+		  warning_str[] = "Warning!", ok[] = "Ok";
- 
- bool ui__dialog_yesno(const char *msg)
- {
- 	/* newtWinChoice should really be accepting const char pointers... */
- 	return newtWinChoice(NULL, (char *)yes, (char *)no, (char *)msg) == 1;
- }
-+
-+void ui__warning(const char *format, ...)
-+{
-+	va_list args;
-+
-+	va_start(args, format);
-+	if (use_browser > 0)
-+		newtWinMessagev((char *)warning_str, (char *)ok,
-+				(char *)format, args);
-+	else
-+		vfprintf(stderr, format, args);
-+	va_end(args);
-+}
--- 
-1.7.1.rc2
-
+On Fri, Nov 26, 2010 at 08:45:33PM +0300, Vasiliy Kulikov wrote:
+> Hi Guennadi,
+> 
+> On Fri, Nov 26, 2010 at 18:38 +0100, Guennadi Liakhovetski wrote:
+> > On Fri, 26 Nov 2010, Vasiliy Kulikov wrote:
+> > > clk_get() returns ERR_PTR() on error, not NULL.
+> > > 
+> > > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> > 
+> > Yep, there are, probably, a couple more of these, similar to
+> 
+> I found a bit more, but I'd like to get feedback on these or just see it
+> applied first ;)
+> 
+It's a reasonable change, yes. The old clk_get() scanned multiple lists,
+and could return NULL or -ENOENT depending on which path failed. Now that
+everything is consolidated through the clk_get_sys() lookup, the NULL
+checks should probably all be replaced.
