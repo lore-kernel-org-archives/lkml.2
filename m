@@ -1,231 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab0K0Eoh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 23:44:37 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:54246 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab0K0Eog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 23:44:36 -0500
-Date: Fri, 26 Nov 2010 20:44:26 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, dsd@laptop.org, cjb@laptop.org
-Subject: Re: [PATCH 2/4] cs5535-gpio: convert from pci device to platform
- device
-Message-ID: <20101126204426.162ebc75@debxo>
-In-Reply-To: <20101023004109.319bbdef@queued.net>
-References: <20101023004109.319bbdef@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751002Ab0K0Fen (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 00:34:43 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45917 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab0K0Fek convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 00:34:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AdPQqg+eXc/kyIWR2yHZJwdA2zPy9HgKuKyuDvrFu9Mp7mlE7ZSAo3EvefcGN9xHuc
+         Ny01Te0cuIWVXSth9b84o1fXs670rWVQdIij+YwO75m5bdzBE7YqxAfpWR2KUFEIIcwG
+         1NXoya26yt0fL9bSyPKqhjWCQPc8JeA5uLVcA=
+MIME-Version: 1.0
+In-Reply-To: <4CEFD2BA.5090403@kernel.org>
+References: <4CEFD2BA.5090403@kernel.org>
+Date: Sat, 27 Nov 2010 00:34:39 -0500
+Message-ID: <AANLkTimidOhwXPNwrCCS0HqiOrmzeLC14+bCuWgKj0vJ@mail.gmail.com>
+Subject: Re: Possible FPU context corruption w/ CONFIG_PREEMPT
+From: Brian Gerst <brgerst@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Dan Carpenter <error27@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Bernd Machenschalk <Bernd.Machenschalk@aei.mpg.de>,
+        Heinz-Bernd Eggenstein <hbeggenst@aol.com>,
+        Oliver Bock <oliver.bock@aei.mpg.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel, thanks for applying the mfd patch.  I'm not sure how the rest
-of these should be handled; they depend upon the first patch.  Would you
-prefer they go through the mfd tree, or go in via Andrew's tree?
+On Fri, Nov 26, 2010 at 10:31 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, guys.
+>
+> Heinz-Bernd Eggenstein reports a possible FPU context corruption w/
+> CONFIG_PREEMPT.  Please take a look at the following forum post.
+>
+>  http://einstein.phys.uwm.edu/forum_thread.php?id=8516
+>
+> openSUSE 11.3 desktop kernel which has CONFIG_PREEMPT set is
+> triggering SIGFPE while the default kernel w/o preemption works fine.
+> He also notes that a similar bug was fixed in 2008 by commit 06c38d5e
+> (x86-64: fix FPU corruption with signals and preemption) from Suresh.
+> Does it ring anyone's bell?
+>
+> Heinz, is there a simple procedure to reproduce the problem, or would
+> it be possible to lure you into bisection?
+>
+> Thanks.
+>
 
-On Sat, 23 Oct 2010 00:41:09 -0700
-Andres Salomon <dilinger@queued.net> wrote:
+This might be fixed by commit a4d4fbc7735bba6654b20f859135f9d3f8fe7f76
+(Disable preemption when using TS_USEDFPU).
 
-> 
-> The cs5535-mfd driver now takes care of the PCI BAR handling; this
-> simplifies the gpio driver a lot.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  drivers/gpio/cs5535-gpio.c |   93
-> +++++++++++++++----------------------------- 1 files changed, 31
-> insertions(+), 62 deletions(-)
-> 
-> diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
-> index e23c068..ea6290f 100644
-> --- a/drivers/gpio/cs5535-gpio.c
-> +++ b/drivers/gpio/cs5535-gpio.c
-> @@ -11,13 +11,12 @@
->  #include <linux/kernel.h>
->  #include <linux/spinlock.h>
->  #include <linux/module.h>
-> -#include <linux/pci.h>
-> +#include <linux/platform_device.h>
->  #include <linux/gpio.h>
->  #include <linux/io.h>
->  #include <linux/cs5535.h>
->  
->  #define DRV_NAME "cs5535-gpio"
-> -#define GPIO_BAR 1
->  
->  /*
->   * Some GPIO pins
-> @@ -46,7 +45,7 @@ static struct cs5535_gpio_chip {
->  	struct gpio_chip chip;
->  	resource_size_t base;
->  
-> -	struct pci_dev *pdev;
-> +	struct platform_device *pdev;
->  	spinlock_t lock;
->  } cs5535_gpio_chip;
->  
-> @@ -226,10 +225,10 @@ static struct cs5535_gpio_chip cs5535_gpio_chip
-> = { },
->  };
->  
-> -static int __init cs5535_gpio_probe(struct pci_dev *pdev,
-> -		const struct pci_device_id *pci_id)
-> +static int __devinit cs5535_gpio_probe(struct platform_device *pdev)
->  {
-> -	int err;
-> +	struct resource *res;
-> +	int err = -EIO;
->  	ulong mask_orig = mask;
->  
->  	/* There are two ways to get the GPIO base address; one is by
-> @@ -239,25 +238,24 @@ static int __init cs5535_gpio_probe(struct
-> pci_dev *pdev,
->  	 * it turns out to be unreliable in the face of crappy
-> BIOSes, we
->  	 * can always go back to using MSRs.. */
->  
-> -	err = pci_enable_device_io(pdev);
-> -	if (err) {
-> -		dev_err(&pdev->dev, "can't enable device IO\n");
-> +	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-> +	if (!res) {
-> +		dev_err(&pdev->dev, "can't fetch device resource
-> info\n"); goto done;
->  	}
->  
-> -	err = pci_request_region(pdev, GPIO_BAR, DRV_NAME);
-> -	if (err) {
-> -		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n",
-> GPIO_BAR);
-> +	if (!request_region(res->start, resource_size(res),
-> pdev->name)) {
-> +		dev_err(&pdev->dev, "can't request region\n");
->  		goto done;
->  	}
->  
->  	/* set up the driver-specific struct */
-> -	cs5535_gpio_chip.base = pci_resource_start(pdev, GPIO_BAR);
-> +	cs5535_gpio_chip.base = res->start;
->  	cs5535_gpio_chip.pdev = pdev;
->  	spin_lock_init(&cs5535_gpio_chip.lock);
->  
-> -	dev_info(&pdev->dev, "allocated PCI BAR #%d: base 0x%llx\n",
-> GPIO_BAR,
-> -			(unsigned long long) cs5535_gpio_chip.base);
-> +	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n",
-> +			res->start, res->end);
->  
->  	/* mask out reserved pins */
->  	mask &= 0x1F7FFFFF;
-> @@ -275,78 +273,49 @@ static int __init cs5535_gpio_probe(struct
-> pci_dev *pdev, if (err)
->  		goto release_region;
->  
-> -	dev_info(&pdev->dev, DRV_NAME ": GPIO support successfully
-> loaded.\n");
-> +	dev_info(&pdev->dev, "GPIO support successfully loaded.\n");
->  	return 0;
->  
->  release_region:
-> -	pci_release_region(pdev, GPIO_BAR);
-> +	release_region(res->start, resource_size(res));
->  done:
->  	return err;
->  }
->  
-> -static void __exit cs5535_gpio_remove(struct pci_dev *pdev)
-> +static int __devexit cs5535_gpio_remove(struct platform_device *pdev)
->  {
-> +	struct resource *r;
->  	int err;
->  
->  	err = gpiochip_remove(&cs5535_gpio_chip.chip);
->  	if (err) {
->  		/* uhh? */
->  		dev_err(&pdev->dev, "unable to remove gpio_chip?\n");
-> +		return err;
->  	}
-> -	pci_release_region(pdev, GPIO_BAR);
-> -}
-> -
-> -static struct pci_device_id cs5535_gpio_pci_tbl[] = {
-> -	{ PCI_DEVICE(PCI_VENDOR_ID_NS,
-> PCI_DEVICE_ID_NS_CS5535_ISA) },
-> -	{ PCI_DEVICE(PCI_VENDOR_ID_AMD,
-> PCI_DEVICE_ID_AMD_CS5536_ISA) },
-> -	{ 0, },
-> -};
-> -MODULE_DEVICE_TABLE(pci, cs5535_gpio_pci_tbl);
->  
-> -/*
-> - * We can't use the standard PCI driver registration stuff here,
-> since
-> - * that allows only one driver to bind to each PCI device (and we
-> want
-> - * multiple drivers to be able to bind to the device).  Instead,
-> manually
-> - * scan for the PCI device, request a single region, and keep track
-> of the
-> - * devices that we're using.
-> - */
-> -
-> -static int __init cs5535_gpio_scan_pci(void)
-> -{
-> -	struct pci_dev *pdev;
-> -	int err = -ENODEV;
-> -	int i;
-> -
-> -	for (i = 0; i < ARRAY_SIZE(cs5535_gpio_pci_tbl); i++) {
-> -		pdev = pci_get_device(cs5535_gpio_pci_tbl[i].vendor,
-> -				cs5535_gpio_pci_tbl[i].device, NULL);
-> -		if (pdev) {
-> -			err = cs5535_gpio_probe(pdev,
-> &cs5535_gpio_pci_tbl[i]);
-> -			if (err)
-> -				pci_dev_put(pdev);
-> -
-> -			/* we only support a single CS5535/6
-> southbridge */
-> -			break;
-> -		}
-> -	}
-> -
-> -	return err;
-> +	r = platform_get_resource(pdev, IORESOURCE_IO, 0);
-> +	release_region(r->start, resource_size(r));
-> +	return 0;
->  }
->  
-> -static void __exit cs5535_gpio_free_pci(void)
-> -{
-> -	cs5535_gpio_remove(cs5535_gpio_chip.pdev);
-> -	pci_dev_put(cs5535_gpio_chip.pdev);
-> -}
-> +static struct platform_driver cs5535_gpio_drv = {
-> +	.driver = {
-> +		.name = DRV_NAME,
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = cs5535_gpio_probe,
-> +	.remove = __devexit_p(cs5535_gpio_remove),
-> +};
->  
->  static int __init cs5535_gpio_init(void)
->  {
-> -	return cs5535_gpio_scan_pci();
-> +	return platform_driver_register(&cs5535_gpio_drv);
->  }
->  
->  static void __exit cs5535_gpio_exit(void)
->  {
-> -	cs5535_gpio_free_pci();
-> +	platform_driver_unregister(&cs5535_gpio_drv);
->  }
->  
->  module_init(cs5535_gpio_init);
-
+--
+Brian Gerst
