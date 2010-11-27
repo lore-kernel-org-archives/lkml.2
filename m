@@ -1,52 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab0K0NGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 08:06:23 -0500
-Received: from blade3.isti.cnr.it ([194.119.192.19]:60522 "EHLO
-	BLADE3.ISTI.CNR.IT" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab0K0NGW (ORCPT
+	id S1752481Ab0K0N2s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 08:28:48 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37183 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab0K0N2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 08:06:22 -0500
-Date: Sat, 27 Nov 2010 14:07:22 +0100
-From: Spelic <spelic@shiftmail.org>
-Subject: Can't find fourth number version tags in GIT kernel
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-id: <4CF1028A.6010401@shiftmail.org>
-MIME-version: 1.0
-Content-type: text/plain; format=flowed; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
- Gecko/20100713 Thunderbird/3.0.6
-X-INSM-ip-source: 151.83.169.202 Auth Done
+	Sat, 27 Nov 2010 08:28:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:message-id:user-agent
+         :mime-version:content-type;
+        b=B0dLHtkyHh4uvVz55UjhOUXPug+PTv744th3pQrS7PNTPkzlyNDgAUh4LARJa4o+88
+         18CALmBbW6kvQt/aHFdegG34pO2I5FZW+8nSOk81t+FklQ/4m0Ku3m4zjTrOyYmfpKeH
+         ZAp0TgEXBzBkMuZHYWguPGO7uaHoYYXWFp7Bc=
+From: Franck Bui-Huu <vagabon.xyz@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Francis Moreau <francis.moro@gmail.com>
+Subject: Re: perf: some questions about perf software events
+References: <m3tyj73qev.fsf@gmail.com> <1290598906.2072.461.camel@laptop>
+Date: Sat, 27 Nov 2010 14:28:41 +0100
+Message-ID: <m3oc9a520m.fsf@gmail.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello LKML
-I'm trying to use GIT to stay up-to-date with the kernel sources, but in
+Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-and even
-git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.36.y.git
+> On Wed, 2010-11-24 at 12:35 +0100, Franck Bui-Huu wrote:
 
-I can't find versions with four numbers, e.g. I do find tag:
+[...]
 
-v2.6.35
-(and also the release candidates for 2.6.35)
+>> That is for no 'contiguous' events, setting a sampling frequency doesn't
+>> really make sense since for example you could set a frequency to 1000 HZ
+>> for the software ALIGNMENT_FAULT event and never get any samplings or at
+>> least getting sampling but with a totally different rate. And the
+>> current code doesn't look to handle sample_freq anyway.
+>
+> All the freq bits are in the generic code, it re-computes the rate on
+> the timer-tick as well as on each event occurrence. 
+>
+> Freq driven sampling should work just fine with swevents.
+>
 
-but I can't find tags:
+Yes, but how does it behave with ALIGNMENT_FAULTS for example ?
 
-v2.6.35.1
-v2.6.35.2
-...
-v2.6.35.9
+Such event may happen at a very disparate rate or it can even never
+happen at all.
 
-Apparently tag v2.6.35 really brings me to v2.6.35.0 and not to 
-v2.6.35.9 so it's a problem... I usually want to get the highest number 
-in the fourth number, not the lowest.
-Like this I don't know how to get the bugfixes...?
+>
+>> Also I'm currently not seeing any real differences between cpu-clock and
+>> task-clock events. They both seem to count the time elapsed when the
+>> task is running on a CPU. Am I wrong ?
+>
+> No, Francis already noticed that, I probably wrecked it when I added the
+> multi-pmu stuff, its on my todo list to look at (Francis also handed me
+> a little patchlet), but I keep getting distracted with other stuff :/
 
-What am I missing?
+OK.
 
-Thank you
-PS: can you please reply to me also, as I am not subscribed to LKML. Thanks
+Does it make sense to adjust the period for both of them ?
+
+Also, when creating a task clock event, passing 'pid=-1' to
+sys_perf_event_open() doesn't really make sense, does it ?
+
+Same with cpu clock and 'pid=n': whatever <n> value, the event measure
+the cpu wall time clock.
+
+Perhaps proposing only one clock in the API and internally bind this
+clock to the cpu or task clock depending on pid or cpu parameters would
+have been better ?
+
+Something like the following:
+
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index bb1884c..ad50551 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -105,6 +105,7 @@ enum perf_sw_ids {
+ 	PERF_COUNT_SW_PAGE_FAULTS_MAJ		= 6,
+ 	PERF_COUNT_SW_ALIGNMENT_FAULTS		= 7,
+ 	PERF_COUNT_SW_EMULATION_FAULTS		= 8,
++	PERF_COUNT_SW_CLOCK			= 9,
+ 
+ 	PERF_COUNT_SW_MAX,			/* non-ABI */
+ };
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 1dabb54..f3ff342 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4981,7 +4981,14 @@ static int cpu_clock_event_init(struct perf_event *event)
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
+ 
+-	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
++	switch (event->attr.config) {
++	case PERF_COUNT_SW_CPU_CLOCK:
++		break;
++	case PERF_COUNT_SW_CLOCK:
++		if (!(event->attach_state & PERF_ATTACH_TASK))
++			break;
++		/* fall-through */
++	default:
+ 		return -ENOENT;
+ 
+ 	return 0;
+@@ -5058,8 +5065,16 @@ static int task_clock_event_init(struct perf_event *event)
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
+ 
+-	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
++	switch (event->attr.config) {
++	case PERF_COUNT_SW_TASK_CLOCK:
++		break;
++	case PERF_COUNT_SW_CLOCK:
++		if (event->attach_state & PERF_ATTACH_TASK)
++			break;
++		/* fall-through */
++	default:
+ 		return -ENOENT;
++	}
+ 
+ 	return 0;
+ }
+
+
+-- 
+		Franck
