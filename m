@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab0K0UPN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 15:15:13 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33811 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab0K0UPL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 15:15:11 -0500
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Damien Wyart <damien.wyart@free.fr>
-Cc: tmhikaru@gmail.com, Venkatesh Pallipadi <venki@google.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
-In-Reply-To: <1290693807.2145.36.camel@laptop>
-References: <1287788622-25860-1-git-send-email-venki@google.com>
-	 <1288001573.15336.52.camel@twins> <1288097074.15336.211.camel@twins>
-	 <1288101958.15336.284.camel@twins> <1288381343.1988.12.camel@laptop>
-	 <20101109185516.GQ8332@bombadil.infradead.org>
-	 <1289329348.2191.69.camel@laptop>
-	 <20101110034507.GV8332@bombadil.infradead.org>
-	 <1289390424.2191.98.camel@laptop> <20101114051406.GA2050@roll>
-	 <20101125133106.GA12914@brouette>  <1290693807.2145.36.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 27 Nov 2010 21:15:20 +0100
-Message-ID: <1290888920.32004.1.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753441Ab0K0UWg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 15:22:36 -0500
+Received: from mailsrv1.zmi.at ([212.69.164.54]:60275 "EHLO mailsrv14.zmi.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753279Ab0K0UWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 15:22:34 -0500
+To: linux-kernel@vger.kernel.org
+Subject: Regression 2.6.36 - driver rtl8169 crashes kernel, triggered by user app
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org
+From: Michael Monnerie <michael.monnerie@is.it-management.at>
+Organization: it-management http://it-management.at
+Date: Sat, 27 Nov 2010 21:22:22 +0100
+X-PRIORITY: 2 (High)
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart129095197.KUNcXHk1Mz";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011272122.28164@zmi.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-25 at 15:03 +0100, Peter Zijlstra wrote:
+--nextPart129095197.KUNcXHk1Mz
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> I'll try and get around to it somewhere this week again.
+This is the 3rd time I send this, and I did not get any answer.
+I thought *regressions* are a bad thing that would be handled quickly?
+Maybe this helps: *SHITTY DRIVER NOT WORKING ANYMORE*
 
-How does this work for you? Its hideous but lets start simple.
+Dear list, I've hunted down a bug which does *NOT* occur in kernel=20
+2.6.34.7-0.5-desktop from openSUSE 11.3, but crashes stock kernel 2.6.36=20
+triggered by a user!
 
----
- kernel/sched.c |    5 +++++
- kernel/timer.c |   14 ++++++++++++--
- 2 files changed, 17 insertions(+), 2 deletions(-)
+It's actually very simple. From my desktop (kernel 2.6.36) I "cd" to an=20
+NFS4 share, where a xz compressed image of Win7-64.iso.xz is located.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc91a4d..2ebb07c 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3223,6 +3223,11 @@ static void calc_load_account_active(struct rq *this_rq)
- 	this_rq->calc_load_update += LOAD_FREQ;
- }
- 
-+void calc_load_account_this(void)
-+{
-+	calc_load_account_active(this_rq());
-+}
-+
- /*
-  * The exact cpuload at various idx values, calculated at every tick would be
-  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 68a9ae7..af095c0 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1315,11 +1315,21 @@ void run_local_timers(void)
-  * jiffies is defined in the linker script...
-  */
- 
-+extern void calc_load_account_this(void);
-+
- void do_timer(unsigned long ticks)
- {
--	jiffies_64 += ticks;
-+	if (ticks > 1) {
-+		while (ticks--) {
-+			jiffies_64++;
-+			calc_load_account_this();
-+			calc_global_load();
-+		}
-+	} else {
-+		jiffies_64 += ticks;
-+		calc_global_load();
-+	}
- 	update_wall_time();
--	calc_global_load();
- }
- 
- #ifdef __ARCH_WANT_SYS_ALARM
+# cd /q/iso-images
 
+and then I try to uncompress it there (as user, not root!):
+
+# xz -kv Win7-64.iso.xz
+
+With kernel 2.6.34.7-0.5-desktop, this runs with ~41MiB/s without=20
+problems.
+
+With kernel 2.6.36, it runs at ~26MiB/s, and while doing so, dmesg shows=20
+a lot of noise about r8169 complaining:
+http://zmi.at/x/kernel2.6.36-crash86.jpg
+
+Here are 2 pictures of different crashes:
+http://zmi.at/x/kernel2.6.36-crash84.jpg
+http://zmi.at/x/kernel2.6.36-crash85.jpg
+
+Neither the dmesg-messages nor the crash happens with kernel=20
+2.6.34.7-0.5-desktop as delivered by openSUSE 11.3, but it always fully=20
+crashes 2.6.36. I've retried about 10 times, it *never* finished to=20
+uncompress the ~3GB image. At around 500-1000MB the kernel was gone.
+
+I'm sure someone knows how to fix it. :-)
+
+=2D-=20
+mit freundlichen Gr=C3=BCssen,
+Michael Monnerie, Ing. BSc
+
+it-management Internet Services
+http://proteger.at [gesprochen: Prot-e-schee]
+Tel: 0660 / 415 65 31
+
+--nextPart129095197.KUNcXHk1Mz
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEABECAAYFAkzxaIMACgkQzhSR9xwSCbQoJwCg2eTe6ZwKOOGh4hKe7HHVtppp
+GcQAoJ4G4IZUK6hTFmeOAFrlPzulW0kP
+=uaNU
+-----END PGP SIGNATURE-----
+
+--nextPart129095197.KUNcXHk1Mz--
