@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab0K0VOO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 16:14:14 -0500
-Received: from relay.cooperix.net ([67.23.6.41]:41071 "EHLO relay.sandelman.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380Ab0K0VON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 16:14:13 -0500
-From: Michael Richardson <mcr@sandelman.ca>
-To: Greg KH <gregkh@suse.de>
-cc: linux-kernel@vger.kernel.org, bart@jukie.net
-Subject: Re: odd behavior from /sys/block (sysfs) 
-In-Reply-To: <20101127185829.GA19708@suse.de> 
-References: <5108.1290796566@marajade.sandelman.ca>  <20101127185829.GA19708@suse.de> 
-X-Mailer: MH-E 8.1; nmh 1.1; XEmacs 21.4 (patch 21)
-Date: Sat, 27 Nov 2010 16:14:11 -0500
-Message-ID: <4605.1290892451@marajade.sandelman.ca>
+	id S1753634Ab0K0VRi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 16:17:38 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:23042 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab0K0VRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 16:17:35 -0500
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKID8UyrR7Ht/2dsb2JhbACjDXGlLpojhUcEhFyGBQ
+X-IronPort-AV: E=Sophos;i="4.59,267,1288569600"; 
+   d="scan'208";a="293644311"
+From: Roland Dreier <rdreier@cisco.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/9] Change the copyright info.
+References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Sat, 27 Nov 2010 13:17:30 -0800
+In-Reply-To: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
+	(Justin P. Mattock's message of "Fri, 26 Nov 2010 22:21:10 -0800")
+Message-ID: <adaoc9afout.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+ > Below you will find a set of patches, that update the copyright info from
+ > Sun Microsystems to Oracle.
 
+Are you working for Oracle?  If so I would like to see these patches
+with an @oracle.com signed-off-by address.  If not let's let the
+companies involved sort out the copyrights.
 
->>>>> "Greg" == Greg KH <gregkh@suse.de> writes:
-    >> {please CC me}
-    >> 
-    >> I was capturing data from my laptop's /sys file system as test input
-    >> for some code that needs to grovel through /sys a bit.  I found it weird
-    >> that tar got different answers than ls!  See below (at end) for original
-    >> observation.
-    >> 
-    >> It seems that this is because lstat64() on sysfs returns st_size=0 for
-    >> the link, and tar does not know how to deal with this, while ls does.
-    >> I don't know if it is tar that is wrong, or sysfs.
-    >> lstat64(3) suggests that it is sysfs that is at fault, that it should
-    >> set st_size.  The behaviour of ls, suggests that perhaps other systems
-    >> have worked around st_size=0 for symlinks.  (I'm on 2.6.32-bpo.5
-    >> from debian) 
-
-    Greg> So, what do you think should be changed here?
-
-Iif st_size=0 is not a valid return from readlink(2), then I think sysfs
-should be fixed.    I will cook a patch.
-
-While tar might not useful (I was successful at using cp -r, btw),
-having working file operations makes sense. 
-
-    Greg> I wouldn't ever recommend using tar on sysfs as it doesn't make any
-    Greg> sense (sysfs is a virtual file system, like /proc/ and I think
-    Greg> that tar doesn't like /proc either, right?)
-
-Are there things on /sys for which a read is not idempotent?
-
-On /proc, there are files which never terminate, because the process is
-introspecting itself.  Taking a snapshot of /sys is kinda a useful thing
-if you collecting diagnostics, I think. 
-
-- -- 
-]       He who is tired of Weird Al is tired of life!           |  firewalls  [
-]   Michael Richardson, Sandelman Software Works, Ottawa, ON    |net architect[
-] mcr@sandelman.ottawa.on.ca http://www.sandelman.ottawa.on.ca/ |device driver[
-   Kyoto Plus: watch the video <http://www.youtube.com/watch?v=kzx1ycLXQSE>
-	               then sign the petition. 
-
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Finger me for keys
-
-iQEVAwUBTPF0nYCLcPvd0N1lAQI83Af+M5duLS+DHptiGhvE5IhVAtUdUcUrIW69
-n8ipLp/c0cv8cU5pFiZrb4cv/dUDcite97CYw85WkWe28wIOjgdRgB7DxclleNLm
-dgA5AzY7MSIsFL81k5lDWTiyTGx7v76DIWfMS5iMvF9lIOkX/2wG9AfQLb08AYU2
-ePywvGgQtZYrXrvgPFWhFLOpmibc5v/9QqY+GhJZa56qFzsYX4OjWix7HyyYgIg+
-AG1YBFowoWsFS/sw2YEaXbWivgbOfNkpo6duT03APDLoOfk+Lxb6BZWYUYY3yh0Y
-4HfJiIA6XnESEqV0hGey9w6kzVoS6rn5gZmlOL81xAa3dg1JBxyd8Q==
-=q414
------END PGP SIGNATURE-----
+ - R.
