@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab0K0UzS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 15:55:18 -0500
-Received: from unix.wroclaw.pl ([94.23.28.62]:59956 "EHLO unix.wroclaw.pl"
+	id S1753602Ab0K0VOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 16:14:14 -0500
+Received: from relay.cooperix.net ([67.23.6.41]:41071 "EHLO relay.sandelman.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753462Ab0K0UzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 15:55:15 -0500
-Date: Sat, 27 Nov 2010 21:55:07 +0100
-From: Mariusz Kozlowski <mk@lab.zgora.pl>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Shreyas Bhatewara <sbhatewara@vmware.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org
-Subject: Re: linux-next: Tree for November 26
-Message-ID: <20101127205507.GA3828@mako-laptop>
-References: <20101126132823.7ef94f07.sfr@canb.auug.org.au>
- <AANLkTinJUT=j_P9FSB=GWTLy4Bkr68iWmB2O=5Q3gcT-@mail.gmail.com>
- <4CF155CF.5090601@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CF155CF.5090601@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on
-	Spam=No score=-1.4 bayes=0.5
-	Spam Tests:
-	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	id S1753380Ab0K0VON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 16:14:13 -0500
+From: Michael Richardson <mcr@sandelman.ca>
+To: Greg KH <gregkh@suse.de>
+cc: linux-kernel@vger.kernel.org, bart@jukie.net
+Subject: Re: odd behavior from /sys/block (sysfs) 
+In-Reply-To: <20101127185829.GA19708@suse.de> 
+References: <5108.1290796566@marajade.sandelman.ca>  <20101127185829.GA19708@suse.de> 
+X-Mailer: MH-E 8.1; nmh 1.1; XEmacs 21.4 (patch 21)
+Date: Sat, 27 Nov 2010 16:14:11 -0500
+Message-ID: <4605.1290892451@marajade.sandelman.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 08:02:39PM +0100, Jarek Poplawski wrote:
-> Zimny Lech wrote:
-> ... 
-> > -- 
-> > Slawa!
-> > Zimny "Żyj i pozwól umrzeć" Lech z Wawelu
-> 
-> FYI:
-> http://www.kernel.org/pub/linux/docs/lkml/#s3-12
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Also:
-- be brave and use your real name
-- change your email address to something that is not offending to people
-  who can read Polish
 
-Too bad we have this in git history already.
+>>>>> "Greg" == Greg KH <gregkh@suse.de> writes:
+    >> {please CC me}
+    >> 
+    >> I was capturing data from my laptop's /sys file system as test input
+    >> for some code that needs to grovel through /sys a bit.  I found it weird
+    >> that tar got different answers than ls!  See below (at end) for original
+    >> observation.
+    >> 
+    >> It seems that this is because lstat64() on sysfs returns st_size=0 for
+    >> the link, and tar does not know how to deal with this, while ls does.
+    >> I don't know if it is tar that is wrong, or sysfs.
+    >> lstat64(3) suggests that it is sysfs that is at fault, that it should
+    >> set st_size.  The behaviour of ls, suggests that perhaps other systems
+    >> have worked around st_size=0 for symlinks.  (I'm on 2.6.32-bpo.5
+    >> from debian) 
 
--- 
-Mariusz Kozlowski
+    Greg> So, what do you think should be changed here?
+
+Iif st_size=0 is not a valid return from readlink(2), then I think sysfs
+should be fixed.    I will cook a patch.
+
+While tar might not useful (I was successful at using cp -r, btw),
+having working file operations makes sense. 
+
+    Greg> I wouldn't ever recommend using tar on sysfs as it doesn't make any
+    Greg> sense (sysfs is a virtual file system, like /proc/ and I think
+    Greg> that tar doesn't like /proc either, right?)
+
+Are there things on /sys for which a read is not idempotent?
+
+On /proc, there are files which never terminate, because the process is
+introspecting itself.  Taking a snapshot of /sys is kinda a useful thing
+if you collecting diagnostics, I think. 
+
+- -- 
+]       He who is tired of Weird Al is tired of life!           |  firewalls  [
+]   Michael Richardson, Sandelman Software Works, Ottawa, ON    |net architect[
+] mcr@sandelman.ottawa.on.ca http://www.sandelman.ottawa.on.ca/ |device driver[
+   Kyoto Plus: watch the video <http://www.youtube.com/watch?v=kzx1ycLXQSE>
+	               then sign the petition. 
+
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Finger me for keys
+
+iQEVAwUBTPF0nYCLcPvd0N1lAQI83Af+M5duLS+DHptiGhvE5IhVAtUdUcUrIW69
+n8ipLp/c0cv8cU5pFiZrb4cv/dUDcite97CYw85WkWe28wIOjgdRgB7DxclleNLm
+dgA5AzY7MSIsFL81k5lDWTiyTGx7v76DIWfMS5iMvF9lIOkX/2wG9AfQLb08AYU2
+ePywvGgQtZYrXrvgPFWhFLOpmibc5v/9QqY+GhJZa56qFzsYX4OjWix7HyyYgIg+
+AG1YBFowoWsFS/sw2YEaXbWivgbOfNkpo6duT03APDLoOfk+Lxb6BZWYUYY3yh0Y
+4HfJiIA6XnESEqV0hGey9w6kzVoS6rn5gZmlOL81xAa3dg1JBxyd8Q==
+=q414
+-----END PGP SIGNATURE-----
