@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab0K0SmM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 13:42:12 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:60824 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab0K0SmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 13:42:11 -0500
-Subject: [PATCH 2.6.37] led_class: fix typo in blink API
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 27 Nov 2010 19:42:08 +0100
-Message-ID: <1290883328.3700.1.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753310Ab0K0Srp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 13:47:45 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60729 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752130Ab0K0Srn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 13:47:43 -0500
+Message-ID: <4CF1524B.8020207@kernel.dk>
+Date: Sat, 27 Nov 2010 19:47:39 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: hch@infradead.org, linux-kernel@vger.kernel.org, petero2@telia.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, jack@suse.cz,
+        akpm@linux-foundation.org, adilger.kernel@dilger.ca, tytso@mit.edu,
+        mfasheh@suse.com, joel.becker@oracle.com, aelder@sgi.com,
+        dm-devel@redhat.com, drbd-dev@lists.linbit.com, neilb@suse.de,
+        leochen@broadcom.com, sbranden@broadcom.com, chris.mason@oracle.com,
+        swhiteho@redhat.com, shaggy@linux.vnet.ibm.com, joern@logfs.org,
+        konishi.ryusuke@lab.ntt.co.jp, reiserfs-devel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCHSET] block: clean up bdev claim/release handling
+References: <1288628129-12811-1-git-send-email-tj@kernel.org> <4CDC2488.1030801@kernel.org> <4CF12B4B.2050909@kernel.org>
+In-Reply-To: <4CF12B4B.2050909@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+On 2010-11-27 17:01, Tejun Heo wrote:
+> On 11/11/2010 06:14 PM, Tejun Heo wrote:
+>> Hello,
+>>
+>> I just appended two patches to the series.  These two are the
+>> blkdev_get_by_*() cleanup patches suggested in the fourth patch which
+>> Christoph liked.
+>>
+>> I updated the git tree accordingly and added acked-by's.
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cleanup-bd_claim
+>>
+>> Jens, if you want the whole series resent, please let me know.
+> 
+> Ping.
 
-When I added led_blink_set I had a typo: the
-return value of the hw offload is a regular
-error code that is zero when succesful, and
-in that case software emulation should not
-be used, rather than the other way around.
+You don't have to resend it, I'll pull it in.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
-It'd be nice to get this into 2.6.37 since the patch
-that has the bug is in there. Sorry about that -- I
-had tested the software implementation extensively but
-apparently never tested the hw offload part.
-
- drivers/leds/led-class.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- wireless-testing.orig/drivers/leds/led-class.c	2010-11-27 19:32:24.000000000 +0100
-+++ wireless-testing/drivers/leds/led-class.c	2010-11-27 19:35:41.000000000 +0100
-@@ -267,7 +267,7 @@ void led_blink_set(struct led_classdev *
- 		   unsigned long *delay_off)
- {
- 	if (led_cdev->blink_set &&
--	    led_cdev->blink_set(led_cdev, delay_on, delay_off))
-+	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
- 		return;
- 
- 	/* blink with 1 Hz as default if nothing specified */
-
+-- 
+Jens Axboe
 
