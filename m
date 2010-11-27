@@ -1,449 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab0K0MZb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 07:25:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55259 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab0K0MZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 07:25:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=f7vwVjGltTUXQ0yD1BZ7pnETzWsNoTusdOHKJ6SOGiIouwwUm2GaBgdkjhiq6ffQup
-         3X2qEkO9uzwvYEUeqsyraxjeIoSbI52uTBdUSnXbjfoY2UHabQ3/jm4BVjvTEt26cl5p
-         fbvmAH4wwiOmDHT1zpoqyJB6jRPx8UHys0Sms=
-From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Subject: [PATCH] ARM: Gemini: Add support for PCI BUS
-Date: Sat, 27 Nov 2010 13:24:35 +0100
-Message-Id: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1752322Ab0K0M5x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 07:57:53 -0500
+Received: from solo.fdn.fr ([80.67.169.19]:41244 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab0K0M5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 07:57:51 -0500
+Date: Sat, 27 Nov 2010 13:57:42 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: microcai@fedoraproject.org
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        brad@neruo.com
+Subject: Re: [PATCH] Kernel fbcon UNICODE font support
+Message-ID: <20101127125742.GD4865@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	microcai@fedoraproject.org, torvalds@linux-foundation.org,
+	linux-kernel@vger.kernel.org, brad@neruo.com
+References: <1290750825.2372.59.camel@cai.gentoo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290750825.2372.59.camel@cai.gentoo>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for PCI Bux on Gemini Devices SL3516
--changed Paulius Zaleckas mail address
--changed #include <asm/gpio.h> to #include <linux/gpio.h>
+Hello,
 
-Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
----
- arch/arm/Kconfig                             |    1 +
- arch/arm/mach-gemini/Makefile                |    2 +
- arch/arm/mach-gemini/include/mach/hardware.h |    8 +
- arch/arm/mach-gemini/include/mach/irqs.h     |    7 +-
- arch/arm/mach-gemini/mm.c                    |    5 +
- arch/arm/mach-gemini/pci.c                   |  319 ++++++++++++++++++++++++++
- 6 files changed, 340 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-gemini/pci.c
+Microcai, le Fri 26 Nov 2010 13:53:45 +0800, a écrit :
+>  I know there are most people speaking only English, and never meet
+> non-ASCII characters on console. But, hey , what about others ?
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a19a526..5d4b398 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -307,6 +307,7 @@ config ARCH_GEMINI
- 	select CPU_FA526
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARCH_USES_GETTIMEOFFSET
-+	select PCI
- 	help
- 	  Support for the Cortina Systems Gemini family SoCs
- 
-diff --git a/arch/arm/mach-gemini/Makefile b/arch/arm/mach-gemini/Makefile
-index c5b24b9..c263f48 100644
---- a/arch/arm/mach-gemini/Makefile
-+++ b/arch/arm/mach-gemini/Makefile
-@@ -6,6 +6,8 @@
- 
- obj-y			:= irq.o mm.o time.o devices.o gpio.o
- 
-+obj-$(CONFIG_PCI)	+= pci.o
-+
- # Board-specific support
- obj-$(CONFIG_MACH_NAS4220B)	+= board-nas4220b.o
- obj-$(CONFIG_MACH_RUT100)	+= board-rut1xx.o
-diff --git a/arch/arm/mach-gemini/include/mach/hardware.h b/arch/arm/mach-gemini/include/mach/hardware.h
-index 213a4fc..38c530f 100644
---- a/arch/arm/mach-gemini/include/mach/hardware.h
-+++ b/arch/arm/mach-gemini/include/mach/hardware.h
-@@ -71,4 +71,12 @@
-  */
- #define IO_ADDRESS(x)	((((x) & 0xFFF00000) >> 4) | ((x) & 0x000FFFFF) | 0xF0000000)
- 
-+/*
-+ * PCI subsystem macros
-+ */
-+#define PCIBIOS_MIN_IO		0x00000100
-+#define PCIBIOS_MIN_MEM		0x00000000
-+
-+#define pcibios_assign_all_busses()	1
-+
- #endif
-diff --git a/arch/arm/mach-gemini/include/mach/irqs.h b/arch/arm/mach-gemini/include/mach/irqs.h
-index 06bc47e..c737673 100644
---- a/arch/arm/mach-gemini/include/mach/irqs.h
-+++ b/arch/arm/mach-gemini/include/mach/irqs.h
-@@ -43,11 +43,14 @@
- 
- #define NORMAL_IRQ_NUM	32
- 
--#define GPIO_IRQ_BASE	NORMAL_IRQ_NUM
-+#define PCI_IRQ_BASE	NORMAL_IRQ_NUM
-+#define PCI_IRQ_NUM	4
-+
-+#define GPIO_IRQ_BASE	(NORMAL_IRQ_NUM + PCI_IRQ_NUM)
- #define GPIO_IRQ_NUM	(3 * 32)
- 
- #define ARCH_TIMER_IRQ	IRQ_TIMER2
- 
--#define NR_IRQS		(NORMAL_IRQ_NUM + GPIO_IRQ_NUM)
-+#define NR_IRQS		(NORMAL_IRQ_NUM + PCI_IRQ_NUM + GPIO_IRQ_NUM)
- 
- #endif /* __MACH_IRQS_H__ */
-diff --git a/arch/arm/mach-gemini/mm.c b/arch/arm/mach-gemini/mm.c
-index 5194824..2bf20b2 100644
---- a/arch/arm/mach-gemini/mm.c
-+++ b/arch/arm/mach-gemini/mm.c
-@@ -59,6 +59,11 @@ static struct map_desc gemini_io_desc[] __initdata = {
- 		.length		= SZ_512K,
- 		.type 		= MT_DEVICE,
- 	}, {
-+		.virtual	= IO_ADDRESS(GEMINI_PCI_IO_BASE),
-+		.pfn		= __phys_to_pfn(GEMINI_PCI_IO_BASE),
-+		.length		= SZ_512K,
-+		.type		= MT_DEVICE,
-+	}, {
- 		.virtual	= IO_ADDRESS(GEMINI_FLASH_CTRL_BASE),
- 		.pfn		= __phys_to_pfn(GEMINI_FLASH_CTRL_BASE),
- 		.length		= SZ_512K,
-diff --git a/arch/arm/mach-gemini/pci.c b/arch/arm/mach-gemini/pci.c
-new file mode 100644
-index 0000000..1acdd07
---- /dev/null
-+++ b/arch/arm/mach-gemini/pci.c
-@@ -0,0 +1,319 @@
-+/*
-+ *  Support for Gemini PCI Controller
-+ *
-+ *  Copyright (C) 2009 Janos Laube <janos.dev@gmail.com>
-+ *  Copyright (C) 2009 Paulius Zaleckas <paulius.zaleckas@gmail.com>
-+ *
-+ * based on SL2312 PCI controller code
-+ *   Storlink (C) 2003
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/pci.h>
-+#include <linux/irq.h>
-+
-+#include <asm/mach/pci.h>
-+#include <linux/gpio.h>
-+
-+#include <mach/irqs.h>
-+
-+#define GEMINI_PCI_IOSIZE_1M		0x0000
-+
-+#define GEMINI_PCI_PMC			0x40
-+#define GEMINI_PCI_PMCSR		0x44
-+#define GEMINI_PCI_CTRL1		0x48
-+#define GEMINI_PCI_CTRL2		0x4C
-+#define GEMINI_PCI_MEM1_BASE_SIZE	0x50
-+#define GEMINI_PCI_MEM2_BASE_SIZE	0x54
-+#define GEMINI_PCI_MEM3_BASE_SIZE	0x58
-+
-+#define PCI_CTRL2_INTSTS_OFFSET		28
-+#define PCI_CTRL2_INTMASK_OFFSET	22
-+
-+#define GEMINI_PCI_DMA_MASK		0xFFF00000
-+#define GEMINI_PCI_DMA_MEM1_BASE	0x00000000
-+#define GEMINI_PCI_DMA_MEM2_BASE	0x00000000
-+#define GEMINI_PCI_DMA_MEM3_BASE	0x00000000
-+#define GEMINI_PCI_DMA_MEM1_SIZE	7
-+#define GEMINI_PCI_DMA_MEM2_SIZE	6
-+#define GEMINI_PCI_DMA_MEM3_SIZE	6
-+
-+#define PCI_CONF_ENABLE		(1 << 31)
-+#define PCI_CONF_WHERE(r)	((r) & 0xFC)
-+#define PCI_CONF_BUS(b)		(((b) & 0xFF) << 16)
-+#define PCI_CONF_DEVICE(d)	(((d) & 0x1F) << 11)
-+#define PCI_CONF_FUNCTION(f)	(((f) & 0x07) << 8)
-+
-+#define PCI_IOSIZE_REG		(IO_ADDRESS(GEMINI_PCI_IO_BASE))
-+#define PCI_PROT_REG		(IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x04)
-+#define PCI_CTRL_REG		(IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x08)
-+#define PCI_SOFTRST_REG		(IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x10)
-+#define PCI_CONFIG_REG		(IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x28)
-+#define PCI_DATA_REG		(IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x2C)
-+
-+
-+static DEFINE_SPINLOCK(gemini_pci_lock);
-+
-+static struct resource gemini_pci_resource_io = {
-+	.name	= "PCI I/O Space",
-+	.start	= IO_ADDRESS(GEMINI_PCI_IO_BASE),
-+	.end	= IO_ADDRESS(GEMINI_PCI_IO_BASE) + SZ_1M - 1,
-+	.flags	= IORESOURCE_IO,
-+};
-+
-+static struct resource gemini_pci_resource_mem = {
-+	.name	= "PCI Memory Space",
-+	.start	= GEMINI_PCI_MEM_BASE,
-+	.end	= GEMINI_PCI_MEM_BASE + SZ_128M - 1,
-+	.flags	= IORESOURCE_MEM,
-+};
-+
-+static int gemini_pci_read_config(struct pci_bus *bus, unsigned int fn,
-+				  int config, int size, u32 *value)
-+{
-+	unsigned long irq_flags;
-+
-+	spin_lock_irqsave(&gemini_pci_lock, irq_flags);
-+
-+	__raw_writel(PCI_CONF_BUS(bus->number) |
-+			PCI_CONF_DEVICE(PCI_SLOT(fn)) |
-+			PCI_CONF_FUNCTION(PCI_FUNC(fn)) |
-+			PCI_CONF_WHERE(config) |
-+			PCI_CONF_ENABLE,
-+			PCI_CONFIG_REG);
-+
-+	*value = __raw_readl(PCI_DATA_REG);
-+
-+	if (size == 1)
-+		*value = (*value >> (8 * (config & 3))) & 0xFF;
-+	else if (size == 2)
-+		*value = (*value >> (8 * (config & 3))) & 0xFFFF;
-+
-+	spin_unlock_irqrestore(&gemini_pci_lock, irq_flags);
-+
-+	dev_dbg(&bus->dev,
-+		"[read]  slt: %.2d, fnc: %d, cnf: 0x%.2X, val (%d bytes): 0x%.8X\n",
-+		PCI_SLOT(fn), PCI_FUNC(fn), config, size, *value);
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+static int gemini_pci_write_config(struct pci_bus *bus, unsigned int fn,
-+				   int config, int size, u32 value)
-+{
-+	unsigned long irq_flags = 0;
-+	int ret = PCIBIOS_SUCCESSFUL;
-+
-+	dev_dbg(&bus->dev,
-+		"[write] slt: %.2d, fnc: %d, cnf: 0x%.2X, val (%d bytes): 0x%.8X\n",
-+		PCI_SLOT(fn), PCI_FUNC(fn), config, size, value);
-+
-+	spin_lock_irqsave(&gemini_pci_lock, irq_flags);
-+
-+	__raw_writel(PCI_CONF_BUS(bus->number) |
-+			PCI_CONF_DEVICE(PCI_SLOT(fn)) |
-+			PCI_CONF_FUNCTION(PCI_FUNC(fn)) |
-+			PCI_CONF_WHERE(config) |
-+			PCI_CONF_ENABLE,
-+			PCI_CONFIG_REG);
-+
-+	switch (size) {
-+	case 4:
-+		__raw_writel(value, PCI_DATA_REG);
-+		break;
-+	case 2:
-+		__raw_writew(value, PCI_DATA_REG + (config & 3));
-+		break;
-+	case 1:
-+		__raw_writeb(value, PCI_DATA_REG + (config & 3));
-+		break;
-+	default:
-+		ret = PCIBIOS_BAD_REGISTER_NUMBER;
-+	}
-+
-+	spin_unlock_irqrestore(&gemini_pci_lock, irq_flags);
-+
-+	return ret;
-+}
-+
-+static struct pci_ops gemini_pci_ops = {
-+	.read	= gemini_pci_read_config,
-+	.write	= gemini_pci_write_config,
-+};
-+
-+static int __init gemini_pci_request_resources(struct pci_sys_data *sys)
-+{
-+	if (request_resource(&ioport_resource, &gemini_pci_resource_io))
-+		goto bad_resources;
-+	if (request_resource(&iomem_resource, &gemini_pci_resource_mem))
-+		goto bad_resources;
-+
-+	sys->resource[0] = &gemini_pci_resource_io;
-+	sys->resource[1] = &gemini_pci_resource_mem;
-+	sys->resource[2] = 0;
-+
-+	return 0;
-+
-+bad_resources:
-+	pr_err("Gemini PCI: request_resource() failed. "
-+			"Abort PCI bus enumeration.\n");
-+	return -1;
-+}
-+
-+static int __init gemini_pci_setup(int nr, struct pci_sys_data *sys)
-+{
-+	unsigned int cmd;
-+
-+	if ((nr > 0) || gemini_pci_request_resources(sys))
-+		return 0;
-+
-+	/* setup I/O space to 1MB size */
-+	__raw_writel(GEMINI_PCI_IOSIZE_1M, PCI_IOSIZE_REG);
-+
-+	/* setup hostbridge */
-+	cmd = __raw_readl(PCI_CTRL_REG);
-+	cmd |= PCI_COMMAND_IO;
-+	cmd |= PCI_COMMAND_MEMORY;
-+	cmd |= PCI_COMMAND_MASTER;
-+	__raw_writel(cmd, PCI_CTRL_REG);
-+
-+	return 1;
-+}
-+
-+static struct pci_bus __init *gemini_pci_scan_bus(int nr,
-+	struct pci_sys_data *sys)
-+{
-+	unsigned int reg = 0;
-+	struct pci_bus *bus = 0;
-+
-+	bus = pci_scan_bus(nr, &gemini_pci_ops, sys);
-+	if (bus) {
-+		dev_dbg(&bus->dev, "setting up PCI DMA\n");
-+		reg = (GEMINI_PCI_DMA_MEM1_BASE & GEMINI_PCI_DMA_MASK)
-+			| (GEMINI_PCI_DMA_MEM1_SIZE << 16);
-+		gemini_pci_write_config(bus, 0, GEMINI_PCI_MEM1_BASE_SIZE,
-+					4, reg);
-+		reg =	(GEMINI_PCI_DMA_MEM2_BASE & GEMINI_PCI_DMA_MASK)
-+			| (GEMINI_PCI_DMA_MEM2_SIZE << 16);
-+		gemini_pci_write_config(bus, 0, GEMINI_PCI_MEM2_BASE_SIZE,
-+					4, reg);
-+		reg = (GEMINI_PCI_DMA_MEM3_BASE & GEMINI_PCI_DMA_MASK)
-+			| (GEMINI_PCI_DMA_MEM3_SIZE << 16);
-+		gemini_pci_write_config(bus, 0, GEMINI_PCI_MEM3_BASE_SIZE,
-+					4, reg);
-+	}
-+
-+	return bus;
-+}
-+
-+/* Should work with all boards based on original Storlink EVB */
-+static int __init gemini_pci_map_irq(struct pci_dev *dev, u8 slot, u8 pin)
-+{
-+	if (slot < 9 || slot > 12)
-+		return -1;
-+
-+	return PCI_IRQ_BASE + (((slot - 9) + (pin - 1)) & 0x3);
-+}
-+
-+static struct hw_pci gemini_hw_pci __initdata = {
-+	.nr_controllers	= 1,
-+	.setup		= gemini_pci_setup,
-+	.scan           = gemini_pci_scan_bus,
-+	.swizzle	= pci_std_swizzle,
-+	.map_irq	= gemini_pci_map_irq,
-+};
-+
-+/* we need this for muxed PCI interrupts handling */
-+static struct pci_bus bogus_pci_bus;
-+
-+static void gemini_pci_ack_irq(unsigned int irq)
-+{
-+	unsigned int reg;
-+
-+	gemini_pci_read_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, &reg);
-+	reg &= ~(0xF << PCI_CTRL2_INTSTS_OFFSET);
-+	reg |= 1 << (irq - PCI_IRQ_BASE + PCI_CTRL2_INTSTS_OFFSET);
-+	gemini_pci_write_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, reg);
-+}
-+
-+static void gemini_pci_mask_irq(unsigned int irq)
-+{
-+	unsigned int reg;
-+
-+	gemini_pci_read_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, &reg);
-+	reg &= ~((0xF << PCI_CTRL2_INTSTS_OFFSET)
-+		| (1 << (irq - PCI_IRQ_BASE + PCI_CTRL2_INTMASK_OFFSET)));
-+	gemini_pci_write_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, reg);
-+}
-+
-+static void gemini_pci_unmask_irq(unsigned int irq)
-+{
-+	unsigned int reg;
-+
-+	gemini_pci_read_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, &reg);
-+	reg &= ~(0xF << PCI_CTRL2_INTSTS_OFFSET);
-+	reg |= 1 << (irq - PCI_IRQ_BASE + PCI_CTRL2_INTMASK_OFFSET);
-+	gemini_pci_write_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, reg);
-+}
-+
-+static void gemini_pci_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	unsigned int pci_irq_no, irq_stat, reg, i;
-+
-+	gemini_pci_read_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2, 4, &reg);
-+	irq_stat = reg >> PCI_CTRL2_INTSTS_OFFSET;
-+
-+	for (i = 0; i < 4; i++) {
-+
-+		if ((irq_stat & (1 << i)) == 0)
-+			continue;
-+
-+		pci_irq_no = PCI_IRQ_BASE + i;
-+
-+		BUG_ON(!(irq_desc[pci_irq_no].handle_irq));
-+		irq_desc[pci_irq_no].handle_irq(pci_irq_no,
-+				&irq_desc[pci_irq_no]);
-+	}
-+}
-+
-+static struct irq_chip gemini_pci_irq_chip = {
-+	.name = "PCI",
-+	.ack = gemini_pci_ack_irq,
-+	.mask = gemini_pci_mask_irq,
-+	.unmask = gemini_pci_unmask_irq,
-+};
-+
-+static int __init gemini_pci_init(void)
-+{
-+	int i;
-+
-+	for (i = 72; i <= 95; i++)
-+		gpio_request(i, "PCI");
-+
-+	/* initialize our bogus bus */
-+	dev_set_name(&bogus_pci_bus.dev, "PCI IRQ handler");
-+	bogus_pci_bus.number = 0;
-+
-+	/* mask and clear all interrupts */
-+	gemini_pci_write_config(&bogus_pci_bus, 0, GEMINI_PCI_CTRL2 + 2, 2,
-+				0xF000);
-+
-+	for (i = PCI_IRQ_BASE; i < PCI_IRQ_BASE + 4; i++) {
-+		set_irq_chip(i, &gemini_pci_irq_chip);
-+		set_irq_handler(i, handle_level_irq);
-+		set_irq_flags(i, IRQF_VALID);
-+	}
-+
-+	set_irq_chained_handler(IRQ_PCI, gemini_pci_irq_handler);
-+
-+	pci_common_init(&gemini_hw_pci);
-+
-+	return 0;
-+}
-+
-+subsys_initcall(gemini_pci_init);
--- 
-1.7.3.2
+Well, you can't deny that there _is_ some support for non-ASCII. But
+just at most 512 glyphs and single width, indeed.
 
+>  The first thing I need to handle is that, currently there is no room
+> for adding UNICODE font, only 8bit for characters, how can you do?
+
+(or 9bit, but no more indeed)
+
+>  Also , some characters are double-width. So the solution is  make an
+> backing store. 0xFE and 0xFF stands for character value store else
+> where, and 0xFF means , left-half of the else where character, and 0xFE
+> means right-half of the else where character. 
+> 
+>  This is a basic solution, the best is that making vc->vc_screenbuf
+> store full UNICODE/attribute value, But changing it may break some
+> drivers, so , currently I won't try that way. 
+
+I'd much prefer the full unicode way, however.  Trying to hack around
+with 0xFE/0xFF will just bring hard-to-fix bugs, while it's quite easy
+to make sure we capture not-up-to-date drivers by changing field names
+for instance.  I'd say we should first do that, and then it'll be
+easy to move the old vgaposition/glyph translation cruft into the few
+drivers that need it.  Yes, this seems to be the hard way.  But that's
+the short-term hard then mid-term easy way, which is way easier to
+accept than the short-term easy then mid/long-term tedious way that you
+propose.
+
+> The UNICODE font just too large to be included in e-mail, please follow
+
+There is no way we want to include a big unicode font in the kernel :)
+
+> In future, we don't have to compile  that big font into kernel, we
+> should use setfont to load UNICODE font.
+
+Yes.
+
+> But, .psf does not support that much charcount (or maybe yes, and  I
+> need some search? )
+
+That's just a matter of fixing tools: the newer version of the psf
+format already supports 2^16 glyphs.
+
+> So, here is the patch that add UNICODE font handling functionary.
+
+I've just had a quick glance over it, and there are quite a few things
+that bother me, including:
+
+> @@ -296,6 +295,8 @@ int set_selection(const struct tiocl_selection
+> __user *sel, struct tty_struct *t
+>  			}
+>  			obp = bp;
+>  		}
+> +		if (c > 0x80)
+> +			i += 2;
+>  	}
+>  	sel_buffer_lth = bp - sel_buffer;
+>  	return 0;
+
+That is the kind of hack that really shows your current approach will
+most probably just bring us bugs.
+
+> @@ -2171,6 +2205,8 @@ static int do_con_write(struct tty_struct *tty,
+> const unsigned char *buf, int co
+>  		rescan = 0;
+>  		inverse = 0;
+>  		width = 1;
+> +		vc->vc_utf = 1;
+
+?!
+There is now way we can accept to systematically switch to utf-8.
+
+> -		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
+> +		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size * 2, GFP_NOWAIT);
+
+With a proper switch to a "unicode character" type, this would rather be
+"* sizeof(something)", so that choosing between 16bit unicode and 32bit
+unicode would even be trivial.
+
+Samuel
