@@ -1,114 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab0K0M5x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 07:57:53 -0500
-Received: from solo.fdn.fr ([80.67.169.19]:41244 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab0K0M5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 07:57:51 -0500
-Date: Sat, 27 Nov 2010 13:57:42 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: microcai@fedoraproject.org
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        brad@neruo.com
-Subject: Re: [PATCH] Kernel fbcon UNICODE font support
-Message-ID: <20101127125742.GD4865@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	microcai@fedoraproject.org, torvalds@linux-foundation.org,
-	linux-kernel@vger.kernel.org, brad@neruo.com
-References: <1290750825.2372.59.camel@cai.gentoo>
+	id S1752579Ab0K0NB1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 08:01:27 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36492 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab0K0NBZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 08:01:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RR5pxVIDRc980VjRr2UtMpskHmoa37IGaUn4Ox2aAlGaNO82C9HbM0oNiv5lGIxAc9
+         DH0u7l3xYOLyAmy6hZRQXI4OrnA2Nn+lR8y9yc8kMlIQ1Byk/N3a23kBm3wRyDZuR/vq
+         kK/K31j8u9gW6GojWHRdjxggGb1+gQYNO0fVM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290750825.2372.59.camel@cai.gentoo>
-User-Agent: Mutt/1.5.12-2006-07-14
+In-Reply-To: <alpine.LNX.2.00.1011271306420.7659@localhost.localdomain>
+References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com>
+	<AANLkTikkVqWgpYEg505DwQ+pSegQv1g-Q8cDEpE-JCrV@mail.gmail.com>
+	<alpine.LNX.2.00.1011271306420.7659@localhost.localdomain>
+Date: Sat, 27 Nov 2010 14:01:20 +0100
+Message-ID: <AANLkTinbAVFE+HZrx+9KUwx8=MKFHPqrhpOpAWAEQFv-@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+W dniu 27 listopada 2010 13:16 u¿ytkownik Hans Ulli Kroll
+<ulli.kroll@googlemail.com> napisa³:
+> On Fri, 26 Nov 2010, Micha³ Miros³aw wrote:
+>> 2010/11/20 Hans Ulli Kroll <ulli.kroll@googlemail.com>:
+>> > Add support for PCI Bus on Gemini Devices SL3516
+>> >
+>> > Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+>> > ---
+>> [...]
+>> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+>> > index a19a526..5d4b398 100644
+>> > --- a/arch/arm/Kconfig
+>> > +++ b/arch/arm/Kconfig
+>> > @@ -307,6 +307,7 @@ config ARCH_GEMINI
+>> >        select CPU_FA526
+>> >        select ARCH_REQUIRE_GPIOLIB
+>> >        select ARCH_USES_GETTIMEOFFSET
+>> > +       select PCI
+>> >        help
+>> >          Support for the Cortina Systems Gemini family SoCs
+>> >
+>> [...]
+>> I think it's better to add ARCH_GEMINI to CONFIG_PCI dependencies.
+>> AFAIK IB-4220B NAS does not use PCI and doesn't need all that code.
+>> Board support entries could select PCI if the board is useless without
+>> it.
+> I know this, I have some.
+>
+> There are many boards with PCI i.e WBD 222.
+> Other ARM devices uses the same select inside ARCH_*
+> I don't want to pollute drivers/pci/Kconfig.
 
-Microcai, le Fri 26 Nov 2010 13:53:45 +0800, a écrit :
->  I know there are most people speaking only English, and never meet
-> non-ASCII characters on console. But, hey , what about others ?
+I meant 'config PCI' entry in arch/arm/Kconfig, see following diff.
 
-Well, you can't deny that there _is_ some support for non-ASCII. But
-just at most 512 glyphs and single width, indeed.
+Best Regards,
+Micha³ Miros³aw
 
->  The first thing I need to handle is that, currently there is no room
-> for adding UNICODE font, only 8bit for characters, how can you do?
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index db524e7..74ea522 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1164,7 +1164,7 @@ config ISA_DMA_API
+ 	bool
 
-(or 9bit, but no more indeed)
-
->  Also , some characters are double-width. So the solution is  make an
-> backing store. 0xFE and 0xFF stands for character value store else
-> where, and 0xFF means , left-half of the else where character, and 0xFE
-> means right-half of the else where character. 
-> 
->  This is a basic solution, the best is that making vc->vc_screenbuf
-> store full UNICODE/attribute value, But changing it may break some
-> drivers, so , currently I won't try that way. 
-
-I'd much prefer the full unicode way, however.  Trying to hack around
-with 0xFE/0xFF will just bring hard-to-fix bugs, while it's quite easy
-to make sure we capture not-up-to-date drivers by changing field names
-for instance.  I'd say we should first do that, and then it'll be
-easy to move the old vgaposition/glyph translation cruft into the few
-drivers that need it.  Yes, this seems to be the hard way.  But that's
-the short-term hard then mid-term easy way, which is way easier to
-accept than the short-term easy then mid/long-term tedious way that you
-propose.
-
-> The UNICODE font just too large to be included in e-mail, please follow
-
-There is no way we want to include a big unicode font in the kernel :)
-
-> In future, we don't have to compile  that big font into kernel, we
-> should use setfont to load UNICODE font.
-
-Yes.
-
-> But, .psf does not support that much charcount (or maybe yes, and  I
-> need some search? )
-
-That's just a matter of fixing tools: the newer version of the psf
-format already supports 2^16 glyphs.
-
-> So, here is the patch that add UNICODE font handling functionary.
-
-I've just had a quick glance over it, and there are quite a few things
-that bother me, including:
-
-> @@ -296,6 +295,8 @@ int set_selection(const struct tiocl_selection
-> __user *sel, struct tty_struct *t
->  			}
->  			obp = bp;
->  		}
-> +		if (c > 0x80)
-> +			i += 2;
->  	}
->  	sel_buffer_lth = bp - sel_buffer;
->  	return 0;
-
-That is the kind of hack that really shows your current approach will
-most probably just bring us bugs.
-
-> @@ -2171,6 +2205,8 @@ static int do_con_write(struct tty_struct *tty,
-> const unsigned char *buf, int co
->  		rescan = 0;
->  		inverse = 0;
->  		width = 1;
-> +		vc->vc_utf = 1;
-
-?!
-There is now way we can accept to systematically switch to utf-8.
-
-> -		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
-> +		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size * 2, GFP_NOWAIT);
-
-With a proper switch to a "unicode character" type, this would rather be
-"* sizeof(something)", so that choosing between 16bit unicode and 32bit
-unicode would even be trivial.
-
-Samuel
+ config PCI
+-	bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
+ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
++	bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
+ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX ||
+ARCH_GEMINI
+ 	help
+ 	  Find out whether you have a PCI motherboard. PCI is the name of a
+ 	  bus system, i.e. the way the CPU talks to the other stuff inside
