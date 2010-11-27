@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab0K0Xv2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 18:51:28 -0500
-Received: from mail1.ugh.no ([80.239.42.168]:46111 "EHLO mail1.ugh.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751093Ab0K0Xv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 18:51:27 -0500
-Message-ID: <4CF1997D.3020501@tomt.net>
-Date: Sun, 28 Nov 2010 00:51:25 +0100
-From: Andre Tomt <andre@tomt.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1753911Ab0K0Xx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 18:53:59 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:44774 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab0K0Xxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 18:53:54 -0500
+Date: Sat, 27 Nov 2010 18:53:49 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, gregkh@suse.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/1] TTY: don't allow reopen when ldisc is changing
+Message-ID: <20101127235349.GB15818@bombadil.infradead.org>
+References: <4CEE93FF.3040507@suse.cz>
+ <1290705383-6608-1-git-send-email-jslaby@suse.cz>
+ <20101126002840.GL22651@bombadil.infradead.org>
+ <4CEF65CA.9020403@suse.cz>
+ <20101127025954.GA15818@bombadil.infradead.org>
+ <4CF0C65E.2010104@suse.cz>
+ <4CF0D2DA.20105@suse.cz>
+ <4CF11F8A.1050200@suse.cz>
 MIME-Version: 1.0
-To: jason.vas.dias@gmail.com
-CC: Ben Gamari <bgamari@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: per-chroot clock module ?
-References: <201011271821.35039.jason.vas.dias@gmail.com> <874ob2r3w0.fsf@gmail.com> <201011271922.45611.jason.vas.dias@gmail.com>
-In-Reply-To: <201011271922.45611.jason.vas.dias@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF11F8A.1050200@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2010 08:22 PM, Jason Vas Dias wrote:
-> RE: why ?
-> This would allow one to very easily support websites for totally different timezones , where offsets need not be
-> restricted to legal timezone offsets but could encompass years - also nice if you want to run applications whose
-> license key has expired .  Also very easy to support multiple instances of cron(1) running in different timezones.
-> In any case, the module would ensure that the time the kernel sees internally for all processes is the actual real-time
-> clock value; only processes which have their root directory in one of the special chroot directories would get
-> a different gettimeofday() or clock_gettime() value .
->
->>
->> It seems like what you want here is simple virtualization. Have you
->> considered KVM? The closest thing to your request currently upstream is
->> containers, although I'm unsure of whether a container can be created
->> with an independent clock. Might be something to look into.
->>
->
-> To me, using virtualization to solve this problem is like using a sledgehammer to crack a nut,
-> particularly if the optimal performance of the processes running in such chroot environments
-> is of paramount importance.
+On Sat, Nov 27, 2010 at 04:11:06PM +0100, Jiri Slaby wrote:
+> Is it fixed with the attached proof-of-concept patch?
+> 
+> So you need:
+> THIS ONE
+> TTY: don't allow reopen when ldisc is changing
+> TTY: ldisc, fix open flag handling
+> Char: TTY, restore tty_ldisc_wait_idle
+> 
+> The last one is in 2.6.37-rc2 already.
 
-You might want to take a look at Linux-Vserver; it has containers (that 
-is, chroot on stereoids) with support for "virtualized time"/clock offset.
+Shoved them all into a build and sent it out for testing, the tester who
+was hitting it very frequently reports he hasn't seen it, so I think
+you've managed to close the race window, awesome!
 
-Virtualized time is not without downsides, it adds overhead. It will be 
-tiny compared to using a sledgehammer of course. The vserver guys puts 
-it this way;
-"This enables per guest time offsets to allow for adjusting the system 
-clock individually per guest. this adds some overhead to the time 
-functions and therefore should not be enabled without good reason."
+I rebooted my laptop continuously and didn't hit the WARN_ON as
+well to confirm.
 
-http://linux-vserver.org/
-
-It could be useful to implement such a thing in a "time" namespace, 
-making it available to lxc containers and cgroups also.
+--Kyle
