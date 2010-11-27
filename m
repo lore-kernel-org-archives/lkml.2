@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab0K0Hzj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 02:55:39 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54025 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0K0Hzh (ORCPT
+	id S1751924Ab0K0IBD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 03:01:03 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59749 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab0K0IA7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 02:55:37 -0500
+	Sat, 27 Nov 2010 03:00:59 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oEM4CsVjx0np8QrniRnmsBSEcPQDpq7E6wE9bxwvS2JEyIduV/NaCczHUwNAzFEs/k
-         D/y/fsmqVfvAwwSUq9pOWWxK04N3bTwTVKp/obbi4QXKItrkz7CAY+s0scsQ28vNFj0C
-         0kQoktmMZUTOQu87vianEZDpQsDrKE8DCrHq0=
-Date: Fri, 26 Nov 2010 23:55:28 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Yan Li <yan.i.li@intel.com>
-Cc: linux-input@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        jian-feng.ding@intel.com, linux-kernel@vger.kernel.org,
-        meego-kernel@lists.meego.com,
-        Christopher Heiny <christopherheiny@gmail.com>
-Subject: Re: [PATCH] Input: Lenovo S10-3t's touchpad support
-Message-ID: <20101127075528.GA28667@core.coreip.homeip.net>
-References: <aefc1833eeede37ae6ea4a9ddeaa602eb7d31101.1290823698.git.yan.i.li@intel.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=wUQ7MBAtL8NNyI0R2C3JT0YmcYiGfpDNCfZNFC36PZKvEoTwdo583McgQITJ+j5hCf
+         ooJUVEKbkZOrLGhL0cCWHmEZnI58ORIYVCFmja+m9KlSwmebhkPsR6RjVgi0R4ifmqEH
+         FIZwLq0xzvm7YBXuHEtYJ0enCfGpqgfwMaLEA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <aefc1833eeede37ae6ea4a9ddeaa602eb7d31101.1290823698.git.yan.i.li@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101126210950.142747403@linux.com>
+References: <20101126210937.383047168@linux.com>
+	<20101126210950.142747403@linux.com>
+Date: Sat, 27 Nov 2010 10:00:58 +0200
+X-Google-Sender-Auth: 5Hk9Pw92Xuj0pjMYOtwJG3Pqs2U
+Message-ID: <AANLkTinjh=A52zoWvWT1e2j8VJ65t50ss7jCODgcMPS_@mail.gmail.com>
+Subject: Re: [thisops uV2 02/10] vmstat: Optimize zone counter modifications
+ through the use of this cpu operations
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yan,
+On Fri, Nov 26, 2010 at 11:09 PM, Christoph Lameter <cl@linux.com> wrote:
+> this cpu operations can be used to slightly optimize the function. The
+> changes will avoid some address calculations and replace them with the
+> use of the percpu segment register.
+>
+> If one would have this_cpu_inc_return and this_cpu_dec_return then it
+> would be possible to optimize inc_zone_page_state and dec_zone_page_state even
+> more.
+>
+> V1->V2:
+>        - Fix __dec_zone_state overflow handling
+>        - Use s8 variables for temporary storage.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-On Sat, Nov 27, 2010 at 11:56:59AM +0800, Yan Li wrote:
-> This is for kernel bug #18122 and MeeGo bug #4807.
-> 
-> Current code detects Clickpad by checking the 8 and 20 bits of 0x0c
-> cap. However, the code returns true if either of those bits is 1,
-> while it should only return true when both are 1. This has lead to the
-> touchpad on Lenovo S10-3t be mistakenly recognized as Clickpad and its
-> BTN_LEFT and BTN_RIGHT blocked.
-> 
-> So far we've found that the S10-3ts are shipped with two slightly
-> different models of touchpads, of which the 0x0c cap is either
-> 0x5a0400 or 0x4a0500. They are not Clickpad and return BTN_LEFT and
-> BTN_RIGHT normally.
-
-Hmm, this is weird. According to my data:
-
->> Treat it as a two-bit field.
->>   0x00 == not a clickpad
->>   0x01 == 1 button clickpad
->>   0x02 == 2 button clickpad
->>   0x03 == reserved
-
-Moreover, Takashi's HP returns 0x5a 0x04 0x00 in response to 0x0c query
-and _is_ a clickpad.
-
-Christopher, was there any more updates to the protocol by any chance?
-
-> 
-> This patch fixed this issue by checking both sign bits are 1. Tested
-> on my S10-3t and worked well.
-> 
-> Signed-off-by: Yan Li <yan.i.li@intel.com>
-> ---
->  drivers/input/mouse/synaptics.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-> index 613a365..0c1083c 100644
-> --- a/drivers/input/mouse/synaptics.h
-> +++ b/drivers/input/mouse/synaptics.h
-> @@ -51,7 +51,11 @@
->  #define SYN_EXT_CAP_REQUESTS(c)		(((c) & 0x700000) >> 20)
->  #define SYN_CAP_MULTI_BUTTON_NO(ec)	(((ec) & 0x00f000) >> 12)
->  #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
-> -#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
-> +/* Synaptics' ClickPad has both 8th and 20th bits set in the 0x0c
-> + * cap. Other models (like those shipped with Lenovo S10-3t) may have
-> + * either one of them set but not both, and they are *not* ClickPad
-> + * although they look similar. */
-> +#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100 == 0x100100)
-
-In C comparison operators have higher precedence than bitwise ones. Your
-expression reduces to ((ex0c) & 1) which is not correct. The proper
-expression would be:
-
-#define SYN_CAP_CLICKPAD(ex0c)		(((ex0c) & 0x100100) == 0x100100)
-
-but it really contradicts the data I have...
-
-Thanks.
-
--- 
-Dmitry
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
