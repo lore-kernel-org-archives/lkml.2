@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab0K0NB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 08:01:27 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36492 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab0K0NBZ convert rfc822-to-8bit (ORCPT
+	id S1752412Ab0K0NGX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 08:06:23 -0500
+Received: from blade3.isti.cnr.it ([194.119.192.19]:60522 "EHLO
+	BLADE3.ISTI.CNR.IT" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab0K0NGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 08:01:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RR5pxVIDRc980VjRr2UtMpskHmoa37IGaUn4Ox2aAlGaNO82C9HbM0oNiv5lGIxAc9
-         DH0u7l3xYOLyAmy6hZRQXI4OrnA2Nn+lR8y9yc8kMlIQ1Byk/N3a23kBm3wRyDZuR/vq
-         kK/K31j8u9gW6GojWHRdjxggGb1+gQYNO0fVM=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1011271306420.7659@localhost.localdomain>
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com>
-	<AANLkTikkVqWgpYEg505DwQ+pSegQv1g-Q8cDEpE-JCrV@mail.gmail.com>
-	<alpine.LNX.2.00.1011271306420.7659@localhost.localdomain>
-Date: Sat, 27 Nov 2010 14:01:20 +0100
-Message-ID: <AANLkTinbAVFE+HZrx+9KUwx8=MKFHPqrhpOpAWAEQFv-@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+	Sat, 27 Nov 2010 08:06:22 -0500
+Date: Sat, 27 Nov 2010 14:07:22 +0100
+From: Spelic <spelic@shiftmail.org>
+Subject: Can't find fourth number version tags in GIT kernel
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <4CF1028A.6010401@shiftmail.org>
+MIME-version: 1.0
+Content-type: text/plain; format=flowed; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
+ Gecko/20100713 Thunderbird/3.0.6
+X-INSM-ip-source: 151.83.169.202 Auth Done
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 27 listopada 2010 13:16 u¿ytkownik Hans Ulli Kroll
-<ulli.kroll@googlemail.com> napisa³:
-> On Fri, 26 Nov 2010, Micha³ Miros³aw wrote:
->> 2010/11/20 Hans Ulli Kroll <ulli.kroll@googlemail.com>:
->> > Add support for PCI Bus on Gemini Devices SL3516
->> >
->> > Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
->> > ---
->> [...]
->> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> > index a19a526..5d4b398 100644
->> > --- a/arch/arm/Kconfig
->> > +++ b/arch/arm/Kconfig
->> > @@ -307,6 +307,7 @@ config ARCH_GEMINI
->> >        select CPU_FA526
->> >        select ARCH_REQUIRE_GPIOLIB
->> >        select ARCH_USES_GETTIMEOFFSET
->> > +       select PCI
->> >        help
->> >          Support for the Cortina Systems Gemini family SoCs
->> >
->> [...]
->> I think it's better to add ARCH_GEMINI to CONFIG_PCI dependencies.
->> AFAIK IB-4220B NAS does not use PCI and doesn't need all that code.
->> Board support entries could select PCI if the board is useless without
->> it.
-> I know this, I have some.
->
-> There are many boards with PCI i.e WBD 222.
-> Other ARM devices uses the same select inside ARCH_*
-> I don't want to pollute drivers/pci/Kconfig.
+Hello LKML
+I'm trying to use GIT to stay up-to-date with the kernel sources, but in
 
-I meant 'config PCI' entry in arch/arm/Kconfig, see following diff.
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+and even
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.36.y.git
 
-Best Regards,
-Micha³ Miros³aw
+I can't find versions with four numbers, e.g. I do find tag:
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index db524e7..74ea522 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1164,7 +1164,7 @@ config ISA_DMA_API
- 	bool
+v2.6.35
+(and also the release candidates for 2.6.35)
 
- config PCI
--	bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
-ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
-+	bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
-ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX ||
-ARCH_GEMINI
- 	help
- 	  Find out whether you have a PCI motherboard. PCI is the name of a
- 	  bus system, i.e. the way the CPU talks to the other stuff inside
+but I can't find tags:
+
+v2.6.35.1
+v2.6.35.2
+...
+v2.6.35.9
+
+Apparently tag v2.6.35 really brings me to v2.6.35.0 and not to 
+v2.6.35.9 so it's a problem... I usually want to get the highest number 
+in the fourth number, not the lowest.
+Like this I don't know how to get the bugfixes...?
+
+What am I missing?
+
+Thank you
+PS: can you please reply to me also, as I am not subscribed to LKML. Thanks
