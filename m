@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab0K0PQu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 10:16:50 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:55783 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752561Ab0K0PQt (ORCPT
+	id S1752776Ab0K0PU3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 10:20:29 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:53757 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752547Ab0K0PU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 10:16:49 -0500
-Date: Sat, 27 Nov 2010 10:16:47 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
-Subject: Re: Nobody cared about IRQs at shutdown
-In-Reply-To: <4CF0AF5C.6010003@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1011271011230.23611-100000@netrider.rowland.org>
+	Sat, 27 Nov 2010 10:20:28 -0500
+Date: Sat, 27 Nov 2010 10:20:26 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thisops uV2 09/10] x86: this_cpu_cmpxchg and
+	this_cpu_cmpxchg_double operations
+Message-ID: <20101127152026.GA15758@Krystal>
+References: <20101126210937.383047168@linux.com> <20101126210954.166783984@linux.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101126210954.166783984@linux.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:07:52 up 3 days, 20:10,  3 users,  load average: 0.04, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Nov 2010, Alexander E. Patrakov wrote:
-
-> 26.11.2010 01:25, Alan Stern wrote:
-> > On Thu, 25 Nov 2010, Alexander E. Patrakov wrote:
-> >
-> >> 25.11.2010 21:06, Alan Stern wrote:
-> >>> On Thu, 25 Nov 2010, Alexander E. Patrakov wrote:
-> >>>
-> >>>> Hello.
-> >>>>
-> >>>> After switching my Gentoo desktop from sysvinit + openrc to systemd, I
-> >>>> started getting "nobody cared" messages about IRQs 16 and 19 (common
-> >>>> thing: they are assigned to the USB controllers, that's why CC:
-> >>> According to your listing, they are used by uhci-hcd.  Do the messages
-> >>> go away if you unload uhci-hcd before shutting down?
-> >> It is not a module here, so I have to recompile the kernel in order to
-> >> try this. Will do that tomorrow.
-> >>
-> >>> You may need to debug the uhci-hcd driver. Look into
-> >>> drivers/usb/host/uhci-hcd.c; the uhci_shutdown() routine ought to be
-> >>> called and it ought to call uhci_hc_died(), which in turn calls
-> >>> uhci_reset_hc() in pci-quirks.c, which is supposed to prevent the
-> >>> controller from generating any IRQs.
-> >> OK, tomorrow I will add some printks there.
+* Christoph Lameter (cl@linux.com) wrote:
+> Provide support as far as the hardware capabilities of the x86 cpus
+> allow.
 > 
-> Sorry, I didn't add them due to being busy with a different (non-kernel) 
-> bug. What do you want to know - just the fact that these functions are 
-> called before or after reporting the bad IRQ?
-
-They should be called before the bad IRQ is reported.  That's what I 
-want to verify.
-
-> > Even without rebuilding the kernel, you can unbind the uhci-hcd driver
-> > from the hardware by going to the /sys/bus/pci/drivers/uhci_hcd
-> > directory and doing:
-> >
-> > 	echo -n device-name>unbind
-> >
-> > where "device-name" is the name of one of the symlinks in that
-> > directory.
+> V1->V2:
+> 	- Mark %rdx clobbering during cmpxchg16b
+> 	- Provide emulation of cmpxchg16b for early AMD processors
 > 
-> Thanks for the tip. Below are the updated test results, including the 
-> ones posted in my first mail, for completeness.
-> 
-> 1. No irqpoll, no unbind: the system reports that nobody cared for IRQs, 
-> then waits, displays SATA errors, waits again, shuts down.
-> 
-> 2. irqpoll, no unbind: the system shuts down without any delays.
-> 
-> 3. No irqpoll, unbind uhci-hcd from everything it controls: the system 
-> reports bad IRQ 19 (consumed by firewire-ohci), waits, displays SATA 
-> errors, waits again, shuts down.
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-This suggests that the problem comes from the firewire controller, not 
-the UHCI controller.
+[...]
+> +/*
+> + * Something is screwed up with alternate instruction creation. This one
+> + * fails with a mysterious asm error about a byte val > 255.
 
-Are you sure that you ever got "nobody cared" reports for IRQ 16?  Your 
-listing showed that uhci-hcd used both 16 and 19 whereas firewire-ohci 
-used only 19.
+Hrm, "interesting" ;) Does each of these work if expressed directly in inline
+assembly without the alternatives ? Can you give us more information about the
+failure ?
 
-> 4. No irqpoll, unbind both uhci-hcd and firewire-ohci from everything: 
-> the system does not report any bad IRQs, waits, displays SATA errors, 
-> waits again, shuts down.
+> + */
+> +#define percpu_cmpxchg16b(pcp, o1, o2, n1, n2)			\
+> +({									\
+> +	char __ret;							\
+> +	typeof(o1) __o1 = o1;						\
+> +	typeof(o1) __n1 = n1;						\
+> +	typeof(o2) __o2 = o2;						\
+> +	typeof(o2) __n2 = n2;						\
+> +	typeof(o2) __dummy;						\
+> +	VM_BUG_ON(((unsigned long)pcp) % 16);				\
 
-And this tends to confirm it.  The SATA errors are probably a separate
-issue.
+Restricting typing on "pcp" at build time might be more appropriate. E.g.
+creating a "struct doublecas" that would be forcefully aligned on 16 bytes. We
+could check that with __builtin_types_compatible_p and generate a build failure
+if necessary.
 
-What happens if you unbind firewire-ohci but not uhci-hcd?
+Thanks,
 
-> 5. irqpoll, unbind both uhci-hcd and firewire-ohci from everything: same 
-> as (4).
-> 
-> I have no firewire devices.
+Mathieu
 
-Apparently that doesn't stop the controller from misbehaving.  But you 
-need to do more tests to be sure of this.
+> +	alternative_io("call cmpxchg16b_local\n\t" P6_NOP4,		\
+> +			"cmpxchg16b %%gs:(%%rsi)\n\tsetz %0\n\t",	\
+> +			X86_FEATURE_CX16,				\
+> +		    	ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),	\
+> +		        "S" (pcp), "b"(__n1), "c"(__n2),		\
+> +			 "a"(__o1), "d"(__o2));				\
+> +	__ret;								\
+> +})
 
-Alan Stern
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
