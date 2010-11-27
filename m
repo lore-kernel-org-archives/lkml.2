@@ -1,39 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab0K0C0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 21:26:51 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36554
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753587Ab0K0C0t (ORCPT
+	id S1753912Ab0K0Cud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 21:50:33 -0500
+Received: from inter13.unsl.edu.ar ([170.210.173.199]:48751 "EHLO
+	inter13.unsl.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab0K0Cuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 21:26:49 -0500
-Date: Fri, 26 Nov 2010 18:27:14 -0800 (PST)
-Message-Id: <20101126.182714.226785459.davem@davemloft.net>
-To: mhocko@suse.cz
-Cc: stable@kernel.org, vegard.nossum@gmail.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, eugene@redhat.com, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com
-Subject: Re: [PATCH] af_unix: limit unix_tot_inflight
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101126085000.GA4532@tiehlicka.suse.cz>
-References: <1290553918.2866.80.camel@edumazet-laptop>
-	<1290590335.3464.24.camel@edumazet-laptop>
-	<20101126085000.GA4532@tiehlicka.suse.cz>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Nov 2010 21:50:32 -0500
+Message-ID: <22453.217.175.73.2.1290823956.squirrel@webmail2.unsl.edu.ar>
+Date: Fri, 26 Nov 2010 23:12:36 -0300 (ARGSL-ST)
+Subject: I am a Staff of Hang Seng Bank HongKong,
+      I do not know if we can work together in transferring $19,500,
+     000.USD from my bank   to your bank account. Finally if you are 
+     interested I shall provide you with more details. Please contact me 
+     with this Email:   mr.songlile87@yahoo.com.hk 
+From: lapierre@unsl.edu.ar
+Reply-To: mr.songlile87@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.9a
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 26 Nov 2010 09:50:00 +0100
 
-> Shouldn't this go to stable?
-> AFAICS 2.6.32 contains the same code (the patch applies). 
-> I haven't tried to reproduce the issue yet.
 
-I'll submit it to all the stable branches after this patch (and the
-other AF_UNIX fixes recently proposed) have sat in Linus's tree for at
-least half a week or so.
