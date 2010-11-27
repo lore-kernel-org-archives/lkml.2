@@ -1,322 +1,439 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0K0PX3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 10:23:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37974 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab0K0PWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753178Ab0K0PWz (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 27 Nov 2010 10:22:55 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37951 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547Ab0K0PWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 10:22:49 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
         hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
         yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
         penberg@kernel.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 16/16] x86: Unify NUMA initialization between 32 and 64bit
-Date: Sat, 27 Nov 2010 16:22:05 +0100
-Message-Id: <1290871325-3055-17-git-send-email-tj@kernel.org>
+Subject: [PATCH 14/16] x86: Unify CPU -> NUMA node mapping between 32 and 64bit
+Date: Sat, 27 Nov 2010 16:22:03 +0100
+Message-Id: <1290871325-3055-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290871325-3055-1-git-send-email-tj@kernel.org>
 References: <1290871325-3055-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 27 Nov 2010 15:22:21 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 27 Nov 2010 15:22:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that everything else is unified, NUMA initialization can be
-unified too.
+Unlike 64bit, 32bit has been using its own cpu_to_node_map[] for CPU
+-> NUMA node mapping.  Replace it with early_percpu variable
+x86_cpu_to_node_map and share the mapping code with 64bit.
 
-* numa_init_array() and init_cpu_to_node() are moved from numa_64 to
-  numa.
+* USE_PERCPU_NUMA_NODE_ID is now enabled for 32bit too.
 
-* numa_32::initmem_init() is updated to call numa_init_array() and
-  setup_arch() to call init_cpu_to_node() on 32bit too.
+* x86_cpu_to_node_map and numa_set/clear_node() are moved from numa_64
+  to numa.  For now, x86_cpu_to_node_map is initialized with 0 instead
+  of NUMA_NO_NODE.  This is to avoid introducing unexpected behavior
+  change and will be updated once init path is unified.
 
-* x86_cpu_to_node_map is now initialized to NUMA_NO_NODE on 32bit too.
-  This is safe now as numa_init_array() will initialize it early
-  during boot.
-
-This makes NUMA mapping fully initialized before setup_per_cpu_areas()
-on 32bit too and thus makes the first percpu chunk which contains all
-the static variables and some of dynamic area allocated with NUMA
-affinity correctly considered.
+* srat_detect_node() is now enabled for x86_32 too.  It calls
+  numa_set_node() and initializes the mapping making explicit
+  cpu_to_node_map[] updates from map/unmap_cpu_to_node() unnecessary.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/numa.h    |    4 ++
- arch/x86/include/asm/numa_64.h |    3 --
- arch/x86/kernel/setup.c        |    2 -
- arch/x86/mm/numa.c             |   76 +++++++++++++++++++++++++++++++++++++--
- arch/x86/mm/numa_32.c          |    1 +
- arch/x86/mm/numa_64.c          |   75 ---------------------------------------
- 6 files changed, 77 insertions(+), 84 deletions(-)
+ arch/x86/Kconfig                |    2 +-
+ arch/x86/include/asm/numa.h     |    8 ++++
+ arch/x86/include/asm/numa_64.h  |    4 --
+ arch/x86/include/asm/topology.h |   17 ---------
+ arch/x86/kernel/acpi/boot.c     |    5 ---
+ arch/x86/kernel/cpu/amd.c       |    4 +-
+ arch/x86/kernel/cpu/intel.c     |    2 +-
+ arch/x86/kernel/setup_percpu.c  |    4 +-
+ arch/x86/kernel/smpboot.c       |    6 ---
+ arch/x86/mm/numa.c              |   72 ++++++++++++++++++++++++++++++++++++++-
+ arch/x86/mm/numa_64.c           |   65 -----------------------------------
+ 11 files changed, 85 insertions(+), 104 deletions(-)
 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e832768..d493c44 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1678,7 +1678,7 @@ config HAVE_ARCH_EARLY_PFN_TO_NID
+ 	depends on NUMA
+ 
+ config USE_PERCPU_NUMA_NODE_ID
+-	def_bool X86_64
++	def_bool y
+ 	depends on NUMA
+ 
+ menu "Power management and ACPI options"
 diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 77f8bcb..b131348 100644
+index e40bf6f..97078b8 100644
 --- a/arch/x86/include/asm/numa.h
 +++ b/arch/x86/include/asm/numa.h
-@@ -37,6 +37,8 @@ static inline void set_apicid_to_node(int apicid, s16 node)
- #ifdef CONFIG_NUMA
- extern void __cpuinit numa_set_node(int cpu, int node);
- extern void __cpuinit numa_clear_node(int cpu);
-+extern void __init numa_init_array(void);
-+extern void __init init_cpu_to_node(void);
- 
- # ifdef CONFIG_DEBUG_PER_CPU_MAPS
- extern void __cpuinit numa_add_cpu(int cpu);
-@@ -55,6 +57,8 @@ static inline void __cpuinit numa_remove_cpu(int cpu)
- #else	/* CONFIG_NUMA */
- static inline void numa_set_node(int cpu, int node)	{ }
- static inline void numa_clear_node(int cpu)		{ }
-+static inline void numa_init_array(void)		{ }
-+static inline void init_cpu_to_node(void)		{ }
- static inline void numa_add_cpu(int cpu)		{ }
- static inline void numa_remove_cpu(int cpu)		{ }
- #endif	/* CONFIG_NUMA */
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 6331190..db3baa2 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -13,7 +13,6 @@ extern int compute_hash_shift(struct bootnode *nodes, int numblks,
- 
- #define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
- 
--extern void numa_init_array(void);
- extern int numa_off;
- 
- extern unsigned long numa_free_all_bootmem(void);
-@@ -28,7 +27,6 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
-  */
- #define NODE_MIN_SIZE (4*1024*1024)
- 
--extern void __init init_cpu_to_node(void);
- extern int __cpuinit numa_cpu_node(int cpu);
- 
- #ifdef CONFIG_NUMA_EMU
-@@ -36,7 +34,6 @@ extern int __cpuinit numa_cpu_node(int cpu);
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
- #endif /* CONFIG_NUMA_EMU */
- #else
--static inline void init_cpu_to_node(void)		{ }
- static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
+@@ -33,4 +33,12 @@ static inline void set_apicid_to_node(int apicid, s16 node)
+ # include "numa_64.h"
  #endif
  
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 21c6746..fca6d54 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1030,9 +1030,7 @@ void __init setup_arch(char **cmdline_p)
++#ifdef CONFIG_NUMA
++extern void __cpuinit numa_set_node(int cpu, int node);
++extern void __cpuinit numa_clear_node(int cpu);
++#else	/* CONFIG_NUMA */
++static inline void numa_set_node(int cpu, int node)	{ }
++static inline void numa_clear_node(int cpu)		{ }
++#endif	/* CONFIG_NUMA */
++
+ #endif	/* _ASM_X86_NUMA_H */
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index 17171ee..96691a0 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -30,8 +30,6 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
  
- 	prefill_possible_map();
+ extern void __init init_cpu_to_node(void);
+ extern int __cpuinit numa_cpu_node(int cpu);
+-extern void __cpuinit numa_set_node(int cpu, int node);
+-extern void __cpuinit numa_clear_node(int cpu);
+ extern void __cpuinit numa_add_cpu(int cpu);
+ extern void __cpuinit numa_remove_cpu(int cpu);
  
+@@ -42,8 +40,6 @@ extern void __cpuinit numa_remove_cpu(int cpu);
+ #else
+ static inline void init_cpu_to_node(void)		{ }
+ static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
+-static inline void numa_set_node(int cpu, int node)	{ }
+-static inline void numa_clear_node(int cpu)		{ }
+ static inline void numa_add_cpu(int cpu, int node)	{ }
+ static inline void numa_remove_cpu(int cpu)		{ }
+ #endif
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index 21899cc..b101c17 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -47,21 +47,6 @@
+ 
+ #include <asm/mpspec.h>
+ 
+-#ifdef CONFIG_X86_32
+-
+-/* Mappings between logical cpu number and node number */
+-extern int cpu_to_node_map[];
+-
+-/* Returns the number of the node containing CPU 'cpu' */
+-static inline int __cpu_to_node(int cpu)
+-{
+-	return cpu_to_node_map[cpu];
+-}
+-#define early_cpu_to_node __cpu_to_node
+-#define cpu_to_node __cpu_to_node
+-
+-#else /* CONFIG_X86_64 */
+-
+ /* Mappings between logical cpu number and node number */
+ DECLARE_EARLY_PER_CPU(int, x86_cpu_to_node_map);
+ 
+@@ -84,8 +69,6 @@ static inline int early_cpu_to_node(int cpu)
+ 
+ #endif /* !CONFIG_DEBUG_PER_CPU_MAPS */
+ 
+-#endif /* CONFIG_X86_64 */
+-
+ /* Mappings between node number and cpus on that node. */
+ extern cpumask_var_t node_to_cpumask_map[MAX_NUMNODES];
+ 
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index edff4f5..0ce5755 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -584,12 +584,7 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+ 	if (nid == -1 || !node_online(nid))
+ 		return;
+ 	set_apicid_to_node(physid, nid);
 -#ifdef CONFIG_X86_64
- 	init_cpu_to_node();
+ 	numa_set_node(cpu, nid);
+-#else /* CONFIG_X86_32 */
+-	cpu_to_node_map[cpu] = nid;
 -#endif
+-
+ #endif
+ }
  
- 	init_apic_mappings();
- 	ioapic_init_mappings();
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index aa3c613..4259322 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -233,7 +233,7 @@ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+ }
+ #endif
+ 
+-#if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
++#ifdef CONFIG_NUMA
+ static int __cpuinit nearby_node(int apicid)
+ {
+ 	int i, node;
+@@ -334,7 +334,7 @@ EXPORT_SYMBOL_GPL(amd_get_nb_id);
+ 
+ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ {
+-#if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
++#ifdef CONFIG_NUMA
+ 	int cpu = smp_processor_id();
+ 	int node;
+ 	unsigned apicid = c->apicid;
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 6052004..df86bc8 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -276,7 +276,7 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 
+ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ {
+-#if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
++#ifdef CONFIG_NUMA
+ 	unsigned node;
+ 	int cpu = smp_processor_id();
+ 
+diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+index b5147f0..71f4727 100644
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -233,6 +233,7 @@ void __init setup_per_cpu_areas(void)
+ 		per_cpu(irq_stack_ptr, cpu) =
+ 			per_cpu(irq_stack_union.irq_stack, cpu) +
+ 			IRQ_STACK_SIZE - 64;
++#endif
+ #ifdef CONFIG_NUMA
+ 		per_cpu(x86_cpu_to_node_map, cpu) =
+ 			early_per_cpu_map(x86_cpu_to_node_map, cpu);
+@@ -246,7 +247,6 @@ void __init setup_per_cpu_areas(void)
+ 		 */
+ 		set_cpu_numa_node(cpu, early_cpu_to_node(cpu));
+ #endif
+-#endif
+ 		/*
+ 		 * Up to this point, the boot CPU has been using .init.data
+ 		 * area.  Reload any changed state for the boot CPU.
+@@ -263,7 +263,7 @@ void __init setup_per_cpu_areas(void)
+ #ifdef CONFIG_X86_32
+ 	early_per_cpu_ptr(x86_cpu_to_logical_apicid) = NULL;
+ #endif
+-#if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
++#ifdef CONFIG_NUMA
+ 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
+ #endif
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 4b8b72d..b78ce8c 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -133,16 +133,11 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
+ atomic_t init_deasserted;
+ 
+ #if defined(CONFIG_NUMA) && defined(CONFIG_X86_32)
+-/* which node each logical CPU is on */
+-int cpu_to_node_map[NR_CPUS] __read_mostly = { [0 ... NR_CPUS-1] = 0 };
+-EXPORT_SYMBOL(cpu_to_node_map);
+-
+ /* set up a mapping between cpu and node. */
+ static void map_cpu_to_node(int cpu, int node)
+ {
+ 	printk(KERN_INFO "Mapping cpu %d to node %d\n", cpu, node);
+ 	cpumask_set_cpu(cpu, node_to_cpumask_map[node]);
+-	cpu_to_node_map[cpu] = node;
+ }
+ 
+ /* undo a mapping between cpu and node. */
+@@ -153,7 +148,6 @@ static void unmap_cpu_to_node(int cpu)
+ 	printk(KERN_INFO "Unmapping cpu %d from all nodes\n", cpu);
+ 	for (node = 0; node < MAX_NUMNODES; node++)
+ 		cpumask_clear_cpu(cpu, node_to_cpumask_map[node]);
+-	cpu_to_node_map[cpu] = 0;
+ }
+ #else /* !(CONFIG_NUMA && CONFIG_X86_32) */
+ #define map_cpu_to_node(cpu, node)	({})
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index c52c267..dd93a41 100644
+index 63db99c..b23b5fe 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -16,11 +16,7 @@ EXPORT_SYMBOL(node_to_cpumask_map);
- /*
-  * Map cpu index to node index
-  */
--#ifdef CONFIG_X86_32
--DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, 0);
--#else
- DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, NUMA_NO_NODE);
--#endif
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_node_map);
+@@ -14,6 +14,44 @@ cpumask_var_t node_to_cpumask_map[MAX_NUMNODES];
+ EXPORT_SYMBOL(node_to_cpumask_map);
  
- void __cpuinit numa_set_node(int cpu, int node)
-@@ -77,6 +73,78 @@ void __init setup_node_to_cpumask_map(void)
- 	pr_debug("Node to cpumask map for %d nodes\n", nr_node_ids);
+ /*
++ * Map cpu index to node index
++ */
++#ifdef CONFIG_X86_32
++DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, 0);
++#else
++DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, NUMA_NO_NODE);
++#endif
++EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_node_map);
++
++void __cpuinit numa_set_node(int cpu, int node)
++{
++	int *cpu_to_node_map = early_per_cpu_ptr(x86_cpu_to_node_map);
++
++	/* early setting, no percpu area yet */
++	if (cpu_to_node_map) {
++		cpu_to_node_map[cpu] = node;
++		return;
++	}
++
++#ifdef CONFIG_DEBUG_PER_CPU_MAPS
++	if (cpu >= nr_cpu_ids || !cpu_possible(cpu)) {
++		printk(KERN_ERR "numa_set_node: invalid cpu# (%d)\n", cpu);
++		dump_stack();
++		return;
++	}
++#endif
++	per_cpu(x86_cpu_to_node_map, cpu) = node;
++
++	if (node != NUMA_NO_NODE)
++		set_cpu_numa_node(cpu, node);
++}
++
++void __cpuinit numa_clear_node(int cpu)
++{
++	numa_set_node(cpu, NUMA_NO_NODE);
++}
++
++/*
+  * Allocate node_to_cpumask_map based on number of available nodes
+  * Requires node_possible_map to be valid.
+  *
+@@ -40,6 +78,37 @@ void __init setup_node_to_cpumask_map(void)
  }
  
-+/*
-+ * There are unfortunately some poorly designed mainboards around that
-+ * only connect memory to a single CPU. This breaks the 1:1 cpu->node
-+ * mapping. To avoid this fill in the mapping for all possible CPUs,
-+ * as the number of CPUs is not known yet. We round robin the existing
-+ * nodes.
-+ */
-+void __init numa_init_array(void)
-+{
-+	int rr, i;
-+
-+	rr = first_node(node_online_map);
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		if (early_cpu_to_node(i) != NUMA_NO_NODE)
-+			continue;
-+		numa_set_node(i, rr);
-+		rr = next_node(rr, node_online_map);
-+		if (rr == MAX_NUMNODES)
-+			rr = first_node(node_online_map);
-+	}
-+}
-+
-+static __init int find_near_online_node(int node)
-+{
-+	int n, val;
-+	int min_val = INT_MAX;
-+	int best_node = -1;
-+
-+	for_each_online_node(n) {
-+		val = node_distance(node, n);
-+
-+		if (val < min_val) {
-+			min_val = val;
-+			best_node = n;
-+		}
-+	}
-+
-+	return best_node;
-+}
-+
-+/*
-+ * Setup early cpu_to_node.
-+ *
-+ * Populate cpu_to_node[] only if x86_cpu_to_apicid[],
-+ * and apicid_to_node[] tables have valid entries for a CPU.
-+ * This means we skip cpu_to_node[] initialisation for NUMA
-+ * emulation and faking node case (when running a kernel compiled
-+ * for NUMA on a non NUMA box), which is OK as cpu_to_node[]
-+ * is already initialized in a round robin manner at numa_init_array,
-+ * prior to this call, and this initialization is good enough
-+ * for the fake NUMA cases.
-+ *
-+ * Called before the per_cpu areas are setup.
-+ */
-+void __init init_cpu_to_node(void)
-+{
-+	int cpu;
-+	u16 *cpu_to_apicid = early_per_cpu_ptr(x86_cpu_to_apicid);
-+
-+	BUG_ON(cpu_to_apicid == NULL);
-+
-+	for_each_possible_cpu(cpu) {
-+		int node = numa_cpu_node(cpu);
-+
-+		if (node == NUMA_NO_NODE)
-+			continue;
-+		if (!node_online(node))
-+			node = find_near_online_node(node);
-+		numa_set_node(cpu, node);
-+	}
-+}
-+
  #ifdef CONFIG_DEBUG_PER_CPU_MAPS
- 
- int __cpu_to_node(int cpu)
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 9f27ae2..0bad0f8 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -367,6 +367,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
- 	 */
- 
- 	get_memcfg_numa();
-+	numa_init_array();
- 
- 	kva_pages = roundup(calculate_numa_remap_pages(), PTRS_PER_PTE);
- 
++
++int __cpu_to_node(int cpu)
++{
++	if (early_per_cpu_ptr(x86_cpu_to_node_map)) {
++		printk(KERN_WARNING
++			"cpu_to_node(%d): usage too early!\n", cpu);
++		dump_stack();
++		return early_per_cpu_ptr(x86_cpu_to_node_map)[cpu];
++	}
++	return per_cpu(x86_cpu_to_node_map, cpu);
++}
++EXPORT_SYMBOL(__cpu_to_node);
++
++/*
++ * Same function as cpu_to_node() but used if called before the
++ * per_cpu areas are setup.
++ */
++int early_cpu_to_node(int cpu)
++{
++	if (early_per_cpu_ptr(x86_cpu_to_node_map))
++		return early_per_cpu_ptr(x86_cpu_to_node_map)[cpu];
++
++	if (!cpu_possible(cpu)) {
++		printk(KERN_WARNING
++			"early_cpu_to_node(%d): no per_cpu area!\n", cpu);
++		dump_stack();
++		return NUMA_NO_NODE;
++	}
++	return per_cpu(x86_cpu_to_node_map, cpu);
++}
++
+ /*
+  * Returns a pointer to the bitmask of CPUs on Node 'node'.
+  */
+@@ -62,4 +131,5 @@ const struct cpumask *cpumask_of_node(int node)
+ 	return node_to_cpumask_map[node];
+ }
+ EXPORT_SYMBOL(cpumask_of_node);
+-#endif
++
++#endif	/* CONFIG_DEBUG_PER_CPU_MAPS */
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index c8c2e29..e7b1ab5 100644
+index 47ca1b0..121b26d 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -225,28 +225,6 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
- 	node_set_online(nodeid);
- }
+@@ -31,12 +31,6 @@ static unsigned long __initdata nodemap_addr;
+ static unsigned long __initdata nodemap_size;
  
--/*
-- * There are unfortunately some poorly designed mainboards around that
-- * only connect memory to a single CPU. This breaks the 1:1 cpu->node
-- * mapping. To avoid this fill in the mapping for all possible CPUs,
-- * as the number of CPUs is not known yet. We round robin the existing
-- * nodes.
+ /*
+- * Map cpu index to node index
 - */
--void __init numa_init_array(void)
--{
--	int rr, i;
--
--	rr = first_node(node_online_map);
--	for (i = 0; i < nr_cpu_ids; i++) {
--		if (early_cpu_to_node(i) != NUMA_NO_NODE)
--			continue;
--		numa_set_node(i, rr);
--		rr = next_node(rr, node_online_map);
--		if (rr == MAX_NUMNODES)
--			rr = first_node(node_online_map);
--	}
--}
--
- #ifdef CONFIG_NUMA_EMU
- /* Numa emulation */
- static struct bootnode nodes[MAX_NUMNODES] __initdata;
-@@ -669,59 +647,6 @@ static __init int numa_setup(char *opt)
- }
- early_param("numa", numa_setup);
- 
--#ifdef CONFIG_NUMA
--
--static __init int find_near_online_node(int node)
--{
--	int n, val;
--	int min_val = INT_MAX;
--	int best_node = -1;
--
--	for_each_online_node(n) {
--		val = node_distance(node, n);
--
--		if (val < min_val) {
--			min_val = val;
--			best_node = n;
--		}
--	}
--
--	return best_node;
--}
+-DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, NUMA_NO_NODE);
+-EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_node_map);
 -
 -/*
-- * Setup early cpu_to_node.
-- *
-- * Populate cpu_to_node[] only if x86_cpu_to_apicid[],
-- * and apicid_to_node[] tables have valid entries for a CPU.
-- * This means we skip cpu_to_node[] initialisation for NUMA
-- * emulation and faking node case (when running a kernel compiled
-- * for NUMA on a non NUMA box), which is OK as cpu_to_node[]
-- * is already initialized in a round robin manner at numa_init_array,
-- * prior to this call, and this initialization is good enough
-- * for the fake NUMA cases.
-- *
-- * Called before the per_cpu areas are setup.
-- */
--void __init init_cpu_to_node(void)
+  * Given a shift value, try to populate memnodemap[]
+  * Returns :
+  * 1 if OK
+@@ -737,34 +731,6 @@ int __cpuinit numa_cpu_node(int cpu)
+ 	return NUMA_NO_NODE;
+ }
+ 
+-void __cpuinit numa_set_node(int cpu, int node)
 -{
--	int cpu;
--	u16 *cpu_to_apicid = early_per_cpu_ptr(x86_cpu_to_apicid);
+-	int *cpu_to_node_map = early_per_cpu_ptr(x86_cpu_to_node_map);
 -
--	BUG_ON(cpu_to_apicid == NULL);
--
--	for_each_possible_cpu(cpu) {
--		int node = numa_cpu_node(cpu);
--
--		if (node == NUMA_NO_NODE)
--			continue;
--		if (!node_online(node))
--			node = find_near_online_node(node);
--		numa_set_node(cpu, node);
+-	/* early setting, no percpu area yet */
+-	if (cpu_to_node_map) {
+-		cpu_to_node_map[cpu] = node;
+-		return;
 -	}
--}
+-
+-#ifdef CONFIG_DEBUG_PER_CPU_MAPS
+-	if (cpu >= nr_cpu_ids || !cpu_possible(cpu)) {
+-		printk(KERN_ERR "numa_set_node: invalid cpu# (%d)\n", cpu);
+-		dump_stack();
+-		return;
+-	}
 -#endif
+-	per_cpu(x86_cpu_to_node_map, cpu) = node;
 -
- int __cpuinit numa_cpu_node(int cpu)
+-	if (node != NUMA_NO_NODE)
+-		set_cpu_numa_node(cpu, node);
+-}
+-
+-void __cpuinit numa_clear_node(int cpu)
+-{
+-	numa_set_node(cpu, NUMA_NO_NODE);
+-}
+-
+ #ifndef CONFIG_DEBUG_PER_CPU_MAPS
+ 
+ void __cpuinit numa_add_cpu(int cpu)
+@@ -814,37 +780,6 @@ void __cpuinit numa_remove_cpu(int cpu)
  {
- 	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
+ 	numa_set_cpumask(cpu, 0);
+ }
+-
+-int __cpu_to_node(int cpu)
+-{
+-	if (early_per_cpu_ptr(x86_cpu_to_node_map)) {
+-		printk(KERN_WARNING
+-			"cpu_to_node(%d): usage too early!\n", cpu);
+-		dump_stack();
+-		return early_per_cpu_ptr(x86_cpu_to_node_map)[cpu];
+-	}
+-	return per_cpu(x86_cpu_to_node_map, cpu);
+-}
+-EXPORT_SYMBOL(__cpu_to_node);
+-
+-/*
+- * Same function as cpu_to_node() but used if called before the
+- * per_cpu areas are setup.
+- */
+-int early_cpu_to_node(int cpu)
+-{
+-	if (early_per_cpu_ptr(x86_cpu_to_node_map))
+-		return early_per_cpu_ptr(x86_cpu_to_node_map)[cpu];
+-
+-	if (!cpu_possible(cpu)) {
+-		printk(KERN_WARNING
+-			"early_cpu_to_node(%d): no per_cpu area!\n", cpu);
+-		dump_stack();
+-		return NUMA_NO_NODE;
+-	}
+-	return per_cpu(x86_cpu_to_node_map, cpu);
+-}
+-
+ /*
+  * --------- end of debug versions of the numa functions ---------
+  */
 -- 
 1.7.1
 
