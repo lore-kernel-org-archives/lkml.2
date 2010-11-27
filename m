@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0K0S2N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 13:28:13 -0500
-Received: from cantor.suse.de ([195.135.220.2]:41261 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013Ab0K0S2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 13:28:11 -0500
-Date: Sat, 27 Nov 2010 10:27:23 -0800
-From: Greg KH <gregkh@suse.de>
-To: Valdis.Kletnieks@vt.edu
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andres More <more.andres@gmail.com>,
-        Charles Cl?ment <caratorn@gmail.com>, devel@driverdev.osuosl.org,
-        Mike McCormack <mikem@ring3k.org>, Radu Voicilas <rvoicilas@gmail.com>
-Subject: Re: The longest build error ever, ever, ever seen :) (Re:
- linux-next: Tree for November 26)
-Message-ID: <20101127182723.GA5389@suse.de>
-References: <AANLkTinY3on+arwh-Rvqnbrx_FU4mKDmpwXR_EfkPJ0f@mail.gmail.com>
- <20101127164555.GA23508@suse.de>
- <256560.1290881547@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <256560.1290881547@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753228Ab0K0SmM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 13:42:12 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:60824 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab0K0SmL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 13:42:11 -0500
+Subject: [PATCH 2.6.37] led_class: fix typo in blink API
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 27 Nov 2010 19:42:08 +0100
+Message-ID: <1290883328.3700.1.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 01:12:27PM -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Sat, 27 Nov 2010 08:45:55 PST, Greg KH said:
-> > On Sat, Nov 27, 2010 at 09:56:45AM +0100, Zimny Lech wrote:
-> > > Ave!
-> > > 
-> > > 2010/11/26 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > > > Hi all,
-> > > >
-> > > 
-> > > OMG, LOL, this one is awesome :) The longest build error ever, ever,
-> > > ever seen! Fscking awesome, someone gets Guiness World Record :)
-> > > 
-> > >   LD      drivers/staging/built-in.o
-> > > drivers/staging/rtl8192e/built-in.o: In function `rtl8192_setBBreg':
-> > > (.text+0xae00): multiple definition of `rtl8192_setBBreg'
-> > > drivers/staging/rtl8192u/built-in.o:(.text+0xa1a0): first defined here
-> > 
-> > You built both of these drivers into the kernel, which causes the
-> > problem.  Try building them as modules, or just one as a module, and
-> > that will solve the problem.
-> 
-> We probably should create some Kconfig magic to prevent this situation?
-> 
-> 	depends (othermodule != 'y') || (myself != 'y')
-> 
-> or am I on the wrong track here?
+From: Johannes Berg <johannes.berg@intel.com>
 
-Just make each module depend on 'm' so that they can not be built into
-the kernel, and all should be fine.
+When I added led_blink_set I had a typo: the
+return value of the hw offload is a regular
+error code that is zero when succesful, and
+in that case software emulation should not
+be used, rather than the other way around.
 
-thanks,
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+It'd be nice to get this into 2.6.37 since the patch
+that has the bug is in there. Sorry about that -- I
+had tested the software implementation extensively but
+apparently never tested the hw offload part.
 
-greg k-h
+ drivers/leds/led-class.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- wireless-testing.orig/drivers/leds/led-class.c	2010-11-27 19:32:24.000000000 +0100
++++ wireless-testing/drivers/leds/led-class.c	2010-11-27 19:35:41.000000000 +0100
+@@ -267,7 +267,7 @@ void led_blink_set(struct led_classdev *
+ 		   unsigned long *delay_off)
+ {
+ 	if (led_cdev->blink_set &&
+-	    led_cdev->blink_set(led_cdev, delay_on, delay_off))
++	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+ 		return;
+ 
+ 	/* blink with 1 Hz as default if nothing specified */
+
+
