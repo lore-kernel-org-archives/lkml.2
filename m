@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab0K0DAF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 22:00:05 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:48772 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab0K0DAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 22:00:04 -0500
-Date: Fri, 26 Nov 2010 21:59:55 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, gregkh@suse.de,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 1/1] TTY: don't allow reopen when ldisc is changing
-Message-ID: <20101127025954.GA15818@bombadil.infradead.org>
-References: <4CEE93FF.3040507@suse.cz>
- <1290705383-6608-1-git-send-email-jslaby@suse.cz>
- <20101126002840.GL22651@bombadil.infradead.org>
- <4CEF65CA.9020403@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CEF65CA.9020403@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753760Ab0K0DMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 22:12:05 -0500
+Received: from jdl.com ([208.123.74.7]:52900 "EHLO jdl.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031Ab0K0DME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 22:12:04 -0500
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 04/11] x86/dtb: add irq host abstraction 
+In-reply-to: <4CEFC1EC.7030507@linutronix.de> 
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de> <1290706801-7323-5-git-send-email-bigeasy@linutronix.de> <E1PLhWV-0004y7-44@jdl.com> <4CEFC1EC.7030507@linutronix.de>
+Comments: In-reply-to Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+   message dated "Fri, 26 Nov 2010 15:19:24 +0100."
+Date: Fri, 26 Nov 2010 21:11:52 -0600
+From: Jon Loeliger <jdl@jdl.com>
+Message-Id: <E1PMBCa-0007l1-1V@jdl.com>
+X-Spam-Score: -1.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 08:46:18AM +0100, Jiri Slaby wrote:
-> >> -	if (test_bit(TTY_CLOSING, &tty->flags))
-> >> +	if (test_bit(TTY_CLOSING, &tty->flags) ||
-> >> +			test_bit(TTY_LDISC_CHANGING, &tty->flags))
-> >>  		return -EIO;
-> >>  
-> >>  	if (driver->type == TTY_DRIVER_TYPE_PTY &&
+> Jon Loeliger wrote:
+> 
+> >> +struct irq_host {
+> >> +	int (*xlate)(struct irq_host *h, const u32 *intspec, u32 intsize,
+> >> +			u32 *out_hwirq, u32 *out_type);
+> >> +	void *priv;
+> >> +	struct device_node *controller;
+> >> +	struct list_head l;
+> >> +};
 > > 
-> > Unfortunately, users report this doesn't seem to fix things for them
-> > (built against 2.6.36 (plus another patch you wrote iirc.))
+> > I thought there was an intent and desire to rename the irq_host
+> > as irq_domain.
+> > 
+> > jdl
 > 
-> Which patches exactly do you have? You need three of mine in 2.6.36.
-> 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=630464#c27
-> 
+> AFAIK Benh was thinking about renaming it. I don't know if this is
+> still the case or when he intends to do so.
 
-Hrm, I'm still seeing it on top of Linus' latest with that patch. :/
+I submitted a first version of that patch already.
+I thought we were waiting on gkh's patches to go upstream
+before re-submitting the next version of that patch.
+If we're ready to proceed with that, we can rebase it
+and re-submit it too.
 
-Even more bizarrely, I tried to come up with ways this could be failing,
-and decided to test a few things...
+> Once he does so, this can be renamed as well.
 
-I set_bit(TTY_DEBUG, &tty->flags) just before returning from
-tty_init_dev (which, afaict, should be called for vc/tty$n and ptys?)
-and then checked it with a similar WARN_ON in tty_reopen, and found that
-I was hitting it fairly regularly.
+Hrm.  Well, let's ask Ben what order he wants to do...?
 
-As far as I can tell, for this to occur, we'd need something to open
-/dev/tty1 first, which hits the tty_init_dev, and something else to very
-closely follow that, hit the linking of driver->ttys[idx] and so skip
-into tty_reopen, and smack into my WARN_ON.
-
-Of course, given the locking, I have no idea how it could possibly be
-happening.
-
-I'm poking around to see, I think maybe something might be dropping
-locks in the callchain that gives us a window where this might be
-possible... I don't see any other way we could end up with tty1 having
-TTY_LDISC unset.
-
-(I'm poking in some more debugging, and moving the 'linking in' of the
- device until after tty_ldisc_setup in tty_init_dev, but I'm not
- particularly hopeful.)
-
- --Kyle
+jdl
