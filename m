@@ -1,154 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0K0BYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 20:24:54 -0500
-Received: from nm6-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.54]:22537 "HELO
-	nm6-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753289Ab0K0BYw (ORCPT
+	id S1753613Ab0K0B7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 20:59:34 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59678 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab0K0B7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 20:24:52 -0500
-X-Yahoo-Newman-Id: 489969.23186.bm@omp1006.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Subject:From:To:Cc:In-Reply-To:References:Content-Type:Date:Message-ID:Mime-Version:X-Mailer:Content-Transfer-Encoding;
-  b=vBR3cdr7VxcpWCjyK0e5W4j77W7q+dUp1Qzq+5Gn+8jwIZJhKRZBm6h68A4eOv6VFBFpsFmcagiWTa+RtmZ1HAtfG3QgEY6dEuZMhObFTaW81gMVkIs1luRlypGQc8/9uJiOtAR92SYBl3CoIs/KO6XBGAngsRXuyUqoiVDs58k=  ;
-X-Yahoo-SMTP: 2V1ThQ.swBDh24fWwg9PZFuY7TTwFsTuVtXZ.8DKSgQ-
-X-YMail-OSG: bxYyDdwVM1lM6oglHlJbFgM4AS6UApSOnqfZ_u7Gdo1kSPM
- 583uPyOGDbljSLXrEz6vAdJUOuRrdDeSskwf5FJ3WvWcRHFY5bC1opstQ3Ex
- myzrc0BOq44jv4FAr1PapohS19OwQMR6unMeuwBpGptWLOahmzsINmxAaiAP
- 4jVyJSqJ.MfHT70vMv_Ys1gimicYOdMJJc3hThguIf.TXrwQ40UpUy_VTqU5
- kPMov1I8PBsiB3RJRIoVaJYYwWnyxv7J6jtTtvlz5RdCn7AQxySyY9Y125z9
- rKJNU.Ut9.45qJVFLZHF5_AJtVWAVgBrzK.8yPyPixGs-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-From: David Brownell <david-b@pacbell.net>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: MugdhaKamoolkar <mugdha@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
-        BenoitCousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        HariKanigeri <h-kanigeri2@ti.com>, SumanAnna <s-anna@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <AANLkTi=sZ-4BBLAJNU5B41cAxtroGkpNomgEYO4vtx8z@mail.gmail.com>
-References: <AANLkTi=JSuJCqceJ3iw3TnV5OeJd+e5T3CyHtWVzBRu_@mail.gmail.com>
-	 <536589.12568.qm@web180310.mail.gq1.yahoo.com>
-	 <AANLkTinQdNC0XaOqNyDbdYE6ZcP0QyzpN492j=Kovuea@mail.gmail.com>
-	 <1290716548.2529.136.camel@helium>
-	 <AANLkTi=sZ-4BBLAJNU5B41cAxtroGkpNomgEYO4vtx8z@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 26 Nov 2010 17:24:47 -0800
-Message-ID: <1290821087.2529.252.camel@helium>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Nov 2010 20:59:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=XkcWLOSnB+6oDYa0E4xnQOtIpr12LSzgNgGw6DmAt7xpwG+qsF0x6hBEdcZmiELtjI
+         MGLphhheC31ZrLJtcqPuSOiZPCBTJFaZ/aMiIBqRGl560QLAR0ahHXpxhkov1PB65rTg
+         h2QFsBeNpvQWUbh8LqIsyAesTnuzKAOeN3Z/M=
+Date: Fri, 26 Nov 2010 23:59:26 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 5/5] perf tools: Fix lost and unknown events handling
+Message-ID: <20101127015926.GA25407@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 09:34 +0200, Ohad Ben-Cohen wrote:
-> On Thu, Nov 25, 2010 at 10:22 PM, David Brownell <david-b@pacbell.net> wrote:
-> > So there's no strong reason to think this is
-> > actually "ggeneric".  Function names no longer
-> > specify OMAP, but without other hardware under
-> > the interface, calling it "generic" reflects
-> > more optimism than reality.  (That was the
-> > implication of my observations...)
-> 
-> Well, it's not omap-specific anymore.
+Ingo,
+	
+	I added this one and removed the GCC optimization (alloc_size
+attribute), please consider pulling from:
 
-You haven't (and evidently can't) show non-OMAP hardware under your
-calls, though ... so in a practical sense, it's still OMAP-specific code
-(since nothing else is working).  (And for that matter, what non-OMAP
-code should try using these locks??)
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-Your intent "generic" is fine, but you've not achieved it and thus I
-think you shouldn't imply that you have.   Dropping the word "generic"
-should  suffice; it _is_ a framework, and maybe the next person working
-with hardware spinlocks can finish generalizing (and add use cases).
+	Thomas, I hope this one is better?
 
-> > To find other hardware spinlocks, you might be
-> > able to look at fault tolerant multiprocessors.
+	At some point I'll work on i18n these messages...
 
-(For much the same reasons as the various ASMP chips care
-about HW spinlocks:...  SMP can use pure software spinlocks, but when
-there are special hardware (or system) circumstances, they may not
-be sufficiently robust/ or reliable.  (Consider just the impact of
-differeent memory and caching models, ARM vs DSP in the OMAP case.
+- Arnaldo
 
-Non-Academic specs on fault tolerant computers may be hard to
-come by, unfortunately ... They're very specialized and often
- have lots of funky proprietary logic that vendors don't want
-reverse-engineered.  Hardware voting is just the start.  The
-software to make the fault tolerance robust/reliable gets to
-be very tricky ... and without it, why bother with expensive
-hardware mechanisms.
+---------------------------------------------------------------------------
 
-The same issues come up with aerospace and some industrial
-systems, where reliability affects mission-readiness and, for
-industrial apps, safety.
+Fix it by explaining what can be happening and giving the number of processed
+and lost events.
 
-> > Ages ago I worked with one of those, where any
-> > spinlock failures integrated with CPU/OS fault
-> > detection; HW cwould yank (checkpointed) CPU boards
-> > off the bus so they could be recovered (some
-> > might continue later from checkpoints, etc.)...
-> 
-> Is that HW supported by Linux today ?
+Also holler if unknown events were found, that can be due to processing a
+perf.data file collected using a newer tool where newer events got added on
+reporting using an older perf tool, that or a bug, so ask for a report to be
+made.
 
-Not mainline, and unlikely any branch.  Fault tolerant
-operating systems can't be as simple as Linux, and I think
-that trying to add fault tolerance to it would not only turn it
-into a very different animal, but would lose most developers.
+Works on both --tui and --stdio.
 
-(The mantra I recall was "No single Point Failures".  Linux
-has lots of such failure modes, and removing them would be a
-multi-year effort, even just inside the kernel.  (How would you
-recover from a bus failure?  Fan failure?  Power supply death?
-(All such hardware must be duplicated, with recovery supported
-by both hardware and software...)  (Where "recover" includes
- "keep running without losing data or other computations.)
-(Last I knew, Linux didn't even have much support for checkpoint
-and restore of kernel state ... hibernation is related, but
-seems to be constantly in flux.  (Don't think it's aiming to
-tolerate CPU failures after a hibernation checkpoint either.
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/debug.c   |   11 +++++++++++
+ tools/perf/util/debug.h   |    2 ++
+ tools/perf/util/session.c |   18 ++++++++++++++++++
+ tools/perf/util/ui/util.c |   16 +++++++++++++++-
+ 4 files changed, 46 insertions(+), 1 deletions(-)
 
-(Heck ... on my Ubuntu, "Network Manager" isn't even competent to
-switch over cleanly from Ethernet to WLAN (and don't get me talking
-about other ways it's broken.  LOTS of stupid fault handling, and
-that's arguably mission-critical for the whole system ... multiple
-single point failure modes.  That's FAR from fault-tolerant.
-
-> Any chance you can share a link or any other info about it ?
-
-I googled for "sequoia systems fault tolerance" and found some stuff
-that looked like it summarized some of the original hardware.
-
-I can't think, off the top of my head, of other kinds of system that
-need and use hardware spinlocks, but likely they do exist. (Mainframe
-tech might use them too, as part of the subset of fault-tolerant HW
-tech they build on. If you want to provide a "generic" framework you
-should find and support some (or Tom-Sawyer such support... :)
-> 
-> >
-> > I seem to recall some iterations of the real-time patches doing a lot of
-> > work to generalize spinlocks, since they needed multiple variants.  It
-> > might be worth following in those footsteps.  (Though I'm not sure they
-> > were thinking much about hardware support .
-> 
-> Any chance you can point me at a specific discussion or patchset that
-> you feel may be relevant ?
-
-Haven't looked at RT in a long time.  Just look at the current RT
-patchset to see if it still has several spinlock variants.  ISTR the
-"raw" spinlock stuff came from there not long ago.  Much compile-time
-magic was involved in switching between variants.
-
-- Dave
-
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index c8d81b0..e5161e8 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -46,6 +46,17 @@ int dump_printf(const char *fmt, ...)
+ 	return ret;
+ }
+ 
++#ifdef NO_NEWT_SUPPORT
++void ui__warning(const char *format, ...)
++{
++	va_list args;
++
++	va_start(args, format);
++	vfprintf(stderr, format, args);
++	va_end(args);
++}
++#endif
++
+ static int dump_printf_color(const char *fmt, const char *color, ...)
+ {
+ 	va_list args;
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 7b51408..ca35fd6 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -35,4 +35,6 @@ int ui_helpline__show_help(const char *format, va_list ap);
+ #include "ui/progress.h"
+ #endif
+ 
++void ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
++
+ #endif	/* __PERF_DEBUG_H */
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 3d56047..3ae6955 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -852,6 +852,24 @@ done:
+ 	flush_sample_queue(self, ops);
+ out_err:
+ 	ui_progress__delete(progress);
++
++	if (ops->lost == event__process_lost &&
++	    self->hists.stats.total_lost != 0) {
++		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
++			    "Check IO/CPU overload!\n\n",
++			    self->hists.stats.total_period,
++			    self->hists.stats.total_lost);
++	}
++	
++	if (self->hists.stats.nr_unknown_events != 0) {
++		ui__warning("Found %u unknown events!\n\n"
++			    "Is this an older tool processing a perf.data "
++			    "file generated by a more recent tool?\n\n"
++			    "If that is not the case, consider "
++			    "reporting to linux-kernel@vger.kernel.org.\n\n",
++			    self->hists.stats.nr_unknown_events);
++	}
++		
+ 	return err;
+ }
+ 
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+index 056c695..7b5a892 100644
+--- a/tools/perf/util/ui/util.c
++++ b/tools/perf/util/ui/util.c
+@@ -104,10 +104,24 @@ out_destroy_form:
+ 	return rc;
+ }
+ 
+-static const char yes[] = "Yes", no[] = "No";
++static const char yes[] = "Yes", no[] = "No",
++		  warning_str[] = "Warning!", ok[] = "Ok";
+ 
+ bool ui__dialog_yesno(const char *msg)
+ {
+ 	/* newtWinChoice should really be accepting const char pointers... */
+ 	return newtWinChoice(NULL, (char *)yes, (char *)no, (char *)msg) == 1;
+ }
++
++void ui__warning(const char *format, ...)
++{
++	va_list args;
++
++	va_start(args, format);
++	if (use_browser > 0)
++		newtWinMessagev((char *)warning_str, (char *)ok,
++				(char *)format, args);
++	else
++		vfprintf(stderr, format, args);
++	va_end(args);
++}
+-- 
+1.7.1.rc2
 
