@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab0K0Srp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 13:47:45 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60729 "EHLO kernel.dk"
+	id S1753333Ab0K0Suh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 13:50:37 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:43385 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab0K0Srn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 13:47:43 -0500
-Message-ID: <4CF1524B.8020207@kernel.dk>
-Date: Sat, 27 Nov 2010 19:47:39 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752130Ab0K0Sue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 13:50:34 -0500
+X-ASG-Debug-ID: 1290883832-085313b00001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CF152F4.6060400@fusionio.com>
+Date: Sat, 27 Nov 2010 19:50:28 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
-CC: hch@infradead.org, linux-kernel@vger.kernel.org, petero2@telia.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, jack@suse.cz,
-        akpm@linux-foundation.org, adilger.kernel@dilger.ca, tytso@mit.edu,
-        mfasheh@suse.com, joel.becker@oracle.com, aelder@sgi.com,
-        dm-devel@redhat.com, drbd-dev@lists.linbit.com, neilb@suse.de,
-        leochen@broadcom.com, sbranden@broadcom.com, chris.mason@oracle.com,
-        swhiteho@redhat.com, shaggy@linux.vnet.ibm.com, joern@logfs.org,
-        konishi.ryusuke@lab.ntt.co.jp, reiserfs-devel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCHSET] block: clean up bdev claim/release handling
-References: <1288628129-12811-1-git-send-email-tj@kernel.org> <4CDC2488.1030801@kernel.org> <4CF12B4B.2050909@kernel.org>
-In-Reply-To: <4CF12B4B.2050909@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+CC: Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET] backing-dev: replace private thread pool with   workqueue
+References: <1283777182-11426-1-git-send-email-tj@kernel.org> <20100907121608.GA26597@lst.de> <4C862DDC.6010702@kernel.org> <4C86303A.90601@fusionio.com> <4C8631BE.9030709@kernel.org> <4CF12BAB.3000704@kernel.org>
+X-ASG-Orig-Subj: Re: [PATCHSET] backing-dev: replace private thread pool with   workqueue
+In-Reply-To: <4CF12BAB.3000704@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1290883832
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.47849
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-27 17:01, Tejun Heo wrote:
-> On 11/11/2010 06:14 PM, Tejun Heo wrote:
+On 2010-11-27 17:02, Tejun Heo wrote:
+> On 09/07/2010 02:36 PM, Tejun Heo wrote:
 >> Hello,
 >>
->> I just appended two patches to the series.  These two are the
->> blkdev_get_by_*() cleanup patches suggested in the fourth patch which
->> Christoph liked.
+>> On 09/07/2010 02:29 PM, Jens Axboe wrote:
+>>> I agree (with both of you). It's definitely too early to convert it
+>>> over, but if we can in the longer run, it never hurts to get rid of
+>>> code. The writeback threads aren't a typical threadpool, in that the
+>>> threads stick around and only go away when idle for too long. If they
+>>> stick around, you get the same process hammering IO at your device. So
+>>> converting that over to the generic cwq may or may not be at a
+>>> performance cost, it'll definitely have to be tested.
 >>
->> I updated the git tree accordingly and added acked-by's.
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cleanup-bd_claim
->>
->> Jens, if you want the whole series resent, please let me know.
+>> One thing to try is removing WQ_UNBOUND and see how it affects the
+>> performance.  I put WQ_UNBOUND there mainly to keep the behavior about
+>> the same as the current code but given what it does I think it would
+>> probably fare better with workers bound to CPUs.
 > 
-> Ping.
+> cmwq now seems pretty solid.  There hasn't been any noticeable failure
+> yet.  I think we can move on with this conversion now.  Shall I
+> refresh the patchset against the current block tree?
 
-You don't have to resend it, I'll pull it in.
+I'd still prefer to wait a while. The writeback code is still very much
+a moving target, so I don't think mixing in a different work queue
+scheme is likely going to do anyone any good at this point in time.
 
 -- 
 Jens Axboe
