@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0K0XHx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 18:07:53 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55463 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab0K0XHu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 18:07:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N8KI56MLwMZeVI5FdT7FUPYu66Ubnc+jN1QBS4zeoIp2yoZC/ls7F21fnGF3+H65Vl
-         mjBogG+/3IBN1r+1UKxwmdEKUa6ZCagWueDiWnCGlPUBRuqgwH1ZRTfXFYIDP4ar+PpN
-         RkCOSK7HB6Qs1+LZsOtvjkueP3LIpDleG0ADo=
+	id S1753848Ab0K0Xv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 18:51:28 -0500
+Received: from mail1.ugh.no ([80.239.42.168]:46111 "EHLO mail1.ugh.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751093Ab0K0Xv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Nov 2010 18:51:27 -0500
+Message-ID: <4CF1997D.3020501@tomt.net>
+Date: Sun, 28 Nov 2010 00:51:25 +0100
+From: Andre Tomt <andre@tomt.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <4CF18853.1000402@gmail.com>
-References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>
-	<adaoc9afout.fsf@cisco.com>
-	<4CF18853.1000402@gmail.com>
-Date: Sun, 28 Nov 2010 00:07:48 +0100
-Message-ID: <AANLkTi=BxGFjLV6fO7GbyedX1b3xnXKW4Ss=qNDOLDjy@mail.gmail.com>
-Subject: Re: [RFC 0/9] Change the copyright info.
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Roland Dreier <rdreier@cisco.com>, trivial@kernel.org,
-        linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: jason.vas.dias@gmail.com
+CC: Ben Gamari <bgamari@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: per-chroot clock module ?
+References: <201011271821.35039.jason.vas.dias@gmail.com> <874ob2r3w0.fsf@gmail.com> <201011271922.45611.jason.vas.dias@gmail.com>
+In-Reply-To: <201011271922.45611.jason.vas.dias@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 11:38 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 11/27/2010 01:17 PM, Roland Dreier wrote:
+On 11/27/2010 08:22 PM, Jason Vas Dias wrote:
+> RE: why ?
+> This would allow one to very easily support websites for totally different timezones , where offsets need not be
+> restricted to legal timezone offsets but could encompass years - also nice if you want to run applications whose
+> license key has expired .  Also very easy to support multiple instances of cron(1) running in different timezones.
+> In any case, the module would ensure that the time the kernel sees internally for all processes is the actual real-time
+> clock value; only processes which have their root directory in one of the special chroot directories would get
+> a different gettimeofday() or clock_gettime() value .
+>
 >>
->>  >  Below you will find a set of patches, that update the copyright info
->> from
->>  >  Sun Microsystems to Oracle.
->>
->> Are you working for Oracle?  If so I would like to see these patches
->> with an @oracle.com signed-off-by address.  If not let's let the
->> companies involved sort out the copyrights.
->>
->>  - R.
+>> It seems like what you want here is simple virtualization. Have you
+>> considered KVM? The closest thing to your request currently upstream is
+>> containers, although I'm unsure of whether a container can be created
+>> with an independent clock. Might be something to look into.
 >>
 >
-> it's true what they say "you learn something new everyday".. in this case I
-> needed to be from the company in order too submit patches like this.(no
-> worries over here, let the companies sort out the copyrights(like what you
-> said))
+> To me, using virtualization to solve this problem is like using a sledgehammer to crack a nut,
+> particularly if the optimal performance of the processes running in such chroot environments
+> is of paramount importance.
 
-You can't change others' copyright, be it a company or not. AFAIK,
-what you can do is adding/changing/improving/copying/... the code (and
-add your own copyright for the changes if they are important enough);
-but you have to maintain the original copyright if you keep the code
-as is.
+You might want to take a look at Linux-Vserver; it has containers (that 
+is, chroot on stereoids) with support for "virtualized time"/clock offset.
 
->
-> cheers,
->
-> Justin P. Mattock
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Virtualized time is not without downsides, it adds overhead. It will be 
+tiny compared to using a sledgehammer of course. The vserver guys puts 
+it this way;
+"This enables per guest time offsets to allow for adjusting the system 
+clock individually per guest. this adds some overhead to the time 
+functions and therefore should not be enabled without good reason."
+
+http://linux-vserver.org/
+
+It could be useful to implement such a thing in a "time" namespace, 
+making it available to lxc containers and cgroups also.
