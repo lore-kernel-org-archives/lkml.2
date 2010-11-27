@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab0K0Kfv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 05:35:51 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34794 "EHLO
+	id S1754254Ab0K0Kfx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 05:35:53 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34786 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752561Ab0K0K0A (ORCPT
+	by vger.kernel.org with ESMTP id S1752431Ab0K0KZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 05:26:00 -0500
+	Sat, 27 Nov 2010 05:25:59 -0500
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: ApcFAO1p8Ex5Lcx2/2dsb2JhbACVC44Acr12hUcEimGFFA
-Message-Id: <bb3f4a29b5a011895e33aba9f5fc2977c43ed0e5.1290852958.git.npiggin@kernel.dk>
+Message-Id: <0fff695735c9b652a3f63b8480686c64811e89d0.1290852958.git.npiggin@kernel.dk>
 In-Reply-To: <cover.1290852958.git.npiggin@kernel.dk>
 References: <cover.1290852958.git.npiggin@kernel.dk>
 From: Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 27 Nov 2010 20:44:36 +1100
-Subject: [PATCH 06/46] cifs: dont overwrite dentry name in d_revalidate
+Date: Sat, 27 Nov 2010 20:44:32 +1100
+Subject: [PATCH 02/46] fs: d_validate fixes
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use vfat's method for dealing with negative dentries to preserve case,
-rather than overwrite dentry name in d_revalidate, which is a bit ugly
-and also gets in the way of doing lock-free path walking.
+d_validate has been broken for a long time.
+
+kmem_ptr_validate does not guarantee that a pointer can be dereferenced
+if it can go away at any time. Even rcu_read_lock doesn't help, because
+the pointer might be queued in RCU callbacks but not executed yet.
+
+So the parent cannot be checked, nor the name hashed. The dentry pointer
+can not be touched until it can be verified under lock. Hashing simply
+cannot be used.
+
+Instead, verify the parent/child relationship by traversing parent's
+d_child list. It's slow, but only ncpfs and the destaged smbfs care
+about it, at this point.
 
 Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 ---
- fs/cifs/dir.c |   43 ++++++++++++++++++++++++-------------------
- 1 files changed, 24 insertions(+), 19 deletions(-)
+ fs/dcache.c |   25 +++++++------------------
+ 1 files changed, 7 insertions(+), 18 deletions(-)
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 3840edd..521d841 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -656,22 +656,34 @@ lookup_out:
- static int
- cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
+diff --git a/fs/dcache.c b/fs/dcache.c
+index cc2b938..9d1a59d 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1483,41 +1483,30 @@ out:
+ }
+ 
+ /**
+- * d_validate - verify dentry provided from insecure source
++ * d_validate - verify dentry provided from insecure source (deprecated)
+  * @dentry: The dentry alleged to be valid child of @dparent
+  * @dparent: The parent dentry (known to be valid)
+  *
+  * An insecure source has sent us a dentry, here we verify it and dget() it.
+  * This is used by ncpfs in its readdir implementation.
+  * Zero is returned in the dentry is invalid.
++ *
++ * This function is slow for big directories, and deprecated, do not use it.
+  */
+- 
+ int d_validate(struct dentry *dentry, struct dentry *dparent)
  {
--	int isValid = 1;
+-	struct hlist_head *base;
+-	struct hlist_node *lhp;
 -
- 	if (direntry->d_inode) {
- 		if (cifs_revalidate_dentry(direntry))
- 			return 0;
--	} else {
--		cFYI(1, "neg dentry 0x%p name = %s",
--			 direntry, direntry->d_name.name);
--		if (time_after(jiffies, direntry->d_time + HZ) ||
--			!lookupCacheEnabled) {
--			d_drop(direntry);
--			isValid = 0;
--		}
-+		else
-+			return 1;
- 	}
+-	/* Check whether the ptr might be valid at all.. */
+-	if (!kmem_ptr_validate(dentry_cache, dentry))
+-		goto out;
+-
+-	if (dentry->d_parent != dparent)
+-		goto out;
++	struct dentry *child;
  
--	return isValid;
-+	/*
-+	 * This may be nfsd (or something), anyway, we can't see the
-+	 * intent of this. So, since this can be for creation, drop it.
-+	 */
-+	if (!nd)
-+		return 0;
-+
-+	/*
-+	 * Drop the negative dentry, in order to make sure to use the
-+	 * case sensitive name which is specified by user if this is
-+	 * for creation.
-+	 */
-+	if (!(nd->flags & (LOOKUP_CONTINUE | LOOKUP_PARENT))) {
-+		if (nd->flags & (LOOKUP_CREATE | LOOKUP_RENAME_TARGET))
-+			return 0;
-+	}
-+
-+	if (time_after(jiffies, direntry->d_time + HZ) || !lookupCacheEnabled)
-+		return 0;
-+
-+	return 1;
- }
- 
- /* static int cifs_d_delete(struct dentry *direntry)
-@@ -709,15 +721,8 @@ static int cifs_ci_compare(struct dentry *dentry, struct qstr *a,
- 	struct nls_table *codepage = CIFS_SB(dentry->d_inode->i_sb)->local_nls;
- 
- 	if ((a->len == b->len) &&
--	    (nls_strnicmp(codepage, a->name, b->name, a->len) == 0)) {
--		/*
--		 * To preserve case, don't let an existing negative dentry's
--		 * case take precedence.  If a is not a negative dentry, this
--		 * should have no side effects
+ 	spin_lock(&dcache_lock);
+-	base = d_hash(dparent, dentry->d_name.hash);
+-	hlist_for_each(lhp,base) { 
+-		/* hlist_for_each_entry_rcu() not required for d_hash list
+-		 * as it is parsed under dcache_lock
 -		 */
--		memcpy((void *)a->name, b->name, a->len);
-+	    (nls_strnicmp(codepage, a->name, b->name, a->len) == 0))
- 		return 0;
--	}
- 	return 1;
+-		if (dentry == hlist_entry(lhp, struct dentry, d_hash)) {
++	list_for_each_entry(child, &dparent->d_subdirs, d_u.d_child) {
++		if (dentry == child) {
+ 			__dget_locked(dentry);
+ 			spin_unlock(&dcache_lock);
+ 			return 1;
+ 		}
+ 	}
+ 	spin_unlock(&dcache_lock);
+-out:
++
+ 	return 0;
  }
- 
+ EXPORT_SYMBOL(d_validate);
 -- 
 1.7.1
 
