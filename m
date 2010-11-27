@@ -1,907 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab0K0KeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 05:34:17 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34786 "EHLO
+	id S1754222Ab0K0KeT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 05:34:19 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34780 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752657Ab0K0K0F (ORCPT
+	by vger.kernel.org with ESMTP id S1752715Ab0K0K0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 05:26:05 -0500
+	Sat, 27 Nov 2010 05:26:07 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO1p8Ex5Lcx2/2dsb2JhbACjC3K9doVHBIUUhU2FFA
-Message-Id: <90187ce44a6613ebc9ca3f82473ecf710640ebee.1290852958.git.npiggin@kernel.dk>
+X-IronPort-Anti-Spam-Result: AvsEAO1p8Ex5Lcx2/2dsb2JhbACjC3K9doVHBIphhRQ
+Message-Id: <758c8b8304fdf5ca8ddf4e3e6b479327327cf3af.1290852959.git.npiggin@kernel.dk>
 In-Reply-To: <cover.1290852958.git.npiggin@kernel.dk>
 References: <cover.1290852958.git.npiggin@kernel.dk>
 From: Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 27 Nov 2010 20:44:38 +1100
-Subject: [PATCH 08/46] fs: change d_compare for rcu-walk
+Date: Sat, 27 Nov 2010 20:44:44 +1100
+Subject: [PATCH 14/46] fs: dcache scale d_unhashed
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change d_compare so it may be called from lock-free RCU lookups. This
-does put significant restrictions on what may be done from the callback,
-however there don't seem to have been any problems with in-tree fses.
-If some strange use case pops up that _really_ cannot cope with the
-rcu-walk rules, we can just add new rcu-unaware callbacks, which would
-cause name lookup to drop out of rcu-walk mode.
-
-For in-tree filesystems, this is just a mechanical change.
+Protect d_unhashed(dentry) condition with d_lock.
 
 Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 ---
- Documentation/filesystems/Locking |    4 +-
- Documentation/filesystems/porting |    7 +++
- Documentation/filesystems/vfs.txt |   25 +++++++++-
- fs/adfs/dir.c                     |    8 ++-
- fs/affs/namei.c                   |   44 +++++++++++--------
- fs/cifs/dir.c                     |   11 +++--
- fs/dcache.c                       |    4 +-
- fs/fat/namei_msdos.c              |   15 ++++---
- fs/fat/namei_vfat.c               |   39 +++++++++++-----
- fs/hfs/hfs_fs.h                   |    4 +-
- fs/hfs/string.c                   |   14 +++---
- fs/hfsplus/hfsplus_fs.h           |    4 +-
- fs/hfsplus/unicode.c              |   14 +++---
- fs/hpfs/dentry.c                  |   21 +++++---
- fs/isofs/inode.c                  |   88 ++++++++++++++++++-------------------
- fs/isofs/namei.c                  |    3 +-
- fs/jfs/namei.c                    |   10 +++--
- fs/ncpfs/dir.c                    |   29 ++++++++----
- fs/ncpfs/ncplib_kernel.h          |    8 ++--
- fs/proc/proc_sysctl.c             |   12 +++---
- include/linux/dcache.h            |   12 ++---
- include/linux/ncp_fs.h            |    4 +-
- 22 files changed, 228 insertions(+), 152 deletions(-)
+ arch/powerpc/platforms/cell/spufs/inode.c |    3 +
+ drivers/usb/core/inode.c                  |    3 +
+ fs/autofs4/autofs_i.h                     |   13 -----
+ fs/autofs4/expire.c                       |   21 ++++++--
+ fs/ceph/dir.c                             |    5 +-
+ fs/configfs/configfs_internal.h           |    2 +
+ fs/dcache.c                               |   83 ++++++++++++++++++++---------
+ fs/libfs.c                                |   29 +++++++---
+ fs/ocfs2/dcache.c                         |    5 ++-
+ security/tomoyo/realpath.c                |    1 +
+ 10 files changed, 109 insertions(+), 56 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index a91f308..fc5e1b7 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -11,7 +11,9 @@ be able to use diff(1).
- prototypes:
- 	int (*d_revalidate)(struct dentry *, int);
- 	int (*d_hash) (struct dentry *, struct qstr *);
--	int (*d_compare) (struct dentry *, struct qstr *, struct qstr *);
-+	int (*d_compare)(const struct dentry *,
-+			const struct dentry *, const struct inode *,
-+			unsigned int, const char *, const struct qstr *);
- 	int (*d_delete)(struct dentry *);
- 	void (*d_release)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
-diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
-index 6d9d6c3..2999495 100644
---- a/Documentation/filesystems/porting
-+++ b/Documentation/filesystems/porting
-@@ -327,3 +327,10 @@ unreferenced dentries, and is now only called when the dentry refcount goes to
- 0. Even on 0 refcount transition, it must be able to tolerate being called 0,
- 1, or more times (eg. constant, idempotent).
- 
-+---
-+[mandatory]
-+
-+	.d_compare() calling convention and locking rules are significantly
-+changed. Read updated documentation in Documentation/filesystems/vfs.txt (and
-+look at examples of other filesystems) for guidance.
-+
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 83c42d0..0f66e6a 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -842,7 +842,9 @@ defined:
- struct dentry_operations {
- 	int (*d_revalidate)(struct dentry *, struct nameidata *);
- 	int (*d_hash)(struct dentry *, struct qstr *);
--	int (*d_compare)(struct dentry *, struct qstr *, struct qstr *);
-+	int (*d_compare)(const struct dentry *,
-+			const struct dentry *, const struct inode *,
-+			unsigned int, const char *, const struct qstr *);
- 	int (*d_delete)(const struct dentry *);
- 	void (*d_release)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
-@@ -854,9 +856,26 @@ struct dentry_operations {
- 	dcache. Most filesystems leave this as NULL, because all their
- 	dentries in the dcache are valid
- 
--  d_hash: called when the VFS adds a dentry to the hash table
-+  d_hash: called when the VFS adds a dentry to the hash table. The first
-+	dentry passed to d_hash is the parent directory that the name is
-+ 	to be hashed into.
- 
--  d_compare: called when a dentry should be compared with another
-+  d_compare: called to compare a dentry name with a given name. The first
-+	dentry is the parent of the dentry to be compared, the second is
-+	the dentry itself. inode, len, and name string are properties of
-+	the dentry to be compared. qstr is the name to compare it with.
-+
-+	Must be constant and idempotent, and should not take locks if
-+	possible, and should not or store into the dentry or inodes.
-+	Should not dereference pointers outside the dentry or inodes without
-+	lots of care (eg.  d_parent, d_inode shouldn't be used).
-+
-+	However, our vfsmount is pinned, and RCU held, so the dentries and
-+	inodes won't disappear, neither will our sb or filesystem module.
-+	->i_sb and ->d_sb may be used.
-+
-+	It is a tricky calling convention because it needs to be called under
-+	"rcu-walk", ie. without any locks or references on things.
- 
-   d_delete: called when the last reference to a dentry is dropped and the
- 	dcache is deciding whether or not to cache it. Return 1 to delete
-diff --git a/fs/adfs/dir.c b/fs/adfs/dir.c
-index f4287e4..4ed74ef 100644
---- a/fs/adfs/dir.c
-+++ b/fs/adfs/dir.c
-@@ -237,17 +237,19 @@ adfs_hash(struct dentry *parent, struct qstr *qstr)
-  * requirements of the underlying filesystem.
-  */
- static int
--adfs_compare(struct dentry *parent, struct qstr *entry, struct qstr *name)
-+adfs_compare(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
- 	int i;
- 
--	if (entry->len != name->len)
-+	if (len != name->len)
- 		return 1;
- 
- 	for (i = 0; i < name->len; i++) {
- 		char a, b;
- 
--		a = entry->name[i];
-+		a = str[i];
- 		b = name->name[i];
- 
- 		if (a >= 'A' && a <= 'Z')
-diff --git a/fs/affs/namei.c b/fs/affs/namei.c
-index 914d1c0..a86e877 100644
---- a/fs/affs/namei.c
-+++ b/fs/affs/namei.c
-@@ -14,10 +14,14 @@ typedef int (*toupper_t)(int);
- 
- static int	 affs_toupper(int ch);
- static int	 affs_hash_dentry(struct dentry *, struct qstr *);
--static int       affs_compare_dentry(struct dentry *, struct qstr *, struct qstr *);
-+static int       affs_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
- static int	 affs_intl_toupper(int ch);
- static int	 affs_intl_hash_dentry(struct dentry *, struct qstr *);
--static int       affs_intl_compare_dentry(struct dentry *, struct qstr *, struct qstr *);
-+static int       affs_intl_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
- 
- const struct dentry_operations affs_dentry_operations = {
- 	.d_hash		= affs_hash_dentry,
-@@ -88,29 +92,29 @@ affs_intl_hash_dentry(struct dentry *dentry, struct qstr *qstr)
- 	return __affs_hash_dentry(dentry, qstr, affs_intl_toupper);
- }
- 
--static inline int
--__affs_compare_dentry(struct dentry *dentry, struct qstr *a, struct qstr *b, toupper_t toupper)
-+static inline int __affs_compare_dentry(unsigned int len,
-+		const char *str, const struct qstr *name, toupper_t toupper)
- {
--	const u8 *aname = a->name;
--	const u8 *bname = b->name;
--	int len;
-+	const u8 *aname = str;
-+	const u8 *bname = name->name;
- 
--	/* 'a' is the qstr of an already existing dentry, so the name
--	 * must be valid. 'b' must be validated first.
-+	/*
-+	 * 'str' is the name of an already existing dentry, so the name
-+	 * must be valid. 'name' must be validated first.
- 	 */
- 
--	if (affs_check_name(b->name,b->len))
-+	if (affs_check_name(name->name, name->len))
- 		return 1;
- 
--	/* If the names are longer than the allowed 30 chars,
-+	/*
-+	 * If the names are longer than the allowed 30 chars,
- 	 * the excess is ignored, so their length may differ.
- 	 */
--	len = a->len;
- 	if (len >= 30) {
--		if (b->len < 30)
-+		if (name->len < 30)
- 			return 1;
- 		len = 30;
--	} else if (len != b->len)
-+	} else if (len != name->len)
- 		return 1;
- 
- 	for (; len > 0; len--)
-@@ -121,14 +125,18 @@ __affs_compare_dentry(struct dentry *dentry, struct qstr *a, struct qstr *b, tou
- }
- 
- static int
--affs_compare_dentry(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+affs_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	return __affs_compare_dentry(dentry, a, b, affs_toupper);
-+	return __affs_compare_dentry(len, str, name, affs_toupper);
- }
- static int
--affs_intl_compare_dentry(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+affs_intl_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	return __affs_compare_dentry(dentry, a, b, affs_intl_toupper);
-+	return __affs_compare_dentry(len, str, name, affs_intl_toupper);
- }
- 
- /*
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 521d841..f3351f1 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -715,13 +715,14 @@ static int cifs_ci_hash(struct dentry *dentry, struct qstr *q)
- 	return 0;
- }
- 
--static int cifs_ci_compare(struct dentry *dentry, struct qstr *a,
--			   struct qstr *b)
-+static int cifs_ci_compare(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	struct nls_table *codepage = CIFS_SB(dentry->d_inode->i_sb)->local_nls;
-+	struct nls_table *codepage = CIFS_SB(inode->i_sb)->local_nls;
- 
--	if ((a->len == b->len) &&
--	    (nls_strnicmp(codepage, a->name, b->name, a->len) == 0))
-+	if ((name->len == len) &&
-+	    (nls_strnicmp(codepage, name->name, str, len) == 0))
- 		return 0;
- 	return 1;
- }
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 14e0564..a7362de 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1433,7 +1433,9 @@ struct dentry * __d_lookup(struct dentry * parent, struct qstr * name)
- 		 */
- 		qstr = &dentry->d_name;
- 		if (parent->d_op && parent->d_op->d_compare) {
--			if (parent->d_op->d_compare(parent, qstr, name))
-+			if (parent->d_op->d_compare(parent,
-+						dentry, dentry->d_inode,
-+						qstr->len, qstr->name, name))
- 				goto next;
+diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
+index 29a406a..5aef1a7 100644
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -166,6 +166,9 @@ static void spufs_prune_dir(struct dentry *dir)
+ 			__d_drop(dentry);
+ 			spin_unlock(&dentry->d_lock);
+ 			simple_unlink(dir->d_inode, dentry);
++			/* XXX: what is dcache_lock protecting here? Other
++			 * filesystems (IB, configfs) release dcache_lock
++			 * before unlink */
+ 			spin_unlock(&dcache_lock);
+ 			dput(dentry);
  		} else {
- 			if (qstr->len != len)
-diff --git a/fs/fat/namei_msdos.c b/fs/fat/namei_msdos.c
-index 3345aab..37e915c 100644
---- a/fs/fat/namei_msdos.c
-+++ b/fs/fat/namei_msdos.c
-@@ -164,16 +164,19 @@ static int msdos_hash(struct dentry *dentry, struct qstr *qstr)
-  * Compare two msdos names. If either of the names are invalid,
-  * we fall back to doing the standard name comparison.
-  */
--static int msdos_cmp(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+static int msdos_cmp(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str,
-+		const struct qstr *name)
- {
--	struct fat_mount_options *options = &MSDOS_SB(dentry->d_sb)->options;
-+	struct fat_mount_options *options = &MSDOS_SB(parent->d_sb)->options;
- 	unsigned char a_msdos_name[MSDOS_NAME], b_msdos_name[MSDOS_NAME];
- 	int error;
+diff --git a/drivers/usb/core/inode.c b/drivers/usb/core/inode.c
+index b690aa3..e3ab443 100644
+--- a/drivers/usb/core/inode.c
++++ b/drivers/usb/core/inode.c
+@@ -347,10 +347,13 @@ static int usbfs_empty (struct dentry *dentry)
  
--	error = msdos_format_name(a->name, a->len, a_msdos_name, options);
-+	error = msdos_format_name(name->name, name->len, a_msdos_name, options);
- 	if (error)
- 		goto old_compare;
--	error = msdos_format_name(b->name, b->len, b_msdos_name, options);
-+	error = msdos_format_name(str, len, b_msdos_name, options);
- 	if (error)
- 		goto old_compare;
- 	error = memcmp(a_msdos_name, b_msdos_name, MSDOS_NAME);
-@@ -182,8 +185,8 @@ out:
+ 	list_for_each(list, &dentry->d_subdirs) {
+ 		struct dentry *de = list_entry(list, struct dentry, d_u.d_child);
++		spin_lock(&de->d_lock);
+ 		if (usbfs_positive(de)) {
++			spin_unlock(&de->d_lock);
+ 			spin_unlock(&dcache_lock);
+ 			return 0;
+ 		}
++		spin_unlock(&de->d_lock);
+ 	}
  
- old_compare:
- 	error = 1;
--	if (a->len == b->len)
--		error = memcmp(a->name, b->name, a->len);
-+	if (name->len == len)
-+		error = memcmp(name->name, str, len);
- 	goto out;
+ 	spin_unlock(&dcache_lock);
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index 3d283ab..3912dcf 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -254,19 +254,6 @@ static inline int simple_positive(struct dentry *dentry)
+ 	return dentry->d_inode && !d_unhashed(dentry);
  }
  
-diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-index b936703..4540e76 100644
---- a/fs/fat/namei_vfat.c
-+++ b/fs/fat/namei_vfat.c
-@@ -85,15 +85,18 @@ static int vfat_revalidate_ci(struct dentry *dentry, struct nameidata *nd)
- }
- 
- /* returns the length of a struct qstr, ignoring trailing dots */
--static unsigned int vfat_striptail_len(struct qstr *qstr)
-+static unsigned int __vfat_striptail_len(unsigned int len, const char *name)
- {
--	unsigned int len = qstr->len;
+-static inline int __simple_empty(struct dentry *dentry)
+-{
+-	struct dentry *child;
+-	int ret = 0;
 -
--	while (len && qstr->name[len - 1] == '.')
-+	while (len && name[len - 1] == '.')
- 		len--;
- 	return len;
- }
- 
-+static unsigned int vfat_striptail_len(const struct qstr *qstr)
-+{
-+	return __vfat_striptail_len(qstr->len, qstr->name);
-+}
-+
- /*
-  * Compute the hash for the vfat name corresponding to the dentry.
-  * Note: if the name is invalid, we leave the hash code unchanged so
-@@ -133,16 +136,18 @@ static int vfat_hashi(struct dentry *dentry, struct qstr *qstr)
- /*
-  * Case insensitive compare of two vfat names.
-  */
--static int vfat_cmpi(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+static int vfat_cmpi(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	struct nls_table *t = MSDOS_SB(dentry->d_inode->i_sb)->nls_io;
-+	struct nls_table *t = MSDOS_SB(inode->i_sb)->nls_io;
- 	unsigned int alen, blen;
- 
- 	/* A filename cannot end in '.' or we treat it like it has none */
--	alen = vfat_striptail_len(a);
--	blen = vfat_striptail_len(b);
-+	alen = vfat_striptail_len(name);
-+	blen = __vfat_striptail_len(len, str);
- 	if (alen == blen) {
--		if (nls_strnicmp(t, a->name, b->name, alen) == 0)
-+		if (nls_strnicmp(t, name->name, str, alen) == 0)
- 			return 0;
- 	}
- 	return 1;
-@@ -151,15 +156,17 @@ static int vfat_cmpi(struct dentry *dentry, struct qstr *a, struct qstr *b)
- /*
-  * Case sensitive compare of two vfat names.
-  */
--static int vfat_cmp(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+static int vfat_cmp(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
- 	unsigned int alen, blen;
- 
- 	/* A filename cannot end in '.' or we treat it like it has none */
--	alen = vfat_striptail_len(a);
--	blen = vfat_striptail_len(b);
-+	alen = vfat_striptail_len(name);
-+	blen = __vfat_striptail_len(len, str);
- 	if (alen == blen) {
--		if (strncmp(a->name, b->name, alen) == 0)
-+		if (strncmp(name->name, str, alen) == 0)
- 			return 0;
- 	}
- 	return 1;
-@@ -780,6 +787,12 @@ static int vfat_create(struct inode *dir, struct dentry *dentry, int mode,
- 	struct timespec ts;
- 	int err;
- 
-+	/*
-+	 * To preserve case, don't let an existing negative dentry's case
-+	 * take precedence.
-+	 */
-+	memcpy((void *)dentry->d_name.name, nd->last.name, dentry->d_name.len);
-+
- 	lock_super(sb);
- 
- 	ts = CURRENT_TIME_SEC;
-diff --git a/fs/hfs/hfs_fs.h b/fs/hfs/hfs_fs.h
-index c8cffb8..3a815fd 100644
---- a/fs/hfs/hfs_fs.h
-+++ b/fs/hfs/hfs_fs.h
-@@ -216,7 +216,9 @@ extern const struct dentry_operations hfs_dentry_operations;
- extern int hfs_hash_dentry(struct dentry *, struct qstr *);
- extern int hfs_strcmp(const unsigned char *, unsigned int,
- 		      const unsigned char *, unsigned int);
--extern int hfs_compare_dentry(struct dentry *, struct qstr *, struct qstr *);
-+extern int hfs_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
- 
- /* trans.c */
- extern void hfs_asc2mac(struct super_block *, struct hfs_name *, struct qstr *);
-diff --git a/fs/hfs/string.c b/fs/hfs/string.c
-index 927a5af..712aa53 100644
---- a/fs/hfs/string.c
-+++ b/fs/hfs/string.c
-@@ -92,21 +92,21 @@ int hfs_strcmp(const unsigned char *s1, unsigned int len1,
-  * Test for equality of two strings in the HFS filename character ordering.
-  * return 1 on failure and 0 on success
-  */
--int hfs_compare_dentry(struct dentry *dentry, struct qstr *s1, struct qstr *s2)
-+int hfs_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
- 	const unsigned char *n1, *n2;
--	int len;
- 
--	len = s1->len;
- 	if (len >= HFS_NAMELEN) {
--		if (s2->len < HFS_NAMELEN)
-+		if (name->len < HFS_NAMELEN)
- 			return 1;
- 		len = HFS_NAMELEN;
--	} else if (len != s2->len)
-+	} else if (len != name->len)
- 		return 1;
- 
--	n1 = s1->name;
--	n2 = s2->name;
-+	n1 = str;
-+	n2 = name->name;
- 	while (len--) {
- 		if (caseorder[*n1++] != caseorder[*n2++])
- 			return 1;
-diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
-index cb3653e..7a98f24 100644
---- a/fs/hfsplus/hfsplus_fs.h
-+++ b/fs/hfsplus/hfsplus_fs.h
-@@ -380,7 +380,9 @@ int hfsplus_strcmp(const struct hfsplus_unistr *, const struct hfsplus_unistr *)
- int hfsplus_uni2asc(struct super_block *, const struct hfsplus_unistr *, char *, int *);
- int hfsplus_asc2uni(struct super_block *, struct hfsplus_unistr *, const char *, int);
- int hfsplus_hash_dentry(struct dentry *dentry, struct qstr *str);
--int hfsplus_compare_dentry(struct dentry *dentry, struct qstr *s1, struct qstr *s2);
-+int hfsplus_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
- 
- /* wrapper.c */
- int hfsplus_read_wrapper(struct super_block *);
-diff --git a/fs/hfsplus/unicode.c b/fs/hfsplus/unicode.c
-index b66d67d..6e3be8f 100644
---- a/fs/hfsplus/unicode.c
-+++ b/fs/hfsplus/unicode.c
-@@ -363,9 +363,11 @@ int hfsplus_hash_dentry(struct dentry *dentry, struct qstr *str)
-  * Composed unicode characters are decomposed and case-folding is performed
-  * if the appropriate bits are (un)set on the superblock.
-  */
--int hfsplus_compare_dentry(struct dentry *dentry, struct qstr *s1, struct qstr *s2)
-+int hfsplus_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	struct super_block *sb = dentry->d_sb;
-+	struct super_block *sb = parent->d_sb;
- 	int casefold, decompose, size;
- 	int dsize1, dsize2, len1, len2;
- 	const u16 *dstr1, *dstr2;
-@@ -375,10 +377,10 @@ int hfsplus_compare_dentry(struct dentry *dentry, struct qstr *s1, struct qstr *
- 
- 	casefold = test_bit(HFSPLUS_SB_CASEFOLD, &HFSPLUS_SB(sb)->flags);
- 	decompose = !test_bit(HFSPLUS_SB_NODECOMPOSE, &HFSPLUS_SB(sb)->flags);
--	astr1 = s1->name;
--	len1 = s1->len;
--	astr2 = s2->name;
--	len2 = s2->len;
-+	astr1 = str;
-+	len1 = len;
-+	astr2 = name->name;
-+	len2 = name->len;
- 	dsize1 = dsize2 = 0;
- 	dstr1 = dstr2 = NULL;
- 
-diff --git a/fs/hpfs/dentry.c b/fs/hpfs/dentry.c
-index 67d9d36..3175ccc 100644
---- a/fs/hpfs/dentry.c
-+++ b/fs/hpfs/dentry.c
-@@ -34,19 +34,24 @@ static int hpfs_hash_dentry(struct dentry *dentry, struct qstr *qstr)
- 	return 0;
- }
- 
--static int hpfs_compare_dentry(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+static int hpfs_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	unsigned al=a->len;
--	unsigned bl=b->len;
--	hpfs_adjust_length(a->name, &al);
-+	unsigned al = len;
-+	unsigned bl = name->len;
-+
-+	hpfs_adjust_length(str, &al);
- 	/*hpfs_adjust_length(b->name, &bl);*/
--	/* 'a' is the qstr of an already existing dentry, so the name
--	 * must be valid. 'b' must be validated first.
-+
-+	/*
-+	 * 'str' is the nane of an already existing dentry, so the name
-+	 * must be valid. 'name' must be validated first.
- 	 */
- 
--	if (hpfs_chk_name(b->name, &bl))
-+	if (hpfs_chk_name(name->name, &bl))
- 		return 1;
--	if (hpfs_compare_names(dentry->d_sb, a->name, al, b->name, bl, 0))
-+	if (hpfs_compare_names(parent->d_sb, str, al, name->name, bl, 0))
- 		return 1;
- 	return 0;
- }
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index bfdeb82..9a7a6df 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -28,14 +28,22 @@
- 
- static int isofs_hashi(struct dentry *parent, struct qstr *qstr);
- static int isofs_hash(struct dentry *parent, struct qstr *qstr);
--static int isofs_dentry_cmpi(struct dentry *dentry, struct qstr *a, struct qstr *b);
--static int isofs_dentry_cmp(struct dentry *dentry, struct qstr *a, struct qstr *b);
-+static int isofs_dentry_cmpi(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
-+static int isofs_dentry_cmp(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
- 
- #ifdef CONFIG_JOLIET
- static int isofs_hashi_ms(struct dentry *parent, struct qstr *qstr);
- static int isofs_hash_ms(struct dentry *parent, struct qstr *qstr);
--static int isofs_dentry_cmpi_ms(struct dentry *dentry, struct qstr *a, struct qstr *b);
--static int isofs_dentry_cmp_ms(struct dentry *dentry, struct qstr *a, struct qstr *b);
-+static int isofs_dentry_cmpi_ms(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
-+static int isofs_dentry_cmp_ms(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name);
- #endif
- 
- static void isofs_put_super(struct super_block *sb)
-@@ -206,49 +214,31 @@ isofs_hashi_common(struct dentry *dentry, struct qstr *qstr, int ms)
- }
- 
- /*
-- * Case insensitive compare of two isofs names.
-+ * Compare of two isofs names.
-  */
--static int isofs_dentry_cmpi_common(struct dentry *dentry, struct qstr *a,
--				struct qstr *b, int ms)
-+static int isofs_dentry_cmp_common(
-+		unsigned int len, const char *str,
-+		const struct qstr *name, int ms, int ci)
- {
- 	int alen, blen;
- 
- 	/* A filename cannot end in '.' or we treat it like it has none */
--	alen = a->len;
--	blen = b->len;
-+	alen = name->len;
-+	blen = len;
- 	if (ms) {
--		while (alen && a->name[alen-1] == '.')
-+		while (alen && name->name[alen-1] == '.')
- 			alen--;
--		while (blen && b->name[blen-1] == '.')
-+		while (blen && str[blen-1] == '.')
- 			blen--;
- 	}
- 	if (alen == blen) {
--		if (strnicmp(a->name, b->name, alen) == 0)
--			return 0;
--	}
--	return 1;
+-	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child)
+-		if (simple_positive(child))
+-			goto out;
+-	ret = 1;
+-out:
+-	return ret;
 -}
 -
--/*
-- * Case sensitive compare of two isofs names.
-- */
--static int isofs_dentry_cmp_common(struct dentry *dentry, struct qstr *a,
--					struct qstr *b, int ms)
--{
--	int alen, blen;
--
--	/* A filename cannot end in '.' or we treat it like it has none */
--	alen = a->len;
--	blen = b->len;
--	if (ms) {
--		while (alen && a->name[alen-1] == '.')
--			alen--;
--		while (blen && b->name[blen-1] == '.')
--			blen--;
--	}
--	if (alen == blen) {
--		if (strncmp(a->name, b->name, alen) == 0)
--			return 0;
-+		if (ci) {
-+			if (strnicmp(name->name, str, alen) == 0)
-+				return 0;
-+		} else {
-+			if (strncmp(name->name, str, alen) == 0)
-+				return 0;
+ static inline void autofs4_add_expiring(struct dentry *dentry)
+ {
+ 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+index 413b564..ee64020 100644
+--- a/fs/autofs4/expire.c
++++ b/fs/autofs4/expire.c
+@@ -160,14 +160,18 @@ static int autofs4_tree_busy(struct vfsmount *mnt,
+ 
+ 	spin_lock(&dcache_lock);
+ 	for (p = top; p; p = next_dentry(p, top)) {
++		spin_lock(&p->d_lock);
+ 		/* Negative dentry - give up */
+-		if (!simple_positive(p))
++		if (!simple_positive(p)) {
++			spin_unlock(&p->d_lock);
+ 			continue;
 +		}
+ 
+ 		DPRINTK("dentry %p %.*s",
+ 			p, (int) p->d_name.len, p->d_name.name);
+ 
+-		p = dget(p);
++		p = dget_dlock(p);
++		spin_unlock(&p->d_lock);
+ 		spin_unlock(&dcache_lock);
+ 
+ 		/*
+@@ -228,14 +232,18 @@ static struct dentry *autofs4_check_leaves(struct vfsmount *mnt,
+ 
+ 	spin_lock(&dcache_lock);
+ 	for (p = parent; p; p = next_dentry(p, parent)) {
++		spin_lock(&p->d_lock);
+ 		/* Negative dentry - give up */
+-		if (!simple_positive(p))
++		if (!simple_positive(p)) {
++			spin_unlock(&p->d_lock);
+ 			continue;
++		}
+ 
+ 		DPRINTK("dentry %p %.*s",
+ 			p, (int) p->d_name.len, p->d_name.name);
+ 
+-		p = dget(p);
++		p = dget_dlock(p);
++		spin_unlock(&p->d_lock);
+ 		spin_unlock(&dcache_lock);
+ 
+ 		if (d_mountpoint(p)) {
+@@ -324,12 +332,15 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
+ 		struct dentry *dentry = list_entry(next, struct dentry, d_u.d_child);
+ 
+ 		/* Negative dentry - give up */
++		spin_lock(&dentry->d_lock);
+ 		if (!simple_positive(dentry)) {
+ 			next = next->next;
++			spin_unlock(&dentry->d_lock);
+ 			continue;
+ 		}
+ 
+-		dentry = dget(dentry);
++		dentry = dget_dlock(dentry);
++		spin_unlock(&dentry->d_lock);
+ 		spin_unlock(&dcache_lock);
+ 
+ 		spin_lock(&sbi->fs_lock);
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index 599b011..9d52531 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -135,6 +135,7 @@ more:
+ 			fi->at_end = 1;
+ 			goto out_unlock;
+ 		}
++		spin_lock(&dentry->d_lock);
+ 		if (!d_unhashed(dentry) && dentry->d_inode &&
+ 		    ceph_snap(dentry->d_inode) != CEPH_SNAPDIR &&
+ 		    ceph_ino(dentry->d_inode) != CEPH_INO_CEPH &&
+@@ -144,13 +145,13 @@ more:
+ 		     dentry->d_name.len, dentry->d_name.name, di->offset,
+ 		     filp->f_pos, d_unhashed(dentry) ? " unhashed" : "",
+ 		     !dentry->d_inode ? " null" : "");
++		spin_unlock(&dentry->d_lock);
+ 		p = p->prev;
+ 		dentry = list_entry(p, struct dentry, d_u.d_child);
+ 		di = ceph_dentry(dentry);
  	}
- 	return 1;
- }
-@@ -266,15 +256,19 @@ isofs_hashi(struct dentry *dentry, struct qstr *qstr)
- }
  
- static int
--isofs_dentry_cmp(struct dentry *dentry,struct qstr *a,struct qstr *b)
-+isofs_dentry_cmp(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	return isofs_dentry_cmp_common(dentry, a, b, 0);
-+	return isofs_dentry_cmp_common(len, str, name, 0, 0);
- }
+-	spin_lock(&dentry->d_lock);
+-	dentry->d_count++;
++	dget_dlock(dentry);
+ 	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dcache_lock);
  
- static int
--isofs_dentry_cmpi(struct dentry *dentry,struct qstr *a,struct qstr *b)
-+isofs_dentry_cmpi(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	return isofs_dentry_cmpi_common(dentry, a, b, 0);
-+	return isofs_dentry_cmp_common(len, str, name, 0, 1);
- }
+diff --git a/fs/configfs/configfs_internal.h b/fs/configfs/configfs_internal.h
+index da6061a..e58b4c3 100644
+--- a/fs/configfs/configfs_internal.h
++++ b/fs/configfs/configfs_internal.h
+@@ -121,6 +121,7 @@ static inline struct config_item *configfs_get_config_item(struct dentry *dentry
+ 	struct config_item * item = NULL;
  
- #ifdef CONFIG_JOLIET
-@@ -291,15 +285,19 @@ isofs_hashi_ms(struct dentry *dentry, struct qstr *qstr)
- }
- 
- static int
--isofs_dentry_cmp_ms(struct dentry *dentry,struct qstr *a,struct qstr *b)
-+isofs_dentry_cmp_ms(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	return isofs_dentry_cmp_common(dentry, a, b, 1);
-+	return isofs_dentry_cmp_common(len, str, name, 1, 0);
- }
- 
- static int
--isofs_dentry_cmpi_ms(struct dentry *dentry,struct qstr *a,struct qstr *b)
-+isofs_dentry_cmpi_ms(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	return isofs_dentry_cmpi_common(dentry, a, b, 1);
-+	return isofs_dentry_cmp_common(len, str, name, 1, 1);
- }
- #endif
- 
-diff --git a/fs/isofs/namei.c b/fs/isofs/namei.c
-index 0d23abf..e7768ac 100644
---- a/fs/isofs/namei.c
-+++ b/fs/isofs/namei.c
-@@ -37,7 +37,8 @@ isofs_cmp(struct dentry *dentry, const char *compare, int dlen)
- 
- 	qstr.name = compare;
- 	qstr.len = dlen;
--	return dentry->d_op->d_compare(dentry, &dentry->d_name, &qstr);
-+	return dentry->d_op->d_compare(NULL, NULL, NULL,
-+			dentry->d_name.len, dentry->d_name.name, &qstr);
- }
- 
- /*
-diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
-index 2da1546..5571d0b 100644
---- a/fs/jfs/namei.c
-+++ b/fs/jfs/namei.c
-@@ -1587,14 +1587,16 @@ static int jfs_ci_hash(struct dentry *dir, struct qstr *this)
- 	return 0;
- }
- 
--static int jfs_ci_compare(struct dentry *dir, struct qstr *a, struct qstr *b)
-+static int jfs_ci_compare(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
- 	int i, result = 1;
- 
--	if (a->len != b->len)
-+	if (len != name->len)
- 		goto out;
--	for (i=0; i < a->len; i++) {
--		if (tolower(a->name[i]) != tolower(b->name[i]))
-+	for (i=0; i < len; i++) {
-+		if (tolower(str[i]) != tolower(name->name[i]))
- 			goto out;
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dentry->d_lock);
+ 	if (!d_unhashed(dentry)) {
+ 		struct configfs_dirent * sd = dentry->d_fsdata;
+ 		if (sd->s_type & CONFIGFS_ITEM_LINK) {
+@@ -129,6 +130,7 @@ static inline struct config_item *configfs_get_config_item(struct dentry *dentry
+ 		} else
+ 			item = config_item_get(sd->s_element);
  	}
- 	result = 0;
-diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-index d6e6453..c99a5dd 100644
---- a/fs/ncpfs/dir.c
-+++ b/fs/ncpfs/dir.c
-@@ -75,7 +75,9 @@ const struct inode_operations ncp_dir_inode_operations =
-  */
- static int ncp_lookup_validate(struct dentry *, struct nameidata *);
- static int ncp_hash_dentry(struct dentry *, struct qstr *);
--static int ncp_compare_dentry (struct dentry *, struct qstr *, struct qstr *);
-+static int ncp_compare_dentry(const struct dentry *,
-+		const struct dentry *, const struct inode *,
-+		unsigned int, const char *, const struct qstr *);
- static int ncp_delete_dentry(const struct dentry *);
++	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dcache_lock);
  
- static const struct dentry_operations ncp_dentry_operations =
-@@ -113,10 +115,10 @@ static inline int ncp_preserve_entry_case(struct inode *i, __u32 nscreator)
- 
- #define ncp_preserve_case(i)	(ncp_namespace(i) != NW_NS_DOS)
- 
--static inline int ncp_case_sensitive(struct dentry *dentry)
-+static inline int ncp_case_sensitive(const struct inode *inode)
- {
- #ifdef CONFIG_NCPFS_NFS_NS
--	return ncp_namespace(dentry->d_inode) == NW_NS_NFS;
-+	return ncp_namespace(inode) == NW_NS_NFS;
- #else
- 	return 0;
- #endif /* CONFIG_NCPFS_NFS_NS */
-@@ -129,12 +131,15 @@ static inline int ncp_case_sensitive(struct dentry *dentry)
- static int 
- ncp_hash_dentry(struct dentry *dentry, struct qstr *this)
- {
--	if (!ncp_case_sensitive(dentry)) {
-+	struct inode *inode = dentry->d_inode;
-+
-+	if (!ncp_case_sensitive(inode)) {
-+		struct super_block *sb = dentry->d_sb;
- 		struct nls_table *t;
- 		unsigned long hash;
- 		int i;
- 
--		t = NCP_IO_TABLE(dentry);
-+		t = NCP_IO_TABLE(sb);
- 		hash = init_name_hash();
- 		for (i=0; i<this->len ; i++)
- 			hash = partial_name_hash(ncp_tolower(t, this->name[i]),
-@@ -145,15 +150,19 @@ ncp_hash_dentry(struct dentry *dentry, struct qstr *this)
- }
- 
- static int
--ncp_compare_dentry(struct dentry *dentry, struct qstr *a, struct qstr *b)
-+ncp_compare_dentry(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	if (a->len != b->len)
-+	struct super_block *sb = dentry->d_sb;
-+
-+	if (len != name->len)
- 		return 1;
- 
--	if (ncp_case_sensitive(dentry))
--		return strncmp(a->name, b->name, a->len);
-+	if (ncp_case_sensitive(inode))
-+		return strncmp(str, name->name, len);
- 
--	return ncp_strnicmp(NCP_IO_TABLE(dentry), a->name, b->name, a->len);
-+	return ncp_strnicmp(NCP_IO_TABLE(sb), str, name->name, len);
- }
- 
- /*
-diff --git a/fs/ncpfs/ncplib_kernel.h b/fs/ncpfs/ncplib_kernel.h
-index 3c57eca..244d1b7 100644
---- a/fs/ncpfs/ncplib_kernel.h
-+++ b/fs/ncpfs/ncplib_kernel.h
-@@ -135,7 +135,7 @@ int ncp__vol2io(struct ncp_server *, unsigned char *, unsigned int *,
- 				const unsigned char *, unsigned int, int);
- 
- #define NCP_ESC			':'
--#define NCP_IO_TABLE(dentry)	(NCP_SERVER((dentry)->d_inode)->nls_io)
-+#define NCP_IO_TABLE(sb)	(NCP_SBP(sb)->nls_io)
- #define ncp_tolower(t, c)	nls_tolower(t, c)
- #define ncp_toupper(t, c)	nls_toupper(t, c)
- #define ncp_strnicmp(t, s1, s2, len) \
-@@ -150,15 +150,15 @@ int ncp__io2vol(unsigned char *, unsigned int *,
- int ncp__vol2io(unsigned char *, unsigned int *,
- 				const unsigned char *, unsigned int, int);
- 
--#define NCP_IO_TABLE(dentry)	NULL
-+#define NCP_IO_TABLE(sb)	NULL
- #define ncp_tolower(t, c)	tolower(c)
- #define ncp_toupper(t, c)	toupper(c)
- #define ncp_io2vol(S,m,i,n,k,U)	ncp__io2vol(m,i,n,k,U)
- #define ncp_vol2io(S,m,i,n,k,U)	ncp__vol2io(m,i,n,k,U)
- 
- 
--static inline int ncp_strnicmp(struct nls_table *t, const unsigned char *s1,
--		const unsigned char *s2, int len)
-+static inline int ncp_strnicmp(const struct nls_table *t,
-+		const unsigned char *s1, const unsigned char *s2, int len)
- {
- 	while (len--) {
- 		if (tolower(*s1++) != tolower(*s2++))
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index a256d77..34f1fc5 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -397,15 +397,15 @@ static int proc_sys_delete(const struct dentry *dentry)
- 	return !!PROC_I(dentry->d_inode)->sysctl->unregistering;
- }
- 
--static int proc_sys_compare(struct dentry *dir, struct qstr *qstr,
--			    struct qstr *name)
-+static int proc_sys_compare(const struct dentry *parent,
-+		const struct dentry *dentry, const struct inode *inode,
-+		unsigned int len, const char *str, const struct qstr *name)
- {
--	struct dentry *dentry = container_of(qstr, struct dentry, d_name);
--	if (qstr->len != name->len)
-+	if (name->len != len)
- 		return 1;
--	if (memcmp(qstr->name, name->name, name->len))
-+	if (memcmp(name->name, str, len))
- 		return 1;
--	return !sysctl_is_seen(PROC_I(dentry->d_inode)->sysctl);
-+	return !sysctl_is_seen(PROC_I(inode)->sysctl);
- }
- 
- static const struct dentry_operations proc_sys_dentry_operations = {
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index cbfc956..ba1b9bd 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -134,7 +134,9 @@ enum dentry_d_lock_class
- struct dentry_operations {
- 	int (*d_revalidate)(struct dentry *, struct nameidata *);
- 	int (*d_hash)(struct dentry *, struct qstr *);
--	int (*d_compare)(struct dentry *, struct qstr *, struct qstr *);
-+	int (*d_compare)(const struct dentry *,
-+			const struct dentry *, const struct inode *,
-+			unsigned int, const char *, const struct qstr *);
- 	int (*d_delete)(const struct dentry *);
- 	void (*d_release)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
-@@ -145,12 +147,8 @@ struct dentry_operations {
-  * Locking rules for dentry_operations callbacks are to be found in
-  * Documentation/filesystems/Locking. Keep it updated!
+ 	return item;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 2e04131..05b2257 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -46,6 +46,7 @@
+  *   - d_name
+  *   - d_lru
+  *   - d_count
++ *   - d_unhashed()
   *
-- * the dentry parameter passed to d_hash and d_compare is the parent
-- * directory of the entries to be compared. It is used in case these
-- * functions need any directory specific information for determining
-- * equivalency classes.  Using the dentry itself might not work, as it
-- * might be a negative dentry which has no information associated with
-- * it.
-+ * FUrther descriptions are found in Documentation/filesystems/vfs.txt.
-+ * Keep it updated too!
+  * Ordering:
+  * dcache_lock
+@@ -53,6 +54,13 @@
+  *     dcache_lru_lock
+  *     dcache_hash_lock
+  *
++ * If there is an ancestor relationship:
++ * dentry->d_parent->...->d_parent->d_lock
++ *   ...
++ *     dentry->d_parent->d_lock
++ *       dentry->d_lock
++ *
++ * If no ancestor relationship:
+  * if (dentry1 < dentry2)
+  *   dentry1->d_lock
+  *     dentry2->d_lock
+@@ -337,7 +345,9 @@ int d_invalidate(struct dentry * dentry)
+ 	 * If it's already been dropped, return OK.
+ 	 */
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dentry->d_lock);
+ 	if (d_unhashed(dentry)) {
++		spin_unlock(&dentry->d_lock);
+ 		spin_unlock(&dcache_lock);
+ 		return 0;
+ 	}
+@@ -346,9 +356,11 @@ int d_invalidate(struct dentry * dentry)
+ 	 * to get rid of unused child entries.
+ 	 */
+ 	if (!list_empty(&dentry->d_subdirs)) {
++		spin_unlock(&dentry->d_lock);
+ 		spin_unlock(&dcache_lock);
+ 		shrink_dcache_parent(dentry);
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dentry->d_lock);
+ 	}
+ 
+ 	/*
+@@ -361,7 +373,6 @@ int d_invalidate(struct dentry * dentry)
+ 	 * we might still populate it if it was a
+ 	 * working directory or similar).
+ 	 */
+-	spin_lock(&dentry->d_lock);
+ 	if (dentry->d_count > 1) {
+ 		if (dentry->d_inode && S_ISDIR(dentry->d_inode->i_mode)) {
+ 			spin_unlock(&dentry->d_lock);
+@@ -448,35 +459,49 @@ EXPORT_SYMBOL(dget_parent);
+  * any other hashed alias over that one unless @want_discon is set,
+  * in which case only return an IS_ROOT, DCACHE_DISCONNECTED alias.
   */
- 
- /* d_flags entries */
-diff --git a/include/linux/ncp_fs.h b/include/linux/ncp_fs.h
-index ef66306..1c27f20 100644
---- a/include/linux/ncp_fs.h
-+++ b/include/linux/ncp_fs.h
-@@ -184,13 +184,13 @@ struct ncp_entry_info {
- 	__u8			file_handle[6];
- };
- 
--static inline struct ncp_server *NCP_SBP(struct super_block *sb)
-+static inline struct ncp_server *NCP_SBP(const struct super_block *sb)
+-
+-static struct dentry * __d_find_alias(struct inode *inode, int want_discon)
++static struct dentry *___d_find_alias(struct inode *inode, int want_discon)
  {
- 	return sb->s_fs_info;
+-	struct list_head *head, *next, *tmp;
+-	struct dentry *alias, *discon_alias=NULL;
++	struct dentry *alias, *discon_alias;
+ 
+-	head = &inode->i_dentry;
+-	next = inode->i_dentry.next;
+-	while (next != head) {
+-		tmp = next;
+-		next = tmp->next;
+-		prefetch(next);
+-		alias = list_entry(tmp, struct dentry, d_alias);
++again:
++	discon_alias = NULL;
++	list_for_each_entry(alias, &inode->i_dentry, d_alias) {
++		spin_lock(&alias->d_lock);
+  		if (S_ISDIR(inode->i_mode) || !d_unhashed(alias)) {
+ 			if (IS_ROOT(alias) &&
+ 			    (alias->d_flags & DCACHE_DISCONNECTED))
+ 				discon_alias = alias;
+-			else if (!want_discon) {
+-				__dget_locked(alias);
++			else if (!want_discon)
+ 				return alias;
+-			}
+ 		}
++		spin_unlock(&alias->d_lock);
+ 	}
+-	if (discon_alias)
+-		__dget_locked(discon_alias);
+-	return discon_alias;
++	if (discon_alias) {
++		alias = discon_alias;
++		spin_lock(&alias->d_lock);
++ 		if (S_ISDIR(inode->i_mode) || !d_unhashed(alias)) {
++			if (IS_ROOT(alias) &&
++			    (alias->d_flags & DCACHE_DISCONNECTED))
++				return alias;
++		}
++		spin_unlock(&alias->d_lock);
++		goto again;
++	}
++	return NULL;
  }
  
- #define NCP_SERVER(inode)	NCP_SBP((inode)->i_sb)
--static inline struct ncp_inode_info *NCP_FINFO(struct inode *inode)
-+static inline struct ncp_inode_info *NCP_FINFO(const struct inode *inode)
+-struct dentry * d_find_alias(struct inode *inode)
++static struct dentry *__d_find_alias(struct inode *inode, int want_discon)
++{
++	struct dentry *alias;
++	alias = ___d_find_alias(inode, want_discon);
++	if (alias) {
++		__dget_locked_dlock(alias);
++		spin_unlock(&alias->d_lock);
++	}
++	return alias;
++}
++
++struct dentry *d_find_alias(struct inode *inode)
  {
- 	return container_of(inode, struct ncp_inode_info, vfs_inode);
+ 	struct dentry *de = NULL;
+ 
+@@ -759,8 +784,8 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
+ 	spin_lock(&dcache_lock);
+ 	spin_lock(&dentry->d_lock);
+ 	dentry_lru_del(dentry);
+-	spin_unlock(&dentry->d_lock);
+ 	__d_drop(dentry);
++	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dcache_lock);
+ 
+ 	for (;;) {
+@@ -775,8 +800,8 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
+ 					    d_u.d_child) {
+ 				spin_lock(&loop->d_lock);
+ 				dentry_lru_del(loop);
+-				spin_unlock(&loop->d_lock);
+ 				__d_drop(loop);
++				spin_unlock(&loop->d_lock);
+ 				cond_resched_lock(&dcache_lock);
+ 			}
+ 			spin_unlock(&dcache_lock);
+@@ -1797,7 +1822,10 @@ static void d_move_locked(struct dentry * dentry, struct dentry * target)
+ 	/*
+ 	 * XXXX: do we really need to take target->d_lock?
+ 	 */
+-	if (target < dentry) {
++	if (d_ancestor(dentry, target)) {
++		spin_lock(&dentry->d_lock);
++		spin_lock_nested(&target->d_lock, DENTRY_D_LOCK_NESTED);
++	} else if (d_ancestor(target, dentry) || target < dentry) {
+ 		spin_lock(&target->d_lock);
+ 		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+ 	} else {
+@@ -2476,15 +2504,18 @@ resume:
+ 		struct list_head *tmp = next;
+ 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
+ 		next = tmp->next;
+-		if (d_unhashed(dentry)||!dentry->d_inode)
++		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
++		if (d_unhashed(dentry) || !dentry->d_inode) {
++			spin_unlock(&dentry->d_lock);
+ 			continue;
++		}
+ 		if (!list_empty(&dentry->d_subdirs)) {
++			spin_unlock(&dentry->d_lock);
+ 			this_parent = dentry;
+ 			goto repeat;
+ 		}
+-		spin_lock(&dentry->d_lock);
+-		dentry->d_count--;
+-		spin_unlock(&dentry->d_lock);
++ 		dentry->d_count--;
++ 		spin_unlock(&dentry->d_lock);
+ 	}
+ 	if (this_parent != root) {
+ 		next = this_parent->d_u.d_child.next;
+diff --git a/fs/libfs.c b/fs/libfs.c
+index b9d25d8..433e713 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -16,6 +16,11 @@
+ 
+ #include <asm/uaccess.h>
+ 
++static inline int simple_positive(struct dentry *dentry)
++{
++	return dentry->d_inode && !d_unhashed(dentry);
++}
++
+ int simple_getattr(struct vfsmount *mnt, struct dentry *dentry,
+ 		   struct kstat *stat)
+ {
+@@ -100,8 +105,10 @@ loff_t dcache_dir_lseek(struct file *file, loff_t offset, int origin)
+ 			while (n && p != &file->f_path.dentry->d_subdirs) {
+ 				struct dentry *next;
+ 				next = list_entry(p, struct dentry, d_u.d_child);
+-				if (!d_unhashed(next) && next->d_inode)
++				spin_lock(&next->d_lock);
++				if (simple_positive(next))
+ 					n--;
++				spin_unlock(&next->d_lock);
+ 				p = p->next;
+ 			}
+ 			list_add_tail(&cursor->d_u.d_child, p);
+@@ -155,9 +162,13 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 			for (p=q->next; p != &dentry->d_subdirs; p=p->next) {
+ 				struct dentry *next;
+ 				next = list_entry(p, struct dentry, d_u.d_child);
+-				if (d_unhashed(next) || !next->d_inode)
++				spin_lock_nested(&next->d_lock, DENTRY_D_LOCK_NESTED);
++				if (!simple_positive(next)) {
++					spin_unlock(&next->d_lock);
+ 					continue;
++				}
+ 
++				spin_unlock(&next->d_lock);
+ 				spin_unlock(&dcache_lock);
+ 				if (filldir(dirent, next->d_name.name, 
+ 					    next->d_name.len, filp->f_pos, 
+@@ -259,20 +270,20 @@ int simple_link(struct dentry *old_dentry, struct inode *dir, struct dentry *den
+ 	return 0;
  }
+ 
+-static inline int simple_positive(struct dentry *dentry)
+-{
+-	return dentry->d_inode && !d_unhashed(dentry);
+-}
+-
+ int simple_empty(struct dentry *dentry)
+ {
+ 	struct dentry *child;
+ 	int ret = 0;
+ 
+ 	spin_lock(&dcache_lock);
+-	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child)
+-		if (simple_positive(child))
++	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
++		spin_lock_nested(&child->d_lock, DENTRY_D_LOCK_NESTED);
++		if (simple_positive(child)) {
++			spin_unlock(&child->d_lock);
+ 			goto out;
++		}
++		spin_unlock(&child->d_lock);
++	}
+ 	ret = 1;
+ out:
+ 	spin_unlock(&dcache_lock);
+diff --git a/fs/ocfs2/dcache.c b/fs/ocfs2/dcache.c
+index edaded4..107d0f1 100644
+--- a/fs/ocfs2/dcache.c
++++ b/fs/ocfs2/dcache.c
+@@ -174,13 +174,16 @@ struct dentry *ocfs2_find_local_alias(struct inode *inode,
+ 	list_for_each(p, &inode->i_dentry) {
+ 		dentry = list_entry(p, struct dentry, d_alias);
+ 
++		spin_lock(&dentry->d_lock);
+ 		if (ocfs2_match_dentry(dentry, parent_blkno, skip_unhashed)) {
+ 			mlog(0, "dentry found: %.*s\n",
+ 			     dentry->d_name.len, dentry->d_name.name);
+ 
+-			dget_locked(dentry);
++			dget_locked_dlock(dentry);
++			spin_unlock(&dentry->d_lock);
+ 			break;
+ 		}
++		spin_unlock(&dentry->d_lock);
+ 
+ 		dentry = NULL;
+ 	}
+diff --git a/security/tomoyo/realpath.c b/security/tomoyo/realpath.c
+index 1d0bf8f..d1e05b0 100644
+--- a/security/tomoyo/realpath.c
++++ b/security/tomoyo/realpath.c
+@@ -14,6 +14,7 @@
+ #include <linux/slab.h>
+ #include <net/sock.h>
+ #include "common.h"
++#include "../../fs/internal.h"
+ 
+ /**
+  * tomoyo_encode: Convert binary string to ascii string.
 -- 
 1.7.1
 
