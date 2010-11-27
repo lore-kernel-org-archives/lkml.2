@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab0K0DMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 22:12:05 -0500
-Received: from jdl.com ([208.123.74.7]:52900 "EHLO jdl.com"
+	id S1754161Ab0K0Ddp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 22:33:45 -0500
+Received: from vsmtp6.jaring.my ([192.228.250.86]:49510 "EHLO vsmtp6.jaring.my"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031Ab0K0DME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 22:12:04 -0500
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 04/11] x86/dtb: add irq host abstraction 
-In-reply-to: <4CEFC1EC.7030507@linutronix.de> 
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de> <1290706801-7323-5-git-send-email-bigeasy@linutronix.de> <E1PLhWV-0004y7-44@jdl.com> <4CEFC1EC.7030507@linutronix.de>
-Comments: In-reply-to Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-   message dated "Fri, 26 Nov 2010 15:19:24 +0100."
-Date: Fri, 26 Nov 2010 21:11:52 -0600
-From: Jon Loeliger <jdl@jdl.com>
-Message-Id: <E1PMBCa-0007l1-1V@jdl.com>
-X-Spam-Score: -1.8
+	id S1753325Ab0K0Ddn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 22:33:43 -0500
+Message-Id: <201011270331.oAR3VG5r072643@vsmtp6.jaring.my>
+Reply-To: <chngeric@aol.com>
+From: "Eric" <cheung65@web.de>
+Subject: Mr Cheung.
+Date: Sat, 27 Nov 2010 04:28:08 -0800
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_003A_01C2A9A6.46BCA030"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jon Loeliger wrote:
-> 
-> >> +struct irq_host {
-> >> +	int (*xlate)(struct irq_host *h, const u32 *intspec, u32 intsize,
-> >> +			u32 *out_hwirq, u32 *out_type);
-> >> +	void *priv;
-> >> +	struct device_node *controller;
-> >> +	struct list_head l;
-> >> +};
-> > 
-> > I thought there was an intent and desire to rename the irq_host
-> > as irq_domain.
-> > 
-> > jdl
-> 
-> AFAIK Benh was thinking about renaming it. I don't know if this is
-> still the case or when he intends to do so.
+This is a multi-part message in MIME format.
 
-I submitted a first version of that patch already.
-I thought we were waiting on gkh's patches to go upstream
-before re-submitting the next version of that patch.
-If we're ready to proceed with that, we can rebase it
-and re-submit it too.
+------=_NextPart_000_003A_01C2A9A6.46BCA030
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-> Once he does so, this can be renamed as well.
+Eric Cheung.,
 
-Hrm.  Well, let's ask Ben what order he wants to do...?
+Mitt namn är Eric Cheung., Jag jobbar med Hang Seng Bank. Det är summan av
+$ 15,500,000.00 i min bank "Hang Seng Bank, Hong Kong.
 
-jdl
+Jag vill göra överföringen av $ 15,500,000.00. Jag värva för dig
+hjälp i att sprida denna transaction.I för avsikt att ge 50% av den totala
+ersättningsfonden för din hjälp.
+
+Skulle du vara intresserad så skicka mig ett mail på min privata e-post
+1. Fullständigt namn
+2. Privat telefonnummer
+3. Nuvarande bostadsadress
+(Chngeric@aol.com).
+
+Hälsningar,
+chngeric@aol.com
+Eric Cheung.
+
+------=_NextPart_000_003A_01C2A9A6.46BCA030
+Content-Type: application/octet-stream;
+	name="cheung  small.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="cheung  small.txt"
+
+TXIgRXJpYyBDaGV1bmcuLCANCg0KTXkgbmFtZSBpcyBFcmljIENoZXVuZy4s
+IEkgd29yayB3aXRoIHRoZSBIYW5nIFNlbmcgQmFuay4gVGhlcmUgaXMgdGhl
+IHN1bSBvZg0KJCAxNSw1MDAsMDAwLjAwIGluIG15IGJhbmsgIkhhbmcgU2Vu
+ZyBCYW5rLCBIb25nIEtvbmcuDQoNCkkgd2lzaCB0byBtYWtlIHRoZSB0cmFu
+c2ZlciBvZiB0aGUgJCAxNSw1MDAsMDAwLjAwLiBJIHRvIHNvbGljaXQgZm9y
+IHlvdQ0KYXNzaXN0YW5jZSBpbiBlZmZlY3RpbmcgdGhpcyB0cmFuc2FjdGlv
+bi5JIGludGVuZCB0byBnaXZlIDUwJSBvZiB0aGUgdG90YWwNCnRoZSBjb21w
+ZW5zYXRpb24gZnVuZCBmb3IgeW91ciBhc3Npc3RhbmNlLg0KDQpTaG91bGQg
+eW91IGJlIEludGVyZXN0ZWQgcGxlYXNlIHNlbmQgbWUgYW4gZW1haWwgb24g
+bXkgcHJpdmF0ZSBlbWFpbA0KMS4gRnVsbCBuYW1lcw0KMi4gUHJpdmF0ZSBw
+aG9uZSBudW1iZXINCjMuIEN1cnJlbnQgcmVzaWRlbnRpYWwgYWRkcmVzcw0K
+KGNobmdlcmljQGFvbC5jb20pLg0KDQpSZWdhcmRzLA0KY2huZ2VyaWNAYW9s
+LmNvbQ0KRXJpYyBDaGV1bmcu
+
+------=_NextPart_000_003A_01C2A9A6.46BCA030--
