@@ -1,314 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab0K0K01 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 05:26:27 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34785 "EHLO
+	id S1753373Ab0K0K3c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 05:29:32 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:34780 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752824Ab0K0K0P (ORCPT
+	by vger.kernel.org with ESMTP id S1752668Ab0K0K0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 05:26:15 -0500
+	Sat, 27 Nov 2010 05:26:35 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO1p8Ex5Lcx2/2dsb2JhbACjC3K9doVHBIph
-Message-Id: <fc3560560f2b735d411391b6598577e31b45791e.1290852959.git.npiggin@kernel.dk>
+X-IronPort-Anti-Spam-Result: AvsEAO1p8Ex5Lcx2/2dsb2JhbACjC3K9doVHBIphhRQ
+Message-Id: <2b3419d8509b63d2b13d113c67a1e87b8b0edd26.1290852959.git.npiggin@kernel.dk>
 In-Reply-To: <cover.1290852958.git.npiggin@kernel.dk>
 References: <cover.1290852958.git.npiggin@kernel.dk>
 From: Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 27 Nov 2010 20:44:54 +1100
-Subject: [PATCH 24/46] fs: dcache rationalise dget variants
+Date: Sat, 27 Nov 2010 20:45:05 +1100
+Subject: [PATCH 35/46] fs: dcache remove d_mounted
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dget_locked was a shortcut to avoid the lazy lru manipulation when we already
-held dcache_lock (lru manipulation was relatively cheap at that point).
-However, how that the lru lock is an innermost one, we never hold it at any
-caller, so the lock cost can now be avoided. We already have well working lazy
-dcache LRU, so it should be fine to defer LRU manipulations to scan time.
+Rather than keep a d_mounted count in the dentry, set a dentry flag instead.
+The flag can be cleared by checking the hash table to see if there are any
+mounts left, which is not time critical because it is performed at detach time.
+
+The mounted state of a dentry is only used to speculatively take a look in the
+mount hash table if it is set -- before following the mount, vfsmount lock is
+taken and mount re-checked without races.
+
+This saves 4 bytes on 32-bit, nothing on 64-bit but it does provide a hole I
+might use later (and some configs have larger than 32-bit spinlocks which might
+make use of the hole).
+
+Autofs4 conversion and changelog by Ian Kent <raven@themaw.net>:
+In autofs4, when expring direct (or offset) mounts we need to ensure that we
+block user path walks into the autofs mount, which is covered by another mount.
+To do this we clear the mounted status so that follows stop before walking into
+the mount and are essentially blocked until the expire is completed. The
+automount daemon still finds the correct dentry for the umount due to the
+follow mount logic in fs/autofs4/root.c:autofs4_follow_link(), which is set as
+an inode operation for direct and offset mounts only and is called following
+the lookup that stopped at the covered mount.
+
+At the end of the expire the covering mount probably has gone away so the
+mounted status need not be restored. But we need to check this and only restore
+the mounted status if the expire failed.
+
+XXX: autofs may not work right if we have other mounts go over the top of it?
 
 Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 ---
- arch/powerpc/platforms/cell/spufs/inode.c |    2 +-
- drivers/infiniband/hw/ipath/ipath_fs.c    |    2 +-
- drivers/infiniband/hw/qib/qib_fs.c        |    2 +-
- drivers/staging/smbfs/cache.c             |    2 +-
- fs/configfs/inode.c                       |    2 +-
- fs/dcache.c                               |   34 ++++++++--------------------
- fs/exportfs/expfs.c                       |    2 +-
- fs/ncpfs/dir.c                            |    2 +-
- fs/ocfs2/dcache.c                         |    2 +-
- include/linux/dcache.h                    |   15 ++----------
- kernel/cgroup.c                           |    2 +-
- security/selinux/selinuxfs.c              |    2 +-
- 12 files changed, 23 insertions(+), 46 deletions(-)
+ fs/autofs4/expire.c    |   13 +++++++++++--
+ fs/dcache.c            |    1 -
+ fs/namespace.c         |   29 ++++++++++++++++++++++++++---
+ include/linux/dcache.h |   42 +++++++++++++++++++++---------------------
+ 4 files changed, 58 insertions(+), 27 deletions(-)
 
-diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
-index 2662b50..03185de 100644
---- a/arch/powerpc/platforms/cell/spufs/inode.c
-+++ b/arch/powerpc/platforms/cell/spufs/inode.c
-@@ -161,7 +161,7 @@ static void spufs_prune_dir(struct dentry *dir)
- 	list_for_each_entry_safe(dentry, tmp, &dir->d_subdirs, d_u.d_child) {
- 		spin_lock(&dentry->d_lock);
- 		if (!(d_unhashed(dentry)) && dentry->d_inode) {
--			dget_locked_dlock(dentry);
-+			dget_dlock(dentry);
- 			__d_drop(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			simple_unlink(dir->d_inode, dentry);
-diff --git a/drivers/infiniband/hw/ipath/ipath_fs.c b/drivers/infiniband/hw/ipath/ipath_fs.c
-index 925e882..31ae1b1 100644
---- a/drivers/infiniband/hw/ipath/ipath_fs.c
-+++ b/drivers/infiniband/hw/ipath/ipath_fs.c
-@@ -279,7 +279,7 @@ static int remove_file(struct dentry *parent, char *name)
+diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+index 7869b3a..d9f9a15 100644
+--- a/fs/autofs4/expire.c
++++ b/fs/autofs4/expire.c
+@@ -295,7 +295,9 @@ struct dentry *autofs4_expire_direct(struct super_block *sb,
+ 		struct autofs_info *ino = autofs4_dentry_ino(root);
+ 		if (d_mountpoint(root)) {
+ 			ino->flags |= AUTOFS_INF_MOUNTPOINT;
+-			root->d_mounted--;
++			spin_lock(&root->d_lock);
++			root->d_flags &= ~DCACHE_MOUNTED;
++			spin_unlock(&root->d_lock);
+ 		}
+ 		ino->flags |= AUTOFS_INF_EXPIRING;
+ 		init_completion(&ino->expire_complete);
+@@ -503,7 +505,14 @@ int autofs4_do_expire_multi(struct super_block *sb, struct vfsmount *mnt,
  
- 	spin_lock(&tmp->d_lock);
- 	if (!(d_unhashed(tmp) && tmp->d_inode)) {
--		dget_locked_dlock(tmp);
-+		dget_dlock(tmp);
- 		__d_drop(tmp);
- 		spin_unlock(&tmp->d_lock);
- 		simple_unlink(parent->d_inode, tmp);
-diff --git a/drivers/infiniband/hw/qib/qib_fs.c b/drivers/infiniband/hw/qib/qib_fs.c
-index 49af4a6..df7fa25 100644
---- a/drivers/infiniband/hw/qib/qib_fs.c
-+++ b/drivers/infiniband/hw/qib/qib_fs.c
-@@ -455,7 +455,7 @@ static int remove_file(struct dentry *parent, char *name)
- 
- 	spin_lock(&tmp->d_lock);
- 	if (!(d_unhashed(tmp) && tmp->d_inode)) {
--		dget_locked_dlock(tmp);
-+		dget_dlock(tmp);
- 		__d_drop(tmp);
- 		spin_unlock(&tmp->d_lock);
- 		simple_unlink(parent->d_inode, tmp);
-diff --git a/drivers/staging/smbfs/cache.c b/drivers/staging/smbfs/cache.c
-index abae450..9a8267f 100644
---- a/drivers/staging/smbfs/cache.c
-+++ b/drivers/staging/smbfs/cache.c
-@@ -102,7 +102,7 @@ smb_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
- 		dent = list_entry(next, struct dentry, d_u.d_child);
- 		if ((unsigned long)dent->d_fsdata == fpos) {
- 			if (dent->d_inode)
--				dget_locked(dent);
-+				dget(dent);
- 			else
- 				dent = NULL;
- 			goto out_unlock;
-diff --git a/fs/configfs/inode.c b/fs/configfs/inode.c
-index fb3a55f..c83f476 100644
---- a/fs/configfs/inode.c
-+++ b/fs/configfs/inode.c
-@@ -252,7 +252,7 @@ void configfs_drop_dentry(struct configfs_dirent * sd, struct dentry * parent)
- 	if (dentry) {
- 		spin_lock(&dentry->d_lock);
- 		if (!(d_unhashed(dentry) && dentry->d_inode)) {
--			dget_locked_dlock(dentry);
-+			dget_dlock(dentry);
- 			__d_drop(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			simple_unlink(parent->d_inode, dentry);
+ 		spin_lock(&sbi->fs_lock);
+ 		if (ino->flags & AUTOFS_INF_MOUNTPOINT) {
+-			sb->s_root->d_mounted++;
++			spin_lock(&sb->s_root->d_lock);
++			/*
++			 * If we haven't been expired away, then reset
++			 * mounted status.
++			 */
++			if (mnt->mnt_parent != mnt)
++				sb->s_root->d_flags |= DCACHE_MOUNTED;
++			spin_unlock(&sb->s_root->d_lock);
+ 			ino->flags &= ~AUTOFS_INF_MOUNTPOINT;
+ 		}
+ 		ino->flags &= ~AUTOFS_INF_EXPIRING;
 diff --git a/fs/dcache.c b/fs/dcache.c
-index 6fe387d..9231748 100644
+index 5b59807..c25be71 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
-@@ -389,32 +389,17 @@ int d_invalidate(struct dentry * dentry)
- EXPORT_SYMBOL(d_invalidate);
- 
- /* This must be called with d_lock held */
--static inline struct dentry * __dget_locked_dlock(struct dentry *dentry)
-+static inline void __dget_dlock(struct dentry *dentry)
- {
- 	dentry->d_count++;
--	dentry_lru_del(dentry);
--	return dentry;
+@@ -1198,7 +1198,6 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
+ 	dentry->d_sb = NULL;
+ 	dentry->d_op = NULL;
+ 	dentry->d_fsdata = NULL;
+-	dentry->d_mounted = 0;
+ 	INIT_HLIST_NODE(&dentry->d_hash);
+ 	INIT_LIST_HEAD(&dentry->d_lru);
+ 	INIT_LIST_HEAD(&dentry->d_subdirs);
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 3dbfc07..39a7d50 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -492,6 +492,27 @@ static void __touch_mnt_namespace(struct mnt_namespace *ns)
  }
  
--/* This must be called with d_lock held */
--static inline struct dentry * __dget_locked(struct dentry *dentry)
-+static inline void __dget(struct dentry *dentry)
- {
- 	spin_lock(&dentry->d_lock);
--	__dget_locked_dlock(dentry);
-+	__dget_dlock(dentry);
- 	spin_unlock(&dentry->d_lock);
--	return dentry;
--}
--
--struct dentry * dget_locked_dlock(struct dentry *dentry)
--{
--	return __dget_locked_dlock(dentry);
--}
--
--struct dentry * dget_locked(struct dentry *dentry)
--{
--	return __dget_locked(dentry);
+ /*
++ * Clear dentry's mounted state if it has no remaining mounts.
++ * vfsmount_lock must be held for write.
++ */
++static void dentry_reset_mounted(struct vfsmount *mnt, struct dentry *dentry)
++{
++	unsigned u;
++
++	for (u = 0; u < HASH_SIZE; u++) {
++		struct vfsmount *p;
++
++		list_for_each_entry(p, &mount_hashtable[u], mnt_hash) {
++			if (p->mnt_mountpoint == dentry)
++				return;
++		}
++	}
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags &= ~DCACHE_MOUNTED;
++	spin_unlock(&dentry->d_lock);
++}
++
++/*
+  * vfsmount lock must be held for write
+  */
+ static void detach_mnt(struct vfsmount *mnt, struct path *old_path)
+@@ -502,7 +523,7 @@ static void detach_mnt(struct vfsmount *mnt, struct path *old_path)
+ 	mnt->mnt_mountpoint = mnt->mnt_root;
+ 	list_del_init(&mnt->mnt_child);
+ 	list_del_init(&mnt->mnt_hash);
+-	old_path->dentry->d_mounted--;
++	dentry_reset_mounted(old_path->mnt, old_path->dentry);
  }
--EXPORT_SYMBOL(dget_locked);
  
- struct dentry *dget_parent(struct dentry *dentry)
+ /*
+@@ -513,7 +534,9 @@ void mnt_set_mountpoint(struct vfsmount *mnt, struct dentry *dentry,
  {
-@@ -495,7 +480,7 @@ static struct dentry *__d_find_alias(struct inode *inode, int want_discon)
- 	struct dentry *alias;
- 	alias = ___d_find_alias(inode, want_discon);
- 	if (alias) {
--		__dget_locked_dlock(alias);
-+		__dget_dlock(alias);
- 		spin_unlock(&alias->d_lock);
- 	}
- 	return alias;
-@@ -526,7 +511,7 @@ restart:
- 	list_for_each_entry(dentry, &inode->i_dentry, d_alias) {
- 		spin_lock(&dentry->d_lock);
- 		if (!dentry->d_count) {
--			__dget_locked_dlock(dentry);
-+			__dget_dlock(dentry);
- 			__d_drop(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			spin_unlock(&dcache_inode_lock);
-@@ -1224,7 +1209,8 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
- 		 * don't need child lock because it is not subject
- 		 * to concurrency here
- 		 */
--		dentry->d_parent = dget_dlock(parent);
-+		__dget_dlock(parent);
-+		dentry->d_parent = parent;
- 		dentry->d_sb = parent->d_sb;
- 		list_add(&dentry->d_u.d_child, &parent->d_subdirs);
- 		spin_unlock(&parent->d_lock);
-@@ -1323,7 +1309,7 @@ static struct dentry *__d_instantiate_unique(struct dentry *entry,
- 			goto next;
- 		if (memcmp(qstr->name, name, len))
- 			goto next;
--		dget_locked_dlock(alias);
-+		__dget_dlock(alias);
- 		spin_unlock(&alias->d_lock);
- 		return alias;
- next:
-@@ -1579,7 +1565,7 @@ struct dentry *d_add_ci(struct dentry *dentry, struct inode *inode,
- 	 * reference to it, move it in place and use it.
- 	 */
- 	new = list_entry(inode->i_dentry.next, struct dentry, d_alias);
--	dget_locked(new);
-+	__dget(new);
- 	spin_unlock(&dcache_inode_lock);
- 	security_d_instantiate(found, inode);
- 	d_move(new, found);
-@@ -1755,7 +1741,7 @@ int d_validate(struct dentry *dentry, struct dentry *dparent)
- 	list_for_each_entry(child, &dparent->d_subdirs, d_u.d_child) {
- 		if (dentry == child) {
- 			spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
--			__dget_locked_dlock(dentry);
-+			__dget_dlock(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			spin_unlock(&dparent->d_lock);
- 			return 1;
-diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
-index 53a5c08..f06a940 100644
---- a/fs/exportfs/expfs.c
-+++ b/fs/exportfs/expfs.c
-@@ -49,7 +49,7 @@ find_acceptable_alias(struct dentry *result,
+ 	child_mnt->mnt_parent = mntget(mnt);
+ 	child_mnt->mnt_mountpoint = dget(dentry);
+-	dentry->d_mounted++;
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_MOUNTED;
++	spin_unlock(&dentry->d_lock);
+ }
  
- 	spin_lock(&dcache_inode_lock);
- 	list_for_each_entry(dentry, &result->d_inode->i_dentry, d_alias) {
--		dget_locked(dentry);
-+		dget(dentry);
- 		spin_unlock(&dcache_inode_lock);
- 		if (toput)
- 			dput(toput);
-diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-index e6d5153..6ecc33a 100644
---- a/fs/ncpfs/dir.c
-+++ b/fs/ncpfs/dir.c
-@@ -399,7 +399,7 @@ ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
- 		dent = list_entry(next, struct dentry, d_u.d_child);
- 		if ((unsigned long)dent->d_fsdata == fpos) {
- 			if (dent->d_inode)
--				dget_locked(dent);
-+				dget(dent);
- 			else
- 				dent = NULL;
- 			spin_unlock(&parent->d_lock);
-diff --git a/fs/ocfs2/dcache.c b/fs/ocfs2/dcache.c
-index 76f2170..8b26b54 100644
---- a/fs/ocfs2/dcache.c
-+++ b/fs/ocfs2/dcache.c
-@@ -178,7 +178,7 @@ struct dentry *ocfs2_find_local_alias(struct inode *inode,
- 			mlog(0, "dentry found: %.*s\n",
- 			     dentry->d_name.len, dentry->d_name.name);
- 
--			dget_locked_dlock(dentry);
-+			dget_dlock(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			break;
+ /*
+@@ -1073,7 +1096,7 @@ void umount_tree(struct vfsmount *mnt, int propagate, struct list_head *kill)
+ 		list_del_init(&p->mnt_child);
+ 		if (p->mnt_parent != p) {
+ 			p->mnt_parent->mnt_ghosts++;
+-			p->mnt_mountpoint->d_mounted--;
++			dentry_reset_mounted(p->mnt_parent, p->mnt_mountpoint);
  		}
+ 		change_mnt_propagation(p, MS_PRIVATE);
+ 	}
 diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index ab07ed8..e31fc9a 100644
+index 5dfb6f7..2fd0b45 100644
 --- a/include/linux/dcache.h
 +++ b/include/linux/dcache.h
-@@ -317,23 +317,17 @@ extern char *dentry_path(struct dentry *, char *, int);
- /* Allocation counts.. */
+@@ -92,7 +92,6 @@ struct dentry {
+ 	unsigned int d_flags;		/* protected by d_lock */
+ 	spinlock_t d_lock;		/* per dentry lock */
+ 	seqcount_t d_seq;		/* per dentry seqlock */
+-	int d_mounted;
+ 	struct inode *d_inode;		/* Where the name belongs to - NULL is
+ 					 * negative */
+ 	/*
+@@ -156,33 +155,34 @@ struct dentry_operations {
  
- /**
-- *	dget, dget_locked	-	get a reference to a dentry
-+ *	dget, dget_dlock -	get a reference to a dentry
-  *	@dentry: dentry to get a reference to
-  *
-  *	Given a dentry or %NULL pointer increment the reference count
-  *	if appropriate and return the dentry. A dentry will not be 
-- *	destroyed when it has references. dget() should never be
-- *	called for dentries with zero reference counter. For these cases
-- *	(preferably none, functions in dcache.c are sufficient for normal
-- *	needs and they take necessary precautions) you should hold d_lock
-- *	and call dget_dlock() instead of dget().
-+ *	destroyed when it has references.
-  */
- static inline struct dentry *dget_dlock(struct dentry *dentry)
- {
--	if (dentry) {
--		BUG_ON(!dentry->d_count);
-+	if (dentry)
- 		dentry->d_count++;
--	}
- 	return dentry;
- }
+ /* d_flags entries */
+ #define DCACHE_AUTOFS_PENDING 0x0001    /* autofs: "under construction" */
+-#define DCACHE_NFSFS_RENAMED  0x0002    /* this dentry has been "silly
+-					 * renamed" and has to be
+-					 * deleted on the last dput()
+-					 */
+-#define	DCACHE_DISCONNECTED 0x0004
+-     /* This dentry is possibly not currently connected to the dcache tree,
+-      * in which case its parent will either be itself, or will have this
+-      * flag as well.  nfsd will not use a dentry with this bit set, but will
+-      * first endeavour to clear the bit either by discovering that it is
+-      * connected, or by performing lookup operations.   Any filesystem which
+-      * supports nfsd_operations MUST have a lookup function which, if it finds
+-      * a directory inode with a DCACHE_DISCONNECTED dentry, will d_move
+-      * that dentry into place and return that dentry rather than the passed one,
+-      * typically using d_splice_alias.
+-      */
++#define DCACHE_NFSFS_RENAMED  0x0002
++     /* this dentry has been "silly renamed" and has to be deleted on the last
++      * dput() */
++
++#define	DCACHE_DISCONNECTED	0x0004
++     /* This dentry is possibly not currently connected to the dcache tree, in
++      * which case its parent will either be itself, or will have this flag as
++      * well.  nfsd will not use a dentry with this bit set, but will first
++      * endeavour to clear the bit either by discovering that it is connected,
++      * or by performing lookup operations.   Any filesystem which supports
++      * nfsd_operations MUST have a lookup function which, if it finds a
++      * directory inode with a DCACHE_DISCONNECTED dentry, will d_move that
++      * dentry into place and return that dentry rather than the passed one,
++      * typically using d_splice_alias. */
  
-@@ -347,9 +341,6 @@ static inline struct dentry *dget(struct dentry *dentry)
- 	return dentry;
- }
- 
--extern struct dentry * dget_locked(struct dentry *);
--extern struct dentry * dget_locked_dlock(struct dentry *);
+ #define DCACHE_REFERENCED	0x0008  /* Recently used, don't discard. */
+ #define DCACHE_UNHASHED		0x0010	
 -
- extern struct dentry *dget_parent(struct dentry *dentry);
+-#define DCACHE_INOTIFY_PARENT_WATCHED	0x0020 /* Parent inode is watched by inotify */
++#define DCACHE_INOTIFY_PARENT_WATCHED 0x0020
++     /* Parent inode is watched by inotify */
  
- /**
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 845dc23..6e34f75 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -885,7 +885,7 @@ static void cgroup_clear_directory(struct dentry *dentry)
- 			/* This should never be called on a cgroup
- 			 * directory with child cgroups */
- 			BUG_ON(d->d_inode->i_mode & S_IFDIR);
--			dget_locked_dlock(d);
-+			dget_dlock(d);
- 			spin_unlock(&d->d_lock);
- 			spin_unlock(&dentry->d_lock);
- 			d_delete(d);
-diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
-index 2285d69..43deac2 100644
---- a/security/selinux/selinuxfs.c
-+++ b/security/selinux/selinuxfs.c
-@@ -1154,7 +1154,7 @@ static void sel_remove_entries(struct dentry *de)
- 		list_del_init(node);
+ #define DCACHE_COOKIE		0x0040	/* For use by dcookie subsystem */
+-
+-#define DCACHE_FSNOTIFY_PARENT_WATCHED	0x0080 /* Parent inode is watched by some fsnotify listener */
++#define DCACHE_FSNOTIFY_PARENT_WATCHED 0x0080
++     /* Parent inode is watched by some fsnotify listener */
  
- 		if (d->d_inode) {
--			dget_locked_dlock(d);
-+			dget_dlock(d);
- 			spin_unlock(&de->d_lock);
- 			spin_unlock(&d->d_lock);
- 			d_delete(d);
+ #define DCACHE_CANT_MOUNT	0x0100
+ #define DCACHE_GENOCIDE		0x0200
++#define DCACHE_MOUNTED		0x0400	/* is a mountpoint */
++
+ 
+ extern spinlock_t dcache_inode_lock;
+ extern spinlock_t dcache_hash_lock;
+@@ -381,7 +381,7 @@ extern void dput(struct dentry *);
+ 
+ static inline int d_mountpoint(struct dentry *dentry)
+ {
+-	return dentry->d_mounted;
++	return dentry->d_flags & DCACHE_MOUNTED;
+ }
+ 
+ extern struct vfsmount *lookup_mnt(struct path *);
 -- 
 1.7.1
 
