@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab0K0ASe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Nov 2010 19:18:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43909 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0K0ASd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Nov 2010 19:18:33 -0500
-Date: Fri, 26 Nov 2010 22:18:17 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 2/5] perf events: Default to using event__process_lost
-Message-ID: <20101127001817.GA17400@ghostprotocols.net>
-References: <1290808041-16535-1-git-send-email-acme@infradead.org> <1290808041-16535-3-git-send-email-acme@infradead.org> <alpine.LFD.2.00.1011270042520.2900@localhost6.localdomain6>
+	id S1753205Ab0K0Aa6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Nov 2010 19:30:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619Ab0K0Aa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Nov 2010 19:30:57 -0500
+Date: Fri, 26 Nov 2010 22:30:40 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <dave@gnu.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 3/5] perf tools: Add GCC optimization to memory
+	allocating functions
+Message-ID: <20101127003040.GB17400@ghostprotocols.net>
+References: <1290808041-16535-1-git-send-email-acme@infradead.org> <1290808041-16535-4-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011270042520.2900@localhost6.localdomain6>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290808041-16535-4-git-send-email-acme@infradead.org>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Nov 27, 2010 at 12:55:24AM +0100, Thomas Gleixner escreveu:
-> On Fri, 26 Nov 2010, Arnaldo Carvalho de Melo wrote:
+Em Fri, Nov 26, 2010 at 07:47:19PM -0200, Arnaldo Carvalho de Melo escreveu:
+> From: Davidlohr Bueso <dave@gnu.org>
 > 
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > Tool developers have to fill in a 'perf_event_ops' method table to
-> > specify how to handle each event, so far the ones that were not
-> > explicitely especified would get a stub that would just discard the
-> > event.
-> > 
-> > Change that so that tool developers can get the lost event details and
-> > the total number of such events at the end of 'perf report -D' output.
+> We can benefit from the alloc_size attribute in xrealloc and zalloc.
 > 
-> That should be always displayed if the subcommand does not have it's
-> own lost event handling. I stared long enough into the wrong place,
-> just because the stupid thing just was silent about it. And with this
-> patch it's still silent for the normal use case.
+> Quoting from http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html:
+> 
+> "The alloc_size attribute is used to tell the compiler that the function return
+> value points to memory, where the size is given by one or two of the functions
+> parameters. GCC uses this information to improve the correctness of
+> __builtin_object_size."
 
-Will make it holler if perf_event_ops->lost == event__process_lost and
-self->hists.stats.total_lost != 0, as you suggest.
- 
-> We really want to tell the user when something went wrong. Users do
-> not run perf report -D when the tool shows fancy events, why should
-> they? Just because they know that the tool is hiding problems? If
-> that's the case then the trust into perf tools is about 0.
-> 
-> Darn, being silent about a known problem is the most stupid error
-> handling ever.
-> 
-> That's what I added at the end of perf_session__process_events()
-> 
-> +	if (self->hists.stats.total_lost)
-> +		fprintf(stderr, "Lost events. Check IO/CPU overload!\n");
-> 
-> It's hacky, but it does the job and tells me clearly that the trace is
-> only halfways useful.
+Ingo, please don't pull this, it breaks the build with older GCCs...
 
-Ok, will implement it like you suggested, in a followon patch, in both
-the --stdio and --tui modes.
+util/util.h:185: warning: ‘alloc_size’ attribute directive ignored
+util/util.h:190: warning: ‘alloc_size’ attribute directive ignored
+make: *** [/home/acme/git/build/perf/builtin-annotate.o] Error 1
+make: Leaving directory `/home/acme/git/linux-2.6-tip/tools/perf'
+[acme@mica linux-2.6-tip]$ gcc -v
+Using built-in specs.
+Target: x86_64-redhat-linux
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+--infodir=/usr/share/info --enable-shared --enable-threads=posix
+--enable-checking=release --with-system-zlib --enable-__cxa_atexit
+--disable-libunwind-exceptions --enable-libgcj-multifile
+--enable-languages=c,c++,objc,obj-c++,java,fortran,ada
+--enable-java-awt=gtk --disable-dssi --enable-plugin
+--with-java-home=/usr/lib/jvm/java-1.4.2-gcj-1.4.2.0/jre
+--with-cpu=generic --host=x86_64-redhat-linux
+Thread model: posix
+gcc version 4.1.2 20071124 (Red Hat 4.1.2-42)
+
+I'll reorg this using compiler.h tricks probably, for now I'll just
+remove it from my perf/core branch.
 
 - Arnaldo
