@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab0K0ImC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 03:42:02 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51843 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab0K0ImA (ORCPT
+	id S1752217Ab0K0Iuq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 03:50:46 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43302 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab0K0Iun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 03:42:00 -0500
+	Sat, 27 Nov 2010 03:50:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bFQ3JKXmaDpK5DLh+G/1njlltnyyTiKy0mQYNQtVqYqcmFZFFyMA+xrPVqDKCcurBI
-         wHPUCmSX3w9c628IYe0SWo8QGIbijLVI6V5gIrrt3scsSJi3oG4n9ShgyDAqIaqQRcZy
-         HUFMVEURXy1blcgSsQggIjs5kp3RBs/0wYEnU=
-Date: Sat, 27 Nov 2010 00:41:53 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Duncan Laurie <dlaurie@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs
- driver rebind
-Message-ID: <20101127084153.GC28745@core.coreip.homeip.net>
-References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Dp7Z+kl8ozU6IQ9ADNqVyQlKHlDuIiwNlhzVDFOTzNv7zAYN4XgdA2NEYDpyrGT4JO
+         9E7YSB1nRpCdJ9sMQOZFy46caZcImHn81UqjFfKXSx33RoC7Gaa/LC0dXlK6yklUKlS2
+         ZLP+Y6MVpuhZW0pzBb6kLOKnORgs67htbbwpA=
+Message-ID: <4CF0C65E.2010104@suse.cz>
+Date: Sat, 27 Nov 2010 09:50:38 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290467390-25302-1-git-send-email-dlaurie@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/1] TTY: don't allow reopen when ldisc is changing
+References: <4CEE93FF.3040507@suse.cz> <1290705383-6608-1-git-send-email-jslaby@suse.cz> <20101126002840.GL22651@bombadil.infradead.org> <4CEF65CA.9020403@suse.cz> <20101127025954.GA15818@bombadil.infradead.org>
+In-Reply-To: <20101127025954.GA15818@bombadil.infradead.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Duncan,
+On 11/27/2010 03:59 AM, Kyle McMartin wrote:
+> I'm poking around to see, I think maybe something might be dropping
+> locks in the callchain that gives us a window where this might be
+> possible...
 
-On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
-> When rebinding a serio driver via sysfs drvctl interface it is possible for
-> an interrupt to trigger after the disconnect of the existing driver and
-> before the binding of the new driver.  This will cause the serio interrupt
-> handler to queue a rescan event which will disconnect the new driver
-> immediately after it is attached.
-> 
-> This change clears the serio event queue after processing the drvctl
-> request but before releasing the serio mutex, which will clear any queued
-> rescans before they can get processed.
-> 
-> Reproduction involves issuing a rebind of device port from psmouse driver
-> to serio_raw driver while generating input to trigger interrupts.  Then
-> checking to see if the corresponding i8042/serio4/driver is correctly
-> attached to the serio_raw driver instead of psmouse.
-> 
-> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
-> ---
->  drivers/input/serio/serio.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-> index 405bf21..a66307e 100644
-> --- a/drivers/input/serio/serio.c
-> +++ b/drivers/input/serio/serio.c
-> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
->  		serio_disconnect_port(serio);
->  		error = serio_bind_driver(serio, to_serio_driver(drv));
->  		put_driver(drv);
-> +		serio_remove_pending_events(serio);
+Of course, that's the case:
+        clear_bit(TTY_LDISC, &tty->flags);
+        tty_unlock();
+        cancel_delayed_work_sync(&tty->buf.work);
+        mutex_unlock(&tty->ldisc_mutex);
 
-Hmm, makes sense, although should we limit events being removed to
-rescan events only?
+        tty_lock();
+        mutex_lock(&tty->ldisc_mutex);
 
+in tty_ldisc_hangup. Hence my point 1) from previous posts doesn't hold too:
+1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+section tty_lock is held.
+
+I will check, how to fix this.
+
+thanks,
 -- 
-Dmitry
+js
+suse labs
