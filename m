@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab0K1Tql (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 14:46:41 -0500
-Received: from thunk.org ([69.25.196.29]:56438 "EHLO thunker.thunk.org"
+	id S1754187Ab0K1TwZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 14:52:25 -0500
+Received: from mailsrv1.zmi.at ([212.69.164.54]:36222 "EHLO mailsrv14.zmi.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906Ab0K1Tqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 14:46:38 -0500
-Date: Sun, 28 Nov 2010 14:46:24 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Microcai <microcai@fedoraproject.org>
-Cc: Lisa Milne <lisa@ltmnet.com>, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101128194624.GP2767@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Microcai <microcai@fedoraproject.org>, Lisa Milne <lisa@ltmnet.com>,
-	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-	linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-References: <1290941875.13526.15.camel@cai.gentoo>
- <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
- <1290951770.13526.18.camel@cai.gentoo>
- <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
- <20101129020610.7ea7c79e.lisa@ltmnet.com>
- <1290961207.13526.31.camel@cai.gentoo>
+	id S1752088Ab0K1TwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 14:52:24 -0500
+From: Michael Monnerie <michael.monnerie@is.it-management.at>
+Organization: it-management http://it-management.at
+To: Francois Romieu <romieu@fr.zoreil.com>
+Subject: Re: Regression 2.6.36 - driver rtl8169 crashes kernel, triggered by user app
+Date: Sun, 28 Nov 2010 20:52:17 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+References: <201011272122.28164@zmi.at> <20101127215219.GA2691@electric-eye.fr.zoreil.com>
+In-Reply-To: <20101127215219.GA2691@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290961207.13526.31.camel@cai.gentoo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed;
+  boundary="nextPart3448860.UF7rDMzRiY";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011282052.17978@zmi.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 12:20:07AM +0800, Microcai wrote:
-> 
-> > Another possible model: split the current system in 2, so there's a
-> > bytestream handler, and a vt-legacy module. Then use the interface
-> > between bytestream/legacy as an interface for future vt-kernel and
-> > vt-user modules.
-> 
-> this may cause early printk stop working. 
+--nextPart3448860.UF7rDMzRiY
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Let's start by asking a much more fundamental question; what the heck
-are your goals?
+On Samstag, 27. November 2010 Francois Romieu wrote:
+> Michael Monnerie <michael.monnerie@is.it-management.at> :
+> > This is the 3rd time I send this, and I did not get any answer.
+>=20
+> What about changing your mx blacklisting policy or checking the
+> mailing-list archive (http://marc.info/?t=3D128950098300003) ?
 
-If the main goal of the console is emergency debugging when the system
-is in a very bad state (i.e., trashed initrd, etc.) do we really even
-need Unicode support?
+We've solved that in PM now.
 
-How many people do regular login, development, reading e-mail, etc.,
-on the console?  Very few!  If the answer is because you hate X, as
-you've already pointed out, we already have fbterm.  Where is it
-written that we need to have a full unicode-capable console system?
-Why is this so important; especially if doing this is going to be very
-difficult, and risks breaking lots of stuff if we try to mess with it?
+> Is it in v2.6.37-rc2.
 
-	       	     	      	      - Ted
+Thanks, I'll try and report back then.
+
+=2D-=20
+mit freundlichen Gr=FCssen,
+Michael Monnerie, Ing. BSc
+
+it-management Internet Services: Prot=E9ger
+http://proteger.at [gesprochen: Prot-e-schee]
+Tel: +43 660 / 415 6531
+
+// ****** Radiointerview zum Thema Spam ******
+// http://www.it-podcast.at/archiv.html#podcast-100716
+//=20
+// Haus zu verkaufen: http://zmi.at/langegg/
+
+--nextPart3448860.UF7rDMzRiY
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEABECAAYFAkzysvEACgkQzhSR9xwSCbRF0gCfQkDUa+2Nw+XnycdUFOanWSAP
+mp4An1djHeWbUoZ2xZoFxy2FSn7OQZvG
+=ZPI4
+-----END PGP SIGNATURE-----
+
+--nextPart3448860.UF7rDMzRiY--
