@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab0K1KN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 05:13:57 -0500
-Received: from mail.perches.com ([173.55.12.10]:1918 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab0K1KNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 05:13:54 -0500
-Subject: Re: [PATCH 4/4] zd1211rw: remove unnecessary [kv][mcz]alloc casts
-From: Joe Perches <joe@perches.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Daniel Drake <dsd@gentoo.org>, Ulrich Kunitz <kune@deine-taler.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1290938527.3467.5.camel@jlt3.sipsolutions.net>
-References: <cover.1290934782.git.joe@perches.com>
-	 <704bdd89d630b364043ac7a9ec0a110d311a17a2.1290934782.git.joe@perches.com>
-	 <1290935566.3467.0.camel@jlt3.sipsolutions.net>
-	 <1290936047.16349.13.camel@Joe-Laptop>
-	 <1290936606.3467.2.camel@jlt3.sipsolutions.net>
-	 <1290937845.16349.16.camel@Joe-Laptop>
-	 <1290938527.3467.5.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Nov 2010 02:13:52 -0800
-Message-ID: <1290939232.16349.32.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752328Ab0K1Kb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 05:31:56 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37663 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab0K1Kbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 05:31:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=dFSKGzYTe57IyWjHWqED92DTf9na8CVLlcRVqscwPwCzH8gxzZINTkQ3gQUfa9j4CA
+         QRNrnIo+bGANs16S3M3DjytVkiseL4o8WNXSCLUrdt6fe0MKzg/YEfBBBUVlHY5a/AL8
+         dAxSC7KpYgY6YiPkcQSDcUjrH1qI7wNE2U2jo=
+MIME-Version: 1.0
+Date: Sun, 28 Nov 2010 11:31:52 +0100
+Message-ID: <AANLkTi=owK=WZW4oNtpm5WpAZhqCQUdTR2K5gzJ_MqZ+@mail.gmail.com>
+Subject: Fanotify mv/rename?
+From: Axel Kittenberger <axkibe@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-28 at 11:02 +0100, Johannes Berg wrote:
-> On Sun, 2010-11-28 at 01:50 -0800, Joe Perches wrote:
-> > Good memory you have Johannes...
-> > http://marc.info/?l=linux-netdev&m=117113743902549&w=3
-> I, err, not really, all this isn't making a whole lot of sense to me
-> right now :-)
-> The only thing I remembered was that there was something weird with
-> zd_addr_t ...
+Hi!
 
-Yes.  It's marked __nocast.
+I was just installing 2.6.37-rc3 to incorporate the brand new, cool
+looking fanotify interface into Lsyncd,
+http://code.google.com/p/lsyncd/ . It uses so far inotify to
+continously rsync changes of a local directory tree to backups/live
+mirrors, etc. Fanotify looked very nice at first, since inotify with 1
+watch per dir can eat up quite some memory when watching *hugh*
+directory trees. Additionally we made also Gedankenexperiments if
+fanotifies Deny feature could be used for race-condition-safe
+Master-Master synchronizations. But Alas, there are no move/rename
+events in fanotify! I know it was designed with the virus shields in
+mind and not observing/sync tools like Lsyncd, but I really hoped it
+would be the (better?) Linux way of OSX' /dev/fsevents which does
+feature mv's. Are there are any plans for MOVE events? Don't want to
+add pulling other peoples carpet, but I'd rather wanted to see it
+delayed yet another version with moves than ever without.
 
-> Did sparse become more reliable in face of errors?
-
-Apparently not.
-
-If the kmalloc cast in zd_chip is removed:
-
-$ make C=1 drivers/net/wireless/zd1211rw/zd_chip.o
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHECK   drivers/net/wireless/zd1211rw/zd_chip.c
-arch/x86/include/asm/uaccess_32.h:197:9: error: attribute 'error': unknown attribute
-  CC      drivers/net/wireless/zd1211rw/zd_chip.o
-$
-
-If the __compiletime_<foo> uses in uaccess_32.h are removed,
-and the kmalloc cast in zd_chip is also removed:
-
-$ make C=1 drivers/net/wireless/zd1211rw/zd_chip.o
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      arch/x86/kernel/asm-offsets.s
-  GEN     include/generated/asm-offsets.h
-  CALL    scripts/checksyscalls.sh
-  CHECK   drivers/net/wireless/zd1211rw/zd_chip.c
-drivers/net/wireless/zd1211rw/zd_chip.c:121:22: warning: implicit cast to nocast type
-  CC      drivers/net/wireless/zd1211rw/zd_chip.o
-$
-
+Kind regards,
+Axel
