@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab0K1FES (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 00:04:18 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51857 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab0K1FEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 00:04:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=o1tJEy+CdWlObhltH1HIlNn+Ia4fD4xWouQWFgLZsnjGBo8tbNiogoGpLmGb9j6geu
-         Rwg0Y6cgDlHuBDbRtx2MPJQchF3WFyUrhiFMJr3lIHtrFsoPyX/owq5wELDNVN6IDnYC
-         CTmccBuAuN1GQojWcuElWhRbAn0tZd8eveYDQ=
-Date: Sat, 27 Nov 2010 23:04:07 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sage Weil <sage@newdream.net>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] vfs: introduce FS_IOC_SYNCFS to sync a single super
-Message-ID: <20101128050407.GA16903@burratino>
-References: <Pine.LNX.4.64.1008090711040.17515@cobra.newdream.net>
- <20100826170142.e029cff5.akpm@linux-foundation.org>
- <20101127223217.GA26820@burratino>
+	id S1751215Ab0K1FR3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 00:17:29 -0500
+Received: from cantor.suse.de ([195.135.220.2]:54404 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714Ab0K1FR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 00:17:28 -0500
+Date: Sat, 27 Nov 2010 21:17:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>, Andi Kleen <ak@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org
+Subject: Re: [patch 2/2 v2] mm: add node hotplug emulation
+Message-ID: <20101128051749.GA11474@suse.de>
+References: <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com>
+ <20101119003225.GB3327@shaohui>
+ <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1011201827540.12889@chino.kir.corp.google.com>
+ <20101121173438.GA3922@suse.de>
+ <alpine.DEB.2.00.1011211346160.26304@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1011211505440.30377@chino.kir.corp.google.com>
+ <20101122005658.GA6710@suse.de>
+ <alpine.DEB.2.00.1011271750140.3764@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101127223217.GA26820@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1011271750140.3764@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Nieder wrote:
+On Sat, Nov 27, 2010 at 05:52:03PM -0800, David Rientjes wrote:
+> On Sun, 21 Nov 2010, Greg KH wrote:
+> 
+> > > Add an interface to allow new nodes to be added when performing memory
+> > > hot-add.  This provides a convenient interface to test memory hotplug
+> > > notifier callbacks and surrounding hotplug code when new nodes are
+> > > onlined without actually having a machine with such hotpluggable SRAT
+> > > entries.
+> > > 
+> > > This adds a new debugfs interface at /sys/kernel/debug/hotplug/add_node
+> > 
+> > The rule for debugfs is "there are no rules", but perhaps you might want
+> > to name "hotplug" a bit more specific for what you are doing?  "hotplug"
+> > means pretty much anything these days, so how about s/hotplug/node/
+> > instead as that is what you are controlling.
+> > 
+> > Just a suggestion...
+> > 
+> 
+> Hmm, how strongly do you feel about that?  There's nothing node specific 
+> in the memory hotplug code where this lives, so we'd probably have to 
+> define the dentry elsewhere and even then it would only needed for 
+> CONFIG_MEMORY_HOTPLUG.
+> 
+> I personally don't see this as a node debugging but rather memory hotplug 
+> callback debugging.
 
-> Since
-> ancient times, that has been done with the "rename trick":
-[...]
-> Great.  Problem is, filesystems with delayed allocation like XFS,
-> ubifs, ext4, hfs+ don't cope so well with that[1].
-[...]
-> [1] Yes, even after v2.6.30-rc1~416^2~15 (ext4: Automatically allocate
-> delay allocated blocks on rename, 2009-02-23).
-> See https://bugzilla.kernel.org/show_bug.cgi?id=18632
+Then name it as such, not the generic "hotplug" like you just did.
+"mem_hotplug" would make sense, right?
 
-Sorry, wrong link.  The example meant was
+thanks,
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=15910
-
-"zero-length files and performance degradation", reported against 2.6.32:
-
-| To reproduce it:
-| * install a fresh Ubuntu Lucid system on an ext4 filesystem, or Debian with
-| dpkg < 1.15.6 or Ubuntu Karmic
-| * install a package, wait a few seconds and simulate a crash 
-| $ sudo apt-get install some-package; sleep 5; sudo echo b > /proc/sysrq-trigger
-| * reboot
-| $ ls -l /var/lib/dpkg/info/some-package.* will list empty maintainer's scripts.
-| $ ls -l /var/cache/apt/archive/some-package.* will show the empty archive
-| you've just downloaded
-| At this stage, the package manager is unusable and the common user cannot
-| update anything anymore.
-|
-| This behavior is observed with data=ordered and with or without the mount
-| option auto_da_alloc.
-
-Sorry for the confusion.
-Jonathan
+greg k-h
