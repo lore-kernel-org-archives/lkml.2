@@ -1,126 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab0K1OtH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 09:49:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33338 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab0K1OtD convert rfc822-to-8bit (ORCPT
+	id S1753251Ab0K1PDU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 10:03:20 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41988 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab0K1PDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 09:49:03 -0500
+	Sun, 28 Nov 2010 10:03:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HsEfABwsyrhVcDY5TtobxxTPCf4tzjNmdjJt1dYFfwML6cV2E0DnWoMVflhqiCssb6
-         YOEEtXUbP65tiNmljADUHyIgghuRdkL0yQw+NP3Z84Lnvxa1P9l7Cavc51k+4RQcWpqF
-         Eu/gIQJmZtJF9JXI+5GgQcQE95/2/xZpMHb/w=
-MIME-Version: 1.0
-In-Reply-To: <1290954545.13526.27.camel@cai.gentoo>
-References: <1290941875.13526.15.camel@cai.gentoo>
-	<73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
-	<1290951770.13526.18.camel@cai.gentoo>
-	<AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
-	<1290954545.13526.27.camel@cai.gentoo>
-Date: Sun, 28 Nov 2010 09:49:00 -0500
-Message-ID: <AANLkTi=dMnZeqdDXppE5U5kb9zXs5WcyEs-op=wmB7rw@mail.gmail.com>
-Subject: Re: VT console need rewrite
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: microcai@fedoraproject.org
-Cc: Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=xH/m0w1eODKYoui5HO433g9lsal3LKW3+fDcT/txJM6vmjzr/kOcOaue/3TOMj3Fs3
+         5BGO05bpQBD4QEuYpKH9ohp48ql0oPXCCRQvMOZ1OlPAS8hxb9g+rkYr1GnNeD0Q3phG
+         0d4JrhLdb+RtBikQRsKY3DUWCLeiw6hMwUBvM=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH v2 1/3] deactivate invalidated pages
+Date: Mon, 29 Nov 2010 00:02:55 +0900
+Message-Id: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 28, 2010 at 9:29 AM, Microcai <microcai@fedoraproject.org> wrote:
-> 在 2010-11-28日的 09:05 -0500，jonsmirl@gmail.com写道：
->> On Sun, Nov 28, 2010 at 8:42 AM, Microcai <microcai@fedoraproject.org> wrote:
->> > 在 2010-11-28日的 08:24 -0500，Theodore Tso写道：
->> >> On Nov 28, 2010, at 5:57 AM, Microcai wrote:
->> >>
->> >> > Hi, there
->> >> >
->> >> >     I'm implementing the UNICODE font of the framebuffer console, (see
->> >> > http://lkml.org/lkml/2010/11/26/50 in case you do not got my email). But
->> >> > current vt code is too bugy, too many direct assumes about vt buffer,
->> >> > This makes me so hard to hack.  There is TODO telling me to add UNICODE
->> >> > support, but no room for such code, that's why my patch is so tricky.
->> >> >
->> >> >     And the code itself, if you'll excuse me, it isn't as beautiful as rest
->> >> > of the kernel.
->> >> >     So, it really really need a clean rewrite.I'm ganna take is hard job.
->> >> >     And, please tell me if is worth to do so.
->> >>
->> >> Yes, the console is code is very old.   But please be aware that lots of code (both in the kernel and in userspace) has dependencies upon how the code behaves.   So changing it in a way that does not break backwards compatibility is hard.  i.e., it is hard to hack for a reason.
->> >>
->> >> I would recommend an incremental rewrite (i.e., one patch at a time), as opposed to a rewrite from scratch.   Because people will want to be assured that things haven't broken in a horrible way as a result of a complete rewrite...
->> >>
->> >> -- Ted
->> >>
->> >
->> > Yeah, I'd also like to rewrite it incrementally. But... who will accept
->> > that incrementally patch ? It just seems that incremental patch will be
->> > horrible at the beginning...... It will be discard without a
->> > reason .....
->>
->> You can use CONFIG_VT to remove the entire VT subsystem. It might be
->> easier for you to write an alternative VT system that could be enabled
->> with a different flag.
->>
->> The VT system is very old code from the earliest days of Linux.
->> Thousands of things depend on it both in the kernel and user space. It
->> will be very hard to make significant changes to it that don't break
->> lots of dependent code.
->>
->> Another model to consider... Remove the VT subsystem. Replace it will
->> a Unicode VT system built in user space. Using the existing kernel
->> code, leave a single user console in the kernel that would only be
->> used for system maintenance. Normal users would never see this console
->> unless their system was really messed up.
->>
->>
->
-> So, here is the design according to your description  ..
->
-> JUST export /dev/fb and /dev/pts and /dev/console
-> The kernel use /dev/console, but invisible.
-> The rest of the world uses /dev/pts
->
-> Make init using /dev/fb to display boot message, and agetty runs
-> on /dev/pts
->
-> Another user-space program use /dev/fb to display all /dev/pts , you can
-> use alt+Fx to switch between them (kernel no longer handles console
-> switch).
->
-> So, there is no virtual console ... . Just as windows  (who uses cmd.exe
-> to display console )
->
-> kernel just deal with BYTE stream, no need for font handling .....
->
-> Will you agree with that kind of system ?
+This patch is based on mmotm-11-23. 
 
-It is a lot of work to get a system like that running, but it should
-work when finished. It also lets you avoid messing with the VT layer
-which will be a very painful process.
+Recently, there are reported problem about thrashing.
+(http://marc.info/?l=rsync&m=128885034930933&w=2)
+It happens by backup workloads(ex, nightly rsync).
+That's because the workload makes just use-once pages
+and touches pages twice. It promotes the page into
+active list so that it results in working set page eviction.
 
-Now that we have KMS you can even hide the boot display if you want.
-My Ubuntu system jumps straight to a graphical boot display and you
-have to hit a key to see the boot console.
+Some app developer want to support POSIX_FADV_NOREUSE.
+But other OSes don't support it, either.
+(http://marc.info/?l=linux-mm&m=128928979512086&w=2)
 
+By Other approach, app developer uses POSIX_FADV_DONTNEED.
+But it has a problem. If kernel meets page is writing
+during invalidate_mapping_pages, it can't work.
+It is very hard for application programmer to use it.
+Because they always have to sync data before calling
+fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+be discardable. At last, they can't use deferred write of kernel
+so that they could see performance loss.
+(http://insights.oetiker.ch/linux/fadvise.html)
 
+In fact, invalidation is very big hint to reclaimer.
+It means we don't use the page any more. So let's move
+the writing page into inactive list's head.
 
->
->
->
->
->
->
+Why I need the page to head, Dirty/Writeback page would be flushed
+sooner or later. This patch uses trick PG_reclaim so the page would
+be moved into tail of inactive list when the page writeout completes.
 
+It can prevent writeout of pageout which is less effective than
+flusher's writeout.
 
+This patch considers page_mappged(page) with working set.
+So the page could leave head of inactive to get a change to activate.
 
+Originally, I reused lru_demote of Peter with some change so added
+his Signed-off-by.
+
+Note :
+PG_reclaim trick of writeback page could race with end_page_writeback
+so this patch check PageWriteback one more. It makes race window time
+reall small. But by theoretical, it still have a race. But it's a trivial.
+
+Quote from fe3cba17 and some modification
+"If some page PG_reclaim unintentionally, it will confuse readahead and
+make it restart the size rampup process. But it's a trivial problem, and
+can mostly be avoided by checking PageWriteback(page) first in readahead"
+
+PG_reclaim trick of dirty page don't work now since clear_page_dirty_for_io
+always clears PG_reclaim. Next patch will fix it.
+
+Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Mel Gorman <mel@csn.ul.ie>
+
+Changelog since v1:
+ - modify description
+ - correct typo
+ - add some comment
+ - change deactivation policy
+---
+ mm/swap.c |   84 +++++++++++++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 63 insertions(+), 21 deletions(-)
+
+diff --git a/mm/swap.c b/mm/swap.c
+index 31f5ec4..345eca1 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -268,10 +268,65 @@ void add_page_to_unevictable_list(struct page *page)
+ 	spin_unlock_irq(&zone->lru_lock);
+ }
+ 
+-static void __pagevec_lru_deactive(struct pagevec *pvec)
++/*
++ * This function is used by invalidate_mapping_pages.
++ * If the page can't be invalidated, this function moves the page
++ * into inative list's head or tail to reclaim ASAP and evict
++ * working set page.
++ *
++ * PG_reclaim means when the page's writeback completes, the page
++ * will move into tail of inactive for reclaiming ASAP.
++ *
++ * 1. active, mapped page -> inactive, head
++ * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
++ * 3. inactive, mapped page -> none
++ * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
++ * 5. others -> none
++ *
++ * In 4, why it moves inactive's head, the VM expects the page would
++ * be writeout by flusher. The flusher's writeout is much effective than
++ * reclaimer's random writeout.
++ */
++static void __lru_deactivate(struct page *page, struct zone *zone)
+ {
+-	int i, lru, file;
++	int lru, file;
++	int active = 0;
++
++	if (!PageLRU(page))
++		return;
++
++	if (PageActive(page))
++		active = 1;
++	/* Some processes are using the page */
++	if (page_mapped(page) && !active)
++		return;
++
++	else if (PageWriteback(page)) {
++		SetPageReclaim(page);
++		/* Check race with end_page_writeback */
++		if (!PageWriteback(page))
++			ClearPageReclaim(page);
++	} else if (PageDirty(page))
++		SetPageReclaim(page);
++
++	file = page_is_file_cache(page);
++	lru = page_lru_base_type(page);
++	del_page_from_lru_list(zone, page, lru + active);
++	ClearPageActive(page);
++	ClearPageReferenced(page);
++	add_page_to_lru_list(zone, page, lru);
++	if (active)
++		__count_vm_event(PGDEACTIVATE);
++
++	update_page_reclaim_stat(zone, page, file, 0);
++}
+ 
++/*
++ * This function must be called with preemption disable.
++ */
++static void __pagevec_lru_deactivate(struct pagevec *pvec)
++{
++	int i;
+ 	struct zone *zone = NULL;
+ 
+ 	for (i = 0; i < pagevec_count(pvec); i++) {
+@@ -284,21 +339,7 @@ static void __pagevec_lru_deactive(struct pagevec *pvec)
+ 			zone = pagezone;
+ 			spin_lock_irq(&zone->lru_lock);
+ 		}
+-
+-		if (PageLRU(page)) {
+-			if (PageActive(page)) {
+-				file = page_is_file_cache(page);
+-				lru = page_lru_base_type(page);
+-				del_page_from_lru_list(zone, page,
+-						lru + LRU_ACTIVE);
+-				ClearPageActive(page);
+-				ClearPageReferenced(page);
+-				add_page_to_lru_list(zone, page, lru);
+-				__count_vm_event(PGDEACTIVATE);
+-
+-				update_page_reclaim_stat(zone, page, file, 0);
+-			}
+-		}
++		__lru_deactivate(page, zone);
+ 	}
+ 	if (zone)
+ 		spin_unlock_irq(&zone->lru_lock);
+@@ -336,11 +377,13 @@ static void drain_cpu_pagevecs(int cpu)
+ 
+ 	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
+ 	if (pagevec_count(pvec))
+-		__pagevec_lru_deactive(pvec);
++		__pagevec_lru_deactivate(pvec);
+ }
+ 
+ /*
+- * Forecfully demote a page to the tail of the inactive list.
++ * Forcefully deactivate a page.
++ * This function is used for reclaiming the page ASAP when the page
++ * can't be invalidated by Dirty/Writeback.
+  */
+ void lru_deactivate_page(struct page *page)
+ {
+@@ -348,12 +391,11 @@ void lru_deactivate_page(struct page *page)
+ 		struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
+ 
+ 		if (!pagevec_add(pvec, page))
+-			__pagevec_lru_deactive(pvec);
++			__pagevec_lru_deactivate(pvec);
+ 		put_cpu_var(lru_deactivate_pvecs);
+ 	}
+ }
+ 
+-
+ void lru_add_drain(void)
+ {
+ 	drain_cpu_pagevecs(get_cpu());
 -- 
-Jon Smirl
-jonsmirl@gmail.com
+1.7.0.4
+
