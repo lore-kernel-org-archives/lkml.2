@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab0K1QHF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 11:07:05 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:53543 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab0K1QHC (ORCPT
+	id S1753516Ab0K1QTn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 11:19:43 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41425 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab0K1QTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 11:07:02 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: ben-linux@fluff.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: aaro.koskinen@iki.fi
-Subject: [PATCH] i2c-iop3xx: add iomem annotation
-Date: Sun, 28 Nov 2010 18:07:00 +0200
-Message-Id: <1290960420-7484-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
+	Sun, 28 Nov 2010 11:19:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
+         :content-type:organization:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=M8mwwokDVwASIk+CxIzQU1G/8sd4+lk8rqrxwRGyzzJtP/hYL5iL/dH3r/SyAb/uro
+         Eeai10PT7nRo+zyc8rzjh3Y5OAjdFTaou13QFM9pRajYAyYOVTc1yaRa8J0k1GHysfHz
+         ATt5vLVwHG+BinwcWzrZDJTkk4uPhjz18n77I=
+Subject: Re: VT console need rewrite
+From: Microcai <microcai@fedoraproject.org>
+Reply-To: microcai@fedoraproject.org
+To: Lisa Milne <lisa@ltmnet.com>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>, Theodore Tso <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+In-Reply-To: <20101129020610.7ea7c79e.lisa@ltmnet.com>
+References: <1290941875.13526.15.camel@cai.gentoo>
+	 <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
+	 <1290951770.13526.18.camel@cai.gentoo>
+	 <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
+	 <20101129020610.7ea7c79e.lisa@ltmnet.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: fedoraproject.org
+Date: Mon, 29 Nov 2010 00:20:07 +0800
+Message-ID: <1290961207.13526.31.camel@cai.gentoo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate unnecessary casts and the following sparse warnings:
 
-	drivers/i2c/busses/i2c-iop3xx.c:65:9: warning: incorrect type in argument 1 (different base types)
-	drivers/i2c/busses/i2c-iop3xx.c:65:9:    expected void const volatile [noderef] <asn:2>*<noident>
-	drivers/i2c/busses/i2c-iop3xx.c:65:9:    got unsigned int
+> 
+> Another possible model: split the current system in 2, so there's a
+> bytestream handler, and a vt-legacy module. Then use the interface
+> between bytestream/legacy as an interface for future vt-kernel and
+> vt-user modules.
 
-	[ the previous warning is repeated 18 times ]
+this may cause early printk stop working. 
 
-	drivers/i2c/busses/i2c-iop3xx.c:456:33: warning: cast removes address space of expression
+> 
+> This may make it possible to create an initial patch to do the split,
+> then work on the new system independently of the current vt system.
+> Hopefully reducing any problems with api/subsystem inconsistencies
+> breaking existing code elsewhere, by giving it time to adapt.
+> 
+> This is guesswork on my part as I haven't actually looked at the code,
+> so while it sounds good in theory, you'd have to check if it's actually
+> doable.
+> 
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/i2c/busses/i2c-iop3xx.c |    6 +++---
- drivers/i2c/busses/i2c-iop3xx.h |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-iop3xx.c b/drivers/i2c/busses/i2c-iop3xx.c
-index 112c61f..f09c931 100644
---- a/drivers/i2c/busses/i2c-iop3xx.c
-+++ b/drivers/i2c/busses/i2c-iop3xx.c
-@@ -409,7 +409,7 @@ iop3xx_i2c_remove(struct platform_device *pdev)
- 		IOP3XX_ICR_RXFULL_IE | IOP3XX_ICR_TXEMPTY_IE);
- 	__raw_writel(cr, adapter_data->ioaddr + CR_OFFSET);
- 
--	iounmap((void __iomem*)adapter_data->ioaddr);
-+	iounmap(adapter_data->ioaddr);
- 	release_mem_region(res->start, IOP3XX_I2C_IO_SIZE);
- 	kfree(adapter_data);
- 	kfree(padapter);
-@@ -453,7 +453,7 @@ iop3xx_i2c_probe(struct platform_device *pdev)
- 	/* set the adapter enumeration # */
- 	adapter_data->id = i2c_id++;
- 
--	adapter_data->ioaddr = (u32)ioremap(res->start, IOP3XX_I2C_IO_SIZE);
-+	adapter_data->ioaddr = ioremap(res->start, IOP3XX_I2C_IO_SIZE);
- 	if (!adapter_data->ioaddr) {
- 		ret = -ENOMEM;
- 		goto release_region;
-@@ -498,7 +498,7 @@ iop3xx_i2c_probe(struct platform_device *pdev)
- 	return 0;
- 
- unmap:
--	iounmap((void __iomem*)adapter_data->ioaddr);
-+	iounmap(adapter_data->ioaddr);
- 
- release_region:
- 	release_mem_region(res->start, IOP3XX_I2C_IO_SIZE);
-diff --git a/drivers/i2c/busses/i2c-iop3xx.h b/drivers/i2c/busses/i2c-iop3xx.h
-index 8485861..a63b9f1 100644
---- a/drivers/i2c/busses/i2c-iop3xx.h
-+++ b/drivers/i2c/busses/i2c-iop3xx.h
-@@ -97,7 +97,7 @@
- #define	IOP3XX_I2C_IO_SIZE	0x18
- 
- struct i2c_algo_iop3xx_data {
--	u32 ioaddr;
-+	char __iomem *ioaddr;
- 	wait_queue_head_t waitq;
- 	spinlock_t lock;
- 	u32 SR_enabled, SR_received;
--- 
-1.5.6.5
+Sounds like a good idea. Who is in charge of VT system ? Seems no
+one ....
 
