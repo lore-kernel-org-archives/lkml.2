@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0K1VAg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 16:00:36 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:37403 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab0K1VAR (ORCPT
+	id S1753766Ab0K1VBE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 16:01:04 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:39980 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab0K1VAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 16:00:17 -0500
+	Sun, 28 Nov 2010 16:00:15 -0500
 From: Pekka Enberg <penberg@kernel.org>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
         Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH 02/13] w35und: Kill _USE_FALLBACK_RATE_ macro
-Date: Sun, 28 Nov 2010 22:59:57 +0200
-Message-Id: <1290978008-29095-2-git-send-email-penberg@kernel.org>
+Subject: [PATCH 08/13] w35und: Kill write-only ->TxToggle
+Date: Sun, 28 Nov 2010 23:00:03 +0200
+Message-Id: <1290978008-29095-8-git-send-email-penberg@kernel.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1290978008-29095-1-git-send-email-penberg@kernel.org>
 References: <1290978008-29095-1-git-send-email-penberg@kernel.org>
@@ -21,47 +21,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _USE_FALLBACK_RATE_ macro parametrizes DEFAULT_RATE_RETRY_LIMIT. It's only
-used in Mxx_initial() in reg.c where _USE_FALLBACK_RATE_ is always defined
-because the reg.c file includes sysdef.h at the top. It's therefore safe to
-remove the _USE_FALLBACK_RATE_ macro.
+This patch removes ->TxToggle from struct wb35_mds because it's a write only struct member.
 
 Cc: Pavel Machek <pavel@ucw.cz>
 Signed-off-by: Pekka Enberg <penberg@kernel.org>
 ---
- drivers/staging/winbond/sysdef.h    |    2 --
- drivers/staging/winbond/wb35reg_s.h |    4 ----
- 2 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/staging/winbond/mds.c   |    5 -----
+ drivers/staging/winbond/mds_s.h |    4 ----
+ 2 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/winbond/sysdef.h b/drivers/staging/winbond/sysdef.h
-index 7198708..f8d8606 100644
---- a/drivers/staging/winbond/sysdef.h
-+++ b/drivers/staging/winbond/sysdef.h
-@@ -3,8 +3,6 @@
- #ifndef SYS_DEF_H
- #define SYS_DEF_H
+diff --git a/drivers/staging/winbond/mds.c b/drivers/staging/winbond/mds.c
+index b4e0514..0daabdc 100644
+--- a/drivers/staging/winbond/mds.c
++++ b/drivers/staging/winbond/mds.c
+@@ -481,11 +481,6 @@ Mds_Tx(struct wbsoft_priv *adapter)
+ 			XmitBufSize += CurrentSize;
+ 			XmitBufAddress += CurrentSize;
  
--#define _USE_FALLBACK_RATE_
--
- #define _WPA2_
- 
- /* debug print options, mark what debug you don't need */
-diff --git a/drivers/staging/winbond/wb35reg_s.h b/drivers/staging/winbond/wb35reg_s.h
-index 9d5993b..9b782ed 100644
---- a/drivers/staging/winbond/wb35reg_s.h
-+++ b/drivers/staging/winbond/wb35reg_s.h
-@@ -51,11 +51,7 @@ struct hw_data;
- #define DEFAULT_CWMAX			1023	/* (M2C) CWmax. Its value is in the range 0-1023. */
- #define DEFAULT_AID			1	/* (M34) AID. Its value is in the range 1-2007. */
- 
--#ifdef _USE_FALLBACK_RATE_
- #define DEFAULT_RATE_RETRY_LIMIT	2	/* (M38) as named */
--#else
--#define DEFAULT_RATE_RETRY_LIMIT	7	/* (M38) as named */
+-#ifdef _IBSS_BEACON_SEQ_STICK_
+-			if ((XmitBufAddress[DOT_11_DA_OFFSET+8] & 0xfc) != MAC_SUBTYPE_MNGMNT_PROBE_REQUEST) /* +8 for USB hdr */
 -#endif
+-				pMds->TxToggle = true;
+-
+ 			/* Get packet to transmit completed, 1:TESTSTA 2:MLME 3: Ndis data */
+ 			MLME_SendComplete(adapter, 0, true);
  
- #define DEFAULT_LONG_RETRY_LIMIT	7	/* (M38) LongRetryLimit. Its value is in the range 0-15. */
- #define DEFAULT_SHORT_RETRY_LIMIT	7	/* (M38) ShortRetryLimit. Its value is in the range 0-15. */
+diff --git a/drivers/staging/winbond/mds_s.h b/drivers/staging/winbond/mds_s.h
+index e2de4bd..eeedf01 100644
+--- a/drivers/staging/winbond/mds_s.h
++++ b/drivers/staging/winbond/mds_s.h
+@@ -107,10 +107,6 @@ struct wb35_mds {
+ 	u8	TxRate[((MAX_USB_TX_DESCRIPTOR + 1) & ~0x01)][2]; /* [0] current tx rate, [1] fall back rate */
+ 	u8	TxInfo[((MAX_USB_TX_DESCRIPTOR + 1) & ~0x01)]; /*Store information for callback function */
+ 
+-	/* for scanning mechanism */
+-	u8	TxToggle;	/* It is TRUE if there are tx activities in some time interval */
+-	u8	Reserved_[3];
+-
+ 	/* ---- for Tx Parameter */
+ 	u16	TxFragmentThreshold;	/* For frame body only */
+ 	u16	TxRTSThreshold;
 -- 
 1.7.0.4
 
