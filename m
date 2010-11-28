@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0K1TOU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 14:14:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25605 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866Ab0K1TOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 14:14:18 -0500
-Date: Sun, 28 Nov 2010 20:07:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH UPDATED 06/14] signal: use GROUP_STOP_PENDING to avoid
-	stopping multiple times for a single group stop
-Message-ID: <20101128190741.GA12896@redhat.com>
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-7-git-send-email-tj@kernel.org> <4CF0EE11.6000206@kernel.org>
+	id S1751998Ab0K1TSU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 14:18:20 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:33395 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab0K1TSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 14:18:17 -0500
+Date: Sun, 28 Nov 2010 19:18:14 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaurora@redhat.com, neilb@suse.de, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 0/2] overlayfs fixes
+Message-ID: <20101128191813.GC11339@shadowen.org>
+References: <1290015424-5583-1-git-send-email-apw@canonical.com>
+ <E1PLdPT-0003Y7-31@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CF0EE11.6000206@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <E1PLdPT-0003Y7-31@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27, Tejun Heo wrote:
->
->  static int recalc_sigpending_tsk(struct task_struct *t)
->  {
-> -	if (t->signal->group_stop_count > 0 ||
-> +	if ((t->group_stop & GROUP_STOP_PENDING) ||
+On Thu, Nov 25, 2010 at 04:06:55PM +0100, Miklos Szeredi wrote:
+> On Wed, 17 Nov 2010, Andy Whitcroft wrote:
+> >   overlayfs: handle missing lower inodes in ovl_is_same_inode
+> 
+> I don't see how this could be needed.  vfs_is_same_inode() checks if
+> the dentries are positive.  In that case either the upper dentry or
+> the lower dentry or both must exist.
 
-OK, this makes the intent clear.
+It was cirtinaly exploding in my tests without that change.  The test
+case was overlaying a tmpfs over a squashfs.
 
-> @@ -732,6 +732,9 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
->  		t = p;
->  		do {
->  			unsigned int state;
-> +
-> +			t->group_stop = 0;
-> +
+> >   overlayfs: ovl_copy_up_xattr -- handle EOPNOTSUPP from vfs_listxattr
+> 
+> Applied.  Thanks, Andy.
+> 
+> I pushed an updated version based on v2.6.37-rc3 to the overlayfs.v5
+> branch:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v5
+> 
+> Thanks,
+> Miklos
 
-Yes.
+I'll retest with that version and see if the first patch is still
+required.
 
-But, afaics, this is not enough. Say, what about zap_other_threads() ?
-We shouldn't allow sub-threads to stop in this case.
+Thanks for the updated version.
 
-Basically, every time we clear ->group_stop_count we should also reset
-->group_stop for every thread. Fortunately, every time we already do
-while_each_thread().
-
-Oleg.
-
+-apw
