@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab0K1Xkd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 18:40:33 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54282 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab0K1Xkb convert rfc822-to-8bit (ORCPT
+	id S1754228Ab0K1XrH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 18:47:07 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39949 "EHLO
+	localhost6.localdomain6" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752840Ab0K1XrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 18:40:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tAKm8RJUeE5Ru2ki62H52SfnXErckpnsF8Ijs+WYy1IOC5OmJBHEdGsEeGZH/78EnJ
-         XFxaGqxv4behv307Trz0OI9I2z2EcduW6hGsFO/xbXdCCa8fRPLeWIBicIFEjO7HXZXz
-         8x4qtrOzcSIUvBGOxMc58Goq5MYnDMhiP4O7M=
-MIME-Version: 1.0
-In-Reply-To: <1290754245.25125.1.camel@mola>
-References: <1290754245.25125.1.camel@mola>
-Date: Mon, 29 Nov 2010 08:40:29 +0900
-Message-ID: <AANLkTi=A7LcN6Eoh8WnT2g5TBpFb12ogWncYjZzFeZg3@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH 0/4] Fixes resource leaks for Samsung SoCs
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org,
-        Jassi Brar <jassi.brar@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Maurus Cuelenaere <mcuelenaere@gmail.com>,
-        Graeme Gregory <graeme@openmoko.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Seungwhan Youn <sw.youn@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 28 Nov 2010 18:47:05 -0500
+Date: Sun, 28 Nov 2010 23:46:34 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: microcai@fedoraproject.org
+Cc: Lisa Milne <lisa@ltmnet.com>, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-console@vger.kernel.org
+Subject: Re: VT console need rewrite
+Message-ID: <20101128234634.461daec4@pyx>
+In-Reply-To: <1290961207.13526.31.camel@cai.gentoo>
+References: <1290941875.13526.15.camel@cai.gentoo>
+	<73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
+	<1290951770.13526.18.camel@cai.gentoo>
+	<AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
+	<20101129020610.7ea7c79e.lisa@ltmnet.com>
+	<1290961207.13526.31.camel@cai.gentoo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; i686-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 3:50 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> This serial of patches fixes resource leaks for Samsung SoCs.
->
-> Axel Lin (4):
->  ASoC: Fix resource leask in goni_wm8994.c
->  ASoC: Fix resource leask in neo1973_gta02_init() error path
->  ASoC: Add missing gpio_free(S3C64XX_GPK(12)) in smartq_exit()
->  ASoC: Fix resource leask in smdk_spdif.c
+> Sounds like a good idea. Who is in charge of VT system ? Seems no
+> one ....
 
-Acked-by: Jassi Brar <jassi.brar@samsung.com>
+Which bit - lots of people own different parts of it, because there is a
+lot of it, and people own different sections of currently ongoing
+projects. Plus the X DRM folks own the KMS framebuffers, various authors
+own their own low level drivers for each card and so on.
+
+I kind of own the drivers/tty/vt* bits.
+
+I simply don't see how you are going to address the majority of the
+worlds languages in kernel space, all the major ones are too complex and
+pango is too big and complex to put in kernel as are the needed font
+renderers. Most of the needed compositing accelerations are also not
+directly exposed in KMS to the console driver as would be needed
+
+Your other problem is mode setting, VESA is on its way out, a lot of
+devices today, especially non X86 ones pretty much need X to do any kind
+of video management beyond "here is how the firmware console was
+configured", and indeed many embedded devices don't have an VT code
+enabled at all, just a printk console and possibly ttyprintk, both of
+which may well only be talking to the debug ports
+
+Alan
