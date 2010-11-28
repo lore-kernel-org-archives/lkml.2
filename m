@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab0K1PWM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 10:22:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65240 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab0K1PWL (ORCPT
+	id S1753403Ab0K1PfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 10:35:10 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:53068 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753229Ab0K1PfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 10:22:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=raMq2882Rl/ZBgNnLQZtTv7lfp3CNFxbmhPygD6F/L090MIFZQ2drc71SJW5NAEU3s
-         ZO/Zku87mZPNhjPSx9tcALDOS9gYoPikPapi9WoM1Ecwgi/D0GgJshqMh0rhuzKu6mb3
-         FH1azlDcBhIFA1vOGjQK/BqEzHKsRJ4nkJitA=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Subject: Re: 2.6.37-rc3-git4 bad desktop performance
-Date: Sun, 28 Nov 2010 16:21:58 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3; KDE/4.4.5; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTimjMR4wUYCfi7BoUcg6aBmuWcQW_dBo8svReWcS@mail.gmail.com>
-In-Reply-To: <AANLkTimjMR4wUYCfi7BoUcg6aBmuWcQW_dBo8svReWcS@mail.gmail.com>
+	Sun, 28 Nov 2010 10:35:07 -0500
+Date: Sun, 28 Nov 2010 10:35:04 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM: Prevent dpm_prepare() from returning errors
+ unnecessarily
+In-Reply-To: <201011281312.49949.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1011281031240.27303-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011281621.59036.maciej.rutecki@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On niedziela, 28 listopada 2010 o 13:21:24 Anca Emanuel wrote:
-> Linus,
+On Sun, 28 Nov 2010, Rafael J. Wysocki wrote:
+
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Last known good kernel: 2.6.37-rc3
-> Driver: nouveau
-> Test: play a HD movie.
+> Currently dpm_prepare() returns error code if it finds that a device
+> being suspended has a pending runtime resume request.  However, it
+> should not do that if the checking for wakeup events is not enabled.
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=23912
-for your bug report, please add your address to the CC list in there, thanks!
+It doesn't.  The line you changed _does_ check device_may_wakeup().
 
-PS. Please, send config, dmesg, do bisection etc. will be useful...
+> On the other hand, if the checking for wakeup events is enabled, it
+> can return error when a wakeup event is detected, regardless of its
+> source.
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Will adding this call to pm_wakeup_event() end up double-counting some 
+events?
+
+Alan Stern
+
