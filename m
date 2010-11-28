@@ -1,72 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215Ab0K1FR3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 00:17:29 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54404 "EHLO mx1.suse.de"
+	id S1751429Ab0K1GKc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 01:10:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:48306 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab0K1FR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 00:17:28 -0500
-Date: Sat, 27 Nov 2010 21:17:49 -0800
-From: Greg KH <gregkh@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Shaohui Zheng <shaohui.zheng@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>, Andi Kleen <ak@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org
-Subject: Re: [patch 2/2 v2] mm: add node hotplug emulation
-Message-ID: <20101128051749.GA11474@suse.de>
-References: <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com>
- <20101119003225.GB3327@shaohui>
- <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1011201827540.12889@chino.kir.corp.google.com>
- <20101121173438.GA3922@suse.de>
- <alpine.DEB.2.00.1011211346160.26304@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1011211505440.30377@chino.kir.corp.google.com>
- <20101122005658.GA6710@suse.de>
- <alpine.DEB.2.00.1011271750140.3764@chino.kir.corp.google.com>
+	id S1750948Ab0K1GK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 01:10:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,268,1288594800"; 
+   d="scan'208";a="861974166"
+Date: Sun, 28 Nov 2010 13:43:55 +0800
+From: Yunpeng Gao <yunpeng.gao@intel.com>
+To: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v1 0/3]mmc: enable runtime PM support for mmc storage card
+Message-ID: <20101128054355.GA3318@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011271750140.3764@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 05:52:03PM -0800, David Rientjes wrote:
-> On Sun, 21 Nov 2010, Greg KH wrote:
-> 
-> > > Add an interface to allow new nodes to be added when performing memory
-> > > hot-add.  This provides a convenient interface to test memory hotplug
-> > > notifier callbacks and surrounding hotplug code when new nodes are
-> > > onlined without actually having a machine with such hotpluggable SRAT
-> > > entries.
-> > > 
-> > > This adds a new debugfs interface at /sys/kernel/debug/hotplug/add_node
-> > 
-> > The rule for debugfs is "there are no rules", but perhaps you might want
-> > to name "hotplug" a bit more specific for what you are doing?  "hotplug"
-> > means pretty much anything these days, so how about s/hotplug/node/
-> > instead as that is what you are controlling.
-> > 
-> > Just a suggestion...
-> > 
-> 
-> Hmm, how strongly do you feel about that?  There's nothing node specific 
-> in the memory hotplug code where this lives, so we'd probably have to 
-> define the dentry elsewhere and even then it would only needed for 
-> CONFIG_MEMORY_HOTPLUG.
-> 
-> I personally don't see this as a node debugging but rather memory hotplug 
-> callback debugging.
+Hi,
+    These patches are to enable the runtime PM support for mmc storage cards. 
 
-Then name it as such, not the generic "hotplug" like you just did.
-"mem_hotplug" would make sense, right?
+    Currently, there's already runtime PM support in the mmc core layer. But
+    for the mmc storage card (SD card, mmc card, eMMC device and so on) to
+    work with runtime PM, it also needs both block driver and host controller
+    driver to implement the runtime PM support, which are not presented in
+    current kernel.
 
-thanks,
-
-greg k-h
+    These patches implemented the runtime PM for both block driver and PCI
+    interface SDHCI host controller driver. It also tried to fix some issues
+    of current runtime PM implementation of mmc core layer.
