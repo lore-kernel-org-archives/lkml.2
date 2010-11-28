@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0K1Ssa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 13:48:30 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36564
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753907Ab0K1Ss1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 13:48:27 -0500
-Date: Sun, 28 Nov 2010 10:48:54 -0800 (PST)
-Message-Id: <20101128.104854.183053726.davem@davemloft.net>
-To: u.kleine-koenig@pengutronix.de
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        kernel@pengutronix.de, arjan@infradead.org,
-        torvalds@linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 3/6] net: add some KERN_CONT markers to continuation
- lines
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290589070-854-3-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20101124085645.GW4693@pengutronix.de>
-	<1290589070-854-3-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753983Ab0K1TC7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 14:02:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753429Ab0K1TC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 14:02:58 -0500
+Message-ID: <4CF2A72D.9060307@redhat.com>
+Date: Sun, 28 Nov 2010 14:02:05 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v2 1/3] deactivate invalidated pages
+References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
+In-Reply-To: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Date: Wed, 24 Nov 2010 09:57:47 +0100
+On 11/28/2010 10:02 AM, Minchan Kim wrote:
+> This patch is based on mmotm-11-23.
+>
+> Recently, there are reported problem about thrashing.
+> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+> It happens by backup workloads(ex, nightly rsync).
+> That's because the workload makes just use-once pages
+> and touches pages twice. It promotes the page into
+> active list so that it results in working set page eviction.
 
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Applied.
+-- 
+All rights reversed
