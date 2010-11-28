@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab0K1UBW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 15:01:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab0K1UBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 15:01:21 -0500
-Date: Sun, 28 Nov 2010 20:54:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        "rjw@sisk.plpavel"@ucw.cz, Jan Kratochvil <jan.kratochvil@redhat.com>
-Subject: Re: [PATCH 08/14] ptrace: make do_signal_stop() use ptrace_stop()
-	if the task is being ptraced
-Message-ID: <20101128195442.GB12896@redhat.com>
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-9-git-send-email-tj@kernel.org>
+	id S1751810Ab0K1UHI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 15:07:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46261 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab0K1UHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 15:07:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gQUVk5zqkgtz9ZmNBXZ8Gb7fYhFNZgakzqXg28TdnNyWpYjzgsSicRKhUaHVBmc+b0
+         0aH/JR/7gzPp23tldrn6gZeWtKJjqyYtEndKsa6PfTif3CVuXcZxYfDVecG6+zL7ll7Y
+         w4KQ0GDpBi1tDLMQXOsXMDTngfCkEV6BMwjPA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290768569-16224-9-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTi=2O80uDo4DvjVj14Q0DGqTcZMQmnd-q2XV6f4K@mail.gmail.com>
+References: <AANLkTimjMR4wUYCfi7BoUcg6aBmuWcQW_dBo8svReWcS@mail.gmail.com>
+	<201011281621.59036.maciej.rutecki@gmail.com>
+	<AANLkTi=2O80uDo4DvjVj14Q0DGqTcZMQmnd-q2XV6f4K@mail.gmail.com>
+Date: Sun, 28 Nov 2010 22:07:02 +0200
+Message-ID: <AANLkTi=jF0hwO8OyquAaT=XFrcCjrdggacCND6jcXFCb@mail.gmail.com>
+Subject: Re: 2.6.37-rc3-git4 bad desktop performance
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: maciej.rutecki@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26, Tejun Heo wrote:
+On Sun, Nov 28, 2010 at 6:51 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> On Sun, Nov 28, 2010 at 5:21 PM, Maciej Rutecki
+> <maciej.rutecki@gmail.com> wrote:
+>> On niedziela, 28 listopada 2010 o 13:21:24 Anca Emanuel wrote:
+>>> Linus,
+>>>
+>>> Last known good kernel: 2.6.37-rc3
+>>> Driver: nouveau
+>>> Test: play a HD movie.
+>>
+>> I created a Bugzilla entry at
+>> https://bugzilla.kernel.org/show_bug.cgi?id=23912
+>> for your bug report, please add your address to the CC list in there, thanks!
+>>
+>> PS. Please, send config, dmesg, do bisection etc. will be useful...
 >
-> A ptraced task would still stop at do_signal_stop() when it's stopping
-> for stop signals and do_signal_stop() behaves the same whether the
-> task is ptraced or not.  However, in addition to stopping,
-> ptrace_stop() also does ptrace specific stuff like calling
-> architecture specific callbacks, so this behavior makes the code more
-> fragile and difficult to understand.
+> config and dmesg attached.
+> Bisecting now, but it will take some time.
+>
 
-OK. This patch adds the obviously user-visible change. It looks
-very minor, but I never know when it comes to ptrace.
+Some other strange things: when PC is restarted, I get this image instead:
+http://i56.tinypic.com/6eoklw.jpg
 
-To simplify, suppose that we have a single-thread tracee, and
-debugger "acks" SIGSTOP, say, it does ptrace(PTRACE_CONT, SIGSTOP).
-
-Before this patch, the tracee stops in TASK_STOPPED, now it calls
-ptrace_stop() and goes to TASK_TRACED state.
-
-Add Jan. I hope this is OK, but this might break the tracer if
-it looks into fs/proc (probably only test-cases do this).
-
-
-At least, with or without this patch ->last_siginfo is NULL, good.
-
-
-The check in do_signal_stop() looks racy though, see the next
-email.
-
-Oleg.
-
+In VLC, no other key is responding, but alt+f2
