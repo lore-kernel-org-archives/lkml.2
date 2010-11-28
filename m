@@ -1,180 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab0K1WHc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 17:07:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54114 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab0K1WHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 17:07:31 -0500
-Date: Sun, 28 Nov 2010 23:07:23 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: =?ISO-8859-7?Q?Re=3A_=5BPATCH=5D=5Btrivial=5D_Kill_off_a_bunch_of_annoying__warning=3A_=A1inline=A2_is_not_at_beginning_of_declaration?=
-In-Reply-To: <alpine.LNX.2.00.1011282128210.29621@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011282303250.981@pobox.suse.cz>
-References: <alpine.LNX.2.00.1011282128210.29621@swampdragon.chaosbits.net>
+	id S1753502Ab0K1WRI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 17:17:08 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27499 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab0K1WRG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 17:17:06 -0500
+Date: Sun, 28 Nov 2010 23:09:41 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-scsi@vger.kernel.org
+cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH][SCSI][Resend]: Reduce sequential pointer derefs, reduce
+ size, clean up whitespace in scsi_error.c
+Message-ID: <alpine.LNX.2.00.1011282256250.29621@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Nov 2010, Jesper Juhl wrote:
+Hi,
 
-> Hi,
-> 
-> These warnings are spewed during a build of a 'allnoconfig' kernel 
-> (especially the ones from u64_stats_sync.h show up a lot) when building 
-> with -Wextra (which I often do)..
-> They are
->   a) annoying
->   b) easy to get rid of.
-> This patch kills them off.
+This is a resend of a (slightly updated) patch that was originally 
+submitted on
+  24 April 2008
+  27 April 2008
+  14 November 2010
 
-Hmm, this made me look into what -Wextra actually does ... and it seems 
-quite fishy for kernel. For example my gcc manpage tells me
+I'm getting tired of carrying this patch. I'd like an ACK or NACK (or 
+preferably just a merge) of this patch. I've submitted it several times 
+without a single comment. Except from Linus, who (according to my personal 
+analytical skills) seems to like it but had some improvement suggestions 
+(included in this version).
 
-       -Wempty-body
-           Warn if an empty body occurs in an if, else or do while statement.
-	   This warning is also enabled by -Wextra.
+This patch does the following to scsi_error.c:
 
-And we do have quite a bunch of 'do { } while (0);' in kernel. So it seems 
-to me like you'll be getting much more noise with -Wextra than the lines 
-below, won't you?
+ - Cleans up trailing whitespace.
+ - Reduces the size of scsi_error.o.
+ - Reduces the number of pointer dereferences quite a bit.
 
-> include/linux/u64_stats_sync.h:70:1: warning: ¡inline¢ is not at beginning of declaration
-> include/linux/u64_stats_sync.h:77:1: warning: ¡inline¢ is not at beginning of declaration
-> include/linux/u64_stats_sync.h:84:1: warning: ¡inline¢ is not at beginning of declaration
-> include/linux/u64_stats_sync.h:96:1: warning: ¡inline¢ is not at beginning of declaration
-> include/linux/u64_stats_sync.h:115:1: warning: ¡inline¢ is not at beginning of declaration
-> include/linux/u64_stats_sync.h:127:1: warning: ¡inline¢ is not at beginning of declaration
-> kernel/time.c:241:1: warning: ¡inline¢ is not at beginning of declaration
-> kernel/time.c:257:1: warning: ¡inline¢ is not at beginning of declaration
-> kernel/perf_event.c:4513:1: warning: ¡inline¢ is not at beginning of declaration
-> mm/page_alloc.c:4012:1: warning: ¡inline¢ is not at beginning of declaration
-> 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  include/linux/u64_stats_sync.h |   12 ++++++------
->  kernel/perf_event.c            |    2 +-
->  kernel/time.c                  |    4 ++--
->  mm/page_alloc.c                |    2 +-
->  4 files changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/u64_stats_sync.h b/include/linux/u64_stats_sync.h
-> index fa261a0..8da8c4e 100644
-> --- a/include/linux/u64_stats_sync.h
-> +++ b/include/linux/u64_stats_sync.h
-> @@ -67,21 +67,21 @@ struct u64_stats_sync {
->  #endif
->  };
->  
-> -static void inline u64_stats_update_begin(struct u64_stats_sync *syncp)
-> +static inline void u64_stats_update_begin(struct u64_stats_sync *syncp)
->  {
->  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
->  	write_seqcount_begin(&syncp->seq);
->  #endif
->  }
->  
-> -static void inline u64_stats_update_end(struct u64_stats_sync *syncp)
-> +static inline void u64_stats_update_end(struct u64_stats_sync *syncp)
->  {
->  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
->  	write_seqcount_end(&syncp->seq);
->  #endif
->  }
->  
-> -static unsigned int inline u64_stats_fetch_begin(const struct u64_stats_sync *syncp)
-> +static inline unsigned int u64_stats_fetch_begin(const struct u64_stats_sync *syncp)
->  {
->  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
->  	return read_seqcount_begin(&syncp->seq);
-> @@ -93,7 +93,7 @@ static unsigned int inline u64_stats_fetch_begin(const struct u64_stats_sync *sy
->  #endif
->  }
->  
-> -static bool inline u64_stats_fetch_retry(const struct u64_stats_sync *syncp,
-> +static inline bool u64_stats_fetch_retry(const struct u64_stats_sync *syncp,
->  					 unsigned int start)
->  {
->  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
-> @@ -112,7 +112,7 @@ static bool inline u64_stats_fetch_retry(const struct u64_stats_sync *syncp,
->   * - UP 32bit must disable BH.
->   * - 64bit have no problem atomically reading u64 values, irq safe.
->   */
-> -static unsigned int inline u64_stats_fetch_begin_bh(const struct u64_stats_sync *syncp)
-> +static inline unsigned int u64_stats_fetch_begin_bh(const struct u64_stats_sync *syncp)
->  {
->  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
->  	return read_seqcount_begin(&syncp->seq);
-> @@ -124,7 +124,7 @@ static unsigned int inline u64_stats_fetch_begin_bh(const struct u64_stats_sync
->  #endif
->  }
->  
-> -static bool inline u64_stats_fetch_retry_bh(const struct u64_stats_sync *syncp,
-> +static inline bool u64_stats_fetch_retry_bh(const struct u64_stats_sync *syncp,
->  					 unsigned int start)
->  {
->  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 671f6c8..8126942 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -4510,7 +4510,7 @@ int perf_swevent_get_recursion_context(void)
->  }
->  EXPORT_SYMBOL_GPL(perf_swevent_get_recursion_context);
->  
-> -void inline perf_swevent_put_recursion_context(int rctx)
-> +inline void perf_swevent_put_recursion_context(int rctx)
->  {
->  	struct swevent_htable *swhash = &__get_cpu_var(swevent_htable);
->  
-> diff --git a/kernel/time.c b/kernel/time.c
-> index ba9b338..3217435 100644
-> --- a/kernel/time.c
-> +++ b/kernel/time.c
-> @@ -238,7 +238,7 @@ EXPORT_SYMBOL(current_fs_time);
->   * Avoid unnecessary multiplications/divisions in the
->   * two most common HZ cases:
->   */
-> -unsigned int inline jiffies_to_msecs(const unsigned long j)
-> +inline unsigned int jiffies_to_msecs(const unsigned long j)
->  {
->  #if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
->  	return (MSEC_PER_SEC / HZ) * j;
-> @@ -254,7 +254,7 @@ unsigned int inline jiffies_to_msecs(const unsigned long j)
->  }
->  EXPORT_SYMBOL(jiffies_to_msecs);
->  
-> -unsigned int inline jiffies_to_usecs(const unsigned long j)
-> +inline unsigned int jiffies_to_usecs(const unsigned long j)
->  {
->  #if HZ <= USEC_PER_SEC && !(USEC_PER_SEC % HZ)
->  	return (USEC_PER_SEC / HZ) * j;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e409270..6bb6660 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4009,7 +4009,7 @@ static void __init setup_usemap(struct pglist_data *pgdat,
->  		zone->pageblock_flags = alloc_bootmem_node(pgdat, usemapsize);
->  }
->  #else
-> -static void inline setup_usemap(struct pglist_data *pgdat,
-> +static inline void setup_usemap(struct pglist_data *pgdat,
->  				struct zone *zone, unsigned long zonesize) {}
->  #endif /* CONFIG_SPARSEMEM */
+Could we please just merge this and move on? Or if that's not possible 
+for some reason, then throw it out and tell me the reason...
 
-But I agree that we should get rid of the things that have been explicitly 
-obsoleted by C standard. So I'll queue this up.
 
-Thanks,
+(Please CC me on replies)
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ scsi_error.c |   96 ++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 50 insertions(+), 46 deletions(-)
+
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 824b8fc..a53864e 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -3,14 +3,14 @@
+  *
+  *  SCSI error/timeout handling
+  *      Initial versions: Eric Youngdale.  Based upon conversations with
+- *                        Leonard Zubkoff and David Miller at Linux Expo, 
++ *                        Leonard Zubkoff and David Miller at Linux Expo,
+  *                        ideas originating from all over the place.
+  *
+  *	Restructured scsi_unjam_host and associated functions.
+  *	September 04, 2002 Mike Anderson (andmike@us.ibm.com)
+  *
+  *	Forward port of Russell King's (rmk@arm.linux.org.uk) changes and
+- *	minor  cleanups.
++ *	minor cleanups.
+  *	September 30, 2002 Mike Anderson (andmike@us.ibm.com)
+  */
+ 
+@@ -129,14 +129,15 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
+ {
+ 	struct scsi_cmnd *scmd = req->special;
+ 	enum blk_eh_timer_return rtn = BLK_EH_NOT_HANDLED;
++	struct Scsi_Host *host = scmd->device->host;
+ 
+ 	trace_scsi_dispatch_cmd_timeout(scmd);
+ 	scsi_log_completion(scmd, TIMEOUT_ERROR);
+ 
+-	if (scmd->device->host->transportt->eh_timed_out)
+-		rtn = scmd->device->host->transportt->eh_timed_out(scmd);
+-	else if (scmd->device->host->hostt->eh_timed_out)
+-		rtn = scmd->device->host->hostt->eh_timed_out(scmd);
++	if (host->transportt->eh_timed_out)
++		rtn = host->transportt->eh_timed_out(scmd);
++	else if (host->hostt->eh_timed_out)
++		rtn = host->hostt->eh_timed_out(scmd);
+ 
+ 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
+ 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD))) {
+@@ -195,7 +196,7 @@ static inline void scsi_eh_prt_fail_stats(struct Scsi_Host *shost,
+ 				++total_failures;
+ 				if (scmd->eh_eflags & SCSI_EH_CANCEL_CMD)
+ 					++cmd_cancel;
+-				else 
++				else
+ 					++cmd_failed;
+ 			}
+ 		}
+@@ -214,7 +215,7 @@ static inline void scsi_eh_prt_fail_stats(struct Scsi_Host *shost,
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(2, printk("Total of %d commands on %d"
+ 					  " devices require eh work\n",
+-				  total_failures, devices_failed));
++				   total_failures, devices_failed));
+ }
+ #endif
+ 
+@@ -294,7 +295,7 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
+ 			return NEEDS_RETRY;
+ 		}
+ 		/*
+-		 * if the device is in the process of becoming ready, we 
++		 * if the device is in the process of becoming ready, we
+ 		 * should retry.
+ 		 */
+ 		if ((sshdr.asc == 0x04) && (sshdr.ascq == 0x01))
+@@ -488,7 +489,7 @@ static int scsi_eh_completed_normally(struct scsi_cmnd *scmd)
+  */
+ static void scsi_eh_done(struct scsi_cmnd *scmd)
+ {
+-	struct completion     *eh_action;
++	struct completion *eh_action;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3,
+ 		printk("%s scmd: %p result: %x\n",
+@@ -507,22 +508,23 @@ static int scsi_try_host_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Host RST\n",
+ 					  __func__));
+ 
+-	if (!scmd->device->host->hostt->eh_host_reset_handler)
++	if (!hostt->eh_host_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_host_reset_handler(scmd);
++	rtn = hostt->eh_host_reset_handler(scmd);
+ 
+ 	if (rtn == SUCCESS) {
+-		if (!scmd->device->host->hostt->skip_settle_delay)
++		if (!hostt->skip_settle_delay)
+ 			ssleep(HOST_RESET_SETTLE_TIME);
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
+-		scsi_report_bus_reset(scmd->device->host,
+-				      scmd_channel(scmd));
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
++		scsi_report_bus_reset(host, scmd_channel(scmd));
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -536,22 +538,23 @@ static int scsi_try_bus_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Bus RST\n",
+ 					  __func__));
+ 
+-	if (!scmd->device->host->hostt->eh_bus_reset_handler)
++	if (!hostt->eh_bus_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_bus_reset_handler(scmd);
++	rtn = hostt->eh_bus_reset_handler(scmd);
+ 
+ 	if (rtn == SUCCESS) {
+-		if (!scmd->device->host->hostt->skip_settle_delay)
++		if (!hostt->skip_settle_delay)
+ 			ssleep(BUS_RESET_SETTLE_TIME);
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
+-		scsi_report_bus_reset(scmd->device->host,
+-				      scmd_channel(scmd));
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
++		scsi_report_bus_reset(host, scmd_channel(scmd));
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -577,16 +580,18 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+-	if (!scmd->device->host->hostt->eh_target_reset_handler)
++	if (!hostt->eh_target_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_target_reset_handler(scmd);
++	rtn = hostt->eh_target_reset_handler(scmd);
+ 	if (rtn == SUCCESS) {
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
+ 		__starget_for_each_device(scsi_target(scmd->device), NULL,
+ 					  __scsi_report_device_reset);
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -605,22 +610,23 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
+ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
+ {
+ 	int rtn;
++	struct scsi_host_template *hostt = scmd->device->host->hostt;
+ 
+-	if (!scmd->device->host->hostt->eh_device_reset_handler)
++	if (!hostt->eh_device_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_device_reset_handler(scmd);
++	rtn = hostt->eh_device_reset_handler(scmd);
+ 	if (rtn == SUCCESS)
+ 		__scsi_report_device_reset(scmd->device, NULL);
+ 	return rtn;
+ }
+ 
+-static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
++static int __scsi_try_to_abort_cmd(struct scsi_host_template *hostt,
++				   struct scsi_cmnd *scmd)
+ {
+-	if (!scmd->device->host->hostt->eh_abort_handler)
++	if (!hostt->eh_abort_handler)
+ 		return FAILED;
+-
+-	return scmd->device->host->hostt->eh_abort_handler(scmd);
++	return hostt->eh_abort_handler(scmd);
+ }
+ 
+ /**
+@@ -642,12 +648,12 @@ static int scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
+ 	 */
+ 	if (scmd->serial_number == 0)
+ 		return SUCCESS;
+-	return __scsi_try_to_abort_cmd(scmd);
++	return __scsi_try_to_abort_cmd(scmd->device->host->hostt, scmd);
+ }
+ 
+ static void scsi_abort_eh_cmnd(struct scsi_cmnd *scmd)
+ {
+-	if (__scsi_try_to_abort_cmd(scmd) != SUCCESS)
++	if (__scsi_try_to_abort_cmd(scmd->device->host->hostt, scmd) != SUCCESS)
+ 		if (scsi_try_bus_device_reset(scmd) != SUCCESS)
+ 			if (scsi_try_target_reset(scmd) != SUCCESS)
+ 				if (scsi_try_bus_reset(scmd) != SUCCESS)
+@@ -867,7 +873,7 @@ EXPORT_SYMBOL(scsi_eh_finish_cmd);
+  *
+  * Description:
+  *    See if we need to request sense information.  if so, then get it
+- *    now, so we have a better idea of what to do.  
++ *    now, so we have a better idea of what to do.
+  *
+  * Notes:
+  *    This has the unfortunate side effect that if a shost adapter does
+@@ -987,7 +993,6 @@ static int scsi_eh_abort_cmds(struct list_head *work_q,
+ 			    !scsi_eh_tur(scmd)) {
+ 				scsi_eh_finish_cmd(scmd, done_q);
+ 			}
+-				
+ 		} else
+ 			SCSI_LOG_ERROR_RECOVERY(3, printk("%s: aborting"
+ 							  " cmd failed:"
+@@ -1031,7 +1036,7 @@ static int scsi_eh_try_stu(struct scsi_cmnd *scmd)
+  *
+  * Notes:
+  *    If commands are failing due to not ready, initializing command required,
+- *	try revalidating the device, which will end up sending a start unit. 
++ *	try revalidating the device, which will end up sending a start unit.
+  */
+ static int scsi_eh_stu(struct Scsi_Host *shost,
+ 			      struct list_head *work_q,
+@@ -1085,7 +1090,7 @@ static int scsi_eh_stu(struct Scsi_Host *shost,
+  *    Try a bus device reset.  Still, look to see whether we have multiple
+  *    devices that are jammed or not - if we have multiple devices, it
+  *    makes no sense to try bus_device_reset - we really would need to try
+- *    a bus_reset instead. 
++ *    a bus_reset instead.
+  */
+ static int scsi_eh_bus_device_reset(struct Scsi_Host *shost,
+ 				    struct list_head *work_q,
+@@ -1196,7 +1201,7 @@ static int scsi_eh_target_reset(struct Scsi_Host *shost,
+ }
+ 
+ /**
+- * scsi_eh_bus_reset - send a bus reset 
++ * scsi_eh_bus_reset - send a bus reset
+  * @shost:	&scsi host being recovered.
+  * @work_q:     &list_head for pending commands.
+  * @done_q:	&list_head for processed commands.
+@@ -1213,7 +1218,7 @@ static int scsi_eh_bus_reset(struct Scsi_Host *shost,
+ 	 * we really want to loop over the various channels, and do this on
+ 	 * a channel by channel basis.  we should also check to see if any
+ 	 * of the failed commands are on soft_reset devices, and if so, skip
+-	 * the reset.  
++	 * the reset.
+ 	 */
+ 
+ 	for (channel = 0; channel <= shost->max_channel; channel++) {
+@@ -1255,7 +1260,7 @@ static int scsi_eh_bus_reset(struct Scsi_Host *shost,
+ }
+ 
+ /**
+- * scsi_eh_host_reset - send a host reset 
++ * scsi_eh_host_reset - send a host reset
+  * @work_q:	list_head for processed commands.
+  * @done_q:	list_head for processed commands.
+  */
+@@ -1408,7 +1413,7 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
+ 		return SUCCESS;
+ 		/*
+ 		 * when the low level driver returns did_soft_error,
+-		 * it is responsible for keeping an internal retry counter 
++		 * it is responsible for keeping an internal retry counter
+ 		 * in order to avoid endless loops (db)
+ 		 *
+ 		 * actually this is a bug in this function here.  we should
+@@ -1446,7 +1451,6 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
+ 			 */
+ 			break;
+ 		/* fallthrough */
+-
+ 	case DID_BUS_BUSY:
+ 	case DID_PARITY:
+ 		goto maybe_retry;
+@@ -2005,7 +2009,7 @@ int scsi_normalize_sense(const u8 *sense_buffer, int sb_len,
+ 		if (sb_len > 7)
+ 			sshdr->additional_length = sense_buffer[7];
+ 	} else {
+-		/* 
++		/*
+ 		 * fixed format
+ 		 */
+ 		if (sb_len > 2)
+
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
