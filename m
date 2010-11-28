@@ -1,65 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab0K1GzS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 01:55:18 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:11495 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab0K1GzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 01:55:15 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=98.194.216.198;
-From: Milton Miller <miltonm@bga.com>
-To: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>, Greg KH <gregkh@suse.de>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: The longest build error ever, ever, ever seen :) (Re:linux-next: Tree for November 26)
-In-Reply-To: <256560.1290881547@localhost>
-References: <256560.1290881547@localhost>
-	<20101127164555.GA23508@suse.de>
-	<AANLkTinY3on+arwh-Rvqnbrx_FU4mKDmpwXR_EfkPJ0f@mail.gmail.com>
-Date: Sun, 28 Nov 2010 00:55:14 -0600
-X-Originating-IP: 98.194.216.198
-Message-ID: <1290927314_21183@mail4.comsite.net>
+	id S1751817Ab0K1Hmd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 02:42:33 -0500
+Received: from fwil.voltaire.com ([193.47.165.2]:33456 "EHLO exil.voltaire.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751644Ab0K1Hma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 02:42:30 -0500
+Message-ID: <4CF207E1.8070404@Voltaire.com>
+Date: Sun, 28 Nov 2010 09:42:25 +0200
+From: Or Gerlitz <ogerlitz@Voltaire.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081209)
+MIME-Version: 1.0
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Roland Dreier <rdreier@cisco.com>, trivial@kernel.org,
+        linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/9] Change the copyright info.
+References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>	<adaoc9afout.fsf@cisco.com> <4CF18853.1000402@gmail.com> <AANLkTi=BxGFjLV6fO7GbyedX1b3xnXKW4Ss=qNDOLDjy@mail.gmail.com>
+In-Reply-To: <AANLkTi=BxGFjLV6fO7GbyedX1b3xnXKW4Ss=qNDOLDjy@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Nov 2010 07:42:27.0523 (UTC) FILETIME=[CDF94130:01CB8ECF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat Nov 27 2010 around 13:13:03 EST, Valdis Kletnieks wrote:
-> On Sat, 27 Nov 2010 08:45:55 PST, Greg KH said:
-> > On Sat, Nov 27, 2010 at 09:56:45AM +0100, Zimny Lech wrote:
-> > > Ave!
-> > >
-> > > 2010/11/26 Stephen Rothwell <sfr@xxxxxxxxxxxxxxxx>:
-> > > > Hi all,
-> > > >
-> > >
-> > > OMG, LOL, this one is awesome :) The longest build error ever, ever,
-> > > ever seen! Fscking awesome, someone gets Guiness World Record :)
-> > >
-> > > LD drivers/staging/built-in.o
-> > > drivers/staging/rtl8192e/built-in.o: In function `rtl8192_setBBreg':
-> > > (.text+0xae00): multiple definition of `rtl8192_setBBreg'
-> > > drivers/staging/rtl8192u/built-in.o:(.text+0xa1a0): first defined here
-> >
-> > You built both of these drivers into the kernel, which causes the
-> > problem. Try building them as modules, or just one as a module, and
-> > that will solve the problem.
-> 
-> We probably should create some Kconfig magic to prevent this situation?
-> 
-> depends (othermodule != 'y') || (myself != 'y')
-> 
-> or am I on the wrong track here?
-> 
+Miguel Ojeda wrote:
+> [...] you have to maintain the original copyright 
 
-A simple
+Yes, this copyright change, e.g five years after merging the relevant patches is like asking a school 
+to change the family name posted on a graduate diploma just b/c few years later she got married and decided to adopt the family name of her spouse.
 
-depends on !OTHERMODULE
-
-allows either to be built-in or both to be modular.
-
-It also documents what conflicts.
-
-(see Menu dependencies in Documentation/kbuild/kconfig-language.txt)
-
-milton
+Or.
