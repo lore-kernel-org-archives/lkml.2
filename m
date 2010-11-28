@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0K1TJF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 14:09:05 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:28373 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753929Ab0K1TJD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 14:09:03 -0500
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: Scott Goldman <scottjg@vmware.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>
-Date: Sun, 28 Nov 2010 11:09:14 -0800
-Subject: Re: [Pv-drivers] [PATCH] vmxnet3: fix compilation when RSS is
- disabled
-Thread-Topic: [Pv-drivers] [PATCH] vmxnet3: fix compilation when RSS is
- disabled
-Thread-Index: AcuPL7b40/DPdyPgQ9W+I69/kzrtzg==
-Message-ID: <3522C779-FB58-4792-8ADE-80D826FB4606@vmware.com>
-References: <1290890035-32285-1-git-send-email-scottjg@vmware.com>
- <1290890035-32285-2-git-send-email-scottjg@vmware.com>
-In-Reply-To: <1290890035-32285-2-git-send-email-scottjg@vmware.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754096Ab0K1TL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 14:11:56 -0500
+Received: from solo.fdn.fr ([80.67.169.19]:55855 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753866Ab0K1TLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 14:11:55 -0500
+Date: Sun, 28 Nov 2010 20:11:52 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Microcai <microcai@fedoraproject.org>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>, Theodore Tso <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+Subject: Re: VT console need rewrite
+Message-ID: <20101128191152.GV10602@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Microcai <microcai@fedoraproject.org>,
+	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+	Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+	linux-console@vger.kernel.org
+References: <1290941875.13526.15.camel@cai.gentoo> <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu> <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com> <1290954545.13526.27.camel@cai.gentoo>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290954545.13526.27.camel@cai.gentoo>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Straightforward enough. Thanks for fixing this Scott!
+Microcai, le Sun 28 Nov 2010 22:29:05 +0800, a écrit :
+> So, here is the design according to your description  .. 
+> 
+> JUST export /dev/fb and /dev/pts and /dev/console
+> The kernel use /dev/console, but invisible. 
+> The rest of the world uses /dev/pts
+> 
+> Make init using /dev/fb to display boot message, and agetty runs
+> on /dev/pts
 
+Errr, but that already exists, that's fbterm...
 
-On Nov 27, 2010, at 12:35 PM, "Scott J. Goldman" <scottjg@vmware.com> wrote:
-
-> If RSS is disabled, we can ifdef out some RSS specific code. This fixes
-> the compile error found by Randy Dunlap.
-> 
-> Signed-off-by: Scott J. Goldman <scottjg@vmware.com>
-
-Reviewed-by: Bhavesh Davda <bhavesh@vmware.com>
-
-> ---
-> drivers/net/vmxnet3/vmxnet3_ethtool.c |    5 ++++-
-> 1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-> index 9ddaea6..8e17fc8 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
-> +++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-> @@ -553,7 +553,7 @@ vmxnet3_get_rxnfc(struct net_device *netdev, struct ethtool_rxnfc *info,
->    return -EOPNOTSUPP;
-> }
-> 
-> -
-> +#ifdef VMXNET3_RSS
-> static int
-> vmxnet3_get_rss_indir(struct net_device *netdev,
->              struct ethtool_rxfh_indir *p)
-> @@ -598,6 +598,7 @@ vmxnet3_set_rss_indir(struct net_device *netdev,
->    return 0;
-> 
-> }
-> +#endif
-> 
-> static struct ethtool_ops vmxnet3_ethtool_ops = {
->    .get_settings      = vmxnet3_get_settings,
-> @@ -623,8 +624,10 @@ static struct ethtool_ops vmxnet3_ethtool_ops = {
->    .get_ringparam     = vmxnet3_get_ringparam,
->    .set_ringparam     = vmxnet3_set_ringparam,
->    .get_rxnfc         = vmxnet3_get_rxnfc,
-> +#ifdef VMXNET3_RSS
->    .get_rxfh_indir    = vmxnet3_get_rss_indir,
->    .set_rxfh_indir    = vmxnet3_set_rss_indir,
-> +#endif
-> };
-> 
-> void vmxnet3_set_ethtool_ops(struct net_device *netdev)
-> -- 
-> 1.7.0.4
-> 
-> _______________________________________________
-> Pv-drivers mailing list
-> Pv-drivers@vmware.com
-> http://mailman2.vmware.com/mailman/listinfo/pv-drivers
+Samuel
