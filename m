@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab0K1AoJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 19:44:09 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61174 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab0K1AoG (ORCPT
+	id S1751029Ab0K1BhI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 20:37:08 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:1090 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab0K1BhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 19:44:06 -0500
+	Sat, 27 Nov 2010 20:37:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qNNYLFJm71McaB57Hsi14j6l/aYz+IkI5DHczVsLo2O9q+bUPuVaSJdB98Zr++XFZd
-         ht4iLIQFyQo8TtHI7E9BTI+KDnXSYqbn1n1IQLSi8LXszzYqXPas9sbMC0yEBim5xh7h
-         nvT3Or506Ln7UkoKxw6YFSM1xLh03DhEYhCJA=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=uqu3tXUL0dCc+2OePO9SUOblBx5Vb/8s+qlbUFszq8b1vvBfjahxEHH1zcBMI5ZZAa
+         uCI/3IhOb4Kzzs9Jbc1A==
+Date: Sat, 27 Nov 2010 17:36:54 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: "Figo.zhang" <figo1802@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2]mm/oom-kill: direct hardware access processes should
+ get bonus
+In-Reply-To: <20101123154843.7B8D.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011271733460.3764@chino.kir.corp.google.com>
+References: <20101115095446.BF00.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011150159330.2986@chino.kir.corp.google.com> <20101123154843.7B8D.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101124191711.GA6198@srcf.ucam.org>
-References: <AANLkTikff5b9zhCLEmyoHZPTPaREuHE1qp21SLA0v=83@mail.gmail.com>
-	<20101026192028.GA17880@srcf.ucam.org>
-	<AANLkTinmsNzAkp_ZGcaNyVRVMu0Rc4-C+xPKuSOS5jRJ@mail.gmail.com>
-	<20101027192913.GA14828@srcf.ucam.org>
-	<AANLkTin94udpwFkH+yqH95fu9Q=WCu2u80_DaHHp+zyR@mail.gmail.com>
-	<20101124191711.GA6198@srcf.ucam.org>
-Date: Sat, 27 Nov 2010 17:44:04 -0700
-Message-ID: <AANLkTinaR4MbArfs20xLZMUjTa32sSLZfzRrnApgiGqS@mail.gmail.com>
-Subject: Re: toshiba_acpi.c: Full TOS1900 device support
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On Tue, 23 Nov 2010, KOSAKI Motohiro wrote:
 
-Sorry for the late reply.
+> > > > I think in cases of heuristics like this where we obviously want to give 
+> > > > some bonus to CAP_SYS_ADMIN that there is consistency with other bonuses 
+> > > > given elsewhere in the kernel.
+> > > 
+> > > Keep comparision apple to apple. vm_enough_memory() account _virtual_ memory.
+> > > oom-killer try to free _physical_ memory. It's unrelated.
+> > > 
+> > 
+> > It's not unrelated, the LSM function gives an arbitrary 3% bonus to 
+> > CAP_SYS_ADMIN.  
+> 
+> Unrelated. LSM _is_ security module. and It only account virtual memory.
+> 
 
-On Wed, Nov 24, 2010 at 12:17 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> Can you try this (entirely untested) patch and see if it works on your
-> system? It's basically your code, but with some of the conditionals
-> cleaned up when we already know that information.
-
-The patch works, however, I added a couple lines in order to make it work
-on my laptop:
-
-In toshiba_acpi_query_event:
-       status = execute_acpi_method(toshiba_acpi.acpi_dev->handle, "INFO",
-				    NULL, hotkey);
-
-Here, the handle should be the ACPI device, not the EC
-
-In toshiba_acpi_add:
-	/* enable hotkey event */
-	hci_write1(HCI_HOTKEY_EVENT, 1, &hci_result);
-
-My model (and a couple others) the ENAB method is empty, and hotkey
-activation is done via HCI_HOTKEY_EVENT
-
-
-Another thing that I've noticed is that "device->device_type" is always zero
-for me, I thought that it was supposed to be 1, due to  {"TOS1900", 1}.
-So I changed the comparison value to 0 in order to get the hotkeys
-reported.
-
-
-Saludos
-Azael
-
-
--- 
--- El mundo apesta y vosotros apestais tambien --
+I needed a small bias for CAP_SYS_ADMIN tasks so I chose 3% since it's the 
+same proportion used elsewhere in the kernel and works nicely since the 
+badness score is now a proportion.  If you'd like to propose a different 
+percentage or suggest removing the bias for root tasks altogether, feel 
+free to propose a patch.  Thanks!
