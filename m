@@ -1,76 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab0K1SIV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 13:08:21 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52868 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab0K1SIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 13:08:20 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Damien Wyart <damien.wyart@free.fr>
-Cc: Peter Zijlstra <peterz@infradead.org>, tmhikaru@gmail.com,
-        Venkatesh Pallipadi <venki@google.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
-Subject: Re: High CPU load when machine is idle (related to PROBLEM: Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-In-Reply-To: Your message of "Sun, 28 Nov 2010 12:40:27 +0100."
-             <20101128114027.GA2745@brouette>
-From: Valdis.Kletnieks@vt.edu
-References: <1288101958.15336.284.camel@twins> <1288381343.1988.12.camel@laptop> <20101109185516.GQ8332@bombadil.infradead.org> <1289329348.2191.69.camel@laptop> <20101110034507.GV8332@bombadil.infradead.org> <1289390424.2191.98.camel@laptop> <20101114051406.GA2050@roll> <20101125133106.GA12914@brouette> <1290693807.2145.36.camel@laptop> <1290888920.32004.1.camel@laptop>
-            <20101128114027.GA2745@brouette>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1290967623_5841P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 28 Nov 2010 13:07:03 -0500
-Message-ID: <88912.1290967623@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4CF29A48.0047,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1753939Ab0K1SZr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 13:25:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38741 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752796Ab0K1SZo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 13:25:44 -0500
+Subject: Re: [RFC/PATCH v6 05/12] media: Reference count and power handling
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <201011281333.39214.laurent.pinchart@ideasonboard.com> (sfid-20101128_154847_234366_292E6E7B)
+Date: Sun, 28 Nov 2010 18:25:39 +0000
+Cc: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
+        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk,
+        lennart@poettering.net
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6C806F24-FF45-4BF6-ACB0-1EE10AC584BD@opensource.wolfsonmicro.com>
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <4CEEA191.1000706@maxwell.research.nokia.com> <20101125214633.GC25162@opensource.wolfsonmicro.com> <201011281333.39214.laurent.pinchart@ideasonboard.com> (sfid-20101128_154847_234366_292E6E7B)
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1290967623_5841P
-Content-Type: text/plain; charset=us-ascii
+On 28 Nov 2010, at 12:33, Laurent Pinchart wrote:
 
-On Sun, 28 Nov 2010 12:40:27 +0100, Damien Wyart said:
-> Hi,
-> 
-> * Peter Zijlstra <peterz@infradead.org> [2010-11-27 21:15]:
-> > How does this work for you? Its hideous but lets start simple.
-> > [...]
-> 
-> Doesn't give wrong numbers like initial bug and tentative patches, but
-> feels a bit too slow when numbers go up and down. Correct values are
-> reached when waiting long enough, but it feels slow.
+> Throwing an idea here, what about making power management modular ? The MC 
+> core would then call back to drivers to handle use count changes. The 
+> media_entity_use_change() function would be exported (and renamed), so that 
+> drivers could use it if they want graph-based power management. ALSA would 
+> have its own use count handler.
 
-Umm.. maybe the code still averages the 1/5/15 over that many minute's
-worth of ticks, which may be longer for a tickless kernel?  
+We need more than just the count handler - we need a complete list of everything that has been changed in the whole system. The graph walk itself is fine but we need to be able to do postprocessing of the delta that is generated. Like I said pre- and post- callbacks may well cover it.
 
---==_Exmh_1290967623_5841P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFM8ppHcC3lWbTT17ARAswLAKDxaQF2ERWpxZ8cKrUhLqYZXTHKFACfQhYn
-hn4HgdTs5BKjnzDABCAwOcM=
-=KFNw
------END PGP SIGNATURE-----
-
---==_Exmh_1290967623_5841P--
-
+Note that this is specifically for ASoC, not ALSA in general.
