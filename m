@@ -1,170 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603Ab0K1GUN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 01:20:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64660 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab0K1GUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 01:20:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,269,1288594800"; 
-   d="scan'208,223";a="681636686"
-Date: Sun, 28 Nov 2010 13:53:15 +0800
-From: Yunpeng Gao <yunpeng.gao@intel.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v1 3/3]mmc: changes to enable runtime PM of mmc core layer
-Message-ID: <20101128055315.GD3318@intel.com>
+	id S1751603Ab0K1GYK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 01:24:10 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37674 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab0K1GYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 01:24:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=xUD8O1WDadCdNXSzBIoIp2594fmciQi6OPnx0qIkssHBkLNQXvNySrQekTH/nksA96
+         YDdlLPyuyyYpGYGzJWYtBDNw2hi5grXT6WnGwyS5oYThWTSqjIMm5kz4FX+ZBbCd7jlX
+         QEMsfV1caBKfpepgxXaJkCdl3NMWirr4rkJos=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20101128032830.GA12139@amd>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<AANLkTikRDO0C4Giz6vVHeMnHMtOGO5N1gN4wChEwBLpk@mail.gmail.com>
+	<20101128032830.GA12139@amd>
+Date: Sun, 28 Nov 2010 07:24:06 +0100
+Message-ID: <AANLkTinVPzv6q1Vq8mfy_b4ujm6cAesobEe3+6ryfq6V@mail.gmail.com>
+Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=001636310649a94cfb0496170036
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--001636310649a94cfb0496170036
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
->From cac07f43de68615cca9f01f619870fdce05df2a2 Mon Sep 17 00:00:00 2001
-From: Yunpeng Gao <yunpeng.gao@intel.com>
-Date: Sun, 28 Nov 2010 13:00:42 +0800
-Subject: [PATCH] Do some changes in mmc core layer to enable mmc card runtime pm.
+On Sun, Nov 28, 2010 at 4:28 AM, Nick Piggin <npiggin@kernel.dk> wrote:
+> On Sat, Nov 27, 2010 at 05:04:08PM +0200, Anca Emanuel wrote:
+>> On Sat, Nov 27, 2010 at 12:15 PM, Nick Piggin <npiggin@kernel.dk> wrote:
+>> >
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.gi=
+t vfs-scale-working
+>>
+>> I get:
+>> =C2=A0 CC [M] =C2=A0fs/cifs/inode.o
+>> fs/cifs/inode.c: In function =E2=80=98inode_has_hashed_dentries=E2=80=99=
+:
+>> fs/cifs/inode.c:807: error: =E2=80=98dcache_inode_lock=E2=80=99 undeclar=
+ed (first use
+>> in this function)
+>> fs/cifs/inode.c:807: error: (Each undeclared identifier is reported only=
+ once
+>> fs/cifs/inode.c:807: error: for each function it appears in.)
+>> make[3]: *** [fs/cifs/inode.o] Error 1
+>> make[2]: *** [fs/cifs] Error 2
+>> make[1]: *** [fs] Error 2
+>>
+>> I used the latest mainline.
+>
+> Sorry, missed a conversion, it just needs to be changed to
+> inode->i_lock. Pushed the fix to git.
+>
 
-Seems current runtime PM support in mmc core layer has some problems:
+I attached a patch to my posting in [1] but it was somehow "eaten"
+(here in my mbox the patch is definitely attached).
+Patchwork is also not listing my patch.
+Anyway, it's fixed - that's good.
 
-1. If host controller is PCI device, then it's possibly that the PCI
-host controller will be runtime suspended immediately after its PCI
-probe. Then it will have trouble when do the following mmc_rescan
-since at that time the function driver (mmc block driver or sdio
-function driver) has not been called and there's no chance to execute
-pm_runtime_get().
+I have to check why I get a Call trace with systemd-v15 but not with
+sysvinit package here on Debian.
 
-2. Currently mmc_host_class (defined in drivers/mmc/core/host.c) is
-parent of mmc_card and child of host controller. But mmc_host_class
-has not implemented the runtime pm APIs of itself. So seems it'll
-cause the mmc runtime PM chain disconnect here.
+- Sedat -
 
-This patch tries to fix above 2 problems.
-For 1, it adds pm_runtime_get/put at the begging/end of function
-mmc_rescan().
-For2, it implements a set of dummy runtime PM API for the
-mmc_host_class.
+[1] http://lkml.org/lkml/2010/11/27/145
 
-Signed-off-by: Yunpeng Gao <yunpeng.gao@intel.com>
----
- drivers/mmc/core/bus.c  |    2 +-
- drivers/mmc/core/core.c |    4 ++++
- drivers/mmc/core/host.c |   35 +++++++++++++++++++++++++++++++++++
- 3 files changed, 40 insertions(+), 1 deletions(-)
+--001636310649a94cfb0496170036
+Content-Type: plain/text; 
+	name="fs-cifs-inode.c-Fix-error-dcache_inode_lock-undeclared.patch"
+Content-Disposition: attachment; 
+	filename="fs-cifs-inode.c-Fix-error-dcache_inode_lock-undeclared.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gh1jlytm0
 
-diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
-index af8dc6a..96b6cff 100644
---- a/drivers/mmc/core/bus.c
-+++ b/drivers/mmc/core/bus.c
-@@ -160,7 +160,7 @@ static int mmc_runtime_resume(struct device *dev)
- 
- static int mmc_runtime_idle(struct device *dev)
- {
--	return pm_runtime_suspend(dev);
-+	return pm_schedule_suspend(dev, 100);
- }
- 
- static const struct dev_pm_ops mmc_bus_pm_ops = {
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 6286898..2905dac 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -22,6 +22,7 @@
- #include <linux/scatterlist.h>
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -1503,6 +1504,7 @@ void mmc_rescan(struct work_struct *work)
- 
- 	spin_unlock_irqrestore(&host->lock, flags);
- 
-+	pm_runtime_get_sync(host->parent);
- 
- 	mmc_bus_get(host);
- 
-@@ -1598,6 +1600,8 @@ out_fail:
- 		mmc_power_off(host);
- 	}
- out:
-+	pm_runtime_put_sync(host->parent);
-+
- 	if (host->caps & MMC_CAP_NEEDS_POLL)
- 		mmc_schedule_delayed_work(&host->detect, HZ);
- }
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 92e3370..8268b8e 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -19,6 +19,7 @@
- #include <linux/leds.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/mmc/host.h>
- #include <linux/mmc/card.h>
-@@ -28,6 +29,33 @@
- 
- #define cls_dev_to_mmc_host(d)	container_of(d, struct mmc_host, class_dev)
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int mmc_host_runtime_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int mmc_host_runtime_resume(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int mmc_host_runtime_idle(struct device *dev)
-+{
-+	return pm_runtime_suspend(dev);
-+}
-+#else
-+#define mmc_host_runtime_suspend	NULL
-+#define mmc_host_runtime_resume		NULL
-+#define mmc_host_runtime_idle		NULL
-+#endif
-+
-+const static struct dev_pm_ops host_pm = {
-+	.runtime_suspend = mmc_host_runtime_suspend,
-+	.runtime_resume = mmc_host_runtime_resume,
-+	.runtime_idle = mmc_host_runtime_idle,
-+};
-+
- static void mmc_host_classdev_release(struct device *dev)
- {
- 	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-@@ -37,6 +65,7 @@ static void mmc_host_classdev_release(struct device *dev)
- static struct class mmc_host_class = {
- 	.name		= "mmc_host",
- 	.dev_release	= mmc_host_classdev_release,
-+	.pm		= &host_pm,
- };
- 
- int mmc_register_host_class(void)
-@@ -333,6 +362,12 @@ int mmc_add_host(struct mmc_host *host)
- 	if (err)
- 		return err;
- 
-+	/* Enable runtime PM */
-+	pm_runtime_get_noresume(&host->class_dev);
-+	pm_runtime_set_active(&host->class_dev);
-+	pm_runtime_enable(&host->class_dev);
-+	pm_runtime_put_sync(&host->class_dev);
-+
- #ifdef CONFIG_DEBUG_FS
- 	mmc_add_host_debugfs(host);
- #endif
--- 
-1.6.6.1
-
+SW5kZXg6IGxpbnV4LTIuNi9mcy9jaWZzL2lub2RlLmMKPT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
+Lm9yaWcvZnMvY2lmcy9pbm9kZS5jCisrKyBsaW51eC0yLjYvZnMvY2lmcy9pbm9kZS5jCkBAIC04
+MDQsMTQgKzgwNCwxNCBAQCBpbm9kZV9oYXNfaGFzaGVkX2RlbnRyaWVzKHN0cnVjdCBpbm9kZSAq
+CiB7CiAJc3RydWN0IGRlbnRyeSAqZGVudHJ5OwogCi0Jc3Bpbl9sb2NrKCZkY2FjaGVfaW5vZGVf
+bG9jayk7CisJc3Bpbl9sb2NrKCZpbm9kZS0+aV9sb2NrKTsKIAlsaXN0X2Zvcl9lYWNoX2VudHJ5
+KGRlbnRyeSwgJmlub2RlLT5pX2RlbnRyeSwgZF9hbGlhcykgewogCQlpZiAoIWRfdW5oYXNoZWQo
+ZGVudHJ5KSB8fCBJU19ST09UKGRlbnRyeSkpIHsKLQkJCXNwaW5fdW5sb2NrKCZkY2FjaGVfaW5v
+ZGVfbG9jayk7CisJCQlzcGluX3VubG9jaygmaW5vZGUtPmlfbG9jayk7CiAJCQlyZXR1cm4gdHJ1
+ZTsKIAkJfQogCX0KLQlzcGluX3VubG9jaygmZGNhY2hlX2lub2RlX2xvY2spOworCXNwaW5fdW5s
+b2NrKCZpbm9kZS0+aV9sb2NrKTsKIAlyZXR1cm4gZmFsc2U7CiB9CiAK
+--001636310649a94cfb0496170036--
