@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab0K1WT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 17:19:28 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27533 "EHLO
+	id S1753551Ab0K1WjX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 17:39:23 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27739 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab0K1WT1 (ORCPT
+	with ESMTP id S1751889Ab0K1WjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 17:19:27 -0500
-Date: Sun, 28 Nov 2010 23:12:02 +0100 (CET)
+	Sun, 28 Nov 2010 17:39:22 -0500
+Date: Sun, 28 Nov 2010 23:31:57 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: Jiri Kosina <jkosina@suse.cz>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: =?ISO-8859-7?Q?Re=3A_=5BPATCH=5D=5Btrivial=5D_Kill_off_a_bunch_of_annoying__warning=3A_=A1inline=A2_is_not_at_beginning_of_declaration?=
-In-Reply-To: <alpine.LNX.2.00.1011282303250.981@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1011282310160.29621@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011282128210.29621@swampdragon.chaosbits.net> <alpine.LNX.2.00.1011282303250.981@pobox.suse.cz>
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, carlos@strangeworlds.co.uk, stable@kernel.org,
+        ceolin@ulevel.com
+Subject: Re: [PATCH] wmi: use memcmp instead of strncmp to compare GUIDs
+In-Reply-To: <1290980810-5903-1-git-send-email-cascardo@holoscopio.com>
+Message-ID: <alpine.LNX.2.00.1011282331330.29621@swampdragon.chaosbits.net>
+References: <1290980810-5903-1-git-send-email-cascardo@holoscopio.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -23,36 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Nov 2010, Jiri Kosina wrote:
+On Sun, 28 Nov 2010, Thadeu Lima de Souza Cascardo wrote:
 
-> On Sun, 28 Nov 2010, Jesper Juhl wrote:
+> While looking for the duplicates in /sys/class/wmi/, I couldn't find
+> them. The code that looks for duplicates uses strncmp in a binary GUID,
+> which may contain zero bytes. The right function is memcmp, which is
+> also used in another section of wmi code.
 > 
-> > Hi,
-> > 
-> > These warnings are spewed during a build of a 'allnoconfig' kernel 
-> > (especially the ones from u64_stats_sync.h show up a lot) when building 
-> > with -Wextra (which I often do)..
-> > They are
-> >   a) annoying
-> >   b) easy to get rid of.
-> > This patch kills them off.
+> It was finding 49142400-C6A3-40FA-BADB-8A2652834100 as a duplicate of
+> 39142400-C6A3-40FA-BADB-8A2652834100. Since the first byte is the fourth
+> printed, they were found as equal by strncmp.
 > 
-> Hmm, this made me look into what -Wextra actually does ... and it seems 
-> quite fishy for kernel. For example my gcc manpage tells me
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> ---
+>  drivers/platform/x86/wmi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
->        -Wempty-body
->            Warn if an empty body occurs in an if, else or do while statement.
-> 	   This warning is also enabled by -Wextra.
-> 
-> And we do have quite a bunch of 'do { } while (0);' in kernel. So it seems 
-> to me like you'll be getting much more noise with -Wextra than the lines 
-> below, won't you?
+> diff --git a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
+> index 104b77c..aecd9a9 100644
+> --- a/drivers/platform/x86/wmi.c
+> +++ b/drivers/platform/x86/wmi.c
+> @@ -755,7 +755,7 @@ static bool guid_already_parsed(const char *guid_string)
+>  	struct wmi_block *wblock;
+>  
+>  	list_for_each_entry(wblock, &wmi_block_list, list)
+> -		if (strncmp(wblock->gblock.guid, guid_string, 16) == 0)
+> +		if (memcmp(wblock->gblock.guid, guid_string, 16) == 0)
+>  			return true;
+>  
+>  	return false;
 > 
 
-Yes, I'm getting a lot of noise, and most of it I'll just live with since 
-it's not relevant.
-But, some of it - like what this patch addresses - is noise that can 
-easily just go away and I think it should.
+Looks right to me.
 
 -- 
 Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
