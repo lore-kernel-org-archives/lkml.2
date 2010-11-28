@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab0K1TSU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 14:18:20 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:33395 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab0K1TSR (ORCPT
+	id S1752559Ab0K1T1W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 14:27:22 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56234
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751583Ab0K1T1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 14:18:17 -0500
-Date: Sun, 28 Nov 2010 19:18:14 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vaurora@redhat.com, neilb@suse.de, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 0/2] overlayfs fixes
-Message-ID: <20101128191813.GC11339@shadowen.org>
-References: <1290015424-5583-1-git-send-email-apw@canonical.com>
- <E1PLdPT-0003Y7-31@pomaz-ex.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PLdPT-0003Y7-31@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 28 Nov 2010 14:27:20 -0500
+Date: Sun, 28 Nov 2010 11:27:47 -0800 (PST)
+Message-Id: <20101128.112747.35051709.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL net-2.6] vhost-net: rcu fixup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101125122301.GA15990@redhat.com>
+References: <20101125122301.GA15990@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 04:06:55PM +0100, Miklos Szeredi wrote:
-> On Wed, 17 Nov 2010, Andy Whitcroft wrote:
-> >   overlayfs: handle missing lower inodes in ovl_is_same_inode
-> 
-> I don't see how this could be needed.  vfs_is_same_inode() checks if
-> the dentries are positive.  In that case either the upper dentry or
-> the lower dentry or both must exist.
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Thu, 25 Nov 2010 14:23:01 +0200
 
-It was cirtinaly exploding in my tests without that change.  The test
-case was overlaying a tmpfs over a squashfs.
-
-> >   overlayfs: ovl_copy_up_xattr -- handle EOPNOTSUPP from vfs_listxattr
+> Please merge the following fix for 2.6.36.
+> Thanks!
 > 
-> Applied.  Thanks, Andy.
+> The following changes since commit a27e13d370415add3487949c60810e36069a23a6:
 > 
-> I pushed an updated version based on v2.6.37-rc3 to the overlayfs.v5
-> branch:
+>   econet: fix CVE-2010-3848 (2010-11-24 11:51:47 -0800)
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v5
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
 > 
-> Thanks,
-> Miklos
+> Michael S. Tsirkin (1):
+>       vhost/net: fix rcu check usage
+> 
 
-I'll retest with that version and see if the first patch is still
-required.
-
-Thanks for the updated version.
-
--apw
+Pulled, thanks Michael.
