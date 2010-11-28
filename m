@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab0K1V5I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 16:57:08 -0500
-Received: from tundra.namei.org ([65.99.196.166]:41542 "EHLO tundra.namei.org"
+	id S1752905Ab0K1WFe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 17:05:34 -0500
+Received: from tundra.namei.org ([65.99.196.166]:58580 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751772Ab0K1V5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 16:57:05 -0500
-Date: Mon, 29 Nov 2010 08:56:34 +1100 (EST)
+	id S1751998Ab0K1WFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 17:05:33 -0500
+Date: Mon, 29 Nov 2010 09:05:31 +1100 (EST)
 From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: [PATCH v1.5 0/5] keys: trusted and encrypted keys
-In-Reply-To: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1011290856070.15604@tundra.namei.org>
-References: <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+cc: LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Smack: UDS revision
+In-Reply-To: <4CEDB7EA.1070106@schaufler-ca.com>
+Message-ID: <alpine.LRH.2.00.1011290904540.15604@tundra.namei.org>
+References: <4CEDB7EA.1070106@schaufler-ca.com>
 User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,14 +22,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Nov 2010, Mimi Zohar wrote:
+On Wed, 24 Nov 2010, Casey Schaufler wrote:
 
-> Mimi Zohar (5):
->   lib: hex2bin converts ascii hexadecimal string to binary
->   tpm: add module_put wrapper
->   key: add tpm_send command
->   keys: add new trusted key-type
->   keys: add new key-type encrypted
+> 
+> Subject: [PATCH] Smack: UDS revision
+> 
+>     This patch addresses a number of long standing issues
+>     with the way Smack treats UNIX domain sockets.
+>     
+>     All access control was being done based on the label of
+>     the file system object. This is inconsistant with the
+>     internet domain, in which access is done based on the
+>     IPIN and IPOUT attributes of the socket. As a result
+>     of the inode label policy it was not possible to use
+>     a UDS socket for label cognizant services, including
+>     dbus and the X11 server.
+>     
+>     Support for SCM_PEERSEC on UDS sockets is also provided.
+> 
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+
+(I'm guessing you wanted me to apply this).
 
 Applied to
 git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
