@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab0K1D2i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Nov 2010 22:28:38 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:7006 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751266Ab0K1D2f (ORCPT
+	id S1751480Ab0K1E0P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Nov 2010 23:26:15 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:32860 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab0K1E0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Nov 2010 22:28:35 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiMEAONZ8Ux5Lcx2gWdsb2JhbACDUJ89FgEBFiIisRePUYEhgzNzBA
-Date: Sun, 28 Nov 2010 14:28:30 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Anca Emanuel <anca.emanuel@gmail.com>,
-        Sedat Dilek <sedat.dilek@googlemail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
-Message-ID: <20101128032830.GA12139@amd>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <AANLkTikRDO0C4Giz6vVHeMnHMtOGO5N1gN4wChEwBLpk@mail.gmail.com>
+	Sat, 27 Nov 2010 23:26:13 -0500
+Date: Sat, 27 Nov 2010 23:26:01 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Damien Wyart <damien.wyart@free.fr>, tmhikaru@gmail.com,
+        Venkatesh Pallipadi <venki@google.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+Message-ID: <20101128042601.GC15818@bombadil.infradead.org>
+References: <1288101958.15336.284.camel@twins>
+ <1288381343.1988.12.camel@laptop>
+ <20101109185516.GQ8332@bombadil.infradead.org>
+ <1289329348.2191.69.camel@laptop>
+ <20101110034507.GV8332@bombadil.infradead.org>
+ <1289390424.2191.98.camel@laptop>
+ <20101114051406.GA2050@roll>
+ <20101125133106.GA12914@brouette>
+ <1290693807.2145.36.camel@laptop>
+ <1290888920.32004.1.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikRDO0C4Giz6vVHeMnHMtOGO5N1gN4wChEwBLpk@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290888920.32004.1.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 05:04:08PM +0200, Anca Emanuel wrote:
-> On Sat, Nov 27, 2010 at 12:15 PM, Nick Piggin <npiggin@kernel.dk> wrote:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
+On Sat, Nov 27, 2010 at 09:15:20PM +0100, Peter Zijlstra wrote:
+> > I'll try and get around to it somewhere this week again.
 > 
-> I get:
->   CC [M]  fs/cifs/inode.o
-> fs/cifs/inode.c: In function ‘inode_has_hashed_dentries’:
-> fs/cifs/inode.c:807: error: ‘dcache_inode_lock’ undeclared (first use
-> in this function)
-> fs/cifs/inode.c:807: error: (Each undeclared identifier is reported only once
-> fs/cifs/inode.c:807: error: for each function it appears in.)
-> make[3]: *** [fs/cifs/inode.o] Error 1
-> make[2]: *** [fs/cifs] Error 2
-> make[1]: *** [fs] Error 2
+> How does this work for you? Its hideous but lets start simple.
 > 
-> I used the latest mainline.
 
-Sorry, missed a conversion, it just needs to be changed to
-inode->i_lock. Pushed the fix to git.
+At least one user reports noticeably lower idle load average using a
+kernel with that patch.
 
-Thanks,
-Nick
+Thanks, looks promising!
 
+ Kyle
