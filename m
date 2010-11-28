@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab0K1Hmd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 02:42:33 -0500
-Received: from fwil.voltaire.com ([193.47.165.2]:33456 "EHLO exil.voltaire.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751644Ab0K1Hma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 02:42:30 -0500
-Message-ID: <4CF207E1.8070404@Voltaire.com>
-Date: Sun, 28 Nov 2010 09:42:25 +0200
-From: Or Gerlitz <ogerlitz@Voltaire.com>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081209)
+	id S1751782Ab0K1IYi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 03:24:38 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58559 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab0K1IYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 03:24:36 -0500
+Date: Sun, 28 Nov 2010 09:24:21 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] perf tools: Fix lost and unknown events handling
+Message-ID: <20101128082421.GA2586@elte.hu>
+References: <20101127015926.GA25407@ghostprotocols.net>
 MIME-Version: 1.0
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Roland Dreier <rdreier@cisco.com>, trivial@kernel.org,
-        linux-rdma@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/9] Change the copyright info.
-References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com>	<adaoc9afout.fsf@cisco.com> <4CF18853.1000402@gmail.com> <AANLkTi=BxGFjLV6fO7GbyedX1b3xnXKW4Ss=qNDOLDjy@mail.gmail.com>
-In-Reply-To: <AANLkTi=BxGFjLV6fO7GbyedX1b3xnXKW4Ss=qNDOLDjy@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Nov 2010 07:42:27.0523 (UTC) FILETIME=[CDF94130:01CB8ECF]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101127015926.GA25407@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miguel Ojeda wrote:
-> [...] you have to maintain the original copyright 
 
-Yes, this copyright change, e.g five years after merging the relevant patches is like asking a school 
-to change the family name posted on a graduate diploma just b/c few years later she got married and decided to adopt the family name of her spouse.
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-Or.
+> Ingo,
+> 	
+> 	I added this one and removed the GCC optimization (alloc_size
+> attribute), please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
