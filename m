@@ -1,151 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab0K1OEy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 09:04:54 -0500
-Received: from www.tglx.de ([62.245.132.106]:34941 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab0K1OEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 09:04:52 -0500
-Date: Sun, 28 Nov 2010 15:04:36 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 07/11] x86/dtb: add support for PCI devices backed by dtb nodes
-Message-ID: <20101128140436.GB30784@www.tglx.de>
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de> <1290706801-7323-8-git-send-email-bigeasy@linutronix.de> <1290897231.32570.168.camel@pasglop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1290897231.32570.168.camel@pasglop>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+	id S1753123Ab0K1OFs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 09:05:48 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60618 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab0K1OFq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 09:05:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fkcQ55wz3BvfYJdkWJFehQWV7hgBZ6sLSlJbEgd0TO4zck0UugaskeHQnTtxP0H4OZ
+         8CM+ypj233NV1rlxyoJw8GmwThBdAX/zzLJHnHKZfk6YMZIvX5eQJOaTnoAoAoF50I7o
+         GOU2T/dzyvcXuA0/dfyfLeW4XTA/tEXHBxvik=
+MIME-Version: 1.0
+In-Reply-To: <1290951770.13526.18.camel@cai.gentoo>
+References: <1290941875.13526.15.camel@cai.gentoo>
+	<73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
+	<1290951770.13526.18.camel@cai.gentoo>
+Date: Sun, 28 Nov 2010 09:05:44 -0500
+Message-ID: <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
+Subject: Re: VT console need rewrite
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: microcai@fedoraproject.org
+Cc: Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-console@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt | 2010-11-28 09:33:51 [+1100]:
-
->That's something we need to eventually put into common code, ie matching
->device nodes to PCI devices... In the meantime, your approach will do,
->some nits:
+On Sun, Nov 28, 2010 at 8:42 AM, Microcai <microcai@fedoraproject.org> wrote:
+> 在 2010-11-28日的 08:24 -0500，Theodore Tso写道：
+>> On Nov 28, 2010, at 5:57 AM, Microcai wrote:
+>>
+>> > Hi, there
+>> >
+>> >     I'm implementing the UNICODE font of the framebuffer console, (see
+>> > http://lkml.org/lkml/2010/11/26/50 in case you do not got my email). But
+>> > current vt code is too bugy, too many direct assumes about vt buffer,
+>> > This makes me so hard to hack.  There is TODO telling me to add UNICODE
+>> > support, but no room for such code, that's why my patch is so tricky.
+>> >
+>> >     And the code itself, if you'll excuse me, it isn't as beautiful as rest
+>> > of the kernel.
+>> >     So, it really really need a clean rewrite.I'm ganna take is hard job.
+>> >     And, please tell me if is worth to do so.
+>>
+>> Yes, the console is code is very old.   But please be aware that lots of code (both in the kernel and in userspace) has dependencies upon how the code behaves.   So changing it in a way that does not break backwards compatibility is hard.  i.e., it is hard to hack for a reason.
+>>
+>> I would recommend an incremental rewrite (i.e., one patch at a time), as opposed to a rewrite from scratch.   Because people will want to be assured that things haven't broken in a horrible way as a result of a complete rewrite...
+>>
+>> -- Ted
+>>
 >
->> +static int of_irq_map_pci(struct pci_dev *dev, struct of_irq *oirq)
->> +{
->> +	struct device_node *node;
->> +	__be32 laddr[3];
->> +	__be32 lspec[2];
->> +	int ret;
->> +	u8 pin;
->> +
->> +	node = dev->dev.of_node;
->> +	if (!node) {
->> +		node = dev->bus->dev.of_node;
->> +		if (node) {
->> +			ret = of_irq_map_one(node, 0, oirq);
->> +			if (!ret)
->> +				return ret;
->> +		}
->> +	}
+> Yeah, I'd also like to rewrite it incrementally. But... who will accept
+> that incrementally patch ? It just seems that incremental patch will be
+> horrible at the beginning...... It will be discard without a
+> reason .....
+
+You can use CONFIG_VT to remove the entire VT subsystem. It might be
+easier for you to write an alternative VT system that could be enabled
+with a different flag.
+
+The VT system is very old code from the earliest days of Linux.
+Thousands of things depend on it both in the kernel and user space. It
+will be very hard to make significant changes to it that don't break
+lots of dependent code.
+
+Another model to consider... Remove the VT subsystem. Replace it will
+a Unicode VT system built in user space. Using the existing kernel
+code, leave a single user console in the kernel that would only be
+used for system maintenance. Normal users would never see this console
+unless their system was really messed up.
+
+
+
 >
->I don't quite get the logic in getting to the bus' interrupts if you
->can't find a device own nodes here...
-the of_irq_map_one() is here in case the device has an interrupt node in
-the device tree. If not, looks it up in the device tree based on the pin
-and the device address.
-
->> +	ret = pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
->> +	if (ret)
->> +		return ret;
->> +	if (!pin)
->> +		return -EINVAL;
->> +
->> +	laddr[0] = cpu_to_be32((dev->bus->number << 16) | (dev->devfn << 8));
->> +	laddr[1] = 0;
->> +	laddr[2] = 0;
->> +
->> +	lspec[0] = cpu_to_be32(pin);
->> +	lspec[1] = cpu_to_be32(0);
->> +	ret = of_irq_map_raw(node, lspec, 1, laddr, oirq);
->> +	if (ret)
->> +		return ret;
->> +	return 0;
->> +}
 >
->Ok so I see what you are trying to do, but I think it's not completely
->correct, besides you miss the swizzling when crossing P2P bridges and
->similar.
-It should be correct. I did not understand the P2P bridge so I left it
-out.
-
->I suppose you looked at powerpc's of_irq_map_pci() so I'm not sure why
->you modified it the way you did :-) You should probably either move it
->to a generic place or copy it for now with a comment indicating where it
->comes from so we spot it when we put it into a common code.
-Microblaze had its own copy of this code so I though there is something
-specific about it. If it is okay with you, I would move it to drivers/of
-and share. Then I would have the swizzle part :)
-
->> +void __cpuinit x86_of_pci_init(void)
->> +{
->> +	struct device_node *np;
->> +
->> +	pcibios_enable_irq = x86_of_pci_irq_enable;
->> +	pcibios_disable_irq = x86_of_pci_irq_disable;
->> +
->> +	for_each_node_by_type(np, "pci") {
->> +		const void *prop;
->> +		struct pci_bus *bus;
->> +		unsigned int bus_min;
->> +		struct device_node *child;
->> +
->> +		prop = of_get_property(np, "bus-range", NULL);
->> +		if (!prop)
->> +			continue;
->> +		bus_min = be32_to_cpup(prop);
->> +
->> +		bus = pci_find_bus(0, bus_min);
->> +		if (!bus) {
->> +			printk(KERN_ERR "Can't find a node for bus %s.\n",
->> +					np->full_name);
->> +			continue;
->> +		}
->> +
->> +		bus->dev.of_node = np;
->> +		for_each_child_of_node(np, child) {
->> +			struct pci_dev *dev;
->> +			u32 devfn;
->> +
->> +			prop = of_get_property(child, "reg", NULL);
->> +			if (!prop)
->> +				continue;
->> +
->> +			devfn = (be32_to_cpup(prop) >> 8) & 0xff;
->> +			dev = pci_get_slot(bus, devfn);
->> +			if (!dev)
->> +				continue;
->> +			dev->dev.of_node = child;
->> +		}
->> +	}
->> +}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
->That too won't go down bridges, atom never have any ? (no PCIe root
->complex at all ? ever will be ? even then, it should be supported as got
->knows what we'll handle in the future).
-The cpu I have here for testing does not have any.
 
->Eventually we want that matching between PCI devices and OF nodes to be
->in generic code, so that's not a big deal to have an "inferior" version
->temporarily in there I suppose.
 
-Inferior, I see :)
 
->Also, aren't you missing a pci_dev_put() after pci_get_slot() ?
-probably. I will check.
-
->Cheers,
->Ben.
-
-Sebastian
+-- 
+Jon Smirl
+jonsmirl@gmail.com
