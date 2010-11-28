@@ -1,39 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab0K1SZr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 13:25:47 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38741 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752796Ab0K1SZo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 13:25:44 -0500
-Subject: Re: [RFC/PATCH v6 05/12] media: Reference count and power handling
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <201011281333.39214.laurent.pinchart@ideasonboard.com> (sfid-20101128_154847_234366_292E6E7B)
-Date: Sun, 28 Nov 2010 18:25:39 +0000
-Cc: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk,
-        lennart@poettering.net
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6C806F24-FF45-4BF6-ACB0-1EE10AC584BD@opensource.wolfsonmicro.com>
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <4CEEA191.1000706@maxwell.research.nokia.com> <20101125214633.GC25162@opensource.wolfsonmicro.com> <201011281333.39214.laurent.pinchart@ideasonboard.com> (sfid-20101128_154847_234366_292E6E7B)
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-X-Mailer: Apple Mail (2.1082)
+	id S1753937Ab0K1Sbw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 13:31:52 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:48061 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830Ab0K1Sbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 13:31:51 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Hennerich <michael.hennerich@analog.com>
+Subject: [PATCH] MAINTAINERS: update Analog Devices support info
+Date: Sun, 28 Nov 2010 13:36:41 -0500
+Message-Id: <1290969401-29014-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 Nov 2010, at 12:33, Laurent Pinchart wrote:
+From: Michael Hennerich <michael.hennerich@analog.com>
 
-> Throwing an idea here, what about making power management modular ? The MC 
-> core would then call back to drivers to handle use count changes. The 
-> media_entity_use_change() function would be exported (and renamed), so that 
-> drivers could use it if they want graph-based power management. ALSA would 
-> have its own use count handler.
+Add more Analog Devices driver entries and refine the differences between
+Blackfin-specific code and processor independent drivers.
 
-We need more than just the count handler - we need a complete list of everything that has been changed in the whole system. The graph walk itself is fine but we need to be able to do postprocessing of the delta that is generated. Like I said pre- and post- callbacks may well cover it.
+Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ MAINTAINERS |   82 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 78 insertions(+), 4 deletions(-)
 
-Note that this is specifically for ASoC, not ALSA in general.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b3be8b3..5e7aecf 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -286,6 +286,41 @@ L:	linux-parisc@vger.kernel.org
+ S:	Maintained
+ F:	sound/pci/ad1889.*
+ 
++AD525X ANALOG DEVICES DIGITAL POTENTIOMETERS DRIVER
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/AD5254
++S:	Supported
++F:	drivers/misc/ad525x_dpot.c
++
++AD5398 CURRENT REGULATOR DRIVER (AD5398/AD5821)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/AD5398
++S:	Supported
++F:	drivers/regulator/ad5398.c
++
++AD714X CAPACITANCE TOUCH SENSOR DRIVER (AD7142/3/7/8/7A)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/AD7142
++S:	Supported
++F:	drivers/input/misc/ad714x.c
++
++AD7877 TOUCHSCREEN DRIVER
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/AD7877
++S:	Supported
++F:	drivers/input/touchscreen/ad7877.c
++
++AD7879 TOUCHSCREEN DRIVER (AD7879/AD7889)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/AD7879
++S:	Supported
++F:	drivers/input/touchscreen/ad7879.c
++
+ ADM1025 HARDWARE MONITOR DRIVER
+ M:	Jean Delvare <khali@linux-fr.org>
+ L:	lm-sensors@lm-sensors.org
+@@ -305,6 +340,32 @@ W:	http://linuxwireless.org/
+ S:	Orphan
+ F:	drivers/net/wireless/adm8211.*
+ 
++ADP5520 BACKLIGHT DRIVER WITH IO EXPANDER (ADP5520/ADP5501)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/ADP5520
++S:	Supported
++F:	drivers/mfd/adp5520.c
++F:	drivers/video/backlight/adp5520_bl.c
++F:	drivers/led/leds-adp5520.c
++F:	drivers/gpio/adp5520-gpio.c
++F:	drivers/input/keyboard/adp5520-keys.c
++
++ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/ADP5588
++S:	Supported
++F:	drivers/input/keyboard/adp5588-keys.c
++F:	drivers/gpio/adp5588-gpio.c
++
++ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/ADP8860
++S:	Supported
++F:	drivers/video/backlight/adp8860_bl.c
++
+ ADT746X FAN DRIVER
+ M:	Colin Leroy <colin@colino.net>
+ S:	Maintained
+@@ -317,6 +378,13 @@ S:	Maintained
+ F:	Documentation/hwmon/adt7475
+ F:	drivers/hwmon/adt7475.c
+ 
++ADXL34X THREE-AXIS DIGITAL ACCELEROMETER DRIVER (ADXL345/ADXL346)
++M:	Michael Hennerich <michael.hennerich@analog.com>
++L:	device-driver-devel@blackfin.uclinux.org
++W:	http://wiki-analog.com/ADXL345
++S:	Supported
++F:	drivers/input/misc/adxl34x.c
++
+ ADVANSYS SCSI DRIVER
+ M:	Matthew Wilcox <matthew@wil.cx>
+ L:	linux-scsi@vger.kernel.org
+@@ -441,17 +509,23 @@ L:	linux-rdma@vger.kernel.org
+ S:	Maintained
+ F:	drivers/infiniband/hw/amso1100/
+ 
+-ANALOG DEVICES INC ASOC DRIVERS
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++ANALOG DEVICES INC ASOC CODEC DRIVERS
++L:	device-driver-devel@blackfin.uclinux.org
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+-W:	http://blackfin.uclinux.org/
++W:	http://wiki-analog.com/
+ S:	Supported
+-F:	sound/soc/blackfin/*
+ F:	sound/soc/codecs/ad1*
+ F:	sound/soc/codecs/adau*
+ F:	sound/soc/codecs/adav*
+ F:	sound/soc/codecs/ssm*
+ 
++ANALOG DEVICES INC ASOC DRIVERS
++L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
++W:	http://blackfin.uclinux.org/
++S:	Supported
++F:	sound/soc/blackfin/*
++
+ AOA (Apple Onboard Audio) ALSA DRIVER
+ M:	Johannes Berg <johannes@sipsolutions.net>
+ L:	linuxppc-dev@lists.ozlabs.org
+-- 
+1.7.3.2
+
