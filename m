@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0K1WxR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 17:53:17 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35847 "EHLO ogre.sisk.pl"
+	id S1754229Ab0K1WyN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 17:54:13 -0500
+Received: from gate.crashing.org ([63.228.1.57]:60020 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab0K1WxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 17:53:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] PM: Prevent dpm_prepare() from returning errors unnecessarily
-Date: Sun, 28 Nov 2010 23:52:10 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1011281031240.27303-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1011281031240.27303-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752848Ab0K1WyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 17:54:11 -0500
+Subject: Re: [PATCH 07/11] x86/dtb: add support for PCI devices backed by
+ dtb nodes
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <20101128140436.GB30784@www.tglx.de>
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
+	 <1290706801-7323-8-git-send-email-bigeasy@linutronix.de>
+	 <1290897231.32570.168.camel@pasglop>  <20101128140436.GB30784@www.tglx.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Nov 2010 09:32:06 +1100
+Message-ID: <1290983526.32570.187.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011282352.10498.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 28, 2010, Alan Stern wrote:
-> On Sun, 28 Nov 2010, Rafael J. Wysocki wrote:
+On Sun, 2010-11-28 at 15:04 +0100, Sebastian Andrzej Siewior wrote:
+> Microblaze had its own copy of this code so I though there is
+> something
+> specific about it. If it is okay with you, I would move it to
+> drivers/of
+> and share. Then I would have the swizzle part :)
+
+Appart from the accessor pci_device_to_OF_node() which might or might
+not be specific, I thin the code is pretty common, probably something
+Grant didn't have time to tackle yet :-)
+ 
+> >Eventually we want that matching between PCI devices and OF nodes to
+> be
+> >in generic code, so that's not a big deal to have an "inferior"
+> version
+> >temporarily in there I suppose.
 > 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > Currently dpm_prepare() returns error code if it finds that a device
-> > being suspended has a pending runtime resume request.  However, it
-> > should not do that if the checking for wakeup events is not enabled.
-> 
-> It doesn't.  The line you changed _does_ check device_may_wakeup().
+> Inferior, I see :)
 
-That's not the point.  The problem is that it shouldn't abort suspend
-when events_check_enabled is unset.
+Hehe yeah :-) It's actually not a simple problem. For example, we can't
+just move the powerpc variant over to generic code as-is bcs ... we have
+2 completely different ways of doing it between ppc32 and ppc64 for
+historical reasons :-) They also have different "features". This is
+something I need to reconcile at some stage.
 
-> > On the other hand, if the checking for wakeup events is enabled, it
-> > can return error when a wakeup event is detected, regardless of its
-> > source.
-> 
-> Will adding this call to pm_wakeup_event() end up double-counting some 
-> events?
+For example our ppc32 variant support bus renumbering (ie, Linux
+assigning different bus numbers than what the DT encodes) while our
+ppc64 doesn't, but our ppc64 variant has additional "stuff" to deal with
+hotplug for example etc...
 
-Yes, it will, if the event has already been reported by the subsystem or driver.
+> >Also, aren't you missing a pci_dev_put() after pci_get_slot() ?
+> probably. I will check.
 
-I don't think it's a very big issue and I'm not sure trying to avoid it is
-worth the effort (we can check if the device's wakeup source object is active
-and skip reporting the wakeup event in that case, but that doesn't guarantee
-that the event won't be counted twice anyway).
+Cheers,
+Ben.
 
-Thanks,
-Rafael
