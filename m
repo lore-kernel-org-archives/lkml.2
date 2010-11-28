@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab0K1GOy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 01:14:54 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56336 "EHLO mga01.intel.com"
+	id S1751539Ab0K1GRV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 01:17:21 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40403 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab0K1GOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 01:14:52 -0500
+	id S1750947Ab0K1GRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 01:17:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,268,1288594800"; 
-   d="scan'208,223";a="630872768"
-Date: Sun, 28 Nov 2010 13:48:18 +0800
+   d="scan'208,223";a="353970441"
+Date: Sun, 28 Nov 2010 13:50:43 +0800
 From: Yunpeng Gao <yunpeng.gao@intel.com>
 To: linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v1 1/3]mmc: enable runtime PM support for block driver
-Message-ID: <20101128054818.GB3318@intel.com>
+Subject: [PATCH v1 2/3]mmc: enable runtime PM support of sdhci host
+	controller
+Message-ID: <20101128055043.GC3318@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,82 +25,245 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
->From 51e4d34f19b48552a10a9f6b69f51c5aeed18d03 Mon Sep 17 00:00:00 2001
+>From fab85166c387c5f590ab2d85ab73af52c684a6a5 Mon Sep 17 00:00:00 2001
 From: Yunpeng Gao <yunpeng.gao@intel.com>
-Date: Sun, 28 Nov 2010 08:01:01 +0800
-Subject: [PATCH] Enable runtime pm support for block driver of mmc stack.
+Date: Sun, 28 Nov 2010 08:27:46 +0800
+Subject: [PATCH] Enable runtime pm support of sdhci host controller with pci interface.
 
-Follow the kernel runtime pm framework, this patch enable
-runtime pm support for block driver of mmc stack.
-To validate it, it needs runtime pm support for mmc bus
-and host controller to be enabled also.
+Follow the kernel runtime pm framework, enable runtime pm support
+of the sdhci host controller with pci interface.
 
 Signed-off-by: Yunpeng Gao <yunpeng.gao@intel.com>
 ---
- drivers/mmc/card/block.c |   24 +++++++++++++++++++++---
- 1 files changed, 21 insertions(+), 3 deletions(-)
+ drivers/mmc/host/sdhci-pci.c |  120 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/sdhci.c     |   44 +++++++++++++++
+ drivers/mmc/host/sdhci.h     |    5 ++
+ 3 files changed, 169 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 217f820..8a35814 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -31,6 +31,7 @@
- #include <linux/mutex.h>
- #include <linux/scatterlist.h>
- #include <linux/string_helpers.h>
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index 3d9c246..a78eb16 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -18,6 +18,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
+ #include <linux/device.h>
 +#include <linux/pm_runtime.h>
  
- #include <linux/mmc/card.h>
  #include <linux/mmc/host.h>
-@@ -560,14 +561,24 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
  
- static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- {
-+	struct mmc_blk_data *md = mq->data;
-+	struct mmc_card *card = md->queue.card;
-+	int ret;
-+
-+	pm_runtime_get_sync(&card->dev);
-+
- 	if (req->cmd_flags & REQ_DISCARD) {
- 		if (req->cmd_flags & REQ_SECURE)
--			return mmc_blk_issue_secdiscard_rq(mq, req);
-+			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
--			return mmc_blk_issue_discard_rq(mq, req);
-+			ret = mmc_blk_issue_discard_rq(mq, req);
- 	} else {
--		return mmc_blk_issue_rw_rq(mq, req);
-+		ret = mmc_blk_issue_rw_rq(mq, req);
+@@ -934,6 +935,10 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
+ 		chip->slots[i] = slot;
  	}
-+
-+	pm_runtime_put(&card->dev);
-+
-+	return ret;
- }
  
- static inline int mmc_blk_readonly(struct mmc_card *card)
-@@ -709,6 +720,11 @@ static int mmc_blk_probe(struct mmc_card *card)
- 
- 	mmc_set_drvdata(card, md);
- 	add_disk(md->disk);
-+
-+	/* Indicate to runtime PM core that our device is active */
-+	pm_runtime_set_active(&card->dev);
-+	pm_runtime_enable(&card->dev);
++	pm_runtime_set_active(&pdev->dev);
++	pm_runtime_enable(&pdev->dev);
++	pm_runtime_allow(&pdev->dev);
 +
  	return 0;
  
-  out:
-@@ -732,6 +748,8 @@ static void mmc_blk_remove(struct mmc_card *card)
- 		mmc_blk_put(md);
+ free:
+@@ -960,9 +965,121 @@ static void __devexit sdhci_pci_remove(struct pci_dev *pdev)
+ 		kfree(chip);
  	}
- 	mmc_set_drvdata(card, NULL);
+ 
++	pm_runtime_forbid(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
 +
-+	pm_runtime_disable(&card->dev);
+ 	pci_disable_device(pdev);
  }
  
- #ifdef CONFIG_PM
++#ifdef CONFIG_PM_RUNTIME
++
++static int sdhci_pci_runtime_suspend(struct device *dev)
++{
++	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
++	struct sdhci_pci_chip *chip;
++	struct sdhci_pci_slot *slot;
++	int i, ret;
++	mmc_pm_flag_t pm_flags = 0;
++	pm_message_t state;
++
++	chip = pci_get_drvdata(pdev);
++	if (!chip)
++		return 0;
++
++	for (i = 0; i < chip->num_slots; i++) {
++		slot = chip->slots[i];
++		if (!slot)
++			continue;
++
++		ret = sdhci_runtime_suspend(slot->host);
++
++		if (ret) {
++			for (i--; i >= 0; i--)
++				sdhci_runtime_resume(chip->slots[i]->host);
++			return ret;
++		}
++
++		pm_flags |= slot->host->mmc->pm_flags;
++	}
++
++	state.event = PM_EVENT_AUTO_SUSPEND;
++	if (chip->fixes && chip->fixes->suspend) {
++		ret = chip->fixes->suspend(chip, state);
++		if (ret) {
++			for (i = chip->num_slots - 1; i >= 0; i--)
++				sdhci_runtime_resume(chip->slots[i]->host);
++			return ret;
++		}
++	}
++
++	pci_save_state(pdev);
++	if (pm_flags & MMC_PM_KEEP_POWER) {
++		if (pm_flags & MMC_PM_WAKE_SDIO_IRQ)
++			pci_enable_wake(pdev, PCI_D3hot, 1);
++	} else {
++		pci_enable_wake(pdev, PCI_D3hot, 0);
++		pci_disable_device(pdev);
++	}
++	pci_set_power_state(pdev, PCI_D3hot);
++
++	return 0;
++}
++
++static int sdhci_pci_runtime_resume(struct device *dev)
++{
++	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
++	struct sdhci_pci_chip *chip;
++	struct sdhci_pci_slot *slot;
++	int i, ret;
++
++	chip = pci_get_drvdata(pdev);
++	if (!chip)
++		return 0;
++
++	pci_set_power_state(pdev, PCI_D0);
++	pci_restore_state(pdev);
++	ret = pci_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	if (chip->fixes && chip->fixes->resume) {
++		ret = chip->fixes->resume(chip);
++		if (ret)
++			return ret;
++	}
++
++	for (i = 0; i < chip->num_slots; i++) {
++		slot = chip->slots[i];
++		if (!slot)
++			continue;
++
++		ret = sdhci_runtime_resume(slot->host);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++static int sdhci_pci_runtime_idle(struct device *dev)
++{
++	return 0;
++}
++
++#else
++
++#define sdhci_pci_runtime_suspend	NULL
++#define sdhci_pci_runtime_resume	NULL
++#define sdhci_pci_runtime_idle		NULL
++
++#endif
++
++static const struct dev_pm_ops sdhci_pci_pm_ops = {
++	.runtime_suspend = sdhci_pci_runtime_suspend,
++	.runtime_resume = sdhci_pci_runtime_resume,
++	.runtime_idle = sdhci_pci_runtime_idle,
++};
++
+ static struct pci_driver sdhci_driver = {
+ 	.name = 	"sdhci-pci",
+ 	.id_table =	pci_ids,
+@@ -970,6 +1087,9 @@ static struct pci_driver sdhci_driver = {
+ 	.remove =	__devexit_p(sdhci_pci_remove),
+ 	.suspend =	sdhci_pci_suspend,
+ 	.resume	=	sdhci_pci_resume,
++	.driver =	{
++		.pm =	&sdhci_pci_pm_ops
++	},
+ };
+ 
+ /*****************************************************************************\
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index a25db42..c437390 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1707,6 +1707,50 @@ EXPORT_SYMBOL_GPL(sdhci_enable_irq_wakeups);
+ 
+ #endif /* CONFIG_PM */
+ 
++#ifdef CONFIG_PM_RUNTIME
++
++int sdhci_runtime_suspend(struct sdhci_host *host)
++{
++	int ret = 0;
++
++	if (host->vmmc)
++		ret = regulator_disable(host->vmmc);
++
++	return ret;
++}
++
++EXPORT_SYMBOL_GPL(sdhci_runtime_suspend);
++
++int sdhci_runtime_resume(struct sdhci_host *host)
++{
++	int ret = 0;
++
++	if (host->vmmc) {
++		int ret = regulator_enable(host->vmmc);
++		if (ret)
++			return ret;
++	}
++
++	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
++		if (host->ops->enable_dma)
++			host->ops->enable_dma(host);
++	}
++
++	sdhci_init(host, (host->mmc->pm_flags & MMC_PM_KEEP_POWER));
++
++	if (host->mmc->pm_flags & MMC_PM_KEEP_POWER)
++		sdhci_set_ios(host->mmc, &host->mmc->ios);
++
++	mmiowb();
++
++	return ret;
++}
++
++EXPORT_SYMBOL_GPL(sdhci_runtime_resume);
++
++#endif /* CONFIG_PM_RUNTIME */
++
++
+ /*****************************************************************************\
+  *                                                                           *
+  * Device allocation/registration                                            *
+diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+index e42d7f0..d3a8855 100644
+--- a/drivers/mmc/host/sdhci.h
++++ b/drivers/mmc/host/sdhci.h
+@@ -326,4 +326,9 @@ extern int sdhci_resume_host(struct sdhci_host *host);
+ extern void sdhci_enable_irq_wakeups(struct sdhci_host *host);
+ #endif
+ 
++#ifdef CONFIG_PM_RUNTIME
++extern int sdhci_runtime_suspend(struct sdhci_host *host);
++extern int sdhci_runtime_resume(struct sdhci_host *host);
++#endif
++
+ #endif /* __SDHCI_HW_H */
 -- 
 1.6.6.1
 
