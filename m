@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab0K1Lkw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 06:40:52 -0500
-Received: from mailhost-p4-m2.nerim.net ([78.40.49.191]:53123 "EHLO
-	smtp-delay2.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752358Ab0K1Lkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 06:40:51 -0500
-Date: Sun, 28 Nov 2010 12:40:27 +0100
-From: Damien Wyart <damien.wyart@free.fr>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: tmhikaru@gmail.com, Venkatesh Pallipadi <venki@google.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-Message-ID: <20101128114027.GA2745@brouette>
-References: <1288101958.15336.284.camel@twins>
- <1288381343.1988.12.camel@laptop>
- <20101109185516.GQ8332@bombadil.infradead.org>
- <1289329348.2191.69.camel@laptop>
- <20101110034507.GV8332@bombadil.infradead.org>
- <1289390424.2191.98.camel@laptop>
- <20101114051406.GA2050@roll>
- <20101125133106.GA12914@brouette>
- <1290693807.2145.36.camel@laptop>
- <1290888920.32004.1.camel@laptop>
+	id S1752801Ab0K1MN6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 07:13:58 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35144 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752616Ab0K1MNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 07:13:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH] PM: Prevent dpm_prepare() from returning errors unnecessarily
+Date: Sun, 28 Nov 2010 13:12:49 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290888920.32004.1.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011281312.49949.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-* Peter Zijlstra <peterz@infradead.org> [2010-11-27 21:15]:
-> How does this work for you? Its hideous but lets start simple.
-> [...]
+Currently dpm_prepare() returns error code if it finds that a device
+being suspended has a pending runtime resume request.  However, it
+should not do that if the checking for wakeup events is not enabled.
+On the other hand, if the checking for wakeup events is enabled, it
+can return error when a wakeup event is detected, regardless of its
+source.
 
-Doesn't give wrong numbers like initial bug and tentative patches, but
-feels a bit too slow when numbers go up and down. Correct values are
-reached when waiting long enough, but it feels slow.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/main.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-As I've tested many combinations, maybe this is an impression because
-I do not remember about "normal" delays for the load to rise and fall,
-but this still feels slow.
-
-Thanks for working on this problem again.
-
--- 
-Damien Wyart
+Index: linux-2.6/drivers/base/power/main.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/main.c
++++ linux-2.6/drivers/base/power/main.c
+@@ -26,6 +26,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/sched.h>
+ #include <linux/async.h>
++#include <linux/suspend.h>
+ 
+ #include "../base.h"
+ #include "power.h"
+@@ -1052,8 +1053,10 @@ static int dpm_prepare(pm_message_t stat
+ 		mutex_unlock(&dpm_list_mtx);
+ 
+ 		pm_runtime_get_noresume(dev);
+-		if (pm_runtime_barrier(dev) && device_may_wakeup(dev)) {
+-			/* Wake-up requested during system sleep transition. */
++		if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
++			pm_wakeup_event(dev, 0);
++
++		if (pm_check_wakeup_events()) {
+ 			pm_runtime_put_sync(dev);
+ 			error = -EBUSY;
+ 		} else {
+@@ -1068,8 +1071,8 @@ static int dpm_prepare(pm_message_t stat
+ 				error = 0;
+ 				continue;
+ 			}
+-			printk(KERN_ERR "PM: Failed to prepare device %s "
+-				"for power transition: error %d\n",
++			printk(KERN_INFO "PM: Device %s not prepared "
++				"for power transition: code %d\n",
+ 				kobject_name(&dev->kobj), error);
+ 			put_device(dev);
+ 			break;
