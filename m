@@ -1,55 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab0K1UvM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 15:51:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab0K1UvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 15:51:11 -0500
-Date: Sun, 28 Nov 2010 21:44:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        "rjw@sisk.plpavel"@ucw.cz, Jan Kratochvil <jan.kratochvil@redhat.com>
-Subject: Re: [PATCH 14/14] ptrace: remove the extra wake_up_process() from
-	ptrace_detach()
-Message-ID: <20101128204435.GE12896@redhat.com>
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-15-git-send-email-tj@kernel.org>
+	id S1752088Ab0K1UxR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 15:53:17 -0500
+Received: from host0.dyn.jankratochvil.net ([89.250.240.59]:55779 "EHLO
+	host0.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751704Ab0K1UxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 15:53:12 -0500
+Date: Sun, 28 Nov 2010 21:51:34 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 09/14] ptrace: clean transitions between TASK_STOPPED and
+ TRACED
+Message-ID: <20101128205134.GA16858@host0.dyn.jankratochvil.net>
+References: <1290768569-16224-1-git-send-email-tj@kernel.org>
+ <1290768569-16224-10-git-send-email-tj@kernel.org>
+ <20101128202535.GC12896@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290768569-16224-15-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101128202535.GC12896@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today I lost the concentration at 13/14 ;)
+On Sun, 28 Nov 2010 21:25:35 +0100, Oleg Nesterov wrote:
+> On 11/26, Tejun Heo wrote:
+> > +	/*
+> > +	 * If the task is already STOPPED, set GROUP_STOP_PENDING and
+> > +	 * kick it so that it transits to TRACED.  This is safe as
+> > +	 * both transitions in and out of STOPPED are protected by
+> > +	 * siglock.
+> > +	 */
+> > +	spin_lock(&task->sighand->siglock);
+> > +	if (task_is_stopped(task)) {
+> > +		task->group_stop |= GROUP_STOP_PENDING;
+> > +		signal_wake_up(task, 1);
+> 
+> OK. Now we have a window if the tracer attaches to the stopped task.
+> 
+> Say,
+> 
+> 	child = fork()
+> 
+> 	if (!child)
+> 		return child_do_something();
+> 
+> 	kill(child, SIGSTOP);
+> 	wait();			// <--- ensures it is stopped
+> 
+> 	ptrace(PTRACE_ATTACH, child);
+> 
+> 	assert(ptrace(PTRACE_WHATEVER, child) == 0);
+> 
+> Currently this code is correct. With this patch the assertion above
+> can fail, the child may be running, changing its state from STOPPED
+> to TRACED.
 
-Will continue tomorrow. As for this patch,
+GDB now has code (as rewritten by Daniel Jacobowitz):
 
-On 11/26, Tejun Heo wrote:
->
-> This wake_up_process() has a turbulent history.  This is a remnant
-> from ancient ptrace implementation and patently wrong.  Commit
-> 95a3540d (ptrace_detach: the wrong wakeup breaks the ERESTARTxxx
-> logic) removed it
+ptrace (PTRACE_ATTACH) has been done and:
+linux_nat_post_attach_wait:
+  if (pid_is_stopped (pid)) ### it means `State' is `T (stopped)'
+    {
+      if (debug_linux_nat)
+        fprintf_unfiltered (gdb_stdlog,
+                            "LNPAW: Attaching to a stopped process\n");
 
-Yes. This obviously means I personally like this change. In fact,
-I never understood this wakeup, and I was glad to find the reason
-to send the patch.
+      /* The process is definitely stopped.  It is in a job control
+         stop, unless the kernel predates the TASK_STOPPED /
+         TASK_TRACED distinction, in which case it might be in a
+         ptrace stop.  Make sure it is in a ptrace stop; from there we
+         can kill it, signal it, et cetera.
 
-> but the change was reverted later by commit edaba2c5
-> (ptrace: revert "ptrace_detach: the wrong wakeup breaks the
-> ERESTARTxxx logic ") citing compatibility breakage and general
-> brokeness of the whole group stop / ptrace interaction.
+         First make sure there is a pending SIGSTOP.  Since we are
+         already attached, the process can not transition from stopped
+         to running without a PTRACE_CONT; so we know this signal will
+         go into the queue.  The SIGSTOP generated by PTRACE_ATTACH is
+         probably already in the queue (unless this kernel is old
+         enough to use TASK_STOPPED for ptrace stops); but since SIGSTOP
+         is not an RT signal, it can only be queued once.  */
+      kill_lwp (pid, SIGSTOP);
 
-Yes. Honestly, I completely forgot the reason, iirc 95a3540d
-broke gdb somehow.
+      /* Finally, resume the stopped process.  This will deliver the SIGSTOP
+         (or a higher priority signal, just like normal PTRACE_ATTACH).  */
+      ptrace (PTRACE_CONT, pid, 0, 0); ### line B
+    }
 
-Add Jan. IIRC, we had a long discussion after that, and (iirc!)
-Jan seems to agree we can kill this wakeup.
+### point A
 
-Oleg.
+  /* Make sure the initial process is stopped.  The user-level threads
+     layer might want to poke around in the inferior, and that won't
+     work if things haven't stabilized yet.  */
+  new_pid = my_waitpid (pid, &status, 0); ### this is in fact waitpid()
 
+
+The problem is this code is already racy.  At `point A' someone may
+`kill (tracee, SIGSTOP)', `waitpid (tracee)' -- eats SIGSTOP, and then
+my_waitpid() will hang because the <pid_is_stopped (pid)> block was not
+executed to prevent it.
+
+So if we are already discussing the ptrace race safety I would prefer some
+kernel ptrace API suggestion how to safely race-less attach to a task, with
+the task being in any state - unstopped, T (stopped) with pending SIGSTOP and
+T (stopped) with already eaten SIGSTOP.
+
+Specifically as a reply to your mail I guess the `line B' maybe could fail, if
+the tracee was very freshly `kill (tracee, SIGSTOP)' and `waitpid (tracee)',
+and thus the new `kill_lwp (pid, SIGSTOP)' delivery would not get into effect
+for the `my_waitpid()' line.
+
+
+
+Thanks,
+Jan
