@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab0K1K4t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 05:56:49 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44536 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab0K1K4o (ORCPT
+	id S1752437Ab0K1LCB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 06:02:01 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35812 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750982Ab0K1LCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 05:56:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:reply-to:to:content-type:organization:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OFkRk6fQY9eDQt2AV3GoOQDpdhl8m/hZ+gtLWuaFibzUmNhQXqOa9zYttV2DDDN7bP
-         7p8PDVQ9NONbyPrUfsLzGN6wZEWjMTaP6MlAjTJmzi6+L3O/96edAVK3L8MomDGMkvPV
-         9QwRVUPg+c/6j47ELggbWLANDJBV+7gEx0dxQ=
-Subject: VT console need rewrite
-From: Microcai <microcai@fedoraproject.org>
-Reply-To: microcai@fedoraproject.org
-To: linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: fedoraproject.org
-Date: Sun, 28 Nov 2010 18:57:55 +0800
-Message-ID: <1290941875.13526.15.camel@cai.gentoo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
-Content-Transfer-Encoding: 7bit
+	Sun, 28 Nov 2010 06:02:00 -0500
+Date: Sun, 28 Nov 2010 11:02:09 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Graeme Gregory <graeme@openmoko.org>,
+        Maurus Cuelenaere <mcuelenaere@gmail.com>,
+        Seungwhan Youn <sw.youn@samsung.com>,
+        Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/4] Fixes resource leaks for Samsung SoCs
+Message-ID: <20101128110208.GA28950@opensource.wolfsonmicro.com>
+References: <1290754245.25125.1.camel@mola>
+ <1290774396.3298.6.camel@odin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290774396.3298.6.camel@odin>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, there
+On Fri, Nov 26, 2010 at 12:26:36PM +0000, Liam Girdwood wrote:
 
-	I'm implementing the UNICODE font of the framebuffer console, (see
-http://lkml.org/lkml/2010/11/26/50 in case you do not got my email). But
-current vt code is too bugy, too many direct assumes about vt buffer,
-This makes me so hard to hack.  There is TODO telling me to add UNICODE
-support, but no room for such code, that's why my patch is so tricky.
+> All 
 
-	And the code itself, if you'll excuse me, it isn't as beautiful as rest
-of the kernel.
-	So, it really really need a clean rewrite.I'm ganna take is hard job.	
-	And, please tell me if is worth to do so.
+> Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 
-
+Jassi, I guess you're OK with these?
