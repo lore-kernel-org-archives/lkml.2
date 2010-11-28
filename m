@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0K1PN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 10:13:27 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47519 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab0K1PN0 (ORCPT
+	id S1753331Ab0K1PWM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 10:22:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65240 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab0K1PWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 10:13:26 -0500
+	Sun, 28 Nov 2010 10:22:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=l7YZgTxWM+F84oWzp6JCbq2Dn3swa1u60kOCOBIf5G1F5/kLDigtcnOwqPWI5Y0EQf
-         ytHcCjO/oQ04mSj9HpbAlVWt0Zc96r6elySokCBw9hvkdF7dF7op+WovcvUMdJpofMUO
-         g8CUcDDoei5GpfQ0BMEbmYaWxKqPTj6uLdDdo=
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=raMq2882Rl/ZBgNnLQZtTv7lfp3CNFxbmhPygD6F/L090MIFZQ2drc71SJW5NAEU3s
+         ZO/Zku87mZPNhjPSx9tcALDOS9gYoPikPapi9WoM1Ecwgi/D0GgJshqMh0rhuzKu6mb3
+         FH1azlDcBhIFA1vOGjQK/BqEzHKsRJ4nkJitA=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Subject: Re: 2.6.37-rc3-git4 bad desktop performance
+Date: Sun, 28 Nov 2010 16:21:58 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3; KDE/4.4.5; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
+References: <AANLkTimjMR4wUYCfi7BoUcg6aBmuWcQW_dBo8svReWcS@mail.gmail.com>
+In-Reply-To: <AANLkTimjMR4wUYCfi7BoUcg6aBmuWcQW_dBo8svReWcS@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
-References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
-Date: Mon, 29 Nov 2010 00:13:24 +0900
-Message-ID: <AANLkTikW+WG09KetDPG9DgT5CRBkm1tqQ+tUTHjLu4N6@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] deactivate invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011281621.59036.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is add-on patch of mmotm-11-23.
-Please, read original patch and thread.
+On niedziela, 28 listopada 2010 o 13:21:24 Anca Emanuel wrote:
+> Linus,
+> 
+> Last known good kernel: 2.6.37-rc3
+> Driver: nouveau
+> Test: play a HD movie.
 
-http://marc.info/?l=linux-kernel&m=129034986927826&w=3
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=23912
+for your bug report, please add your address to the CC list in there, thanks!
 
+PS. Please, send config, dmesg, do bisection etc. will be useful...
+
+Regards
 -- 
-Kind regards,
-Minchan Kim
+Maciej Rutecki
+http://www.maciek.unixy.pl
