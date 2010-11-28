@@ -1,32 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab0K1MV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 07:21:27 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42697 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab0K1MVZ (ORCPT
+	id S1752848Ab0K1NBU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 08:01:20 -0500
+Received: from mail.cybernet.ac.cy ([195.14.149.96]:42014 "EHLO
+	mail.cybernet.ac.cy" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0K1NBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 07:21:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=ATFTWqRodxYZDbw0lmmMDYWxlUk76zRRVxmRADz9qlMmHfd9kVC76IbHXPPT+Lvi7I
-         nDjWbNZes4sX+Nn0TI25KaSte1QJZhoKvlFuDU8jHyK1FXVpLOjGsVusBzK+k7TqlO/f
-         7MsA+LVzcyvOCmhNgoHmhCQ8bS4XU64BEo5kI=
+	Sun, 28 Nov 2010 08:01:19 -0500
+Message-ID: <3274.115.242.110.60.1290948316.squirrel@www.cybernet.ac.cy>
+Date: Sun, 28 Nov 2010 12:45:16 -0000 (GMT)
+Subject: REPLY URGENTLY.
+From: "Mr. Chikao Akira" <chiakira40@gmail.com>
+Reply-To: chiakira40@gmail.com
+User-Agent: SquirrelMail/1.4.1
 MIME-Version: 1.0
-Date: Sun, 28 Nov 2010 14:21:24 +0200
-Message-ID: <AANLkTimjMR4wUYCfi7BoUcg6aBmuWcQW_dBo8svReWcS@mail.gmail.com>
-Subject: 2.6.37-rc3-git4 bad desktop performance
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Greetings from Japan.
 
-Last known good kernel: 2.6.37-rc3
-Driver: nouveau
-Test: play a HD movie.
+I write to solicit your assistance/partnership in
+
+a business deal.
+I will send details as soon as I get your reply
+
+in my most secure email
+chiakira40@gmail.com
+
+Please do treat with regards as I look forward to
+
+your urgent reply and
+our partnership.
+
+Sincerely,
+
+Mr. Chikao Akira
+
+
