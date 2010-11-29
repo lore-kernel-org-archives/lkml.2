@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab0K2Xfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:35:34 -0500
-Received: from ozlabs.org ([203.10.76.45]:50635 "EHLO ozlabs.org"
+	id S1755435Ab0K2Xj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:39:57 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:40097 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953Ab0K2Xfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:35:32 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Date: Tue, 30 Nov 2010 10:05:29 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic-pae; KDE/4.5.1; i686; ; )
-Cc: matthieu castet <castet.matthieu@free.fr>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dave Jones <davej@redhat.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-References: <4CE2F914.9070106@free.fr> <20101129181542.GA11630@home.goodmis.org>
-In-Reply-To: <20101129181542.GA11630@home.goodmis.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752687Ab0K2Xj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 18:39:56 -0500
+Date: Mon, 29 Nov 2010 15:39:51 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Milton Miller <miltonm@bga.com>, devicetree-discuss@lists.ozlabs.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
+ (v4)
+Message-ID: <20101129153951.74202a84@queued.net>
+In-Reply-To: <20101116221241.21419250@queued.net>
+References: <20101111214546.4e573cad@queued.net>
+	<reply-olpc-3-v2@mdm.bga.com>
+	<20101112002704.50c629e2@queued.net>
+	<20101114095013.GB24206@elte.hu>
+	<4CE0B54E.6000101@zytor.com>
+	<20101115070254.GA25243@elte.hu>
+	<4CE17133.2050101@zytor.com>
+	<20101116221241.21419250@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011301005.29532.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010 04:45:42 am Steven Rostedt wrote:
-> This patch breaks function tracer:
-...
-> Here we set the text read only before we call the notifiers. The
-> function tracer changes the calls to mcount into nops via a notifier
-> call so this must be done after the module notifiers.
 
-That seems fine.
+Calling alloc_bootmem() for tiny chunks of memory over and over is really
+slow; on an XO-1, it caused the time between when the kernel started
+booting and when the display came alive (post-lxfb probe) to increase
+to 44s.  This patch optimizes the prom_early_alloc function by
+calling alloc_bootmem for 4k-sized blocks of memory, and handing out
+chunks of that to callers.  With this patch, the time between kernel load
+and display initialization decreased to 23s.  If there's a better way to
+do this early in the boot process, please let me know.
 
-I note that both before and after this patch we potentially execute code
-in the module (via parse_args) before we set it ro & nx.  But fixing this
-last bit of coverage is probably not worth the pain...
+(Note: increasing the chunk size to 16k didn't noticably affect boot time,
+and wasted 9k.)
 
-Cheers,
-Rusty.
+v4: clarify comment, requested by hpa
+v3: fix wasted memory buglet found by Milton Miller, and style fix.
+v2: reorder prom_early_alloc as suggested by Grant.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ arch/x86/platform/olpc/olpc_dt.c |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
+index 7054697..dab8746 100644
+--- a/arch/x86/platform/olpc/olpc_dt.c
++++ b/arch/x86/platform/olpc/olpc_dt.c
+@@ -126,14 +126,32 @@ static unsigned int prom_early_allocated __initdata;
+ 
+ void * __init prom_early_alloc(unsigned long size)
+ {
++	static u8 *mem;
++	static size_t free_mem;
+ 	void *res;
+ 
+-	res = alloc_bootmem(size);
+-	if (res)
+-		memset(res, 0, size);
+-
+-	prom_early_allocated += size;
++	if (free_mem < size) {
++		const size_t chunk_size = max(PAGE_SIZE, size);
++
++		/*
++		 * To mimimize the number of allocations, grab at least
++		 * PAGE_SIZE of memory (that's an arbitrary choice that's
++		 * fast enough on the platforms we care about while minimizing
++		 * wasted bootmem) and hand off chunks of it to callers.
++		 */
++		res = alloc_bootmem(chunk_size);
++		if (!res)
++			return NULL;
++		prom_early_allocated += chunk_size;
++		memset(res, 0, chunk_size);
++		free_mem = chunk_size;
++		mem = res;
++	}
+ 
++	/* allocate from the local cache */
++	free_mem -= size;
++	res = mem;
++	mem += size;
+ 	return res;
+ }
+ 
+-- 
+1.7.2.3
+
