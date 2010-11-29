@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab0K2Vhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 16:37:54 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:54725 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab0K2Vhx convert rfc822-to-8bit (ORCPT
+	id S1753155Ab0K2Vh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 16:37:59 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57655 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab0K2Vh5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 16:37:53 -0500
+	Mon, 29 Nov 2010 16:37:57 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=E5qSuLTWw/bl5ANGbctNmkXcJTOyCe20xasuw/lnUGiccSl7+a8NEcz5um1LPHffYZ
-         RmrmyQS2Y6EAVY7IEuBA==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=skTP5Ot9lF7/ueOrQ1SfG8h3wYzrAC4TyaJGASWj7jPSAs6ohUWaQK+6IFpjvItsdn
+         v+Pf5JEgX9mqssf+N/Q2HtqHCl5M+YBtP0ZiDBdbFAKyuk9db1zfeVKDbMujaBaEdDzM
+         FRccm/gUqZytyZL91WF7BXrEzHVD2Q+XSGDl8=
 MIME-Version: 1.0
-In-Reply-To: <20101127084153.GC28745@core.coreip.homeip.net>
-References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org> <20101127084153.GC28745@core.coreip.homeip.net>
-From: Duncan Laurie <dlaurie@chromium.org>
-Date: Mon, 29 Nov 2010 13:37:35 -0800
-X-Google-Sender-Auth: RnjJ3EQs8BpIohvdSq6TvGGs4TA
-Message-ID: <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
-Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs driver rebind
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikH+GnpJCjYvn2+LDV30=kNMwNfkA94z+GRpJHG@mail.gmail.com>
+References: <20101122191547.GC4340@kroah.com>
+	<19695.48938.271140.613069@wylie.me.uk>
+	<4CF036CF.20606@goop.org>
+	<AANLkTikH+GnpJCjYvn2+LDV30=kNMwNfkA94z+GRpJHG@mail.gmail.com>
+Date: Mon, 29 Nov 2010 13:37:56 -0800
+Message-ID: <AANLkTikFaxnO3_xYWGGW9gEA6XPVM0pMpMqz-hpEHN_6@mail.gmail.com>
+Subject: Re: Xen domU kernel no longer shuts down (Was Linux 2.6.32.26)
+From: Alok Kataria <alokkataria1@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "Alan J. Wylie" <alan@wylie.me.uk>, Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sander Eikelenboom <linux@eikelenboom.it>, akataria@vmware.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 12:41 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Duncan,
->
-> On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
->> When rebinding a serio driver via sysfs drvctl interface it is possible for
->> an interrupt to trigger after the disconnect of the existing driver and
->> before the binding of the new driver.  This will cause the serio interrupt
->> handler to queue a rescan event which will disconnect the new driver
->> immediately after it is attached.
->>
->> This change clears the serio event queue after processing the drvctl
->> request but before releasing the serio mutex, which will clear any queued
->> rescans before they can get processed.
->>
->> Reproduction involves issuing a rebind of device port from psmouse driver
->> to serio_raw driver while generating input to trigger interrupts.  Then
->> checking to see if the corresponding i8042/serio4/driver is correctly
->> attached to the serio_raw driver instead of psmouse.
->>
->> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
->> ---
->>  drivers/input/serio/serio.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
->> index 405bf21..a66307e 100644
->> --- a/drivers/input/serio/serio.c
->> +++ b/drivers/input/serio/serio.c
->> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
->>               serio_disconnect_port(serio);
->>               error = serio_bind_driver(serio, to_serio_driver(drv));
->>               put_driver(drv);
->> +             serio_remove_pending_events(serio);
->
-> Hmm, makes sense, although should we limit events being removed to
-> rescan events only?
->
+[resending my reply, apologies if you get it twice]
 
-
-That seems reasonable.  It would mean adding a new function or a
-parameter to the existing serio_remove_pending_events function, do you
-have a preference?
-
-Thanks,
--duncan
+On Mon, Nov 29, 2010 at 1:35 PM, Alok Kataria <alokkataria1@gmail.com> wrote:
+>
+>
+> On Fri, Nov 26, 2010 at 2:38 PM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>
+>> On 11/26/2010 06:07 AM, Alan J. Wylie wrote:
+>> > Greg KH <gregkh@suse.de> writes:
+>> >
+>> >> I'm announcing the release of the 2.6.32.26 kernel.
+>> > ...
+>> >
+>> >> Alok Kataria (1):
+>> >>       x86, kexec: Make sure to stop all CPUs before exiting the kernel
+>> > This patch (ae832c21a08514fd11d2d1d6e217c8a537764bb0) stops my Xen DomU from
+>> > shutting down iff vcpus in the xen config file is > 1.
+>> >
+>> > Simply reverting the commit gets things working properly again.
+>>
+>> Thanks for confirming this.  I had seen the same thing and suspected
+>> this change, but hadn't investigated it yet.
+>
+>
+> To get the old behavior back for Xen you can replace this call
+> smp_call_function(stop_self, NULL, wait);
+>
+>  in  xen_stop_other_cpus with
+>
+> smp_call_function(stop_self, NULL, 0);
+>
+> That should fix your hang and fallback to the original behavior, though please note that there might still be a fundamental problem about why some of the AP's don't respond to stop_send IPI on XEN.
+>
+> Alok
