@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab0K2Uvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:51:51 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37885 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0K2Uvu convert rfc822-to-8bit (ORCPT
+	id S1753960Ab0K2UyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:54:17 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57433 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab0K2UyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:51:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TUWi+cPyd653BnhUy0UboAu5TK/lynwuUOG8/NVQMsQyaFvCMl6//+zbt7Aco5Pgwe
-         oZEtiCQ3N7XPvxYZAkJ799xbIASsuSLTdPdM+wGKyBUzgvR42oRsGarRTREcZsa+EDcD
-         MZCQYe77duVhQLoNkmwu5iEIucVl5shlZqEWY=
+	Mon, 29 Nov 2010 15:54:16 -0500
+Date: Mon, 29 Nov 2010 21:54:10 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Jonathan Corbet <corbet@lwn.net>
+cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
+ driver owner
+In-Reply-To: <20101129131737.3dd6eb03@bike.lwn.net>
+Message-ID: <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
+References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
+ <20101129131737.3dd6eb03@bike.lwn.net>
 MIME-Version: 1.0
-In-Reply-To: <20101129085250.GF5218@cr0.nay.redhat.com>
-References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
-	<20101129081619.GD5218@cr0.nay.redhat.com>
-	<AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com>
-	<20101129085250.GF5218@cr0.nay.redhat.com>
-Date: Mon, 29 Nov 2010 21:51:49 +0100
-Message-ID: <AANLkTikmzhM-XpXrtOys3DbrG00brnXx0YVYSpHt-vrs@mail.gmail.com>
-Subject: Re: [PATCH] Built kernel without -O2 option
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: Hui Zhu <teawater@gmail.com>, linux-kernel@vger.kernel.org,
-        gdb@sourceware.org, hellogcc@freelists.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:q3UeGbT3Vf0P0dIPu57oHdVyJyZLeMmhaEiVTdNld10
+ TViiQangwhqEOjKBcLdZcFeN10/9k7Fg/xDWXyKX78qXsAOmP0
+ YOCyCkIaChA5XfP41O22edgrrWaTwF7EDlB1eeTBUbmsNgNuEX
+ EOvgeKob40CEd2Y4tiS7+RxpoO4a7pxowIDAuVnLDXHZg24/qV
+ jlDb7IepnkJKaPF6MAv0/UWBymON+KUhyIzHqhIfpg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 9:52 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Mon, Nov 29, 2010 at 04:24:42PM +0800, Hui Zhu wrote:
->>On Mon, Nov 29, 2010 at 16:16, Américo Wang <xiyou.wangcong@gmail.com> wrote:
->>> On Mon, Nov 29, 2010 at 11:56:15AM +0800, Hui Zhu wrote:
->>>>Hi,
->>>>
->>>>Now, there are a lot of ways to debug the Linux kernel with GDB, like
->>>>qemu, kgtp or kgdb and so on.
->>>>But the developer more like add a printk. It have a lot of reason, a big one is:
->>>>(gdb) p ret
->>>>$3 = <value optimized out>
->>>>And the code execution order is not right.
->>>>
->>>>This is becuase the Kernel is bult with gcc -O2.  Gcc will not
->>>>generate enough debug message with file with -O2.
->>>>So GDB cannot work very well with Linux kernel.
->>>>
->>>>So I make a patch that add a option in "Kernel hacking" called "Close
->>>>GCC optimization".  It will make kernel be built without -O2.
->>>>
->>>>I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
->>>>
->>>
->>> The problem is that some functions _have to_ be inlined and gcc without -O2
->>> doesn't inline them. Have check all the cases? I doubt.
->>
->>If they really need O2, I set  them to O2.
->>Actually, this is the main work, find out the file that need the O2.  :)
->>
->>For example:
->>ifdef CONFIG_CC_CLOSE_OPTIMIZATION
->>CFLAGS_fpu.o                           += -O2
->>CFLAGS_aesni-intel_glue.o              += -O2
->>CFLAGS_ghash-clmulni-intel_glue.o      += -O2
->>endif
->
-> No, I didn't mean this, I meant some function that have to be inlined
-> are those who only work when being inlined, e.g. current_text_addr().
+Hi Jon
 
-Can you please explain to me why some functions work only when they are inlined?
-Is it because of asm() black magic?
+On Mon, 29 Nov 2010, Jonathan Corbet wrote:
 
-> I think it is not alone. :)
->
-> Also, since many inline functions sit in hot-path, are there any
-> performance regressions with your patch applied?
->
-> BTW, you need to Cc kbuild for makefile changes like this.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
+> Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> 
+> > When two drivers interoperate without an explicit dependency, it is often
+> > required to prevent one of them from being unloaded safely by dereferencing
+> > dev->driver->owner. This patch provides a generic function to do this in a
+> > race-free way.
+> 
+> I must ask: why not, instead, make the dependency explicit?  In
+> particular, this looks like an application for the proposed media
+> controller code, which is meant to model the connections between otherwise
+> independent devices.  The fact that your example comes from V4L2 (which is
+> the current domain of the media controller) also argues that way.
 
--- 
-Thanks,
-//richard
+Sorry, don't see a good way to do this. This function is for a general 
+dependency, where you don't have that driver, we are checking for register 
+with us, so, the only way to get to it is via dev->driver->owner. And I 
+also don't want to move registering the device into the dependant driver 
+and then wait (with a timeout) for a driver to probe with it... I just 
+want to verify, whether a driver has attached to that device and whether I 
+can lock it down.
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
