@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab0K2IQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:16:44 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33887 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751006Ab0K2IQm (ORCPT
+	id S1751344Ab0K2ISb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:18:31 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44550 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0K2ISb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:16:42 -0500
-X-IronPort-AV: E=Sophos;i="4.59,275,1288566000"; 
-   d="scan'208";a="81139750"
-Date: Mon, 29 Nov 2010 09:16:39 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Microcai <microcai@fedoraproject.org>
-Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>, Theodore Tso <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101129081639.GA5142@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Microcai <microcai@fedoraproject.org>,
-	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-	Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-	linux-console@vger.kernel.org
-References: <1290941875.13526.15.camel@cai.gentoo> <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu> <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com> <1290954545.13526.27.camel@cai.gentoo> <20101128191152.GV10602@const.famille.thibault.fr> <1290993006.877.0.camel@cai.gentoo>
+	Mon, 29 Nov 2010 03:18:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:cc:content-type
+         :content-transfer-encoding;
+        b=PFGhMKPbmd7rdYPgcsNU6OjpWzFj35bY7jh5hb0t2q3kHXPoeRX9l4fup4ZWywCqcB
+         /V7CN//lJKwPn5fIsdvbnhoBAn7zwS2rqyva5b/YvhBk+yGLs2cHaBghCDvmXmHy5bu4
+         FIP0yeGjyianBwQS7u59kfDAOxeONV+nmouiQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290993006.877.0.camel@cai.gentoo>
-User-Agent: Mutt/1.5.12-2006-07-14
+In-Reply-To: <20101129081619.GD5218@cr0.nay.redhat.com>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com> <20101129081619.GD5218@cr0.nay.redhat.com>
+From: microcai <microcai@fedoraproject.org>
+Date: Mon, 29 Nov 2010 16:18:09 +0800
+X-Google-Sender-Auth: T3VPn86fDzYw9Z1T09k1CTrBzo8
+Message-ID: <AANLkTi=c4THHSaBCmuxfTZ4k1WUGVkzJzCJXMgX82fzX@mail.gmail.com>
+Subject: Re: [PATCH] Built kernel without -O2 option
+Cc: Hui Zhu <teawater@gmail.com>, linux-kernel@vger.kernel.org,
+        gdb@sourceware.org, hellogcc@freelists.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microcai, le Mon 29 Nov 2010 09:10:06 +0800, a écrit :
-> 在 2010-11-28日的 20:11 +0100，Samuel Thibault写道：
-> > Microcai, le Sun 28 Nov 2010 22:29:05 +0800, a écrit :
-> > > So, here is the design according to your description  .. 
-> > > 
-> > > JUST export /dev/fb and /dev/pts and /dev/console
-> > > The kernel use /dev/console, but invisible. 
-> > > The rest of the world uses /dev/pts
-> > > 
-> > > Make init using /dev/fb to display boot message, and agetty runs
-> > > on /dev/pts
-> > 
-> > Errr, but that already exists, that's fbterm...
-> 
-> Every time someone try to implement something , some other guy will jump
-> out and say, that already exist, in user-space ..... blablablabla
-
-But isn't that basically what you are describing?
-
-(i.e. what's the use of using a pts and /dev/fb, if not for a userlevel
-terminal to actually do the work?)
-
-Samuel
+2010/11/29 Américo Wang <xiyou.wangcong@gmail.com>:
+> On Mon, Nov 29, 2010 at 11:56:15AM +0800, Hui Zhu wrote:
+>>Hi,
+>>
+>>Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>>qemu, kgtp or kgdb and so on.
+>>But the developer more like add a printk. It have a lot of reason, a big one is:
+>>(gdb) p ret
+>>$3 = <value optimized out>
+>>And the code execution order is not right.
+>>
+>>This is becuase the Kernel is bult with gcc -O2.  Gcc will not
+>>generate enough debug message with file with -O2.
+>>So GDB cannot work very well with Linux kernel.
+>>
+>>So I make a patch that add a option in "Kernel hacking" called "Close
+>>GCC optimization".  It will make kernel be built without -O2.
+>>
+>>I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
+>>
+>
+> The problem is that some functions _have to_ be inlined and gcc without -O2
+> doesn't inline them. Have check all the cases? I doubt.
+>
+> Also, what is size of vmlinux before applying your patch and after that?
+> Does it increase too much?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
