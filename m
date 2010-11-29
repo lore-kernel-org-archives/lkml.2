@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0K2Eaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 23:30:30 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57312 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763Ab0K2Ea3 (ORCPT
+	id S1754906Ab0K2Eex (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 23:34:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43047 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab0K2Eew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 23:30:29 -0500
+	Sun, 28 Nov 2010 23:34:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=mecIAbvmeqeyi7T7yeSYDTI7Uh8DmucOC/BiVviCIWjCQa3w7NB+lN+Hd7TMdhyUYW
-         vBpUr5d/YyHBvkzgCtNQ9UtFL8NxkIRq0hm3iNXC88YcfvDq4sobumrLg3Mi2Gan8LmH
-         iDYCMcBD1fY1h49+59lGVbeqoT5EQM9/qiYnI=
+        b=tL56YIWQNRdin4JUqYJViRizfKpeGz2Wss+CoZvvPqI/Dtg8DbajpMZSR7oDeA30Z2
+         pvska6iA4o6m/cyiIEh74Zi46DbICxGHrygzFMvOXLQjXw+/pBWALz6phntSb8hI8qFi
+         3nDP7WfFRbmoBk+tiEPPviizdRxpNddbcgBNs=
 MIME-Version: 1.0
-In-Reply-To: <4CF32BD5.8050006@redhat.com>
-References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
-	<48315b5fe54efa08982aa7df77e8abe793889e3a.1290956059.git.minchan.kim@gmail.com>
-	<4CF32BD5.8050006@redhat.com>
-Date: Mon, 29 Nov 2010 13:30:28 +0900
-Message-ID: <AANLkTinr0UtYzptXzZXB4hu_XvF8BzY86GiQE=b+zsj1@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] Prevent promotion of page in madvise_dontneed
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
+In-Reply-To: <AANLkTinkvA=cVb4+ctR6w6bTsevttwp3C016Z2XEMAOC@mail.gmail.com>
+References: <1290598502-31727-1-git-send-email-tom.leiming@gmail.com>
+	<20101124144540.GB15875@ghostprotocols.net>
+	<AANLkTinkvA=cVb4+ctR6w6bTsevttwp3C016Z2XEMAOC@mail.gmail.com>
+Date: Mon, 29 Nov 2010 12:34:49 +0800
+Message-ID: <AANLkTi=U4echi4NzKan7uVgdCOEuhg5ZvBoWeqJH1sVT@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf:tools: avoid to create much more maps for kernel
+ symbols on ARM
+From: Ming Lei <tom.leiming@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au1.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 1:28 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 11/28/2010 10:02 AM, Minchan Kim wrote:
+2010/11/25 Ming Lei <tom.leiming@gmail.com>:
+> 2010/11/24 Arnaldo Carvalho de Melo <acme@ghostprotocols.net>:
+>> Em Wed, Nov 24, 2010 at 07:35:02PM +0800, tom.leiming@gmail.com escreveu:
+>>> From: Ming Lei <tom.leiming@gmail.com>
 >>
->> Now zap_pte_range alwayas promotes pages which are pte_young&&
->> !VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
->> it's unnecessary since the page wouldn't use any more.
+>>> On ARM, module addresss space is ahead of kernel space, so the module
+>>> symbols are handled before kernel symbol in dso__split_kallsyms, then
+>>> cause one map is created for each kernel symbol.
 >>
->> If the page is sharred by other processes and it's real working set
+>>> This patch fixes the issue by restoring to original kernel map in
+>>> dso__split_kallsyms() to avoid create unnecessary maps for kernel
+>>> symbols when starting to handle kenel symbol maps but after module
+>>> symbol maps are handled over.
+>>
+>> Can you try with the following patch instead?
 >
-> This line seems to be superfluous, I don't see any special
-> treatment for this case in the code.
+> Fine to me.
+>
+> Reported-and-tested-by: Ming Lei <tom.leiming@gmail.com>
 
-I should remove the lines.
-It's my fault.
+Arnaldo, could you queue this one and the patch below
 
->
->> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
->> Cc: Rik van Riel<riel@redhat.com>
->> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->> Cc: Johannes Weiner<hannes@cmpxchg.org>
->> Cc: Nick Piggin<npiggin@kernel.dk>
->> Cc: Mel Gorman<mel@csn.ul.ie>
->> Cc: Wu Fengguang<fengguang.wu@intel.com>
->
-> The patch itself looks good to me.
->
-> Acked-by: Rik van Riel <riel@redhat.com>
+      http://marc.info/?l=linux-kernel&m=129068448714210&w=2
 
-Thanks, Rik.
+into your tree? Without the two, perf tool can't work well on ARM
+if there are modules loaded.
+
+thanks,
 -- 
-Kind regards,
-Minchan Kim
+Lei Ming
