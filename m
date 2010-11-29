@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab0K2PUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:20:10 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:56274 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab0K2PUI (ORCPT
+	id S1754509Ab0K2PXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:23:04 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:35616 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408Ab0K2PXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:20:08 -0500
-Date: Mon, 29 Nov 2010 15:19:53 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>
-Subject: Re: [REGRESSION] Suspend fails because of TPM modules
-Message-ID: <20101129151953.GA9501@srcf.ucam.org>
-References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
+	Mon, 29 Nov 2010 10:23:01 -0500
+Date: Mon, 29 Nov 2010 10:22:30 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Kyle McMartin <kyle@mcmartin.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
+ threshold when memory is low
+Message-ID: <20101129152230.GH15818@bombadil.infradead.org>
+References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie>
+ <1288169256-7174-2-git-send-email-mel@csn.ul.ie>
+ <20101126160619.GP22651@bombadil.infradead.org>
+ <20101129095618.GB13268@csn.ul.ie>
+ <20101129131626.GF15818@bombadil.infradead.org>
+ <20101129150824.GF13268@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20101129150824.GF13268@csn.ul.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:15:21PM +0100, Jiri Kosina wrote:
+On Mon, Nov 29, 2010 at 03:08:24PM +0000, Mel Gorman wrote:
+> Ouch! I have been unable to create an exact copy of your kernel source as
+> I'm not running Fedora. From a partial conversion of a source RPM, I saw no
+> changes related to mm/vmscan.c. Is this accurate? I'm trying to establish
+> if this is a mainline bug as well.
+> 
 
-> I just found out, that if I modprobe tpm_tis module with
-> 
-> 	itpm=1
-> 
-> parameter, the problem doesn't happen any more and suspend works fine.
-> 
-> This definitely wasn't needed on older kernels though, so I'd consider 
-> that still a regression.
-> 
-> Also, can't we make the module automatically detect the machines on which 
-> to apply the workaround? Let's say, based on DMI?
+Sorry, if you extract the source rpm you should get the patched
+sources... Aside from a few patches to mm/mmap for execshield, mm/* is
+otherwise untouched from the latest stable 2.6.35 kernels.
 
-http://lkml.org/lkml/2010/10/21/456
+If you git clone git://pkgs.fedoraproject.org/kernel and check out the
+origin/f14/master branch, it has all the patches we apply (based on the
+'ApplyPatch' lines in kernel.spec
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> Second, I see all the stack traces are marked with "?" making them
+> unreliable. Is that anything to be concerned about?
+> 
+
+Hrm, I don't think it is, I think the ones with '?' are just artifacts
+because we don't have a proper unwinder. Oh! Thanks! I just found a bug
+in our configs... We don't have CONFIG_FRAME_POINTER set because
+CONFIG_DEBUG_KERNEL got unset in the 'production' configs... I'll fix
+that up.
+
+> I see that one user has reported that the patches fixed the problem for him
+> but I fear that this might be a co-incidence or that the patches close a
+> race of some description. Specifically, I'm trying to identify if there is
+> a situation where kswapd() constantly loops checking watermarks and never
+> calling cond_resched(). This could conceivably happen if kswapd() is always
+> checking sleeping_prematurely() at a higher order where as balance_pgdat()
+> is always checks the watermarks at the lower order. I'm not seeing how this
+> could happen in 2.6.35.6 though. If Fedora doesn't have special changes,
+> it might mean that these patches do need to go into -stable as the
+> cost of zone_page_state_snapshot() is far higher on larger machines than
+> previously reported.
+> 
+
+Yeah, I am a bit surprised as well. Luke seems to have quite a large
+machine... I haven't seen any kswapd lockups there on my 18G machine
+using the same kernel. :< (Possibly it's just not stressed enough
+though.)
+
+Thanks for looking into this!
+	Kyle
