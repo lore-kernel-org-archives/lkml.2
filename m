@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab0K2QPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:15:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59425 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949Ab0K2QPF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:15:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=RpcNz8nWf9rbB4oBJSLcPYwQ7x71r2/vdVhpWtnDzykcQ9tlgu5n6qSZd1Td9U2taD
-         Sb8CZewBtCPY1aDmgRVIozY9Im2CCZRW2261o0TBNDzJd/f8lSwBMRO1IPZRQG2dkX4G
-         Ab5wwZFcGhB/POUjyerLMc3Wk6nAxqT93q5fE=
-Message-ID: <4CF3D182.8090907@doube.net>
-Date: Mon, 29 Nov 2010 16:14:58 +0000
-From: Michael Doube <michael@doube.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [REGRESSION] Suspend fails because of TPM modules
-References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755056Ab0K2QPV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:15:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755028Ab0K2QPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:15:18 -0500
+Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
+From: Eric Paris <eparis@redhat.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
+        "agruen@linbit.com" <agruen@linbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <201011261011.55266.tvrtko.ursulin@sophos.com>
+References: <20101122002747.13674.69384.stgit@zaytsev.su>
+	 <20101122003357.13674.30341.stgit@zaytsev.su>
+	 <201011261011.55266.tvrtko.ursulin@sophos.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Nov 2010 11:14:54 -0500
+Message-ID: <1291047294.3248.9.camel@localhost.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-11-26 at 10:11 +0000, Tvrtko Ursulin wrote:
+> On Monday 22 Nov 2010 00:37:21 Alexey Zaytsev wrote:
 
-> I just found out, that if I modprobe tpm_tis module with
-> 
-> 	itpm=1
-> 
-> parameter, the problem doesn't happen any more and suspend works fine.
+> >  struct fanotify_event_metadata {
+> > -       __u16 event_len;
+> > +       __u16 event_len; /* Including the options */
+> >         __u8 vers;
+> > -       __u8 reserved;
+> > +       __u8 options_offset; /* Aka header length */
+> >         __s32 fd;
+> >         __aligned_u64 mask;
+> >         __s32 pid;
+> > +       /* Options go here. */
+> >  };
 
-Not here unfortunately. Suspend still fails with itpm=1, and I get this
-in my logs
+> Also, options_offset is, if I understood it correctly, basically the lenght of
+> fanotify_event_metadata. As such, isn't that field redundant since the lenght
+> is implied from the protocol version?
 
-Nov 29 15:52:32 doris kernel: [  649.110527] resource map sanity check
-conflict: 0xfed40000 0xfed44fff 0xfed43000 0xfed43fff Intel Flush Page
-Nov 29 15:52:32 doris kernel: [  649.110923] tpm_tis 00:09: 1.2 TPM
-(device-id 0xB, rev-id 16)
-Nov 29 15:52:32 doris kernel: [  649.110929] tpm_tis 00:09: Intel iTPM
-workaround enabled
-Nov 29 15:54:34 doris kernel: [  771.360067] tpm_tis 00:09:
-tpm_transmit: tpm_send: error -62
+Ok, the way I envision the interface is the fanotify_event_metadata is
+going to be information that is common for all event types.  If a
+particular event type (in the case being brought forth MODIFY and
+CLOSE_WRITE) needs more information it will use the optional headers.
+I'd still like to be able to add generic info, ex: the uid of the
+requesting process, to the generic event metadata.  We might also
+someday want to use the optional headers for things like the inotify
+move cookie.  Why waste space in every event when only the move type
+events cared about this cookie?
 
-Also, this patch:
-http://marc.info/?l=linux-kernel&m=128769741101534&w=2
+This necessitates options_offset.  Lets say I compile my userspace app
+as version 3.  I know that fanotify_event_metadata is 14 bytes long in
+version 3.  Thus I start looking at byte 15 for the first optional
+header.  But the kernel is version 4 and fanotify_event_metadata is
+actually 18 bytes long.  Whoops, userspace should be looking at byte 19
+for the header but accidentally looked at byte 15.  options_offset will
+allow a version 3 userspace to run on a version 4 kernel while skipping
+bytes 15-18 which it doesn't understand.
 
-Looks for a string that is absent from my Vaio SZ650, so the workaround
-is not applied (and if it was, it probably wouldn't work, right?).
+At the end of all of this discussion what did people finally agree on?
+Something like this?
 
-I posted my DSDT to bugzilla:
-https://bugzilla.kernel.org/attachment.cgi?id=38072
+struct fanotify_opt_hdr {
+        __u16 type;
+        __u16 len;
+        /* Payload goes here. */
+};
 
-Michael
+struct fanotify_event_metadata {
+        __u32 event_len; /* Including the options */
+        __u16 vers;
+        __u16 options_offset; /* Aka header length */
+        __s32 fd;
+        __aligned_u64 mask;
+        __s32 pid;
+        /* Options go here. */
+};
+
+We could be ABI compatible if we let vers as a __u32 and added
+options_offset at the end of the structure...   Do we have strong
+feelings on either side about maintaining compatibility or about
+structure lengths?
+
+-Eric
+
