@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab0K2CHi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 21:07:38 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:54194 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918Ab0K2CHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 21:07:37 -0500
-Date: Mon, 29 Nov 2010 13:07:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20101129130729.64d26563.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754534Ab0K2CLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 21:11:09 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46519
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754096Ab0K2CLI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 21:11:08 -0500
+Date: Sun, 28 Nov 2010 18:11:34 -0800 (PST)
+Message-Id: <20101128.181134.104049260.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, peppe.cavallaro@st.com
+Subject: Re: linux-next: build failure after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101129110824.639b2659.sfr@canb.auug.org.au>
+References: <20101129110824.639b2659.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Nov_2010_13_07_29_+1100_RNjT.Z1Bf92/TELP"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Nov_2010_13_07_29_+1100_RNjT.Z1Bf92/TELP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Nov 2010 11:08:24 +1100
 
-Hi Linus,
+> Hi all,
+> 
+> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/net/stmmac/stmmac_main.c: In function 'stmmac_resume':
+> drivers/net/stmmac/stmmac_main.c:1849: error: 'struct stmmac_priv' has no member named 'shutdown'
+> 
+> Caused by commit 874bd42d24c2a74f5dbd65e81e175982240fecd8 ("stmmac:
+> convert to dev_pm_ops").
+> 
+> I have used the net tree from next-20101126 for today.
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+I have pushed the following fix which should cure this:
 
-In file included from include/linux/splice.h:11,
-                 from net/core/skbuff.c:54:
-include/linux/pipe_fs_i.h: In function 'get_pipe_info':
-include/linux/pipe_fs_i.h:171: error: dereferencing pointer to incomplete t=
-ype
-include/linux/pipe_fs_i.h:173: error: dereferencing pointer to incomplete t=
-ype
-include/linux/pipe_fs_i.h:173: error: dereferencing pointer to incomplete t=
-ype
+--------------------
+stmmac: fix stmmac_resume removing not yet used shutdown flag
 
-Caused by commit c66fb347946ebdd5b10908866ecc9fa05ee2cf3d ("Export
-'get_pipe_info()' to other users") from Linus' tree.
+The commit to convert to use the dev_pm_ops struct
+introduces a bug. The shutdown flag is not yet used
+because the hibernation on memory is done by using
+the freeze callback.
+Thanks to Vlad for having reported it.
 
-I cherry-picked the fix from Linus' tree.
+Reported-by: Vlad Lungu <vlad.lungu@windriver.com>
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/stmmac/stmmac_main.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+diff --git a/drivers/net/stmmac/stmmac_main.c b/drivers/net/stmmac/stmmac_main.c
+index f1dbc18..730a6fd 100644
+--- a/drivers/net/stmmac/stmmac_main.c
++++ b/drivers/net/stmmac/stmmac_main.c
+@@ -1846,13 +1846,6 @@ static int stmmac_resume(struct device *dev)
+ 	if (!netif_running(ndev))
+ 		return 0;
+ 
+-	if (priv->shutdown) {
+-		/* Re-open the interface and re-init the MAC/DMA
+-		   and the rings (i.e. on hibernation stage) */
+-		stmmac_open(dev);
+-		return 0;
+-	}
+-
+ 	spin_lock(&priv->lock);
+ 
+ 	/* Power Down bit, into the PM register, is cleared
+-- 
+1.7.3.2
 
---Signature=_Mon__29_Nov_2010_13_07_29_+1100_RNjT.Z1Bf92/TELP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM8wrhAAoJEDMEi1NhKgbsnycH/jhwFrTpyJM+ANwr4pdUgzlR
-tv7FjQAqh3fUlu4nSa9dxwm8Sn068cpnyVPt6NAnKMDM/v94jtJcQefqpcP/9OoP
-tLslgsT6jE16hO+rgIToyZrTIcYdzyJznAk9CcilOzdG06F7CV+HuqRjMQube0aR
-O1T/MA6w3al082H0wxPO4aTLvW55wltUhfnadge8fGeK2t/+iI2HdExBVxw7JSpN
-UGxL7rwlnFu12UxcgMqaHncAIUv37ND7C6cenKs8w/e7LJF+jjYGRIu+Bgwv00V2
-8H0OoecCEmIHyBWAWrXUY7mXaiGv0LYNYP5Kjwlqqq6Fe8kDZGOUhjBqNYeI9K0=
-=sRkm
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Nov_2010_13_07_29_+1100_RNjT.Z1Bf92/TELP--
