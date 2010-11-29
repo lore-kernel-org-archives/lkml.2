@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab0K2JTW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:19:22 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:40990 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab0K2JTV (ORCPT
+	id S1752212Ab0K2JWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:22:52 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60924 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0K2JWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:19:21 -0500
-Date: Mon, 29 Nov 2010 04:19:20 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 3/3] xfs: demultiplex xfs_icsb_modify_counters()
-Message-ID: <20101129091920.GB13902@infradead.org>
-References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
- <1290991002-18680-4-git-send-email-david@fromorbit.com>
+	Mon, 29 Nov 2010 04:22:51 -0500
+Message-ID: <4CF370D3.7020606@pengutronix.de>
+Date: Mon, 29 Nov 2010 10:22:27 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290991002-18680-4-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: andrew.chih.howe.khor@intel.com, Samuel Ortiz <sameo@linux.intel.com>,
+        margie.foster@intel.com, netdev@vger.kernel.org,
+        Christian Pellegrin <chripell@fsfe.org>, linux-kernel@vger.kernel.org,
+        yong.y.wang@intel.com, socketcan-core@lists.berlios.de,
+        kok.howg.ewe@intel.com, joel.clark@intel.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfgang Grandegger <wg@grandegger.com>, qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 01/19 v5] can: EG20T PCH: Separate Interface
+ Register(IF1/IF2)
+References: <4CEF150A.7080409@dsn.okisemi.com>	<4CEF84BE.7000101@pengutronix.de> <4CEF864B.6080207@pengutronix.de> <002201cb8f69$11d30050$66f8800a@maildom.okisemi.com>
+In-Reply-To: <002201cb8f69$11d30050$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig6599FCA0CD6EF44EAC1F0816"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:36:41AM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> With the conversion to percpu counters, xfs_icsb_modify_counters() really does
-> not need to exist. Convert the inode counter modifications to use a common
-> helper function for the one place that calls them, and add another function for
-> the free block modification and convert all the callers to use that.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig6599FCA0CD6EF44EAC1F0816
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> +xfs_icsb_modify_inodes(
-> +	xfs_mount_t	*mp,
+On 11/29/2010 02:59 AM, Tomoya MORINAGA wrote:
+> On Friday, November 26, 2010 7:04 PM, Marc Kleine-Budde wrote:
+>=20
+>>> nitpick: it's unusual to have leading whitespace in the patch descrip=
+tion.
+>=20
+>> maybe it's a problem of your mailer.
+> I can see the whitespace created patch by "git format-patch"
+> I show the head of patch below.
+>=20
+> From e53c63a8ff00c76f165e371511604f374451627b Mon Sep 17 00:00:00 2001
+> From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> Date: Thu, 18 Nov 2010 09:18:15 +0900
+> Subject: [PATCH] CAN : Separate interface register from whole of regist=
+er structure.
+>  CAN register of Intel PCH EG20T has 2 sets of interface register.
+>  To reduce whole of code size, separate interface register.
+>  As a result, the number of function also can be reduced.
+>=20
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-struct xfs_mount, please.
+Maybe your patch description in git commit is unusual. It should be a
+one line patch subject, followed by a blank line, then a multi line
+patch description. The a blank line followed by the S-o-b. Have a look
+at 15) in Documentation/SubmittingPatches.
 
-> +	int		cntr,
-> +	int64_t		delta,
-> +	int		rsvd)
+> ---
+>  drivers/net/can/pch_can.c |  445 ++++++++++++++++++++-----------------=
+--------
+>  1 files changed, 201 insertions(+), 244 deletions(-)
+>=20
+> .........
+>=20
+> Since I have copied from the patch file directly, whitespace is inserte=
+d.
+> When next resubmitting, I will delete the whiletespace by hand.
 
-the rsvd argument isn't used at all.
+No need for this.
 
-> +{
-> +	int		ret = 0;
-> +
-> +	ASSERT(cntr == XFS_ICSB_ICOUNT || cntr == XFS_ICSB_IFREE);
-> +
-> +	ret = xfs_icsb_add(mp, cntr, delta, 0);
-> +	if (ret < 0) {
-> +		ASSERT(0);
-> +		return XFS_ERROR(EINVAL);
-> +	}
-> +	return 0;
+Marc
 
-You could get rdif of the ret argument as we don't care about the
-value.  I also don't think we need the assert here - the caller already
-does one for us.
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-> +xfs_icsb_modify_free_blocks(
-> +	xfs_mount_t	*mp,
 
-same here.
+--------------enig6599FCA0CD6EF44EAC1F0816
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzzcNgACgkQjTAFq1RaXHMALgCffBq3x3mvrjP1NWN0qClh4RAm
+p60Ani+K0uPxVuA6Ml8RhMg9mSV6pItv
+=R3O9
+-----END PGP SIGNATURE-----
+
+--------------enig6599FCA0CD6EF44EAC1F0816--
