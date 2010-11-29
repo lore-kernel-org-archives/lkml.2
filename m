@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab0K2EJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 23:09:58 -0500
-Received: from amber.ccs.neu.edu ([129.10.116.51]:55107 "EHLO
-	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab0K2EJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 23:09:57 -0500
-Date: Sun, 28 Nov 2010 23:09:51 -0500
-From: Gene Cooperman <gene@ccs.neu.edu>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, xemul@sw.ru,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101129040951.GD6471@sundance.ccs.neu.edu>
-References: <4CD72150.9070705@cs.columbia.edu>
- <4CE3C334.9080401@kernel.org>
- <20101117153902.GA1155@hallyn.com>
- <4CE3F8D1.10003@kernel.org>
- <20101119041045.GC24031@hallyn.com>
- <4CE683E1.6010500@kernel.org>
- <4CE69B8C.6050606@cs.columbia.edu>
- <Pine.LNX.4.64.1011251049350.3051@takamine.ncl.cs.columbia.edu>
+	id S1754885Ab0K2EZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 23:25:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751600Ab0K2EZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 23:25:55 -0500
+Message-ID: <4CF32B24.50509@redhat.com>
+Date: Sun, 28 Nov 2010 23:25:08 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1011251049350.3051@takamine.ncl.cs.columbia.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v2 2/3] move ClearPageReclaim
+References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com> <c3b1c78f0e2eba5dfebda7c363c4274e649ab36a.1290956059.git.minchan.kim@gmail.com>
+In-Reply-To: <c3b1c78f0e2eba5dfebda7c363c4274e649ab36a.1290956059.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oren,
+On 11/28/2010 10:02 AM, Minchan Kim wrote:
+> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+> preventing fast reclaiming readahead marker page.
+>
+> In this series, PG_reclaim is used by invalidated page, too.
+> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+> to reclaim asap. Then, when the dirty page will be writeback,
+> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+> It disturbs this serie's goal.
+>
+> I think it's okay to clear PG_readahead when the page is dirty, not
+> writeback time. So this patch moves ClearPageReadahead.
+> This patch needs Wu's opinion.
 
-On Thu, Nov 25, 2010 at 11:04:16AM -0500, Oren Laadan wrote:
-> On Tue, 23 Nov 2010, Kapil Arya wrote:
-> 
-> > OL> Even if it did - the question is not how to deal with "glue"
-> > OL> (you demonstrated quite well how to do that with DMTCP), but
-> > OL> how should teh basic, core c/r functionality work - which is
-> > OL> below, and orthogonal to the "glue".
-> > 
-> > There seems to be an implicit assumption that it is easy to separate the DMTCP
-> > "glue code" from the DMTCP C/R engine as separate modules. DMTCP is modular but
-> > it splits the problems into modules along a different line than Linux C/R. We
-> > look forward to the joint experiment in which we would try to combine DMTCP
-> > with Linux C/R. This will help answer the question in our mind.
-> 
-> I apologize for being blunt - but this is probably an issue specific to 
-> DMTCP's engineering...
-> 
+Acked-by: Rik van Riel <riel@redhat.com>
 
-I completely agree with you, Oren.  DMTCP was never designed to be split
-into a userland and in-kernel replacement.  We will want to re-factor
-DMTCP to make this happen.
-    I'm sorry if my e-mail came off as confrontational.  That was not my
-intention.  I was just looking forward to an interesting intellectual
-experiment --- how to go about combining DMTCP and Linux C/R.   I was
-trying to guess ahead of time where there are interesting challenges, and
-my hope is that we will find a way to solve them together.
 
-Best wishes,
-- Gene
+-- 
+All rights reversed
