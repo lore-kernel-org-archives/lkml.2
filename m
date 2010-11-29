@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab0K2Qor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:44:47 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52267 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab0K2Qon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:44:43 -0500
-Date: Mon, 29 Nov 2010 17:44:18 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101129164418.GA9402@elte.hu>
-References: <20101121133744.GA10765@elte.hu>
- <1290700829.4759.16.camel@maggy.simson.net>
- <1290954299.30515.15.camel@marge.simson.net>
- <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
- <20101128201851.GA20555@elte.hu>
- <1291031593.32004.19.camel@laptop>
- <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755147Ab0K2Qrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:47:53 -0500
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:29843 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab0K2Qrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:47:52 -0500
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.59,276,1288569600"; 
+   d="scan'208";a="627657212"
+From: David Ahern <daahern@cisco.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: David Ahern <daahern@cisco.com>
+Subject: [PATCH] Allow user to specify path to kallsyms file
+Date: Mon, 29 Nov 2010 09:47:40 -0700
+Message-Id: <1291049260-8098-1-git-send-email-daahern@cisco.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is useful for analyzing a perf data file on a different system
+than the one data was collected on and still include symbols from
+loaded kernel modules in the output.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Signed-off-by: David Ahern <daahern@cisco.com>
+---
+ tools/perf/builtin-report.c |    2 ++
+ tools/perf/util/symbol.c    |    9 +++++++--
+ tools/perf/util/symbol.h    |    1 +
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-> On Mon, Nov 29, 2010 at 3:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > Well we totally re-wrote the cgroup load-balancer in -tip. The thing currently 
-> > in -linus is a utter crap because its very strongly serialized across all cores 
-> > (some people spend like 25% of their time in there).
-> 
-> Well, it seems that the rewrite is more crap than the "utter crap" in current 
-> -git. What does that make -tip? Super-utter-crap?
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5de405d..b0c6995 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -442,6 +442,8 @@ static const struct option options[] = {
+ 		    "dump raw trace in ASCII"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
++	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
++		   "file", "kallsyms pathname"),
+ 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
+ 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
+ 		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index a348906..f40c076 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1830,8 +1830,8 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+ 	const char *kallsyms_filename = NULL;
+ 	char *kallsyms_allocated_filename = NULL;
+ 	/*
+-	 * Step 1: if the user specified a vmlinux filename, use it and only
+-	 * it, reporting errors to the user if it cannot be used.
++	 * Step 1: if the user specified a kallsyms or vmlinux filename, use
++	 * it and only it, reporting errors to the user if it cannot be used.
+ 	 *
+ 	 * For instance, try to analyse an ARM perf.data file _without_ a
+ 	 * build-id, or if the user specifies the wrong path to the right
+@@ -1844,6 +1844,11 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+ 	 * validation in dso__load_vmlinux and will bail out if they don't
+ 	 * match.
+ 	 */
++	if (symbol_conf.kallsyms_name != NULL) {
++		kallsyms_filename = symbol_conf.kallsyms_name;
++		goto do_kallsyms;
++	}
++
+ 	if (symbol_conf.vmlinux_name != NULL) {
+ 		err = dso__load_vmlinux(self, map,
+ 					symbol_conf.vmlinux_name, filter);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 038f220..12defbe 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -72,6 +72,7 @@ struct symbol_conf {
+ 			show_cpu_utilization,
+ 			initialized;
+ 	const char	*vmlinux_name,
++			*kallsyms_name,
+ 			*source_prefix,
+ 			*field_sep;
+ 	const char	*default_guest_vmlinux_name,
+-- 
+1.7.2.3
 
-Something along that line, or worse.
-
-> Peter - getting the wrong answer quickly is not any better than strong 
-> serialization.
-
-Yeah, obviously.
-
-> Anyway, I'm happy to hear that the problem hasn't reached mainline yet.
-
-It wont.
-
-Thanks,
-
-	Ingo
