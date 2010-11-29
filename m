@@ -1,74 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab0K2Pvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:51:33 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46386 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0K2Pvc (ORCPT
+	id S1754668Ab0K2PyL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:54:11 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44693 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab0K2PyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:51:32 -0500
-Date: Mon, 29 Nov 2010 15:51:23 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Magnus Damm <damm@opensource.se>, M?rton N?meth <nm127@freemail.hu>,
-        linux-media@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] soc_camera: Add the ability to bind regulators to
-	soc_camedra devices
-Message-ID: <20101129155122.GB30926@sirena.org.uk>
-References: <1290964687.3016.5.camel@realization> <Pine.LNX.4.64.1011281923440.5731@axis700.grange> <1291023297.3139.55.camel@realization>
+	Mon, 29 Nov 2010 10:54:09 -0500
+Date: Mon, 29 Nov 2010 16:52:54 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        john stultz <johnstul@us.ibm.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, "avi@redhat.com" <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: [PATCH -v1.1] HPET: Fix HPET readout for small deltas
+Message-ID: <20101129155254.GC1170@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291023297.3139.55.camel@realization>
-X-Cookie: f u cn rd ths, u r prbbly a lsy spllr.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 10:34:57AM +0100, Alberto Panizzo wrote:
-> On dom, 2010-11-28 at 20:05 +0100, Guennadi Liakhovetski wrote:
 
-> >  (2) would anyone really want to 
-> > use several regulators for a camera sensor? If so, can it be the case, 
-> > that, for example, the regulators have to be switched off in the reverse 
-> > order to switching on? Or something else?
+Some HPET implementations might require longer delay when accessing the
+HPET than what 995bd3bb5c78f3ff71339803c0b8337ed36d64fb established (8
+cycles). Generally, the proper value should be programmed by BIOS and
+written into the ACPI HPET table as the main counter minimum tick in
+periodic mode (offset 53).
 
-> Well, I'm working on the i.MX31 3 Stack board support and there are 2 
-> regulators that powers the camera and if you consider the digital output
-> that enable another supplier needed, the total regulators are three..
-> So, yes a list of regulators is needed in this case, and Yes I did not 
-> considered the order of enabling and disabling operations. Just because
-> even the freescale drivers didn't.
+We assume that value as the minimum value a delta can be in order to
+reprogram the HPET successfully. For BIOSen which contain crap, we fall
+back to a default value of 128 cycles which should be sensible on all
+more or less sane HPET implementations.
 
-> A practical general rule is to turn off switchers in the reverse order
-> than the turning on one. And this can be easily implemented here.
-> But as you rose the question, we can add priorities of turning on and 
-> off.
+LKML-Reference: <20101026112052.GA1672@arch.trippelsdorf.de>
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
 
-If you use the regulator bulk API it'll reverse the ordering when doing
-the power down (or should if it doesn't already).
+v1.1 Add comment update from Markus and his S-O-B.
 
-> > > +static int soc_camera_power_set(struct soc_camera_device *icd,
-> > > +				struct soc_camera_link *icl,
-> > > +				int power_on)
-> > > +{
-> > > +	int ret, i;
-> > > +
-> > > +	for (i = 0; i < icd->num_soc_regulators; i++) {
-> > > +		if (power_on) {
-> > > +			ret = regulator_set_voltage(icd->soc_regulators[i],
-> > > +				icl->soc_regulator_descs[i].value_on_min,
-> > > +				icl->soc_regulator_descs[i].value_on_max);
+ arch/x86/include/asm/hpet.h |    1 +
+ arch/x86/kernel/acpi/boot.c |   10 +++++++---
+ arch/x86/kernel/hpet.c      |    9 +++++----
+ 3 files changed, 13 insertions(+), 7 deletions(-)
 
-Unless you're actively varying the voltages at runtime (as Guennadi
-mentioned) I'd really expect the voltages to be handled by the regulator
-constraints.
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..01d9480 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -68,6 +68,7 @@ extern unsigned long force_hpet_address;
+ extern u8 hpet_blockid;
+ extern int hpet_force_user;
+ extern u8 hpet_msi_disable;
++extern u16 hpet_min_tick;
+ extern int is_hpet_enabled(void);
+ extern int hpet_enable(void);
+ extern void hpet_disable(void);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 71232b9..91a46bc 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -772,9 +772,6 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 		hpet_address >>= 32;
+ 	}
+ #endif
+-	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx\n",
+-	       hpet_tbl->id, hpet_address);
+-
+ 	/*
+ 	 * Allocate and initialize the HPET firmware resource for adding into
+ 	 * the resource tree during the lateinit timeframe.
+@@ -790,6 +787,13 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 	hpet_res->start = hpet_address;
+ 	hpet_res->end = hpet_address + (1 * 1024) - 1;
+ 
++	/* Accept only sensible values written by BIOS */
++	if (hpet_tbl->minimum_tick < hpet_min_tick)
++		hpet_min_tick = hpet_tbl->minimum_tick;
++
++	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx min tick: %d\n",
++		hpet_tbl->id, hpet_address, hpet_min_tick);
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ae03cab..cfbbc94 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -40,6 +40,7 @@ u8					hpet_msi_disable;
+ static unsigned long			hpet_num_timers;
+ #endif
+ static void __iomem			*hpet_virt_address;
++u16					hpet_min_tick = 0x80;
+ 
+ struct hpet_dev {
+ 	struct clock_event_device	evt;
+@@ -402,13 +403,13 @@ static int hpet_next_event(unsigned long delta,
+ 	 * move us behind that point easily. Now instead of reading
+ 	 * the compare register back several times, we make the ETIME
+ 	 * decision based on the following: Return ETIME if the
+-	 * counter value after the write is less than 8 HPET cycles
+-	 * away from the event or if the counter is already ahead of
+-	 * the event.
++	 * counter value after the write is less than hpet_min_tick
++	 * HPET cycles away from the event or if the counter is already
++	 * ahead of the event.
+ 	 */
+ 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
+ 
+-	return res < 8 ? -ETIME : 0;
++	return res < hpet_min_tick ? -ETIME : 0;
+ }
+ 
+ static void hpet_legacy_set_mode(enum clock_event_mode mode,
+-- 
+1.7.3.1.50.g1e633
+
