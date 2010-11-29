@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab0K2HOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 02:14:48 -0500
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:53408 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949Ab0K2HN6 (ORCPT
+	id S1755017Ab0K2HRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 02:17:50 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5692 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab0K2HRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 02:13:58 -0500
-X-Greylist: delayed 1175 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Nov 2010 02:13:58 EST
-X-SENDER-IP: [83.226.251.67]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Avw7AJvc8kxT4vtDPGdsb2JhbACBfIQzgXCaaQEBAQE1wTiFRwSKYYUU
-X-IronPort-AV: E=Sophos;i="4.59,274,1288566000"; 
-   d="scan'208";a="1695243757"
-Message-ID: <4CF34E20.5060100@coyote.org>
-Date: Mon, 29 Nov 2010 07:54:24 +0100
-From: Lars Lindley <lindley@coyote.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101126 Lightning/1.0b3pre Thunderbird/3.1.6
+	Mon, 29 Nov 2010 02:17:49 -0500
+Message-ID: <4CF3D23F.3040003@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 01:18:07 +0900
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: gregkh@suse.de, sankar.curiosity@gmail.com, ruslan@rpisarev.org.ua,
-        adam.latham@unisontorbay.org.uk, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: Coding style fixes in mac_structures.h
-References: <1290984966-23571-1-git-send-email-lindley@coyote.org> <4CF34D54.60602@kernel.org>
-In-Reply-To: <4CF34D54.60602@kernel.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Dr. David Alan Gilbert" <linux@treblig.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        John Linn <john.linn@xilinx.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Maxime Bizon <mbizon@freebox.fr>, Greg Rose <gregory.v.rose@intel.com>,
+        ML netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Subject: [PATCH 2/2] pch_gbe driver: The wrong of initializer entry
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hehe..Great timing then.. ;)
-Oh well..
+The wrong of initializer entry was modified.
 
-/Lars
+Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Reported-by: Dr. David Alan Gilbert <linux@treblig.org>
+---
+ drivers/net/pch_gbe/pch_gbe_param.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-On 2010-11-29 07:51, Pekka Enberg wrote:
-> On 11/29/10 12:56 AM, Lars Lindley wrote:
->> I fixed whitespace and indentation. I removed versioning comments
->> and "commented away" code.
->> Signed-off-by: Lars Lindley<lindley@coyote.org>
-> 
-> Heh, I nuked most of that code in a patch series I sent few hours before you sent this patch.
-> 
->             Pekka
-> 
+diff --git a/drivers/net/pch_gbe/pch_gbe_param.c b/drivers/net/pch_gbe/pch_gbe_param.c
+index 2510146..ef0996a 100644
+--- a/drivers/net/pch_gbe/pch_gbe_param.c
++++ b/drivers/net/pch_gbe/pch_gbe_param.c
+@@ -434,8 +434,8 @@ void pch_gbe_check_options(struct pch_gbe_adapter *adapter)
+ 			.err  = "using default of "
+ 				__MODULE_STRING(PCH_GBE_DEFAULT_TXD),
+ 			.def  = PCH_GBE_DEFAULT_TXD,
+-			.arg  = { .r = { .min = PCH_GBE_MIN_TXD } },
+-			.arg  = { .r = { .max = PCH_GBE_MAX_TXD } }
++			.arg  = { .r = { .min = PCH_GBE_MIN_TXD,
++					 .max = PCH_GBE_MAX_TXD } }
+ 		};
+ 		struct pch_gbe_tx_ring *tx_ring = adapter->tx_ring;
+ 		tx_ring->count = TxDescriptors;
+@@ -450,8 +450,8 @@ void pch_gbe_check_options(struct pch_gbe_adapter *adapter)
+ 			.err  = "using default of "
+ 				__MODULE_STRING(PCH_GBE_DEFAULT_RXD),
+ 			.def  = PCH_GBE_DEFAULT_RXD,
+-			.arg  = { .r = { .min = PCH_GBE_MIN_RXD } },
+-			.arg  = { .r = { .max = PCH_GBE_MAX_RXD } }
++			.arg  = { .r = { .min = PCH_GBE_MIN_RXD,
++					 .max = PCH_GBE_MAX_RXD } }
+ 		};
+ 		struct pch_gbe_rx_ring *rx_ring = adapter->rx_ring;
+ 		rx_ring->count = RxDescriptors;
+-- 1.6.2.5 
