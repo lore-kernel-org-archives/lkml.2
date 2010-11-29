@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab0K2Q0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:26:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37782 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab0K2Q0s (ORCPT
+	id S1753046Ab0K2Q2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:28:05 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52267 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751602Ab0K2Q2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:26:48 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=8cL3MtyfY58A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=8ihFfIJwqyCAqWK5UNwA:9 a=Wgynq_MgBHPBeVnDFRCzWPRtz5sA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=LaDIu8IYw2Jky5q_:21 a=49ovBrhUIj-Ag2jr:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] Don't spam trace report about missing fields
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-In-Reply-To: <1291047601-13879-1-git-send-email-avi@redhat.com>
-References: <1291047601-13879-1-git-send-email-avi@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 29 Nov 2010 11:26:45 -0500
-Message-ID: <1291048005.30543.731.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Nov 2010 11:28:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <1291031593.32004.19.camel@laptop>
+References: <20101121133744.GA10765@elte.hu> <1290700829.4759.16.camel@maggy.simson.net>
+ <1290954299.30515.15.camel@marge.simson.net> <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
+ <20101128201851.GA20555@elte.hu> <1291031593.32004.19.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 29 Nov 2010 08:27:40 -0800
+Message-ID: <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-29 at 18:20 +0200, Avi Kivity wrote:
-> Instead of spamming the output with complaints about missing fields, simply
-> return an error to the caller, which can print something out or do something
-> more intelligent about them.
-> 
-> Fixes kvm plugin tracing older kernels.
+On Mon, Nov 29, 2010 at 3:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> Well we totally re-wrote the cgroup load-balancer in -tip. The thing
+> currently in -linus is a utter crap because its very strongly serialized
+> across all cores (some people spend like 25% of their time in there).
 
-Hmm, what about just passing in err=0?
+Well, it seems that the rewrite is more crap than the "utter crap" in
+current -git. What does that make -tip? Super-utter-crap?
 
--- Steve
+Peter - getting the wrong answer quickly is not any better than strong
+serialization.
 
-> 
-> Signed-off-by: Avi Kivity <avi@redhat.com>
-> ---
->  parse-events.c |   15 +++------------
->  1 files changed, 3 insertions(+), 12 deletions(-)
-> 
-> diff --git a/parse-events.c b/parse-events.c
-> index f0b0324..7a4c3a6 100644
-> --- a/parse-events.c
-> +++ b/parse-events.c
-> @@ -4446,17 +4446,11 @@ int get_field_val(struct trace_seq *s, struct format_field *field,
->  		  const char *name, struct record *record,
->  		  unsigned long long *val, int err)
->  {
-> -	if (!field) {
-> -		if (err)
-> -			trace_seq_printf(s, "<CANT FIND FIELD %s>", name);
-> +	if (!field)
->  		return -1;
-> -	}
->  
-> -	if (pevent_read_number_field(field, record->data, val)) {
-> -		if (err)
-> -			trace_seq_printf(s, " %s=INVALID", name);
-> +	if (pevent_read_number_field(field, record->data, val))
->  		return -1;
-> -	}
->  
->  	return 0;
->  }
-> @@ -4489,11 +4483,8 @@ void *pevent_get_field_raw(struct trace_seq *s, struct event_format *event,
->  
->  	field = pevent_find_field(event, name);
->  
-> -	if (!field) {
-> -		if (err)
-> -			trace_seq_printf(s, "<CANT FIND FIELD %s>", name);
-> +	if (!field)
->  		return NULL;
-> -	}
->  
->  	/* Allow @len to be NULL */
->  	if (!len)
+Anyway, I'm happy to hear that the problem hasn't reached mainline yet.
 
-
+                    Linus
