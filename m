@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab0K2Xpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:45:46 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33572 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab0K2Xpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:45:45 -0500
-Content-Type: text/plain; charset=UTF-8
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S1755789Ab0K2XrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:47:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab0K2XrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 18:47:17 -0500
+Message-ID: <4CF43BC9.8040603@redhat.com>
+Date: Mon, 29 Nov 2010 18:48:25 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+CC: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-reply-to: <1291031690.32004.20.camel@laptop>
-References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com> <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com> <1290510512.2072.387.camel@laptop> <20101123124121.GA11101@ghostprotocols.net> <20101125154718.GE15875@ghostprotocols.net> <1291009409-sup-4332@au1.ibm.com> <1291031690.32004.20.camel@laptop>
-Date: Tue, 30 Nov 2010 10:45:40 +1100
-Message-Id: <1291073899-sup-7083@au1.ibm.com>
-User-Agent: Sup/0.11
-Content-Transfer-Encoding: 8bit
+        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
+        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent
+ by fsync
+References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
+In-Reply-To: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 11/29/2010 05:05 PM, Darrick J. Wong wrote:
+> On certain types of hardware, issuing a write cache flush takes a considerable
+> amount of time.  Typically, these are simple storage systems with write cache
+> enabled and no battery to save that cache after a power failure.  When we
+> encounter a system with many I/O threads that write data and then call fsync
+> after more transactions accumulate, ext4_sync_file performs a data-only flush,
+> the performance of which is suboptimal because each of those threads issues its
+> own flush command to the drive instead of trying to coordinate the flush,
+> thereby wasting execution time.
+>
+> Instead of each fsync call initiating its own flush, there's now a flag to
+> indicate if (0) no flushes are ongoing, (1) we're delaying a short time to
+> collect other fsync threads, or (2) we're actually in-progress on a flush.
+>
+> So, if someone calls ext4_sync_file and no flushes are in progress, the flag
+> shifts from 0->1 and the thread delays for a short time to see if there are any
+> other threads that are close behind in ext4_sync_file.  After that wait, the
+> state transitions to 2 and the flush is issued.  Once that's done, the state
+> goes back to 0 and a completion is signalled.
+>
+> Those close-behind threads see the flag is already 1, and go to sleep until the
+> completion is signalled.  Instead of issuing a flush themselves, they simply
+> wait for that first thread to do it for them.  If they see that the flag is 2,
+> they wait for the current flush to finish, and start over.
+>
+> However, there are a couple of exceptions to this rule.  First, there exist
+> high-end storage arrays with battery-backed write caches for which flush
+> commands take very little time (<  2ms); on these systems, performing the
+> coordination actually lowers performance.  Given the earlier patch to the block
+> layer to report low-level device flush times, we can detect this situation and
+> have all threads issue flushes without coordinating, as we did before.  The
+> second case is when there's a single thread issuing flushes, in which case it
+> can skip the coordination.
+>
+> This author of this patch is aware that jbd2 has a similar flush coordination
+> scheme for journal commits.  An earlier version of this patch simply created a
+> new empty journal transaction and committed it, but that approach was shown to
+> increase the amount of write traffic heading towards the disk, which in turn
+> lowered performance considerably, especially in the case where directio was in
+> use.  Therefore, this patch adds the coordination code directly to ext4.
 
-Excerpts from Peter Zijlstra's message of Mon Nov 29 22:54:50 +1100 2010:
-> On Mon, 2010-11-29 at 17:06 +1100, Ian Munsie wrote:
-> > This goes away if PERF_SAMPLE_CPU is added to the mix so that the
-> > timestamps are offset from the first event of *their* CPU, otherwise
-> > time-epoch can go negative, as it has done here. 
-> 
-> How does that happen, I though the power7 sched_clock() was fully
-> synchronized and monotonic across all cores?
+Hi Darrick,
 
-Oh the timestamps coming from the kernel are fine, I should have been
-clearer in my email. This bug is purely restricted to the userspace code
-that prints them out - in the perf_session__print_tstamp function. It
-tries to print the timestamps out so that they start at 0 and if it
-doesn't know what CPU the events came from it uses the very first event
-it sees as epoch, but at the moment that is not necessarily going to be
-the earliest event.
+Just curious why we would need to have batching in both places? Doesn't your 
+patch set make the jbd2 transaction batching redundant?
 
-Thinking about it overnight, I realise that this should also go away if
-we sort them before printing things out at all, which is exactly what
-I'm proposing to do in my patches.
+I noticed that the patches have a default delay and a mount option to override 
+that default. The jbd2 code today tries to measure the average time needed in a 
+transaction and automatically tune itself. Can't we do something similar with 
+your patch set? (I hate to see yet another mount option added!)
 
-Cheers,
--Ian
+Regards,
+
+Ric
+
+
