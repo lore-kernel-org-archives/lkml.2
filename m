@@ -1,153 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab0K2XBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:01:09 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45473 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab0K2XBI convert rfc822-to-8bit (ORCPT
+	id S1755332Ab0K2XEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:04:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51214 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752039Ab0K2XEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:01:08 -0500
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-From: Peter Zijlstra <peterz@infradead.org>
-To: tmhikaru@gmail.com
-Cc: Damien Wyart <damien.wyart@free.fr>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
-In-Reply-To: <20101129194041.GA8280@roll>
-References: <20101109185516.GQ8332@bombadil.infradead.org>
-	 <1289329348.2191.69.camel@laptop>
-	 <20101110034507.GV8332@bombadil.infradead.org>
-	 <1289390424.2191.98.camel@laptop> <20101114051406.GA2050@roll>
-	 <20101125133106.GA12914@brouette> <1290693807.2145.36.camel@laptop>
-	 <1290888920.32004.1.camel@laptop> <20101128114027.GA2745@brouette>
-	 <1291030726.32004.4.camel@laptop>  <20101129194041.GA8280@roll>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 30 Nov 2010 00:01:17 +0100
-Message-ID: <1291071677.32004.527.camel@laptop>
+	Mon, 29 Nov 2010 18:04:08 -0500
+Date: Mon, 29 Nov 2010 15:03:23 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnd Hannemann <arnd@arndnet.de>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@linux.intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: 5ada28bf76752 causes compilation error if !CONFIG_LEDS_CLASS
+Message-Id: <20101129150323.a03a09bf.akpm@linux-foundation.org>
+In-Reply-To: <1290505290.3674.4.camel@jlt3.sipsolutions.net>
+References: <C5C86A19469DAE48AAAD0E5F3716E44501D41A7DC2@irsmsx504.ger.corp.intel.com>
+	<20101118082454.GC15928@tiehlicka.suse.cz>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ECB46@irsmsx504.ger.corp.intel.com>
+	<4CEAA151.7050404@arndnet.de>
+	<20101123063200.GA23907@elte.hu>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED756@irsmsx504.ger.corp.intel.com>
+	<20101122233654.117eef93.akpm@linux-foundation.org>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D41ED75C@irsmsx504.ger.corp.intel.com>
+	<20101123075742.GA28714@elte.hu>
+	<20101123000232.e51b99b7.akpm@linux-foundation.org>
+	<20101123091756.GA22530@elte.hu>
+	<1290505290.3674.4.camel@jlt3.sipsolutions.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-29 at 14:40 -0500, tmhikaru@gmail.com wrote:
-> On Mon, Nov 29, 2010 at 12:38:46PM +0100, Peter Zijlstra wrote:
-> > On Sun, 2010-11-28 at 12:40 +0100, Damien Wyart wrote:
-> > > Hi,
-> > > 
-> > > * Peter Zijlstra <peterz@infradead.org> [2010-11-27 21:15]:
-> > > > How does this work for you? Its hideous but lets start simple.
-> > > > [...]
-> > > 
-> > > Doesn't give wrong numbers like initial bug and tentative patches, but
-> > > feels a bit too slow when numbers go up and down. Correct values are
-> > > reached when waiting long enough, but it feels slow.
-> > > 
-> > > As I've tested many combinations, maybe this is an impression because
-> > > I do not remember about "normal" delays for the load to rise and fall,
-> > > but this still feels slow.
-> > 
-> > You can test this by either booting with nohz=off, or builting with
-> > CONFIG_NO_HZ=n and then comparing the result, something like
-> > 
-> > make O=defconfig clean; while sleep 10; do uptime >> load.log; done &
-> > make -j32 O=defconfig; kill %1
-> > 
-> > And comparing the curves between the NO_HZ and !NO_HZ kernels.
-> > 
-> > I'll try and make the patch less hideous ;-)
-> 
-> I've tested this patch on my own use case, and it seems to work for the most
-> part - it's still not settling as low as the previous implementation used
-> to, nor is it settling as low as CONFIG_NO_HZ=N (that is to say, 0.00 across
-> the board when not being used) however, this is definitely an improvement:
-> 
-> 14:26:04 up  9:08,  5 users,  load average: 0.05, 0.01, 0.00
-> 
-> This is the result of running uptime on a checked out version of
-> [74f5187ac873042f502227701ed1727e7c5fbfa9] sched: Cure load average vs NO_HZ woes
-> 
-> with the patch applied, starting X, and simply letting the machine sit idle
-> for nine hours. For the brief period I spent watching it after boot, it
-> quickly began settling down to a reasonable value, I only let it sit idle
-> this long to verify the loadavg was consistently low. (the loadavg was
-> consistently erratic, anywhere from 0.6 to 1.2 with the machine idle without
-> this patch)
+On Tue, 23 Nov 2010 10:41:30 +0100
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-Ok, that's good testing.. so its still not quite the same as NO_HZ=n,
-how about this one?
+> On Tue, 2010-11-23 at 09:17 +0000, Ingo Molnar wrote:
+> 
+> > It fails to build on x86 64-bit allmodconfig:
+> 
+> Let's not modify them to tristate then, too many ifdefs.
+> 
+> johannes
+> 
+> 
+> Subject: leds: fix up dependencies
+> From: Johannes Berg <johannes.berg@intel.com>
+> 
+> It's not useful to build LED triggers when
+> there's no LEDs that can be triggered by
+> them. Therefore, fix up the dependencies
+> so that this cannot happen, and fix a few
+> users that select triggers to depend on
+> LEDS_CLASS as well (there is also one user
+> that also selects LEDS_CLASS, which is OK).
 
-(it seems to drop down to 0.00 if I wait a few minutes with top -d5)
+Ingo, Randy: does this work for you?
 
+
+From: Johannes Berg <johannes.berg@intel.com>
+
+It's not useful to build LED triggers when there's no LEDs that can be
+triggered by them.  Therefore, fix up the dependencies so that this cannot
+happen, and fix a few users that select triggers to depend on LEDS_CLASS
+as well (there is also one user that also selects LEDS_CLASS, which is
+OK).
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnd Hannemann <arnd@arndnet.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Richard Purdie <rpurdie@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- kernel/sched.c           |    5 +++++
- kernel/time/tick-sched.c |    4 +++-
- kernel/timer.c           |   12 ++++++++++++
- 3 files changed, 20 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 864040c..a859158 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3082,6 +3082,11 @@ static void calc_load_account_active(struct rq *this_rq)
- 	this_rq->calc_load_update += LOAD_FREQ;
- }
+ drivers/leds/Kconfig      |   50 +++++++++++++++++++++++++++++-------
+ drivers/macintosh/Kconfig |    1 
+ net/mac80211/Kconfig      |    2 -
+ 3 files changed, 43 insertions(+), 10 deletions(-)
+
+diff -puN drivers/leds/Kconfig~leds-fix-up-dependencies drivers/leds/Kconfig
+--- a/drivers/leds/Kconfig~leds-fix-up-dependencies
++++ a/drivers/leds/Kconfig
+@@ -7,20 +7,20 @@ menuconfig NEW_LEDS
+ 	  This is not related to standard keyboard LEDs which are controlled
+ 	  via the input system.
  
-+void calc_load_account_this(void)
-+{
-+	calc_load_account_active(this_rq());
-+}
-+
- /*
-  * The exact cpuload at various idx values, calculated at every tick would be
-  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3e216e0..1e6d384 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -41,6 +41,8 @@ struct tick_sched *tick_get_tick_sched(int cpu)
- 	return &per_cpu(tick_cpu_sched, cpu);
- }
+-if NEW_LEDS
+-
+ config LEDS_CLASS
+ 	bool "LED Class Support"
++	depends on NEW_LEDS
+ 	help
+ 	  This option enables the led sysfs class in /sys/class/leds.  You'll
+ 	  need this to do anything useful with LEDs.  If unsure, say N.
  
-+extern void do_timer_nohz(unsigned long ticks);
-+
- /*
-  * Must be called with interrupts disabled !
-  */
-@@ -75,7 +77,7 @@ static void tick_do_update_jiffies64(ktime_t now)
- 			last_jiffies_update = ktime_add_ns(last_jiffies_update,
- 							   incr * ticks);
- 		}
--		do_timer(++ticks);
-+		do_timer_nohz(++ticks);
+-if LEDS_CLASS
++if NEW_LEDS
  
- 		/* Keep the tick_next_period variable up to date */
- 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
-diff --git a/kernel/timer.c b/kernel/timer.c
-index d6ccb90..eb2646f 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1300,6 +1300,18 @@ void do_timer(unsigned long ticks)
- 	calc_global_load();
- }
+ comment "LED drivers"
  
-+extern void calc_load_account_this(void);
-+
-+void do_timer_nohz(unsigned long ticks)
-+{
-+	while (ticks--) {
-+		jiffies_64++;
-+		calc_load_account_this();
-+		calc_global_load();
-+	}
-+	update_wall_time();
-+}
-+
- #ifdef __ARCH_WANT_SYS_ALARM
+ config LEDS_88PM860X
+ 	tristate "LED Support for Marvell 88PM860x PMIC"
++	depends on LEDS_CLASS
+ 	depends on MFD_88PM860X
+ 	help
+ 	  This option enables support for on-chip LED drivers found on Marvell
+@@ -28,6 +28,7 @@ config LEDS_88PM860X
  
- /*
+ config LEDS_ATMEL_PWM
+ 	tristate "LED Support using Atmel PWM outputs"
++	depends on LEDS_CLASS
+ 	depends on ATMEL_PWM
+ 	help
+ 	  This option enables support for LEDs driven using outputs
+@@ -35,6 +36,7 @@ config LEDS_ATMEL_PWM
+ 
+ config LEDS_LOCOMO
+ 	tristate "LED Support for Locomo device"
++	depends on LEDS_CLASS
+ 	depends on SHARP_LOCOMO
+ 	help
+ 	  This option enables support for the LEDs on Sharp Locomo.
+@@ -42,6 +44,7 @@ config LEDS_LOCOMO
+ 
+ config LEDS_MIKROTIK_RB532
+ 	tristate "LED Support for Mikrotik Routerboard 532"
++	depends on LEDS_CLASS
+ 	depends on MIKROTIK_RB532
+ 	help
+ 	  This option enables support for the so called "User LED" of
+@@ -49,6 +52,7 @@ config LEDS_MIKROTIK_RB532
+ 
+ config LEDS_S3C24XX
+ 	tristate "LED Support for Samsung S3C24XX GPIO LEDs"
++	depends on LEDS_CLASS
+ 	depends on ARCH_S3C2410
+ 	help
+ 	  This option enables support for LEDs connected to GPIO lines
+@@ -56,12 +60,14 @@ config LEDS_S3C24XX
+ 
+ config LEDS_AMS_DELTA
+ 	tristate "LED Support for the Amstrad Delta (E3)"
++	depends on LEDS_CLASS
+ 	depends on MACH_AMS_DELTA
+ 	help
+ 	  This option enables support for the LEDs on Amstrad Delta (E3).
+ 
+ config LEDS_NET48XX
+ 	tristate "LED Support for Soekris net48xx series Error LED"
++	depends on LEDS_CLASS
+ 	depends on SCx200_GPIO
+ 	help
+ 	  This option enables support for the Soekris net4801 and net4826 error
+@@ -79,18 +85,21 @@ config LEDS_NET5501
+ 
+ config LEDS_FSG
+ 	tristate "LED Support for the Freecom FSG-3"
++	depends on LEDS_CLASS
+ 	depends on MACH_FSG
+ 	help
+ 	  This option enables support for the LEDs on the Freecom FSG-3.
+ 
+ config LEDS_WRAP
+ 	tristate "LED Support for the WRAP series LEDs"
++	depends on LEDS_CLASS
+ 	depends on SCx200_GPIO
+ 	help
+ 	  This option enables support for the PCEngines WRAP programmable LEDs.
+ 
+ config LEDS_ALIX2
+ 	tristate "LED Support for ALIX.2 and ALIX.3 series"
++	depends on LEDS_CLASS
+ 	depends on X86 && !GPIO_CS5535 && !CS5535_GPIO
+ 	help
+ 	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
+@@ -98,12 +107,14 @@ config LEDS_ALIX2
+ 
+ config LEDS_H1940
+ 	tristate "LED Support for iPAQ H1940 device"
++	depends on LEDS_CLASS
+ 	depends on ARCH_H1940
+ 	help
+ 	  This option enables support for the LEDs on the h1940.
+ 
+ config LEDS_COBALT_QUBE
+ 	tristate "LED Support for the Cobalt Qube series front LED"
++	depends on LEDS_CLASS
+ 	depends on MIPS_COBALT
+ 	help
+ 	  This option enables support for the front LED on Cobalt Qube series
+@@ -117,6 +128,7 @@ config LEDS_COBALT_RAQ
+ 
+ config LEDS_SUNFIRE
+ 	tristate "LED support for SunFire servers."
++	depends on LEDS_CLASS
+ 	depends on SPARC64
+ 	select LEDS_TRIGGERS
+ 	help
+@@ -125,6 +137,7 @@ config LEDS_SUNFIRE
+ 
+ config LEDS_HP6XX
+ 	tristate "LED Support for the HP Jornada 6xx"
++	depends on LEDS_CLASS
+ 	depends on SH_HP6XX
+ 	help
+ 	  This option enables LED support for the handheld
+@@ -132,6 +145,7 @@ config LEDS_HP6XX
+ 
+ config LEDS_PCA9532
+ 	tristate "LED driver for PCA9532 dimmer"
++	depends on LEDS_CLASS
+ 	depends on I2C && INPUT && EXPERIMENTAL
+ 	help
+ 	  This option enables support for NXP pca9532
+@@ -140,6 +154,7 @@ config LEDS_PCA9532
+ 
+ config LEDS_GPIO
+ 	tristate "LED Support for GPIO connected LEDs"
++	depends on LEDS_CLASS
+ 	depends on GENERIC_GPIO
+ 	help
+ 	  This option enables support for the LEDs connected to GPIO
+@@ -167,6 +182,7 @@ config LEDS_GPIO_OF
+ 
+ config LEDS_LP3944
+ 	tristate "LED Support for N.S. LP3944 (Fun Light) I2C chip"
++	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+ 	  This option enables support for LEDs connected to the National
+@@ -196,6 +212,7 @@ config LEDS_LP5523
+ 
+ config LEDS_CLEVO_MAIL
+ 	tristate "Mail LED on Clevo notebook"
++	depends on LEDS_CLASS
+ 	depends on X86 && SERIO_I8042 && DMI
+ 	help
+ 	  This driver makes the mail LED accessible from userspace
+@@ -226,6 +243,7 @@ config LEDS_CLEVO_MAIL
+ 
+ config LEDS_PCA955X
+ 	tristate "LED Support for PCA955x I2C chips"
++	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+ 	  This option enables support for LEDs connected to PCA955x
+@@ -234,6 +252,7 @@ config LEDS_PCA955X
+ 
+ config LEDS_WM831X_STATUS
+ 	tristate "LED support for status LEDs on WM831x PMICs"
++	depends on LEDS_CLASS
+ 	depends on MFD_WM831X
+ 	help
+ 	  This option enables support for the status LEDs of the WM831x
+@@ -241,6 +260,7 @@ config LEDS_WM831X_STATUS
+ 
+ config LEDS_WM8350
+ 	tristate "LED Support for WM8350 AudioPlus PMIC"
++	depends on LEDS_CLASS
+ 	depends on MFD_WM8350
+ 	help
+ 	  This option enables support for LEDs driven by the Wolfson
+@@ -248,6 +268,7 @@ config LEDS_WM8350
+ 
+ config LEDS_DA903X
+ 	tristate "LED Support for DA9030/DA9034 PMIC"
++	depends on LEDS_CLASS
+ 	depends on PMIC_DA903X
+ 	help
+ 	  This option enables support for on-chip LED drivers found
+@@ -255,6 +276,7 @@ config LEDS_DA903X
+ 
+ config LEDS_DAC124S085
+ 	tristate "LED Support for DAC124S085 SPI DAC"
++	depends on LEDS_CLASS
+ 	depends on SPI
+ 	help
+ 	  This option enables support for DAC124S085 SPI DAC from NatSemi,
+@@ -262,18 +284,21 @@ config LEDS_DAC124S085
+ 
+ config LEDS_PWM
+ 	tristate "PWM driven LED Support"
++	depends on LEDS_CLASS
+ 	depends on HAVE_PWM
+ 	help
+ 	  This option enables support for pwm driven LEDs
+ 
+ config LEDS_REGULATOR
+ 	tristate "REGULATOR driven LED support"
++	depends on LEDS_CLASS
+ 	depends on REGULATOR
+ 	help
+ 	  This option enables support for regulator driven LEDs.
+ 
+ config LEDS_BD2802
+ 	tristate "LED driver for BD2802 RGB LED"
++	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+ 	  This option enables support for BD2802GU RGB LED driver chips
+@@ -281,6 +306,7 @@ config LEDS_BD2802
+ 
+ config LEDS_INTEL_SS4200
+ 	tristate "LED driver for Intel NAS SS4200 series"
++	depends on LEDS_CLASS
+ 	depends on PCI && DMI
+ 	help
+ 	  This option enables support for the Intel SS4200 series of
+@@ -290,6 +316,7 @@ config LEDS_INTEL_SS4200
+ 
+ config LEDS_LT3593
+ 	tristate "LED driver for LT3593 controllers"
++	depends on LEDS_CLASS
+ 	depends on GENERIC_GPIO
+ 	help
+ 	  This option enables support for LEDs driven by a Linear Technology
+@@ -298,6 +325,7 @@ config LEDS_LT3593
+ 
+ config LEDS_ADP5520
+ 	tristate "LED Support for ADP5520/ADP5501 PMIC"
++	depends on LEDS_CLASS
+ 	depends on PMIC_ADP5520
+ 	help
+ 	  This option enables support for on-chip LED drivers found
+@@ -308,6 +336,7 @@ config LEDS_ADP5520
+ 
+ config LEDS_DELL_NETBOOKS
+ 	tristate "External LED on Dell Business Netbooks"
++	depends on LEDS_CLASS
+ 	depends on X86 && ACPI_WMI
+ 	help
+ 	  This adds support for the Latitude 2100 and similar
+@@ -315,6 +344,7 @@ config LEDS_DELL_NETBOOKS
+ 
+ config LEDS_MC13783
+ 	tristate "LED Support for MC13783 PMIC"
++	depends on LEDS_CLASS
+ 	depends on MFD_MC13783
+ 	help
+ 	  This option enable support for on-chip LED drivers found
+@@ -322,6 +352,7 @@ config LEDS_MC13783
+ 
+ config LEDS_NS2
+ 	tristate "LED support for Network Space v2 GPIO LEDs"
++	depends on LEDS_CLASS
+ 	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || MACH_NETSPACE_MAX_V2 || D2NET_V2
+ 	default y
+ 	help
+@@ -340,17 +371,17 @@ config LEDS_NETXBIG
+ 
+ config LEDS_TRIGGERS
+ 	bool "LED Trigger support"
++	depends on LEDS_CLASS
+ 	help
+ 	  This option enables trigger support for the leds class.
+ 	  These triggers allow kernel events to drive the LEDs and can
+ 	  be configured via sysfs. If unsure, say Y.
+ 
+-if LEDS_TRIGGERS
+-
+ comment "LED Triggers"
+ 
+ config LEDS_TRIGGER_TIMER
+ 	tristate "LED Timer Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by a programmable timer
+ 	  via sysfs. Some LED hardware can be programmed to start
+@@ -362,12 +393,14 @@ config LEDS_TRIGGER_TIMER
+ config LEDS_TRIGGER_IDE_DISK
+ 	bool "LED IDE Disk Trigger"
+ 	depends on IDE_GD_ATA
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by IDE disk activity.
+ 	  If unsure, say Y.
+ 
+ config LEDS_TRIGGER_HEARTBEAT
+ 	tristate "LED Heartbeat Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by a CPU load average.
+ 	  The flash frequency is a hyperbolic function of the 1-minute
+@@ -376,6 +409,7 @@ config LEDS_TRIGGER_HEARTBEAT
+ 
+ config LEDS_TRIGGER_BACKLIGHT
+ 	tristate "LED backlight Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled as a backlight device: they
+ 	  turn off and on when the display is blanked and unblanked.
+@@ -384,6 +418,7 @@ config LEDS_TRIGGER_BACKLIGHT
+ 
+ config LEDS_TRIGGER_GPIO
+ 	tristate "LED GPIO Trigger"
++	depends on LEDS_TRIGGERS
+ 	depends on GPIOLIB
+ 	help
+ 	  This allows LEDs to be controlled by gpio events. It's good
+@@ -396,6 +431,7 @@ config LEDS_TRIGGER_GPIO
+ 
+ config LEDS_TRIGGER_DEFAULT_ON
+ 	tristate "LED Default ON Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be initialised in the ON state.
+ 	  If unsure, say Y.
+@@ -403,8 +439,4 @@ config LEDS_TRIGGER_DEFAULT_ON
+ comment "iptables trigger is under Netfilter config (LED target)"
+ 	depends on LEDS_TRIGGERS
+ 
+-endif # LEDS_TRIGGERS
+-
+-endif # LEDS_CLASS
+-
+ endif # NEW_LEDS
+diff -puN drivers/macintosh/Kconfig~leds-fix-up-dependencies drivers/macintosh/Kconfig
+--- a/drivers/macintosh/Kconfig~leds-fix-up-dependencies
++++ a/drivers/macintosh/Kconfig
+@@ -102,6 +102,7 @@ config ADB_PMU_LED
+ config ADB_PMU_LED_IDE
+ 	bool "Use front LED as IDE LED by default"
+ 	depends on ADB_PMU_LED
++	depends on LEDS_CLASS
+ 	select LEDS_TRIGGERS
+ 	select LEDS_TRIGGER_IDE_DISK
+ 	help
+diff -puN net/mac80211/Kconfig~leds-fix-up-dependencies net/mac80211/Kconfig
+--- a/net/mac80211/Kconfig~leds-fix-up-dependencies
++++ a/net/mac80211/Kconfig
+@@ -92,7 +92,7 @@ config MAC80211_MESH
+ config MAC80211_LEDS
+ 	bool "Enable LED triggers"
+ 	depends on MAC80211
+-	select NEW_LEDS
++	depends on LEDS_CLASS
+ 	select LEDS_TRIGGERS
+ 	---help---
+ 	  This option enables a few LED triggers for different
+_
 
