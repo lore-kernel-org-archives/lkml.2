@@ -1,33 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0K2Kp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 05:45:26 -0500
+	id S1753448Ab0K2Kpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:45:39 -0500
 Received: from mga09.intel.com ([134.134.136.24]:5721 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753087Ab0K2KpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 05:45:23 -0500
+	id S1753321Ab0K2Kpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 05:45:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
-   d="scan'208";a="578534111"
-X-Mailbox-Line: From shaohui.zheng@intel.com Mon Nov 29 17:19:35 2010
-Message-Id: <20101129091935.600946109@intel.com>
+   d="scan'208";a="681922333"
+X-Mailbox-Line: From shaohui.zheng@intel.com Mon Nov 29 17:19:36 2010
+Message-Id: <20101129091936.116394523@intel.com>
 References: <20101129091750.950277284@intel.com>
 User-Agent: quilt/0.46-1
-Date: Mon, 29 Nov 2010 17:17:51 +0800
+Date: Mon, 29 Nov 2010 17:17:56 +0800
 From: shaohui.zheng@intel.com
 To: akpm@linux-foundation.org, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
         lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
         rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
         Shaohui Zheng <shaohui.zheng@intel.com>,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: [1/8, v5] NUMA Hotplug Emulator: Add numa=possibe options
-Content-Disposition: inline; filename=001-node-possible-option.patch
+        Haicheng Li <haicheng.li@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [6/8, v5] From: Shaohui Zheng <shaohui.zheng@intel.com>
+Content-Disposition: inline; filename=006-hotplug-emulator-extend-memory-probe-interface-to-support-numa.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Subject: [6/8, v5] NUMA Hotplug Emulator: extend memory probe interface to support NUMA
 
+Extend memory probe interface to support an extra paramter nid,
+the reserved memory can be added into this node if node exists.
+
+Add a memory section(128M) to node 3(boots with mem=1024m)
+
+	echo 0x40000000,3 > memory/probe
+
+And more we make it friendly, it is possible to add memory to do
+
+	echo 3g > memory/probe
+	echo 1024m,3 > memory/probe
+
+It maintains backwards compatibility.
+
+Another format suggested by Dave Hansen:
+
+	echo physical_address=0x40000000 numa_node=3 > memory/probe
+
+it is more explicit to show meaning of the parameters.
+
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+Index: linux-hpe4/arch/x86/Kconfig
+===================================================================
+--- linux-hpe4.orig/arch/x86/Kconfig	2010-11-29 14:43:51.529065999 +0800
++++ linux-hpe4/arch/x86/Kconfig	2010-11-29 14:43:54.569066000 +0800
+@@ -1276,10 +1276,6 @@
+ 	def_bool y
+ 	depends on ARCH_SPARSEMEM_ENABLE
+ 
+-config ARCH_MEMORY_PROBE
+-	def_bool X86_64
+-	depends on MEMORY_HOTPLUG
+-
+ config ILLEGAL_POINTER_VALUE
+        hex
+        default 0 if X86_32
+Index: linux-hpe4/drivers/base/memory.c
+===================================================================
+--- linux-hpe4.orig/drivers/base/memory.c	2010-11-29 14:43:51.539066000 +0800
++++ linux-hpe4/drivers/base/memory.c	2010-11-29 14:43:54.569066000 +0800
+@@ -329,27 +329,76 @@
+  * will not need to do it from userspace.  The fake hot-add code
+  * as well as ppc64 will do all of their discovery in userspace
+  * and will require this interface.
++ *
++ * Parameter format 1: physical_address,numa_node
++ * Parameter format 2: physical_address=0x40000000 numa_node=3
+  */
+ #ifdef CONFIG_ARCH_MEMORY_PROBE
+-static ssize_t
+-memory_probe_store(struct class *class, struct class_attribute *attr,
+-		   const char *buf, size_t count)
++ssize_t parse_memory_probe_store(const char *buf, size_t count)
+ {
+-	u64 phys_addr;
+-	int nid;
++	u64 phys_addr = 0;
++	int nid = 0;
+ 	int ret;
++	char *p = NULL, *q = NULL;
++	/* format: physical_address=0x40000000 numa_node=3 */
++	p = strchr(buf, '=');
++	if (p != NULL) {
++		*p = '\0';
++		q = strchr(buf, ' ');
++		if (q == NULL) {
++			if (strcmp(buf, "physical_address") != 0)
++				ret = -EPERM;
++			else
++				phys_addr = memparse(p+1, NULL);
++		} else {
++			*q++ = '\0';
++			p = strchr(q, '=');
++			if (strcmp(buf, "physical_address") == 0)
++				phys_addr = memparse(p+1, NULL);
++			if (strcmp(buf, "numa_node") == 0)
++				nid = simple_strtoul(p+1, NULL, 0);
++			if (strcmp(q, "physical_address") == 0)
++				phys_addr = memparse(p+1, NULL);
++			if (strcmp(q, "numa_node") == 0)
++				nid = simple_strtoul(p+1, NULL, 0);
++		}
++	} else { /* physical_address,numa_node */
++		p = strchr(buf, ',');
++		if (p != NULL && strlen(p+1) > 0) {
++			/* nid specified */
++			*p++ = '\0';
++			nid = simple_strtoul(p, NULL, 0);
++			phys_addr = memparse(buf, NULL);
++		} else {
++			phys_addr = memparse(buf, NULL);
++			nid = memory_add_physaddr_to_nid(phys_addr);
++		}
++	}
+ 
+-	phys_addr = simple_strtoull(buf, NULL, 0);
+-
+-	nid = memory_add_physaddr_to_nid(phys_addr);
+-	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++	if (nid < 0 || nid > nr_node_ids - 1) {
++		printk(KERN_ERR "Invalid node id %d(0<=nid<%d).\n", nid, nr_node_ids);
++		ret = -EPERM;
++	} else {
++		printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
++		ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++		if (ret)
++			count = ret;
++	}
+ 
+ 	if (ret)
+ 		count = ret;
+ 
+ 	return count;
+ }
+-static CLASS_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
++EXPORT_SYMBOL(parse_memory_probe_store);
++
++static ssize_t
++memory_probe_store(struct class *class, struct class_attribute *attr,
++		   const char *buf, size_t count)
++{
++	return parse_memory_probe_store(buf, count);
++}
++
+ 
+ static int memory_probe_init(void)
+ {
+Index: linux-hpe4/mm/Kconfig
+===================================================================
+--- linux-hpe4.orig/mm/Kconfig	2010-11-29 14:43:51.549066001 +0800
++++ linux-hpe4/mm/Kconfig	2010-11-29 14:43:54.569066000 +0800
+@@ -174,6 +174,17 @@
+ 	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
+ 	default "4"
+ 
++config ARCH_MEMORY_PROBE
++	def_bool y
++	bool "Memory hotplug emulation"
++	depends on MEMORY_HOTPLUG
++	---help---
++	  Enable memory hotplug emulation. Reserve memory with grub parameter
++	  "mem=N"(such as mem=1024M), where N is the initial memory size, the
++	  rest physical memory will be removed from e820 table; the memory probe
++	  interface is for memory hot-add to specified node in software method.
++	  This is for debuging and testing purpose
++
+ #
+ # support for memory compaction
+ config COMPACTION
+Index: linux-hpe4/include/linux/memory_hotplug.h
+===================================================================
+--- linux-hpe4.orig/include/linux/memory_hotplug.h	2010-11-29 14:43:51.559066001 +0800
++++ linux-hpe4/include/linux/memory_hotplug.h	2010-11-29 14:43:54.569066000 +0800
+@@ -211,6 +211,14 @@
+ extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+ extern struct page *sparse_decode_mem_map(unsigned long coded_mem_map,
+ 					  unsigned long pnum);
++#ifdef CONFIG_ARCH_MEMORY_PROBE
++extern ssize_t parse_memory_probe_store(const char *buf, size_t count);
++#else
++static inline ssize_t parse_memory_probe_store(const char *buf, size_t count)
++{
++	return 0;
++}
++#endif  /* CONFIG_ARCH_MEMORY_PROBE */
+ 
+ #ifdef CONFIG_ARCH_MEMORY_PROBE
+ extern ssize_t parse_memory_probe_store(const char *buf, size_t count);
 
 -- 
 Thanks & Regards,
