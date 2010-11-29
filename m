@@ -1,108 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab0K2P6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:58:18 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:43330 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab0K2P6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:58:17 -0500
-Date: Mon, 29 Nov 2010 15:58:01 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
-	threshold when memory is low
-Message-ID: <20101129155801.GG13268@csn.ul.ie>
-References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie> <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101126160619.GP22651@bombadil.infradead.org> <20101129095618.GB13268@csn.ul.ie> <20101129131626.GF15818@bombadil.infradead.org> <20101129150824.GF13268@csn.ul.ie> <20101129152230.GH15818@bombadil.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101129152230.GH15818@bombadil.infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754772Ab0K2QCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:02:10 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54265 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab0K2QCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:02:09 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs" <linux-btrfs@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates for 2.6.37-rc
+Date: Mon, 29 Nov 2010 11:00:57 -0500
+Message-Id: <1291045745-sup-8236@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 10:22:30AM -0500, Kyle McMartin wrote:
-> On Mon, Nov 29, 2010 at 03:08:24PM +0000, Mel Gorman wrote:
-> > Ouch! I have been unable to create an exact copy of your kernel source as
-> > I'm not running Fedora. From a partial conversion of a source RPM, I saw no
-> > changes related to mm/vmscan.c. Is this accurate? I'm trying to establish
-> > if this is a mainline bug as well.
-> > 
-> 
-> Sorry, if you extract the source rpm you should get the patched
-> sources... Aside from a few patches to mm/mmap for execshield, mm/* is
-> otherwise untouched from the latest stable 2.6.35 kernels.
-> 
+Hi everyone,
 
-Perfect, that correlates with what I saw so this is probably a
-mainline issue.
+The master branch of the btrfs unstable tree:
 
-> If you git clone git://pkgs.fedoraproject.org/kernel and check out the
-> origin/f14/master branch, it has all the patches we apply (based on the
-> 'ApplyPatch' lines in kernel.spec
-> 
-> > Second, I see all the stack traces are marked with "?" making them
-> > unreliable. Is that anything to be concerned about?
-> > 
-> 
-> Hrm, I don't think it is, I think the ones with '?' are just artifacts
-> because we don't have a proper unwinder. Oh! Thanks! I just found a bug
-> in our configs... We don't have CONFIG_FRAME_POINTER set because
-> CONFIG_DEBUG_KERNEL got unset in the 'production' configs... I'll fix
-> that up.
-> 
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
 
-Ordinarily I'd expect it to be from the lack of a unwinder but if FRAME_POINTER
-is there (which you say in a follow-up mail that is), it can be a bit of
-a concern. There is some real weirness as it is. Take on of Luke's
-examples where it appears to be locked up in
+Has a collection of btrfs bug fixes.
 
-[ 5015.448127] Pid: 185, comm: kswapd1 Tainted: P 2.6.35.6-48.fc14.x86_64 #1 X8DA3/X8DA3
-[ 5015.448127] RIP: 0010:[<ffffffff81469130>]  [<ffffffff81469130>] _raw_spin_unlock_irqrestore+0x18/0x19
+The three most important fixes here address crashes in the btrfs
+O_DIRECT code, add a migrate_page operation to avoid metadata corruption
+as btree pages go through migration, and fix up our NFS support.
 
-I am at a loss to explain under what circumstances that can even happen!
-Is there any possibility RIP is being translated to the wrong symbol possibly
-via an userspace decoder of the oops or similar? Is there any possibility
-the stack is being corrupted if the swap subsystem is on a complicated
-software stack?
+Otherwise we have assorted correctness fixes, many of which were kicked
+out by xfsqa.
 
-> > I see that one user has reported that the patches fixed the problem for him
-> > but I fear that this might be a co-incidence or that the patches close a
-> > race of some description. Specifically, I'm trying to identify if there is
-> > a situation where kswapd() constantly loops checking watermarks and never
-> > calling cond_resched(). This could conceivably happen if kswapd() is always
-> > checking sleeping_prematurely() at a higher order where as balance_pgdat()
-> > is always checks the watermarks at the lower order. I'm not seeing how this
-> > could happen in 2.6.35.6 though. If Fedora doesn't have special changes,
-> > it might mean that these patches do need to go into -stable as the
-> > cost of zone_page_state_snapshot() is far higher on larger machines than
-> > previously reported.
-> > 
-> 
-> Yeah, I am a bit surprised as well. Luke seems to have quite a large
-> machine... I haven't seen any kswapd lockups there on my 18G machine
-> using the same kernel. :< (Possibly it's just not stressed enough
-> though.)
-> 
+-chris
 
-He reports his machine as 24-way but with his model of CPU it could
-still be 2-socket which I ordinarily would not have expected to suffer
-so badly from zone_page_state_snapshot(). I would have predicted that
-the patches being thrown about in the thread "Free memory never fully
-used, swapping" to be more relevant to kswapd failing to go to sleep :/
+Josef Bacik (11) commits (+241/-54):
+    Btrfs: make btrfs_add_nondir take parent inode as an argument (+16/-22)
+    Btrfs: fix typo in fallocate to make it honor actual size (+5/-4)
+    Btrfs: hold i_mutex when calling btrfs_log_dentry_safe (+7/-0)
+    Btrfs: setup blank root and fs_info for mount time (+33/-7)
+    Btrfs: make sure new inode size is ok in fallocate (+4/-0)
+    Btrfs: use dget_parent where we can UPDATED (+43/-12)
+    Btrfs: handle the space_cache option properly (+1/-0)
+    Btrfs: update inode ctime when using links (+1/-0)
+    Btrfs: fix more ESTALE problems with NFS (+1/-0)
+    Btrfs: handle NFS lookups properly (+76/-0)
+    Btrfs: fix fiemap (+54/-9)
 
-Andrew, this patch was a performance fix but is a report saying that it
-fixes a functional regression in Fedora enough to push a patch torwards
-stable even though an explanation as to *why* it fixes the problem is missing?
+Chris Mason (4) commits (+124/-9):
+    Btrfs: deal with DIO bios that span more than one ordered extent (+89/-4)
+    Btrfs: avoid NULL pointer deref in try_release_extent_buffer (+4/-2)
+    Btrfs: don't use migrate page without CONFIG_MIGRATION (+6/-1)
+    Btrfs: add migrate page for metadata inode (+25/-2)
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Li Zefan (3) commits (+6/-6):
+    btrfs: Check if dest_offset is block-size aligned before cloning file (+3/-4)
+    btrfs: Show device attr correctly for symlinks (+1/-0)
+    btrfs: Set file size correctly in file clone (+2/-2)
+
+Miao Xie (3) commits (+195/-45):
+    btrfs: cleanup duplicate bio allocating functions (+8/-18)
+    btrfs: fix free dip and dip->csums twice (+3/-6)
+    btrfs: fix panic caused by direct IO (+184/-21)
+
+Mariusz Kozlowski (1) commits (+3/-3):
+    btrfs: make 1-bit signed fileds unsigned
+
+Arne Jansen (1) commits (+1/-1):
+    btrfs: Fix early enospc because 'unused' calculated with wrong sign.
+
+Ian Kent (1) commits (+6/-0):
+    Btrfs - fix race between btrfs_get_sb() and umount
+
+Total: (24) commits (+576/-118)
+
+ fs/btrfs/compression.c  |   15 +---
+ fs/btrfs/ctree.h        |    6 +-
+ fs/btrfs/disk-io.c      |   38 +++++-
+ fs/btrfs/export.c       |   76 ++++++++++++
+ fs/btrfs/extent-tree.c  |    2 +-
+ fs/btrfs/extent_io.c    |   77 ++++++++++---
+ fs/btrfs/extent_io.h    |    3 +
+ fs/btrfs/file.c         |    7 +
+ fs/btrfs/inode.c        |  294 ++++++++++++++++++++++++++++++++++++++---------
+ fs/btrfs/ioctl.c        |   31 ++++--
+ fs/btrfs/ordered-data.c |   67 +++++++++++
+ fs/btrfs/ordered-data.h |    3 +
+ fs/btrfs/super.c        |   41 ++++++-
+ fs/btrfs/transaction.c  |    5 +-
+ fs/btrfs/tree-log.c     |   21 +++-
+ 15 files changed, 572 insertions(+), 114 deletions(-)
