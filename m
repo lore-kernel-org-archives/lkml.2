@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab0K2JBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:01:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21183 "EHLO mx1.redhat.com"
+	id S1752018Ab0K2JCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:02:09 -0500
+Received: from gate.crashing.org ([63.228.1.57]:40458 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842Ab0K2JBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:01:14 -0500
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Xiaotian Feng <dfeng@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] block: check for proper length of iov entries earlier in blk_rq_map_user_iov()
-Date: Mon, 29 Nov 2010 17:00:55 +0800
-Message-Id: <1291021255-2838-1-git-send-email-dfeng@redhat.com>
+	id S1751872Ab0K2JCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 04:02:06 -0500
+Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <20101126143843.801484792@chello.nl>
+References: <20101126143843.801484792@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Nov 2010 20:00:20 +1100
+Message-ID: <1291021220.32570.295.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 9284bcf checks for proper length of iov entries in
-blk_rq_map_user_iov(). But if the map is unaligned, kernel
-will break out the loop without checking for the proper length.
-So we need to check the proper length before the unalign check.
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
----
- block/blk-map.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+> Linus seems to want this to get some serious review and be pushed through
+> Andrew (well, anybody but me actually, but since Andrew is mm master...)
+> 
+> Ben, Thomas, Andrew, can I trick you guys into looking at this stuff?
 
-diff --git a/block/blk-map.c b/block/blk-map.c
-index 5d5dbe4..e663ac2 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -201,12 +201,13 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
- 	for (i = 0; i < iov_count; i++) {
- 		unsigned long uaddr = (unsigned long)iov[i].iov_base;
- 
-+		if (!iov[i].iov_len)
-+			return -EINVAL;
-+
- 		if (uaddr & queue_dma_alignment(q)) {
- 			unaligned = 1;
- 			break;
- 		}
--		if (!iov[i].iov_len)
--			return -EINVAL;
- 	}
- 
- 	if (unaligned || (q->dma_pad_mask & len) || map_data)
--- 
-1.7.3.2
+It's on my hot todo list this week :-)
+
+I'd like to take out the rcu fix for ppc page table freeing tho and send
+it to Linus now if you're ok with that.
+
+Cheers,
+Ben.
+
 
