@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab0K2Sh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:37:27 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:40868 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab0K2Sh0 (ORCPT
+	id S1754221Ab0K2Sm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:42:29 -0500
+Received: from claranet-outbound-smtp04.uk.clara.net ([195.8.89.37]:55816 "EHLO
+	claranet-outbound-smtp04.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751233Ab0K2Sm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:37:26 -0500
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Nov 2010 13:37:26 EST
-Subject: [PATCH] x86/PCI: never allocate PCI space from the last 1M below 4G
-To: "H. Peter Anvin" <hpa@zytor.com>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
-Date: Mon, 29 Nov 2010 11:30:09 -0700
-Message-ID: <20101129183009.11256.33739.stgit@bob.kio>
-User-Agent: StGit/0.15
+	Mon, 29 Nov 2010 13:42:28 -0500
+Message-ID: <4CF3F40E.3040508@sciolus.org>
+Date: Mon, 29 Nov 2010 18:42:22 +0000
+From: "R.M. Thomas" <rmthomas@sciolus.org>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: easycap: fix build failure
+References: <alpine.LNX.2.00.1011291813060.981@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011291813060.981@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jiri Kosina wrote:
+> Now, I really believe that this driver is completely hopeless and the only 
+> option is complete from-scratch rewrite. I have been looking into it for 
+> approximately ~30 seconds (solely to fix this build failure), and I really 
+> don't know what to say.
 
-The last 1M before 4G contains the processor restart vector and usually
-the system ROM.  We don't know the actual ROM size; I chose 1M because
-that's how much Windows 7 appears to avoid.
+You are quite right of course.  This driver does indeed require a complete
+re-write.  The non-standard formatting and (now) redundant debugging macros
+are actually the least troublesome issues.  More significant is the need to
+replace most of the routines by existing functions from the V4L subsystem.
+Unfortunately I shall be unable to undertake this essential work myself in
+the foreseeable future owing to other commitments.  Probably the simplest
+solution would be to drop the driver from staging.
 
-Without this check, we can allocate PCI space that will never work.  On
-Matthew's HP 2530p, we put the Intel GTT "Flush Page" at the very last
-page, which causes a spontaneous power-off:
+Even in its present untidy state the driver does work reasonably well on x86
+and x86-64, so something could possibly be salvaged from it.
 
-  pci_root PNP0A08:00: host bridge window [mem 0xfee01000-0xffffffff]
-  fffff000-ffffffff : Intel Flush Page (assigned by intel-gtt)
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23542
-Reported-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
-
- arch/x86/include/asm/e820.h |    3 +++
- arch/x86/pci/i386.c         |   10 +++++++++-
- 2 files changed, 12 insertions(+), 1 deletions(-)
-
-
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 5be1542..c1e908f 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -72,6 +72,9 @@ struct e820map {
- #define BIOS_BEGIN		0x000a0000
- #define BIOS_END		0x00100000
- 
-+#define BIOS_ROM_BASE		0xfff00000
-+#define BIOS_ROM_END		0x100000000ULL
-+
- #ifdef __KERNEL__
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index c4bb261..6890241 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -65,8 +65,14 @@ pcibios_align_resource(void *data, const struct resource *res,
- 			resource_size_t size, resource_size_t align)
- {
- 	struct pci_dev *dev = data;
--	resource_size_t start = round_down(res->end - size + 1, align);
-+	resource_size_t start, end = res->end;
- 
-+	/* Make sure we don't allocate from the last 1M before 4G */
-+	if (res->flags & IORESOURCE_MEM) {
-+		if (end >= BIOS_ROM_BASE && end < BIOS_ROM_END)
-+			end = BIOS_ROM_BASE - 1;
-+	}
-+	start = round_down(end - size + 1, align);
- 	if (res->flags & IORESOURCE_IO) {
- 
- 		/*
-@@ -80,6 +86,8 @@ pcibios_align_resource(void *data, const struct resource *res,
- 	} else if (res->flags & IORESOURCE_MEM) {
- 		if (start < BIOS_END)
- 			start = res->end;	/* fail; no space */
-+		if (start >= BIOS_ROM_BASE && start < BIOS_ROM_END)
-+			start = ALIGN(BIOS_ROM_END, align);
- 	}
- 	return start;
- }
+Mike   
 
