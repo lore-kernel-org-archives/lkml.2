@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab0K2QMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:12:31 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49646 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab0K2QM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:12:29 -0500
-Date: Mon, 29 Nov 2010 08:12:11 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 29
-Message-Id: <20101129081211.2e0c7783.randy.dunlap@oracle.com>
-In-Reply-To: <20101129145717.GA20232@gondor.apana.org.au>
-References: <20101129140335.19800705.sfr@canb.auug.org.au>
-	<AANLkTikiZoNM9zpXw3wSK7-uqh+ZYMpJ+wg0wPpBs_kx@mail.gmail.com>
-	<20101129145717.GA20232@gondor.apana.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754954Ab0K2QNg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:13:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754653Ab0K2QNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:13:35 -0500
+Date: Mon, 29 Nov 2010 17:11:03 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 53 of 66] add numa awareness to hugepage allocations
+Message-ID: <20101129161103.GE24474@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <223ee926614158fc1353.1288798108@v2.random>
+ <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010 22:57:17 +0800 Herbert Xu wrote:
-
-> On Mon, Nov 29, 2010 at 09:47:38AM +0000, Zimny Lech wrote:
-> > Ave
-> > 
-> > 2010/11/29 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > > Hi all,
-> > >
-> > > Changes since 20101126:
-> > 
-> > 
-> > Setup is 14188 bytes (padded to 14336 bytes).
-> > System is 1267 kB
-> > CRC 61cea148
-> > Kernel: arch/x86/boot/bzImage is ready  (#1)
-> >   Building modules, stage 2.
-> >   MODPOST 537 modules
-> > ERROR: "sock_no_mmap" [crypto/algif_skcipher.ko] undefined!
+On Mon, Nov 29, 2010 at 02:38:01PM +0900, Daisuke Nishimura wrote:
+> I think this should be:
 > 
-> I hope this patch fixes it for you.
+> 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+> #ifdef CONFIG_NUMA
+> 		put_page(new_page);
+> #endif
+> 		goto out;
+> 	}
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-Thanks.
-
-
-> commit 7451708f39db19a8303bb7fb95f00aca9f673cb5
-> Author: Herbert Xu <herbert@gondor.apana.org.au>
-> Date:   Mon Nov 29 22:56:03 2010 +0800
-> 
->     crypto: af_alg - Add dependency on NET
->     
->     Add missing dependency on NET since we require sockets for our
->     interface.
->     
->     Should really be a select but kconfig doesn't like that:
->     
->     net/Kconfig:6:error: found recursive dependency: NET -> NETWORK_FILESYSTEMS -> AFS_FS -> AF_RXRPC -> CRYPTO -> CRYPTO_USER_API_HASH -> CRYPTO_USER_API -> NET
->     
->     Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
->     Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-> 
-> diff --git a/crypto/Kconfig b/crypto/Kconfig
-> index 467491d..96b0e55 100644
-> --- a/crypto/Kconfig
-> +++ b/crypto/Kconfig
-> @@ -848,6 +848,7 @@ config CRYPTO_USER_API
->  
->  config CRYPTO_USER_API_HASH
->  	tristate "User-space interface for hash algorithms"
-> +	depends on NET
->  	select CRYPTO_HASH
->  	select CRYPTO_USER_API
->  	help
-> @@ -856,6 +857,7 @@ config CRYPTO_USER_API_HASH
->  
->  config CRYPTO_USER_API_SKCIPHER
->  	tristate "User-space interface for symmetric key cipher algorithms"
-> +	depends on NET
->  	select CRYPTO_BLKCIPHER
->  	select CRYPTO_USER_API
->  	help
-> 
-> Thanks,
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Hmm no, the change you suggest would generate memory corruption with
+use after free.
