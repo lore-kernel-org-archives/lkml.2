@@ -1,56 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab0K2RmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 12:42:06 -0500
-Received: from mail.perches.com ([173.55.12.10]:1927 "EHLO mail.perches.com"
+	id S1755510Ab0K2Rnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 12:43:46 -0500
+Received: from mail.perches.com ([173.55.12.10]:1959 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752285Ab0K2RmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 12:42:04 -0500
+	id S1755410Ab0K2RmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 12:42:12 -0500
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Szymon Janc <szymon@janc.net.pl>,
         =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirqus@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 00/11] forcedeth: Convert to use netdev_<level> and neatening
-Date: Mon, 29 Nov 2010 09:41:51 -0800
-Message-Id: <cover.1291051316.git.joe@perches.com>
+Subject: [PATCH 07/11] forcedeth: Add function init_realtek_8211b
+Date: Mon, 29 Nov 2010 09:41:58 -0800
+Message-Id: <c66fcbd5111052cc1051ce5212f728aa47010c68.1291051316.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
+In-Reply-To: <cover.1291051316.git.joe@perches.com>
+References: <cover.1291051316.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some mild restructuring and some generally neatening.
+Deduplicate the code use for the init/reset of this device.
 
-The conversions of dprintk to netdev_dbg in patches 2 and 4 are
-deleted in patch 10 as these seem to have been used only
-during initial development and are not normally compiled-in.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/forcedeth.c |  105 ++++++++++++++--------------------------------
+ 1 files changed, 32 insertions(+), 73 deletions(-)
 
-Patch 10 may be ignored if desired.
-
-Object size is reduced ~2Kb overall.
-
-$ size drivers/net/forcedeth.o.*
-   text	   data	    bss	    dec	    hex	filename
-  71739	    336	  17176	  89251	  15ca3	drivers/net/forcedeth.o.new
-  73416	    240	  17696	  91352	  164d8	drivers/net/forcedeth.o.old
-
-Joe Perches (11):
-  forcedeth: Change reg_delay arguments and use
-  forcedeth: convert dprintk(KERN_DEBUG to netdev_dbg
-  forcedeth: Use print_hex_dump
-  forcedeth: Convert remaining dprintk to netdev_dbg
-  forcedeth: Use pr_fmt and pr_<level>
-  forcedeth: Convert pr_<level> to netdev_<level>
-  forcedeth: Add function init_realtek_8211b
-  forcedeth: Separate vendor specific initializations into functions
-  forcedeth: Convert dev_printk(<level> to dev_<level>(
-  forcedeth: Remove netdev_dbg uses
-  forcedeth: Use netdev_dbg for printk(KERN_DEBUG
-
- drivers/net/forcedeth.c |  860 ++++++++++++++++++++---------------------------
- 1 files changed, 357 insertions(+), 503 deletions(-)
-
+diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+index c3a9783..300748c 100644
+--- a/drivers/net/forcedeth.c
++++ b/drivers/net/forcedeth.c
+@@ -1181,6 +1181,33 @@ static int phy_reset(struct net_device *dev, u32 bmcr_setup)
+ 	return 0;
+ }
+ 
++static int init_realtek_8211b(struct net_device *dev, struct fe_priv *np)
++{
++	static const struct {
++		int reg;
++		int init;
++	} ri[] = {
++		{ PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT1 },
++		{ PHY_REALTEK_INIT_REG2, PHY_REALTEK_INIT2 },
++		{ PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT3 },
++		{ PHY_REALTEK_INIT_REG3, PHY_REALTEK_INIT4 },
++		{ PHY_REALTEK_INIT_REG4, PHY_REALTEK_INIT5 },
++		{ PHY_REALTEK_INIT_REG5, PHY_REALTEK_INIT6 },
++		{ PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT1 },
++	};
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(ri); i++) {
++		if (mii_rw(dev, np->phyaddr, ri[i].reg, ri[i].init)) {
++			netdev_info(dev, "%s: phy init failed\n",
++				    pci_name(np->pci_dev));
++			return PHY_ERROR;
++		}
++	}
++
++	return 0;
++}
++
+ static int phy_init(struct net_device *dev)
+ {
+ 	struct fe_priv *np = get_nvpriv(dev);
+@@ -1200,44 +1227,10 @@ static int phy_init(struct net_device *dev)
+ 	if (np->phy_oui == PHY_OUI_REALTEK) {
+ 		if (np->phy_model == PHY_MODEL_REALTEK_8211 &&
+ 		    np->phy_rev == PHY_REV_REALTEK_8211B) {
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT1)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG2, PHY_REALTEK_INIT2)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT3)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG3, PHY_REALTEK_INIT4)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG4, PHY_REALTEK_INIT5)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG5, PHY_REALTEK_INIT6)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT1)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
++			if (init_realtek_8211b(dev, np))
+ 				return PHY_ERROR;
+-			}
+-		}
+-		if (np->phy_model == PHY_MODEL_REALTEK_8211 &&
+-		    np->phy_rev == PHY_REV_REALTEK_8211C) {
++		} else if (np->phy_model == PHY_MODEL_REALTEK_8211 &&
++			   np->phy_rev == PHY_REV_REALTEK_8211C) {
+ 			u32 powerstate = readl(base + NvRegPowerState2);
+ 
+ 			/* need to perform hw phy reset */
+@@ -1459,43 +1452,9 @@ static int phy_init(struct net_device *dev)
+ 		if (np->phy_model == PHY_MODEL_REALTEK_8211 &&
+ 		    np->phy_rev == PHY_REV_REALTEK_8211B) {
+ 			/* reset could have cleared these out, set them back */
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT1)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
++			if (init_realtek_8211b(dev, np))
+ 				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG2, PHY_REALTEK_INIT2)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT3)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG3, PHY_REALTEK_INIT4)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG4, PHY_REALTEK_INIT5)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG5, PHY_REALTEK_INIT6)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-			if (mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG1, PHY_REALTEK_INIT1)) {
+-				netdev_info(dev, "%s: phy init failed\n",
+-					    pci_name(np->pci_dev));
+-				return PHY_ERROR;
+-			}
+-		}
+-		if (np->phy_model == PHY_MODEL_REALTEK_8201) {
++		} else if (np->phy_model == PHY_MODEL_REALTEK_8201) {
+ 			if (np->driver_data & DEV_NEED_PHY_INIT_FIX) {
+ 				phy_reserved = mii_rw(dev, np->phyaddr, PHY_REALTEK_INIT_REG6, MII_READ);
+ 				phy_reserved |= PHY_REALTEK_INIT7;
 -- 
 1.7.3.2.245.g03276.dirty
 
