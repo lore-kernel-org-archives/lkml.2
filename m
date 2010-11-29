@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab0K2Xcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:32:39 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46439 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab0K2Xci convert rfc822-to-8bit (ORCPT
+	id S1755634Ab0K2Xdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:33:42 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42422 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754299Ab0K2Xdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:32:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=g5iGD0tV1rc+vu6Bl8IRkFdvdGp236Svb0DYLDsMtHTj2+H5yKxGvs8RURVGyaLcx8
-         GIq5jER6SDtzRyhrta6UFX9L6fRa1J8nXWJhEdbMR4PgaZyFEUQjTIs0CG1/lR9nIW0X
-         OVK0dvdEc8WSxkFTzLnodD371jiE/Z22yjJ9g=
-MIME-Version: 1.0
-In-Reply-To: <4CF30B46.4000203@pavlinux.ru>
-References: <4CF30B46.4000203@pavlinux.ru>
-Date: Mon, 29 Nov 2010 18:32:37 -0500
-Message-ID: <AANLkTikgtGkKDMJBLanE0Efy3_CrY9X2ggS9h+kMTToT@mail.gmail.com>
-Subject: Re: [PATCH] Repalce strncmp by memcmp
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: pavel@pavlinux.ru
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Nov 2010 18:33:41 -0500
+Date: Mon, 29 Nov 2010 23:31:50 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
+        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, w@1wt.eu
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101129233150.60a3c3af@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101129163308.GA2383@xanatos>
+References: <20101116104600.GA24015@suse.de>
+	<20101119191906.GA31760@xanatos>
+	<AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com>
+	<20101126074809.GD19589@elte.hu>
+	<20101129163308.GA2383@xanatos>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> >  	/* Some debugging symbols have no name.  Ignore them. */
+> > -	if (!iter->name[0])
+> > +	if (!iter->name[0] || !capable(CAP_SYS_ADMIN))
+> >  		return 0;
 
-On Sun, Nov 28, 2010 at 9:09 PM, Pavel Vasilyev <pavel@pavlinux.ru> wrote:
->
->    This patch replace all strncmp(a, b, c) by  memcmp(a, b, c).
->
-> I test on x86_64 (AMD Opteron 285).
->
-> #include <string.h>
->
-Could you at least do your "performance/code analysis" [NDLR: ahem...]
-in a kernel environment ? <string.h> only belongs to userland and the
-"K" of lkml stands for "kernel".
+This is hardcoding file permission policy into the kernel in a way the
+user cannot change - its bogus in the extreme. Use file permissions that
+way saner people can chmod them as they like. Indeed quite a few people
+*already* chmod chunks of /proc.
 
-Thanks,
- - Arnaud
+It also means that things like SELinux and Tomoyo can be used to manage
+security on it in clever ways - something that using a capability
+completely buggers up.
 
-ps: please don't send a +500k on the list, that's rude to many people.
+Alan
