@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab0K2Syr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:54:47 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:27449 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751513Ab0K2Syq (ORCPT
+	id S1751512Ab0K2TCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 14:02:52 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:57582 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab0K2TCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:54:46 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: NztYYCkVM1kBiHIGa3_LWC8J0lN19P_jYeenxkXlAeUCwJ2
- CJMk-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 29 Nov 2010 12:54:42 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [thisops uV2 04/10] x86: Support for
- this_cpu_add,sub,dec,inc_return
-In-Reply-To: <20101129183333.GA25610@Krystal>
-Message-ID: <alpine.DEB.2.00.1011291244410.4836@router.home>
-References: <20101126210937.383047168@linux.com> <20101126210951.303044608@linux.com> <20101127150015.GE15365@Krystal> <alpine.DEB.2.00.1011291025410.3923@router.home> <20101129183333.GA25610@Krystal>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 29 Nov 2010 14:02:51 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 24.130.172.179
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+oXPspPk9WqMfWUn/y1KvJ
+Date: Mon, 29 Nov 2010 11:02:44 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: [GIT PULL] omap serial console with PM fixes
+Message-ID: <20101129190244.GD17222@atomide.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010, Mathieu Desnoyers wrote:
+Hi Linus,
 
-> > > > +#define percpu_add_return_op(var, val)					\
-> > > > +({									\
-> > > > +	typedef typeof(var) pao_T__;					\
-> > > > +	typeof(var) pfo_ret__ = val;					\
-> > > > +	if (0) {							\
-> > > > +		pao_T__ pao_tmp__;					\
-> > > > +		pao_tmp__ = (val);					\
-> > > > +		(void)pao_tmp__;					\
-> > > > +	}								\
-> > >
-> > > OK, I'm dumb: why is the above needed ?
-> >
-> > Ensure that the compiler agrees that  *var and val are compatible. Taken
-> > over from percpu_add_op().
->
-> Isn't that the purpose of __builtin_types_compatible_p(t1, t2) ?
+Please pull two patches to fix omap serial console with PM enabled:
 
-We also have a __same_type() macro in linux/compiler.h... But if I use
-that the kernel build fails. I guess the check is too strict.
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
 
----
- arch/x86/include/asm/percpu.h |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+Both fix issues are related to conversion from 8250 to omap-serial done
+in commit 6f251e9db1093c187addc309b5f2f7fe3efd2995 ("OMAP: UART: omap_device
+conversions, remove implicit 8520 assumptions").
 
-Index: linux-2.6/arch/x86/include/asm/percpu.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-11-29 12:46:50.000000000 -0600
-+++ linux-2.6/arch/x86/include/asm/percpu.h	2010-11-29 12:52:25.000000000 -0600
-@@ -127,11 +127,7 @@ do {									\
- 	typedef typeof(var) pao_T__;					\
- 	const int pao_ID__ = (__builtin_constant_p(val) &&		\
- 			      ((val) == 1 || (val) == -1)) ? (val) : 0;	\
--	if (0) {							\
--		pao_T__ pao_tmp__;					\
--		pao_tmp__ = (val);					\
--		(void)pao_tmp__;					\
--	}								\
-+	BUILD_BUG_ON(!__same_type(var, val));				\
- 	switch (sizeof(var)) {						\
- 	case 1:								\
- 		if (pao_ID__ == 1)					\
+With the commit above, we are now idling devices using omap generic
+code instead of tinkering with the uart registers directly. However,
+we may now have pr_debug and pr_warning in the idle path that we
+did not have earlier.
+
+Without the second patch in this series the system may hang when PM
+is enabled. The first patch in the series fixes a related issue if only
+some of the uarts are enabled.
+
+Apologies for the rather intrusive fix this late. The long term fix
+is to let omap-serial.c manage it's own idle state but that's not ready
+yet and can't be done as a fix.
+
+An alternative fix for the -rc series would be to remove the pr_debug
+and pr_warning from the idle path, but that really only fixes the
+symptoms, not the cause.
+
+Regards,
+
+Tony
 
 
+The following changes since commit 0b9466ccea3c4ec363737288dd9467bf978c9c2d:
+
+  Merge master.kernel.org:/home/rmk/linux-2.6-arm (2010-11-25 07:41:10 +0900)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+
+Kevin Hilman (1):
+      OMAP: UART: don't resume UARTs that are not enabled.
+
+Paul Walmsley (1):
+      OMAP2+: PM/serial: hold console semaphore while OMAP UARTs are disabled
+
+ arch/arm/mach-omap2/pm24xx.c |    7 +++++++
+ arch/arm/mach-omap2/pm34xx.c |   10 ++++++++++
+ arch/arm/mach-omap2/serial.c |    7 ++++++-
+ 3 files changed, 23 insertions(+), 1 deletions(-)
