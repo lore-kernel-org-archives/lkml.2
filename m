@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab0K2PD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:03:27 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:41293 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab0K2PD0 (ORCPT
+	id S1753214Ab0K2PEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:04:14 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:59781 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0K2PEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:03:26 -0500
-Date: Mon, 29 Nov 2010 10:03:25 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: npiggin@kernel.dk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/7] fs: fsync optimisations
-Message-ID: <20101129150325.GD26076@infradead.org>
-References: <20101123140610.292941494@kernel.dk>
- <20101123140708.058372884@kernel.dk>
+	Mon, 29 Nov 2010 10:04:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+Subject: Re: [RESEND][BUG][PATCH]-rc: USB: yurex: add .llseek fop to file_operations
+Date: Mon, 29 Nov 2010 16:04:11 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+References: <4CEE8A99.5020906@gmail.com> <201011261622.29100.arnd@arndb.de> <AANLkTikddbZN2d+WWwJ_k7ZLpM5SS9H+2OLBZ1CgoZrB@mail.gmail.com>
+In-Reply-To: <AANLkTikddbZN2d+WWwJ_k7ZLpM5SS9H+2OLBZ1CgoZrB@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101123140708.058372884@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011291604.12026.arnd@arndb.de>
+X-Provags-ID: V02:K0:B6kTIE+RvzLWv+fowQHDXBNUatp5iloKKQ2+FYpJpLR
+ v9k+87CV3M/4Wup1Zz36JRdgPDEAq93a4VCpkm6XnnVa5u9caH
+ v4R4vbpUEWzkxpLFGdYzOBf/zxdnHdmO/zWSZNDk6zx/tZNPzL
+ 4PQZVxhJfWtjvA7+b3RiNQxClqJB+B0WyLQi4k0DF+wXejmDy3
+ er1fxOhWj61g6kS7qnPng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 01:06:16AM +1100, npiggin@kernel.dk wrote:
-> Optimise fsync by adding a datasync parameter to sync_inode_metadata to
-> DTRT with writing back the inode (->write_inode in theory should have a
-> datasync parameter too perhaps, but that's for another time).
+On Saturday 27 November 2010, Tomoki Sekiyama wrote:
+> 2010/11/27 Arnd Bergmann <arnd@arndb.de>:
+>
+> > As far as I can tell, you don't really want to seek this file
+> > anyway, so the default behaviour of disallowing llseek would actually
+> > make more sense.
 > 
-> Also, implement the metadata sync optimally rather than reusing the
-> normal data writeback path. This means less useless moving the inode around the
-> writeback lists, and less dropping and retaking of inode_lock, and avoiding
-> the data writeback call with nr_pages == 0.
+> I need seek because the device notifies the update of the sensor's value
+> by fasync, then the user can rewind(seek to 0) and re-read the file.
 
-This patch looks good to me, but a few minor comments below:
+Yes, that makes sense.
 
-> @@ -1315,13 +1315,49 @@ EXPORT_SYMBOL(sync_inode);
->   *
->   * Note: only writes the actual inode, no associated data or other metadata.
->   */
-> -int sync_inode_metadata(struct inode *inode, int wait)
-> +int sync_inode_metadata(struct inode *inode, int datasync, int wait)
->  {
-> +	struct address_space *mapping = inode->i_mapping;
->  	struct writeback_control wbc = {
->  		.sync_mode = wait ? WB_SYNC_ALL : WB_SYNC_NONE,
->  		.nr_to_write = 0, /* metadata-only */
->  	};
-> +	unsigned dirty, mask;
-> +	int ret = 0;
->  
-> -	return sync_inode(inode, &wbc);
-> +	/*
-> +	 * This is a similar implementation to writeback_single_inode.
-> +	 * Keep them in sync.
-> +	 */
-
-I'd move this comment to above the function.
-
-> +	/*
-> +	 * Generic write_inode doesn't distinguish between sync and datasync,
-> +	 * so even a datasync can clear the sync state. Filesystems which
-> +	 * distiguish these cases must only clear 'mask' in their metadata
-> +	 * sync code.
-> +	 */
-
-I don't understand this comment.  Currenly filesystems never clear
-i_state bits by themselves.
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
