@@ -1,218 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab0K2JQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:16:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:40979 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0K2JQO (ORCPT
+	id S1752126Ab0K2JRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:17:06 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:59283 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751785Ab0K2JRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:16:14 -0500
-Date: Mon, 29 Nov 2010 04:16:10 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 2/3] xfs: use generic per-cpu counter infrastructure
-Message-ID: <20101129091610.GA13902@infradead.org>
-References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
- <1290991002-18680-3-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290991002-18680-3-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 29 Nov 2010 04:17:04 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v2 2/2] TTY: open/hangup race fixup
+Date: Mon, 29 Nov 2010 10:16:54 +0100
+Message-Id: <1291022214-27794-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1291022214-27794-1-git-send-email-jslaby@suse.cz>
+References: <1291022214-27794-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:36:40AM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> XFS has a per-cpu counter implementation for in-core superblock
-> counters that pre-dated the generic implementation. It is complex
-> and baroque as it is tailored directly to the needs of ENOSPC
-> detection.
-> 
-> Now that the generic percpu counter infrastructure has the
-> percpu_counter_add_unless_lt() function that implements the
-> necessary threshold checks for us, switch the XFS per-cpu
-> superblock counters to use the generic percpu counter
-> infrastructure.
+Like in the "TTY: don't allow reopen when ldisc is changing" patch,
+this one fixes a TTY WARNING as described in the option 1) there:
+1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+section tty_lock is held. However tty_lock is temporarily dropped in
+the middle of the function by tty_ldisc_hangup.
 
-Looks good, but a few comments below:
+The fix is to introduce a new flag which we set during the unlocked
+window and check it in tty_reopen too. The flag is TTY_HUPPING and is
+cleared after TTY_HUPPED is set.
 
-> +/*
-> + * Per-cpu incore superblock counters
-> + *
-> + * Simple concept, difficult implementation, now somewhat simplified by generic
-> + * per-cpu counter support.  This provides distributed per cpu counters for
-> + * contended fields (e.g.  free block count).
+While at it, remove duplicate TTY_HUPPED set_bit. The one after
+calling ops->hangup seems to be more correct. But anyway, we hold
+tty_lock, so there should be no difference.
 
-The kind of historic comments like now simplified by  .. don't make any
-sense after only a short while.  I'd just remove the first senstence
-above, as the details of the problems are explained much better later.
+Also document the function it does that kind of crap.
 
-> +static inline int
-> +xfs_icsb_add(
-> +	struct xfs_mount	*mp,
-> +	int			counter,
-> +	int64_t			delta,
-> +	int64_t			threshold)
-> +{
-> +	int			ret;
-> +
-> +	ret = percpu_counter_add_unless_lt(&mp->m_icsb[counter], delta,
-> +								threshold);
-> +	if (ret < 0)
-> +		return -ENOSPC;
-> +	return 0;
-> +}
-> +
-> +static inline void
-> +xfs_icsb_set(
-> +	struct xfs_mount	*mp,
-> +	int			counter,
-> +	int64_t			value)
-> +{
-> +	percpu_counter_set(&mp->m_icsb[counter], value);
-> +}
-> +
-> +static inline int64_t
-> +xfs_icsb_sum(
-> +	struct xfs_mount	*mp,
-> +	int			counter)
-> +{
-> +	return percpu_counter_sum_positive(&mp->m_icsb[counter]);
-> +}
+Nicely reproducible with two forked children:
+static void do_work(const char *tty)
+{
+	if (signal(SIGHUP, SIG_IGN) == SIG_ERR) exit(1);
+	setsid();
+	while (1) {
+		int fd = open(tty, O_RDWR|O_NOCTTY);
+		if (fd < 0) continue;
+		if (ioctl(fd, TIOCSCTTY)) continue;
+		if (vhangup()) continue;
+		close(fd);
+	}
+	exit(0);
+}
 
-I still don't like these wrappers.  They are all local to xfs_mount.c,
-and only have a single function calling them.  See the RFC patch below
-which removes them, and imho makes the code more readable.  Especially
-in xfs _add case where we can get rid of one level of error remapping,
-and go directly from the weird percpu return values to the positive
-xfs errors instead of doing a detour via the negative linux errors.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: <Valdis.Kletnieks@vt.edu>
+Reported-by: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+---
+I don't see a better way how to fix it, so I promoted the
+proof-of-concept to a real patch.
 
-> +static inline int64_t
-> +xfs_icsb_read(
-> +	struct xfs_mount	*mp,
-> +	int			counter)
-> +{
-> +	return percpu_counter_read_positive(&mp->m_icsb[counter]);
-> +}
+ drivers/tty/tty_io.c |   10 +++++++++-
+ include/linux/tty.h  |    1 +
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
-this one is entirely unused.
-
-Index: xfs/fs/xfs/xfs_mount.c
-===================================================================
---- xfs.orig/fs/xfs/xfs_mount.c	2010-11-29 09:43:31.423011248 +0100
-+++ xfs/fs/xfs/xfs_mount.c	2010-11-29 09:56:32.546255345 +0100
-@@ -282,54 +282,14 @@ xfs_free_perag(
-  * so we only need to modify the fast path to handle per-cpu counter error
-  * cases.
-  */
--static inline int
--xfs_icsb_add(
--	struct xfs_mount	*mp,
--	int			counter,
--	int64_t			delta,
--	int64_t			threshold)
--{
--	int			ret;
--
--	ret = percpu_counter_add_unless_lt(&mp->m_icsb[counter], delta,
--								threshold);
--	if (ret < 0)
--		return -ENOSPC;
--	return 0;
--}
--
--static inline void
--xfs_icsb_set(
--	struct xfs_mount	*mp,
--	int			counter,
--	int64_t			value)
--{
--	percpu_counter_set(&mp->m_icsb[counter], value);
--}
--
--static inline int64_t
--xfs_icsb_sum(
--	struct xfs_mount	*mp,
--	int			counter)
--{
--	return percpu_counter_sum_positive(&mp->m_icsb[counter]);
--}
--
--static inline int64_t
--xfs_icsb_read(
--	struct xfs_mount	*mp,
--	int			counter)
--{
--	return percpu_counter_read_positive(&mp->m_icsb[counter]);
--}
--
- void
- xfs_icsb_reinit_counters(
- 	struct xfs_mount	*mp)
- {
--	xfs_icsb_set(mp, XFS_ICSB_FDBLOCKS, mp->m_sb.sb_fdblocks);
--	xfs_icsb_set(mp, XFS_ICSB_IFREE, mp->m_sb.sb_ifree);
--	xfs_icsb_set(mp, XFS_ICSB_ICOUNT, mp->m_sb.sb_icount);
-+	percpu_counter_set(&mp->m_icsb[XFS_ICSB_FDBLOCKS],
-+			   mp->m_sb.sb_fdblocks);
-+	percpu_counter_set(&mp->m_icsb[XFS_ICSB_IFREE], mp->m_sb.sb_ifree);
-+	percpu_counter_set(&mp->m_icsb[XFS_ICSB_ICOUNT], mp->m_sb.sb_icount);
- }
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 878f6d6..35480dd 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -559,6 +559,9 @@ void __tty_hangup(struct tty_struct *tty)
  
- int
-@@ -368,9 +328,12 @@ xfs_icsb_sync_counters(
- 	xfs_mount_t	*mp)
- {
- 	assert_spin_locked(&mp->m_sb_lock);
--	mp->m_sb.sb_icount = xfs_icsb_sum(mp, XFS_ICSB_ICOUNT);
--	mp->m_sb.sb_ifree = xfs_icsb_sum(mp, XFS_ICSB_IFREE);
--	mp->m_sb.sb_fdblocks = xfs_icsb_sum(mp, XFS_ICSB_FDBLOCKS);
-+	mp->m_sb.sb_icount =
-+		percpu_counter_sum_positive(&mp->m_icsb[XFS_ICSB_ICOUNT]);
-+	mp->m_sb.sb_ifree =
-+		percpu_counter_sum_positive(&mp->m_icsb[XFS_ICSB_IFREE]);
-+	mp->m_sb.sb_fdblocks =
-+		percpu_counter_sum_positive(&mp->m_icsb[XFS_ICSB_FDBLOCKS]);
- }
+ 	tty_lock();
  
- /*
-@@ -1953,7 +1916,7 @@ xfs_icsb_modify_counters(
++	/* some functions below drop BTM, so we need this bit */
++	set_bit(TTY_HUPPING, &tty->flags);
++
+ 	/* inuse_filps is protected by the single tty lock,
+ 	   this really needs to change if we want to flush the
+ 	   workqueue with the lock held */
+@@ -578,6 +581,10 @@ void __tty_hangup(struct tty_struct *tty)
+ 	}
+ 	spin_unlock(&tty_files_lock);
  
- 	switch (field) {
- 	case XFS_SBS_ICOUNT:
--		ret = xfs_icsb_add(mp, cntr, delta, 0);
-+		ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_SBS_ICOUNT], delta, 0);
- 		if (ret < 0) {
- 			ASSERT(0);
- 			return XFS_ERROR(EINVAL);
-@@ -1961,7 +1924,7 @@ xfs_icsb_modify_counters(
- 		return 0;
++	/*
++	 * it drops BTM and thus races with reopen
++	 * we protect the race by TTY_HUPPING
++	 */
+ 	tty_ldisc_hangup(tty);
  
- 	case XFS_SBS_IFREE:
--		ret = xfs_icsb_add(mp, XFS_ICSB_IFREE, delta, 0);
-+		ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_SBS_IFREE], delta, 0);
- 		if (ret < 0) {
- 			ASSERT(0);
- 			return XFS_ERROR(EINVAL);
-@@ -1990,13 +1953,12 @@ xfs_icsb_modify_counters(
- 		}
+ 	read_lock(&tasklist_lock);
+@@ -615,7 +622,6 @@ void __tty_hangup(struct tty_struct *tty)
+ 	tty->session = NULL;
+ 	tty->pgrp = NULL;
+ 	tty->ctrl_status = 0;
+-	set_bit(TTY_HUPPED, &tty->flags);
+ 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
  
- 		/* try the change */
--		ret = xfs_icsb_add(mp, XFS_ICSB_FDBLOCKS, delta,
--						XFS_ALLOC_SET_ASIDE(mp));
-+		ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_ICSB_FDBLOCKS],
-+						   delta, XFS_ALLOC_SET_ASIDE(mp));
- 		if (likely(ret >= 0))
- 			return 0;
+ 	/* Account for the p->signal references we killed */
+@@ -641,6 +647,7 @@ void __tty_hangup(struct tty_struct *tty)
+ 	 * can't yet guarantee all that.
+ 	 */
+ 	set_bit(TTY_HUPPED, &tty->flags);
++	clear_bit(TTY_HUPPING, &tty->flags);
+ 	tty_ldisc_enable(tty);
  
- 		/* ENOSPC */
--		ASSERT(ret == -ENOSPC);
- 		ASSERT(delta < 0);
+ 	tty_unlock();
+@@ -1311,6 +1318,7 @@ static int tty_reopen(struct tty_struct *tty)
+ 	struct tty_driver *driver = tty->driver;
  
- 		if (!rsvd)
+ 	if (test_bit(TTY_CLOSING, &tty->flags) ||
++			test_bit(TTY_HUPPING, &tty->flags) ||
+ 			test_bit(TTY_LDISC_CHANGING, &tty->flags))
+ 		return -EIO;
+ 
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 032d79f..54e4eaa 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -366,6 +366,7 @@ struct tty_file_private {
+ #define TTY_HUPPED 		18	/* Post driver->hangup() */
+ #define TTY_FLUSHING		19	/* Flushing to ldisc in progress */
+ #define TTY_FLUSHPENDING	20	/* Queued buffer flush pending */
++#define TTY_HUPPING 		21	/* ->hangup() in progress */
+ 
+ #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
+ 
+-- 
+1.7.3.1
+
+
