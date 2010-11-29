@@ -1,153 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0K2KX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 05:23:29 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:35423 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab0K2KX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 05:23:27 -0500
-Date: Mon, 29 Nov 2010 10:23:11 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 18 of 66] add pmd mangling functions to x86
-Message-ID: <20101129102310.GC13268@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <c681aaa016f2bd9ce393.1288798073@v2.random> <20101118130446.GO8135@csn.ul.ie> <20101126175751.GY6118@random.random>
+	id S1753148Ab0K2K1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:27:55 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47680 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101Ab0K2K1y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 05:27:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=w+BU04h3Kn1waF6+DS0NNeqReYHwgP/Q6WjgeJFOi8kNBFQikt9GLNb3RUO4tkhKEN
+         X4yM3m8O6jYfxOfkRlubYZbROoxZMR6J9Xh42d3xW1C3+2PBkFf7KfD6P8jqwj9U4jf7
+         /+HrQnRD2theHeYCow768NyqH2t3MCtXtRKT8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101126175751.GY6118@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4cc988bf535efac7a6aafe1ca0f0ac44f3968d94.1290992687.git.tfransosi@gmail.com>
+References: <4cc988bf535efac7a6aafe1ca0f0ac44f3968d94.1290992687.git.tfransosi@gmail.com>
+Date: Mon, 29 Nov 2010 16:27:53 +0600
+Message-ID: <AANLkTimg5MLkE=38ujG8QHoGfcP-sXSci61Cii_t4kSA@mail.gmail.com>
+Subject: Re: [PATCH] apic/io_apic.c: Move variable 'desc' into the #ifdef.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 06:57:51PM +0100, Andrea Arcangeli wrote:
-> On Thu, Nov 18, 2010 at 01:04:46PM +0000, Mel Gorman wrote:
-> > On Wed, Nov 03, 2010 at 04:27:53PM +0100, Andrea Arcangeli wrote:
-> > > From: Andrea Arcangeli <aarcange@redhat.com>
-> > > 
-> > > Add needed pmd mangling functions with simmetry with their pte counterparts.
-> > 
-> > symmetry
-> 
-> Fixed.
-> 
-> > 
-> > > pmdp_freeze_flush is the only exception only present on the pmd side and it's
-> > > needed to serialize the VM against split_huge_page, it simply atomically clears
-> > > the present bit in the same way pmdp_clear_flush_young atomically clears the
-> > > accessed bit (and both need to flush the tlb to make it effective, which is
-> > > mandatory to happen synchronously for pmdp_freeze_flush).
-> > 
-> > I don't see a pmdp_freeze_flush defined in the patch. Did yu mean 
-> > pmdp_splitting_flush? Even if it is, it's the splitting bit you are
-> > dealing with which isn't the same as the present bit. I'm missing
-> > something.
-> 
-> Well the comment went out of sync with the code sorry. I updated it:
-> 
-> =======
-> Add needed pmd mangling functions with symmetry with their pte counterparts.
-> pmdp_splitting_flush() is the only new addition on the pmd_ methods and it's
-> needed to serialize the VM against split_huge_page. It simply atomically sets
-> the splitting bit in a similar way pmdp_clear_flush_young atomically clears the
-> accessed bit. pmdp_splitting_flush() also has to flush the tlb to make it
-> effective against gup_fast, but it wouldn't really require to flush the tlb
-> too. Just the tlb flush is the simplest operation we can invoke to serialize
-> pmdp_splitting_flush() against gup_fast.
-> =======
-> 
+On Mon, Nov 29, 2010 at 7:06 AM, Thiago Farina <tfransosi@gmail.com> wrote:
+> This variable is only used in the presence of the CONFIG_GENERIC_PENDING_IRQ.
+> So when compiling without this config, we get the following warning:
+>
+> arch/x86/kernel/apic/io_apic.c: In function ‘ack_apic_level’:
+> arch/x86/kernel/apic/io_apic.c:2433: warning: unused variable ‘desc’
+>
 
-Much clearer, thanks.
+Its been already fixed by
+http://marc.info/?l=linux-mm-commits&m=128821373401265&w=2. Currently
+its on -mm tree.
 
-> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > > Acked-by: Rik van Riel <riel@redhat.com>
-> > > ---
-> > > 
-> > > diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-> > > --- a/arch/x86/include/asm/pgtable.h
-> > > +++ b/arch/x86/include/asm/pgtable.h
-> > > @@ -302,15 +302,15 @@ pmd_t *populate_extra_pmd(unsigned long 
-> > >  pte_t *populate_extra_pte(unsigned long vaddr);
-> > >  #endif	/* __ASSEMBLY__ */
-> > >  
-> > > +#ifndef __ASSEMBLY__
-> > > +#include <linux/mm_types.h>
-> > > +
-> > >  #ifdef CONFIG_X86_32
-> > >  # include "pgtable_32.h"
-> > >  #else
-> > >  # include "pgtable_64.h"
-> > >  #endif
-> > >  
-> > > -#ifndef __ASSEMBLY__
-> > > -#include <linux/mm_types.h>
-> > > -
-> > 
-> > Stupid quetion: Why is this move necessary?
-> 
-> That's not a stupid question, it seems to build in all configurations
-> even with this part backed out. I'll try to reverse this one in the
-> hope that it won't break build. I suppose some earlier version of the
-> patchset required this to build (I would never make a gratuitous
-> change like this if it wasn't needed at some point) but it seems not
-> be required anymore according to my build tests. If I'm wrong and some
-> build breaks I'll reintroduce it later.
-> 
+thanks,
+rakib
 
-Ok.
-
-> > >  static inline int pte_none(pte_t pte)
-> > >  {
-> > >  	return !pte.pte;
-> > > @@ -353,7 +353,7 @@ static inline unsigned long pmd_page_vad
-> > >   * Currently stuck as a macro due to indirect forward reference to
-> > >   * linux/mmzone.h's __section_mem_map_addr() definition:
-> > >   */
-> > > -#define pmd_page(pmd)	pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT)
-> > > +#define pmd_page(pmd)	pfn_to_page((pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT)
-> > >  
-> > 
-> > Why is it now necessary to use PTE_PFN_MASK?
-> 
-> Just for the NX bit, that couldn't be set before the pmd could be
-> marked PSE.
-> 
-
-Sorry, I still am missing something. PTE_PFN_MASK is this
-
-#define PTE_PFN_MASK            ((pteval_t)PHYSICAL_PAGE_MASK)
-#define PHYSICAL_PAGE_MASK      (((signed long)PAGE_MASK) & __PHYSICAL_MASK)
-
-I'm not seeing how PTE_PFN_MASK affects the NX bit (bit 63).
-
-> > The implementations look fine but I'm having trouble reconsiling what
-> > the leader says with the patch :(
-> 
-> Yes because it was out of sync, the new version is above.
-> 
-
-Thanks
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 7cc0a72..56261be 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2430,9 +2430,12 @@ static void ack_apic_level(struct irq_data *data)
+>  {
+>        struct irq_cfg *cfg = data->chip_data;
+>        int i, do_unmask_irq = 0, irq = data->irq;
+> -       struct irq_desc *desc = irq_to_desc(irq);
+>        unsigned long v;
+>
+> +#ifdef CONFIG_GENERIC_PENDING_IRQ
+> +       struct irq_desc *desc = irq_to_desc(irq);
+> +#endif
+> +
+>        irq_complete_move(cfg);
+>  #ifdef CONFIG_GENERIC_PENDING_IRQ
+>        /* If we are moving the irq we need to mask it */
+> --
+> 1.7.3.2.343.g7d43d
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
