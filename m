@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab0K2VyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 16:54:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45266 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752475Ab0K2VyW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 16:54:22 -0500
-Date: Mon, 29 Nov 2010 21:53:28 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pavel Vasilyev <pavel@pavlinux.ru>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] asm-generic: Raise default NR_IRQS when using sparse
- IRQs
-Message-ID: <20101129215134.GA8335@opensource.wolfsonmicro.com>
-References: <fUhqx-3EE-15@gated-at.bofh.it>
- <4CF406ED.6070705@pavlinux.ru>
+	id S1754176Ab0K2V6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 16:58:30 -0500
+Received: from authsmtp.rrzn.uni-hannover.de ([130.75.2.107]:52569 "EHLO
+	authsmtp.rrzn.uni-hannover.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753371Ab0K2V63 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 16:58:29 -0500
+X-Greylist: delayed 1025 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Nov 2010 16:58:29 EST
+Message-ID: <20101129222337.18511yvah3x8je1l@webmail.rrzn.uni-hannover.de>
+Date: Mon, 29 Nov 2010 22:23:37 +0100
+From: "WEBMASTER SERVICE" <info@webmaster.org>
+Reply-to: web_master_service@live.co.uk
+To: undisclosed-recipients:;
+Subject: Ensure Your Account
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <4CF406ED.6070705@pavlinux.ru>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.11.29.211216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:02:53PM +0300, Pavel Vasilyev wrote:
-> On 29.11.2010 22:20, Mark Brown wrote:
-> > Rather than have each platform using sparse IRQs pick a suitably large
-> > NR_IRQS for use with sparse IRQs make the default high when they are
-> > enabled.  We pick 64k as there is still a bitmap of IRQs that is
-> > allocated statically, and as we all know 64k should be enough for
-> > anyone.
 
-> May be
+Ensure Your Account
 
->   #define NR_IRQS 15*NR_CPUS
 
-No, this is missing the point - that's way too low for many systems
-(most except x86 I guess).  The idea is that since we're using sparse
-IRQs we've much less reason to restrict the number of IRQs than we do
-when we've got a statically allocated table so we can have a higher
-default, meaning less need for platforms to individually select a higher
-number.
+
+  We are currently upgrading our data base and e-mail home center is  
+managed. Enter your email to delete accounts that are not actively  
+users.we parents to create more space for new accounts have also  
+studied the system security audit to improve and enhance our current  
+security situation.
+
+Continue to use our services are needed to update and
+re-comfirmed your requested information via e-mail below.
+
+To complete the new account confirmation, reply to this email  
+immediately and enter the account number below to
+
+Username: ................
+User E-mail ..............
+Password: ..................
+Password: ............
+Date of Birth: .................
+
+
+Otherwise, your account will be disabled immediately to the database  
+and information service is not interrupted and important messages can  
+be lost in the reduction of the new coordinates comfirmed to us.
+
+We apologize for any inconvenience this causes this season but is  
+confident that we are here to serve you better and
+providing more technology which revolves around email and internet.
+
+It is also essential to understand that the most important  
+epréoccupation our customers and the security of their files and  
+data....
+
+
+
+
