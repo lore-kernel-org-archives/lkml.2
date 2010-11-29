@@ -1,235 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab0K2SAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:00:46 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:34120 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab0K2SAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:00:44 -0500
-X-IronPort-AV: E=Sophos;i="4.59,276,1288569600"; 
-   d="scan'208";a="3097356"
-Date: Mon, 29 Nov 2010 18:00:39 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH] xen: fix MSI setup and teardown for PV on HVM guests
-In-Reply-To: <20101129170351.GA20952@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1011291738520.14723@kaball-desktop>
-References: <alpine.DEB.2.00.1011251904370.2373@kaball-desktop> <20101129170351.GA20952@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755583Ab0K2SDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:03:55 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50130 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754631Ab0K2SDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:03:54 -0500
+Date: Mon, 29 Nov 2010 19:03:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Message-ID: <20101129180324.GA14046@elte.hu>
+References: <20101121133744.GA10765@elte.hu>
+ <1290700829.4759.16.camel@maggy.simson.net>
+ <1290954299.30515.15.camel@marge.simson.net>
+ <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
+ <20101128201851.GA20555@elte.hu>
+ <1291031593.32004.19.camel@laptop>
+ <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+ <1291052268.32004.171.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291052268.32004.171.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 26, 2010 at 02:59:10PM +0000, Stefano Stabellini wrote:
-> > xen: fix MSI setup and teardown for PV on HVM guests
+
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
+> On Mon, 2010-11-29 at 08:27 -0800, Linus Torvalds wrote:
+> > On Mon, Nov 29, 2010 at 3:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > >
+> > > Well we totally re-wrote the cgroup load-balancer in -tip. The thing
+> > > currently in -linus is a utter crap because its very strongly serialized
+> > > across all cores (some people spend like 25% of their time in there).
 > > 
-> > When remapping MSIs into pirqs for PV on HVM guests, qemu is responsible
-> > for doing the actual mapping and unmapping.
-> 
-> Is this QEMU version dependent? 
-
-It depends on both qemu and xen: the presence of this feature (pirq
-remapping for hvm guests) is signaled by the flag
-XENFEAT_hvm_pirqs that we check in pci_xen_hvm_init.
-
-
-> > We only give qemu the desired pirq number when we ask to do the mapping
-> > the first time, after that we should be reading back the pirq number
-> > from qemu every time we want to re-enable the MSI.
-> 
-> What about IRQ migration from CPU to CPU?
-
-that should follow the normal pirq/evtchn migration code paths in
-drivers/xen/event.c
-
-
+> > Well, it seems that the rewrite is more crap than the "utter crap" in
+> > current -git. What does that make -tip? Super-utter-crap?
 > > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> > index d7b5109..ff81d67 100644
-> > --- a/arch/x86/pci/xen.c
-> > +++ b/arch/x86/pci/xen.c
-> > @@ -98,8 +98,26 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-> >  	struct msi_msg msg;
-> >  
-> >  	list_for_each_entry(msidesc, &dev->msi_list, list) {
-> > +		__read_msi_msg(msidesc, &msg);
-> > +		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
-> > +			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
-> > +		if (xen_irq_from_pirq(pirq) >= 0 &&
-> > +			msg.data == (MSI_DATA_TRIGGER_EDGE |
-> > +					     MSI_DATA_LEVEL_ASSERT |
-> > +						 (3 << 8) |
-> > +						 MSI_DATA_VECTOR(0))) {
+> > Peter - getting the wrong answer quickly is not any better than strong
+> > serialization.
 > 
-> A similar construct is used in xen_msi_compose_msg function. Could you
-> make this an #define?
+> I know, from the testing so far we _thought_ it was fairly sane.
+> Apparently there's still some work to do.
 
-yes, good idea.
+Btw., i think it shows the conceptual power of Mike's patch that this cgroups 
+scheduling suckage was exposed so clearly. Previously it took weeks (sometimes 
+months) for bugs to reach those who are using cgroups.
 
+Thanks,
 
-> > +			xen_allocate_pirq_msi((type == PCI_CAP_ID_MSIX) ?
-> > +					"msi-x" : "msi", &irq, &pirq, XEN_ALLOC_IRQ);
-> > +			if (irq < 0 || pirq < 0)
-> 
-> The pirq value won't be touched at all, since you are passing in XEN_ALLOC_IRQ.
-> Is there any sense in checking the pirq value here?
-> 
-
-not really, just legacy. I'll fix it.
-
-
-> > +				goto error;
-> > +			ret = set_irq_msi(irq, msidesc);
-> > +			if (ret < 0)
-> > +				goto error_while;
-> > +			printk(KERN_DEBUG "xen: msi already setup: pirq=%d\n", pirq);
-> 
-> While that is technically correct, would it make sense to add a comment
-> about setting the IRQ value since the printk "xen: msi-->irq=%d" is not going
-> to be reached?
-
-you mean printing the irq value as well? Sure.
-
----
-
-
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index d7b5109..25cd4a0 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -70,6 +70,9 @@ static int acpi_register_gsi_xen_hvm(struct device *dev, u32 gsi,
- struct xen_pci_frontend_ops *xen_pci_frontend;
- EXPORT_SYMBOL_GPL(xen_pci_frontend);
- 
-+#define XEN_PIRQ_MSI_DATA  (MSI_DATA_TRIGGER_EDGE | \
-+		MSI_DATA_LEVEL_ASSERT | (3 << 8) | MSI_DATA_VECTOR(0))
-+
- static void xen_msi_compose_msg(struct pci_dev *pdev, unsigned int pirq,
- 		struct msi_msg *msg)
- {
-@@ -83,12 +86,7 @@ static void xen_msi_compose_msg(struct pci_dev *pdev, unsigned int pirq,
- 		MSI_ADDR_REDIRECTION_CPU |
- 		MSI_ADDR_DEST_ID(pirq);
- 
--	msg->data =
--		MSI_DATA_TRIGGER_EDGE |
--		MSI_DATA_LEVEL_ASSERT |
--		/* delivery mode reserved */
--		(3 << 8) |
--		MSI_DATA_VECTOR(0);
-+	msg->data = XEN_PIRQ_MSI_DATA;
- }
- 
- static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-@@ -98,8 +96,23 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	struct msi_msg msg;
- 
- 	list_for_each_entry(msidesc, &dev->msi_list, list) {
-+		__read_msi_msg(msidesc, &msg);
-+		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
-+			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
-+		if (xen_irq_from_pirq(pirq) >= 0 && msg.data == XEN_PIRQ_MSI_DATA) {
-+			xen_allocate_pirq_msi((type == PCI_CAP_ID_MSIX) ?
-+					"msi-x" : "msi", &irq, &pirq, XEN_ALLOC_IRQ);
-+			if (irq < 0)
-+				goto error;
-+			ret = set_irq_msi(irq, msidesc);
-+			if (ret < 0)
-+				goto error_while;
-+			printk(KERN_DEBUG "xen: msi already setup: msi --> irq=%d"
-+					" pirq=%d\n", irq, pirq);
-+			return 0;
-+		}
- 		xen_allocate_pirq_msi((type == PCI_CAP_ID_MSIX) ?
--				"msi-x" : "msi", &irq, &pirq);
-+				"msi-x" : "msi", &irq, &pirq, (XEN_ALLOC_IRQ | XEN_ALLOC_PIRQ));
- 		if (irq < 0 || pirq < 0)
- 			goto error;
- 		printk(KERN_DEBUG "xen: msi --> irq=%d, pirq=%d\n", irq, pirq);
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 7ab43c3..f78945c 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -668,17 +668,21 @@ out:
- #include <linux/msi.h>
- #include "../pci/msi.h"
- 
--void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
-+void xen_allocate_pirq_msi(char *name, int *irq, int *pirq, int alloc)
- {
- 	spin_lock(&irq_mapping_update_lock);
- 
--	*irq = find_unbound_irq();
--	if (*irq == -1)
--		goto out;
-+	if (alloc & XEN_ALLOC_IRQ) {
-+		*irq = find_unbound_irq();
-+		if (*irq == -1)
-+			goto out;
-+	}
- 
--	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
--	if (*pirq == -1)
--		goto out;
-+	if (alloc & XEN_ALLOC_PIRQ) {
-+		*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
-+		if (*pirq == -1)
-+			goto out;
-+	}
- 
- 	set_irq_chip_and_handler_name(*irq, &xen_pirq_chip,
- 				      handle_level_irq, name);
-@@ -766,6 +770,7 @@ int xen_destroy_irq(int irq)
- 			printk(KERN_WARNING "unmap irq failed %d\n", rc);
- 			goto out;
- 		}
-+		pirq_to_irq[info->u.pirq.pirq] = -1;
- 	}
- 	irq_info[irq] = mk_unbound_info();
- 
-@@ -786,6 +791,11 @@ int xen_gsi_from_irq(unsigned irq)
- 	return gsi_from_irq(irq);
- }
- 
-+int xen_irq_from_pirq(unsigned pirq)
-+{
-+	return pirq_to_irq[pirq];
-+}
-+
- int bind_evtchn_to_irq(unsigned int evtchn)
- {
- 	int irq;
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 646dd17..00f53dd 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -76,7 +76,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name);
- 
- #ifdef CONFIG_PCI_MSI
- /* Allocate an irq and a pirq to be used with MSIs. */
--void xen_allocate_pirq_msi(char *name, int *irq, int *pirq);
-+#define XEN_ALLOC_PIRQ (1 << 0)
-+#define XEN_ALLOC_IRQ  (1 << 1)
-+void xen_allocate_pirq_msi(char *name, int *irq, int *pirq, int alloc_mask);
- int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type);
- #endif
- 
-@@ -89,4 +91,7 @@ int xen_vector_from_irq(unsigned pirq);
- /* Return gsi allocated to pirq */
- int xen_gsi_from_irq(unsigned pirq);
- 
-+/* Return irq from pirq */
-+int xen_irq_from_pirq(unsigned pirq);
-+
- #endif	/* _XEN_EVENTS_H */
+	Ingo
