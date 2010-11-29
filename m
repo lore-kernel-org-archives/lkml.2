@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab0K2ECK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 23:02:10 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:58179 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529Ab0K2ECI (ORCPT
+	id S1754852Ab0K2EJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 23:09:58 -0500
+Received: from amber.ccs.neu.edu ([129.10.116.51]:55107 "EHLO
+	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730Ab0K2EJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 23:02:08 -0500
-Date: Mon, 29 Nov 2010 13:01:13 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        kernel-janitors@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Magnus Damm <damm@opensource.se>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sh: boards: mach-se: use IS_ERR() instead of NULL check
-Message-ID: <20101129040113.GA7594@linux-sh.org>
-References: <1290791190-21358-1-git-send-email-segoon@openwall.com> <Pine.LNX.4.64.1011261835500.16655@axis700.grange> <20101126174533.GA29507@albatros> <20101127022315.GF7893@linux-sh.org>
+	Sun, 28 Nov 2010 23:09:57 -0500
+Date: Sun, 28 Nov 2010 23:09:51 -0500
+From: Gene Cooperman <gene@ccs.neu.edu>
+To: Oren Laadan <orenl@cs.columbia.edu>
+Cc: Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, xemul@sw.ru,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101129040951.GD6471@sundance.ccs.neu.edu>
+References: <4CD72150.9070705@cs.columbia.edu>
+ <4CE3C334.9080401@kernel.org>
+ <20101117153902.GA1155@hallyn.com>
+ <4CE3F8D1.10003@kernel.org>
+ <20101119041045.GC24031@hallyn.com>
+ <4CE683E1.6010500@kernel.org>
+ <4CE69B8C.6050606@cs.columbia.edu>
+ <Pine.LNX.4.64.1011251049350.3051@takamine.ncl.cs.columbia.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101127022315.GF7893@linux-sh.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <Pine.LNX.4.64.1011251049350.3051@takamine.ncl.cs.columbia.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 11:23:15AM +0900, Paul Mundt wrote:
-> On Fri, Nov 26, 2010 at 08:45:33PM +0300, Vasiliy Kulikov wrote:
-> > Hi Guennadi,
-> > 
-> > On Fri, Nov 26, 2010 at 18:38 +0100, Guennadi Liakhovetski wrote:
-> > > On Fri, 26 Nov 2010, Vasiliy Kulikov wrote:
-> > > > clk_get() returns ERR_PTR() on error, not NULL.
-> > > > 
-> > > > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> > > 
-> > > Yep, there are, probably, a couple more of these, similar to
-> > 
-> > I found a bit more, but I'd like to get feedback on these or just see it
-> > applied first ;)
-> > 
-> It's a reasonable change, yes. The old clk_get() scanned multiple lists,
-> and could return NULL or -ENOENT depending on which path failed. Now that
-> everything is consolidated through the clk_get_sys() lookup, the NULL
-> checks should probably all be replaced.
+Hi Oren,
 
-Anyways, I've applied this one now. Feel free to send updates for the
-rest at your leisure.
+On Thu, Nov 25, 2010 at 11:04:16AM -0500, Oren Laadan wrote:
+> On Tue, 23 Nov 2010, Kapil Arya wrote:
+> 
+> > OL> Even if it did - the question is not how to deal with "glue"
+> > OL> (you demonstrated quite well how to do that with DMTCP), but
+> > OL> how should teh basic, core c/r functionality work - which is
+> > OL> below, and orthogonal to the "glue".
+> > 
+> > There seems to be an implicit assumption that it is easy to separate the DMTCP
+> > "glue code" from the DMTCP C/R engine as separate modules. DMTCP is modular but
+> > it splits the problems into modules along a different line than Linux C/R. We
+> > look forward to the joint experiment in which we would try to combine DMTCP
+> > with Linux C/R. This will help answer the question in our mind.
+> 
+> I apologize for being blunt - but this is probably an issue specific to 
+> DMTCP's engineering...
+> 
+
+I completely agree with you, Oren.  DMTCP was never designed to be split
+into a userland and in-kernel replacement.  We will want to re-factor
+DMTCP to make this happen.
+    I'm sorry if my e-mail came off as confrontational.  That was not my
+intention.  I was just looking forward to an interesting intellectual
+experiment --- how to go about combining DMTCP and Linux C/R.   I was
+trying to guess ahead of time where there are interesting challenges, and
+my hope is that we will find a way to solve them together.
+
+Best wishes,
+- Gene
