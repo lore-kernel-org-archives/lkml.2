@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab0K2Nir (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 08:38:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:54899 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753474Ab0K2Niq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 08:38:46 -0500
-Message-ID: <4CF3ACD6.7020109@kernel.org>
-Date: Mon, 29 Nov 2010 14:38:30 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1754118Ab0K2NmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 08:42:20 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:57379 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753822Ab0K2NmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 08:42:18 -0500
+Message-ID: <4CF3AD99.9050400@euromail.se>
+Date: Mon, 29 Nov 2010 14:41:45 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH UPDATED 06/14] signal: use GROUP_STOP_PENDING to avoid
- stopping multiple times for a single group stop
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-7-git-send-email-tj@kernel.org> <4CF0EE11.6000206@kernel.org> <20101128190741.GA12896@redhat.com>
-In-Reply-To: <20101128190741.GA12896@redhat.com>
-X-Enigmail-Version: 1.1.1
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] hid: egalax: Rework to include Joojoo and Wetab support
+References: <1291016612-25102-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1011291248290.981@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011291248290.981@pobox.suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Nov 2010 13:38:31 +0000 (UTC)
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PN3zG-0002Nv-7A.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PN3zG-0002Nv-7A e0055dc7c69361b06ece1e9c55782e75
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+On 11/29/2010 12:50 PM, Jiri Kosina wrote:
 
-On 11/28/2010 08:07 PM, Oleg Nesterov wrote:
->> @@ -732,6 +732,9 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
->>  		t = p;
->>  		do {
->>  			unsigned int state;
->> +
->> +			t->group_stop = 0;
->> +
+> On Mon, 29 Nov 2010, Henrik Rydberg wrote:
 > 
-> Yes.
+>> Hi Jiri,
+>>
+>> This is the second version of this patchset, extended to also support
+>> the Wetab. The input core changes aside, the patches provide exactly
+>> the same changes, except for a better signal-to-noise value provided
+>> by Phillip.
+>>
+>> The first patch is already in your tree, but provided for completeness
+>> (the present set is against -rc3). The second patch no longer sets up
+>> the events per packet, since it is handled during slots
+>> initialization. The third and fourth patch are identical, the fifth
+>> has that new value, and the sixth is further simplified by using the
+>> new input core interface. The seventh patch adds support for the
+>> Wetab.
+>>
+>> The driver has been tested succesfully on all three supported device
+>> ids.
+>>
+>> Cheers,
+>> Henrik
+>>
+>> Henrik Rydberg (7):
+>>   hid: egalax: Use kzalloc
+>>   hid: egalax: Setup input device manually (rev2)
+>>   hid: egalax: Correct for device resolution report error (rev2)
+>>   hid: egalax: Report zero as minimum pressure (rev2)
+>>   hid: egalax: Add event filtering (rev3)
+>>   hid: egalax: Convert to MT slots (rev2)
+>>   hid: egalax: Add support for Wetab
+>>
+>>  drivers/hid/hid-core.c   |    1 +
+>>  drivers/hid/hid-egalax.c |  129 +++++++++++++++++++---------------------------
+>>  drivers/hid/hid-ids.h    |    1 +
+>>  3 files changed, 56 insertions(+), 75 deletions(-)
 > 
-> But, afaics, this is not enough. Say, what about zap_other_threads() ?
-> We shouldn't allow sub-threads to stop in this case.
+> From a quick look, it looks basically fine to me, thanks!
 > 
-> Basically, every time we clear ->group_stop_count we should also reset
-> ->group_stop for every thread. Fortunately, every time we already do
-> while_each_thread().
+> Just a very minor nit: it'd be nice to have the Kconfig help text entry 
+> updated, as the eGalax driver now supports more than what is described 
+> there.
 
-Yes, indeed.  Will update accordingly.
 
-Thanks.
+Something like this, perhaps?
 
--- 
-tejun
+>From c6675000b59412b22f4f798de4268318e39b628c Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Mon, 29 Nov 2010 14:40:11 +0100
+Subject: [PATCH] hid: egalax: Document the newly supported models in Kconfig
+
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/hid/Kconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 3052e29..401acec 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -154,7 +154,8 @@ config HID_EGALAX
+ 	tristate "eGalax multi-touch panel"
+ 	depends on USB_HID
+ 	---help---
+-	Support for the eGalax dual-touch panel.
++	Support for the eGalax dual-touch panels, including the
++	Joojoo and Wetab tablets.
+
+ config HID_ELECOM
+
+Thanks,
+Henrik
