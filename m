@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab0K2R7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 12:59:50 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51241 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0K2R7s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 12:59:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=TikNL9itYeM9//i6Gca4++MdNdABeyu5d9uM2mZ5WaxtFoRyr/d2Krbzi8xVyj/AGH
-         sEQfk0rUvkcRJIlzVQZVgDG6fuRAJpiDLJJG+2X1tebh1K4BKQ0nPBJ9Itf9+6sxVnZ0
-         faQITUR7jW+1fCE4p6wIOBTPaTnmW8JVmnNZc=
-Subject: Re: [PATCH v2 0/4] kthread: NUMA aware kthread_create_on_cpu()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, netdev@vger.kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, tony.luck@intel.com, fenghua.yu@intel.com
-In-Reply-To: <20101129.093942.104054089.davem@davemloft.net>
-References: <20101129090510.GA15763@basil.fritz.box>
-	 <1291023532.3435.29.camel@edumazet-laptop>
-	 <1291043604.3435.969.camel@edumazet-laptop>
-	 <20101129.093942.104054089.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Nov 2010 18:59:43 +0100
-Message-ID: <1291053583.3435.1269.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1755494Ab0K2SA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:00:28 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35456 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752006Ab0K2SA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:00:27 -0500
+Date: Mon, 29 Nov 2010 10:00:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH] init: Kconfig: fix typo
+Message-ID: <20101129180004.GB2182@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1290654130-26114-1-git-send-email-andrea.gelmini@gelma.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290654130-26114-1-git-send-email-andrea.gelmini@gelma.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 29 novembre 2010 à 09:39 -0800, David Miller a écrit :
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Mon, 29 Nov 2010 16:13:23 +0100
+On Thu, Nov 25, 2010 at 04:02:10AM +0100, Andrea Gelmini wrote:
+> s/feautre/feature/
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+> ---
+>  init/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> > Note : compiled and tested on x86_32 and x86_64 only, but these patches
-> > take care of other arches as well.
-> > 
-> > Cc: linux-arch@vger.kernel.org 
-> > 
-> > Thanks for your feedback Andi !
+> diff --git a/init/Kconfig b/init/Kconfig
+> index c972899..dd43d8e 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -620,7 +620,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+>  	help
+>  	  Memory Resource Controller Swap Extension comes with its price in
+>  	  a bigger memory consumption. General purpose distribution kernels
+> -	  which want to enable the feautre but keep it disabled by default
+> +	  which want to enable the feature but keep it disabled by default
+>  	  and let the user enable it by swapaccount boot command line
+>  	  parameter should have this option unselected.
+>  	  For those who want to have the feature enabled by default should
+> -- 
+> 1.7.3.2.316.g4da1c
 > 
-> I'm fine with these changes:
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
-> 
-> Since the majority is non-networking it is pretty clear
-> that someone other than me should integrate these patches.
-> :-)
-
-Sure !
-
-I was thinking Andrew was the guy to carry this patch series, once
-things settle down of course...
-
-Thanks
-
-
