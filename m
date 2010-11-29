@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab0K2XH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:07:28 -0500
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:24989 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab0K2XH1 (ORCPT
+	id S1755519Ab0K2XHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:07:30 -0500
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:8244 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755430Ab0K2XH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:07:27 -0500
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+	Mon, 29 Nov 2010 18:07:26 -0500
+Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-AV: E=Sophos;i="4.59,277,1288569600"; 
-   d="scan'208";a="627872690"
+   d="scan'208";a="249475045"
 From: David Ahern <daahern@cisco.com>
 To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: David Ahern <daahern@cisco.com>
-Subject: [PATCH 2/2] perf tools: Add option to show time history of event samples
-Date: Mon, 29 Nov 2010 16:07:09 -0700
-Message-Id: <1291072029-19178-3-git-send-email-daahern@cisco.com>
+Subject: [PATCH 1/2] perf tools: add reference timestamp to perf header
+Date: Mon, 29 Nov 2010 16:07:08 -0700
+Message-Id: <1291072029-19178-2-git-send-email-daahern@cisco.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1291072029-19178-1-git-send-email-daahern@cisco.com>
 References: <1291072029-19178-1-git-send-email-daahern@cisco.com>
@@ -23,229 +23,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a timehist option to perf record to save cpu and kernel timestamp
-with each sample. Add timehist option to perf report to display the
-cpu and timestamps for each event sample rather than generating a
-histogram. The timehist option leverages the reference timestamp
-from the perf header to create time-of-day stamps.
-
-This option has been extremely in analyzing context switches. The
-time history output can be mined for data such as how long a process
-runs when scheduled in, where it is when scheduled out (ie., backtrace)
-and how long between schedule in events.
+Reference timestamp is added to perf header to allow conversion of
+kernel timestamps to time-of-day. Timestamp is added using a feature
+bit for compatibility with older binaries.
 
 Signed-off-by: David Ahern <daahern@cisco.com>
 ---
- tools/perf/builtin-record.c |    8 +++
- tools/perf/builtin-report.c |  120 ++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 126 insertions(+), 2 deletions(-)
+ tools/perf/util/header.c  |   51 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h  |    3 ++
+ tools/perf/util/session.c |   26 +++++++++++++++++++++++
+ 3 files changed, 80 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 024e144..2496b04 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -49,6 +49,7 @@ static int			group				=      0;
- static int			realtime_prio			=      0;
- static bool			raw_samples			=  false;
- static bool			system_wide			=  false;
-+static bool			time_history			=  false;
- static pid_t			target_pid			=     -1;
- static pid_t			target_tid			=     -1;
- static pid_t			*all_tids			=      NULL;
-@@ -281,6 +282,11 @@ static void create_counter(int counter, int cpu)
- 	if (system_wide)
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
-+	if (time_history) {
-+		attr->sample_type	|= PERF_SAMPLE_TIME;
-+		attr->sample_type	|= PERF_SAMPLE_CPU;
-+	}
-+
- 	if (raw_samples) {
- 		attr->sample_type	|= PERF_SAMPLE_TIME;
- 		attr->sample_type	|= PERF_SAMPLE_RAW;
-@@ -840,6 +846,8 @@ const struct option record_options[] = {
- 		    "do not update the buildid cache"),
- 	OPT_BOOLEAN('B', "no-buildid", &no_buildid,
- 		    "do not collect buildids in perf.data"),
-+	OPT_BOOLEAN(0, "timehist", &time_history,
-+		    "collect data for time history report"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5de405d..042dc7c 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -35,6 +35,7 @@ static char		const *input_name = "perf.data";
- static bool		force, use_tui, use_stdio;
- static bool		hide_unresolved;
- static bool		dont_use_callchains;
-+static bool		time_history;
- 
- static bool		show_threads;
- static struct perf_read_values	show_threads_values;
-@@ -124,6 +125,106 @@ out_free_syms:
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index f65d7dc..0f04368 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -191,6 +191,40 @@ static int write_padded(int fd, const void *bf, size_t count,
  	return err;
  }
  
-+static const char *timestr(u64 timestamp, struct perf_session *session)
++static int perf_header__read_ref_time(struct perf_header *self,
++			int fd, u64 offset, u64 size)
 +{
-+	struct tm ltime;
-+	u64 dt;
-+	struct timeval tv_dt, tv_res;
-+	static char tstr[64];
++	size_t sz_nsec = sizeof(self->nsec_ref);
++	size_t sz_tv   = sizeof(self->tv_ref);
++	int err = -1;
 +
-+	dt = timestamp - session->header.nsec_ref;
-+	tv_dt.tv_sec = (time_t) (dt / NSEC_PER_SEC);
-+	tv_dt.tv_usec = (suseconds_t) ((dt - tv_dt.tv_sec * NSEC_PER_SEC) / 1000);
++	if (((size - offset) < (sz_nsec + sz_tv)) ||
++	    (read(fd, &self->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
++	    (read(fd, &self->tv_ref, sz_tv) != (ssize_t) sz_tv))
++		goto out;
 +
-+	timeradd(&session->header.tv_ref, &tv_dt, &tv_res);
++	err = 0;
 +
-+	if ((session->header.nsec_ref == 0) ||
-+		(localtime_r(&tv_res.tv_sec, &ltime) == NULL)) {
-+		snprintf(tstr, sizeof(tstr), "00:00:00.000000 %16Ld", timestamp);
-+	} else {
-+		char date[64];
-+		strftime(date, sizeof(date), "%H:%M:%S", &ltime);
-+		snprintf(tstr, sizeof(tstr), "%s.%06ld %16Ld",
-+		         date, tv_res.tv_usec, timestamp);
-+	}
-+
-+	return tstr;
++out:
++	return err;
 +}
 +
-+#define TIMEHIST_FMT  "%33s  %3d  %-16s %5d  %16Lx  %s (%s)\n"
-+
-+static void timehist_header(void)
++static int perf_header__write_ref_time(struct perf_header *self, int fd)
 +{
-+	printf("%33s  %3s  %-16s %5s  %16s  %s (%s)\n",
-+		   "  Time-of-Day   Kernel Timestamp",
-+	       "cpu", "Command Name", "PID",
-+	       "    IP    ", "Symbol Name", "DSO Name");
++	size_t sz_nsec = sizeof(self->nsec_ref);
++	size_t sz_tv   = sizeof(self->tv_ref);
++	int err = -1;
++
++	if ((write(fd, &self->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
++	    (write(fd, &self->tv_ref, sz_tv) != (ssize_t) sz_tv))
++		goto out;
++
++	err = 0;
++
++out:
++	return err;
 +}
 +
-+static int perf_session__print_sample(struct perf_session *self,
-+					struct addr_location *al,
-+					struct sample_data *data)
-+{
-+	static int show_timehist_error = 1;
-+	u64 timestamp = 0;
-+	struct map_symbol *syms = NULL;
-+	struct symbol *parent = NULL;
-+	const char *tstr;
+ #define dsos__for_each_with_build_id(pos, head)	\
+ 	list_for_each_entry(pos, head, node)	\
+ 		if (!pos->has_build_id)		\
+@@ -483,6 +517,19 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
+ 			perf_session__cache_build_ids(session);
+ 	}
+ 
++	if (perf_header__has_feat(self, HEADER_REFERENCE_TIME)) {
++		struct perf_file_section *tref_sec;
 +
-+	if (show_timehist_error &&
-+		((data->cpu == (u32) -1) || !(self->sample_type & PERF_SAMPLE_TIME))) {
-+		pr_err("Data for time history missing in perf event samples.\n"
-+		       "Did you record with -T option?\n");
-+		show_timehist_error = 0;
-+	}
-+
-+	if (self->sample_type & PERF_SAMPLE_TIME)
-+		timestamp = data->time;
-+
-+	tstr = timestr(timestamp, self);
-+
-+
-+	if ((symbol_conf.use_callchain) && data->callchain) {
-+		u64 i;
-+
-+		syms = perf_session__resolve_callchain(self, al->thread,
-+						       data->callchain, &parent);
-+		if (syms == NULL)
-+			return -ENOMEM;
-+
-+		for (i = 0; i < data->callchain->nr; ++i) {
-+			const char *symname = "", *dsoname = "";
-+
-+			if (syms[i].sym && syms[i].sym->name)
-+				symname = syms[i].sym->name;
-+			else if (hide_unresolved)
-+				continue;
-+
-+			if (syms[i].map && syms[i].map->dso &&
-+					syms[i].map->dso->name)
-+				dsoname = syms[i].map->dso->name;
-+			else if (hide_unresolved)
-+				continue;
-+
-+			printf(TIMEHIST_FMT,
-+				   tstr, data->cpu,
-+				   al->thread->comm, al->thread->pid,
-+				   data->callchain->ips[i], symname, dsoname);
++		tref_sec = &feat_sec[idx++];
++		tref_sec->offset = lseek(fd, 0, SEEK_CUR);
++		err = perf_header__write_ref_time(self, fd);
++		if (err < 0) {
++			pr_debug("failed to write reference time\n");
++			goto out_free;
 +		}
-+
-+		free(syms);
-+
-+	} else {
-+		printf(TIMEHIST_FMT,
-+			   tstr, data->cpu,
-+			   al->thread->comm, al->thread->pid, al->addr,
-+			   al->sym->name, al->map->dso->name);
++		tref_sec->size = lseek(fd, 0, SEEK_CUR) - tref_sec->offset;
 +	}
-+	printf("\n");
++
+ 	lseek(fd, sec_start, SEEK_SET);
+ 	err = do_write(fd, feat_sec, sec_size);
+ 	if (err < 0)
+@@ -810,6 +857,10 @@ static int perf_file_section__process(struct perf_file_section *self,
+ 		if (perf_header__read_build_ids(ph, fd, self->offset, self->size))
+ 			pr_debug("Failed to read buildids, continuing...\n");
+ 		break;
++	case HEADER_REFERENCE_TIME:
++		if (perf_header__read_ref_time(ph, fd, self->offset, self->size))
++			pr_debug("Failed to read reference time, continuing...\n");
++		break;
+ 	default:
+ 		pr_debug("unknown feature %d, continuing...\n", feat);
+ 	}
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index ed550bf..d1a8e19 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -19,6 +19,7 @@ struct perf_header_attr {
+ enum {
+ 	HEADER_TRACE_INFO = 1,
+ 	HEADER_BUILD_ID,
++	HEADER_REFERENCE_TIME,
+ 	HEADER_LAST_FEATURE,
+ };
+ 
+@@ -59,6 +60,8 @@ struct perf_header {
+ 	u64			data_size;
+ 	u64			event_offset;
+ 	u64			event_size;
++	u64			nsec_ref;
++	struct timeval		tv_ref;
+ 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
+ };
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 3ae6955..1ceef22 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -70,6 +70,29 @@ void perf_session__update_sample_type(struct perf_session *self)
+ 	self->sample_type = perf_header__sample_type(&self->header);
+ }
+ 
++static int perf_session__create_ref_time(struct perf_session *self)
++{
++	struct timespec tp;
++
++	/* race here between successive calls, but should be close enough */
++	if (gettimeofday(&self->header.tv_ref, NULL) != 0) {
++		pr_err("gettimeofday failed. Cannot set reference time.\n");
++		return -1;
++	}
++
++	if (clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
++		pr_err("clock_gettime failed. Cannot set reference time.\n");
++		return -1;
++	}
++
++	self->header.nsec_ref = (u64) tp.tv_sec * NSEC_PER_SEC
++	                            + (u64) tp.tv_nsec;
++
++	perf_header__set_feat(&self->header, HEADER_REFERENCE_TIME);
 +
 +	return 0;
 +}
 +
- static int add_event_total(struct perf_session *session,
- 			   struct sample_data *data,
- 			   struct perf_event_attr *attr)
-@@ -165,7 +266,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 	if (al.filtered || (hide_unresolved && al.sym == NULL))
- 		return 0;
- 
--	if (perf_session__add_hist_entry(session, &al, &data)) {
-+	if (time_history) {
-+		perf_session__print_sample(session, &al, &data);
-+	} else if (perf_session__add_hist_entry(session, &al, &data)) {
- 		pr_debug("problem incrementing symbol period, skipping event\n");
- 		return -1;
- 	}
-@@ -318,6 +421,14 @@ static int __cmd_report(void)
- 	if (ret)
- 		goto out_delete;
- 
-+	if (time_history) {
-+		if (!session->header.nsec_ref) {
-+			pr_err("Reference timestamp missing in perf.data file.\n"
-+			       "Cannot convert kernel timestamps to time-of-day.\n");
-+		}
-+		timehist_header();
-+	}
-+
- 	ret = perf_session__process_events(session, &event_ops);
- 	if (ret)
- 		goto out_delete;
-@@ -333,6 +444,9 @@ static int __cmd_report(void)
- 	if (verbose > 2)
- 		perf_session__fprintf_dsos(session, stdout);
- 
-+	if (time_history)
-+		goto out_delete;
-+
- 	next = rb_first(&session->hists_tree);
- 	while (next) {
- 		struct hists *hists;
-@@ -478,6 +592,8 @@ static const struct option options[] = {
- 		   "columns '.' is reserved."),
- 	OPT_BOOLEAN('U', "hide-unresolved", &hide_unresolved,
- 		    "Only display entries resolved to a symbol"),
-+	OPT_BOOLEAN(0, "timehist", &time_history,
-+		    "Dump time history of event samples"),
- 	OPT_END()
- };
- 
-@@ -485,7 +601,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ int perf_session__create_kernel_maps(struct perf_session *self)
  {
- 	argc = parse_options(argc, argv, options, report_usage, 0);
+ 	int ret = machine__create_kernel_maps(&self->host_machine);
+@@ -117,6 +140,9 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+ 		 */
+ 		if (perf_session__create_kernel_maps(self) < 0)
+ 			goto out_delete;
++
++		if (perf_session__create_ref_time(self) < 0)
++			goto out_delete;
+ 	}
  
--	if (use_stdio)
-+	if (use_stdio || time_history)
- 		use_browser = 0;
- 	else if (use_tui)
- 		use_browser = 1;
+ 	perf_session__update_sample_type(self);
 -- 
 1.7.2.3
 
