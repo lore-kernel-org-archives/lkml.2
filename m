@@ -1,61 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493Ab0K2IGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:06:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab0K2IGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:06:16 -0500
-Date: Mon, 29 Nov 2010 10:05:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] vhost: fix typos in comment
-Message-ID: <20101129080549.GA25496@redhat.com>
-References: <20101129054840.24951.29849.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+	id S1751112Ab0K2IJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:09:23 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56092 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab0K2IJW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 03:09:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WD7JKcyEdH9vjsQwogYYXmPn8cYNDzhRP7aXJqY5YKtq0b8OpSRXAKAbxT6CG86/9n
+         yI09kSYmMBlAui6zQ65+ZPynFuxGJpcnuGYNg4RWinbdEQrYvZ5Gph4AmwEGasb3Jdbm
+         2uvaVUt+kvUhgR2HX7bgaY6rdyQIUtpPylNok=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129054840.24951.29849.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101129074954.GB22803@localhost>
+References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
+	<20101129074954.GB22803@localhost>
+Date: Mon, 29 Nov 2010 17:09:21 +0900
+Message-ID: <AANLkTimVFT8Fsm5b9z3EWP024BiPBHSM7AfUbib9ZHe1@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] deactivate invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 01:48:40PM +0800, Jason Wang wrote:
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Hi Wu,
 
-Applied, thanks.
+On Mon, Nov 29, 2010 at 4:49 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Sun, Nov 28, 2010 at 11:02:55PM +0800, Minchan Kim wrote:
+>> This patch is based on mmotm-11-23.
+>
+> I cannot find __pagevec_lru_deactive() in mmotm-11-23.
+> Do you have any more patches?
 
-> ---
->  drivers/vhost/net.c   |    2 +-
->  drivers/vhost/vhost.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index d10da28..14fc189 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -452,7 +452,7 @@ static void handle_rx_mergeable(struct vhost_net *net)
->  			move_iovec_hdr(vq->iov, vq->hdr, vhost_hlen, in);
->  		else
->  			/* Copy the header for use in VIRTIO_NET_F_MRG_RXBUF:
-> -			 * needed because sendmsg can modify msg_iov. */
-> +			 * needed because recvmsg can modify msg_iov. */
->  			copy_iovec_hdr(vq->iov, vq->hdr, sock_hlen, in);
->  		msg.msg_iovlen = in;
->  		err = sock->ops->recvmsg(NULL, sock, &msg,
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index 073d06a..2af44b7 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -102,7 +102,7 @@ struct vhost_virtqueue {
->  	 * flush the vhost_work instead of synchronize_rcu. Therefore readers do
->  	 * not need to call rcu_read_lock/rcu_read_unlock: the beginning of
->  	 * vhost_work execution acts instead of rcu_read_lock() and the end of
-> -	 * vhost_work execution acts instead of rcu_read_lock().
-> +	 * vhost_work execution acts instead of rcu_read_unlock().
->  	 * Writers use virtqueue mutex. */
->  	void __rcu *private_data;
->  	/* Log write descriptors */
+Please see this patch.
+http://www.spinics.net/lists/mm-commits/msg80851.html
+
+>
+>> Recently, there are reported problem about thrashing.
+>> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+>> It happens by backup workloads(ex, nightly rsync).
+>> That's because the workload makes just use-once pages
+>> and touches pages twice. It promotes the page into
+>> active list so that it results in working set page eviction.
+>>
+>> Some app developer want to support POSIX_FADV_NOREUSE.
+>> But other OSes don't support it, either.
+>> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
+>>
+>> By Other approach, app developer uses POSIX_FADV_DONTNEED.
+>> But it has a problem. If kernel meets page is writing
+>> during invalidate_mapping_pages, it can't work.
+>> It is very hard for application programmer to use it.
+>> Because they always have to sync data before calling
+>> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+>> be discardable. At last, they can't use deferred write of kernel
+>> so that they could see performance loss.
+>> (http://insights.oetiker.ch/linux/fadvise.html)
+>>
+>> In fact, invalidation is very big hint to reclaimer.
+>> It means we don't use the page any more. So let's move
+>> the writing page into inactive list's head.
+>>
+>> Why I need the page to head, Dirty/Writeback page would be flushed
+>> sooner or later. This patch uses trick PG_reclaim so the page would
+>> be moved into tail of inactive list when the page writeout completes.
+>>
+>> It can prevent writeout of pageout which is less effective than
+>> flusher's writeout.
+>>
+>> This patch considers page_mappged(page) with working set.
+>> So the page could leave head of inactive to get a change to activate.
+>>
+>> Originally, I reused lru_demote of Peter with some change so added
+>> his Signed-off-by.
+>>
+>> Note :
+>> PG_reclaim trick of writeback page could race with end_page_writeback
+>> so this patch check PageWriteback one more. It makes race window time
+>> reall small. But by theoretical, it still have a race. But it's a trivial.
+>>
+>> Quote from fe3cba17 and some modification
+>> "If some page PG_reclaim unintentionally, it will confuse readahead and
+>> make it restart the size rampup process. But it's a trivial problem, and
+>> can mostly be avoided by checking PageWriteback(page) first in readahead"
+>>
+>> PG_reclaim trick of dirty page don't work now since clear_page_dirty_for_io
+>> always clears PG_reclaim. Next patch will fix it.
+>>
+>> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>>
+>> Changelog since v1:
+>>  - modify description
+>>  - correct typo
+>>  - add some comment
+>>  - change deactivation policy
+>> ---
+>>  mm/swap.c |   84 +++++++++++++++++++++++++++++++++++++++++++++---------------
+>>  1 files changed, 63 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/mm/swap.c b/mm/swap.c
+>> index 31f5ec4..345eca1 100644
+>> --- a/mm/swap.c
+>> +++ b/mm/swap.c
+>> @@ -268,10 +268,65 @@ void add_page_to_unevictable_list(struct page *page)
+>>       spin_unlock_irq(&zone->lru_lock);
+>>  }
+>>
+>> -static void __pagevec_lru_deactive(struct pagevec *pvec)
+>> +/*
+>> + * This function is used by invalidate_mapping_pages.
+>> + * If the page can't be invalidated, this function moves the page
+>> + * into inative list's head or tail to reclaim ASAP and evict
+>> + * working set page.
+>> + *
+>> + * PG_reclaim means when the page's writeback completes, the page
+>> + * will move into tail of inactive for reclaiming ASAP.
+>> + *
+>> + * 1. active, mapped page -> inactive, head
+>> + * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
+>> + * 3. inactive, mapped page -> none
+>> + * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
+>> + * 5. others -> none
+>> + *
+>> + * In 4, why it moves inactive's head, the VM expects the page would
+>> + * be writeout by flusher. The flusher's writeout is much effective than
+>> + * reclaimer's random writeout.
+>> + */
+>> +static void __lru_deactivate(struct page *page, struct zone *zone)
+>>  {
+>> -     int i, lru, file;
+>> +     int lru, file;
+>> +     int active = 0;
+>> +
+>> +     if (!PageLRU(page))
+>> +             return;
+>> +
+>> +     if (PageActive(page))
+>> +             active = 1;
+>> +     /* Some processes are using the page */
+>> +     if (page_mapped(page) && !active)
+>> +             return;
+>
+> It's good to check such protections if doing heuristic demotion.
+> However if requested explicitly by the user, I'm _much more_ inclined
+> to act stupid&dumb and meet the user's expectation. Or will this code
+> be called by someone other than DONTNEED? Sorry I have no context of
+> the full code.
+
+Sorry.
+
+Yes. I expect lru_deactive_page can be used by other places with some
+modification.
+First thing I expected is here.
+
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
+After I make sure this patch's effective, I will try it, too.
+
+
+>
+>> +     else if (PageWriteback(page)) {
+>> +             SetPageReclaim(page);
+>> +             /* Check race with end_page_writeback */
+>> +             if (!PageWriteback(page))
+>> +                     ClearPageReclaim(page);
+>
+> Does the double check help a lot?
+>
+>> +     } else if (PageDirty(page))
+>> +             SetPageReclaim(page);
+>
+> Typically there are much more dirty pages than writeback pages.
+> I guess it's a good place to call bdi_start_inode_writeback() which
+> was posted here: http://www.spinics.net/lists/linux-mm/msg10833.html
+
+It looks good to me.
+It makes my code very simple.
+
+I can use it. It means my patch depends on yours patch.
+Do you have a plan to merge it?
+
+
+>
+> Thanks,
+> Fengguang
+>
+>> +
+>> +     file = page_is_file_cache(page);
+>> +     lru = page_lru_base_type(page);
+>> +     del_page_from_lru_list(zone, page, lru + active);
+>> +     ClearPageActive(page);
+>> +     ClearPageReferenced(page);
+>> +     add_page_to_lru_list(zone, page, lru);
+>> +     if (active)
+>> +             __count_vm_event(PGDEACTIVATE);
+>> +
+>> +     update_page_reclaim_stat(zone, page, file, 0);
+>> +}
+>>
+>> +/*
+>> + * This function must be called with preemption disable.
+>> + */
+>> +static void __pagevec_lru_deactivate(struct pagevec *pvec)
+>> +{
+>> +     int i;
+>>       struct zone *zone = NULL;
+>>
+>>       for (i = 0; i < pagevec_count(pvec); i++) {
+>> @@ -284,21 +339,7 @@ static void __pagevec_lru_deactive(struct pagevec *pvec)
+>>                       zone = pagezone;
+>>                       spin_lock_irq(&zone->lru_lock);
+>>               }
+>> -
+>> -             if (PageLRU(page)) {
+>> -                     if (PageActive(page)) {
+>> -                             file = page_is_file_cache(page);
+>> -                             lru = page_lru_base_type(page);
+>> -                             del_page_from_lru_list(zone, page,
+>> -                                             lru + LRU_ACTIVE);
+>> -                             ClearPageActive(page);
+>> -                             ClearPageReferenced(page);
+>> -                             add_page_to_lru_list(zone, page, lru);
+>> -                             __count_vm_event(PGDEACTIVATE);
+>> -
+>> -                             update_page_reclaim_stat(zone, page, file, 0);
+>> -                     }
+>> -             }
+>> +             __lru_deactivate(page, zone);
+>>       }
+>>       if (zone)
+>>               spin_unlock_irq(&zone->lru_lock);
+>> @@ -336,11 +377,13 @@ static void drain_cpu_pagevecs(int cpu)
+>>
+>>       pvec = &per_cpu(lru_deactivate_pvecs, cpu);
+>>       if (pagevec_count(pvec))
+>> -             __pagevec_lru_deactive(pvec);
+>> +             __pagevec_lru_deactivate(pvec);
+>>  }
+>>
+>>  /*
+>> - * Forecfully demote a page to the tail of the inactive list.
+>> + * Forcefully deactivate a page.
+>> + * This function is used for reclaiming the page ASAP when the page
+>> + * can't be invalidated by Dirty/Writeback.
+>>   */
+>>  void lru_deactivate_page(struct page *page)
+>>  {
+>> @@ -348,12 +391,11 @@ void lru_deactivate_page(struct page *page)
+>>               struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
+>>
+>>               if (!pagevec_add(pvec, page))
+>> -                     __pagevec_lru_deactive(pvec);
+>> +                     __pagevec_lru_deactivate(pvec);
+>>               put_cpu_var(lru_deactivate_pvecs);
+>>       }
+>>  }
+>>
+>> -
+>>  void lru_add_drain(void)
+>>  {
+>>       drain_cpu_pagevecs(get_cpu());
+>> --
+>> 1.7.0.4
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
