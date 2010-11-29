@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab0K2Pur (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:50:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56023 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0K2Puq (ORCPT
+	id S1754680Ab0K2Pvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:51:33 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46386 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab0K2Pvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:50:46 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-Date: Mon, 29 Nov 2010 16:50:30 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        =?utf-8?q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        linux-kernel@vger.kernel.org
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <201011271639.21694.arnd@arndb.de> <20101129142200.GA14941@n2100.arm.linux.org.uk>
-In-Reply-To: <20101129142200.GA14941@n2100.arm.linux.org.uk>
+	Mon, 29 Nov 2010 10:51:32 -0500
+Date: Mon, 29 Nov 2010 15:51:23 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Magnus Damm <damm@opensource.se>, M?rton N?meth <nm127@freemail.hu>,
+        linux-media@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] soc_camera: Add the ability to bind regulators to
+	soc_camedra devices
+Message-ID: <20101129155122.GB30926@sirena.org.uk>
+References: <1290964687.3016.5.camel@realization> <Pine.LNX.4.64.1011281923440.5731@axis700.grange> <1291023297.3139.55.camel@realization>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201011291650.30982.arnd@arndb.de>
-X-Provags-ID: V02:K0:3B3lz184uXv0TuPjdyTe8GRkzch67+I5d71fbiKewOp
- FC9tIOPcxN3qLtiJhb/cSJ13XSuL+XKQuHbaRUFJ3gvCDPetaf
- xde3+f1XNpr4uyViPh+C3fyA92rY5PZ1ew9GWSz7woeTeS0OM2
- kxoOwh5wv5NN9A8p+oL9myqZKUlAegISMtk99Jzdn/Hkkxe469
- KV5DvpZ9XEDj6CiapPLXA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291023297.3139.55.camel@realization>
+X-Cookie: f u cn rd ths, u r prbbly a lsy spllr.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 November 2010, Russell King - ARM Linux wrote:
-> On Sat, Nov 27, 2010 at 04:39:21PM +0100, Arnd Bergmann wrote:
-> > On Saturday 27 November 2010 14:01:20 Michał Mirosław wrote:
->
-> Be careful.  There are two things going on here:
-> 
-> 1. those which PCI support is configurable
-> 2. those which always have PCI support
-> 
-> Making PCI "depend on HAVE_PCI" is wrong, and will throw up lots of
-> Kconfig warnings, as those platforms which always have PCI support
-> won't select HAVE_PCI - and making them do so such that "PCI support"
-> gets offered to them - with the only possible value being 'Y' is
-> silly.
+On Mon, Nov 29, 2010 at 10:34:57AM +0100, Alberto Panizzo wrote:
+> On dom, 2010-11-28 at 20:05 +0100, Guennadi Liakhovetski wrote:
 
-We definitely need to be careful with combinations of select and
-depends. The obvious danger is enabling two boards, one of which
-requires PCI while the other one cannot deal with CONFIG_PCI=y.
-As we get to more multiplatform builds, we have to eventually
-solve this, along with the problem that certain PCI implementations
-are currently mutually exclusive.
+> >  (2) would anyone really want to 
+> > use several regulators for a camera sensor? If so, can it be the case, 
+> > that, for example, the regulators have to be switched off in the reverse 
+> > order to switching on? Or something else?
 
-What behaviour do you want to see in a multiplatform build where
-one board is known to have PCI, one may have it and a third
-one cannot have PCI? Should it be enabled, disabled or
-user-selected.
+> Well, I'm working on the i.MX31 3 Stack board support and there are 2 
+> regulators that powers the camera and if you consider the digital output
+> that enable another supplier needed, the total regulators are three..
+> So, yes a list of regulators is needed in this case, and Yes I did not 
+> considered the order of enabling and disabling operations. Just because
+> even the freescale drivers didn't.
 
-> So, rather than HAVE_PCI, it should be MIGHT_HAVE_PCI, and that
-> symbol needs to control whether the "PCI support" prompt is offered
-> to the user, not whether PCI is available or not.
+> A practical general rule is to turn off switchers in the reverse order
+> than the turning on one. And this can be easily implemented here.
+> But as you rose the question, we can add priorities of turning on and 
+> off.
 
-Most architectures make PCI optional even though it is a bit silly
-to disable it like on x86. There are a lot of other useful configuration
-options that end up always enabled in practice.
+If you use the regulator bulk API it'll reverse the ordering when doing
+the power down (or should if it doesn't already).
 
-The easiest way would be to always select HAVE_PCI (or MIGHT_HAVE_PCI
-if you prefer the term) and make the default CONFIG_PCI default to
-yes.
+> > > +static int soc_camera_power_set(struct soc_camera_device *icd,
+> > > +				struct soc_camera_link *icl,
+> > > +				int power_on)
+> > > +{
+> > > +	int ret, i;
+> > > +
+> > > +	for (i = 0; i < icd->num_soc_regulators; i++) {
+> > > +		if (power_on) {
+> > > +			ret = regulator_set_voltage(icd->soc_regulators[i],
+> > > +				icl->soc_regulator_descs[i].value_on_min,
+> > > +				icl->soc_regulator_descs[i].value_on_max);
 
-Or you could go fancy and have both HAVE_PCI and MIGHT_HAVE_PCI, with
-each platform selecting at most one of the two and this
-
-config PCI
-	bool "PCI support"
-	depends on MIGHT_HAVE_PCI && !HAVE_PCI
-	default HAVE_PCI
-
-This way it will be silently turned on if one of the machines requires
-PCI, but stay visible if the machines might want to disable PCI.
-
-	Arnd
+Unless you're actively varying the voltages at runtime (as Guennadi
+mentioned) I'd really expect the voltages to be handled by the regulator
+constraints.
