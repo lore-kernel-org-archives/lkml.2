@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab0K2DF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 22:05:28 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54791 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab0K2DF1 (ORCPT
+	id S1754791Ab0K2DFp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 22:05:45 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:35324 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754505Ab0K2DFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 22:05:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ThGXP69bJLNlxgQRXn6W1BVFepWDiIK7Rw5Th3CjWuDl/iecR10UrK9GsfyFRStUnF
-         EnxBfHMyrcVfhACyoK5L10QgwNXkzKLq5GGa3BPgJFWAy3frWS+1tLjTHKhMJM2D3vkM
-         tg7R4WLy9bUd4DS6T6EIKvRr+9UMP61yT7OuY=
-Date: Mon, 29 Nov 2010 11:10:17 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Pavel Vasilyev <pavel@pavlinux.ru>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Repalce strncmp by memcmp
-Message-ID: <20101129031017.GB5218@cr0.nay.redhat.com>
-References: <4CF30B46.4000203@pavlinux.ru>
+	Sun, 28 Nov 2010 22:05:44 -0500
+Date: Sun, 28 Nov 2010 22:05:42 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM: Prevent dpm_prepare() from returning errors
+ unnecessarily
+In-Reply-To: <201011282352.10498.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1011282153560.3447-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF30B46.4000203@pavlinux.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 05:09:10AM +0300, Pavel Vasilyev wrote:
->
->    This patch replace all strncmp(a, b, c) by  memcmp(a, b, c).
->
->I test on x86_64 (AMD Opteron 285).
->
->#include <string.h>
->char *A = "0000";
->void test_memcmp(void) {
->        memcmp(A, "TEST", 4);
->}
->void test_strn(void) {
->        strncmp(A, "TEST", 4);
->}
+On Sun, 28 Nov 2010, Rafael J. Wysocki wrote:
 
-This is plain wrong, memcmp() doesn't handle the case that 'a'
-is shorter than 'b', it may access beyond '\0'.
+> On Sunday, November 28, 2010, Alan Stern wrote:
+> > On Sun, 28 Nov 2010, Rafael J. Wysocki wrote:
+> > 
+> > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > 
+> > > Currently dpm_prepare() returns error code if it finds that a device
+> > > being suspended has a pending runtime resume request.  However, it
+> > > should not do that if the checking for wakeup events is not enabled.
+> > 
+> > It doesn't.  The line you changed _does_ check device_may_wakeup().
+> 
+> That's not the point.  The problem is that it shouldn't abort suspend
+> when events_check_enabled is unset.
+
+Oh, I see.  This is a tricky issue.  Every driver for a device that can
+have wakeup-enabled children needs to worry about the race between
+suspending the device and receiving a wakeup request from a child.  
+For example, in drivers/usb/core/hcd-pci.c, the suspend_common()
+routine goes out of its way to return -EBUSY if device_may_wakeup() is
+true and the controller's root hub has a pending wakeup request.
+
+How should drivers handle this in general?  Should we make an effort to
+convert them to use the wakeup framework so they they can let the PM
+core take care of these races?  Do we have to consider similar races
+during runtime suspend?
+
+> > > On the other hand, if the checking for wakeup events is enabled, it
+> > > can return error when a wakeup event is detected, regardless of its
+> > > source.
+> > 
+> > Will adding this call to pm_wakeup_event() end up double-counting some 
+> > events?
+> 
+> Yes, it will, if the event has already been reported by the subsystem or driver.
+> 
+> I don't think it's a very big issue and I'm not sure trying to avoid it is
+> worth the effort (we can check if the device's wakeup source object is active
+> and skip reporting the wakeup event in that case, but that doesn't guarantee
+> that the event won't be counted twice anyway).
+
+I agree that it's not a big issue.  Wakeups reported twice because they 
+occur just before a system sleep won't cause serious accounting 
+problems and probably won't happen very often anyway.  I just wanted to 
+make sure that the issue wasn't being ignored by mistake.
+
+Alan Stern
+
