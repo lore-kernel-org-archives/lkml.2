@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0K2Sm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:42:29 -0500
-Received: from claranet-outbound-smtp04.uk.clara.net ([195.8.89.37]:55816 "EHLO
-	claranet-outbound-smtp04.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751233Ab0K2Sm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:42:28 -0500
-Message-ID: <4CF3F40E.3040508@sciolus.org>
-Date: Mon, 29 Nov 2010 18:42:22 +0000
-From: "R.M. Thomas" <rmthomas@sciolus.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1753391Ab0K2Swd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:52:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60726 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544Ab0K2Swc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:52:32 -0500
+Message-ID: <4CF3F62F.2000508@zytor.com>
+Date: Mon, 29 Nov 2010 10:51:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: easycap: fix build failure
-References: <alpine.LNX.2.00.1011291813060.981@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1011291813060.981@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below
+ 4G
+References: <20101129183009.11256.33739.stgit@bob.kio> <201011291334.52909.bjorn.helgaas@hp.com>
+In-Reply-To: <201011291334.52909.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Kosina wrote:
-> Now, I really believe that this driver is completely hopeless and the only 
-> option is complete from-scratch rewrite. I have been looking into it for 
-> approximately ~30 seconds (solely to fix this build failure), and I really 
-> don't know what to say.
+On 11/29/2010 12:34 PM, Bjorn Helgaas wrote:
+> On Monday, November 29, 2010 11:30:09 am Bjorn Helgaas wrote:
+>>
+>> The last 1M before 4G contains the processor restart vector and usually
+>> the system ROM.  We don't know the actual ROM size; I chose 1M because
+>> that's how much Windows 7 appears to avoid.
+>>
+>> Without this check, we can allocate PCI space that will never work.  On
+>> Matthew's HP 2530p, we put the Intel GTT "Flush Page" at the very last
+>> page, which causes a spontaneous power-off:
+>>
+>>   pci_root PNP0A08:00: host bridge window [mem 0xfee01000-0xffffffff]
+>>   fffff000-ffffffff : Intel Flush Page (assigned by intel-gtt)
+>>
+>> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23542
+>> Reported-by: Matthew Garrett <mjg@redhat.com>
+>> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+>> ---
+>>
+>>  arch/x86/include/asm/e820.h |    3 +++
+>>  arch/x86/pci/i386.c         |   10 +++++++++-
+>>  2 files changed, 12 insertions(+), 1 deletions(-)
+>>
+>>
+>> diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+>> index 5be1542..c1e908f 100644
+>> --- a/arch/x86/include/asm/e820.h
+>> +++ b/arch/x86/include/asm/e820.h
+>> @@ -72,6 +72,9 @@ struct e820map {
+>>  #define BIOS_BEGIN		0x000a0000
+>>  #define BIOS_END		0x00100000
+>>  
+>> +#define BIOS_ROM_BASE		0xfff00000
+>> +#define BIOS_ROM_END		0x100000000ULL
+> 
+> I'm really not thrilled about hard-coding these addresses, so I'd
+> love it if somebody could suggest a way to discover them from the
+> BIOS.
+> 
+> The E820 map doesn't reserve the last page:
+> 
+>   BIOS-e820: 00000000fed1c000 - 00000000fed20000 (reserved)
+>   BIOS-e820: 00000000fffa0000 - 00000000fffa7000 (reserved)
+> 
+> and I don't think there's any ACPI device that does either.
+> 
 
-You are quite right of course.  This driver does indeed require a complete
-re-write.  The non-standard formatting and (now) redundant debugging macros
-are actually the least troublesome issues.  More significant is the need to
-replace most of the routines by existing functions from the V4L subsystem.
-Unfortunately I shall be unable to undertake this essential work myself in
-the foreseeable future owing to other commitments.  Probably the simplest
-solution would be to drop the driver from staging.
+It is certainly reasonable to block off the last chunk of the 32-bit
+address space.  Some systems double-decode it to avoid issues with
+A20M#, so I would argue that we should avoid at least 2 MiB.
 
-Even in its present untidy state the driver does work reasonably well on x86
-and x86-64, so something could possibly be salvaged from it.
+As far as discovering them from the BIOS, there is a way to do it --
+E820.  This is a fallback for the case where the BIOS has plain and
+simply failed to provide it, and so a heuristic is probably the best we
+can do.  Probing is extremely unsafe.
 
-Mike   
-
+	-hpa
