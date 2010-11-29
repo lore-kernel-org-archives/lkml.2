@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab0K2QZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:25:11 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:21404
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751544Ab0K2QZJ (ORCPT
+	id S1752863Ab0K2Q0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:26:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60749 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752028Ab0K2Q0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:25:09 -0500
-X-SpamScore: -32
-X-BigFish: VPS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i691h637h668h67dh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCNMXL-02-CBG-02
-X-M-MSG: 
-Date: Mon, 29 Nov 2010 17:25:00 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] KVM: Introduce VCPU-wide notion of guest-mode
-Message-ID: <20101129162500.GD2258@amd.com>
-References: <1291045090-2714-1-git-send-email-joerg.roedel@amd.com>
- <4CF3D093.40604@redhat.com>
+	Mon, 29 Nov 2010 11:26:18 -0500
+Date: Mon, 29 Nov 2010 16:26:05 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frede_Feuerstein@gmx.net, Ingo Molnar <mingo@elte.hu>,
+        603229@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Scheduler grouping failure; division by zero in
+	select_task_rq_fair
+Message-ID: <20101129162605.GH8695@decadent.org.uk>
+References: <1290449310.3868.13.camel@localhost> <1290470134.6770.929.camel@localhost> <1290514638.3892.16.camel@localhost> <1290900814.3292.84.camel@localhost> <1290920436.4255.1025.camel@localhost> <1290975266.3292.316.camel@localhost> <1291031425.32004.16.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CF3D093.40604@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1291031425.32004.16.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:10:59AM -0500, Avi Kivity wrote:
-> On 11/29/2010 05:38 PM, Joerg Roedel wrote:
-> > Hi Avi, Hi Marcelo,
-> >
-> > this patch-set introduces a generic notion of guest-mode for VCPUs in
-> > KVM. This is already useful as seen in patch 3/3. Nested-VMX also has a
-> > guest-mode, so it will make sense for this code too.
-> >
+On Mon, Nov 29, 2010 at 12:50:25PM +0100, Peter Zijlstra wrote:
+> On Sun, 2010-11-28 at 20:14 +0000, Ben Hutchings wrote:
 > 
-> Looks good, apart from the trivial comments on patch 1.
+> > [    0.856002] Pid: 2, comm: kthreadd Not tainted 2.6.32-5-amd64 #1 W1100z/2100z
+> 
+> What's in that kernel? is that simply the latest .32-stable?
 
-Okay, I do a re-spin and fix this. Thanks for your comments.
+No, we have quite a few backported driver features and some bug fixes
+that aren't in stable yet.  No scheduler or topology changes except
+reverting 669c55e9f99b90e46eaa0f98a67ec53d46dc969a for ABI reasons
+(which I guess we don't actually need to do).
 
-	Joerg
+> > [    0.536554] CPU0 attaching sched-domain:
+> > [    0.540004]  domain 0: span 0-1 level MC
+> > [    0.548002]   groups: 0 1
+> > [    0.560003]   domain 1: span 0-3 level NODE
+> > [    0.568002]    groups:
+> > [    0.574179] ERROR: domain->cpu_power not set
+> > [    0.576002]
+> > [    0.580002] ERROR: groups don't span domain->span
+> > [    0.584004] CPU1 attaching sched-domain:
+> > [    0.588007]  domain 0: span 0-1 level MC
+> > [    0.596002]   groups: 1 0 (cpu_power = 1023)
+> > [    0.612002] ERROR: parent span is not a superset of domain->span
+> > [    0.616003]   domain 1: span 1-3 level CPU
+> > [    0.624002]    groups: 1 (cpu_power = 2048) 2-3 (cpu_power = 2048)
+> > [    0.644003]    domain 2: span 0-3 level NODE
+> > [    0.652004]     groups: 1-3 (cpu_power = 4096)
+> > [    0.668002] ERROR: domain->cpu_power not set
+> > [    0.672002]
+> > [    0.676002] ERROR: groups don't span domain->span
+> > [    0.680004] CPU2 attaching sched-domain:
+> > [    0.684003]  domain 0: span 2-3 level MC
+> > [    0.692003]   groups: 2 3
+> > [    0.704003]   domain 1: span 1-3 level CPU
+> > [    0.712003]    groups: 2-3 (cpu_power = 2048) 1 (cpu_power = 2048)
+> > [    0.736003]    domain 2: span 0-3 level NODE
+> > [    0.744003]     groups: 1-3 (cpu_power = 4096)
+> > [    0.760003] ERROR: domain->cpu_power not set
+> > [    0.764003]
+> > [    0.768003] ERROR: groups don't span domain->span
+> > [    0.772004] CPU3 attaching sched-domain:
+> > [    0.776003]  domain 0: span 2-3 level MC
+> > [    0.784003]   groups: 3 2
+> > [    0.794183]   domain 1: span 1-3 level CPU
+> > [    0.800003]    groups: 2-3 (cpu_power = 2048) 1 (cpu_power = 2048)
+> > [    0.822183]    domain 2: span 0-3 level NODE
+> > [    0.828003]     groups: 1-3 (cpu_power = 4096)
+> > [    0.842180] ERROR: domain->cpu_power not set
+> > [    0.844003]
+> > [    0.848003] ERROR: groups don't span domain->span
+> 
+> Hrm that smells like the architecture topology setup is wrecked, looks
+> like the NUMA setup is bonkers.
+[...]
+
+Right, that's what I thought.  Question is whether the topology setup
+code should fix this up or whether the schedular init should (as it
+appears to have done before 2.6.32).
+
+Ben.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
