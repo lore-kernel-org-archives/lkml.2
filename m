@@ -1,68 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab0K2OIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 09:08:37 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49310 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753599Ab0K2OIf (ORCPT
+	id S1754253Ab0K2OW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 09:22:28 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49885 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab0K2OW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 09:08:35 -0500
-Date: Mon, 29 Nov 2010 14:07:21 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: microcai@fedoraproject.org
-Cc: Lisa Milne <lisa@ltmnet.com>, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101129140721.40bbc1e8@lxorguk.ukuu.org.uk>
-In-Reply-To: <1290994083.877.13.camel@cai.gentoo>
-References: <1290941875.13526.15.camel@cai.gentoo>
-	<73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
-	<1290951770.13526.18.camel@cai.gentoo>
-	<AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
-	<20101129020610.7ea7c79e.lisa@ltmnet.com>
-	<1290961207.13526.31.camel@cai.gentoo>
-	<20101128234634.461daec4@pyx>
-	<1290994083.877.13.camel@cai.gentoo>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Nov 2010 09:22:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=S2230Ujw3x3HvHOOUMycLdQM+3boNEFu+vvvmfUXQZMzdbU55DPNiCSe3msLvypY82
+         yYxnZfWB/VyQgGStQiDpcvoKLVaTmSjpVspMxhzgpBVTUKxX4IBXLUPFyHUVLrL9gbEL
+         l0M0mcbduTlbUN4eRGZxYuohOK044cRzR7Dcw=
+Date: Mon, 29 Nov 2010 22:22:13 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, venki@google.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Do not account irq time to current task
+Message-ID: <20101129142213.GA2573@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1286237003-12406-7-git-send-email-venki@google.com>
+ <tip-305e6835e05513406fa12820e40e4a8ecb63743c@git.kernel.org>
+ <AANLkTin-U-kzr27ArR60K=eE5Jq+sPdTQ7JNhQg711c7@mail.gmail.com>
+ <1291031990.32004.24.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1291031990.32004.24.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Don't you see the cosole code ? There is TODO that say , "hey , I need
-> UNICODE support..."
+On Mon, Nov 29, 2010 at 12:59:50PM +0100, Peter Zijlstra wrote:
+> On Mon, 2010-11-29 at 16:45 +0800, Yong Zhang wrote:
+> > On Tue, Oct 19, 2010 at 3:26 AM, tip-bot for Venkatesh Pallipadi
+> > <venki@google.com> wrote:
+> > > Commit-ID:  305e6835e05513406fa12820e40e4a8ecb63743c
+> > > Gitweb:     http://git.kernel.org/tip/305e6835e05513406fa12820e40e4a8ecb63743c
+> > > Author:     Venkatesh Pallipadi <venki@google.com>
+> > > AuthorDate: Mon, 4 Oct 2010 17:03:21 -0700
+> > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > CommitDate: Mon, 18 Oct 2010 20:52:26 +0200
+> > >
+> > > sched: Do not account irq time to current task
+> > >
+> > > Scheduler accounts both softirq and interrupt processing times to the
+> > > currently running task. This means, if the interrupt processing was
+> > > for some other task in the system, then the current task ends up being
+> > > penalized as it gets shorter runtime than otherwise.
+> > >
+> > > Change sched task accounting to acoount only actual task time from
+> > > currently running task. Now update_curr(), modifies the delta_exec to
+> > > depend on rq->clock_task.
+> > >
+> > > Note that this change only handles CONFIG_IRQ_TIME_ACCOUNTING case. We can
+> > > extend this to CONFIG_VIRT_CPU_ACCOUNTING with minimal effort. But, thats
+> > > for later.
+> > >
+> > > This change will impact scheduling behavior in interrupt heavy conditions.
+> > >
+> > > Tested on a 4-way system with eth0 handled by CPU 2 and a network heavy
+> > > task (nc) running on CPU 3 (and no RSS/RFS). With that I have CPU 2
+> > > spending 75%+ of its time in irq processing. CPU 3 spending around 35%
+> > > time running nc task.
+> > >
+> > > Now, if I run another CPU intensive task on CPU 2, without this change
+> > > /proc/<pid>/schedstat shows 100% of time accounted to this task. With this
+> > > change, it rightly shows less than 25% accounted to this task as remaining
+> > > time is actually spent on irq processing.
+> > >
+> > > Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > LKML-Reference: <1286237003-12406-7-git-send-email-venki@google.com>
+> > > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > > ---
+> > >  kernel/sched.c      |   43 ++++++++++++++++++++++++++++++++++++++++---
+> > >  kernel/sched_fair.c |    6 +++---
+> > >  kernel/sched_rt.c   |    8 ++++----
+> > >  3 files changed, 47 insertions(+), 10 deletions(-)
+> > >
+> > 
+> > [snip]
+> > 
+> > > diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> > > index ab77aa0..bea7d79 100644
+> > > --- a/kernel/sched_rt.c
+> > > +++ b/kernel/sched_rt.c
+> > > @@ -609,7 +609,7 @@ static void update_curr_rt(struct rq *rq)
+> > >        if (!task_has_rt_policy(curr))
+> > >                return;
+> > >
+> > > -       delta_exec = rq->clock - curr->se.exec_start;
+> > > +       delta_exec = rq->clock_task - curr->se.exec_start;
+> > >        if (unlikely((s64)delta_exec < 0))
+> > >                delta_exec = 0;
+> > >
+> > > @@ -618,7 +618,7 @@ static void update_curr_rt(struct rq *rq)
+> > >        curr->se.sum_exec_runtime += delta_exec;
+> > >        account_group_exec_runtime(curr, delta_exec);
+> > >
+> > > -       curr->se.exec_start = rq->clock;
+> > > +       curr->se.exec_start = rq->clock_task;
+> > >        cpuacct_charge(curr, delta_exec);
+> > >
+> > >        sched_rt_avg_update(rq, delta_exec);
+> > 
+> > Seems the above changes to update_curr_rt() have some false positive
+> > to rt_bandwidth control.
+> > For example:
+> >   rt_period=1000000;
+> >   rt_runtime=950000;
+> >   then if in that period the irq_time is no zero(such as 50000), according to
+> >   the throttle mechanism, rt is not throttled. In the end we left no
+> > time to others.
+> >   It seems that this break the semantic of throttle.
+> > 
+> > Maybe we can revert the change to update_curr_rt()?
+> 
+> No, that's totally correct.
+> 
+> Its the correct and desired behaviour, IRQ time is not time spend
+> running the RT tasks, hence they should not be accounted for it.
 
-And what has happened over time is that we've learned
+Right.
 
-- that real unicode is hard
-- that some languages need very complex character handling, and this
-  happens to be most of the major non western european languages in the
-  world today
+> 
+> If you still want to throttle RT tasks simply ensure their bandwidth
+> constraint is lower than the available time.
 
-and someone put all the needed logic into pango, and people wrote fbterm
-and friends. The world has moved on
+But the available time is harder to calculated than before.
+IRQ is random, so as to the irq_time.
+But the unthrottle(do_sched_rt_period_timer()) runs in fixed
+period which is based on hard clock.
 
-> Simply drawing characters won't need any hw acceleration. It doesn't
-> matter if it is slow. KMS and Wayland will make more people work under
-> console, trust me.
+Is that what we want?
 
-No I don't trust you, sorry. You need compositing acceleration to do some
-of the character composing efficiently and to do anti-aliasing which for
-small symbols in many non western fonts is rather essential.
-
-> > Your other problem is mode setting, VESA is on its way out, a lot of
-> No, VESA will still be here for another decades. Some fb driver conflict
-
-VESA is X86 specific, PC class hardware specific and subject to various
-assumptions, when it works.
-
-No VESA on Intel MID platforms, no VESA on PPC, no VESA on Android phones
-
-> printk console , if redirect to a ttyS? , then the outer Linux world
-> terminal will do UNICODE handling. 
-
-In a window in a debug/development environment under X11 with Pango..
+Thanks,
+Yong
