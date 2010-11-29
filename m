@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab0K2RWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 12:22:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58880 "EHLO mx1.redhat.com"
+	id S1754940Ab0K2RWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 12:22:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55613 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422Ab0K2RWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 12:22:14 -0500
-Message-ID: <4CF3E13D.7040204@redhat.com>
-Date: Mon, 29 Nov 2010 19:22:05 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1752095Ab0K2RWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 12:22:51 -0500
+Date: Mon, 29 Nov 2010 18:22:46 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "R.M. Thomas" <rmthomas@sciolus.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [PATCH] staging: easycap: fix build failure
+Message-ID: <alpine.LNX.2.00.1011291813060.981@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-Subject: Re: [PATCH] Don't spam trace report about missing fields
-References: <1291047601-13879-1-git-send-email-avi@redhat.com> <1291048005.30543.731.camel@gandalf.stny.rr.com>
-In-Reply-To: <1291048005.30543.731.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 06:26 PM, Steven Rostedt wrote:
-> On Mon, 2010-11-29 at 18:20 +0200, Avi Kivity wrote:
-> >  Instead of spamming the output with complaints about missing fields, simply
-> >  return an error to the caller, which can print something out or do something
-> >  more intelligent about them.
-> >
-> >  Fixes kvm plugin tracing older kernels.
->
-> Hmm, what about just passing in err=0?
+This fixes:
 
-I was just patching the printk out it mindlessly.  Will send a new patch.
+	drivers/staging/easycap/easycap_main.c:4251:3: error: implicit declaration of function 'lock_kernel'
+	drivers/staging/easycap/easycap_main.c:4254:3: error: implicit declaration of function 'unlock_kernel'
 
+We need to include smp_lock.h in order to have BKL primitives (the driver
+already correctly depends on BKL).
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+
+Now, I really believe that this driver is completely hopeless and the only 
+option is complete from-scratch rewrite. I have been looking into it for 
+approximately ~30 seconds (solely to fix this build failure), and I really 
+don't know what to say.
+
+- what kind of super-crazy indentation does it have? Seems like it lost 
+  first level of indentation somewhere. Completely unreadable.
+- understanding what field2frame() does is probably completely hopeless 
+  effort
+- copying textual representation of errno into some buffer (just grep of 
+  errbuf) is crazy.  Fortunately, the strings are copied there and never 
+  used ... :P
+- all the SAY(), JOT() macros ... what's the point?
+- easysnd_testtone() seems to implement it's own kind of 
+  endianity-sensitive memcpy(). Why does the for(...) cycle depend on
+  PAGE_SIZE? How much memory will it corrupt on architectures with
+  larger page size than what the author had in mind?
+
+... and then I stopped reading.
+
+ drivers/staging/easycap/easycap.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/easycap/easycap.h b/drivers/staging/easycap/easycap.h
+index 25961c2..caa9298 100644
+--- a/drivers/staging/easycap/easycap.h
++++ b/drivers/staging/easycap/easycap.h
+@@ -88,6 +88,7 @@
+ #include <linux/fs.h>
+ #include <linux/delay.h>
+ #include <linux/types.h>
++#include <linux/smp_lock.h>
+ 
+ /*vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+ #if defined(EASYCAP_IS_VIDEODEV_CLIENT)
 -- 
-error compiling committee.c: too many arguments to function
+1.7.1
 
