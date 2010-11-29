@@ -1,476 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab0K2NNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 08:13:48 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:34853 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab0K2NNB (ORCPT
+	id S1754145Ab0K2NNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 08:13:14 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:48296 "EHLO
+	denmail01.apm.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754100Ab0K2NNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 08:13:01 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, eranian@google.com
-Subject: [PATCH 2/3] perf-events: Add support for supplementary event registers v4
-Date: Mon, 29 Nov 2010 14:12:53 +0100
-Message-Id: <1291036374-24710-3-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291036374-24710-1-git-send-email-andi@firstfloor.org>
-References: <1291036374-24710-1-git-send-email-andi@firstfloor.org>
+	Mon, 29 Nov 2010 08:13:12 -0500
+Date: Mon, 29 Nov 2010 18:43:01 +0530
+From: Rupjyoti Sarmah <rsarmah@amcc.com>
+Message-Id: <201011291313.oATDD1AF028975@amcc.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4] ppc44x:PHY fixup for USB on canyonlands board
+Cc: rsarmah@apm.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
 
-Intel Nehalem/Westmere have a special OFFCORE_RESPONSE event
-that can be used to monitor any offcore accesses from a core.
-This is a very useful event for various tunings, and it's
-also needed to implement the generic LLC-* events correctly.
-
-Unfortunately this event requires programming a mask in a separate
-register. And worse this separate register is per core, not per
-CPU thread.
-
-This patch adds:
-- Teaches perf_events that OFFCORE_RESPONSE needs extra parameters.
-The extra parameters are passed by user space in the unused upper
-32bits of the config word.
-- Add support to the Intel perf_event core to schedule per
-core resources. This adds fairly generic infrastructure that
-can be also used for other per core resources.
-The basic code has is patterned after the similar AMD northbridge
-constraints code.
-
-Thanks to Stephane Eranian who pointed out some problems
-in the original version and suggested improvements.
-
-Cc: eranian@google.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |   70 +++++++++++
- arch/x86/kernel/cpu/perf_event_intel.c |  198 ++++++++++++++++++++++++++++++++
- include/linux/perf_event.h             |    2 +
- 3 files changed, 270 insertions(+), 0 deletions(-)
+changes from previous version:
+-- changed the dts node names for consistency
+-- corrected the indentation pointed by Wolfgang Denk
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 817d2b1..a6754ea 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -93,6 +93,8 @@ struct amd_nb {
- 	struct event_constraint event_constraints[X86_PMC_IDX_MAX];
- };
+ arch/powerpc/boot/dts/canyonlands.dts      |   13 +++
+ arch/powerpc/platforms/44x/44x.h           |    4 +
+ arch/powerpc/platforms/44x/Makefile        |    1 +
+ arch/powerpc/platforms/44x/canyonlands.c   |  120 ++++++++++++++++++++++++++++
+ arch/powerpc/platforms/44x/ppc44x_simple.c |    1 -
+ 5 files changed, 138 insertions(+), 1 deletions(-)
+ create mode 100644 arch/powerpc/platforms/44x/canyonlands.c
+
+diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+index a303703..3c5d63c 100644
+--- a/arch/powerpc/boot/dts/canyonlands.dts
++++ b/arch/powerpc/boot/dts/canyonlands.dts
+@@ -224,6 +224,13 @@
+ 					};
+ 				};
  
-+struct intel_percore;
++				cpld@2,0 {
++					#address-cells = <1>;
++					#size-cells = <1>;
++					compatible = "amcc,ppc460ex-bcsr";
++					reg = <2 0x0 0x9>;
++				};
 +
- #define MAX_LBR_ENTRIES		16
+ 				ndfc@3,0 {
+ 					compatible = "ibm,ndfc";
+ 					reg = <0x00000003 0x00000000 0x00002000>;
+@@ -320,6 +327,12 @@
+ 				interrupts = <0x3 0x4>;
+ 			};
  
- struct cpu_hw_events {
-@@ -128,6 +130,13 @@ struct cpu_hw_events {
- 	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
- 
- 	/*
-+	 * Intel percore register state.
-+	 * Coordinate shared resources between HT threads.
-+	 */
-+	int				percore_used; /* Used by this CPU? */
-+	struct intel_percore		*per_core;
++			GPIO0: gpio@ef600b00 {
++				compatible = "ibm,ppc4xx-gpio";
++				reg = <0xef600b00 0x00000048>;
++				gpio-controller;
++			};
 +
-+	/*
- 	 * AMD specific bits
- 	 */
- 	struct amd_nb		*amd_nb;
-@@ -175,6 +184,32 @@ struct cpu_hw_events {
- #define for_each_event_constraint(e, c)	\
- 	for ((e) = (c); (e)->weight; (e)++)
+ 			ZMII0: emac-zmii@ef600d00 {
+ 				compatible = "ibm,zmii-460ex", "ibm,zmii";
+ 				reg = <0xef600d00 0x0000000c>;
+diff --git a/arch/powerpc/platforms/44x/44x.h b/arch/powerpc/platforms/44x/44x.h
+index dbc4d2b..63f703e 100644
+--- a/arch/powerpc/platforms/44x/44x.h
++++ b/arch/powerpc/platforms/44x/44x.h
+@@ -4,4 +4,8 @@
+ extern u8 as1_readb(volatile u8 __iomem  *addr);
+ extern void as1_writeb(u8 data, volatile u8 __iomem *addr);
  
++#define GPIO0_OSRH	0xC
++#define GPIO0_TSRH	0x14
++#define GPIO0_ISR1H	0x34
++
+ #endif /* __POWERPC_PLATFORMS_44X_44X_H */
+diff --git a/arch/powerpc/platforms/44x/Makefile b/arch/powerpc/platforms/44x/Makefile
+index 82ff326..6854e73 100644
+--- a/arch/powerpc/platforms/44x/Makefile
++++ b/arch/powerpc/platforms/44x/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_WARP)	+= warp.o
+ obj-$(CONFIG_XILINX_VIRTEX_5_FXT) += virtex.o
+ obj-$(CONFIG_XILINX_ML510) += virtex_ml510.o
+ obj-$(CONFIG_ISS4xx)	+= iss4xx.o
++obj-$(CONFIG_CANYONLANDS)+= canyonlands.o
+diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
+new file mode 100644
+index 0000000..4917c31
+--- /dev/null
++++ b/arch/powerpc/platforms/44x/canyonlands.c
+@@ -0,0 +1,120 @@
 +/*
-+ * Extra registers for specific events.
-+ * Some events need large masks and require external MSRs.
-+ * Define a mapping to these extra registers.
-+ * The actual contents are still encoded in unused parts of the
-+ * original config u64.
++ * This contain platform specific code for APM PPC460EX based Canyonlands
++ * board.
++ *
++ * Copyright (c) 2010, Applied Micro Circuits Corporation
++ * Author: Rupjyoti Sarmah <rsarmah@apm.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
 + */
-+struct extra_reg {
-+	unsigned int		event;
-+	unsigned int		msr;
-+	unsigned int		extra_shift;
-+	u64			config_mask;
-+	u64			valid_mask;
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <asm/pci-bridge.h>
++#include <asm/ppc4xx.h>
++#include <asm/udbg.h>
++#include <asm/uic.h>
++#include <linux/of_platform.h>
++#include <linux/delay.h>
++#include "44x.h"
++
++#define BCSR_USB_EN	0x11
++
++static __initdata struct of_device_id ppc44x_of_bus[] = {
++	{ .compatible = "ibm,plb4", },
++	{ .compatible = "ibm,opb", },
++	{ .compatible = "ibm,ebc", },
++	{ .compatible = "simple-bus", },
++	{},
 +};
 +
-+#define EVENT_EXTRA_REG(e, ms, m, vm, es) {	\
-+	.event = (e),		\
-+	.msr = (ms),		\
-+	.config_mask = (m),	\
-+	.valid_mask = (vm),	\
-+	.extra_shift = (es),	\
-+	}
-+#define INTEL_EVENT_EXTRA_REG(event, msr, vm, es)	\
-+	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm, es)
-+#define EVENT_EXTRA_END EVENT_EXTRA_REG(0, 0, 0, 0, 0)
-+
- union perf_capabilities {
- 	struct {
- 		u64	lbr_format    : 6;
-@@ -219,6 +254,7 @@ struct x86_pmu {
- 	void		(*put_event_constraints)(struct cpu_hw_events *cpuc,
- 						 struct perf_event *event);
- 	struct event_constraint *event_constraints;
-+	struct event_constraint *percore_constraints;
- 	void		(*quirks)(void);
- 	int		perfctr_second_write;
- 
-@@ -247,6 +283,11 @@ struct x86_pmu {
- 	 */
- 	unsigned long	lbr_tos, lbr_from, lbr_to; /* MSR base regs       */
- 	int		lbr_nr;			   /* hardware stack size */
-+
-+	/*
-+	 * Extra registers for events
-+	 */
-+	struct extra_reg *extra_regs;
- };
- 
- static struct x86_pmu x86_pmu __read_mostly;
-@@ -321,6 +362,33 @@ again:
- 	return new_raw_count;
- }
- 
-+/*
-+ * Find and validate any extra registers to set up.
-+ */
-+static int x86_pmu_extra_regs(u64 config, struct perf_event *event)
++static int __init ppc44x_device_probe(void)
 +{
-+	struct extra_reg *er;
-+	u64 extra;
++	of_platform_bus_probe(NULL, ppc44x_of_bus, NULL);
 +
-+	event->hw.extra_reg = 0;
-+	event->hw.extra_config = 0;
++	return 0;
++}
++machine_device_initcall(canyonlands, ppc44x_device_probe);
 +
-+	if (!x86_pmu.extra_regs)
-+		return 0;
++/* Using this code only for the Canyonlands board.  */
 +
-+	for (er = x86_pmu.extra_regs; er->msr; er++) {
-+		if (er->event != (config & er->config_mask))
-+			continue;
-+		event->hw.extra_reg = er->msr;
-+		extra = config >> er->extra_shift;
-+		if (extra & ~er->valid_mask)
-+			return -EINVAL;
-+		event->hw.extra_config = extra;
-+		break;
-+	}
++static int __init ppc44x_probe(void)
++{
++	unsigned long root = of_get_flat_dt_root();
++	if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
++		ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
++		return 1;
++		}
 +	return 0;
 +}
 +
- static atomic_t active_events;
- static DEFINE_MUTEX(pmc_reserve_mutex);
- 
-@@ -880,6 +948,8 @@ static void x86_pmu_enable(struct pmu *pmu)
- static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
- 					  u64 enable_mask)
- {
-+	if (hwc->extra_reg)
-+		wrmsrl(hwc->extra_reg, hwc->extra_config);
- 	wrmsrl(hwc->config_base + hwc->idx, hwc->config | enable_mask);
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c8f5c08..04fdcf9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1,5 +1,27 @@
- #ifdef CONFIG_CPU_SUP_INTEL
- 
-+#define MAX_EXTRA_REGS 2
++/* USB PHY fixup code on Canyonlands kit. */
 +
-+/* 
-+ * Per register state.
-+ */
-+struct er_account {
-+	int			ref;		/* reference count */
-+	unsigned int		extra_reg;	/* extra MSR number */
-+	u64			extra_config;	/* extra MSR config */
-+};
-+
-+/*
-+ * Per core state
-+ * This used to coordinate shared registers for HT threads.
-+ */
-+struct intel_percore {
-+	raw_spinlock_t		lock;		/* protect structure */
-+	struct er_account	regs[MAX_EXTRA_REGS];
-+	int			refcnt;		/* number of threads */
-+	unsigned		core_id;
-+};
-+
- /*
-  * Intel PerfMon, used on Core and later.
-  */
-@@ -64,6 +86,18 @@ static struct event_constraint intel_nehalem_event_constraints[] =
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct extra_reg intel_nehalem_extra_regs[] =
++static int __init ppc460ex_canyonlands_fixup(void)
 +{
-+	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE_0 */
-+	EVENT_EXTRA_END
-+};
++	u8 __iomem *bcsr ;
++	void __iomem *vaddr;
++	struct device_node *np;
 +
-+static struct event_constraint intel_nehalem_percore_constraints[] =
-+{
-+	INTEL_EVENT_CONSTRAINT(0xb7, 0),
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint intel_westmere_event_constraints[] =
- {
- 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-@@ -76,6 +110,20 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct extra_reg intel_westmere_extra_regs[] =
-+{
-+	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE_0 */
-+	INTEL_EVENT_EXTRA_REG(0xbb, 0x1a7, 0xffff, 32), /* OFFCORE_RESPONSE_1 */
-+	EVENT_EXTRA_END
-+};
-+
-+static struct event_constraint intel_westmere_percore_constraints[] =
-+{
-+	INTEL_EVENT_CONSTRAINT(0xb7, 0),
-+	INTEL_EVENT_CONSTRAINT(0xbb, 0),
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint intel_gen_event_constraints[] =
- {
- 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-@@ -794,6 +842,66 @@ intel_bts_constraints(struct perf_event *event)
- }
- 
- static struct event_constraint *
-+intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
-+	struct event_constraint *c;
-+	struct intel_percore *pc;
-+	struct er_account *era;
-+	int i;
-+	int free_slot;
-+	int found;
-+
-+	if (!x86_pmu.percore_constraints)
-+		return NULL;
-+
-+	for (c = x86_pmu.percore_constraints; c->cmask; c++) {
-+		if (e != c->code)
-+			continue;
-+
-+		/*
-+		 * Allocate resource per core.
-+		 */
-+		c = NULL;
-+		pc = cpuc->per_core;
-+		if (!pc)
-+			break;
-+		c = &emptyconstraint;
-+		raw_spin_lock(&pc->lock);
-+		free_slot = -1;
-+		found = 0;
-+		for (i = 0; i < MAX_EXTRA_REGS; i++) {
-+			era = &pc->regs[i];
-+			if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
-+				/* Allow sharing same config */
-+				if (hwc->extra_config == era->extra_config) {
-+					era->ref++;
-+					cpuc->percore_used = 1;
-+					c = NULL;
-+				}
-+				/* else conflict */
-+				found = 1;
-+				break;
-+			} else if (era->ref == 0 && free_slot == -1)
-+				free_slot = i;
-+		}
-+		if (!found && free_slot != -1) {
-+			era = &pc->regs[free_slot];
-+			era->ref = 1;
-+			era->extra_reg = hwc->extra_reg;
-+			era->extra_config = hwc->extra_config;
-+			cpuc->percore_used = 1;
-+			c = NULL;
-+		}
-+		raw_spin_unlock(&pc->lock);
-+		return c;
++	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
++	if (!np) {
++		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
++		return -ENODEV;
 +	}
 +
-+	return NULL;
++	bcsr = of_iomap(np, 0);
++	of_node_put(np);
++
++	if (!bcsr) {
++		printk(KERN_CRIT "Could not remap bcsr\n");
++		return -ENODEV;
++	}
++
++	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
++	vaddr = of_iomap(np, 0);
++	if (!vaddr) {
++		printk(KERN_CRIT "Could not get gpio node address\n");
++		return -ENODEV;
++	}
++	/* Disable USB, through the BCSR7 bits */
++	setbits8(&bcsr[7], BCSR_USB_EN);
++
++	/* Wait for a while after reset */
++	msleep(100);
++
++	/* Enable USB here */
++	clrbits8(&bcsr[7], BCSR_USB_EN);
++
++	/*
++	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
++	 * source after USB reset.This configuration is done through GPIO0_TSRH
++	 * and GPIO0_OSRH bits 0:1 and 6:7.
++	 */
++	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
++	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
++	of_node_put(np);
++	return 0;
 +}
-+
-+static struct event_constraint *
- intel_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- {
- 	struct event_constraint *c;
-@@ -806,9 +914,50 @@ intel_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event
- 	if (c)
- 		return c;
- 
-+	c = intel_percore_constraints(cpuc, event);
-+	if (c)
-+		return c;
-+
- 	return x86_get_event_constraints(cpuc, event);
- }
- 
-+static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
-+					struct perf_event *event)
-+{
-+	struct extra_reg *er;
-+	struct intel_percore *pc;
-+	struct er_account *era;
-+	struct hw_perf_event *hwc = &event->hw;
-+	int i, allref;
-+
-+	if (!cpuc->percore_used)
-+		return;
-+
-+	for (er = x86_pmu.extra_regs; er->msr; er++) {
-+		if (er->event != (hwc->config & er->config_mask))
-+			continue;
-+
-+		pc = cpuc->per_core;
-+		raw_spin_lock(&pc->lock);
-+		for (i = 0; i < MAX_EXTRA_REGS; i++) {
-+			era = &pc->regs[i];
-+			if (era->ref > 0 &&
-+			    era->extra_config == hwc->extra_config &&
-+			    era->extra_reg == er->msr) {
-+				era->ref--;
-+				break;
-+			}
-+		}
-+		allref = 0;
-+		for (i = 0; i < MAX_EXTRA_REGS; i++)
-+			allref += pc->regs[i].ref;
-+		if (allref == 0)
-+			cpuc->percore_used = 0;
-+		raw_spin_unlock(&pc->lock);
-+		break;
-+	}
-+}
-+
- static int intel_pmu_hw_config(struct perf_event *event)
- {
- 	int ret = x86_pmu_hw_config(event);
-@@ -854,11 +1003,43 @@ static __initconst const struct x86_pmu core_pmu = {
- 	 */
- 	.max_period		= (1ULL << 31) - 1,
- 	.get_event_constraints	= intel_get_event_constraints,
-+	.put_event_constraints	= intel_put_event_constraints,
- 	.event_constraints	= intel_core_event_constraints,
- };
- 
-+static int intel_pmu_cpu_prepare(int cpu)
-+{
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
-+	
-+	cpuc->per_core = kzalloc_node(sizeof(struct intel_percore), 
-+				      GFP_KERNEL, cpu_to_node(cpu));
-+	if (!cpuc->per_core)
-+		return NOTIFY_BAD;
-+
-+	raw_spin_lock_init(&cpuc->per_core->lock);
-+	cpuc->per_core->core_id = -1;
-+	return NOTIFY_OK;
-+}
-+
- static void intel_pmu_cpu_starting(int cpu)
- {
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
-+	int core_id = topology_core_id(cpu);
-+	int i;
-+
-+	for_each_online_cpu(i) {
-+		struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
-+
-+		if (pc && pc->core_id == core_id) {
-+			kfree(cpuc->per_core);
-+			cpuc->per_core = pc;
-+			break;
-+		}
-+	}
-+
-+	cpuc->per_core->core_id = core_id;
-+	cpuc->per_core->refcnt++;
-+
- 	init_debug_store_on_cpu(cpu);
- 	/*
- 	 * Deal with CPUs that don't clear their LBRs on power-up.
-@@ -868,6 +1049,15 @@ static void intel_pmu_cpu_starting(int cpu)
- 
- static void intel_pmu_cpu_dying(int cpu)
- {
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
-+	struct intel_percore *pc = cpuc->per_core;
-+	
-+	if (pc) {
-+		if (pc->core_id == -1 || --pc->refcnt == 0)
-+			kfree(pc);
-+		cpuc->per_core = NULL;
-+	}
-+
- 	fini_debug_store_on_cpu(cpu);
- }
- 
-@@ -892,7 +1082,9 @@ static __initconst const struct x86_pmu intel_pmu = {
- 	 */
- 	.max_period		= (1ULL << 31) - 1,
- 	.get_event_constraints	= intel_get_event_constraints,
-+	.put_event_constraints	= intel_put_event_constraints,
- 
-+	.cpu_prepare		= intel_pmu_cpu_prepare,
- 	.cpu_starting		= intel_pmu_cpu_starting,
- 	.cpu_dying		= intel_pmu_cpu_dying,
- };
-@@ -1010,7 +1202,10 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_nehalem_event_constraints;
-+		x86_pmu.percore_constraints =
-+			intel_nehalem_percore_constraints;
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
-+		x86_pmu.extra_regs = intel_nehalem_extra_regs;
- 		pr_cont("Nehalem events, ");
- 		break;
- 
-@@ -1032,7 +1227,10 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_westmere_event_constraints;
-+		x86_pmu.percore_constraints =
-+			intel_westmere_percore_constraints;
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
-+		x86_pmu.extra_regs = intel_westmere_extra_regs;
- 		pr_cont("Westmere events, ");
- 		break;
- 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index cbf04cc..7e3f231 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -529,6 +529,8 @@ struct hw_perf_event {
- 			unsigned long	event_base;
- 			int		idx;
- 			int		last_cpu;
-+			unsigned int	extra_reg;
-+			u64		extra_config;
- 		};
- 		struct { /* software */
- 			struct hrtimer	hrtimer;
++machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
++define_machine(canyonlands) {
++	.name = "Canyonlands",
++	.probe = ppc44x_probe,
++	.progress = udbg_progress,
++	.init_IRQ = uic_init_tree,
++	.get_irq = uic_get_irq,
++	.restart = ppc4xx_reset_system,
++	.calibrate_decr = generic_calibrate_decr,
++};
+diff --git a/arch/powerpc/platforms/44x/ppc44x_simple.c b/arch/powerpc/platforms/44x/ppc44x_simple.c
+index 7ddcba3..c81c19c 100644
+--- a/arch/powerpc/platforms/44x/ppc44x_simple.c
++++ b/arch/powerpc/platforms/44x/ppc44x_simple.c
+@@ -53,7 +53,6 @@ static char *board[] __initdata = {
+ 	"amcc,arches",
+ 	"amcc,bamboo",
+ 	"amcc,bluestone",
+-	"amcc,canyonlands",
+ 	"amcc,glacier",
+ 	"ibm,ebony",
+ 	"amcc,eiger",
 -- 
-1.7.1
+1.5.6.3
 
