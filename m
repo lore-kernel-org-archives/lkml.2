@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab0K2QNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:13:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754653Ab0K2QNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:13:35 -0500
-Date: Mon, 29 Nov 2010 17:11:03 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 53 of 66] add numa awareness to hugepage allocations
-Message-ID: <20101129161103.GE24474@random.random>
-References: <patchbomb.1288798055@v2.random>
- <223ee926614158fc1353.1288798108@v2.random>
- <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
+	id S1755014Ab0K2QPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:15:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59425 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949Ab0K2QPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:15:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=RpcNz8nWf9rbB4oBJSLcPYwQ7x71r2/vdVhpWtnDzykcQ9tlgu5n6qSZd1Td9U2taD
+         Sb8CZewBtCPY1aDmgRVIozY9Im2CCZRW2261o0TBNDzJd/f8lSwBMRO1IPZRQG2dkX4G
+         Ab5wwZFcGhB/POUjyerLMc3Wk6nAxqT93q5fE=
+Message-ID: <4CF3D182.8090907@doube.net>
+Date: Mon, 29 Nov 2010 16:14:58 +0000
+From: Michael Doube <michael@doube.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        "Rafael J. Wysocki" <rjw@suse.com>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [REGRESSION] Suspend fails because of TPM modules
+References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 02:38:01PM +0900, Daisuke Nishimura wrote:
-> I think this should be:
-> 
-> 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
-> #ifdef CONFIG_NUMA
-> 		put_page(new_page);
-> #endif
-> 		goto out;
-> 	}
 
-Hmm no, the change you suggest would generate memory corruption with
-use after free.
+> I just found out, that if I modprobe tpm_tis module with
+> 
+> 	itpm=1
+> 
+> parameter, the problem doesn't happen any more and suspend works fine.
+
+Not here unfortunately. Suspend still fails with itpm=1, and I get this
+in my logs
+
+Nov 29 15:52:32 doris kernel: [  649.110527] resource map sanity check
+conflict: 0xfed40000 0xfed44fff 0xfed43000 0xfed43fff Intel Flush Page
+Nov 29 15:52:32 doris kernel: [  649.110923] tpm_tis 00:09: 1.2 TPM
+(device-id 0xB, rev-id 16)
+Nov 29 15:52:32 doris kernel: [  649.110929] tpm_tis 00:09: Intel iTPM
+workaround enabled
+Nov 29 15:54:34 doris kernel: [  771.360067] tpm_tis 00:09:
+tpm_transmit: tpm_send: error -62
+
+Also, this patch:
+http://marc.info/?l=linux-kernel&m=128769741101534&w=2
+
+Looks for a string that is absent from my Vaio SZ650, so the workaround
+is not applied (and if it was, it probably wouldn't work, right?).
+
+I posted my DSDT to bugzilla:
+https://bugzilla.kernel.org/attachment.cgi?id=38072
+
+Michael
