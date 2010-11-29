@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab0K2HZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 02:25:30 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:32794 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754780Ab0K2HZ2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 02:25:28 -0500
-From: Peppe CAVALLARO <peppe.cavallaro@st.com>
-To: David Miller <davem@davemloft.net>
-Cc: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 29 Nov 2010 08:25:05 +0100
-Subject: Re: linux-next: build failure after merge of the net tree
-Thread-Topic: linux-next: build failure after merge of the net tree
-Thread-Index: AcuPlou/0BXe0VYuTSmlSNJe3QQ4Yw==
-Message-ID: <4CF35551.40201@st.com>
-References: <20101129110824.639b2659.sfr@canb.auug.org.au>
- <20101128.181134.104049260.davem@davemloft.net>
-In-Reply-To: <20101128.181134.104049260.davem@davemloft.net>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-enigmail-version: 1.1.1
-user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.12)
- Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-openpgp: url=wwwkeys.bri.st.com
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1755077Ab0K2H34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 02:29:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:17302 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754873Ab0K2H3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 02:29:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
+   d="scan'208";a="578488523"
+Date: Mon, 29 Nov 2010 15:29:51 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v2 2/3] move ClearPageReclaim
+Message-ID: <20101129072951.GA22803@localhost>
+References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
+ <c3b1c78f0e2eba5dfebda7c363c4274e649ab36a.1290956059.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c3b1c78f0e2eba5dfebda7c363c4274e649ab36a.1290956059.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 3:11 AM, David Miller wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 29 Nov 2010 11:08:24 +1100
->
-> > Hi all,
-> >
-> > After merging the net tree, today's linux-next build (x86_64
-> allmodconfig)
-> > failed like this:
-> >
-> > drivers/net/stmmac/stmmac_main.c: In function 'stmmac_resume':
-> > drivers/net/stmmac/stmmac_main.c:1849: error: 'struct stmmac_priv'
-> has no member named 'shutdown'
-> >
-> > Caused by commit 874bd42d24c2a74f5dbd65e81e175982240fecd8 ("stmmac:
-> > convert to dev_pm_ops").
-> >
->
+On Sun, Nov 28, 2010 at 11:02:56PM +0800, Minchan Kim wrote:
+> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+> preventing fast reclaiming readahead marker page.
+> 
+> In this series, PG_reclaim is used by invalidated page, too.
+> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+> to reclaim asap. Then, when the dirty page will be writeback,
+> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+> It disturbs this serie's goal.
+> 
+> I think it's okay to clear PG_readahead when the page is dirty, not
+> writeback time. So this patch moves ClearPageReadahead.
+> This patch needs Wu's opinion.
 
-Yes, this was my fault.
+It's a safe change. The possibility and consequence of races are both
+small enough. However the patch could be simplified as follows?
 
-> > I have used the net tree from next-20101126 for today.
->
-> I have pushed the following fix which should cure this:
->
-> --------------------
-> stmmac: fix stmmac_resume removing not yet used shutdown flag
->
+Thanks,
+Fengguang
+---
 
-The patch, David already applied, fixes this problem.
-
-Peppe
-
-> The commit to convert to use the dev_pm_ops struct
-> introduces a bug. The shutdown flag is not yet used
-> because the hibernation on memory is done by using
-> the freeze callback.
-> Thanks to Vlad for having reported it.
->
-> Reported-by: Vlad Lungu <vlad.lungu@windriver.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> ---
->  drivers/net/stmmac/stmmac_main.c |    7 -------
->  1 files changed, 0 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/net/stmmac/stmmac_main.c
-> b/drivers/net/stmmac/stmmac_main.c
-> index f1dbc18..730a6fd 100644
-> --- a/drivers/net/stmmac/stmmac_main.c
-> +++ b/drivers/net/stmmac/stmmac_main.c
-> @@ -1846,13 +1846,6 @@ static int stmmac_resume(struct device *dev)
->         if (!netif_running(ndev))
->                 return 0;
->
-> -       if (priv->shutdown) {
-> -               /* Re-open the interface and re-init the MAC/DMA
-> -                  and the rings (i.e. on hibernation stage) */
-> -               stmmac_open(dev);
-> -               return 0;
-> -       }
-> -
->         spin_lock(&priv->lock);
->
->         /* Power Down bit, into the PM register, is cleared
-> --
-> 1.7.3.2
->
+--- linux-next.orig/mm/page-writeback.c	2010-11-29 15:14:54.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-11-29 15:15:02.000000000 +0800
+@@ -1330,6 +1330,7 @@ int set_page_dirty(struct page *page)
+ {
+ 	struct address_space *mapping = page_mapping(page);
+ 
++	ClearPageReclaim(page);
+ 	if (likely(mapping)) {
+ 		int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
+ #ifdef CONFIG_BLOCK
+@@ -1387,7 +1388,6 @@ int clear_page_dirty_for_io(struct page 
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+-	ClearPageReclaim(page);
+ 	if (mapping && mapping_cap_account_dirty(mapping)) {
+ 		/*
+ 		 * Yes, Virginia, this is indeed insane.
