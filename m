@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0K2GvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 01:51:01 -0500
-Received: from freeflow.nu ([178.79.134.28]:60167 "EHLO freeflow.nu"
+	id S1754706Ab0K2HD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 02:03:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:52747 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab0K2GvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 01:51:00 -0500
-Message-ID: <4CF34D54.60602@kernel.org>
-Date: Mon, 29 Nov 2010 08:51:00 +0200
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Lars Lindley <lindley@coyote.org>
-CC: gregkh@suse.de, sankar.curiosity@gmail.com, ruslan@rpisarev.org.ua,
-        adam.latham@unisontorbay.org.uk, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: Coding style fixes in mac_structures.h
-References: <1290984966-23571-1-git-send-email-lindley@coyote.org>
-In-Reply-To: <1290984966-23571-1-git-send-email-lindley@coyote.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751275Ab0K2HD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 02:03:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
+   d="scan'208";a="354286236"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH -v6 0/3] Lockless memory allocator and list
+Date: Mon, 29 Nov 2010 15:03:18 +0800
+Message-Id: <1291014201-15513-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/10 12:56 AM, Lars Lindley wrote:
-> I fixed whitespace and indentation. I removed versioning comments
-> and "commented away" code.
-> Signed-off-by: Lars Lindley<lindley@coyote.org>
+This patchset adds a lockless memory allocator and a lock-less
+list.
 
-Heh, I nuked most of that code in a patch series I sent few hours before 
-you sent this patch.
+v6:
 
-             Pekka
+- Revise ARCH_HAVE_NMI_SAFE_CMPXCHG definition for some architectures
+  according to architecture maitainers' comments.
+
+v5:
+
+- Add ARCH_HAVE_NMI_SAFE_CMPXCHG
+- Add spin_trylock_irqsave based fallback in lockless memory allocator
+  if ARCH_HAVE_NMI_SAFE_CMPXCHG=n
+- Make lockless list depends on ARCH_HAVE_NMI_SAFE_CMPXCHG
+
+v4:
+
+- Split from APEI patchset
+- Update patch description and comments according to ML comments
+
+v3:
+
+- Rework lockless memory allocator and list according to ML comments
+
+[PATCH -v6 1/3] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+[PATCH -v6 2/3] lib, Make gen_pool memory allocator lockless
+[PATCH -v6 3/3] lib, Add lock-less NULL terminated single list
