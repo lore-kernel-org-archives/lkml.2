@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab0K2IpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:45:16 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53460 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab0K2IpP convert rfc822-to-8bit (ORCPT
+	id S1751658Ab0K2IsF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:48:05 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:42513 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab0K2IsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:45:15 -0500
+	Mon, 29 Nov 2010 03:48:02 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wkNTbiQunOk5IT+7xgalBnaSMwmiElQkhgyrnfhPDGrffDrNQW9BZUMcmRtat0fGJV
-         IYBQ/PzTmfld3P3Cw/qwmrTmR02CwMkh8FAVRvKL7r0hI3TqcqIffBwhWXGrxhHsXbSR
-         VOnCPYuidZSjIe3h3vwk9Pw3nRuclUc1f2xz0=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=vK3dOtSHQb8z+y6gHHqRURSEm+/iOjyHcr/w5+JLYlvynPofx+SJpsOWLvoj6I8Tb2
+         MiGGLgiKNuW98b6OHI+Cx3t4Wc4aFeUJ71291Ta272yW+B/pVtRtHosiOD8Op0lmwcjg
+         Hg+ktM4jLf1pqqgMOFk4fhmvSQ3RHqAX3EdJM=
+Date: Mon, 29 Nov 2010 16:52:50 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, gdb@sourceware.org,
+        hellogcc@freelists.org
+Subject: Re: [PATCH] Built kernel without -O2 option
+Message-ID: <20101129085250.GF5218@cr0.nay.redhat.com>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
+ <20101129081619.GD5218@cr0.nay.redhat.com>
+ <AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <tip-305e6835e05513406fa12820e40e4a8ecb63743c@git.kernel.org>
-References: <1286237003-12406-7-git-send-email-venki@google.com>
-	<tip-305e6835e05513406fa12820e40e4a8ecb63743c@git.kernel.org>
-Date: Mon, 29 Nov 2010 16:45:12 +0800
-Message-ID: <AANLkTin-U-kzr27ArR60K=eE5Jq+sPdTQ7JNhQg711c7@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched: Do not account irq time to current task
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
-        mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 3:26 AM, tip-bot for Venkatesh Pallipadi
-<venki@google.com> wrote:
-> Commit-ID:  305e6835e05513406fa12820e40e4a8ecb63743c
-> Gitweb:     http://git.kernel.org/tip/305e6835e05513406fa12820e40e4a8ecb63743c
-> Author:     Venkatesh Pallipadi <venki@google.com>
-> AuthorDate: Mon, 4 Oct 2010 17:03:21 -0700
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 18 Oct 2010 20:52:26 +0200
+On Mon, Nov 29, 2010 at 04:24:42PM +0800, Hui Zhu wrote:
+>On Mon, Nov 29, 2010 at 16:16, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+>> On Mon, Nov 29, 2010 at 11:56:15AM +0800, Hui Zhu wrote:
+>>>Hi,
+>>>
+>>>Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>>>qemu, kgtp or kgdb and so on.
+>>>But the developer more like add a printk. It have a lot of reason, a big one is:
+>>>(gdb) p ret
+>>>$3 = <value optimized out>
+>>>And the code execution order is not right.
+>>>
+>>>This is becuase the Kernel is bult with gcc -O2.  Gcc will not
+>>>generate enough debug message with file with -O2.
+>>>So GDB cannot work very well with Linux kernel.
+>>>
+>>>So I make a patch that add a option in "Kernel hacking" called "Close
+>>>GCC optimization".  It will make kernel be built without -O2.
+>>>
+>>>I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
+>>>
+>>
+>> The problem is that some functions _have to_ be inlined and gcc without -O2
+>> doesn't inline them. Have check all the cases? I doubt.
 >
-> sched: Do not account irq time to current task
+>If they really need O2, I set  them to O2.
+>Actually, this is the main work, find out the file that need the O2.  :)
 >
-> Scheduler accounts both softirq and interrupt processing times to the
-> currently running task. This means, if the interrupt processing was
-> for some other task in the system, then the current task ends up being
-> penalized as it gets shorter runtime than otherwise.
->
-> Change sched task accounting to acoount only actual task time from
-> currently running task. Now update_curr(), modifies the delta_exec to
-> depend on rq->clock_task.
->
-> Note that this change only handles CONFIG_IRQ_TIME_ACCOUNTING case. We can
-> extend this to CONFIG_VIRT_CPU_ACCOUNTING with minimal effort. But, thats
-> for later.
->
-> This change will impact scheduling behavior in interrupt heavy conditions.
->
-> Tested on a 4-way system with eth0 handled by CPU 2 and a network heavy
-> task (nc) running on CPU 3 (and no RSS/RFS). With that I have CPU 2
-> spending 75%+ of its time in irq processing. CPU 3 spending around 35%
-> time running nc task.
->
-> Now, if I run another CPU intensive task on CPU 2, without this change
-> /proc/<pid>/schedstat shows 100% of time accounted to this task. With this
-> change, it rightly shows less than 25% accounted to this task as remaining
-> time is actually spent on irq processing.
->
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <1286237003-12406-7-git-send-email-venki@google.com>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  kernel/sched.c      |   43 ++++++++++++++++++++++++++++++++++++++++---
->  kernel/sched_fair.c |    6 +++---
->  kernel/sched_rt.c   |    8 ++++----
->  3 files changed, 47 insertions(+), 10 deletions(-)
->
+>For example:
+>ifdef CONFIG_CC_CLOSE_OPTIMIZATION
+>CFLAGS_fpu.o                           += -O2
+>CFLAGS_aesni-intel_glue.o              += -O2
+>CFLAGS_ghash-clmulni-intel_glue.o      += -O2
+>endif
 
-[snip]
+No, I didn't mean this, I meant some function that have to be inlined
+are those who only work when being inlined, e.g. current_text_addr().
 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index ab77aa0..bea7d79 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -609,7 +609,7 @@ static void update_curr_rt(struct rq *rq)
->        if (!task_has_rt_policy(curr))
->                return;
->
-> -       delta_exec = rq->clock - curr->se.exec_start;
-> +       delta_exec = rq->clock_task - curr->se.exec_start;
->        if (unlikely((s64)delta_exec < 0))
->                delta_exec = 0;
->
-> @@ -618,7 +618,7 @@ static void update_curr_rt(struct rq *rq)
->        curr->se.sum_exec_runtime += delta_exec;
->        account_group_exec_runtime(curr, delta_exec);
->
-> -       curr->se.exec_start = rq->clock;
-> +       curr->se.exec_start = rq->clock_task;
->        cpuacct_charge(curr, delta_exec);
->
->        sched_rt_avg_update(rq, delta_exec);
+I think it is not alone. :)
 
-Seems the above changes to update_curr_rt() have some false positive
-to rt_bandwidth control.
-For example:
-  rt_period=1000000;
-  rt_runtime=950000;
-  then if in that period the irq_time is no zero(such as 50000), according to
-  the throttle mechanism, rt is not throttled. In the end we left no
-time to others.
-  It seems that this break the semantic of throttle.
+Also, since many inline functions sit in hot-path, are there any
+performance regressions with your patch applied?
 
-Maybe we can revert the change to update_curr_rt()?
-
-Thanks,
-Yong
+BTW, you need to Cc kbuild for makefile changes like this.
