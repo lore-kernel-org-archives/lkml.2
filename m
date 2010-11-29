@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab0K2QxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:53:04 -0500
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:46961
-	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755129Ab0K2QxC (ORCPT
+	id S1755318Ab0K2QxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:53:21 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:20649
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755155Ab0K2QxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:53:02 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i691h668h67dh61h)
-X-Spam-TCS-SCL: 0:0
+	Mon, 29 Nov 2010 11:53:15 -0500
+X-SpamScore: 5
+X-BigFish: VPS5(z1039ozbb2cKzz1202hzz8275bhz32i691h668h67dh63h)
+X-Spam-TCS-SCL: 2:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCNO6L-01-CRZ-02
+X-WSS-ID: 0LCNO6M-01-CS2-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 3/3] KVM: X86: Don't report L2 emulation failures to user-space
-Date: Mon, 29 Nov 2010 17:51:49 +0100
-Message-ID: <1291049509-3430-4-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 2/3] KVM: SVM: Make Use of the generic guest-mode functions
+Date: Mon, 29 Nov 2010 17:51:48 +0100
+Message-ID: <1291049509-3430-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <4CF3D093.40604@redhat.com>
 References: <4CF3D093.40604@redhat.com>
@@ -30,48 +30,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prevents that emulation failures which result
-from emulating an instruction for an L2-Guest results in
-being reported to userspace.
-Without this patch a malicious L2-Guest would be able to
-kill the L1 by triggering a race-condition between an vmexit
-and the instruction emulator.
-With this patch the L2 will most likely only kill itself in
-this situation.
+This patch replaces the is_nested logic in the SVM module
+with the generic notion of guest-mode.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/x86.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+ arch/x86/kvm/svm.c |   44 +++++++++++++++++++++-----------------------
+ 1 files changed, 21 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 410d2d1..4337a8b 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4320,13 +4320,19 @@ EXPORT_SYMBOL_GPL(kvm_inject_realmode_interrupt);
- 
- static int handle_emulation_failure(struct kvm_vcpu *vcpu)
- {
-+	int r = EMULATE_DONE;
-+
- 	++vcpu->stat.insn_emulation_fail;
- 	trace_kvm_emulate_insn_failed(vcpu);
--	vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
--	vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_EMULATION;
--	vcpu->run->internal.ndata = 0;
-+	if (!is_guest_mode(vcpu)) {
-+		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
-+		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_EMULATION;
-+		vcpu->run->internal.ndata = 0;
-+		r = EMULATE_FAIL;
-+	}
- 	kvm_queue_exception(vcpu, UD_VECTOR);
--	return EMULATE_FAIL;
-+
-+	return r;
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 2fd2f4d..bff391e 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -192,11 +192,6 @@ static inline struct vcpu_svm *to_svm(struct kvm_vcpu *vcpu)
+ 	return container_of(vcpu, struct vcpu_svm, vcpu);
  }
  
- static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
+-static inline bool is_nested(struct vcpu_svm *svm)
+-{
+-	return svm->nested.vmcb;
+-}
+-
+ static inline void enable_gif(struct vcpu_svm *svm)
+ {
+ 	svm->vcpu.arch.hflags |= HF_GIF_MASK;
+@@ -727,7 +722,7 @@ static void svm_write_tsc_offset(struct kvm_vcpu *vcpu, u64 offset)
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	u64 g_tsc_offset = 0;
+ 
+-	if (is_nested(svm)) {
++	if (is_guest_mode(vcpu)) {
+ 		g_tsc_offset = svm->vmcb->control.tsc_offset -
+ 			       svm->nested.hsave->control.tsc_offset;
+ 		svm->nested.hsave->control.tsc_offset = offset;
+@@ -741,7 +736,7 @@ static void svm_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+ 	svm->vmcb->control.tsc_offset += adjustment;
+-	if (is_nested(svm))
++	if (is_guest_mode(vcpu))
+ 		svm->nested.hsave->control.tsc_offset += adjustment;
+ }
+ 
+@@ -1209,7 +1204,7 @@ static void update_cr0_intercept(struct vcpu_svm *svm)
+ 	if (gcr0 == *hcr0 && svm->vcpu.fpu_active) {
+ 		vmcb->control.intercept_cr_read &= ~INTERCEPT_CR0_MASK;
+ 		vmcb->control.intercept_cr_write &= ~INTERCEPT_CR0_MASK;
+-		if (is_nested(svm)) {
++		if (is_guest_mode(&svm->vcpu)) {
+ 			struct vmcb *hsave = svm->nested.hsave;
+ 
+ 			hsave->control.intercept_cr_read  &= ~INTERCEPT_CR0_MASK;
+@@ -1220,7 +1215,7 @@ static void update_cr0_intercept(struct vcpu_svm *svm)
+ 	} else {
+ 		svm->vmcb->control.intercept_cr_read |= INTERCEPT_CR0_MASK;
+ 		svm->vmcb->control.intercept_cr_write |= INTERCEPT_CR0_MASK;
+-		if (is_nested(svm)) {
++		if (is_guest_mode(&svm->vcpu)) {
+ 			struct vmcb *hsave = svm->nested.hsave;
+ 
+ 			hsave->control.intercept_cr_read |= INTERCEPT_CR0_MASK;
+@@ -1233,7 +1228,7 @@ static void svm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+-	if (is_nested(svm)) {
++	if (is_guest_mode(vcpu)) {
+ 		/*
+ 		 * We are here because we run in nested mode, the host kvm
+ 		 * intercepts cr0 writes but the l1 hypervisor does not.
+@@ -1471,7 +1466,7 @@ static void svm_fpu_activate(struct kvm_vcpu *vcpu)
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	u32 excp;
+ 
+-	if (is_nested(svm)) {
++	if (is_guest_mode(vcpu)) {
+ 		u32 h_excp, n_excp;
+ 
+ 		h_excp  = svm->nested.hsave->control.intercept_exceptions;
+@@ -1700,7 +1695,7 @@ static int nested_svm_check_exception(struct vcpu_svm *svm, unsigned nr,
+ {
+ 	int vmexit;
+ 
+-	if (!is_nested(svm))
++	if (!is_guest_mode(&svm->vcpu))
+ 		return 0;
+ 
+ 	svm->vmcb->control.exit_code = SVM_EXIT_EXCP_BASE + nr;
+@@ -1718,7 +1713,7 @@ static int nested_svm_check_exception(struct vcpu_svm *svm, unsigned nr,
+ /* This function returns true if it is save to enable the irq window */
+ static inline bool nested_svm_intr(struct vcpu_svm *svm)
+ {
+-	if (!is_nested(svm))
++	if (!is_guest_mode(&svm->vcpu))
+ 		return true;
+ 
+ 	if (!(svm->vcpu.arch.hflags & HF_VINTR_MASK))
+@@ -1757,7 +1752,7 @@ static inline bool nested_svm_intr(struct vcpu_svm *svm)
+ /* This function returns true if it is save to enable the nmi window */
+ static inline bool nested_svm_nmi(struct vcpu_svm *svm)
+ {
+-	if (!is_nested(svm))
++	if (!is_guest_mode(&svm->vcpu))
+ 		return true;
+ 
+ 	if (!(svm->nested.intercept & (1ULL << INTERCEPT_NMI)))
+@@ -1994,7 +1989,8 @@ static int nested_svm_vmexit(struct vcpu_svm *svm)
+ 	if (!nested_vmcb)
+ 		return 1;
+ 
+-	/* Exit nested SVM mode */
++	/* Exit Guest-Mode */
++	leave_guest_mode(&svm->vcpu);
+ 	svm->nested.vmcb = 0;
+ 
+ 	/* Give the current vmcb to the guest */
+@@ -2302,7 +2298,9 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
+ 
+ 	nested_svm_unmap(page);
+ 
+-	/* nested_vmcb is our indicator if nested SVM is activated */
++	/* Enter Guest-Mode */
++	enter_guest_mode(&svm->vcpu);
++
+ 	svm->nested.vmcb = vmcb_gpa;
+ 
+ 	enable_gif(svm);
+@@ -2588,7 +2586,7 @@ static int svm_get_msr(struct kvm_vcpu *vcpu, unsigned ecx, u64 *data)
+ 	case MSR_IA32_TSC: {
+ 		u64 tsc_offset;
+ 
+-		if (is_nested(svm))
++		if (is_guest_mode(vcpu))
+ 			tsc_offset = svm->nested.hsave->control.tsc_offset;
+ 		else
+ 			tsc_offset = svm->vmcb->control.tsc_offset;
+@@ -3002,7 +3000,7 @@ static int handle_exit(struct kvm_vcpu *vcpu)
+ 		return 1;
+ 	}
+ 
+-	if (is_nested(svm)) {
++	if (is_guest_mode(vcpu)) {
+ 		int vmexit;
+ 
+ 		trace_kvm_nested_vmexit(svm->vmcb->save.rip, exit_code,
+@@ -3109,7 +3107,7 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+-	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
++	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
+ 		return;
+ 
+ 	if (irr == -1)
+@@ -3163,7 +3161,7 @@ static int svm_interrupt_allowed(struct kvm_vcpu *vcpu)
+ 
+ 	ret = !!(vmcb->save.rflags & X86_EFLAGS_IF);
+ 
+-	if (is_nested(svm))
++	if (is_guest_mode(vcpu))
+ 		return ret && !(svm->vcpu.arch.hflags & HF_VINTR_MASK);
+ 
+ 	return ret;
+@@ -3220,7 +3218,7 @@ static inline void sync_cr8_to_lapic(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+-	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
++	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
+ 		return;
+ 
+ 	if (!(svm->vmcb->control.intercept_cr_write & INTERCEPT_CR8_MASK)) {
+@@ -3234,7 +3232,7 @@ static inline void sync_lapic_to_cr8(struct kvm_vcpu *vcpu)
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	u64 cr8;
+ 
+-	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
++	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
+ 		return;
+ 
+ 	cr8 = kvm_get_cr8(vcpu);
+@@ -3614,7 +3612,7 @@ static void svm_fpu_deactivate(struct kvm_vcpu *vcpu)
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+ 	svm->vmcb->control.intercept_exceptions |= 1 << NM_VECTOR;
+-	if (is_nested(svm))
++	if (is_guest_mode(vcpu))
+ 		svm->nested.hsave->control.intercept_exceptions |= 1 << NM_VECTOR;
+ 	update_cr0_intercept(svm);
+ }
 -- 
 1.7.1
 
