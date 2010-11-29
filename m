@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab0K2Qrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:47:53 -0500
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:29843 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab0K2Qrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:47:52 -0500
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.59,276,1288569600"; 
-   d="scan'208";a="627657212"
-From: David Ahern <daahern@cisco.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <daahern@cisco.com>
-Subject: [PATCH] Allow user to specify path to kallsyms file
-Date: Mon, 29 Nov 2010 09:47:40 -0700
-Message-Id: <1291049260-8098-1-git-send-email-daahern@cisco.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1755175Ab0K2QvC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:51:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754990Ab0K2QvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:51:00 -0500
+Date: Mon, 29 Nov 2010 17:43:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 4/4] taskstats: Export "cdata_acct" with taskstats
+Message-ID: <20101129164329.GA16648@redhat.com>
+References: <20101119201108.269346583@linux.vnet.ibm.com> <20101119201144.871656307@linux.vnet.ibm.com> <20101125132639.GB25836@redhat.com> <1290705675.1941.73.camel@holzheu-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290705675.1941.73.camel@holzheu-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful for analyzing a perf data file on a different system
-than the one data was collected on and still include symbols from
-loaded kernel modules in the output.
+On 11/25, Michael Holzheu wrote:
+>
+> Hello Oleg,
+>
+> On Thu, 2010-11-25 at 14:26 +0100, Oleg Nesterov wrote:
+> > On 11/19, Michael Holzheu wrote:
+> > >
+> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > >
+> > > With this patch the (full) cumulative CPU time is added to "struct taskstats".
+> > > The CPU time is only returned for the thread group leader.
+> > >
+> > > ...
+> > >
+> > > +	if (tsk->tgid == tsk->pid
+> >
+> > thread_group_leader() ?
+>
+> Yes, that's better.
+>
+> > > && lock_task_sighand(tsk, &flags)) {
+> >
+> > Do you really need ->siglock? Starting from 2.6.35 it is always
+> > safe to access ->signal.
+>
+> Hmmm, if you say that...
+>
+> I just did it like it is done in e.g. fs/proc/base.c (proc_pid_limits).
+> Can we remove the locking there, too?
 
-Signed-off-by: David Ahern <daahern@cisco.com>
----
- tools/perf/builtin-report.c |    2 ++
- tools/perf/util/symbol.c    |    9 +++++++--
- tools/perf/util/symbol.h    |    1 +
- 3 files changed, 10 insertions(+), 2 deletions(-)
+We can certainly remove more siglock's which were previously
+needed to access ->signal.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5de405d..b0c6995 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -442,6 +442,8 @@ static const struct option options[] = {
- 		    "dump raw trace in ASCII"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-+	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
-+		   "file", "kallsyms pathname"),
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
- 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
- 		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index a348906..f40c076 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1830,8 +1830,8 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
- 	const char *kallsyms_filename = NULL;
- 	char *kallsyms_allocated_filename = NULL;
- 	/*
--	 * Step 1: if the user specified a vmlinux filename, use it and only
--	 * it, reporting errors to the user if it cannot be used.
-+	 * Step 1: if the user specified a kallsyms or vmlinux filename, use
-+	 * it and only it, reporting errors to the user if it cannot be used.
- 	 *
- 	 * For instance, try to analyse an ARM perf.data file _without_ a
- 	 * build-id, or if the user specifies the wrong path to the right
-@@ -1844,6 +1844,11 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
- 	 * validation in dso__load_vmlinux and will bail out if they don't
- 	 * match.
- 	 */
-+	if (symbol_conf.kallsyms_name != NULL) {
-+		kallsyms_filename = symbol_conf.kallsyms_name;
-+		goto do_kallsyms;
-+	}
-+
- 	if (symbol_conf.vmlinux_name != NULL) {
- 		err = dso__load_vmlinux(self, map,
- 					symbol_conf.vmlinux_name, filter);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 038f220..12defbe 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -72,6 +72,7 @@ struct symbol_conf {
- 			show_cpu_utilization,
- 			initialized;
- 	const char	*vmlinux_name,
-+			*kallsyms_name,
- 			*source_prefix,
- 			*field_sep;
- 	const char	*default_guest_vmlinux_name,
--- 
-1.7.2.3
+This particular one is just wrong. We need task_lock(group_leader)
+to read signal->rlim atomically. However, it is not trivial to do
+this correctly. Probably we should ignore this minor problem.
+
+In any case, this ->siglock buys nothing today.
+
+Oleg.
 
