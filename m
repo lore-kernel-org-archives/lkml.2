@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab0K2Fpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 00:45:35 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:40585 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751177Ab0K2Fpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 00:45:34 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18S/GY5Vk4SdIW3RNj/aoVwUbusLoQ7YL0r/4fKxa
-	ELI8iwRtobSQ0R
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
-References: <20101121133744.GA10765@elte.hu>
-	 <1290700829.4759.16.camel@maggy.simson.net>
-	 <1290954299.30515.15.camel@marge.simson.net>
-	 <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
-Content-Type: text/plain
-Date: Mon, 29 Nov 2010 06:45:28 +0100
-Message-Id: <1291009528.9082.8.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1752356Ab0K2FrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 00:47:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab0K2Fq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 00:46:59 -0500
+Subject: [PATCH] vhost: correctly set bits of dirty pages
+To: virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Date: Mon, 29 Nov 2010 13:48:20 +0800
+Message-ID: <20101129054819.24923.26439.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-28 at 11:31 -0800, Linus Torvalds wrote:
-> On Sun, Nov 28, 2010 at 6:24 AM, Mike Galbraith <efault@gmx.de> wrote:
-> >
-> > Something else is seriously wrong though.  36.1 with attached (plus
-> > sched, cgroup: Fixup broken cgroup movement) works a treat, whereas
-> > 37.git and tip with fixlet below both suck rocks.  With a make -j40
-> > running, wakeup-latency is showing latencies of >100ms, amarok skips,
-> > mouse lurches badly.. generally horrid.  Something went south.
-> 
-> Can you test -rc3? Is that still ok? And are you perhaps using
-> Nouveau? There's a report of some graphics (?) regression since -rc3
-> about bad desktop performance:
+When counting pages we should increase it by 1 instead of VHOST_PAGE_SIZE,
+and also make log_write() can correctly process the request across
+pages with write_address not start at page boundary.
 
-No Nouveau here, plain old boring nv.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/vhost.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
->    https://bugzilla.kernel.org/show_bug.cgi?id=23912
-> 
-> but it doesn't have any more information yet (so if -rc3 _is_ good for
-> you, and you can add anything to that report, it would be good. The
-> original reporter is hopefully bisecting it now)
-
-I'll hunt as soon as I can (inbox runneth over).
-
-	-Mike
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index a29d91c..576300b 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -884,23 +884,21 @@ static int set_bit_to_user(int nr, void __user *addr)
+ static int log_write(void __user *log_base,
+ 		     u64 write_address, u64 write_length)
+ {
+-	int r;
+-	if (!write_length)
+-		return 0;
+-	write_address /= VHOST_PAGE_SIZE;
+-	for (;;) {
++	int r = 0;
++	while (write_length > 0) {
++		u64 l = VHOST_PAGE_SIZE - write_address % VHOST_PAGE_SIZE;
++		u64 write_page = write_address / VHOST_PAGE_SIZE;
+ 		u64 base = (u64)(unsigned long)log_base;
+-		u64 log = base + write_address / 8;
+-		int bit = write_address % 8;
++		u64 log = base + write_page / 8;
++		int bit = write_page % 8;
+ 		if ((u64)(unsigned long)log != log)
+ 			return -EFAULT;
+ 		r = set_bit_to_user(bit, (void __user *)(unsigned long)log);
+ 		if (r < 0)
+ 			return r;
+-		if (write_length <= VHOST_PAGE_SIZE)
+-			break;
+-		write_length -= VHOST_PAGE_SIZE;
+-		write_address += VHOST_PAGE_SIZE;
++		l = min(l, write_length);
++		write_length -= l;
++		write_address += l;
+ 	}
+ 	return r;
+ }
 
