@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab0K2WXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 17:23:51 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:60751 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab0K2WXu (ORCPT
+	id S1754756Ab0K2W07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 17:26:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61704 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab0K2W06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 17:23:50 -0500
-Date: Mon, 29 Nov 2010 17:23:42 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Greg KH <greg@kroah.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Kyle McMartin <kyle@mcmartin.ca>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2 1/2] TTY: don't allow reopen when ldisc is changing
-Message-ID: <20101129222342.GL15818@bombadil.infradead.org>
-References: <1291022214-27794-1-git-send-email-jslaby@suse.cz>
- <20101129214837.GB9830@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129214837.GB9830@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Nov 2010 17:26:58 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=UuO6cx77fMcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=4dVnLGxPWUpYsXh3OroA:9 a=N1v9LDrL31YJ3aPThAiwS5TxtWkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] Repalce strncmp by memcmp
+From: Steven Rostedt <rostedt@goodmis.org>
+To: pavel@pavlinux.ru
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1291069113.30543.876.camel@gandalf.stny.rr.com>
+References: <4CF30B46.4000203@pavlinux.ru>
+	 <1291042737.30543.730.camel@gandalf.stny.rr.com>
+	 <4CF401DD.4000908@pavlinux.ru>
+	 <1291069113.30543.876.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 29 Nov 2010 17:26:56 -0500
+Message-ID: <1291069616.30543.879.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 01:48:37PM -0800, Greg KH wrote:
-> >  [<ffffffff8103b189>] warn_slowpath_common+0x80/0x98
-> >  [<ffffffff8103b1b6>] warn_slowpath_null+0x15/0x17
-> >  [<ffffffff8128a3ab>] tty_open+0x2a2/0x49a
-> >  [<ffffffff810fd53f>] chrdev_open+0x11d/0x146
-> 
-> Are these two patches also for the .36 kernel?  Kyle, you were seeing
-> the warnings show up there, right?
+On Mon, 2010-11-29 at 17:18 -0500, Steven Rostedt wrote:
+
+> Um, do you realize that the kernel does not always use the same memcmp
+> as gcc.
 > 
 
-Yup, I guess they turned up when the BKL went away. (I reverted the BKL
-removal patches on top of 2.6.36, and never saw this WARN_ON trigger at
-least.)
+Note, I'm not against the change, because in 99% of the cases, memcmp()
+can and will be faster, and we don't need to worry about these strange
+cases.
 
---Kyle
+What I'm against is a blind s/strncmp/memcmp/ of the kernel, because it
+may have side effects that you may not have thought of.
+
+-- Steve
+
+
