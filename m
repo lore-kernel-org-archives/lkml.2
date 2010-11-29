@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab0K2P6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:58:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59295 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0K2P6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754791Ab0K2P6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:58:18 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:43330 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754748Ab0K2P6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Nov 2010 10:58:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-Date: Mon, 29 Nov 2010 16:57:53 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        =?utf-8?q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <20101129142200.GA14941@n2100.arm.linux.org.uk> <alpine.LNX.2.00.1011291546550.12293@localhost.localdomain>
-In-Reply-To: <alpine.LNX.2.00.1011291546550.12293@localhost.localdomain>
+Date: Mon, 29 Nov 2010 15:58:01 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
+	threshold when memory is low
+Message-ID: <20101129155801.GG13268@csn.ul.ie>
+References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie> <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101126160619.GP22651@bombadil.infradead.org> <20101129095618.GB13268@csn.ul.ie> <20101129131626.GF15818@bombadil.infradead.org> <20101129150824.GF13268@csn.ul.ie> <20101129152230.GH15818@bombadil.infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011291657.53316.arnd@arndb.de>
-X-Provags-ID: V02:K0:mVoy9JZAeMXp4YVAvZdXp5OEcK7sh7sW+TrblAhbKEX
- cS6+aC3G0tVj+diU03zUYSVsgdHvIISbUMXfHOLZWD8Vvt3cCU
- 5irbEQ2vYkU5nYHkCfqMgiX0YjX+y8fjBbEdaek71xEmfz7dLL
- 0SI6NByub895zDZif81ICCshD8E71v048BgE0JyRkh4smuH7wU
- C/cEw4ijjPXgvAYeSRTfA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20101129152230.GH15818@bombadil.infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 November 2010, Hans Ulli Kroll wrote:
-> @@ -1164,7 +1169,7 @@ config ISA_DMA_API
->         bool
->  
->  config PCI
-> -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB || 
-> ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
-> +       bool "PCI support" if MIGHT_HAVE_PCI
->         help
->           Find out whether you have a PCI motherboard. PCI is the name of 
-> a
->           bus system, i.e. the way the CPU talks to the other stuff inside
+On Mon, Nov 29, 2010 at 10:22:30AM -0500, Kyle McMartin wrote:
+> On Mon, Nov 29, 2010 at 03:08:24PM +0000, Mel Gorman wrote:
+> > Ouch! I have been unable to create an exact copy of your kernel source as
+> > I'm not running Fedora. From a partial conversion of a source RPM, I saw no
+> > changes related to mm/vmscan.c. Is this accurate? I'm trying to establish
+> > if this is a mainline bug as well.
+> > 
+> 
+> Sorry, if you extract the source rpm you should get the patched
+> sources... Aside from a few patches to mm/mmap for execshield, mm/* is
+> otherwise untouched from the latest stable 2.6.35 kernels.
+> 
 
-This does not solve the problem that Russell mentioned: existing platforms
-select PCI unconditionally, e.g. Iop13XX, some IXP, Orion, Shark
-and more. At the very least, these would need to also select MIGHT_HAVE_PCI
-to avoid the warning.
+Perfect, that correlates with what I saw so this is probably a
+mainline issue.
 
-> index fe0c82e..f5c39a8 100644
-> --- a/arch/arm/mach-ks8695/Kconfig
-> +++ b/arch/arm/mach-ks8695/Kconfig
-> @@ -4,6 +4,7 @@ menu "Kendin/Micrel KS8695 Implementations"
->  
->  config MACH_KS8695
->         +++ b/arch/arm/mach-versatile/Kconfig
-> @@ -4,6 +4,7 @@ menu "Versatile platform type"
->  config ARCH_VERSATILE_PB
->         bool "Support Versatile/PB platform"
->         select CPU_ARM926T
-> +       select HAVE_PCI
->         default y
->         help
->           Include support for the ARM(R) Versatile/PB platform.bool 
+> If you git clone git://pkgs.fedoraproject.org/kernel and check out the
+> origin/f14/master branch, it has all the patches we apply (based on the
+> 'ApplyPatch' lines in kernel.spec
+> 
+> > Second, I see all the stack traces are marked with "?" making them
+> > unreliable. Is that anything to be concerned about?
+> > 
+> 
+> Hrm, I don't think it is, I think the ones with '?' are just artifacts
+> because we don't have a proper unwinder. Oh! Thanks! I just found a bug
+> in our configs... We don't have CONFIG_FRAME_POINTER set because
+> CONFIG_DEBUG_KERNEL got unset in the 'production' configs... I'll fix
+> that up.
+> 
 
-Typo: you certainly meant MIGHT_HAVE_PCI here.
+Ordinarily I'd expect it to be from the lack of a unwinder but if FRAME_POINTER
+is there (which you say in a follow-up mail that is), it can be a bit of
+a concern. There is some real weirness as it is. Take on of Luke's
+examples where it appears to be locked up in
 
-We still need to agree on what it should be doing, but otherwise this
-is what I had in mind.
+[ 5015.448127] Pid: 185, comm: kswapd1 Tainted: P 2.6.35.6-48.fc14.x86_64 #1 X8DA3/X8DA3
+[ 5015.448127] RIP: 0010:[<ffffffff81469130>]  [<ffffffff81469130>] _raw_spin_unlock_irqrestore+0x18/0x19
 
-	Arnd
+I am at a loss to explain under what circumstances that can even happen!
+Is there any possibility RIP is being translated to the wrong symbol possibly
+via an userspace decoder of the oops or similar? Is there any possibility
+the stack is being corrupted if the swap subsystem is on a complicated
+software stack?
+
+> > I see that one user has reported that the patches fixed the problem for him
+> > but I fear that this might be a co-incidence or that the patches close a
+> > race of some description. Specifically, I'm trying to identify if there is
+> > a situation where kswapd() constantly loops checking watermarks and never
+> > calling cond_resched(). This could conceivably happen if kswapd() is always
+> > checking sleeping_prematurely() at a higher order where as balance_pgdat()
+> > is always checks the watermarks at the lower order. I'm not seeing how this
+> > could happen in 2.6.35.6 though. If Fedora doesn't have special changes,
+> > it might mean that these patches do need to go into -stable as the
+> > cost of zone_page_state_snapshot() is far higher on larger machines than
+> > previously reported.
+> > 
+> 
+> Yeah, I am a bit surprised as well. Luke seems to have quite a large
+> machine... I haven't seen any kswapd lockups there on my 18G machine
+> using the same kernel. :< (Possibly it's just not stressed enough
+> though.)
+> 
+
+He reports his machine as 24-way but with his model of CPU it could
+still be 2-socket which I ordinarily would not have expected to suffer
+so badly from zone_page_state_snapshot(). I would have predicted that
+the patches being thrown about in the thread "Free memory never fully
+used, swapping" to be more relevant to kswapd failing to go to sleep :/
+
+Andrew, this patch was a performance fix but is a report saying that it
+fixes a functional regression in Fedora enough to push a patch torwards
+stable even though an explanation as to *why* it fixes the problem is missing?
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
