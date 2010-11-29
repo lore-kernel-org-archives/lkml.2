@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab0K2PXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:23:04 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35616 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab0K2PXB (ORCPT
+	id S1753920Ab0K2PW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:22:56 -0500
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:52422 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab0K2PWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:23:01 -0500
-Date: Mon, 29 Nov 2010 10:22:30 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Kyle McMartin <kyle@mcmartin.ca>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
- threshold when memory is low
-Message-ID: <20101129152230.GH15818@bombadil.infradead.org>
-References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie>
- <1288169256-7174-2-git-send-email-mel@csn.ul.ie>
- <20101126160619.GP22651@bombadil.infradead.org>
- <20101129095618.GB13268@csn.ul.ie>
- <20101129131626.GF15818@bombadil.infradead.org>
- <20101129150824.GF13268@csn.ul.ie>
+	Mon, 29 Nov 2010 10:22:55 -0500
+Message-ID: <4CF3C547.6020302@linux.vnet.ibm.com>
+Date: Mon, 29 Nov 2010 13:22:47 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129150824.GF13268@csn.ul.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>,
+        jmorris@namei.org, mjg@redhat.com
+Subject: Re: [REGRESSION] Suspend fails because of TPM modules
+References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 03:08:24PM +0000, Mel Gorman wrote:
-> Ouch! I have been unable to create an exact copy of your kernel source as
-> I'm not running Fedora. From a partial conversion of a source RPM, I saw no
-> changes related to mm/vmscan.c. Is this accurate? I'm trying to establish
-> if this is a mainline bug as well.
-> 
+On 11/29/2010 01:15 PM, Jiri Kosina wrote:
+> On Mon, 29 Nov 2010, Jiri Kosina wrote:
+>
+>> Hi,
+>>
+>> on my thinkpad x200s (and I have seen reports on different HW as well),
+>> suspend fails when TPM modules are loaded.
+>>
+>> 	tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
+>> 	legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -5
+>> 	PM: Device 00:0a failed to suspend: error -5
+>> 	PM: Some devices failed to suspend
+>>
+>> Once tpm, tpm_bios, tpm_tis and tpm modules are unloaded, suspend/resume
+>> works.
+>>
+>> This is a regression. It definitely worked on this very same hardware on
+>> 2.6.34. Any kernel between .34 and .37 wasn't booted there, so I don't
+>> have any data of that kind.
+>>
+>> I can try bisecting it, but if anyone sees immediately what the culprit
+>> might be, that'd be helpful.
+> I just found out, that if I modprobe tpm_tis module with
+>
+> 	itpm=1
+>
+> parameter, the problem doesn't happen any more and suspend works fine.
+>
+> This definitely wasn't needed on older kernels though, so I'd consider
+> that still a regression.
+>
+> Also, can't we make the module automatically detect the machines on which
+> to apply the workaround? Let's say, based on DMI?
+>
+There's a patch already submitted that solves this:
+http://marc.info/?l=linux-kernel&m=128769741101534&w=2 
+<http://marc.info/?l=linux-kernel&m=128769741101534&w=2>
 
-Sorry, if you extract the source rpm you should get the patched
-sources... Aside from a few patches to mm/mmap for execshield, mm/* is
-otherwise untouched from the latest stable 2.6.35 kernels.
+This side effect (to solve the suspend issue) should increase its 
+urgency I think.
+James, any thoughts?
 
-If you git clone git://pkgs.fedoraproject.org/kernel and check out the
-origin/f14/master branch, it has all the patches we apply (based on the
-'ApplyPatch' lines in kernel.spec
+Rajiv
 
-> Second, I see all the stack traces are marked with "?" making them
-> unreliable. Is that anything to be concerned about?
-> 
 
-Hrm, I don't think it is, I think the ones with '?' are just artifacts
-because we don't have a proper unwinder. Oh! Thanks! I just found a bug
-in our configs... We don't have CONFIG_FRAME_POINTER set because
-CONFIG_DEBUG_KERNEL got unset in the 'production' configs... I'll fix
-that up.
 
-> I see that one user has reported that the patches fixed the problem for him
-> but I fear that this might be a co-incidence or that the patches close a
-> race of some description. Specifically, I'm trying to identify if there is
-> a situation where kswapd() constantly loops checking watermarks and never
-> calling cond_resched(). This could conceivably happen if kswapd() is always
-> checking sleeping_prematurely() at a higher order where as balance_pgdat()
-> is always checks the watermarks at the lower order. I'm not seeing how this
-> could happen in 2.6.35.6 though. If Fedora doesn't have special changes,
-> it might mean that these patches do need to go into -stable as the
-> cost of zone_page_state_snapshot() is far higher on larger machines than
-> previously reported.
-> 
 
-Yeah, I am a bit surprised as well. Luke seems to have quite a large
-machine... I haven't seen any kswapd lockups there on my 18G machine
-using the same kernel. :< (Possibly it's just not stressed enough
-though.)
-
-Thanks for looking into this!
-	Kyle
