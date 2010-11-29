@@ -1,131 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab0K2JRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:17:06 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:59283 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751785Ab0K2JRE (ORCPT
+	id S1752233Ab0K2JRU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:17:20 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59002 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab0K2JRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:17:04 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH v2 2/2] TTY: open/hangup race fixup
-Date: Mon, 29 Nov 2010 10:16:54 +0100
-Message-Id: <1291022214-27794-2-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1291022214-27794-1-git-send-email-jslaby@suse.cz>
-References: <1291022214-27794-1-git-send-email-jslaby@suse.cz>
+	Mon, 29 Nov 2010 04:17:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=mRmVoBYmFPpPmsJI9x+DndT8d5A0bGiDWHRZzWP+4++EXa5IHVmNmj/lfF974Pzs6z
+         nNFjgR+/bhe2w9htBYGtTEAr3weKKqMd/e3hbmr9Cs7a2d/FDOfSOYMTUJPJ+g2trVLL
+         7M9cabhDY9m9GIklDrBOZsvE0C4ikPYH/nZg0=
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        will.deacon@arm.com
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
+        dengcheng.zhu@gmail.com, matt@console-pimps.org, sshtylyov@mvista.com
+Subject: [PATCH v3 1/5] MIPS/Perf-events: Work with irq_work
+Date: Mon, 29 Nov 2010 17:19:07 +0800
+Message-Id: <1291022351-13152-2-git-send-email-dengcheng.zhu@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
+References: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like in the "TTY: don't allow reopen when ldisc is changing" patch,
-this one fixes a TTY WARNING as described in the option 1) there:
-1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
-section tty_lock is held. However tty_lock is temporarily dropped in
-the middle of the function by tty_ldisc_hangup.
+This is the MIPS part of the following commit by Peter Zijlstra:
 
-The fix is to introduce a new flag which we set during the unlocked
-window and check it in tty_reopen too. The flag is TTY_HUPPING and is
-cleared after TTY_HUPPED is set.
+- e360adbe29241a0194e10e20595360dd7b98a2b3
+    irq_work: Add generic hardirq context callbacks
 
-While at it, remove duplicate TTY_HUPPED set_bit. The one after
-calling ops->hangup seems to be more correct. But anyway, we hold
-tty_lock, so there should be no difference.
+    Provide a mechanism that allows running code in IRQ context. It is
+    most useful for NMI code that needs to interact with the rest of the
+    system -- like wakeup a task to drain buffers.
 
-Also document the function it does that kind of crap.
+    Perf currently has such a mechanism, so extract that and provide it as
+    a generic feature, independent of perf so that others may also
+    benefit.
 
-Nicely reproducible with two forked children:
-static void do_work(const char *tty)
-{
-	if (signal(SIGHUP, SIG_IGN) == SIG_ERR) exit(1);
-	setsid();
-	while (1) {
-		int fd = open(tty, O_RDWR|O_NOCTTY);
-		if (fd < 0) continue;
-		if (ioctl(fd, TIOCSCTTY)) continue;
-		if (vhangup()) continue;
-		close(fd);
-	}
-	exit(0);
-}
+    The IRQ context callback is generated through self-IPIs where
+    possible, or on architectures like powerpc the decrementer (the
+    built-in timer facility) is set to generate an interrupt immediately.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: <Valdis.Kletnieks@vt.edu>
-Reported-by: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+    Architectures that don't have anything like this get to do with a
+    callback from the timer tick. These architectures can call
+    irq_work_run() at the tail of any IRQ handlers that might enqueue such
+    work (like the perf IRQ handler) to avoid undue latencies in
+    processing the work.
+
+For MIPSXX, we need to call irq_work_run() at the tail of the perf IRQ
+handler as described above.
+
+Reported-by: Wu Zhangjin <wuzhangjin@gmail.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 ---
-I don't see a better way how to fix it, so I promoted the
-proof-of-concept to a real patch.
+ arch/mips/Kconfig                    |    1 +
+ arch/mips/include/asm/perf_event.h   |   12 +-----------
+ arch/mips/kernel/perf_event_mipsxx.c |    2 +-
+ 3 files changed, 3 insertions(+), 12 deletions(-)
 
- drivers/tty/tty_io.c |   10 +++++++++-
- include/linux/tty.h  |    1 +
- 2 files changed, 10 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 878f6d6..35480dd 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -559,6 +559,9 @@ void __tty_hangup(struct tty_struct *tty)
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 67a2fa2..c44c38d 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -4,6 +4,7 @@ config MIPS
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
++	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_ARCH_KGDB
+diff --git a/arch/mips/include/asm/perf_event.h b/arch/mips/include/asm/perf_event.h
+index e00007c..d0c7749 100644
+--- a/arch/mips/include/asm/perf_event.h
++++ b/arch/mips/include/asm/perf_event.h
+@@ -11,15 +11,5 @@
  
- 	tty_lock();
- 
-+	/* some functions below drop BTM, so we need this bit */
-+	set_bit(TTY_HUPPING, &tty->flags);
-+
- 	/* inuse_filps is protected by the single tty lock,
- 	   this really needs to change if we want to flush the
- 	   workqueue with the lock held */
-@@ -578,6 +581,10 @@ void __tty_hangup(struct tty_struct *tty)
- 	}
- 	spin_unlock(&tty_files_lock);
- 
-+	/*
-+	 * it drops BTM and thus races with reopen
-+	 * we protect the race by TTY_HUPPING
-+	 */
- 	tty_ldisc_hangup(tty);
- 
- 	read_lock(&tasklist_lock);
-@@ -615,7 +622,6 @@ void __tty_hangup(struct tty_struct *tty)
- 	tty->session = NULL;
- 	tty->pgrp = NULL;
- 	tty->ctrl_status = 0;
--	set_bit(TTY_HUPPED, &tty->flags);
- 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
- 
- 	/* Account for the p->signal references we killed */
-@@ -641,6 +647,7 @@ void __tty_hangup(struct tty_struct *tty)
- 	 * can't yet guarantee all that.
+ #ifndef __MIPS_PERF_EVENT_H__
+ #define __MIPS_PERF_EVENT_H__
+-
+-/*
+- * MIPS performance counters do not raise NMI upon overflow, a regular
+- * interrupt will be signaled. Hence we can do the pending perf event
+- * work at the tail of the irq handler.
+- */
+-static inline void
+-set_perf_event_pending(void)
+-{
+-}
+-
++/* Leave it empty here. The file is required by linux/perf_event.h */
+ #endif /* __MIPS_PERF_EVENT_H__ */
+diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+index 5c7c6fc..fa00edc 100644
+--- a/arch/mips/kernel/perf_event_mipsxx.c
++++ b/arch/mips/kernel/perf_event_mipsxx.c
+@@ -696,7 +696,7 @@ static int mipsxx_pmu_handle_shared_irq(void)
+ 	 * interrupt, not NMI.
  	 */
- 	set_bit(TTY_HUPPED, &tty->flags);
-+	clear_bit(TTY_HUPPING, &tty->flags);
- 	tty_ldisc_enable(tty);
+ 	if (handled == IRQ_HANDLED)
+-		perf_event_do_pending();
++		irq_work_run();
  
- 	tty_unlock();
-@@ -1311,6 +1318,7 @@ static int tty_reopen(struct tty_struct *tty)
- 	struct tty_driver *driver = tty->driver;
- 
- 	if (test_bit(TTY_CLOSING, &tty->flags) ||
-+			test_bit(TTY_HUPPING, &tty->flags) ||
- 			test_bit(TTY_LDISC_CHANGING, &tty->flags))
- 		return -EIO;
- 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 032d79f..54e4eaa 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -366,6 +366,7 @@ struct tty_file_private {
- #define TTY_HUPPED 		18	/* Post driver->hangup() */
- #define TTY_FLUSHING		19	/* Flushing to ldisc in progress */
- #define TTY_FLUSHPENDING	20	/* Queued buffer flush pending */
-+#define TTY_HUPPING 		21	/* ->hangup() in progress */
- 
- #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
- 
+ #ifdef CONFIG_MIPS_MT_SMP
+ 	read_unlock(&pmuint_rwlock);
 -- 
-1.7.3.1
-
+1.7.1
 
