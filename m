@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0K2SIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:08:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755377Ab0K2SIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:08:37 -0500
-Message-ID: <4CF3EC1E.7050707@redhat.com>
-Date: Mon, 29 Nov 2010 08:08:30 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Avi Kivity <avi@redhat.com>, Glauber Costa <glommer@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, kvm@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 22 (kvm)
-References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>	<20101122132627.bd4e88ef.randy.dunlap@oracle.com> <20101129083324.6870d7da.randy.dunlap@oracle.com> <4CF3D637.6060204@redhat.com> <4CF3E733.8090809@redhat.com> <4CF3E870.4040308@oracle.com>
-In-Reply-To: <4CF3E870.4040308@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755609Ab0K2SLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:11:12 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40363 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab0K2SLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:11:10 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: =?GB2312?B?x8ez5w==?= <qiaochong@loongson.cn>
+Cc: hellogcc@freelists.org,
+        =?GB2312?B?QW2opnJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, gdb@sourceware.org
+Subject: Re: [hellogcc] Re: [PATCH] Built kernel without -O2 option
+In-Reply-To: Your message of "Mon, 29 Nov 2010 17:45:15 +0800."
+             <4CF3762B.9010102@loongson.cn>
+From: Valdis.Kletnieks@vt.edu
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com> <20101129081619.GD5218@cr0.nay.redhat.com> <AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com> <4CF36741.9000808@loongson.cn> <AANLkTiktPFtCdYpZai-L_WCOpBrZYN5yN_V7GZ5tKGXG@mail.gmail.com>
+            <4CF3762B.9010102@loongson.cn>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1291054229_5346P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Mon, 29 Nov 2010 13:10:29 -0500
+Message-ID: <13700.1291054229@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4CF3EC95.0259,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 07:52 AM, Randy Dunlap wrote:
-> On 11/29/10 09:47, Zachary Amsden wrote:
->    
->> On 11/29/2010 06:35 AM, Avi Kivity wrote:
->>      
->>> On 11/29/2010 06:33 PM, Randy Dunlap wrote:
->>>        
->>>> On Mon, 22 Nov 2010 13:26:27 -0800 Randy Dunlap wrote:
->>>>
->>>>          
->>>>>   On Mon, 22 Nov 2010 13:49:11 +1100 Stephen Rothwell wrote:
->>>>>
->>>>>            
->>>>>>   Hi all,
->>>>>>
->>>>>>   Changes since 20101119:
->>>>>>              
->>>>>
->>>>>   kvm.c:(.init.text+0x11f49): undefined reference to
->>>>>            
->>>> `kvm_register_clock'
->>>>          
->>>>>   when CONFIG_KVM_CLOCK is not enabled.
->>>>>            
->>>>
->>>> BUild error still present in linux-next-2010-NOV-29.
->>>>
->>>>          
->>> Glauber, Zach?
->>>
->>>        
->> I can only speculate this reference is being called from smpboot without
->> CONFIG guarding?
->>      
-> Sorry, looks like I dropped the first line of the error messages:
->
-> arch/x86/built-in.o: In function `kvm_smp_prepare_boot_cpu':
-> kvm.c:(.init.text+0xad38): undefined reference to `kvm_register_clock'
->
-> from arch/x86/kernel/kvm.c:
->
-> #ifdef CONFIG_SMP
-> static void __init kvm_smp_prepare_boot_cpu(void)
-> {
-> 	WARN_ON(kvm_register_clock("primary cpu clock"));
-> 	kvm_guest_cpu_init();
-> 	native_smp_prepare_boot_cpu();
-> }
->
-> so it looks like you are correct...
->    
+--==_Exmh_1291054229_5346P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Looks like this is the appropriate fix:
+On Mon, 29 Nov 2010 17:45:15 +0800, 乔崇 said:
 
-#ifdef CONFIG_SMP
-static void __init kvm_smp_prepare_boot_cpu(void)
-{
-#ifdef CONFIG_KVM_CLOCK
-	WARN_ON(kvm_register_clock("primary cpu clock"));
-#endif
-	kvm_guest_cpu_init();
-	native_smp_prepare_boot_cpu();
-}
+> change mycc to this will work,:)
+>=20
+> =23=21/bin/sh
+> gcc =22=24=40=22 -O0 =7C=7C
+>  gcc =22=24=40=22 -O1 =7C=7C
+>  gcc =22=24=40=22
+
+That may result in issues - the problem is that there are places in the k=
+ernel
+where 'gcc -O0' will *compile* cleanly, but not actually *run* correctly.=
 
 
-The SMP code is still buggy as well, wrt printk timing, in that it 
-doesn't get called early enough, correct?  Has anyone thought of a good 
-solution to that problem?
 
-Basically the problem is CPU-1 will get CPU-0's per-cpu areas copied 
-over, and these are not valid for CPU-1.  If the clocksource is used on 
-CPU-1 before kvm clock gets setup, it can go backwards, wreaking havoc, 
-causing panic, etc.
+--==_Exmh_1291054229_5346P
+Content-Type: application/pgp-signature
 
-What is the best test to guard against this?  Perhaps we should keep the 
-CPU number in the per-cpu data and test against it?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFM8+yVcC3lWbTT17ARAtCwAJ9sOL0h3muu0If6DS8EMeeYm/1mbwCfSwID
+5xRV4P1ewn72coIjaViOrnU=
+=kmTU
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1291054229_5346P--
+
