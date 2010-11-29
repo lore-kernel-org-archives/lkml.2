@@ -1,151 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab0K2UVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:21:49 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59405 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0K2UVr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:21:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:x-duff:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=YQrTDtTToDCwsPkrTWJduW3O4y+mf+iZJDHR21ZFoSyDtbpP/ZGt7QeG+fOZhfvsmi
-         mZ8Id8MXjxJ1X67zwb7H+1PCYlsjCynmYKyoM3/+ZlfbapLJ5cWy6FABAhJ1DXmBilPX
-         HkiUkvDxNrmPD/qEZc6++fadrPj00f2f4p6/Q=
-Subject: Re: linux-next: Tree for November 29 (aesni-intel)
-X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
-Mime-Version: 1.0 (Apple Message framework v1082)
+	id S1753461Ab0K2UXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:23:37 -0500
+Received: from fieldses.org ([174.143.236.118]:40877 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab0K2UXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 15:23:34 -0500
+Date: Mon, 29 Nov 2010 15:23:29 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Dave Quigley <dpquigl@davequigley.com>
+Cc: David Quigley <merlin@countercultured.net>, Eric Paris <eparis@redhat.com>,
+        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org,
+        Miklos Szeredi <miklos@szeredi.hu>, Steve French <sfrench@samba.org>
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
+Message-ID: <20101129202329.GC9897@fieldses.org>
+References: <1290016263-1637-1-git-send-email-josef@redhat.com>
+ <20101117191817.GA26575@fieldses.org>
+ <20101117192822.GB3818@localhost.localdomain>
+ <20101117202617.GA31009@fieldses.org>
+ <1290031941.14282.101.camel@localhost.localdomain>
+ <4CE60AE9.2070101@countercultured.net>
+ <20101119164236.GA29148@fieldses.org>
+ <4CE7F97E.4040305@davequigley.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Mathias Krause <minipli@googlemail.com>
-In-Reply-To: <4CF408FB.4060905@oracle.com>
-Date: Mon, 29 Nov 2010 21:21:41 +0100
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Huang Ying <ying.huang@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <41CA6D05-C836-4F43-8DD8-C7EA9948DACC@googlemail.com>
-References: <4CF3F6CB.8080904@oracle.com> <1291058505-9384-1-git-send-email-minipli@googlemail.com> <4CF3FFAE.40906@oracle.com> <45B80502-8597-4650-990F-F23B4FC751B8@googlemail.com> <4CF40504.5060506@oracle.com> <D271AB83-0E5F-4C1C-A4A7-CD0588E6C7B6@googlemail.com> <4CF408FB.4060905@oracle.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-X-Mailer: Apple Mail (2.1082)
+Content-Disposition: inline
+In-Reply-To: <4CE7F97E.4040305@davequigley.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.11.2010, 21:11 Randy Dunlap wrote:
-> On 11/29/10 12:02, Mathias Krause wrote:
->> On 29.11.2010, 20:54 Randy Dunlap wrote:
->>> On 11/29/10 11:45, Mathias Krause wrote:
->>>> On 29.11.2010, 20:31 Randy Dunlap wrote:
->>>>> On 11/29/10 11:21, Mathias Krause wrote:
->>>>>> On 29.11.2010, 19:54 Randy Dunlap wrote:
->>>>>>> On 11/29/10 10:26, Mathias Krause wrote:
->>>>>>>> On 29.11.2010, 17:31 Randy Dunlap wrote:
->>>>>>>>> On Mon, 29 Nov 2010 14:03:35 +1100 Stephen Rothwell wrote:
->>>>>>>>> 
->>>>>>>>>> Hi all,
->>>>>>>>>> 
->>>>>>>>>> Changes since 20101126:
->>>>>>>>> 
->>>>>>>>> 
->>>>>>>>> on i386 builds, I get tons of these (and more) errors:
->>>>>>>>> 
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:842: Error: bad register name `%r13'
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:843: Error: bad register name `%r14'
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:844: Error: bad register name `%rsp'
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:849: Error: bad register name `%rsp'
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:850: Error: bad register name `%rsp'
->>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:851: Error: bad register name `%r9'
->>>>>>>>> 
->>>>>>>>> even though the kernel .config file says:
->>>>>>>>> 
->>>>>>>>> CONFIG_CRYPTO_AES=m
->>>>>>>>> CONFIG_CRYPTO_AES_586=m
->>>>>>>>> CONFIG_CRYPTO_AES_NI_INTEL=m
->>>>>>>>> 
->>>>>>>>> Should arch/x86/crypto/aesni-intel_asm.S be testing
->>>>>>>>> #ifdef CONFIG_X86_64
->>>>>>>>> instead of
->>>>>>>>> #ifdef __x86_64__
->>>>>>>>> or does that not matter?
->>>>>>>>> 
->>>>>>>>> or is this a toolchain issue?
->>>>>>>> 
->>>>>>>> Well, __x86_64__ should be a build-in define of the compiler while
->>>>>>>> CONFIG_X86_64 is defined for 64 bit builds in include/generated/autoconf.h.
->>>>>>>> So by using the latter we should be on the safe side but if your compiler
->>>>>>>> defines __x86_64__ for 32-bit builds it's simply broken. Also git grep
->>>>>>>> showed quite a few more places using __x86_64__ so those would miscompile on
->>>>>>>> your toolchain, too.
->>>>>>>> 
->>>>>>>> But it looks like linux-next is just missing
->>>>>>>> 559ad0ff1368baea14dbc3207d55b02bd69bda4b from Herbert's git repo at
->>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git.
->>>>>>>> That should fix the build issue.
->>>>>>> 
->>>>>>> The build problem still happens when that patch is applied.
->>>>>> 
->>>>>> That's weird. So it must be something with your toolchain.
->>>>>> Can you please post the output of the following commands?:
->>>>>> 
->>>>>> $ touch /tmp/null.c; cc -m32 -dD -E /tmp/null.c | grep -E 'x86|i.86'
->>>>> 
->>>>> #define __i386 1
->>>>> #define __i386__ 1
->>>>> #define i386 1
->>>>> #define __i586 1
->>>>> #define __i586__ 1
->>>>> 
->>>>>> $ touch /tmp/null.c; cc -m64 -dD -E /tmp/null.c | grep -E 'x86|i.86'
->>>>> 
->>>>> #define __x86_64 1
->>>>> #define __x86_64__ 1
->>>>> 
->>>>> So that's not the problem... and the patch below didn't help.
->>>> 
->>>> That's odd. The output of the commands looks good so the x86-64 specific code
->>>> should be left out for 32-bit builds. :/
->>>> 
->>>>> Sorry that I even asked about that.  What next?
->>>> 
->>>> Can you please post the full error message. Meanwhile I'm checking out a
->>>> linux-next tree, trying to reproduce your problem.
->>>> 
->>> 
->>> I just built with "make V=1" to see the full commands that are used, but
->>> that didn't help me either:
->>> 
->>> gcc -Wp,-MD,arch/x86/crypto/.aesni-intel_asm.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.4.1/include -I/lnx/src/NEXT/linux-next-20101129/arch/x86/include -Iinclude  -I/lnx/src/NEXT/linux-next-20101129/include -include include/generated/autoconf.h -D__KERNEL__ -D__ASSEMBLY__ -m32 -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DMODULE  -c -o arch/x86/crypto/aesni-intel_asm.o /lnx/src/NEXT/linux-next-20101129/arch/x86/crypto/aesni-intel_asm.S
->>> 
->>> 
->>> There are 2945 lines like this:
->>> 
->>> linux-next-20101129/arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
->> 
->> Well, in my tree (linux-next + 559ad0ff) line 841 is a comment. Albeit without
->> 559ad0ff it's a 'push %r12'. So maybe you should apply the patch just once
->> more to be sure. ;)
+On Sat, Nov 20, 2010 at 11:38:22AM -0500, Dave Quigley wrote:
+> On 11/19/2010 11:42 AM, J. Bruce Fields wrote:
+> >On Fri, Nov 19, 2010 at 12:28:09AM -0500, David Quigley wrote:
+> >>[snip]
+> >>>If you have persistent xattr support we need the dentry since the xattr
+> >>>code requires a dentry.  I have no idea why but that's what
+> >>>inode->i_op->getxattr() requires.
+> >>>
+> >>The original reason that the xattr operations take dentries is
+> >>because of p9fs and CIFS. CIFS uses the name of the file to grab the
+> >>extended attributes and so does p9fs. I had tried to remove this a
+> >>while ago but couldn't find a way around that.
+> >Both CIFS and FUSE are NFS-exportable, so both allow lookup by
+> >filehandle, so neither can count on getting a filename at this point.
+> >
+> >So, out of curiosity, do we know what will happen when selinux asks one
+> >of them for an xattr on a DCACHE_DISCONNECTED dentry?
+> >
 > 
-> Touche.
-> What does that patch have to do with aesni-intel??
+> SELinux uses several methods to determine file labeling. In the
+> policy filesystems such as xfs and the ext* series of filesystems
+> are marked as fs_use_xattr. In this process the file label is pulled
+> from the security.selinux xattr on disk. However CIFS and FUSE (and
+> NFS but our Labeled NFS changes are trying to fix this) all have the
+> filesystem marked as genfs.
 
-The description should be clear enough: "crypto: aesni-intel - Fixed build error
-on x86-32".
-Here is the link to the patch: <http://git.kernel.org/?p=linux/kernel/git/herbert/cryptodev-2.6.git;a=patch;h=559ad0ff1368baea14dbc3207d55b02bd69bda4b>. Please apply it on
-top of your linux-next build.
+OK, fair enough.  It seems a little fragile to me, but it sounds like
+that works....
 
-> I'm using the linux-next tarball of 20111129.
-> However, your s/__x86_64__/CONFIG_X86_64/ patch was applied, so I dropped it.
+> When mounting the filesystem the fs_type
+> is looked at to determine its labeling type. Since its genfs we
+> lookup what label was determined to be the default for that
+> filesystem type. In NFS's current state all NFS mounts regardless of
+> version get the uniform label of nfs_t for everything listed on an
+> nfs mount point. We have a similar situation for cifs and fuse. So
+> in this case SELinux should not be asking for the security.selinux
+> xattr from these file systems. However if a getxattr call to the
+> security.selinux xattr is made on these filesystems it will still
+> work I might be wrong but my understanding is just the a dentry in
+> the DCACHE_DISCONNECTED state is not negative but just isn't in the
+> tree anymore.
 
-Well I doubt it. The patch was made on top of 559ad0ff so it should have failed
-to apply in your tree since obviously 559ad0ff is missing.
+More  like "yet" than "anymore"; we've looked up the inode by inode
+number (or something similar), not by name, so the dentry in this case
+ends up having a name "" and parent itself (like a root dentry).
 
-> new output file:
-> http://oss.oracle.com/~rdunlap/doc/cry4.out
+--b.
 
-Same bug: 559ad0ff is still missing. Please apply the patch from the link above.
-
+> So looking at vfs_getxattr I had made some
+> modifications a while back to it. Assuming we have permissions to
+> access the file determined by xattr_permission and
+> security_inode_getxattr we check to see if it is in the security
+> namespace.  If it is in the security namespace we call
+> xattr_getsecurity which will attempt to get the security label from
+> the inode first (security_inode_getsecurity). Because the convention
+> is to call d_instantiate on inode create this should always work
+> assuming an LSM is loaded. If it fails and we don't have an lsm
+> loaded we fall back to checking the getxattr i_op and if that
+> doesn't exist we fail with EOPNOTSUPP. That is what should happen on
+> the getxattr call. I don't know if something is happening higher up
+> that makes it so we never get to vfs_getxattr in the event that the
+> dentry is in the DCACHE_DISCONNECTED state. If the DENTRY is
+> disconnected though I'm not sure how getxattr from userspace would
+> be able to have access to it except through a different name in the
+> namespace.
+> 
+> >>When trying to find a
+> >>solution I also got push back from Miklos (FUSE) as he views a
+> >>filesystem being able to make xattr decisions based on the path name
+> >>being a valid use-case.
+> >So selinux may initialize an inode differently depending on which
+> >pathname it happened to be looked up under first?
+> >
+> >Factoring the name into the xattr return sounds scary to me.
+> >
+> 
+> The only current use of determining file label from path name is the
+> situation that Eric Paris described with proc. I personally don't
+> agree with miklos that the path to the xattr should make it return
+> different information (unless im understanding him wrong). However
+> the same thing is at work for CIFS as it exposes the windows
+> alternate file streams which are accessed by adding the stream name
+> to the end of the filename with a separator which I can't remember
+> at the moment. If it was the situation that two fuse files shared
+> the same inode and the security.selinux xattr was filled differently
+> if it was accessed via /fuse/foo and /fuse/bar then yes the
+> situation you described might happen. Normally this isn't a problem
+> because file systems don't take the path into account so a hardlink
+> to the same inode will still obtain the same security label. In
+> reality the xattr is a piece of inode metadata and not a piece of
+> dentry metadata.
+> 
+> >--b.
+> >
+> 
