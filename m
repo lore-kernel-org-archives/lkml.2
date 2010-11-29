@@ -1,83 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab0K2QwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:52:13 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:19657
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755129Ab0K2QwL (ORCPT
+	id S1755250Ab0K2QwW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:52:22 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51577
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755186Ab0K2QwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:52:11 -0500
-X-SpamScore: 5
-X-BigFish: VPS5(z1039ozbb2cKzz1202hzz8275bhz32i691h668h67dh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCNO6L-01-CRY-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/3] KVM: X86: Introduce generic guest-mode representation
-Date: Mon, 29 Nov 2010 17:51:47 +0100
-Message-ID: <1291049509-3430-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <4CF3D093.40604@redhat.com>
-References: <4CF3D093.40604@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Mon, 29 Nov 2010 11:52:20 -0500
+Date: Mon, 29 Nov 2010 08:52:46 -0800 (PST)
+Message-Id: <20101129.085246.193700963.davem@davemloft.net>
+To: toshiharu-linux@dsn.okisemi.com
+Cc: linux@treblig.org, randy.dunlap@oracle.com, john.linn@xilinx.com,
+        ralf@linux-mips.org, kristoffer@gaisler.com, mbizon@freebox.fr,
+        gregory.v.rose@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, masa-korg@dsn.okisemi.com,
+        qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        margie.foster@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH 1/2] pch_gbe dreiver: chang author
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CEA068D.3070900@dsn.okisemi.com>
+References: <4CEA068D.3070900@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a generic representation of guest-mode
-fpr a vcpu. This currently only exists in the SVM code.
-Having this representation generic will help making the
-non-svm code aware of nesting when this is necessary.
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Date: Mon, 22 Nov 2010 14:58:37 +0900
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/kvm_cache_regs.h   |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+> This driver's AUTHOR was changed to "Toshiharu Okada" from "Masayuki Ohtake".
+> I update the Kconfig, renamed "Topcliff" to "EG20T".
+> 
+> Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 54e42c8..d2a66be 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -784,6 +784,7 @@ enum {
- #define HF_VINTR_MASK		(1 << 2)
- #define HF_NMI_MASK		(1 << 3)
- #define HF_IRET_MASK		(1 << 4)
-+#define HF_GUEST_MASK		(1 << 5) /* VCPU is in guest-mode */
- 
- /*
-  * Hardware virtualization extension instructions may fault if a
-diff --git a/arch/x86/kvm/kvm_cache_regs.h b/arch/x86/kvm/kvm_cache_regs.h
-index 975bb45..95ac3af 100644
---- a/arch/x86/kvm/kvm_cache_regs.h
-+++ b/arch/x86/kvm/kvm_cache_regs.h
-@@ -84,4 +84,19 @@ static inline u64 kvm_read_edx_eax(struct kvm_vcpu *vcpu)
- 		| ((u64)(kvm_register_read(vcpu, VCPU_REGS_RDX) & -1u) << 32);
- }
- 
-+static inline void enter_guest_mode(struct kvm_vcpu *vcpu)
-+{
-+	vcpu->arch.hflags |= HF_GUEST_MASK;
-+}
-+
-+static inline void leave_guest_mode(struct kvm_vcpu *vcpu)
-+{
-+	vcpu->arch.hflags &= ~HF_GUEST_MASK;
-+}
-+
-+static inline bool is_guest_mode(struct kvm_vcpu *vcpu)
-+{
-+	return vcpu->arch.hflags & HF_GUEST_MASK;
-+}
-+
- #endif
--- 
-1.7.1
-
-
+Applied.
