@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab0K2LVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 06:21:43 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49649 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab0K2LVl (ORCPT
+	id S1753383Ab0K2Lie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 06:38:34 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54130 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab0K2Lid convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 06:21:41 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [BUGFIX] vmstat: fix dirty threshold ordering
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101129103845.GA1195@localhost>
-References: <20101129103845.GA1195@localhost>
-Message-Id: <20101129202124.82CC.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 29 Nov 2010 20:21:36 +0900 (JST)
+	Mon, 29 Nov 2010 06:38:33 -0500
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: tmhikaru@gmail.com, Venkatesh Pallipadi <venki@google.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
+In-Reply-To: <20101128114027.GA2745@brouette>
+References: <1288101958.15336.284.camel@twins>
+	 <1288381343.1988.12.camel@laptop>
+	 <20101109185516.GQ8332@bombadil.infradead.org>
+	 <1289329348.2191.69.camel@laptop>
+	 <20101110034507.GV8332@bombadil.infradead.org>
+	 <1289390424.2191.98.camel@laptop> <20101114051406.GA2050@roll>
+	 <20101125133106.GA12914@brouette> <1290693807.2145.36.camel@laptop>
+	 <1290888920.32004.1.camel@laptop>  <20101128114027.GA2745@brouette>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 29 Nov 2010 12:38:46 +0100
+Message-ID: <1291030726.32004.4.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The nr_dirty_[background_]threshold fields are misplaced before the
-> numa_* fields, and users will read strange values.
+On Sun, 2010-11-28 at 12:40 +0100, Damien Wyart wrote:
+> Hi,
 > 
-> This is the right order. Before patch, nr_dirty_background_threshold
-> will read as 0 (the value from numa_miss).
+> * Peter Zijlstra <peterz@infradead.org> [2010-11-27 21:15]:
+> > How does this work for you? Its hideous but lets start simple.
+> > [...]
 > 
-> 	numa_hit 128501
-> 	numa_miss 0
-> 	numa_foreign 0
-> 	numa_interleave 7388
-> 	numa_local 128501
-> 	numa_other 0
-> 	nr_dirty_threshold 144291
-> 	nr_dirty_background_threshold 72145
+> Doesn't give wrong numbers like initial bug and tentative patches, but
+> feels a bit too slow when numbers go up and down. Correct values are
+> reached when waiting long enough, but it feels slow.
 > 
-> Cc: Michael Rubin <mrubin@google.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> As I've tested many combinations, maybe this is an impression because
+> I do not remember about "normal" delays for the load to rise and fall,
+> but this still feels slow.
 
-Obviously. :-/
+You can test this by either booting with nohz=off, or builting with
+CONFIG_NO_HZ=n and then comparing the result, something like
 
-Thanks, Wu.
+make O=defconfig clean; while sleep 10; do uptime >> load.log; done &
+make -j32 O=defconfig; kill %1
 
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+And comparing the curves between the NO_HZ and !NO_HZ kernels.
 
-
-> ---
->  mm/vmstat.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- linux-next.orig/mm/vmstat.c	2010-11-28 16:02:12.000000000 +0800
-> +++ linux-next/mm/vmstat.c	2010-11-28 16:02:24.000000000 +0800
-> @@ -750,8 +750,6 @@ static const char * const vmstat_text[] 
->  	"nr_shmem",
->  	"nr_dirtied",
->  	"nr_written",
-> -	"nr_dirty_threshold",
-> -	"nr_dirty_background_threshold",
->  
->  #ifdef CONFIG_NUMA
->  	"numa_hit",
-> @@ -761,6 +759,8 @@ static const char * const vmstat_text[] 
->  	"numa_local",
->  	"numa_other",
->  #endif
-> +	"nr_dirty_threshold",
-> +	"nr_dirty_background_threshold",
->  
->  #ifdef CONFIG_VM_EVENT_COUNTERS
->  	"pgpgin",
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
-
+I'll try and make the patch less hideous ;-)
