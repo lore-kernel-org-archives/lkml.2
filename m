@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab0K3WrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:47:25 -0500
-Received: from smtp22.services.sfr.fr ([93.17.128.12]:49896 "EHLO
-	smtp22.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab0K3WrY (ORCPT
+	id S1753316Ab0K3WzU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:55:20 -0500
+Received: from avas-mr15.fibertel.com.ar ([24.232.0.247]:59877 "EHLO
+	avas-mr15.fibertel.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab0K3WzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:47:24 -0500
-X-SFR-UUID: 20101130224318509.7C6D97000086@msfrf2208.sfr.fr
-Reply-To: <privatehomelenderr@kkwl.ac.th>
-From: "PRIVATE HOME LENDER INC" <loan@loan.com>
-To: derr@yahoo.com
-Subject: SEASONAL FINANCIAL LENDER.
-Date: Wed, 1 Dec 2010 06:43:38 +0800
+	Tue, 30 Nov 2010 17:55:19 -0500
+Message-ID: <49641.69.31.103.148.1291059792.squirrel@squirrel.jetband.com.ar>
+Date: Mon, 29 Nov 2010 16:43:12 -0300 (ART)
+Subject: VIVA 48hrs FINANCE LOAN
+From: "VIVA 48hrs FINANCE LOAN" <viva.lendersfilm2000@gmail.com>
+Reply-To: viva.lendersdesk85@gmail.com
+User-Agent: SquirrelMail/1.4.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="_iso-2022-jp$ESC"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-Message-Id: <20101130224318.7C6D97000086@msfrf2208.sfr.fr>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Fib-Al-Info: Al
+X-Fib-Al-MRId: 354ca368759e2ef274407d33852c3684
+X-Fib-Al: noav
+X-Fib-Al-SA: analyzed
+X-Fib-Al-From: viva.lendersfilm2000@gmail.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply for a loan to establish your business.
-Our interest is very affordable and our loan process is very fast as well as
-percentage rate of 2.5% yea rly from $5 000.00 Min. To $100 000 000.00 M a x.
-Contact us via email if you are interested with the following details
 
 
-NAME:
-PHONE:
-DURATION:
-ADDRESS:
-AMOUNT:
 
-Regards,
-Private Home Lender Inc
-privatehomelenderr@kkwl.ac.th
-Mr Mike Jackson.
+
+VIVA 48hrs FINANCE LOAN
+5 Churchill Place,
+London, E14 5HP.
+Tel:+447024019643
+
+Attention,
+
+We are currently giving out loans to any part of the world at 2% interest
+rate. If interested, send your name, Resident country and Phone number to
+Mr. Mayson Scout with the email address bellow Email:
+ viva48hrslemdersfirm112@live.com .or call: +447024019643
+
+Regards
+Mr. Mayson Scout
+C.E.O
+VIVA 48hrs FINANCE LOAN
 
