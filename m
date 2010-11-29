@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab0K2JRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:17:43 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35839 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab0K2JRm (ORCPT
+	id S1751996Ab0K2JRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:17:05 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:59282 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751841Ab0K2JRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:17:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=p9mAD+4AyXr4Ax3+eIUWk8RORYy493g85+h1fzzSyAlosGUvfwj5rK0RKzbI8rSWqH
-         cIcbgUL0moAcUhyKzgrjDJBgrERud7uew4kp9oVrLZHmQr2Ga/gh6dRHSt2T7OyGwkpv
-         +vw1MRA858NqRdn/huiOUJ1LaeRvem4QFmmZw=
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        will.deacon@arm.com
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
-        dengcheng.zhu@gmail.com, matt@console-pimps.org, sshtylyov@mvista.com
-Subject: [PATCH v3 5/5] MIPS/Perf-events: Use unsigned delta for right shift in event update
-Date: Mon, 29 Nov 2010 17:19:11 +0800
-Message-Id: <1291022351-13152-6-git-send-email-dengcheng.zhu@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
-References: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
+	Mon, 29 Nov 2010 04:17:04 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Kyle McMartin <kyle@mcmartin.ca>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v2 1/2] TTY: don't allow reopen when ldisc is changing
+Date: Mon, 29 Nov 2010 10:16:53 +0100
+Message-Id: <1291022214-27794-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverage the commit for ARM by Will Deacon:
+There are many WARNINGs like the following reported nowadays:
+WARNING: at drivers/tty/tty_io.c:1331 tty_open+0x2a2/0x49a()
+Hardware name: Latitude E6500
+Modules linked in:
+Pid: 1207, comm: plymouthd Not tainted 2.6.37-rc3-mmotm1123 #3
+Call Trace:
+ [<ffffffff8103b189>] warn_slowpath_common+0x80/0x98
+ [<ffffffff8103b1b6>] warn_slowpath_null+0x15/0x17
+ [<ffffffff8128a3ab>] tty_open+0x2a2/0x49a
+ [<ffffffff810fd53f>] chrdev_open+0x11d/0x146
+...
 
-- 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
-    ARM: 6205/1: perf: ensure counter delta is treated as unsigned
+This means tty_reopen is called without TTY_LDISC set. For further
+considerations, note tty_lock is held in tty_open. TTY_LDISC is cleared in:
+1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+section tty_lock is held. However tty_lock is temporarily dropped in
+the middle of the function by tty_ldisc_hangup.
 
-    Hardware performance counters on ARM are 32-bits wide but atomic64_t
-    variables are used to represent counter data in the hw_perf_event structure.
+2) tty_release via tty_ldisc_release till the end of tty existence. If
+tty->count <= 1, tty_lock is taken, TTY_CLOSING bit set and then
+tty_ldisc_release called. tty_reopen checks TTY_CLOSING before checking
+TTY_LDISC.
 
-    The armpmu_event_update function right-shifts a signed 64-bit delta variable
-    and adds the result to the event count. This can lead to shifting in sign-bits
-    if the MSB of the 32-bit counter value is set. This results in perf output
-    such as:
+3) tty_set_ldisc from tty_ldisc_halt to tty_ldisc_enable. We:
+   * take tty_lock, set TTY_LDISC_CHANGING, put tty_lock
+   * call tty_ldisc_halt (clear TTY_LDISC), tty_lock is _not_ held
+   * do some other work
+   * take tty_lock, call tty_ldisc_enable (set TTY_LDISC), put
+     tty_lock
 
-     Performance counter stats for 'sleep 20':
+I cannot see how 2) can be a problem, as there I see no race. OTOH, 1)
+and 3) can happen without problems. This patch the case 3) by checking
+TTY_LDISC_CHANGING along with TTY_CLOSING in tty_reopen. 1) will be
+fixed in the following patch.
 
-     18446744073460670464  cycles             <-- 0xFFFFFFFFF12A6000
-            7783773  instructions             #      0.000 IPC
-                465  context-switches
-                161  page-faults
-            1172393  branches
+Nicely reproducible with two processes:
+while (1) {
+	fd = open("/dev/ttyS1", O_RDWR);
+	if (fd < 0) {
+		warn("open");
+		continue;
+	}
+	close(fd);
+}
+--------
+while (1) {
+        fd = open("/dev/ttyS1", O_RDWR);
+        ld1 = 0; ld2 = 2;
+        while (1) {
+                ioctl(fd, TIOCSETD, &ld1);
+                ioctl(fd, TIOCSETD, &ld2);
+        }
+        close(fd);
+}
 
-       20.154242147  seconds time elapsed
-
-    This patch ensures that the delta value is treated as unsigned so that the
-    right shift sets the upper bits to zero.
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: <Valdis.Kletnieks@vt.edu>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 ---
- arch/mips/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/tty/tty_io.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index 8f7d2f8..a824485 100644
---- a/arch/mips/kernel/perf_event.c
-+++ b/arch/mips/kernel/perf_event.c
-@@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
- 	unsigned long flags;
- 	int shift = 64 - TOTAL_BITS;
- 	s64 prev_raw_count, new_raw_count;
--	s64 delta;
-+	u64 delta;
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index c05c5af..878f6d6 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1310,7 +1310,8 @@ static int tty_reopen(struct tty_struct *tty)
+ {
+ 	struct tty_driver *driver = tty->driver;
  
- again:
- 	prev_raw_count = local64_read(&hwc->prev_count);
+-	if (test_bit(TTY_CLOSING, &tty->flags))
++	if (test_bit(TTY_CLOSING, &tty->flags) ||
++			test_bit(TTY_LDISC_CHANGING, &tty->flags))
+ 		return -EIO;
+ 
+ 	if (driver->type == TTY_DRIVER_TYPE_PTY &&
 -- 
-1.7.1
+1.7.3.1
+
 
