@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab0K2QWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:22:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53649 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab0K2QWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:22:51 -0500
-Date: Mon, 29 Nov 2010 17:22:45 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Michael Doube <michael@doube.net>
-Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [REGRESSION] Suspend fails because of TPM
- modules
-In-Reply-To: <4CF3D182.8090907@doube.net>
-Message-ID: <alpine.LNX.2.00.1011291720580.981@pobox.suse.cz>
-References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz> <4CF3D182.8090907@doube.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752251Ab0K2QZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:25:11 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:21404
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751544Ab0K2QZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:25:09 -0500
+X-SpamScore: -32
+X-BigFish: VPS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i691h637h668h67dh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LCNMXL-02-CBG-02
+X-M-MSG: 
+Date: Mon, 29 Nov 2010 17:25:00 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] KVM: Introduce VCPU-wide notion of guest-mode
+Message-ID: <20101129162500.GD2258@amd.com>
+References: <1291045090-2714-1-git-send-email-joerg.roedel@amd.com>
+ <4CF3D093.40604@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4CF3D093.40604@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010, Michael Doube wrote:
-
-> > I just found out, that if I modprobe tpm_tis module with
-> > 
-> > 	itpm=1
-> > 
-> > parameter, the problem doesn't happen any more and suspend works fine.
+On Mon, Nov 29, 2010 at 11:10:59AM -0500, Avi Kivity wrote:
+> On 11/29/2010 05:38 PM, Joerg Roedel wrote:
+> > Hi Avi, Hi Marcelo,
+> >
+> > this patch-set introduces a generic notion of guest-mode for VCPUs in
+> > KVM. This is already useful as seen in patch 3/3. Nested-VMX also has a
+> > guest-mode, so it will make sense for this code too.
+> >
 > 
-> Not here unfortunately. Suspend still fails with itpm=1, and I get this
-> in my logs
-> 
-> Nov 29 15:52:32 doris kernel: [  649.110923] tpm_tis 00:09: 1.2 TPM (device-id 0xB, rev-id 16)
-> Nov 29 15:52:32 doris kernel: [  649.110929] tpm_tis 00:09: Intel iTPM workaround enabled
-> Nov 29 15:54:34 doris kernel: [  771.360067] tpm_tis 00:09: tpm_transmit: tpm_send: error -62
+> Looks good, apart from the trivial comments on patch 1.
 
-That looks like a completely separate issue -- in your case, 
-wait_for_stat() times out while waiting for _READY.
+Okay, I do a re-spin and fix this. Thanks for your comments.
 
-Is this regressions from older kernels as well?
-
-> Looks for a string that is absent from my Vaio SZ650, so the workaround
-> is not applied (and if it was, it probably wouldn't work, right?).
-
-Yeah, it's workaround for symptoms different from than what you are 
-seeing.
+	Joerg
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
