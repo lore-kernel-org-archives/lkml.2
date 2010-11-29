@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab0K2TVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 14:21:36 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52075 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab0K2TVf convert rfc822-to-8bit (ORCPT
+	id S1752063Ab0K2TWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 14:22:42 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:44374 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751520Ab0K2TWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 14:21:35 -0500
+	Mon, 29 Nov 2010 14:22:40 -0500
+Date: Mon, 29 Nov 2010 14:22:38 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thisops uV2 04/10] x86: Support for
+	this_cpu_add,sub,dec,inc_return
+Message-ID: <20101129192238.GD25610@Krystal>
+References: <20101126210937.383047168@linux.com> <20101126210951.303044608@linux.com> <20101127150015.GE15365@Krystal> <alpine.DEB.2.00.1011291025410.3923@router.home> <20101129183333.GA25610@Krystal> <alpine.DEB.2.00.1011291244410.4836@router.home>
 MIME-Version: 1.0
-In-Reply-To: <4CF3F996.4090703@zytor.com>
-References: <20101116104600.GA24015@suse.de>
-	<20101119191906.GA31760@xanatos>
-	<AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com>
-	<20101126074809.GD19589@elte.hu>
-	<20101129163308.GA2383@xanatos>
-	<20101129180429.GB14046@elte.hu>
-	<4CF3F996.4090703@zytor.com>
-Date: Mon, 29 Nov 2010 14:21:33 -0500
-Message-ID: <AANLkTinQHidwuZLqjjdyxyT-UAVao4XngNsz3tFUPN8M@mail.gmail.com>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-From: Eric Paris <eparis@parisplace.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@linux-foundation.org, w@1wt.eu,
-        alan@lxorguk.ukuu.org.uk, serue@us.ibm.com,
-        LSM List <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011291244410.4836@router.home>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:09:40 up 6 days, 12 min,  4 users,  load average: 1.14, 1.04,
+	1.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 2:05 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/29/2010 10:04 AM, Ingo Molnar wrote:
->>
->> * Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
->>
->>> On Fri, Nov 26, 2010 at 08:48:09AM +0100, Ingo Molnar wrote:
+* Christoph Lameter (cl@linux.com) wrote:
+> On Mon, 29 Nov 2010, Mathieu Desnoyers wrote:
+> 
+> > > > > +#define percpu_add_return_op(var, val)					\
+> > > > > +({									\
+> > > > > +	typedef typeof(var) pao_T__;					\
+> > > > > +	typeof(var) pfo_ret__ = val;					\
+> > > > > +	if (0) {							\
+> > > > > +		pao_T__ pao_tmp__;					\
+> > > > > +		pao_tmp__ = (val);					\
+> > > > > +		(void)pao_tmp__;					\
+> > > > > +	}								\
+> > > >
+> > > > OK, I'm dumb: why is the above needed ?
+> > >
+> > > Ensure that the compiler agrees that  *var and val are compatible. Taken
+> > > over from percpu_add_op().
+> >
+> > Isn't that the purpose of __builtin_types_compatible_p(t1, t2) ?
+> 
+> We also have a __same_type() macro in linux/compiler.h... But if I use
+> that the kernel build fails. I guess the check is too strict.
 
->>>> Sarah,
->>>>
->>>> Does your system boot fine if we make /proc/kallsyms simply an empty file to
->>>> unprivileged users? Something like the (untested ...) patch below.
->>>
->>> Yes, that works.  The system boots as normal. `cat /proc/kallsyms`
->>> returns an empty file, and `sudo cat /proc/kallsyms` does not.
->>
->> Great! Marcus, mind respinning your patch with that approach?
->>
->
-> Can we please not use CAP_SYS_ADMIN for this?  Relying on CAP_SYS_ADMIN
-> is worse than anything else -- it is a fixed policy hardcoded in the
-> kernel, with no ability for the system owner to delegate the policy
-> outward, e.g. by adding group read permission and/or chgrp the file.
->
-> Delegating CAP_SYS_ADMIN, of course, otherwise known as "everything", is
-> worse than anything...
+Ah, ok, so you don't mind if var and val have different types. You just want
+the compiler to be able to cast one into the other without complaining.
 
-Serge just proposed a new CAP_SYSLOG
+Isn't it already checked by "typeof(var) pfo_ret__ = val;" ?
 
-http://lwn.net/Articles/378472/
+Which semantic do you expect when using different types for var and val ?
 
-Which could probably still be renamed and used to cover this access as well....
+The assembly all acts on the following pfo_ret__ :
+
+  typeof(var) pfo_ret__ = val;
+
+But at the end, you return :
+
+  pfo_ret__ + (val);
+
+So if pfo_ret has a type smaller than val (e.g. unsigned short vs unsigned int),
+unless I'm mistakened, the type returned by percpu_add_return_op will be an
+unsigned int (the larger of the two), but the atomic operation is performed on
+an unsigned short. This might cause confusion for the caller. Casting
+
+  pfo_ret__ + (typeof(var)) (val);
+
+might be appropriate.
+
+Thanks,
+
+Mathieu
+
+> 
+> ---
+>  arch/x86/include/asm/percpu.h |    6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/include/asm/percpu.h
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-11-29 12:46:50.000000000 -0600
+> +++ linux-2.6/arch/x86/include/asm/percpu.h	2010-11-29 12:52:25.000000000 -0600
+> @@ -127,11 +127,7 @@ do {									\
+>  	typedef typeof(var) pao_T__;					\
+>  	const int pao_ID__ = (__builtin_constant_p(val) &&		\
+>  			      ((val) == 1 || (val) == -1)) ? (val) : 0;	\
+> -	if (0) {							\
+> -		pao_T__ pao_tmp__;					\
+> -		pao_tmp__ = (val);					\
+> -		(void)pao_tmp__;					\
+> -	}								\
+> +	BUILD_BUG_ON(!__same_type(var, val));				\
+>  	switch (sizeof(var)) {						\
+>  	case 1:								\
+>  		if (pao_ID__ == 1)					\
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
