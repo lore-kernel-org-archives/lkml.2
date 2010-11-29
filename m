@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab0K2Nzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 08:55:39 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34012 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab0K2Nzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 08:55:38 -0500
-Message-ID: <4CF3B0C8.7080200@kernel.org>
-Date: Mon, 29 Nov 2010 14:55:20 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        "@sisk.plpavel@ucw.cz"@htj.dyndns.org,
-        "Jan Kratochvil \"" <jan.kratochvil@redhat.com>
-Subject: Re: [PATCH 14/14] ptrace: remove the extra wake_up_process() from
- ptrace_detach()
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-15-git-send-email-tj@kernel.org> <20101128204435.GE12896@redhat.com>
-In-Reply-To: <20101128204435.GE12896@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754237Ab0K2N6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 08:58:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:50053 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754177Ab0K2N6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 08:58:18 -0500
+X-Authenticated: #18899812
+X-Provags-ID: V01U2FsdGVkX188CVpqt8E8rRUp8UWt/sKsJ8lJlbAkvAvkFDborH
+	Xzf4BewO5iaG1d
+Subject: Re: Scheduler grouping failure; division by zero in
+ select_task_rq_fair
+From: Frede Feuerstein <Frede_Feuerstein@gmx.net>
+Reply-To: Frede_Feuerstein@gmx.net
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ben Hutchings <benh@debian.org>, Ingo Molnar <mingo@elte.hu>,
+        603229@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <1291031425.32004.16.camel@laptop>
+References: <1290449310.3868.13.camel@localhost>
+	 <1290470134.6770.929.camel@localhost>  <1290514638.3892.16.camel@localhost>
+	 <1290900814.3292.84.camel@localhost> <1290920436.4255.1025.camel@localhost>
+	 <1290975266.3292.316.camel@localhost>  <1291031425.32004.16.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: =?ISO-8859-1?Q?Ger=F6llhalde?=
+Date: Mon, 29 Nov 2010 14:58:13 +0100
+Message-ID: <1291039093.26937.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Nov 2010 13:55:22 +0000 (UTC)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 11/28/2010 09:44 PM, Oleg Nesterov wrote:
-> Today I lost the concentration at 13/14 ;)
+On Mon, 2010-11-29 at 12:50 +0100, Peter Zijlstra wrote:
+> On Sun, 2010-11-28 at 20:14 +0000, Ben Hutchings wrote:
 > 
-> Will continue tomorrow. As for this patch,
-
-Eh, well, you've already found enough holes in the patchset.  It's
-like a swiss cheese.  I'll update and repost.
-
-> On 11/26, Tejun Heo wrote:
->>
->> This wake_up_process() has a turbulent history.  This is a remnant
->> from ancient ptrace implementation and patently wrong.  Commit
->> 95a3540d (ptrace_detach: the wrong wakeup breaks the ERESTARTxxx
->> logic) removed it
+> > [    0.856002] Pid: 2, comm: kthreadd Not tainted 2.6.32-5-amd64 #1 W1100z/2100z
 > 
-> Yes. This obviously means I personally like this change. In fact,
-> I never understood this wakeup, and I was glad to find the reason
-> to send the patch.
+> What's in that kernel? is that simply the latest .32-stable?
 
-Another thing is that the use of wake_up_process() in ptrace is rather
-scary even in ptrace_resume().  It will wake up even uninterruptible
-sleeps.  Is there any reason it's not just waking up
-TASK_INTERRUPTIBLE | STOPPED | TRACED?
+It was the latest stable .32 contained in the official "squeeze".
+Today a new one arrived. I shall try that tomorrow on today late night,
+since i cannot reset the mill right now.
 
-Thanks.
+Additional remark:
+When i said, that the cores contained in each chip do not share any
+resources, i forgot about the clock source:
+The clock is set globally for each whole chip, i.e. CPU0 and CPU1 are
+always running on the same clock, as well as CPU2 and CPU3 do.
 
--- 
-tejun
+Best regards
+
+Tilo Hacke
+
+
