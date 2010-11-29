@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0K2PmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:42:00 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:55874 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab0K2Pl7 (ORCPT
+	id S1754457Ab0K2Poe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:44:34 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34611 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0K2Pod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:41:59 -0500
-Message-ID: <4CF3C9BB.20802@linux.vnet.ibm.com>
-Date: Mon, 29 Nov 2010 13:41:47 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Mon, 29 Nov 2010 10:44:33 -0500
+Date: Mon, 29 Nov 2010 15:44:18 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Magnus Damm <damm@opensource.se>, M?rton N?meth <nm127@freemail.hu>,
+        linux-media@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] soc_camera: Add the ability to bind regulators to
+	soc_camedra devices
+Message-ID: <20101129154416.GA30926@sirena.org.uk>
+References: <1290964687.3016.5.camel@realization> <Pine.LNX.4.64.1011281923440.5731@axis700.grange>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>,
-        jmorris@namei.org, mjg@redhat.com
-Subject: Re: [REGRESSION] Suspend fails because of TPM modules
-References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz> <4CF3C547.6020302@linux.vnet.ibm.com> <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1011281923440.5731@axis700.grange>
+X-Cookie: f u cn rd ths, u r prbbly a lsy spllr.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 01:26 PM, Jiri Kosina wrote:
-> On Mon, 29 Nov 2010, Rajiv Andrade wrote:
->
->>>> on my thinkpad x200s (and I have seen reports on different HW as well),
->>>> suspend fails when TPM modules are loaded.
->>>>
->>>> 	tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
->>>> 	legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -5
->>>> 	PM: Device 00:0a failed to suspend: error -5
->>>> 	PM: Some devices failed to suspend
->>>>
->>>> Once tpm, tpm_bios, tpm_tis and tpm modules are unloaded, suspend/resume
->>>> works.
->>>>
->>>> This is a regression. It definitely worked on this very same hardware on
->>>> 2.6.34. Any kernel between .34 and .37 wasn't booted there, so I don't
->>>> have any data of that kind.
->>>>
->>>> I can try bisecting it, but if anyone sees immediately what the culprit
->>>> might be, that'd be helpful.
->>> I just found out, that if I modprobe tpm_tis module with
->>>
->>> 	itpm=1
->>>
->>> parameter, the problem doesn't happen any more and suspend works fine.
->>>
->>> This definitely wasn't needed on older kernels though, so I'd consider
->>> that still a regression.
->>>
->>> Also, can't we make the module automatically detect the machines on which
->>> to apply the workaround? Let's say, based on DMI?
->>>
->> There's a patch already submitted that solves this:
->> http://marc.info/?l=linux-kernel&m=128769741101534&w=2
->> <http://marc.info/?l=linux-kernel&m=128769741101534&w=2>
->>
->> This side effect (to solve the suspend issue) should increase its urgency I
->> think.
->> James, any thoughts?
-> Yeah, Matthew has already pointed me to that patch, thanks. I will be
-> testing it shortly and providing my Tested-by: eventually.
->
-> Any ideas why other kernels were OK (.34) and didn't require this quirk on
-> my machine at all?
->
-The TPM device driver wasn't probably being built/loaded, can you check 
-that?
-The device driver must send the TPM a command prior to suspend to save 
-its state, what's happening here is that this particular model, iTPM, 
-doesn't change the status register as expected to acknowledge the code 
-that a send command operation finished successfully, the driver then 
-returns -EIO. The same obviously happens during suspend, returning 
-failure to save its state, since the command the driver sent to do so 
-failed, halting the suspend operation.
+On Sun, Nov 28, 2010 at 08:05:06PM +0100, Guennadi Liakhovetski wrote:
+> On Sun, 28 Nov 2010, Alberto Panizzo wrote:
 
-Matthew's patch implements automatic detection of such TPMs so that a 
-workaround implemented in a previous commit can be activated to bypass 
-that status register check, making the device usable and therefore able 
-to save its state when asked to by the device driver during suspend.
+> > In certain machines, camera devices are supplied directly
+> > by a number of regulators. This patch add the ability to drive
+> > these regulators directly by the soc_camera driver.
 
-Rajiv
+> IIRC, there has been a discussion a while ago, how to supply power to 
+> cameras by regulators. Someone has tried to provide a .power() hook in the 
+> platform code, but the problem was the order of driver loading / probing. 
+> So, how about doing the following:
+
+> 1. in your platform code you register a notifier like
+> 	bus_register_notifier(&soc_camera_bus_type, &cam_notifier);
+
+FWIW I'm looking at implementing a standard regulator API feature along
+these lines in the background.  This should hopefully mean we don't need
+driver support for most simple power control applications.  No ETA yet.
+
+> The reasons why I do not want to add this to the core are: (1) I do not 
+> want to have two methods for turning power on and off: a platform provided 
+> .power() hook and and a set of regulators, (2) would anyone really want to 
+> use several regulators for a camera sensor? If so, can it be the case, 
+> that, for example, the regulators have to be switched off in the reverse 
+> order to switching on? Or something else? (3) regulators can often do 
+> more, than just set one of two power levels - for on and off. What if a 
+> need arises to use other voltages?
+
+The way MMC handled this was to provide a standard version of the hook
+in the core which could be used by platforms with regulators supplying
+the device - they just assign the appropriate function as their power()
+operation AIUI.  That seems a fairly clean way of keeping stuff in the
+core without giving up the flexibility.
+
+> Is there any really good reason, why we _have_ to do this in soc-camera 
+> core?
+
+It does save everyone open coding stuff.
