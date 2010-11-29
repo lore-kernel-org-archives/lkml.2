@@ -1,46 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0K2KsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 05:48:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:44640 "EHLO mga03.intel.com"
+	id S1753234Ab0K2K5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:57:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34919 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753052Ab0K2KsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 05:48:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
-   d="scan'208";a="354361021"
-Date: Mon, 29 Nov 2010 11:48:13 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, dsd@laptop.org, cjb@laptop.org
-Subject: Re: [PATCH 2/4] cs5535-gpio: convert from pci device to platform
- device
-Message-ID: <20101129104812.GA2332@sortiz-mobl>
-References: <20101023004109.319bbdef@queued.net>
- <20101126204426.162ebc75@debxo>
+	id S1752720Ab0K2K5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 05:57:47 -0500
+Message-ID: <37166.10.24.255.17.1291028266.squirrel@dbdmail.itg.ti.com>
+Date: Mon, 29 Nov 2010 16:27:46 +0530 (IST)
+Subject: [PATCH V4 2/2] omap4: platform changes for CMA3000
+From: "Hemanth V" <hemanthv@ti.com>
+To: linux-omap@vger.kernel.org
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101126204426.162ebc75@debxo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andres,
+>From 8082870cc704d901d98cf0d6af90e45860927ceb Mon Sep 17 00:00:00 2001
+From: Hemanth V <hemanthv@ti.com>
+Date: Thu, 26 Aug 2010 17:49:12 +0530
+Subject: [PATCH] Platform changes for CMA3000 Accelerometer driver
 
-On Fri, Nov 26, 2010 at 08:44:26PM -0800, Andres Salomon wrote:
-> Samuel, thanks for applying the mfd patch.  I'm not sure how the rest
-> of these should be handled; they depend upon the first patch.  Would you
-> prefer they go through the mfd tree, or go in via Andrew's tree?
-I typically take them, unless the corresponding subsystem maintainers disagree
-with it. I also really much prefer to get an ACK from them before taking the
-patches.
+Update 4430 SDP board file with platform data for accelerometer driver
+and select the driver in kconfig
 
-Cheers,
-Samuel.
+Signed-off-by: Hemanth V <hemanthv@ti.com>
+---
+ arch/arm/mach-omap2/Kconfig         |    2 ++
+ arch/arm/mach-omap2/board-4430sdp.c |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index a928fd6..e87c049 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -255,6 +255,8 @@ config MACH_OMAP_4430SDP
+ 	depends on ARCH_OMAP4
+ 	select INPUT_TOUCHSCREEN
+ 	select TOUCHSCREEN_SYNTM12XX
++	select INPUT_MISC
++ 	select INPUT_CMA3000
++ 	select INPUT_CMA3000_I2C
+
+ config MACH_OMAP4_PANDA
+ 	bool "OMAP4 Panda Board"
+diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
+index ed78cdb..8b94f1f 100644
+--- a/arch/arm/mach-omap2/board-4430sdp.c
++++ b/arch/arm/mach-omap2/board-4430sdp.c
+@@ -23,6 +23,8 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/leds.h>
++#include <linux/input/cma3000.h>
++#include <linux/interrupt.h>
+
+ #include <mach/hardware.h>
+ #include <mach/omap4-common.h>
+@@ -44,6 +46,7 @@
+ #define ETH_KS8851_QUART		138
+ #define OMAP4SDP_MDM_PWR_EN_GPIO	157
+ #define OMAP4_SFH7741_SENSOR_OUTPUT_GPIO	184
++#define OMAP4_CMA3000ACCL_GPIO		186
+ #define OMAP4_SFH7741_ENABLE_GPIO	188
+
+ static struct gpio_led sdp4430_gpio_leds[] = {
+@@ -485,6 +488,27 @@ static struct twl4030_platform_data sdp4430_twldata = {
+ 	.vaux3		= &sdp4430_vaux3,
+ };
+
++static struct cma3000_platform_data cma3000_platform_data = {
++	.fuzz_x = 25,
++	.fuzz_y = 25,
++	.fuzz_z = 25,
++	.g_range = CMARANGE_8G,
++	.mode = CMAMODE_MOTDET,
++	.mdthr = 0x8,
++	.mdfftmr = 0x33,
++	.ffthr = 0x8,
++	.irqflags = IRQF_TRIGGER_HIGH,
++};
++
++static void omap_cma3000accl_init(void)
++{
++	if (gpio_request(OMAP4_CMA3000ACCL_GPIO, "Accelerometer") < 0) {
++		pr_err("Accelerometer GPIO request failed\n");
++		return;
++	}
++	gpio_direction_input(OMAP4_CMA3000ACCL_GPIO);
++}
++
+ static struct i2c_board_info __initdata sdp4430_i2c_boardinfo[] = {
+ 	{
+ 		I2C_BOARD_INFO("twl6030", 0x48),
+@@ -518,6 +542,11 @@ static struct i2c_board_info __initdata sdp4430_i2c_4_boardinfo[] = {
+ 	{
+ 		I2C_BOARD_INFO("hmc5843", 0x1e),
+ 	},
++	{
++		I2C_BOARD_INFO("cma3000_d01", 0x1c),
++		.platform_data = &cma3000_platform_data,
++		.irq = OMAP_GPIO_IRQ(OMAP4_CMA3000ACCL_GPIO),
++	},
+ };
+
+ static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
+@@ -570,6 +599,7 @@ static void __init omap_sfh7741prox_init(void)
+ 			 __func__, OMAP4_SFH7741_ENABLE_GPIO, error);
+ 		gpio_free(OMAP4_SFH7741_ENABLE_GPIO);
+ 	}
++	omap_cma3000accl_init();
+ }
+
+ static void __init omap_4430sdp_init(void)
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.5.4.3
+
