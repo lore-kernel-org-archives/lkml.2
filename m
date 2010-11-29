@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0K2AIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 19:08:38 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:44599 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab0K2AIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 19:08:37 -0500
-Date: Mon, 29 Nov 2010 11:08:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20101129110824.639b2659.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Nov_2010_11_08_24_+1100_EAdUC6t0AXb0tCIi"
+	id S1754382Ab0K2ATT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 19:19:19 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10774 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754270Ab0K2ATS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 19:19:18 -0500
+Message-ID: <003c01cb8f5b$0f13e8b0$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
+References: <4CEF178C.2050506@dsn.okisemi.com> <4CEF835C.7000304@pengutronix.de>
+Subject: Re: [PATCH net-next-2.6 06/19 v5] can: EG20T PCH: Fix endianness issue
+Date: Mon, 29 Nov 2010 09:19:13 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Nov_2010_11_08_24_+1100_EAdUC6t0AXb0tCIi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Friday, November 26, 2010 6:52 PM, Marc Kleine-Budde wrote :
 
-Hi all,
+> In an OOM situation the system is under pressure anyway. On low end
+> systems it not good to print a message to the log. AFAICS no other can
+> driver does this.
 
-After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Does the above mean it doesn't have to process for returned value of
+pch_can_rx_msg_lost  like below?
+> +   pch_can_rx_msg_lost(ndev, obj_num);
+> +   rcv_pkts++;
+> +   quota--;
 
-drivers/net/stmmac/stmmac_main.c: In function 'stmmac_resume':
-drivers/net/stmmac/stmmac_main.c:1849: error: 'struct stmmac_priv' has no m=
-ember named 'shutdown'
+> AFAICS no other can driver does this.
+I can see ti_hecc.c calls dev_err when alloc_can_err_skb fails.
 
-Caused by commit 874bd42d24c2a74f5dbd65e81e175982240fecd8 ("stmmac:
-convert to dev_pm_ops").
+Thanks,
 
-I have used the net tree from next-20101126 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
---Signature=_Mon__29_Nov_2010_11_08_24_+1100_EAdUC6t0AXb0tCIi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM8u74AAoJEDMEi1NhKgbsJygH/0/75pGUQg6pDoeSgPaEzFI3
-6BQejrhc7rDFFlMz3tjeLd6CUCupfeBRm9gAbK5PfGtjNPtaIYTb0AnUCQvp2rfq
-nTodeGmkB6nalkZoKjSNEulRxgYGxVFem9Qd3SVoyXYQ0z1/pBvBeMYGZm2++px3
-D3gLloCIiYeo7hbYJ2C4jzm1ueQZPkzbsttu/G9xYJHpeSDydTBYMTQTs+1/T6C0
-CkZIDDvbRFaf703JP5GAq2BcksEmkLOFRJ8blQuKk+7GbV9YFjx4dCbmsVrIob6H
-YdzGNjMM8XP44BcYWI58FELYKHIQptQZgHqNOX6WXrS0zoDAeFZTrgh2e1sAahs=
-=GS1W
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Nov_2010_11_08_24_+1100_EAdUC6t0AXb0tCIi--
