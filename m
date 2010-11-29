@@ -1,225 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab0K2PjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:39:17 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:20023 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab0K2Pif (ORCPT
+	id S1754548Ab0K2PmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:42:00 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:55874 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab0K2Pl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:38:35 -0500
-X-SpamScore: 5
-X-BigFish: VPS5(z1039ozbb2cKzz1202hzz8275bhz32i691h668h67dh63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCNKS3-01-73U-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 2/3] KVM: SVM: Make Use of the generic guest-mode functions
-Date: Mon, 29 Nov 2010 16:38:09 +0100
-Message-ID: <1291045090-2714-3-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291045090-2714-1-git-send-email-joerg.roedel@amd.com>
-References: <1291045090-2714-1-git-send-email-joerg.roedel@amd.com>
+	Mon, 29 Nov 2010 10:41:59 -0500
+Message-ID: <4CF3C9BB.20802@linux.vnet.ibm.com>
+Date: Mon, 29 Nov 2010 13:41:47 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>,
+        jmorris@namei.org, mjg@redhat.com
+Subject: Re: [REGRESSION] Suspend fails because of TPM modules
+References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz> <4CF3C547.6020302@linux.vnet.ibm.com> <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the is_nested logic in the SVM module
-with the generic notion of guest-mode.
+On 11/29/2010 01:26 PM, Jiri Kosina wrote:
+> On Mon, 29 Nov 2010, Rajiv Andrade wrote:
+>
+>>>> on my thinkpad x200s (and I have seen reports on different HW as well),
+>>>> suspend fails when TPM modules are loaded.
+>>>>
+>>>> 	tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
+>>>> 	legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -5
+>>>> 	PM: Device 00:0a failed to suspend: error -5
+>>>> 	PM: Some devices failed to suspend
+>>>>
+>>>> Once tpm, tpm_bios, tpm_tis and tpm modules are unloaded, suspend/resume
+>>>> works.
+>>>>
+>>>> This is a regression. It definitely worked on this very same hardware on
+>>>> 2.6.34. Any kernel between .34 and .37 wasn't booted there, so I don't
+>>>> have any data of that kind.
+>>>>
+>>>> I can try bisecting it, but if anyone sees immediately what the culprit
+>>>> might be, that'd be helpful.
+>>> I just found out, that if I modprobe tpm_tis module with
+>>>
+>>> 	itpm=1
+>>>
+>>> parameter, the problem doesn't happen any more and suspend works fine.
+>>>
+>>> This definitely wasn't needed on older kernels though, so I'd consider
+>>> that still a regression.
+>>>
+>>> Also, can't we make the module automatically detect the machines on which
+>>> to apply the workaround? Let's say, based on DMI?
+>>>
+>> There's a patch already submitted that solves this:
+>> http://marc.info/?l=linux-kernel&m=128769741101534&w=2
+>> <http://marc.info/?l=linux-kernel&m=128769741101534&w=2>
+>>
+>> This side effect (to solve the suspend issue) should increase its urgency I
+>> think.
+>> James, any thoughts?
+> Yeah, Matthew has already pointed me to that patch, thanks. I will be
+> testing it shortly and providing my Tested-by: eventually.
+>
+> Any ideas why other kernels were OK (.34) and didn't require this quirk on
+> my machine at all?
+>
+The TPM device driver wasn't probably being built/loaded, can you check 
+that?
+The device driver must send the TPM a command prior to suspend to save 
+its state, what's happening here is that this particular model, iTPM, 
+doesn't change the status register as expected to acknowledge the code 
+that a send command operation finished successfully, the driver then 
+returns -EIO. The same obviously happens during suspend, returning 
+failure to save its state, since the command the driver sent to do so 
+failed, halting the suspend operation.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kvm/svm.c |   44 +++++++++++++++++++++-----------------------
- 1 files changed, 21 insertions(+), 23 deletions(-)
+Matthew's patch implements automatic detection of such TPMs so that a 
+workaround implemented in a previous commit can be activated to bypass 
+that status register check, making the device usable and therefore able 
+to save its state when asked to by the device driver during suspend.
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 2fd2f4d..3376fca 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -192,11 +192,6 @@ static inline struct vcpu_svm *to_svm(struct kvm_vcpu *vcpu)
- 	return container_of(vcpu, struct vcpu_svm, vcpu);
- }
- 
--static inline bool is_nested(struct vcpu_svm *svm)
--{
--	return svm->nested.vmcb;
--}
--
- static inline void enable_gif(struct vcpu_svm *svm)
- {
- 	svm->vcpu.arch.hflags |= HF_GIF_MASK;
-@@ -727,7 +722,7 @@ static void svm_write_tsc_offset(struct kvm_vcpu *vcpu, u64 offset)
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 	u64 g_tsc_offset = 0;
- 
--	if (is_nested(svm)) {
-+	if (kvm_vcpu_is_gm(vcpu)) {
- 		g_tsc_offset = svm->vmcb->control.tsc_offset -
- 			       svm->nested.hsave->control.tsc_offset;
- 		svm->nested.hsave->control.tsc_offset = offset;
-@@ -741,7 +736,7 @@ static void svm_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 
- 	svm->vmcb->control.tsc_offset += adjustment;
--	if (is_nested(svm))
-+	if (kvm_vcpu_is_gm(vcpu))
- 		svm->nested.hsave->control.tsc_offset += adjustment;
- }
- 
-@@ -1209,7 +1204,7 @@ static void update_cr0_intercept(struct vcpu_svm *svm)
- 	if (gcr0 == *hcr0 && svm->vcpu.fpu_active) {
- 		vmcb->control.intercept_cr_read &= ~INTERCEPT_CR0_MASK;
- 		vmcb->control.intercept_cr_write &= ~INTERCEPT_CR0_MASK;
--		if (is_nested(svm)) {
-+		if (kvm_vcpu_is_gm(&svm->vcpu)) {
- 			struct vmcb *hsave = svm->nested.hsave;
- 
- 			hsave->control.intercept_cr_read  &= ~INTERCEPT_CR0_MASK;
-@@ -1220,7 +1215,7 @@ static void update_cr0_intercept(struct vcpu_svm *svm)
- 	} else {
- 		svm->vmcb->control.intercept_cr_read |= INTERCEPT_CR0_MASK;
- 		svm->vmcb->control.intercept_cr_write |= INTERCEPT_CR0_MASK;
--		if (is_nested(svm)) {
-+		if (kvm_vcpu_is_gm(&svm->vcpu)) {
- 			struct vmcb *hsave = svm->nested.hsave;
- 
- 			hsave->control.intercept_cr_read |= INTERCEPT_CR0_MASK;
-@@ -1233,7 +1228,7 @@ static void svm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0)
- {
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 
--	if (is_nested(svm)) {
-+	if (kvm_vcpu_is_gm(vcpu)) {
- 		/*
- 		 * We are here because we run in nested mode, the host kvm
- 		 * intercepts cr0 writes but the l1 hypervisor does not.
-@@ -1471,7 +1466,7 @@ static void svm_fpu_activate(struct kvm_vcpu *vcpu)
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 	u32 excp;
- 
--	if (is_nested(svm)) {
-+	if (kvm_vcpu_is_gm(vcpu)) {
- 		u32 h_excp, n_excp;
- 
- 		h_excp  = svm->nested.hsave->control.intercept_exceptions;
-@@ -1700,7 +1695,7 @@ static int nested_svm_check_exception(struct vcpu_svm *svm, unsigned nr,
- {
- 	int vmexit;
- 
--	if (!is_nested(svm))
-+	if (!kvm_vcpu_is_gm(&svm->vcpu))
- 		return 0;
- 
- 	svm->vmcb->control.exit_code = SVM_EXIT_EXCP_BASE + nr;
-@@ -1718,7 +1713,7 @@ static int nested_svm_check_exception(struct vcpu_svm *svm, unsigned nr,
- /* This function returns true if it is save to enable the irq window */
- static inline bool nested_svm_intr(struct vcpu_svm *svm)
- {
--	if (!is_nested(svm))
-+	if (!kvm_vcpu_is_gm(&svm->vcpu))
- 		return true;
- 
- 	if (!(svm->vcpu.arch.hflags & HF_VINTR_MASK))
-@@ -1757,7 +1752,7 @@ static inline bool nested_svm_intr(struct vcpu_svm *svm)
- /* This function returns true if it is save to enable the nmi window */
- static inline bool nested_svm_nmi(struct vcpu_svm *svm)
- {
--	if (!is_nested(svm))
-+	if (!kvm_vcpu_is_gm(&svm->vcpu))
- 		return true;
- 
- 	if (!(svm->nested.intercept & (1ULL << INTERCEPT_NMI)))
-@@ -1994,7 +1989,8 @@ static int nested_svm_vmexit(struct vcpu_svm *svm)
- 	if (!nested_vmcb)
- 		return 1;
- 
--	/* Exit nested SVM mode */
-+	/* Exit Guest-Mode */
-+	kvm_vcpu_leave_gm(&svm->vcpu);
- 	svm->nested.vmcb = 0;
- 
- 	/* Give the current vmcb to the guest */
-@@ -2302,7 +2298,9 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 
- 	nested_svm_unmap(page);
- 
--	/* nested_vmcb is our indicator if nested SVM is activated */
-+	/* Enter Guest-Mode */
-+	kvm_vcpu_enter_gm(&svm->vcpu);
-+
- 	svm->nested.vmcb = vmcb_gpa;
- 
- 	enable_gif(svm);
-@@ -2588,7 +2586,7 @@ static int svm_get_msr(struct kvm_vcpu *vcpu, unsigned ecx, u64 *data)
- 	case MSR_IA32_TSC: {
- 		u64 tsc_offset;
- 
--		if (is_nested(svm))
-+		if (kvm_vcpu_is_gm(vcpu))
- 			tsc_offset = svm->nested.hsave->control.tsc_offset;
- 		else
- 			tsc_offset = svm->vmcb->control.tsc_offset;
-@@ -3002,7 +3000,7 @@ static int handle_exit(struct kvm_vcpu *vcpu)
- 		return 1;
- 	}
- 
--	if (is_nested(svm)) {
-+	if (kvm_vcpu_is_gm(vcpu)) {
- 		int vmexit;
- 
- 		trace_kvm_nested_vmexit(svm->vmcb->save.rip, exit_code,
-@@ -3109,7 +3107,7 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
- {
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 
--	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
-+	if (kvm_vcpu_is_gm(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
- 		return;
- 
- 	if (irr == -1)
-@@ -3163,7 +3161,7 @@ static int svm_interrupt_allowed(struct kvm_vcpu *vcpu)
- 
- 	ret = !!(vmcb->save.rflags & X86_EFLAGS_IF);
- 
--	if (is_nested(svm))
-+	if (kvm_vcpu_is_gm(vcpu))
- 		return ret && !(svm->vcpu.arch.hflags & HF_VINTR_MASK);
- 
- 	return ret;
-@@ -3220,7 +3218,7 @@ static inline void sync_cr8_to_lapic(struct kvm_vcpu *vcpu)
- {
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 
--	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
-+	if (kvm_vcpu_is_gm(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
- 		return;
- 
- 	if (!(svm->vmcb->control.intercept_cr_write & INTERCEPT_CR8_MASK)) {
-@@ -3234,7 +3232,7 @@ static inline void sync_lapic_to_cr8(struct kvm_vcpu *vcpu)
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 	u64 cr8;
- 
--	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
-+	if (kvm_vcpu_is_gm(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
- 		return;
- 
- 	cr8 = kvm_get_cr8(vcpu);
-@@ -3614,7 +3612,7 @@ static void svm_fpu_deactivate(struct kvm_vcpu *vcpu)
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 
- 	svm->vmcb->control.intercept_exceptions |= 1 << NM_VECTOR;
--	if (is_nested(svm))
-+	if (kvm_vcpu_is_gm(vcpu))
- 		svm->nested.hsave->control.intercept_exceptions |= 1 << NM_VECTOR;
- 	update_cr0_intercept(svm);
- }
--- 
-1.7.1
-
-
+Rajiv
