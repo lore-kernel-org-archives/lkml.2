@@ -1,53 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab0K2PXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:23:37 -0500
+	id S1754544Ab0K2PXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:23:43 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:36544 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab0K2PXg (ORCPT
+	with ESMTP id S1754528Ab0K2PXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:23:36 -0500
+	Mon, 29 Nov 2010 10:23:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ZuRKEa2+982kCNGLEH4wRwlsUvT9qs29HRTI7ww0S+Y4BIGqpw/NvVVwqPpYEWPKv2
-         sxyvuB6c+krjSTwstFGTUaSWEdQyLoXi/zMR5q6X1jZLRBYHMBiNSnPXvwAssi3anv5i
-         DBm0N9ZXCEOxPB+lUwVNj6MF+h4oWUU9CStaA=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=F6qOFrhY1jBnu+QnreGQlDyeYFqQKGefMYX3bwQ41yuuHcDs9MSoJRQ+v+Sf0acuDk
+         It/+Jf8NYTyWWMGIJQo8Hu5dAQzfJWHh3UKlkX+MsvIOB56Zio4vJlpiOddXN80gyz2W
+         TGphxqYf7aFC9RdfQb64DOY0Y1gbGMM4ljKUQ=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Ben Gamari <bgamari.foss@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v3 0/3] f/madivse(DONTNEED) support
-Date: Tue, 30 Nov 2010 00:23:18 +0900
-Message-Id: <cover.1291043273.git.minchan.kim@gmail.com>
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH v3 1/3] deactivate invalidated pages
+Date: Tue, 30 Nov 2010 00:23:19 +0900
+Message-Id: <6e01d81a4b575dcaaacc6b3782c505103e024085.1291043274.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1291043273.git.minchan.kim@gmail.com>
+References: <cover.1291043273.git.minchan.kim@gmail.com>
+In-Reply-To: <cover.1291043273.git.minchan.kim@gmail.com>
+References: <cover.1291043273.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently there is a report about working set page eviction due to rsync
-workload. application programmers want to use fadvise but it's not easy.
-You could see detailed description on [1/3].
+Recently, there are reported problem about thrashing.
+(http://marc.info/?l=rsync&m=128885034930933&w=2)
+It happens by backup workloads(ex, nightly rsync).
+That's because the workload makes just use-once pages
+and touches pages twice. It promotes the page into
+active list so that it results in working set page eviction.
 
- - [1/3] is to move invalidated page which is dirty/writeback on active list
-   into inactive list's head.
- - [2/3] is for moving invalidated page into inactive list's tail when the
-   page's writeout is completed.
- - [3/3] is to not calling mark_page_accessed in case of madvise(DONTNEED).
+Some app developer want to support POSIX_FADV_NOREUSE.
+But other OSes don't support it, either.
+(http://marc.info/?l=linux-mm&m=128928979512086&w=2)
 
-Minchan Kim (3):
-  deactivate invalidated pages
-  Reclaim invalidated page ASAP
-  Prevent activation of page in madvise_dontneed
+By other approach, app developers use POSIX_FADV_DONTNEED.
+But it has a problem. If kernel meets page is writing
+during invalidate_mapping_pages, it can't work.
+It is very hard for application programmer to use it.
+Because they always have to sync data before calling
+fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+be discardable. At last, they can't use deferred write of kernel
+so that they could see performance loss.
+(http://insights.oetiker.ch/linux/fadvise.html)
 
- include/linux/mm.h   |    4 +-
+In fact, invalidation is very big hint to reclaimer.
+It means we don't use the page any more. So let's move
+the writing page into inactive list's head.
+
+Why I need the page to head, Dirty/Writeback page would be flushed
+sooner or later. It can prevent writeout of pageout which is less
+effective than flusher's writeout.
+
+Originally, I reused lru_demote of Peter with some change so added
+his Signed-off-by.
+
+Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Mel Gorman <mel@csn.ul.ie>
+
+Adnrew. Before applying this series, please drop below two patches.
+ mm-deactivate-invalidated-pages.patch
+ mm-deactivate-invalidated-pages-fix.patch
+
+Changelog since v2:
+ - mapped page leaves alone - suggested by Mel
+ - pass part related PG_reclaim in next patch.
+
+Changelog since v1:
+ - modify description
+ - correct typo
+ - add some comment
+---
  include/linux/swap.h |    1 +
- mm/madvise.c         |    4 +-
- mm/memory.c          |   38 +++++++++++-------
- mm/mmap.c            |    4 +-
- mm/page-writeback.c  |   12 +++++-
- mm/swap.c            |  102 ++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/truncate.c        |   16 ++++++--
- 8 files changed, 155 insertions(+), 26 deletions(-)
+ mm/swap.c            |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/truncate.c        |   16 +++++++--
+ 3 files changed, 93 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index eba53e7..84375e4 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -213,6 +213,7 @@ extern void mark_page_accessed(struct page *);
+ extern void lru_add_drain(void);
+ extern int lru_add_drain_all(void);
+ extern void rotate_reclaimable_page(struct page *page);
++extern void lru_deactivate_page(struct page *page);
+ extern void swap_setup(void);
+ 
+ extern void add_page_to_unevictable_list(struct page *page);
+diff --git a/mm/swap.c b/mm/swap.c
+index 3f48542..19e0812 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -31,6 +31,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/memcontrol.h>
+ #include <linux/gfp.h>
++#include <linux/rmap.h>
+ 
+ #include "internal.h"
+ 
+@@ -39,6 +40,8 @@ int page_cluster;
+ 
+ static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
++static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
++
+ 
+ /*
+  * This path almost never happens for VM activity - pages are normally
+@@ -267,6 +270,63 @@ void add_page_to_unevictable_list(struct page *page)
+ }
+ 
+ /*
++ * This function is used by invalidate_mapping_pages.
++ * If the page can't be invalidated, this function moves the page
++ * into inative list's head. Because the VM expects the page would
++ * be writeout by flusher. The flusher's writeout is much effective
++ * than reclaimer's random writeout.
++ */
++static void __lru_deactivate(struct page *page, struct zone *zone)
++{
++	int lru, file;
++	unsigned long vm_flags;
++
++	if (!PageLRU(page) || !PageActive(page))
++		return;
++
++	/* Some processes are using the page */
++	if (page_mapped(page))
++		return;
++
++	file = page_is_file_cache(page);
++	lru = page_lru_base_type(page);
++	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
++	ClearPageActive(page);
++	ClearPageReferenced(page);
++	add_page_to_lru_list(zone, page, lru);
++	__count_vm_event(PGDEACTIVATE);
++
++	update_page_reclaim_stat(zone, page, file, 0);
++}
++
++/*
++ * This function must be called with preemption disable.
++ */
++static void __pagevec_lru_deactivate(struct pagevec *pvec)
++{
++	int i;
++	struct zone *zone = NULL;
++
++	for (i = 0; i < pagevec_count(pvec); i++) {
++		struct page *page = pvec->pages[i];
++		struct zone *pagezone = page_zone(page);
++
++		if (pagezone != zone) {
++			if (zone)
++				spin_unlock_irq(&zone->lru_lock);
++			zone = pagezone;
++			spin_lock_irq(&zone->lru_lock);
++		}
++		__lru_deactivate(page, zone);
++	}
++	if (zone)
++		spin_unlock_irq(&zone->lru_lock);
++
++	release_pages(pvec->pages, pvec->nr, pvec->cold);
++	pagevec_reinit(pvec);
++}
++
++/*
+  * Drain pages out of the cpu's pagevecs.
+  * Either "cpu" is the current CPU, and preemption has already been
+  * disabled; or "cpu" is being hot-unplugged, and is already dead.
+@@ -292,6 +352,26 @@ static void drain_cpu_pagevecs(int cpu)
+ 		pagevec_move_tail(pvec);
+ 		local_irq_restore(flags);
+ 	}
++
++	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
++	if (pagevec_count(pvec))
++		__pagevec_lru_deactivate(pvec);
++}
++
++/*
++ * Forcefully deactivate a page.
++ * This function is used for reclaiming the page ASAP when the page
++ * can't be invalidated by Dirty/Writeback.
++ */
++void lru_deactivate_page(struct page *page)
++{
++	if (likely(get_page_unless_zero(page))) {
++		struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
++
++		if (!pagevec_add(pvec, page))
++			__pagevec_lru_deactivate(pvec);
++		put_cpu_var(lru_deactivate_pvecs);
++	}
+ }
+ 
+ void lru_add_drain(void)
+diff --git a/mm/truncate.c b/mm/truncate.c
+index cd94607..09b9748 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -332,7 +332,8 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+ {
+ 	struct pagevec pvec;
+ 	pgoff_t next = start;
+-	unsigned long ret = 0;
++	unsigned long ret;
++	unsigned long count = 0;
+ 	int i;
+ 
+ 	pagevec_init(&pvec, 0);
+@@ -359,8 +360,15 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+ 			if (lock_failed)
+ 				continue;
+ 
+-			ret += invalidate_inode_page(page);
+-
++			ret = invalidate_inode_page(page);
++			/*
++			 * If the page was dirty or under writeback we cannot
++			 * invalidate it now.  Move it to the head of the
++			 * inactive LRU for using deferred writeback of flusher.
++			 */
++			if (!ret)
++				lru_deactivate_page(page);
++			count += ret;
+ 			unlock_page(page);
+ 			if (next > end)
+ 				break;
+@@ -369,7 +377,7 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+ 		mem_cgroup_uncharge_end();
+ 		cond_resched();
+ 	}
+-	return ret;
++	return count;
+ }
+ EXPORT_SYMBOL(invalidate_mapping_pages);
+ 
+-- 
+1.7.0.4
 
