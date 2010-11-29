@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab0K2LxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 06:53:04 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:35879 "EHLO
+	id S1753758Ab0K2Lyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 06:54:38 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:35887 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489Ab0K2LxD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752840Ab0K2Lyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 06:53:03 -0500
-Subject: Re: [PATCH v4] sched: automated per session task groups
+	Mon, 29 Nov 2010 06:54:37 -0500
+Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>
-In-Reply-To: <20101128201851.GA20555@elte.hu>
-References: <20101121133744.GA10765@elte.hu>
-	 <1290700829.4759.16.camel@maggy.simson.net>
-	 <1290954299.30515.15.camel@marge.simson.net>
-	 <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
-	 <20101128201851.GA20555@elte.hu>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1291009409-sup-4332@au1.ibm.com>
+References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
+	 <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
+	 <1290510512.2072.387.camel@laptop>
+	 <20101123124121.GA11101@ghostprotocols.net>
+	 <20101125154718.GE15875@ghostprotocols.net>
+	 <1291009409-sup-4332@au1.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 29 Nov 2010 12:53:13 +0100
-Message-ID: <1291031593.32004.19.camel@laptop>
+Date: Mon, 29 Nov 2010 12:54:50 +0100
+Message-ID: <1291031690.32004.20.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-28 at 21:18 +0100, Ingo Molnar wrote:
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Mon, 2010-11-29 at 17:06 +1100, Ian Munsie wrote:
 > 
-> > On Sun, Nov 28, 2010 at 6:24 AM, Mike Galbraith <efault@gmx.de> wrote:
-> > >
-> > > Something else is seriously wrong though.  36.1 with attached (plus
-> > > sched, cgroup: Fixup broken cgroup movement) works a treat, whereas
-> > > 37.git and tip with fixlet below both suck rocks.  With a make -j40
-> > > running, wakeup-latency is showing latencies of >100ms, amarok skips,
-> > > mouse lurches badly.. generally horrid.  Something went south.
-> > 
-> > Can you test -rc3? Is that still ok? And are you perhaps using
-> > Nouveau? There's a report of some graphics (?) regression since -rc3
-> > about bad desktop performance:
-> > 
-> >    https://bugzilla.kernel.org/show_bug.cgi?id=23912
-> > 
-> > but it doesn't have any more information yet (so if -rc3 _is_ good for
-> > you, and you can add anything to that report, it would be good. The
-> > original reporter is hopefully bisecting it now)
 > 
-> Mike, the last pure -rc3 -tip commit is 92c883adf03b - you could try to check that 
-> out too: it has most of the current sched/core commits, but has none of the post-rc3 
-> DRM changes.
+> This goes away if PERF_SAMPLE_CPU is added to the mix so that the
+> timestamps are offset from the first event of *their* CPU, otherwise
+> time-epoch can go negative, as it has done here. 
 
-Well we totally re-wrote the cgroup load-balancer in -tip. The thing
-currently in -linus is a utter crap because its very strongly serialized
-across all cores (some people spend like 25% of their time in there).
+How does that happen, I though the power7 sched_clock() was fully
+synchronized and monotonic across all cores?
