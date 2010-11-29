@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab0K2Ns7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 08:48:59 -0500
-Received: from hera.kernel.org ([140.211.167.34]:57885 "EHLO hera.kernel.org"
+	id S1754210Ab0K2NuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 08:50:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57282 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab0K2Ns6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 08:48:58 -0500
-Message-ID: <4CF3AF35.4050108@kernel.org>
-Date: Mon, 29 Nov 2010 14:48:37 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1753825Ab0K2NuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 08:50:21 -0500
+From: Jason Wang <jasowang@redhat.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        "@sisk.plpavel@ucw.cz"@htj.dyndns.org,
-        "Jan Kratochvil \"" <jan.kratochvil@redhat.com>
-Subject: Re: [PATCH 09/14] ptrace: clean transitions between TASK_STOPPED
- and TRACED
-References: <1290768569-16224-1-git-send-email-tj@kernel.org> <1290768569-16224-10-git-send-email-tj@kernel.org> <20101128202535.GC12896@redhat.com>
-In-Reply-To: <20101128202535.GC12896@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Nov 2010 13:48:39 +0000 (UTC)
+Message-ID: <19699.44942.204823.848838@gargle.gargle.HOWL>
+Date: Mon, 29 Nov 2010 21:50:06 +0800
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, virtualization@lists.osdl.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] vhost: correctly set bits of dirty pages
+In-Reply-To: <20101129081840.GB25496@redhat.com>
+References: <20101129054819.24923.26439.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+	<20101129081840.GB25496@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+Michael S. Tsirkin writes:
+ > On Mon, Nov 29, 2010 at 01:48:20PM +0800, Jason Wang wrote:
+ > > When counting pages we should increase it by 1 instead of VHOST_PAGE_SIZE,
+ > > and also make log_write() can correctly process the request across
+ > > pages with write_address not start at page boundary.
+ > > 
+ > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+ > 
+ > dd
+ > Thanks, good catch!
+ > But let's to it in small steps: first, a small patch to fix the bug:
+ > I think this is equivalent, right?
+ > 
 
-On 11/28/2010 09:25 PM, Oleg Nesterov wrote:
-> This adds another user-visible change, this time it is more serious.
-> Again, I do not claim it breaks ptrace, just I do not know.
-> 
->> @@ -204,6 +202,19 @@ int ptrace_attach(struct task_struct *task)
->>  	__ptrace_link(task, current);
->>  	send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
->>
->> +	/*
->> +	 * If the task is already STOPPED, set GROUP_STOP_PENDING and
->> +	 * kick it so that it transits to TRACED.  This is safe as
->> +	 * both transitions in and out of STOPPED are protected by
->> +	 * siglock.
->> +	 */
->> +	spin_lock(&task->sighand->siglock);
->> +	if (task_is_stopped(task)) {
->> +		task->group_stop |= GROUP_STOP_PENDING;
->> +		signal_wake_up(task, 1);
-> 
-> OK. Now we have a window if the tracer attaches to the stopped task.
-> 
-> Say,
-> 
-> 	child = fork()
-> 
-> 	if (!child)
-> 		return child_do_something();
-> 
-> 	kill(child, SIGSTOP);
-> 	wait();			// <--- ensures it is stopped
-> 
-> 	ptrace(PTRACE_ATTACH, child);
-> 
-> 	assert(ptrace(PTRACE_WHATEVER, child) == 0);
-> 
-> Currently this code is correct. With this patch the assertion above
-> can fail, the child may be running, changing its state from STOPPED
-> to TRACED.
+Yes.
 
-Hmmm... rather convoluted, but yeap.  I can update the code to wait
-for stopped -> traced transition to complete, so that the transition
-is hidden from userland.  How does that sound to you?
+ > Subject: vhost: correctly set bits of dirty pages
+ > 
+ > When counting pages we should increase address by 1 instead of
+ > VHOST_PAGE_SIZE, and also make log_write() can correctly process the
+ > request across pages with write_address not starting at page boundary.
+ > 
+ > Reported-by: Jason Wang <jasowang@redhat.com>
+ > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+ > 
 
->> @@ -1812,7 +1817,13 @@ static int do_signal_stop(int signr)
->>
->>  		spin_lock_irq(&current->sighand->siglock);
->>  	} else
->> -		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
->> +		ptrace_stop(current->group_stop & GROUP_STOP_SIGMASK,
->> +			    CLD_STOPPED, 0, NULL);
->> +
->> +	if (current->group_stop & GROUP_STOP_PENDING) {
->> +		WARN_ON_ONCE(!(current->group_stop & GROUP_STOP_SIGMASK));
->> +		goto retry;
-> 
-> This doesn't look right even without ptrace.
-> 
-> Suppose we have to threads, T1 and T2, both stopped, SIGNAL_STOP_STOPPED
-> is set.
-> 
-> SIGCONT wakes them up.
-> 
-> To simplify the discussion, suppose that T1 takes a long preemption
-> when it returns from schedule(), right before it takes ->siglock again.
-> 
-> T2 sends CLD_CONTINUED to parent and dequeues another SIGSTOP. It
-> initiates another group stop, sees T1 as running,  and stops with
-> ->group_stop_count == 1. Now we are waiting for T1 which should
-> participate.
-> 
-> Finally T1 resumes and sees GROUP_STOP_PENDING. It goes to 'retry:'
-> and stops, but nobody notifies the parent ang ->group_stop_count is
-> still non-zero.
+I'm fine with this, thanks!
 
-Good point.  I'll think about how the problem can be solved.  Maybe
-the retry and pending states need to be separated.
-
-Thanks.
-
--- 
-tejun
+ > ---
+ > 
+ > diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+ > index 568eb70..d0a3552 100644
+ > --- a/drivers/vhost/vhost.c
+ > +++ b/drivers/vhost/vhost.c
+ > @@ -887,6 +887,7 @@ static int log_write(void __user *log_base,
+ >  	int r;
+ >  	if (!write_length)
+ >  		return 0;
+ > +	write_length += write_address % VHOST_PAGE_SIZE;
+ >  	write_address /= VHOST_PAGE_SIZE;
+ >  	for (;;) {
+ >  		u64 base = (u64)(unsigned long)log_base;
+ > @@ -900,7 +901,7 @@ static int log_write(void __user *log_base,
+ >  		if (write_length <= VHOST_PAGE_SIZE)
+ >  			break;
+ >  		write_length -= VHOST_PAGE_SIZE;
+ > -		write_address += VHOST_PAGE_SIZE;
+ > +		write_address += 1;
+ >  	}
+ >  	return r;
+ >  }
+ > --
+ > To unsubscribe from this list: send the line "unsubscribe kvm" in
+ > the body of a message to majordomo@vger.kernel.org
+ > More majordomo info at  http://vger.kernel.org/majordomo-info.html
