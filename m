@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0K2VmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 16:42:25 -0500
-Received: from kroah.org ([198.145.64.141]:36078 "EHLO coco.kroah.org"
+	id S1754073Ab0K2Vrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 16:47:39 -0500
+Received: from kroah.org ([198.145.64.141]:37003 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab0K2VmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 16:42:24 -0500
-Date: Mon, 29 Nov 2010 13:41:28 -0800
+	id S1751519Ab0K2Vri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 16:47:38 -0500
+Date: Mon, 29 Nov 2010 13:44:39 -0800
 From: Greg KH <greg@kroah.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-Message-ID: <20101129214128.GA9691@kroah.com>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <20101129131737.3dd6eb03@bike.lwn.net>
- <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Greg KH <gregkh@suse.de>, Scott Wood <scottwood@freescale.com>,
+        Timur Tabi <timur@freescale.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        devicetree-discuss@vger.kernel.org
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+Message-ID: <20101129214439.GA9830@kroah.com>
+References: <4CE546C5.8060401@freescale.com>
+ <20101118153912.GA1443@suse.de>
+ <4CE54E40.9040503@freescale.com>
+ <20101118112146.3275eb08@udp111988uds.am.freescale.net>
+ <4CE5657D.8060105@freescale.com>
+ <20101118121356.3491da72@udp111988uds.am.freescale.net>
+ <1290594227.4446.12.camel@concordia>
+ <20101124120818.7951bcb4@udp111988uds.am.freescale.net>
+ <20101124182353.GA10589@suse.de>
+ <1290638647.14502.10.camel@concordia>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
+In-Reply-To: <1290638647.14502.10.camel@concordia>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
-> Hi Jon
-> 
-> On Mon, 29 Nov 2010, Jonathan Corbet wrote:
-> 
-> > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
-> > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+On Thu, Nov 25, 2010 at 09:44:07AM +1100, Michael Ellerman wrote:
+> On Wed, 2010-11-24 at 10:23 -0800, Greg KH wrote:
+> > On Wed, Nov 24, 2010 at 12:08:18PM -0600, Scott Wood wrote:
+> > > On Wed, 24 Nov 2010 21:23:47 +1100
+> > > Michael Ellerman <michael@ellerman.id.au> wrote:
+> > > 
+> > > > On Thu, 2010-11-18 at 12:13 -0600, Scott Wood wrote:
+> > > > > Unfortunately, it's not an exact match, and the fact that reg doesn't
+> > > > > translate to a physical address means that AFAICT you'll currently get
+> > > > > something like "byte-channel.nnn", where "nnn" is an arbitrary
+> > > > > kernel-assigned number.
+> > > > 
+> > > > Can you not use device_rename() ?
+> > > 
+> > > Ah, didn't know about that.  Still, might be nice to add support for
+> > > "handle" nodes at the infrastructure level rather than in each driver.
 > > 
-> > > When two drivers interoperate without an explicit dependency, it is often
-> > > required to prevent one of them from being unloaded safely by dereferencing
-> > > dev->driver->owner. This patch provides a generic function to do this in a
-> > > race-free way.
-> > 
-> > I must ask: why not, instead, make the dependency explicit?  In
-> > particular, this looks like an application for the proposed media
-> > controller code, which is meant to model the connections between otherwise
-> > independent devices.  The fact that your example comes from V4L2 (which is
-> > the current domain of the media controller) also argues that way.
+> > No, please never use that function, bad things will happen.
 > 
-> Sorry, don't see a good way to do this. This function is for a general 
-> dependency, where you don't have that driver, we are checking for register 
-> with us, so, the only way to get to it is via dev->driver->owner.
+> Why? The network & wireless code uses it, so presumably it can work?
 
-Wait, what?  The device is already bound to a driver, right, so why
-would you care about "locking" the module into memory?  What could this
-possibly be used for?
+Yes it can, but networking is the only code that should use this.
 
-> And I also don't want to move registering the device into the
-> dependant driver and then wait (with a timeout) for a driver to probe
-> with it... I just want to verify, whether a driver has attached to
-> that device and whether I can lock it down.
+> If
+> not please consider:
+> 
+> commit f470f680dfaad8731f079a033a50440082e20930
+> Author: Michael Ellerman <michael@ellerman.id.au>
+> Date:   Thu Nov 25 09:41:28 2010 +1100
+> 
+>     driver core: Document that device_rename() is not to be used
+>     
+>     Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index 6ed6454..f1fac19 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1513,6 +1513,8 @@ EXPORT_SYMBOL_GPL(device_destroy);
+>   * exclusion between two different calls of device_rename
+>   * on the same device to ensure that new_name is valid and
+>   * won't conflict with other devices.
+> + *
+> + * "Never use this function, bad things will happen" - gregkh
 
-Who cares if a driver is attached to any device?  And again, why would
-you want to "lock it down"?
+Nice, I like it :)
 
-confused,
+I'll go queue this up.
 
 greg k-h
