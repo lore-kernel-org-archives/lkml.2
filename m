@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab0K2PT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:19:28 -0500
-Received: from hera.kernel.org ([140.211.167.34]:32984 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab0K2PT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:19:27 -0500
-Message-ID: <4CF3C46D.9030800@kernel.org>
-Date: Mon, 29 Nov 2010 16:19:09 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1754372Ab0K2PUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:20:10 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:56274 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab0K2PUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 10:20:08 -0500
+Date: Mon, 29 Nov 2010 15:19:53 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>
+Subject: Re: [REGRESSION] Suspend fails because of TPM modules
+Message-ID: <20101129151953.GA9501@srcf.ucam.org>
+References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] kthread: use kthread_create_on_cpu()
-References: <1290972833.29196.90.camel@edumazet-laptop>	 <20101128224024.GA12300@basil.fritz.box>	 <1290984712.29196.100.camel@edumazet-laptop>	 <20101128230146.GB12300@basil.fritz.box>	 <1290987424.29196.128.camel@edumazet-laptop>	 <20101129090510.GA15763@basil.fritz.box>	 <1291023532.3435.29.camel@edumazet-laptop> <1291043719.3435.981.camel@edumazet-laptop>
-In-Reply-To: <1291043719.3435.981.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Nov 2010 15:19:11 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 04:15 PM, Eric Dumazet wrote:
-> ksoftirqd, kworker, migration, and pktgend kthreads can be created with
-> kthread_create_on_cpu(), to get proper NUMA affinities for their stack
-> and task_struct.
+On Mon, Nov 29, 2010 at 04:15:21PM +0100, Jiri Kosina wrote:
+
+> I just found out, that if I modprobe tpm_tis module with
 > 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: linux-arch@vger.kernel.org
+> 	itpm=1
+> 
+> parameter, the problem doesn't happen any more and suspend works fine.
+> 
+> This definitely wasn't needed on older kernels though, so I'd consider 
+> that still a regression.
+> 
+> Also, can't we make the module automatically detect the machines on which 
+> to apply the workaround? Let's say, based on DMI?
 
-Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
+http://lkml.org/lkml/2010/10/21/456
 
 -- 
-tejun
+Matthew Garrett | mjg59@srcf.ucam.org
