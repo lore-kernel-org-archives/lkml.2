@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab0K2I3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:29:31 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55445 "EHLO mx3.mail.elte.hu"
+	id S1750921Ab0K2IfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:35:05 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36009 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab0K2I33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:29:29 -0500
-Date: Mon, 29 Nov 2010 09:29:16 +0100
+	id S1750835Ab0K2IfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 03:35:04 -0500
+Date: Mon, 29 Nov 2010 09:34:50 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-Message-ID: <20101129082916.GA12374@elte.hu>
-References: <20101122133949.93201b15.sfr@canb.auug.org.au>
- <20101129135023.4a931f86.sfr@canb.auug.org.au>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] apic/io_apic.c: Move variable 'desc' into the #ifdef.
+Message-ID: <20101129083450.GC12374@elte.hu>
+References: <4cc988bf535efac7a6aafe1ca0f0ac44f3968d94.1290992687.git.tfransosi@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101129135023.4a931f86.sfr@canb.auug.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4cc988bf535efac7a6aafe1ca0f0ac44f3968d94.1290992687.git.tfransosi@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,30 +34,42 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+* Thiago Farina <tfransosi@gmail.com> wrote:
 
-> Hi all,
+> This variable is only used in the presence of the CONFIG_GENERIC_PENDING_IRQ.
+> So when compiling without this config, we get the following warning:
 > 
-> On Mon, 22 Nov 2010 13:39:49 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > After merging the final tree, today's linux-next build (sparc64 defconfig)
-> > failed like this:
-> > 
-> > arch/sparc/kernel/nmi.c:54: error: redefinition of 'touch_nmi_watchdog'
-> > include/linux/nmi.h:21: note: previous definition of 'touch_nmi_watchdog' was here
-> > 
-> > Caused (or, at least exposed) by commit
-> > 5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a ("x86, nmi_watchdog: Remove the
-> > old nmi_watchdog").  Sparc appears to have a touch_nmi_watchdog() and
-> > defines ARCH_HAS_NMI_WATCHDOG but not CONFIG_HARDLOCKUP_DETECTOR.
-> > 
-> > I have reverted that commit for today (as well as commit
-> > 072b198a4ad48bd722ec6d203d65422a4698eae7 "x86, nmi_watchdog: Remove all
-> > stub function calls from old nmi_watchdog" that depends on it).
+> arch/x86/kernel/apic/io_apic.c: In function ‘ack_apic_level’:
+> arch/x86/kernel/apic/io_apic.c:2433: warning: unused variable ‘desc’
 > 
-> This build failure is back, so I have reverted the above commits again.
+> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 7cc0a72..56261be 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2430,9 +2430,12 @@ static void ack_apic_level(struct irq_data *data)
+>  {
+>  	struct irq_cfg *cfg = data->chip_data;
+>  	int i, do_unmask_irq = 0, irq = data->irq;
+> -	struct irq_desc *desc = irq_to_desc(irq);
+>  	unsigned long v;
+>  
+> +#ifdef CONFIG_GENERIC_PENDING_IRQ
+> +	struct irq_desc *desc = irq_to_desc(irq);
+> +#endif
+> +
+>  	irq_complete_move(cfg);
+>  #ifdef CONFIG_GENERIC_PENDING_IRQ
+>  	/* If we are moving the irq we need to mask it */
 
-Don, have you got a fix for that?
+This is very ugly, and it was ugly before your patch as well.
+
+Please move the bits that are under CONFIG_GENERIC_PENDING_IRQ into a helper inline 
+function.
 
 Thanks,
 
