@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab0K2QvC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:51:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990Ab0K2QvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:51:00 -0500
-Date: Mon, 29 Nov 2010 17:43:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 4/4] taskstats: Export "cdata_acct" with taskstats
-Message-ID: <20101129164329.GA16648@redhat.com>
-References: <20101119201108.269346583@linux.vnet.ibm.com> <20101119201144.871656307@linux.vnet.ibm.com> <20101125132639.GB25836@redhat.com> <1290705675.1941.73.camel@holzheu-laptop>
+	id S1755193Ab0K2QwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:52:13 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:19657
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755129Ab0K2QwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:52:11 -0500
+X-SpamScore: 5
+X-BigFish: VPS5(z1039ozbb2cKzz1202hzz8275bhz32i691h668h67dh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LCNO6L-01-CRY-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 1/3] KVM: X86: Introduce generic guest-mode representation
+Date: Mon, 29 Nov 2010 17:51:47 +0100
+Message-ID: <1291049509-3430-2-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <4CF3D093.40604@redhat.com>
+References: <4CF3D093.40604@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290705675.1941.73.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25, Michael Holzheu wrote:
->
-> Hello Oleg,
->
-> On Thu, 2010-11-25 at 14:26 +0100, Oleg Nesterov wrote:
-> > On 11/19, Michael Holzheu wrote:
-> > >
-> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > >
-> > > With this patch the (full) cumulative CPU time is added to "struct taskstats".
-> > > The CPU time is only returned for the thread group leader.
-> > >
-> > > ...
-> > >
-> > > +	if (tsk->tgid == tsk->pid
-> >
-> > thread_group_leader() ?
->
-> Yes, that's better.
->
-> > > && lock_task_sighand(tsk, &flags)) {
-> >
-> > Do you really need ->siglock? Starting from 2.6.35 it is always
-> > safe to access ->signal.
->
-> Hmmm, if you say that...
->
-> I just did it like it is done in e.g. fs/proc/base.c (proc_pid_limits).
-> Can we remove the locking there, too?
+This patch introduces a generic representation of guest-mode
+fpr a vcpu. This currently only exists in the SVM code.
+Having this representation generic will help making the
+non-svm code aware of nesting when this is necessary.
 
-We can certainly remove more siglock's which were previously
-needed to access ->signal.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/kvm_cache_regs.h   |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-This particular one is just wrong. We need task_lock(group_leader)
-to read signal->rlim atomically. However, it is not trivial to do
-this correctly. Probably we should ignore this minor problem.
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 54e42c8..d2a66be 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -784,6 +784,7 @@ enum {
+ #define HF_VINTR_MASK		(1 << 2)
+ #define HF_NMI_MASK		(1 << 3)
+ #define HF_IRET_MASK		(1 << 4)
++#define HF_GUEST_MASK		(1 << 5) /* VCPU is in guest-mode */
+ 
+ /*
+  * Hardware virtualization extension instructions may fault if a
+diff --git a/arch/x86/kvm/kvm_cache_regs.h b/arch/x86/kvm/kvm_cache_regs.h
+index 975bb45..95ac3af 100644
+--- a/arch/x86/kvm/kvm_cache_regs.h
++++ b/arch/x86/kvm/kvm_cache_regs.h
+@@ -84,4 +84,19 @@ static inline u64 kvm_read_edx_eax(struct kvm_vcpu *vcpu)
+ 		| ((u64)(kvm_register_read(vcpu, VCPU_REGS_RDX) & -1u) << 32);
+ }
+ 
++static inline void enter_guest_mode(struct kvm_vcpu *vcpu)
++{
++	vcpu->arch.hflags |= HF_GUEST_MASK;
++}
++
++static inline void leave_guest_mode(struct kvm_vcpu *vcpu)
++{
++	vcpu->arch.hflags &= ~HF_GUEST_MASK;
++}
++
++static inline bool is_guest_mode(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.hflags & HF_GUEST_MASK;
++}
++
+ #endif
+-- 
+1.7.1
 
-In any case, this ->siglock buys nothing today.
-
-Oleg.
 
