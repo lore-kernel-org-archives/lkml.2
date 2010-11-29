@@ -1,551 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab0K2HDh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 02:03:37 -0500
-Received: from mga14.intel.com ([143.182.124.37]:52747 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754846Ab0K2HDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 02:03:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
-   d="scan'208";a="354286290"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -v6 2/3] lib, Make gen_pool memory allocator lockless
-Date: Mon, 29 Nov 2010 15:03:20 +0800
-Message-Id: <1291014201-15513-3-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1291014201-15513-1-git-send-email-ying.huang@intel.com>
-References: <1291014201-15513-1-git-send-email-ying.huang@intel.com>
+	id S1754892Ab0K2HNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 02:13:49 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:48261 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752880Ab0K2HNs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 02:13:48 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 1/4] input: mt: Break out slots handling
+Date: Mon, 29 Nov 2010 08:13:19 +0100
+Message-Id: <1291014802-17061-2-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291014802-17061-1-git-send-email-rydberg@euromail.se>
+References: <1291014802-17061-1-git-send-email-rydberg@euromail.se>
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PMxva-00050A-9p.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PMxva-00050A-9p 423fa6ee012297e6a255cedba101c05e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of the gen_pool memory allocator supports lockless
-operation.
+In preparation for common code to handle a larger set of MT slots
+devices, move the slots handling over to a separate file.
 
-This makes it safe to use in NMI handlers and other special
-unblockable contexts that could otherwise deadlock on locks.  This is
-implemented by using atomic operations and retries on any conflicts.
-The disadvantage is that there may be livelocks in extreme cases.  For
-better scalability, one gen_pool allocator can be used for each CPU.
-
-The lockless operation only works if there is enough memory available.
-If new memory is added to the pool a lock has to be still taken.  So
-any user relying on locklessness has to ensure that sufficient memory
-is preallocated.
-
-The basic atomic operation of this allocator is cmpxchg on long.  On
-architectures that don't have NMI-safe cmpxchg implementation, a
-spin_trylock_irqsave based fallback is used for gen_pool_alloc, so it
-can be used in NMI handler safely.  But gen_pool_free can not be used
-in NMI handler in these architectures, because memory free can not
-fail.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- include/linux/bitmap.h   |    1 
- include/linux/genalloc.h |   48 ++++++-
- lib/bitmap.c             |    2 
- lib/genalloc.c           |  309 ++++++++++++++++++++++++++++++++++++++++-------
- 4 files changed, 312 insertions(+), 48 deletions(-)
+ drivers/hid/hid-3m-pct.c                |    1 +
+ drivers/input/Makefile                  |    2 +-
+ drivers/input/input-mt.c                |   58 +++++++++++++++++++++++++++++++
+ drivers/input/input.c                   |   48 +-------------------------
+ drivers/input/misc/uinput.c             |    1 +
+ drivers/input/tablet/wacom_wac.c        |    1 +
+ drivers/input/touchscreen/wacom_w8001.c |    2 +-
+ include/linux/input-mt.h                |   44 +++++++++++++++++++++++
+ include/linux/input.h                   |   16 --------
+ 9 files changed, 108 insertions(+), 65 deletions(-)
+ create mode 100644 drivers/input/input-mt.c
+ create mode 100644 include/linux/input-mt.h
 
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -142,6 +142,7 @@ extern void bitmap_release_region(unsign
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
- 
-+#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
- 	((nbits) % BITS_PER_LONG) ?					\
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -1,8 +1,29 @@
-+#ifndef GENALLOC_H
-+#define GENALLOC_H
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-+ *
-+ * It is safe to use the allocator in NMI handlers and other special
-+ * unblockable contexts that could otherwise deadlock on locks.  This
-+ * is implemented by using atomic operations and retries on any
-+ * conflicts.  The disadvantage is that there may be livelocks in
-+ * extreme cases.  For better scalability, one allocator can be used
-+ * for each CPU.
-+ *
-+ * The lockless operation only works if there is enough memory
-+ * available.  If new memory is added to the pool a lock has to be
-+ * still taken.  So any user relying on locklessness has to ensure
-+ * that sufficient memory is preallocated.
-+ *
-+ * The basic atomic operation of this allocator is cmpxchg on long.
-+ * On architectures that don't have NMI-safe cmpxchg implementation, a
-+ * spin_trylock_irqsave based fallback is used for gen_pool_alloc, so
-+ * it can be used in NMI handler safely.  But gen_pool_free can not be
-+ * used in NMI handler in these architectures, because memory free can
-+ * not fail.
-  *
-  * This source code is licensed under the GNU General Public License,
-  * Version 2.  See the file COPYING for more details.
-@@ -13,7 +34,7 @@
-  *  General purpose special memory pool descriptor.
-  */
- struct gen_pool {
--	rwlock_t lock;
-+	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
- };
-@@ -22,15 +43,32 @@ struct gen_pool {
-  *  General purpose special memory pool chunk descriptor.
-  */
- struct gen_pool_chunk {
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	spinlock_t lock;
-+#endif
- 	struct list_head next_chunk;	/* next chunk in pool */
-+	atomic_t avail;
- 	unsigned long start_addr;	/* starting address of memory chunk */
- 	unsigned long end_addr;		/* ending address of memory chunk */
- 	unsigned long bits[0];		/* bitmap for allocating memory chunk */
- };
- 
-+/**
-+ * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
-+ * @chunk:	the struct gen_pool_chunk * to use as a loop cursor
-+ * @pool:	the generic memory pool
-+ *
-+ * Not lockless, proper mutual exclusion is needed to use this macro
-+ * with other gen_pool function simultaneously.
-+ */
-+#define gen_pool_for_each_chunk(chunk, pool)			\
-+	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
-+
- extern struct gen_pool *gen_pool_create(int, int);
- extern int gen_pool_add(struct gen_pool *, unsigned long, size_t, int);
- extern void gen_pool_destroy(struct gen_pool *);
- extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
- extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
-+extern size_t gen_pool_avail(struct gen_pool *);
-+extern size_t gen_pool_size(struct gen_pool *);
-+#endif /* GENALLOC_H */
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -271,8 +271,6 @@ int __bitmap_weight(const unsigned long
- }
- EXPORT_SYMBOL(__bitmap_weight);
- 
--#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
--
- void bitmap_set(unsigned long *map, int start, int nr)
- {
- 	unsigned long *p = map + BIT_WORD(start);
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -1,8 +1,27 @@
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-+ *
-+ * It is safe to use the allocator in NMI handlers and other special
-+ * unblockable contexts that could otherwise deadlock on locks.  This
-+ * is implemented by using atomic operations and retries on any
-+ * conflicts.  The disadvantage is that there may be livelocks in
-+ * extreme cases.  For better scalability, one allocator can be used
-+ * for each CPU.
-+ *
-+ * The lockless operation only works if there is enough memory
-+ * available.  If new memory is added to the pool a lock has to be
-+ * still taken.  So any user relying on locklessness has to ensure
-+ * that sufficient memory is preallocated.
-+ *
-+ * The basic atomic operation of this allocator is cmpxchg on long.
-+ * On architectures that don't have NMI-safe cmpxchg implementation, a
-+ * spin_trylock_irqsave based fallback is used for gen_pool_alloc, so
-+ * it can be used in NMI handler safely.  But gen_pool_free can not be
-+ * used in NMI handler in these architectures, because memory free can
-+ * not fail.
-  *
-  * Copyright 2005 (C) Jes Sorensen <jes@trained-monkey.org>
-  *
-@@ -13,8 +32,109 @@
- #include <linux/slab.h>
+diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
+index 02d8cd3..cb507f4 100644
+--- a/drivers/hid/hid-3m-pct.c
++++ b/drivers/hid/hid-3m-pct.c
+@@ -19,6 +19,7 @@
  #include <linux/module.h>
- #include <linux/bitmap.h>
-+#include <linux/rculist.h>
-+#include <linux/interrupt.h>
- #include <linux/genalloc.h>
+ #include <linux/slab.h>
+ #include <linux/usb.h>
++#include <linux/input-mt.h>
  
-+#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if (val & mask_to_set)
-+			return -EBUSY;
-+	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
-+
-+	return 0;
-+}
-+
-+static int clear_bits_ll(unsigned long *addr, unsigned long mask_to_clear)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if ((val & mask_to_clear) != mask_to_clear)
-+			return -EBUSY;
-+	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
-+
-+	return 0;
-+}
-+
+ MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
+ MODULE_DESCRIPTION("3M PCT multitouch panels");
+diff --git a/drivers/input/Makefile b/drivers/input/Makefile
+index 7ad212d..569938b 100644
+--- a/drivers/input/Makefile
++++ b/drivers/input/Makefile
+@@ -5,7 +5,7 @@
+ # Each configuration option enables a list of files.
+ 
+ obj-$(CONFIG_INPUT)		+= input-core.o
+-input-core-objs := input.o input-compat.o ff-core.o
++input-core-objs := input.o input-compat.o ff-core.o input-mt.o
+ 
+ obj-$(CONFIG_INPUT_FF_MEMLESS)	+= ff-memless.o
+ obj-$(CONFIG_INPUT_POLLDEV)	+= input-polldev.o
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+new file mode 100644
+index 0000000..ee24d28
+--- /dev/null
++++ b/drivers/input/input-mt.c
+@@ -0,0 +1,58 @@
 +/*
-+ * bitmap_set_ll - set the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
++ * Input Multitouch Library
 + *
-+ * Set @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users set the same bit, one user will return remain bits, otherwise
-+ * return 0.
-+ */
-+static int bitmap_set_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_set >= 0) {
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+		nr -= bits_to_set;
-+		bits_to_set = BITS_PER_LONG;
-+		mask_to_set = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * bitmap_clear_ll - clear the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
++ * Copyright (c) 2008-2010 Henrik Rydberg
 + *
-+ * Clear @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users clear the same bit, one user will return remain bits,
-+ * otherwise return 0.
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
 + */
-+static int bitmap_clear_ll(unsigned long *map, int start, int nr)
++
++#include <linux/input-mt.h>
++#include <linux/slab.h>
++
++/**
++ * input_mt_create_slots() - create MT input slots
++ * @dev: input device supporting MT events and finger tracking
++ * @num_slots: number of slots used by the device
++ *
++ * This function allocates all necessary memory for MT slot handling in the
++ * input device, and adds ABS_MT_SLOT to the device capabilities. All slots
++ * are initially marked as unused by setting ABS_MT_TRACKING_ID to -1.
++ */
++int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots)
 +{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
++	int i;
 +
-+	while (nr - bits_to_clear >= 0) {
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+		nr -= bits_to_clear;
-+		bits_to_clear = BITS_PER_LONG;
-+		mask_to_clear = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
-+#endif
- 
- /**
-  * gen_pool_create - create a new special memory pool
-@@ -30,7 +150,7 @@ struct gen_pool *gen_pool_create(int min
- 
- 	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
- 	if (pool != NULL) {
--		rwlock_init(&pool->lock);
-+		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
- 	}
-@@ -58,15 +178,18 @@ int gen_pool_add(struct gen_pool *pool,
- 
- 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
- 	if (unlikely(chunk == NULL))
--		return -1;
-+		return -ENOMEM;
- 
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	spin_lock_init(&chunk->lock);
-+#endif
- 	chunk->start_addr = addr;
- 	chunk->end_addr = addr + size;
-+	atomic_set(&chunk->avail, size);
- 
--	write_lock(&pool->lock);
--	list_add(&chunk->next_chunk, &pool->chunks);
--	write_unlock(&pool->lock);
-+	spin_lock(&pool->lock);
-+	list_add_rcu(&chunk->next_chunk, &pool->chunks);
-+	spin_unlock(&pool->lock);
- 
- 	return 0;
- }
-@@ -102,6 +225,71 @@ void gen_pool_destroy(struct gen_pool *p
- }
- EXPORT_SYMBOL(gen_pool_destroy);
- 
-+#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+#define gen_pool_chunk_trylock(chunk, flags)	1
-+#define gen_pool_chunk_lock(chunk, flags)
-+#define gen_pool_chunk_unlock(chunk, flags)
-+
-+static int gen_pool_chunk_bitmap_set(struct gen_pool_chunk *chunk,
-+				     int start, int nr)
-+{
-+	int remain, cremain;
-+
-+	remain = bitmap_set_ll(chunk->bits, start, nr);
-+	if (remain) {
-+		if (nr - remain) {
-+			cremain = bitmap_clear_ll(chunk->bits,
-+						  start, nr - remain);
-+			BUG_ON(cremain);
-+		}
-+	}
-+
-+	return remain;
-+}
-+
-+static int gen_pool_chunk_bitmap_clear(struct gen_pool_chunk *chunk,
-+				       int start, int nr)
-+{
-+	return bitmap_clear_ll(chunk->bits, start, nr);
-+}
-+#else
-+static int gen_pool_chunk_trylock(struct gen_pool_chunk *chunk,
-+				  unsigned long *flags)
-+{
-+	if (in_nmi() && !spin_trylock_irqsave(&chunk->lock, *flags))
++	if (!num_slots)
 +		return 0;
-+	else
-+		spin_lock_irqsave(&chunk->lock, *flags);
-+	return 1;
-+}
 +
-+static inline void gen_pool_chunk_lock(struct gen_pool_chunk *chunk,
-+				       unsigned long *flags)
-+{
-+	spin_lock_irqsave(&chunk->lock, *flags);
-+}
++	dev->mt = kcalloc(num_slots, sizeof(struct input_mt_slot), GFP_KERNEL);
++	if (!dev->mt)
++		return -ENOMEM;
 +
-+static inline void gen_pool_chunk_unlock(struct gen_pool_chunk *chunk,
-+					 unsigned long *flags)
-+{
-+	spin_unlock_irqrestore(&chunk->lock, *flags);
-+}
++	dev->mtsize = num_slots;
++	input_set_abs_params(dev, ABS_MT_SLOT, 0, num_slots - 1, 0, 0);
 +
-+static inline int gen_pool_chunk_bitmap_set(struct gen_pool_chunk *chunk,
-+					    int start, int nr)
-+{
-+	bitmap_set(chunk->bits, start, nr);
++	/* Mark slots as 'unused' */
++	for (i = 0; i < num_slots; i++)
++		input_mt_set_value(&dev->mt[i], ABS_MT_TRACKING_ID, -1);
++
 +	return 0;
 +}
++EXPORT_SYMBOL(input_mt_create_slots);
 +
-+static inline int gen_pool_chunk_bitmap_clear(struct gen_pool_chunk *chunk,
-+					      int start, int nr)
++/**
++ * input_mt_destroy_slots() - frees the MT slots of the input device
++ * @dev: input device with allocated MT slots
++ *
++ * This function is only needed in error path as the input core will
++ * automatically free the MT slots when the device is destroyed.
++ */
++void input_mt_destroy_slots(struct input_dev *dev)
 +{
-+	bitmap_clear(chunk->bits, start, nr);
-+	return 0;
++	kfree(dev->mt);
++	dev->mt = NULL;
++	dev->mtsize = 0;
 +}
-+#endif
-+
++EXPORT_SYMBOL(input_mt_destroy_slots);
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index db409d6..504cf63 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -12,7 +12,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/types.h>
+-#include <linux/input.h>
++#include <linux/input-mt.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/random.h>
+@@ -1725,52 +1725,6 @@ void input_free_device(struct input_dev *dev)
+ EXPORT_SYMBOL(input_free_device);
+ 
  /**
-  * gen_pool_alloc - allocate special memory from the pool
-  * @pool: pool to allocate from
-@@ -112,39 +300,40 @@ EXPORT_SYMBOL(gen_pool_destroy);
-  */
- unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+- * input_mt_create_slots() - create MT input slots
+- * @dev: input device supporting MT events and finger tracking
+- * @num_slots: number of slots used by the device
+- *
+- * This function allocates all necessary memory for MT slot handling in the
+- * input device, and adds ABS_MT_SLOT to the device capabilities. All slots
+- * are initially marked as unused by setting ABS_MT_TRACKING_ID to -1.
+- */
+-int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots)
+-{
+-	int i;
+-
+-	if (!num_slots)
+-		return 0;
+-
+-	dev->mt = kcalloc(num_slots, sizeof(struct input_mt_slot), GFP_KERNEL);
+-	if (!dev->mt)
+-		return -ENOMEM;
+-
+-	dev->mtsize = num_slots;
+-	input_set_abs_params(dev, ABS_MT_SLOT, 0, num_slots - 1, 0, 0);
+-
+-	/* Mark slots as 'unused' */
+-	for (i = 0; i < num_slots; i++)
+-		dev->mt[i].abs[ABS_MT_TRACKING_ID - ABS_MT_FIRST] = -1;
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(input_mt_create_slots);
+-
+-/**
+- * input_mt_destroy_slots() - frees the MT slots of the input device
+- * @dev: input device with allocated MT slots
+- *
+- * This function is only needed in error path as the input core will
+- * automatically free the MT slots when the device is destroyed.
+- */
+-void input_mt_destroy_slots(struct input_dev *dev)
+-{
+-	kfree(dev->mt);
+-	dev->mt = NULL;
+-	dev->mtsize = 0;
+-}
+-EXPORT_SYMBOL(input_mt_destroy_slots);
+-
+-/**
+  * input_set_capability - mark device as capable of a certain event
+  * @dev: device that is capable of emitting or accepting event
+  * @type: type of the event (EV_KEY, EV_REL, etc...)
+diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+index b941078..e8962b1 100644
+--- a/drivers/input/misc/uinput.c
++++ b/drivers/input/misc/uinput.c
+@@ -37,6 +37,7 @@
+ #include <linux/fs.h>
+ #include <linux/miscdevice.h>
+ #include <linux/uinput.h>
++#include <linux/input-mt.h>
+ #include "../input-compat.h"
+ 
+ static int uinput_dev_event(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index b3252ef..107ee3a 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -14,6 +14,7 @@
+ 
+ #include "wacom_wac.h"
+ #include "wacom.h"
++#include <linux/input-mt.h>
+ 
+ static int wacom_penpartner_irq(struct wacom_wac *wacom)
  {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
- 	unsigned long addr, flags;
- 	int order = pool->min_alloc_order;
--	int nbits, start_bit, end_bit;
-+	int nbits, start_bit = 0, end_bit, remain;
- 
- 	if (size == 0)
- 		return 0;
- 
-+	flags = 0;
- 	nbits = (size + (1UL << order) - 1) >> order;
--
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+		if (size > atomic_read(&chunk->avail))
-+			continue;
- 
- 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
--
--		spin_lock_irqsave(&chunk->lock, flags);
--		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
--						nbits, 0);
-+		if (!gen_pool_chunk_trylock(chunk, &flags))
-+			continue;
-+retry:
-+		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
-+						       start_bit, nbits, 0);
- 		if (start_bit >= end_bit) {
--			spin_unlock_irqrestore(&chunk->lock, flags);
-+			gen_pool_chunk_unlock(chunk, &flags);
- 			continue;
- 		}
-+		remain = gen_pool_chunk_bitmap_set(chunk, start_bit, nbits);
-+		if (remain)
-+			goto retry;
-+		gen_pool_chunk_unlock(chunk, &flags);
- 
- 		addr = chunk->start_addr + ((unsigned long)start_bit << order);
--
--		bitmap_set(chunk->bits, start_bit, nbits);
--		spin_unlock_irqrestore(&chunk->lock, flags);
--		read_unlock(&pool->lock);
-+		size = nbits << order;
-+		atomic_sub(size, &chunk->avail);
- 		return addr;
- 	}
--	read_unlock(&pool->lock);
- 	return 0;
- }
- EXPORT_SYMBOL(gen_pool_alloc);
-@@ -155,33 +344,71 @@ EXPORT_SYMBOL(gen_pool_alloc);
-  * @addr: starting address of memory to free back to pool
-  * @size: size in bytes of memory to free
-  *
-- * Free previously allocated special memory back to the specified pool.
-+ * Free previously allocated special memory back to the specified
-+ * pool.  Can not be used in NMI handler on architectures without
-+ * NMI-safe cmpxchg implementation.
-  */
- void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
- 	unsigned long flags;
- 	int order = pool->min_alloc_order;
--	int bit, nbits;
--
--	nbits = (size + (1UL << order) - 1) >> order;
-+	int start_bit, nbits, remain;
- 
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
+diff --git a/drivers/input/touchscreen/wacom_w8001.c b/drivers/input/touchscreen/wacom_w8001.c
+index 9ae4c7b..1fb0cbc 100644
+--- a/drivers/input/touchscreen/wacom_w8001.c
++++ b/drivers/input/touchscreen/wacom_w8001.c
+@@ -15,7 +15,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-#include <linux/input.h>
++#include <linux/input-mt.h>
+ #include <linux/serio.h>
+ #include <linux/init.h>
+ #include <linux/ctype.h>
+diff --git a/include/linux/input-mt.h b/include/linux/input-mt.h
+new file mode 100644
+index 0000000..4f5e9d0
+--- /dev/null
++++ b/include/linux/input-mt.h
+@@ -0,0 +1,44 @@
++#ifndef _INPUT_MT_H
++#define _INPUT_MT_H
++
++/*
++ * Input Multitouch Library
++ *
++ * Copyright (c) 2010 Henrik Rydberg
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#include <linux/input.h>
++
++/**
++ * struct input_mt_slot - represents the state of an input MT slot
++ * @abs: holds current values of ABS_MT axes for this slot
++ */
++struct input_mt_slot {
++	int abs[ABS_MT_LAST - ABS_MT_FIRST + 1];
++};
++
++static inline void input_mt_set_value(struct input_mt_slot *slot,
++				      unsigned code, int value)
++{
++	slot->abs[code - ABS_MT_FIRST] = value;
++}
++
++static inline int input_mt_get_value(const struct input_mt_slot *slot,
++				     unsigned code)
++{
++	return slot->abs[code - ABS_MT_FIRST];
++}
++
++int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots);
++void input_mt_destroy_slots(struct input_dev *dev);
++
++static inline void input_mt_slot(struct input_dev *dev, int slot)
++{
++	input_event(dev, EV_ABS, ABS_MT_SLOT, slot);
++}
++
 +#endif
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 6ef4446..dd7c0fc 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -1083,14 +1083,6 @@ struct ff_effect {
+ #include <linux/mod_devicetable.h>
  
-+	flags = 0;
-+	nbits = (size + (1UL << order) - 1) >> order;
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
- 		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
- 			BUG_ON(addr + size > chunk->end_addr);
--			spin_lock_irqsave(&chunk->lock, flags);
--			bit = (addr - chunk->start_addr) >> order;
--			while (nbits--)
--				__clear_bit(bit++, chunk->bits);
--			spin_unlock_irqrestore(&chunk->lock, flags);
--			break;
-+			start_bit = (addr - chunk->start_addr) >> order;
-+			gen_pool_chunk_lock(chunk, &flags);
-+			remain = gen_pool_chunk_bitmap_clear(chunk, start_bit,
-+							     nbits);
-+			gen_pool_chunk_unlock(chunk, &flags);
-+			BUG_ON(remain);
-+			size = nbits << order;
-+			atomic_add(size, &chunk->avail);
-+			return;
- 		}
- 	}
--	BUG_ON(nbits > 0);
--	read_unlock(&pool->lock);
-+	BUG();
+ /**
+- * struct input_mt_slot - represents the state of an input MT slot
+- * @abs: holds current values of ABS_MT axes for this slot
+- */
+-struct input_mt_slot {
+-	int abs[ABS_MT_LAST - ABS_MT_FIRST + 1];
+-};
+-
+-/**
+  * struct input_dev - represents an input device
+  * @name: name of the device
+  * @phys: physical path to the device in the system hierarchy
+@@ -1463,11 +1455,6 @@ static inline void input_mt_sync(struct input_dev *dev)
+ 	input_event(dev, EV_SYN, SYN_MT_REPORT, 0);
  }
- EXPORT_SYMBOL(gen_pool_free);
-+
-+/**
-+ * gen_pool_avail - get available free space of the pool
-+ * @pool: pool to get available free space
-+ *
-+ * Return available free space of the specified pool.
-+ */
-+size_t gen_pool_avail(struct gen_pool *pool)
-+{
-+	struct gen_pool_chunk *chunk;
-+	size_t avail = 0;
-+
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		avail += atomic_read(&chunk->avail);
-+	return avail;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_avail);
-+
-+/**
-+ * gen_pool_size - get size in bytes of memory managed by the pool
-+ * @pool: pool to get size
-+ *
-+ * Return size in bytes of memory managed by the pool.
-+ */
-+size_t gen_pool_size(struct gen_pool *pool)
-+{
-+	struct gen_pool_chunk *chunk;
-+	size_t size = 0;
-+
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		size += chunk->end_addr - chunk->start_addr;
-+	return size;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_size);
+ 
+-static inline void input_mt_slot(struct input_dev *dev, int slot)
+-{
+-	input_event(dev, EV_ABS, ABS_MT_SLOT, slot);
+-}
+-
+ void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int code);
+ 
+ /**
+@@ -1580,8 +1567,5 @@ int input_ff_erase(struct input_dev *dev, int effect_id, struct file *file);
+ int input_ff_create_memless(struct input_dev *dev, void *data,
+ 		int (*play_effect)(struct input_dev *, void *, struct ff_effect *));
+ 
+-int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots);
+-void input_mt_destroy_slots(struct input_dev *dev);
+-
+ #endif
+ #endif
+-- 
+1.7.1
+
