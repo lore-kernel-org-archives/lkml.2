@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab0K2LSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 06:18:15 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63658 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab0K2LSO (ORCPT
+	id S1753413Ab0K2LUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 06:20:17 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:48869 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751860Ab0K2LUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 06:18:14 -0500
-Subject: Re: [PATCH 0/5] Fix compile error and missing
- spin_unlock_irqrestore for NUC900 SoC audio
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Wan ZongShun <mcuos.com@gmail.com>, alsa-devel@alsa-project.org
-In-Reply-To: <1291023491.22911.1.camel@mola>
-References: <1291023491.22911.1.camel@mola>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Nov 2010 11:18:10 +0000
-Message-ID: <1291029490.3299.148.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 29 Nov 2010 06:20:15 -0500
+Message-ID: <4CF38C67.20509@euromail.se>
+Date: Mon, 29 Nov 2010 12:20:07 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] input: mt: Add pressure to pointer emulation code
+References: <1291014802-17061-1-git-send-email-rydberg@euromail.se> <1291014802-17061-5-git-send-email-rydberg@euromail.se> <20101129094715.GA9303@core.coreip.homeip.net>
+In-Reply-To: <20101129094715.GA9303@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PN1mC-0002Cu-8q.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PN1mC-0002Cu-8q 0adc04aca0224b19df08b2997fa2a9f3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-29 at 17:38 +0800, Axel Lin wrote:
-> This serial fixes compile error and missing spin_unlock_irqrestore for NUC900 SoC audio.
-> 
-> Regards,
-> Axel
-> 
-> Axel Lin (5):
->   ASoC: Fix compile error for nuc900-ac97.c
->   ASoC: Fix prototype for nuc900_ac97_probe and nuc900_ac97_remove
->   ASoC: Fix compile error for nuc900-pcm.c
->   ASoC: Fix missing spin_unlock_irqrestore
->   ASoC: Remove unneeded !! operations while checking return value of
->     nuc900_checkready
-> 
->  sound/soc/nuc900/nuc900-ac97.c  |   15 +++++++--------
->  sound/soc/nuc900/nuc900-audio.h |    2 ++
->  sound/soc/nuc900/nuc900-pcm.c   |   11 ++++++-----
->  3 files changed, 15 insertions(+), 13 deletions(-)
-> 
+>> @@ -124,9 +125,13 @@ void input_mt_report_pointer_emulation(struct input_dev
+*dev)
 
-All
+>>  	if (oldest) {
+>>  		int x = input_mt_get_value(oldest, ABS_MT_POSITION_X);
+>>  		int y = input_mt_get_value(oldest, ABS_MT_POSITION_Y);
+>> +		int p = input_mt_get_value(oldest, ABS_MT_PRESSURE);
+> 
+> What if device does not report ABS_MT_PRESSURE/ABS_PRESSURE? Do we rely
+> on input core to suppress unsupported events? A comment would be nice...
 
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
 
+Yes, the setup values are the only ones producing output here. How about this
+addition to the function text: "The input core ensures only the KEY and ABS axes
+already setup for this device will produce output."?
+
+> Also, is there a gelper to set up pointer emulation capabilities for MT
+> device?
+
+
+This is certainly the plan with time, but currently it seemed best to leave the
+rest of the event setup code untouched.
+
+Thanks,
+Henrik
