@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab0K2MQS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 07:16:18 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:48364 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab0K2MQQ (ORCPT
+	id S1753835Ab0K2MRU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 07:17:20 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47875 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab0K2MRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 07:16:16 -0500
+	Mon, 29 Nov 2010 07:17:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:mime-version:content-type:content-transfer-encoding:message-id
-         :date:to:cc:subject:in-reply-to:references:x-mailer;
-        b=JJS2Vh9wtO4CZ+9avU2BJ9B08YM1SieI68hGtoK9po5vxDl0cHbf6tJSUrxL7bnAxp
-         SDLABJbxOCUU2nlPs6960Dn9JodXI7nKfmP7PLvG+ER4sDiEPuxvDghHz5fhLLPK89Oa
-         LNOtRIsmwU10KsEwysS7S7UvDhZ0sScF7skcQ=
-From: Sujith <m.sujith@gmail.com>
+        d=googlemail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=DGI43Af/AoKUxpOIyvw5HyiysIL6L9hRiFhKrlt9EW0B9LxkWEL5dLnT21y3vLBzyS
+         17bFlC/4HK+s1DsUu8eluwEHlCLnSrwSSrITyAr0DRr2VCj2+oZVWWT41oOhXjC9KzGD
+         4k383hVZAEzzHXhb9Yo4KPrxW01cEIvYCRkAM=
+Date: Mon, 29 Nov 2010 13:17:12 +0100 (CET)
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+X-X-Sender: elektroman@localhost.localdomain
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
+In-Reply-To: <201011282056.17389.arnd@arndb.de>
+Message-ID: <alpine.LNX.2.00.1011291316560.11926@localhost.localdomain>
+References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011282056.17389.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19699.39300.972745.297319@gargle.gargle.HOWL>
-Date: Mon, 29 Nov 2010 17:46:04 +0530
-To: Pavel Machek <pma@sysgo.com>
-Cc: Sujith <Sujith.Manoharan@atheros.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "ath9k-devel@venema.h4ckr.net" <ath9k-devel@venema.h4ckr.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "chunkeey@googlemail.com" <chunkeey@googlemail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "rudolf.marek@sysgo.com" <rudolf.marek@sysgo.com>,
-        "cko@sysgo.com" <cko@sysgo.com>, "mfa@sysgo.com" <mfa@sysgo.com>,
-        "anl@sysgo.com" <anl@sysgo.com>
-Subject: Re: ath9k_htc vs. powerpc (was Re: working usb wifi card, that is still possible to buy)
-In-Reply-To: <20101126123706.GA19755@pma.sysgo.com>
-References: <20101103092431.GA21138@pma.sysgo.com>
-	<20101124081616.GA30595@pma.sysgo.com>
-	<20101124131320.GA2611@pma.sysgo.com>
-	<4CED33E0.5040000@lwfinger.net>
-	<20101126083125.GA28982@pma.sysgo.com>
-	<20101126102026.GA11857@pma.sysgo.com>
-	<20101126112737.GB11857@pma.sysgo.com>
-	<19695.40541.335361.81396@gargle.gargle.HOWL>
-	<20101126123706.GA19755@pma.sysgo.com>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-unknown-linux-gnu)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek wrote:
-> Hi!
-> 
-> > > Sujith, I see you fought with endianness issues on ath9k_htc
-> > > driver. Was you able to test it on actual hardware? Should I try the
-> > > version just after your commit?
-> > 
-> > No, I never had a chance to test the driver on a big-endian system.
-> > I assume you are referring to this commit: "ath9k_htc: Fix sparse endian warnings" ?
-> 
-> Yes.
-> 
-> > Does using latest wireless-testing help ?
-> 
-> I updated to wireless-testing from today, and still same results.
 
-A lot of structures in htc.h are not handled in an endian-safe manner.
-I'll send a patch fixing them and maybe things will improve.
 
-Sujith
+On Sun, 28 Nov 2010, Arnd Bergmann wrote:
+
+> On Saturday 27 November 2010 13:24:35 Hans Ulli Kroll wrote:
+> > +#define PCI_IOSIZE_REG         (IO_ADDRESS(GEMINI_PCI_IO_BASE))
+> > +#define PCI_PROT_REG           (IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x04)
+> > +#define PCI_CTRL_REG           (IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x08)
+> > +#define PCI_SOFTRST_REG                (IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x10)
+> > +#define PCI_CONFIG_REG         (IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x28)
+> > +#define PCI_DATA_REG           (IO_ADDRESS(GEMINI_PCI_IO_BASE) + 0x2C)
+> 
+> If you use the virtual address of the mapping instead of
+> GEMINI_PCI_IO_BASE, you don't need to repeat the IO_ADDRESS()
+> macro everywhere. I have a patch that gets rid of all the
+> conflicting definitions of this macro because it breaks
+> a multi-platform build once we get there. 
+> 
+> > +static DEFINE_SPINLOCK(gemini_pci_lock);
+> > +
+> > +static struct resource gemini_pci_resource_io = {
+> > +       .name   = "PCI I/O Space",
+> > +       .start  = IO_ADDRESS(GEMINI_PCI_IO_BASE),
+> > +       .end    = IO_ADDRESS(GEMINI_PCI_IO_BASE) + SZ_1M - 1,
+> > +       .flags  = IORESOURCE_IO,
+> > +};
+> > +
+> 
+> This looks wrong in multiple ways:
+> 
+> * resources are physical addresses, not virtual addresses
+> * GEMINI_PCI_IO_BASE is an address in memory space, so it
+>   needs to be IORESOURCE_MEM, not IORESOURCE_IO. You can
+>   also register the IORESOURCE_IO resource, but that would
+>   be .start=PCIBIOS_MIN_IO, .end=IO_SPACE_LIMIT.
+> * IO_SPACE_LIMIT is larger than the I/O window, which can
+>   cause overflows. Setting it to 0xffff is generally enough.
+> 
+
+So I must remove these lines ??
+	}, {
+		.virtual	= IO_ADDRESS(GEMINI_PCI_IO_BASE),
+		.pfn		= __phys_to_pfn(GEMINI_PCI_IO_BASE),
+		.length		= SZ_512K,
+		.type		= MT_DEVICE,
+	},
+These are from arch/arm/mach-gemini/mm.c
+	
+> > +       spin_lock_irqsave(&gemini_pci_lock, irq_flags);
+> > +
+> > +       __raw_writel(PCI_CONF_BUS(bus->number) |
+> > +                       PCI_CONF_DEVICE(PCI_SLOT(fn)) |
+> > +                       PCI_CONF_FUNCTION(PCI_FUNC(fn)) |
+> > +                       PCI_CONF_WHERE(config) |
+> > +                       PCI_CONF_ENABLE,
+> > +                       PCI_CONFIG_REG);
+> > +
+> > +       switch (size) {
+> > +       case 4:
+> > +               __raw_writel(value, PCI_DATA_REG);
+> > +               break;
+> > +       case 2:
+> > +               __raw_writew(value, PCI_DATA_REG + (config & 3));
+> > +               break;
+> > +       case 1:
+> > +               __raw_writeb(value, PCI_DATA_REG + (config & 3));
+> > +               break;
+> > +       default:
+> > +               ret = PCIBIOS_BAD_REGISTER_NUMBER;
+> > +       }
+> > +
+> > +       spin_unlock_irqrestore(&gemini_pci_lock, irq_flags);
+> 
+> The I/O ordering is probably not what you think it is.
+> There is no ordering guarantee between __raw_writel and
+> spin_lock/spin_unlock, so you really should be using
+> readl/writel.
+> 
+> Note that the pci_ops are called under another spinlock, so
+> you also don't need to take gemini_pci_lock here.
+> 
+> 	Arnd
+> 
