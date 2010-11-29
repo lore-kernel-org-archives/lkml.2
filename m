@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab0K2M46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 07:56:58 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:42793 "EHLO mail.sysgo.com"
+	id S1753975Ab0K2NKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 08:10:13 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34972 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab0K2M44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 07:56:56 -0500
-Date: Mon, 29 Nov 2010 13:57:05 +0100
-From: Pavel Machek <pma@sysgo.com>
-To: Sujith <m.sujith@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "ath9k-devel@venema.h4ckr.net" <ath9k-devel@venema.h4ckr.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "chunkeey@googlemail.com" <chunkeey@googlemail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "rudolf.marek@sysgo.com" <rudolf.marek@sysgo.com>,
-        "cko@sysgo.com" <cko@sysgo.com>, "mfa@sysgo.com" <mfa@sysgo.com>,
-        "anl@sysgo.com" <anl@sysgo.com>
-Subject: Re: ath9k_htc vs. powerpc (was Re: working usb wifi card, that is
- still possible to buy)
-Message-ID: <20101129125705.GB31518@pma.sysgo.com>
-References: <20101124081616.GA30595@pma.sysgo.com>
- <20101124131320.GA2611@pma.sysgo.com>
- <4CED33E0.5040000@lwfinger.net>
- <20101126083125.GA28982@pma.sysgo.com>
- <20101126102026.GA11857@pma.sysgo.com>
- <20101126112737.GB11857@pma.sysgo.com>
- <19695.40541.335361.81396@gargle.gargle.HOWL>
- <20101126123706.GA19755@pma.sysgo.com>
- <20101129100159.GC28833@pma.sysgo.com>
- <19699.40557.302196.832862@gargle.gargle.HOWL>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19699.40557.302196.832862@gargle.gargle.HOWL>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751936Ab0K2NKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 08:10:12 -0500
+From: manjunatha_halli@ti.com
+To: mchehab@infradead.org, hverkuil@xs4all.nl
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Manjunatha Halli <manjunatha_halli@ti.com>
+Subject: [RFC v5 0/9] FM V4L2 drivers for WL128x
+Date: Mon, 29 Nov 2010 09:18:34 -0500
+Message-Id: <1291040323-2641-1-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Manjunatha Halli <manjunatha_halli@ti.com>
 
-> > ...so I indentified two endianness problems in eeprom, but even with
-> > both fixed, it still will not associate. Is there some way to dump USB
-> > packets, then compare them between PC and PowerPC versions? Should I
-> > expect them to match?
-> 
-> Does this patch help ?
+Mauro and the list,
 
-Actually I wonder...
+This is the v5 version of the TI WL128x FM V4L2 drivers patchset.
+Texas Instrument's WL128x chipset packs BT, FM, GPS and WLAN in a single
+die with BT, FM and GPS being interfaced over a single UART.
+This driver works on top of the shared transport line discipline driver.
+This driver can also be made use for the WL127x version of the chip which packs
+BT, FM and WLAN only.
 
-> diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-> index e9761c2..1b435d4 100644
-> --- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-> +++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-> @@ -204,7 +204,7 @@ static int ath9k_htc_add_station(struct ath9k_htc_priv *priv,
->  		ista = (struct ath9k_htc_sta *) sta->drv_priv;
->  		memcpy(&tsta.macaddr, sta->addr, ETH_ALEN);
->  		memcpy(&tsta.bssid, common->curbssid, ETH_ALEN);
-> -		tsta.associd = common->curaid;
-> +		tsta.associd = cpu_to_be16(common->curaid);
->  		tsta.is_vif_sta = 0;
->  		tsta.valid = true;
->  		ista->index = priv->nstations;
+Comments on the last version of the patches have been taken care,
+such as
+- Removed the array for opcode handling, instead defined them as macro's.
+- Moved the error message to fmc_senc_cmd() instead of printing it from all
+the caller functions.
+- Use of 'cpu_to_be16' macro instead of using custom macro.
 
-We know the code currently works on PC; but this adds conversions that
-are nop on PowerPC and do something on PC... so they should have no
-effect on PowerPC and could break PC...?
-									Pavel
+Also,
+Can you please also stage this version? Since the files are becoming big
+to be posted as patches?
+
+Thanks & Regards,
+Manjunatha.
+
+
+Manjunatha Halli (9):
+  include:linux: videodev2.h: FM Rx control class
+  Documentation:DocBook:v4l: Update the controls.xml for TI FM driver
+  drivers:staging: ti-st: fmdrv common header file
+  drivers:staging: ti-st: fmdrv_v4l2 sources
+  drivers:staging: ti-st: fmdrv_common sources
+  drivers:staging: ti-st: fmdrv_rx sources
+  drivers:staging: ti-st: fmdrv_tx sources
+  drivers:staging: ti-st: Kconfig & Makefile change
+  driver:staging:ti-st: Update TODO for FM V4L2 driver.
+
+ Documentation/DocBook/v4l/controls.xml |   12 +
+ drivers/staging/ti-st/Kconfig          |   10 +
+ drivers/staging/ti-st/Makefile         |    2 +
+ drivers/staging/ti-st/TODO             |   17 +-
+ drivers/staging/ti-st/fmdrv.h          |  247 ++++
+ drivers/staging/ti-st/fmdrv_common.c   | 2005 ++++++++++++++++++++++++++++++++
+ drivers/staging/ti-st/fmdrv_common.h   |  412 +++++++
+ drivers/staging/ti-st/fmdrv_rx.c       |  903 ++++++++++++++
+ drivers/staging/ti-st/fmdrv_rx.h       |   59 +
+ drivers/staging/ti-st/fmdrv_tx.c       |  420 +++++++
+ drivers/staging/ti-st/fmdrv_tx.h       |   37 +
+ drivers/staging/ti-st/fmdrv_v4l2.c     |  755 ++++++++++++
+ drivers/staging/ti-st/fmdrv_v4l2.h     |   32 +
+ include/linux/videodev2.h              |    8 +
+ 14 files changed, 4918 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/staging/ti-st/fmdrv.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_common.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_common.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_rx.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_rx.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_tx.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_tx.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
+
