@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab0K2JRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:17:20 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59002 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab0K2JRR (ORCPT
+	id S1752273Ab0K2JR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:17:26 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58905 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab0K2JRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:17:17 -0500
+	Mon, 29 Nov 2010 04:17:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mRmVoBYmFPpPmsJI9x+DndT8d5A0bGiDWHRZzWP+4++EXa5IHVmNmj/lfF974Pzs6z
-         nNFjgR+/bhe2w9htBYGtTEAr3weKKqMd/e3hbmr9Cs7a2d/FDOfSOYMTUJPJ+g2trVLL
-         7M9cabhDY9m9GIklDrBOZsvE0C4ikPYH/nZg0=
+        b=F7FamwyHoKLmNLts1DXyO2ynC7I2qJ7mKx9dDT+NVgbFmVA1gygTRpKLs4u/rCnu1+
+         2dMHtq9PHkYAy09wUzsiaTvdAlnK3TIbMGKFfL33sq1bA9bJ/A6k4eZnOeErstqhLmUf
+         kAR6NFC569UnfN4YJp07aHKD6LJEVbUkukEt4=
 From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
         will.deacon@arm.com
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
         dengcheng.zhu@gmail.com, matt@console-pimps.org, sshtylyov@mvista.com
-Subject: [PATCH v3 1/5] MIPS/Perf-events: Work with irq_work
-Date: Mon, 29 Nov 2010 17:19:07 +0800
-Message-Id: <1291022351-13152-2-git-send-email-dengcheng.zhu@gmail.com>
+Subject: [PATCH v3 2/5] MIPS/Perf-events: Work with the new PMU interface
+Date: Mon, 29 Nov 2010 17:19:08 +0800
+Message-Id: <1291022351-13152-3-git-send-email-dengcheng.zhu@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
 References: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
@@ -29,87 +29,407 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the MIPS part of the following commit by Peter Zijlstra:
+This is the MIPS part of the following commits by Peter Zijlstra:
 
-- e360adbe29241a0194e10e20595360dd7b98a2b3
-    irq_work: Add generic hardirq context callbacks
+- a4eaf7f14675cb512d69f0c928055e73d0c6d252
+    perf: Rework the PMU methods
 
-    Provide a mechanism that allows running code in IRQ context. It is
-    most useful for NMI code that needs to interact with the rest of the
-    system -- like wakeup a task to drain buffers.
+    Replace pmu::{enable,disable,start,stop,unthrottle} with
+    pmu::{add,del,start,stop}, all of which take a flags argument.
 
-    Perf currently has such a mechanism, so extract that and provide it as
-    a generic feature, independent of perf so that others may also
-    benefit.
+    The new interface extends the capability to stop a counter while
+    keeping it scheduled on the PMU. We replace the throttled state with
+    the generic stopped state.
 
-    The IRQ context callback is generated through self-IPIs where
-    possible, or on architectures like powerpc the decrementer (the
-    built-in timer facility) is set to generate an interrupt immediately.
+    This also allows us to efficiently stop/start counters over certain
+    code paths (like IRQ handlers).
 
-    Architectures that don't have anything like this get to do with a
-    callback from the timer tick. These architectures can call
-    irq_work_run() at the tail of any IRQ handlers that might enqueue such
-    work (like the perf IRQ handler) to avoid undue latencies in
-    processing the work.
+    It also allows scheduling a counter without it starting, allowing for
+    a generic frozen state (useful for rotating stopped counters).
 
-For MIPSXX, we need to call irq_work_run() at the tail of the perf IRQ
-handler as described above.
+    The stopped state is implemented in two different ways, depending on
+    how the architecture implemented the throttled state:
+
+     1) We disable the counter:
+        a) the pmu has per-counter enable bits, we flip that
+        b) we program a NOP event, preserving the counter state
+
+     2) We store the counter state and ignore all read/overflow events
+
+For MIPSXX, the stopped state is implemented in the way of 1.b as above.
+
+- 33696fc0d141bbbcb12f75b69608ea83282e3117
+    perf: Per PMU disable
+
+    Changes perf_disable() into perf_pmu_disable().
+
+- 24cd7f54a0d47e1d5b3de29e2456bfbd2d8447b7
+    perf: Reduce perf_disable() usage
+
+    Since the current perf_disable() usage is only an optimization,
+    remove it for now. This eases the removal of the __weak
+    hw_perf_enable() interface.
+
+- b0a873ebbf87bf38bf70b5e39a7cadc96099fa13
+    perf: Register PMU implementations
+
+    Simple registration interface for struct pmu, this provides the
+    infrastructure for removing all the weak functions.
+
+- 51b0fe39549a04858001922919ab355dee9bdfcf
+    perf: Deconstify struct pmu
+
+    sed -ie 's/const struct pmu\>/struct pmu/g' `git grep -l "const struct pmu\>"`
 
 Reported-by: Wu Zhangjin <wuzhangjin@gmail.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 ---
- arch/mips/Kconfig                    |    1 +
- arch/mips/include/asm/perf_event.h   |   12 +-----------
- arch/mips/kernel/perf_event_mipsxx.c |    2 +-
- 3 files changed, 3 insertions(+), 12 deletions(-)
+ arch/mips/kernel/perf_event.c        |  275 +++++++++++++++++++---------------
+ arch/mips/kernel/perf_event_mipsxx.c |    2 +
+ 2 files changed, 158 insertions(+), 119 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 67a2fa2..c44c38d 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -4,6 +4,7 @@ config MIPS
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
-+	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
-diff --git a/arch/mips/include/asm/perf_event.h b/arch/mips/include/asm/perf_event.h
-index e00007c..d0c7749 100644
---- a/arch/mips/include/asm/perf_event.h
-+++ b/arch/mips/include/asm/perf_event.h
-@@ -11,15 +11,5 @@
+diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
+index 2b7f3f7..1ee44a3 100644
+--- a/arch/mips/kernel/perf_event.c
++++ b/arch/mips/kernel/perf_event.c
+@@ -161,41 +161,6 @@ mipspmu_event_set_period(struct perf_event *event,
+ 	return ret;
+ }
  
- #ifndef __MIPS_PERF_EVENT_H__
- #define __MIPS_PERF_EVENT_H__
--
--/*
-- * MIPS performance counters do not raise NMI upon overflow, a regular
-- * interrupt will be signaled. Hence we can do the pending perf event
-- * work at the tail of the irq handler.
-- */
--static inline void
--set_perf_event_pending(void)
+-static int mipspmu_enable(struct perf_event *event)
 -{
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct hw_perf_event *hwc = &event->hw;
+-	int idx;
+-	int err = 0;
+-
+-	/* To look for a free counter for this event. */
+-	idx = mipspmu->alloc_counter(cpuc, hwc);
+-	if (idx < 0) {
+-		err = idx;
+-		goto out;
+-	}
+-
+-	/*
+-	 * If there is an event in the counter we are going to use then
+-	 * make sure it is disabled.
+-	 */
+-	event->hw.idx = idx;
+-	mipspmu->disable_event(idx);
+-	cpuc->events[idx] = event;
+-
+-	/* Set the period for the event. */
+-	mipspmu_event_set_period(event, hwc, idx);
+-
+-	/* Enable the event. */
+-	mipspmu->enable_event(hwc, idx);
+-
+-	/* Propagate our changes to the userspace mapping. */
+-	perf_event_update_userpage(event);
+-
+-out:
+-	return err;
 -}
 -
-+/* Leave it empty here. The file is required by linux/perf_event.h */
- #endif /* __MIPS_PERF_EVENT_H__ */
+ static void mipspmu_event_update(struct perf_event *event,
+ 			struct hw_perf_event *hwc,
+ 			int idx)
+@@ -231,32 +196,90 @@ again:
+ 	return;
+ }
+ 
+-static void mipspmu_disable(struct perf_event *event)
++static void mipspmu_start(struct perf_event *event, int flags)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	if (!mipspmu)
++		return;
++
++	if (flags & PERF_EF_RELOAD)
++		WARN_ON_ONCE(!(hwc->state & PERF_HES_UPTODATE));
++
++	hwc->state = 0;
++
++	/* Set the period for the event. */
++	mipspmu_event_set_period(event, hwc, hwc->idx);
++
++	/* Enable the event. */
++	mipspmu->enable_event(hwc, hwc->idx);
++}
++
++static void mipspmu_stop(struct perf_event *event, int flags)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	if (!mipspmu)
++		return;
++
++	if (!(hwc->state & PERF_HES_STOPPED)) {
++		/* We are working on a local event. */
++		mipspmu->disable_event(hwc->idx);
++		barrier();
++		mipspmu_event_update(event, hwc, hwc->idx);
++		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
++	}
++}
++
++static int mipspmu_add(struct perf_event *event, int flags)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+-	int idx = hwc->idx;
++	int idx;
++	int err = 0;
+ 
++	perf_pmu_disable(event->pmu);
+ 
+-	WARN_ON(idx < 0 || idx >= mipspmu->num_counters);
++	/* To look for a free counter for this event. */
++	idx = mipspmu->alloc_counter(cpuc, hwc);
++	if (idx < 0) {
++		err = idx;
++		goto out;
++	}
+ 
+-	/* We are working on a local event. */
++	/*
++	 * If there is an event in the counter we are going to use then
++	 * make sure it is disabled.
++	 */
++	event->hw.idx = idx;
+ 	mipspmu->disable_event(idx);
++	cpuc->events[idx] = event;
+ 
+-	barrier();
+-
+-	mipspmu_event_update(event, hwc, idx);
+-	cpuc->events[idx] = NULL;
+-	clear_bit(idx, cpuc->used_mask);
++	hwc->state = PERF_HES_STOPPED | PERF_HES_UPTODATE;
++	if (flags & PERF_EF_START)
++		mipspmu_start(event, PERF_EF_RELOAD);
+ 
++	/* Propagate our changes to the userspace mapping. */
+ 	perf_event_update_userpage(event);
++
++out:
++	perf_pmu_enable(event->pmu);
++	return err;
+ }
+ 
+-static void mipspmu_unthrottle(struct perf_event *event)
++static void mipspmu_del(struct perf_event *event, int flags)
+ {
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
++	int idx = hwc->idx;
+ 
+-	mipspmu->enable_event(hwc, hwc->idx);
++	WARN_ON(idx < 0 || idx >= mipspmu->num_counters);
++
++	mipspmu_stop(event, PERF_EF_UPDATE);
++	cpuc->events[idx] = NULL;
++	clear_bit(idx, cpuc->used_mask);
++
++	perf_event_update_userpage(event);
+ }
+ 
+ static void mipspmu_read(struct perf_event *event)
+@@ -270,12 +293,17 @@ static void mipspmu_read(struct perf_event *event)
+ 	mipspmu_event_update(event, hwc, hwc->idx);
+ }
+ 
+-static struct pmu pmu = {
+-	.enable		= mipspmu_enable,
+-	.disable	= mipspmu_disable,
+-	.unthrottle	= mipspmu_unthrottle,
+-	.read		= mipspmu_read,
+-};
++static void mipspmu_enable(struct pmu *pmu)
++{
++	if (mipspmu)
++		mipspmu->start();
++}
++
++static void mipspmu_disable(struct pmu *pmu)
++{
++	if (mipspmu)
++		mipspmu->stop();
++}
+ 
+ static atomic_t active_events = ATOMIC_INIT(0);
+ static DEFINE_MUTEX(pmu_reserve_mutex);
+@@ -318,6 +346,82 @@ static void mipspmu_free_irq(void)
+ 		perf_irq = save_perf_irq;
+ }
+ 
++/*
++ * mipsxx/rm9000/loongson2 have different performance counters, they have
++ * specific low-level init routines.
++ */
++static void reset_counters(void *arg);
++static int __hw_perf_event_init(struct perf_event *event);
++
++static void hw_perf_event_destroy(struct perf_event *event)
++{
++	if (atomic_dec_and_mutex_lock(&active_events,
++				&pmu_reserve_mutex)) {
++		/*
++		 * We must not call the destroy function with interrupts
++		 * disabled.
++		 */
++		on_each_cpu(reset_counters,
++			(void *)(long)mipspmu->num_counters, 1);
++		mipspmu_free_irq();
++		mutex_unlock(&pmu_reserve_mutex);
++	}
++}
++
++static int mipspmu_event_init(struct perf_event *event)
++{
++	int err = 0;
++
++	switch (event->attr.type) {
++	case PERF_TYPE_RAW:
++	case PERF_TYPE_HARDWARE:
++	case PERF_TYPE_HW_CACHE:
++		break;
++
++	default:
++		return -ENOENT;
++	}
++
++	if (!mipspmu || event->cpu >= nr_cpumask_bits ||
++		(event->cpu >= 0 && !cpu_online(event->cpu)))
++		return -ENODEV;
++
++	if (!atomic_inc_not_zero(&active_events)) {
++		if (atomic_read(&active_events) > MIPS_MAX_HWEVENTS) {
++			atomic_dec(&active_events);
++			return -ENOSPC;
++		}
++
++		mutex_lock(&pmu_reserve_mutex);
++		if (atomic_read(&active_events) == 0)
++			err = mipspmu_get_irq();
++
++		if (!err)
++			atomic_inc(&active_events);
++		mutex_unlock(&pmu_reserve_mutex);
++	}
++
++	if (err)
++		return err;
++
++	err = __hw_perf_event_init(event);
++	if (err)
++		hw_perf_event_destroy(event);
++
++	return err;
++}
++
++static struct pmu pmu = {
++	.pmu_enable	= mipspmu_enable,
++	.pmu_disable	= mipspmu_disable,
++	.event_init	= mipspmu_event_init,
++	.add		= mipspmu_add,
++	.del		= mipspmu_del,
++	.start		= mipspmu_start,
++	.stop		= mipspmu_stop,
++	.read		= mipspmu_read,
++};
++
+ static inline unsigned int
+ mipspmu_perf_event_encode(const struct mips_perf_event *pev)
+ {
+@@ -409,73 +513,6 @@ static int validate_group(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-/*
+- * mipsxx/rm9000/loongson2 have different performance counters, they have
+- * specific low-level init routines.
+- */
+-static void reset_counters(void *arg);
+-static int __hw_perf_event_init(struct perf_event *event);
+-
+-static void hw_perf_event_destroy(struct perf_event *event)
+-{
+-	if (atomic_dec_and_mutex_lock(&active_events,
+-				&pmu_reserve_mutex)) {
+-		/*
+-		 * We must not call the destroy function with interrupts
+-		 * disabled.
+-		 */
+-		on_each_cpu(reset_counters,
+-			(void *)(long)mipspmu->num_counters, 1);
+-		mipspmu_free_irq();
+-		mutex_unlock(&pmu_reserve_mutex);
+-	}
+-}
+-
+-const struct pmu *hw_perf_event_init(struct perf_event *event)
+-{
+-	int err = 0;
+-
+-	if (!mipspmu || event->cpu >= nr_cpumask_bits ||
+-		(event->cpu >= 0 && !cpu_online(event->cpu)))
+-		return ERR_PTR(-ENODEV);
+-
+-	if (!atomic_inc_not_zero(&active_events)) {
+-		if (atomic_read(&active_events) > MIPS_MAX_HWEVENTS) {
+-			atomic_dec(&active_events);
+-			return ERR_PTR(-ENOSPC);
+-		}
+-
+-		mutex_lock(&pmu_reserve_mutex);
+-		if (atomic_read(&active_events) == 0)
+-			err = mipspmu_get_irq();
+-
+-		if (!err)
+-			atomic_inc(&active_events);
+-		mutex_unlock(&pmu_reserve_mutex);
+-	}
+-
+-	if (err)
+-		return ERR_PTR(err);
+-
+-	err = __hw_perf_event_init(event);
+-	if (err)
+-		hw_perf_event_destroy(event);
+-
+-	return err ? ERR_PTR(err) : &pmu;
+-}
+-
+-void hw_perf_enable(void)
+-{
+-	if (mipspmu)
+-		mipspmu->start();
+-}
+-
+-void hw_perf_disable(void)
+-{
+-	if (mipspmu)
+-		mipspmu->stop();
+-}
+-
+ /* This is needed by specific irq handlers in perf_event_*.c */
+ static void
+ handle_associated_event(struct cpu_hw_events *cpuc,
 diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index 5c7c6fc..fa00edc 100644
+index fa00edc..c9406d6 100644
 --- a/arch/mips/kernel/perf_event_mipsxx.c
 +++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -696,7 +696,7 @@ static int mipsxx_pmu_handle_shared_irq(void)
- 	 * interrupt, not NMI.
- 	 */
- 	if (handled == IRQ_HANDLED)
--		perf_event_do_pending();
-+		irq_work_run();
+@@ -1045,6 +1045,8 @@ init_hw_perf_events(void)
+ 			"CPU, irq %d%s\n", mipspmu->name, counters, irq,
+ 			irq < 0 ? " (share with timer interrupt)" : "");
  
- #ifdef CONFIG_MIPS_MT_SMP
- 	read_unlock(&pmuint_rwlock);
++	perf_pmu_register(&pmu);
++
+ 	return 0;
+ }
+ arch_initcall(init_hw_perf_events);
 -- 
 1.7.1
 
