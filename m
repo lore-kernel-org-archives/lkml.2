@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab0K2A6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 19:58:33 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41870 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab0K2A6c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 19:58:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SeZZLzFzE93fOaetaslQ46BojgJ4CaDxgmaKTnHZ+Sm4Hm1GaFLKjNNbFUNP5kEbrs
-         RYMpGY3lbHM5+a3HcQCVaxa9wip7tLBiTKYYm5CPVfMRyM82Y9KML2W+z886MmZlunhP
-         9IAcUjYCIcNqGbjcNTWF7fA4Q+7bCrbEfKHmA=
-MIME-Version: 1.0
-In-Reply-To: <9354bfd606c4f42b8433bfb1be173198e94f1d87.1290991196.git.tfransosi@gmail.com>
-References: <9354bfd606c4f42b8433bfb1be173198e94f1d87.1290991196.git.tfransosi@gmail.com>
-	<9354bfd606c4f42b8433bfb1be173198e94f1d87.1290991196.git.tfransosi@gmail.com>
-Date: Sun, 28 Nov 2010 22:58:31 -0200
-Message-ID: <AANLkTike+reihX6k4FoXc0kva6Mwq5rs6QBu-84MYR0g@mail.gmail.com>
-Subject: Re: [PATCH] apic/io_apic.c: Remove unused variable 'desc'.
-From: Thiago Farina <tfransosi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752635Ab0K2BED (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 20:04:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:13941 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751889Ab0K2BEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 20:04:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,273,1288594800"; 
+   d="scan'208";a="354190286"
+Subject: Re: Free memory never fully used, swapping
+From: Shaohua Li <shaohua.li@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Simon Kirby <sim@hostway.ca>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+In-Reply-To: <20101126181604.B6E4.A69D9226@jp.fujitsu.com>
+References: <20101126110244.B6DC.A69D9226@jp.fujitsu.com>
+	 <1290739243.12777.17.camel@sli10-conroe>
+	 <20101126181604.B6E4.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Nov 2010 09:03:58 +0800
+Message-ID: <1290992638.12777.27.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 28, 2010 at 10:42 PM, Thiago Farina <tfransosi@gmail.com> wrote:
-> This fix the following warning:
->
-> arch/x86/kernel/apic/io_apic.c: In function ‘ack_apic_level’:
-> arch/x86/kernel/apic/io_apic.c:2433: warning: unused variable ‘desc’
->
-> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
-> ---
->  arch/x86/kernel/apic/io_apic.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 7cc0a72..31c493d 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -2430,7 +2430,6 @@ static void ack_apic_level(struct irq_data *data)
->  {
->        struct irq_cfg *cfg = data->chip_data;
->        int i, do_unmask_irq = 0, irq = data->irq;
-> -       struct irq_desc *desc = irq_to_desc(irq);
->        unsigned long v;
->
->        irq_complete_move(cfg);
-> --
-> 1.7.3.2.343.g7d43d
->
->
+On Fri, 2010-11-26 at 17:18 +0800, KOSAKI Motohiro wrote:
+> > On Fri, 2010-11-26 at 10:31 +0800, KOSAKI Motohiro wrote:
+> > > > record the order seems not sufficient. in balance_pgdat(), the for look
+> > > > exit only when:
+> > > > priority <0 or sc.nr_reclaimed >= SWAP_CLUSTER_MAX.
+> > > > but we do if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+> > > >                         order = sc.order = 0;
+> > > > this means before we set order to 0, we already reclaimed a lot of
+> > > > pages, so I thought we need set order to 0 earlier before there are
+> > > > enough free pages. below is a debug patch.
+> > > > 
+> > > > 
+> > > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > > index d31d7ce..ee5d2ed 100644
+> > > > --- a/mm/vmscan.c
+> > > > +++ b/mm/vmscan.c
+> > > > @@ -2117,6 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+> > > >  }
+> > > >  #endif
+> > > >  
+> > > > +static int all_zone_enough_free_pages(pg_data_t *pgdat)
+> > > > +{
+> > > > +	int i;
+> > > > +
+> > > > +	for (i = 0; i < pgdat->nr_zones; i++) {
+> > > > +		struct zone *zone = pgdat->node_zones + i;
+> > > > +
+> > > > +		if (!populated_zone(zone))
+> > > > +			continue;
+> > > > +
+> > > > +		if (zone->all_unreclaimable)
+> > > > +			continue;
+> > > > +
+> > > > +		if (!zone_watermark_ok(zone, 0, high_wmark_pages(zone) * 8,
+> > > > +								0, 0))
+> > > > +			return 0;
+> > > > +	}
+> > > > +	return 1;
+> > > > +}
+> > > > +
+> > > >  /* is kswapd sleeping prematurely? */
+> > > >  static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+> > > >  {
+> > > > @@ -2355,7 +2375,8 @@ out:
+> > > >  		 * back to sleep. High-order users can still perform direct
+> > > >  		 * reclaim if they wish.
+> > > >  		 */
+> > > > -		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+> > > > +		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX ||
+> > > > +		    (order > 0 && all_zone_enough_free_pages(pgdat)))
+> > > >  			order = sc.order = 0;
+> > > 
+> > > Ummm. this doesn't work. this place is processed every 32 pages reclaimed.
+> > > (see below code and comment). Theresore your patch break high order reclaim
+> > > logic.
+> > Yes, this will break high order reclaim, but we need a compromise.
+> > wrongly reclaim pages is more worse. could increase the watermark in
+> > all_zone_enough_free_pages() better?
+> > 
+> 
+> Hmm..
+> I guess I haven't catch your mention. you wrote 
+> 
+> > > > but we do if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+> > > >                         order = sc.order = 0;
+> > > > this means before we set order to 0, we already reclaimed a lot of
+> > > > pages
+> 
+> and I wrote it's not a lot. So, I don't understand why you are talking
+> about watermark increasing now. Personally you seems to talk unrelated
+> topic. Can you please elablate your point more
+ok let me clarify, in the for-loop of balance_pgdat() we reclaim 32
+pages one time. but we have
+if (!all_zones_ok) {
+...
+		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+			order = sc.order = 0;
 
-Please, disregard this. This variable is used in the #ifdef
-CONFIG_GENERIC_PENDING_IRQ. Sorry for the noise.
+		goto loop_again;
+	}
+only when sc.nr_reclaimed < SWAP_CLUSTER_MAX or priority < 0, we set
+order to 0. before this, we still use high order for zone_watermark_ok()
+and it will fail and we keep doing page reclaim. So in the proposed
+patch by you or Mel, checking the freed pages or order in kswapd() is
+later. so I suggest we check if there is enough free pages in
+balance_pgdat() and break high order allocation if yes.
+
