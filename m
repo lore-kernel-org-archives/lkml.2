@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0K2J7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:59:45 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:37284 "EHLO
+	id S1752782Ab0K2KBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:01:49 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:37288 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab0K2J7o (ORCPT
+	with ESMTP id S1752166Ab0K2KBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:59:44 -0500
+	Mon, 29 Nov 2010 05:01:48 -0500
 From: Andi Kleen <andi@firstfloor.org>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gdb@sourceware.org, hellogcc@freelists.org
-Subject: Re: [PATCH] Built kernel without -O2 option
-References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
-Date: Mon, 29 Nov 2010 10:59:40 +0100
-In-Reply-To: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
-	(Hui Zhu's message of "Mon, 29 Nov 2010 11:56:15 +0800")
-Message-ID: <87r5e4lab7.fsf@basil.nowhere.org>
+To: microcai@fedoraproject.org
+Cc: linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+Subject: Re: VT console need rewrite
+References: <1290941875.13526.15.camel@cai.gentoo>
+Date: Mon, 29 Nov 2010 11:01:46 +0100
+In-Reply-To: <1290941875.13526.15.camel@cai.gentoo>
+	(microcai@fedoraproject.org's message of "Sun, 28 Nov 2010 18:57:55
+	+0800")
+Message-ID: <87mxosla7p.fsf@basil.nowhere.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,33 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hui Zhu <teawater@gmail.com> writes:
+Microcai <microcai@fedoraproject.org> writes:
 
-> Now, there are a lot of ways to debug the Linux kernel with GDB, like
-> qemu, kgtp or kgdb and so on.
-> But the developer more like add a printk. It have a lot of reason, a big one is:
-> (gdb) p ret
-> $3 = <value optimized out>
-> And the code execution order is not right.
-
-Really the right place to fix a lot of this would be gcc (and perhaps
-gdb). I suspect with some careful work the debugging experience
-for -O2 could be improved a lot.
-I also believe the latest gccs already have improvements in this area.
-
+> 	I'm implementing the UNICODE font of the framebuffer console, (see
+> http://lkml.org/lkml/2010/11/26/50 in case you do not got my email). But
+> current vt code is too bugy, too many direct assumes about vt buffer,
+> This makes me so hard to hack.  There is TODO telling me to add UNICODE
+> support, but no room for such code, that's why my patch is so tricky.
 >
-> This is becuase the Kernel is bult with gcc -O2.  Gcc will not
-> generate enough debug message with file with -O2.
-> So GDB cannot work very well with Linux kernel.
->
-> So I make a patch that add a option in "Kernel hacking" called "Close
-> GCC optimization".  It will make kernel be built without -O2.
+> 	And the code itself, if you'll excuse me, it isn't as beautiful as rest
+> of the kernel.
+> 	So, it really really need a clean rewrite.I'm ganna take is hard job.	
+> 	And, please tell me if is worth to do so.
 
-
-You need to at least keep aggressive inlining for header files,
-otherwise there will be too much code bloat and bad code.
-
-Like -O1 -finline-functions ? 
+To be honest I have doubts its worth it. This was discussed years and
+years ago and the conclusion back then that people who need unicode
+fonts should use them in X or another graphical console environment
+(there are plenty to chose from these days). Has this changed?
 
 -Andi
 
