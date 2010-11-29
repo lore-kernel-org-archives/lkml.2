@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab0K2UyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:54:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57433 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab0K2UyQ (ORCPT
+	id S1753439Ab0K2U7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:59:24 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:40842 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751222Ab0K2U7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:54:16 -0500
-Date: Mon, 29 Nov 2010 21:54:10 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Jonathan Corbet <corbet@lwn.net>
-cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-In-Reply-To: <20101129131737.3dd6eb03@bike.lwn.net>
-Message-ID: <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <20101129131737.3dd6eb03@bike.lwn.net>
+	Mon, 29 Nov 2010 15:59:23 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: jqlYPE8VM1n_zkZa_4MveMbL5f1rHebRoMF43NahQl3FFmn
+ sZB2BIta5B2uz.0k2c2Vur8fpx37VLQeEQcPJJiAE3FTaJyQpEnniUnitEit
+ zEcFH_Icn.T7.T2lF8RnZrfGzHZCJtp8Gm.YtvqiHUsM4Ei_mBsltk8X5Rz.
+ n54u6G2y_.4slj4bc.KtAmNq08UBW6LKT4oMUo_ZR2.6KoX9NOeol5F2CoTL
+ Fvd2S0wem4cw-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 29 Nov 2010 14:59:20 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thisops uV2 02/10] vmstat: Optimize zone counter modifications
+ through the use of this cpu operations
+In-Reply-To: <alpine.DEB.2.00.1011291402300.4836@router.home>
+Message-ID: <alpine.DEB.2.00.1011291448220.9804@router.home>
+References: <20101126210937.383047168@linux.com> <20101126210950.142747403@linux.com> <20101127144949.GC15365@Krystal> <alpine.DEB.2.00.1011291013460.3923@router.home> <alpine.DEB.2.00.1011291111110.4836@router.home> <20101129192801.GE25610@Krystal>
+ <alpine.DEB.2.00.1011291402300.4836@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:q3UeGbT3Vf0P0dIPu57oHdVyJyZLeMmhaEiVTdNld10
- TViiQangwhqEOjKBcLdZcFeN10/9k7Fg/xDWXyKX78qXsAOmP0
- YOCyCkIaChA5XfP41O22edgrrWaTwF7EDlB1eeTBUbmsNgNuEX
- EOvgeKob40CEd2Y4tiS7+RxpoO4a7pxowIDAuVnLDXHZg24/qV
- jlDb7IepnkJKaPF6MAv0/UWBymON+KUhyIzHqhIfpg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon
+Some numbers for the cmpxchg implementation (cycles)
 
-On Mon, 29 Nov 2010, Jonathan Corbet wrote:
+Function		Orig	Cmpxchg Fallback
+--------------------------------------------------
+inc_zone_page_state	170	32	196
+__inc_zone_page_s	23	31	26
+inc/dec pairs		347	69	379
 
-> On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
-> Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> 
-> > When two drivers interoperate without an explicit dependency, it is often
-> > required to prevent one of them from being unloaded safely by dereferencing
-> > dev->driver->owner. This patch provides a generic function to do this in a
-> > race-free way.
-> 
-> I must ask: why not, instead, make the dependency explicit?  In
-> particular, this looks like an application for the proposed media
-> controller code, which is meant to model the connections between otherwise
-> independent devices.  The fact that your example comes from V4L2 (which is
-> the current domain of the media controller) also argues that way.
+So the fallback is always worse. cmpxchg is only better for the versions
+of zone counters where we need to disable and enable interrupts.
 
-Sorry, don't see a good way to do this. This function is for a general 
-dependency, where you don't have that driver, we are checking for register 
-with us, so, the only way to get to it is via dev->driver->owner. And I 
-also don't want to move registering the device into the dependant driver 
-and then wait (with a timeout) for a driver to probe with it... I just 
-want to verify, whether a driver has attached to that device and whether I 
-can lock it down.
+This would suggest to only use the cmpxchg for arches that have cmpxchg
+local and only in the case of the full versions.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+There are 12 cases of inc_zone_page_state and 13 of dec_zone_page_state
+as well as 7 cases of mod_zone_page_state.
+
+
