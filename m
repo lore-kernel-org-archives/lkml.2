@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0K2VgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 16:36:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53566 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab0K2VgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 16:36:13 -0500
-Message-ID: <4CF41C89.9060708@zytor.com>
-Date: Mon, 29 Nov 2010 13:35:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S1752582Ab0K2Vhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 16:37:54 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:54725 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab0K2Vhx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 16:37:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=E5qSuLTWw/bl5ANGbctNmkXcJTOyCe20xasuw/lnUGiccSl7+a8NEcz5um1LPHffYZ
+         RmrmyQS2Y6EAVY7IEuBA==
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below
- 4G
-References: <20101129183009.11256.33739.stgit@bob.kio> <201011291334.52909.bjorn.helgaas@hp.com> <4CF3F62F.2000508@zytor.com> <201011291432.51264.bjorn.helgaas@hp.com>
-In-Reply-To: <201011291432.51264.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101127084153.GC28745@core.coreip.homeip.net>
+References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org> <20101127084153.GC28745@core.coreip.homeip.net>
+From: Duncan Laurie <dlaurie@chromium.org>
+Date: Mon, 29 Nov 2010 13:37:35 -0800
+X-Google-Sender-Auth: RnjJ3EQs8BpIohvdSq6TvGGs4TA
+Message-ID: <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
+Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs driver rebind
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 01:32 PM, Bjorn Helgaas wrote:
-> 
-> Oops, egg on my face.  In this case, there *is* an ACPI INT0800 device
-> at 0xff000000-0xffffffff, which should prevent us from allocating that
-> space for anything else.  Only problem is, we IGNORE that useful bit of
-> information.
-> 
-
-Eep... why?
-
->> It is certainly reasonable to block off the last chunk of the 32-bit
->> address space.  Some systems double-decode it to avoid issues with
->> A20M#, so I would argue that we should avoid at least 2 MiB.
+On Sat, Nov 27, 2010 at 12:41 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Duncan,
+>
+> On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
+>> When rebinding a serio driver via sysfs drvctl interface it is possible for
+>> an interrupt to trigger after the disconnect of the existing driver and
+>> before the binding of the new driver.  This will cause the serio interrupt
+>> handler to queue a rescan event which will disconnect the new driver
+>> immediately after it is attached.
 >>
->> As far as discovering them from the BIOS, there is a way to do it --
->> E820.  This is a fallback for the case where the BIOS has plain and
->> simply failed to provide it, and so a heuristic is probably the best we
->> can do.  Probing is extremely unsafe.
-> 
-> I think it's clearly a bug that Linux ignores ACPI resource information
-> (except PNP0C01/PNP0C02 motherboard devices).  If we fix that bug, it
-> will fix Matthew's 2530p.
+>> This change clears the serio event queue after processing the drvctl
+>> request but before releasing the serio mutex, which will clear any queued
+>> rescans before they can get processed.
+>>
+>> Reproduction involves issuing a rebind of device port from psmouse driver
+>> to serio_raw driver while generating input to trigger interrupts.  Then
+>> checking to see if the corresponding i8042/serio4/driver is correctly
+>> attached to the serio_raw driver instead of psmouse.
+>>
+>> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+>> ---
+>>  drivers/input/serio/serio.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+>> index 405bf21..a66307e 100644
+>> --- a/drivers/input/serio/serio.c
+>> +++ b/drivers/input/serio/serio.c
+>> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
+>>               serio_disconnect_port(serio);
+>>               error = serio_bind_driver(serio, to_serio_driver(drv));
+>>               put_driver(drv);
+>> +             serio_remove_pending_events(serio);
+>
+> Hmm, makes sense, although should we limit events being removed to
+> rescan events only?
+>
 
-I would definitely agree with that.
 
-> We might still want a patch like this current one because it could
-> work around some BIOS defects, and because I think it's too late to
-> fix the ACPI resource problem for .37.  But I'm not convinced we
-> should reserve more than Windows does, because that may keep us from
-> discovering other important Linux problems.
+That seems reasonable.  It would mean adding a new function or a
+parameter to the existing serio_remove_pending_events function, do you
+have a preference?
 
-I'm not so sure about that... it feels like a pretty weak argument that
-we might work on some machines even though our code isn't perfect.
-
-	-hpa
+Thanks,
+-duncan
