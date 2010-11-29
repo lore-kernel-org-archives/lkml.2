@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab0K2CWP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 21:22:15 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57374 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab0K2CWL (ORCPT
+	id S1754630Ab0K2CZW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 21:25:22 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47427 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754448Ab0K2CZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 21:22:11 -0500
+	Sun, 28 Nov 2010 21:25:18 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 29 Nov 2010 11:16:25 +0900
+Date: Mon, 29 Nov 2010 11:19:34 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
@@ -23,11 +23,11 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 04/21] mm: Rename drop_anon_vma to put_anon_vma
-Message-Id: <20101129111625.64456ec1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101126145410.491545145@chello.nl>
+Subject: Re: [PATCH 05/21] mm: Move anon_vma ref out from under CONFIG_KSM
+Message-Id: <20101129111934.e5f206ce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101126145410.544741923@chello.nl>
 References: <20101126143843.801484792@chello.nl>
-	<20101126145410.491545145@chello.nl>
+	<20101126145410.544741923@chello.nl>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -37,11 +37,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Nov 2010 15:38:47 +0100
+On Fri, 26 Nov 2010 15:38:48 +0100
 Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> The normal code pattern used in the kernel is: get/put.
+> We need an anon_vma refcount for preemptible anon_vma->lock.
 > 
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
 > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
