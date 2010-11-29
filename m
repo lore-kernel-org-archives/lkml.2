@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0K2QPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:15:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755028Ab0K2QPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:15:18 -0500
-Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
-From: Eric Paris <eparis@redhat.com>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: Alexey Zaytsev <alexey.zaytsev@gmail.com>,
-        Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
-        "agruen@linbit.com" <agruen@linbit.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan@buettcher.org" <stefan@buettcher.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <201011261011.55266.tvrtko.ursulin@sophos.com>
-References: <20101122002747.13674.69384.stgit@zaytsev.su>
-	 <20101122003357.13674.30341.stgit@zaytsev.su>
-	 <201011261011.55266.tvrtko.ursulin@sophos.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Nov 2010 11:14:54 -0500
-Message-ID: <1291047294.3248.9.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755011Ab0K2QQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:16:28 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32826 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752080Ab0K2QQ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:16:27 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: gsvUHqMVM1nA5E2QCxmkjo_krH0uc9aKaZfrJzB_NZgsVGA
+ WXa0gZBgksnNVh4TmKJCqbR3LS1OTfvBKoec1qDTxO2Xo0woxnNamDJzRb3e
+ 901Q5q2_OnjkJ0gy8bvZNfjd7Q_P63G0SUzvhj0duYC_SdTPi3uHBFgqEKX1
+ HZ7_YBMLa3WIY_gCQ4r2toKi5wojxfsmIrT2XmNwXHb_yOrN4rz9bjjLsAxK
+ t1hbXJOUa2V.z46j9.7UDLKrujH3xsS04eT8ktE4YYuGvpMHidrYm
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 29 Nov 2010 10:16:24 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thisops uV2 02/10] vmstat: Optimize zone counter modifications
+ through the use of this cpu operations
+In-Reply-To: <20101127144949.GC15365@Krystal>
+Message-ID: <alpine.DEB.2.00.1011291013460.3923@router.home>
+References: <20101126210937.383047168@linux.com> <20101126210950.142747403@linux.com> <20101127144949.GC15365@Krystal>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 10:11 +0000, Tvrtko Ursulin wrote:
-> On Monday 22 Nov 2010 00:37:21 Alexey Zaytsev wrote:
+On Sat, 27 Nov 2010, Mathieu Desnoyers wrote:
 
-> >  struct fanotify_event_metadata {
-> > -       __u16 event_len;
-> > +       __u16 event_len; /* Including the options */
-> >         __u8 vers;
-> > -       __u8 reserved;
-> > +       __u8 options_offset; /* Aka header length */
-> >         __s32 fd;
-> >         __aligned_u64 mask;
-> >         __s32 pid;
-> > +       /* Options go here. */
-> >  };
+> * Christoph Lameter (cl@linux.com) wrote:
+> > this cpu operations can be used to slightly optimize the function. The
+> > changes will avoid some address calculations and replace them with the
+> > use of the percpu segment register.
+> >
+> > If one would have this_cpu_inc_return and this_cpu_dec_return then it
+> > would be possible to optimize inc_zone_page_state and dec_zone_page_state even
+> > more.
+>
+> Then we might want to directly target the implementation with
+> this_cpu_add_return/this_cpu_sub_return (you implement these in patch 03), which
+> would not need to disable preemption on the fast path. I think we already
+> discussed this in the past. The reason eludes me at the moment, but I remember
+> discussing that changing the increment/decrement delta to the nearest powers of
+> two would let us deal with overflow cleanly. But it's probably too early in the
+> morning for me to wrap my head around the issue at the moment.
 
-> Also, options_offset is, if I understood it correctly, basically the lenght of
-> fanotify_event_metadata. As such, isn't that field redundant since the lenght
-> is implied from the protocol version?
+We still would need to disable preemption because multiple this_cpu_ops
+are needed. The only way to avoid preemption would be if the modifications
+to the differential and the adding to the per zone counters would be
+per cpu atomic.
 
-Ok, the way I envision the interface is the fanotify_event_metadata is
-going to be information that is common for all event types.  If a
-particular event type (in the case being brought forth MODIFY and
-CLOSE_WRITE) needs more information it will use the optional headers.
-I'd still like to be able to add generic info, ex: the uid of the
-requesting process, to the generic event metadata.  We might also
-someday want to use the optional headers for things like the inotify
-move cookie.  Why waste space in every event when only the move type
-events cared about this cookie?
-
-This necessitates options_offset.  Lets say I compile my userspace app
-as version 3.  I know that fanotify_event_metadata is 14 bytes long in
-version 3.  Thus I start looking at byte 15 for the first optional
-header.  But the kernel is version 4 and fanotify_event_metadata is
-actually 18 bytes long.  Whoops, userspace should be looking at byte 19
-for the header but accidentally looked at byte 15.  options_offset will
-allow a version 3 userspace to run on a version 4 kernel while skipping
-bytes 15-18 which it doesn't understand.
-
-At the end of all of this discussion what did people finally agree on?
-Something like this?
-
-struct fanotify_opt_hdr {
-        __u16 type;
-        __u16 len;
-        /* Payload goes here. */
-};
-
-struct fanotify_event_metadata {
-        __u32 event_len; /* Including the options */
-        __u16 vers;
-        __u16 options_offset; /* Aka header length */
-        __s32 fd;
-        __aligned_u64 mask;
-        __s32 pid;
-        /* Options go here. */
-};
-
-We could be ABI compatible if we let vers as a __u32 and added
-options_offset at the end of the structure...   Do we have strong
-feelings on either side about maintaining compatibility or about
-structure lengths?
-
--Eric
 
