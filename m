@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab0K2QCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:02:10 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54265 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab0K2QCJ (ORCPT
+	id S1754797Ab0K2QDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:03:31 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:45200 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754181Ab0K2QDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:02:09 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs" <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates for 2.6.37-rc
-Date: Mon, 29 Nov 2010 11:00:57 -0500
-Message-Id: <1291045745-sup-8236@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	Mon, 29 Nov 2010 11:03:30 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: JlVbJsQVM1mJ8lWM2x1AdHqhZUEEb9.uKYGSsGSgDCugBvM
+ OZzOGtxaa6Vng70noObHpn0BjjhN0h1ZpkMePRdRVjQbiq0u.w4dtSa5CAVK
+ i1GSfTxhJ0z_wPOi.HyoId1GRGCBnvuqZKsPkTHiUq8.Wa2Xp0I8l2MO51Eq
+ U4djUXBXauwTwg_bxX7Iiw6JNJY78jefTRebJ0JkwK9GNxzu877Rx0Fd_qgM
+ qoq.OMjmFhyGhxgIO0Rc4avnZUpRCabwi5DTi.03_n67plY0RRdg-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 29 Nov 2010 10:03:26 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [thisops uV2 04/10] x86: Support for
+ this_cpu_add,sub,dec,inc_return
+In-Reply-To: <AANLkTinQ9_WdZAfyTLKhvP47tRnYABjEtTOVByhn1QZo@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1011291002390.3923@router.home>
+References: <20101126210937.383047168@linux.com> <20101126210951.303044608@linux.com> <AANLkTinQ9_WdZAfyTLKhvP47tRnYABjEtTOVByhn1QZo@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-220736241-1291046608=:3923"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-The master branch of the btrfs unstable tree:
+---1463811839-220736241-1291046608=:3923
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+On Sat, 27 Nov 2010, Pekka Enberg wrote:
 
-Has a collection of btrfs bug fixes.
+> On Fri, Nov 26, 2010 at 11:09 PM, Christoph Lameter <cl@linux.com> wrote:
+> > @@ -300,6 +339,14 @@ do { =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
+ =A0 =A0 =A0 =A0 =A0 \
+> > =A0#define irqsafe_cpu_xor_2(pcp, val) =A0 =A0percpu_to_op("xor", (pcp)=
+, val)
+> > =A0#define irqsafe_cpu_xor_4(pcp, val) =A0 =A0percpu_to_op("xor", (pcp)=
+, val)
+> >
+> > +#ifndef CONFIG_M386
+>
+> Use CONFIG_X86_32 here?
 
-The three most important fixes here address crashes in the btrfs
-O_DIRECT code, add a migrate_page operation to avoid metadata corruption
-as btree pages go through migration, and fix up our NFS support.
+This is a section specifically for non 386. 386 does not support certain
+atomic operations.
 
-Otherwise we have assorted correctness fixes, many of which were kicked
-out by xfsqa.
-
--chris
-
-Josef Bacik (11) commits (+241/-54):
-    Btrfs: make btrfs_add_nondir take parent inode as an argument (+16/-22)
-    Btrfs: fix typo in fallocate to make it honor actual size (+5/-4)
-    Btrfs: hold i_mutex when calling btrfs_log_dentry_safe (+7/-0)
-    Btrfs: setup blank root and fs_info for mount time (+33/-7)
-    Btrfs: make sure new inode size is ok in fallocate (+4/-0)
-    Btrfs: use dget_parent where we can UPDATED (+43/-12)
-    Btrfs: handle the space_cache option properly (+1/-0)
-    Btrfs: update inode ctime when using links (+1/-0)
-    Btrfs: fix more ESTALE problems with NFS (+1/-0)
-    Btrfs: handle NFS lookups properly (+76/-0)
-    Btrfs: fix fiemap (+54/-9)
-
-Chris Mason (4) commits (+124/-9):
-    Btrfs: deal with DIO bios that span more than one ordered extent (+89/-4)
-    Btrfs: avoid NULL pointer deref in try_release_extent_buffer (+4/-2)
-    Btrfs: don't use migrate page without CONFIG_MIGRATION (+6/-1)
-    Btrfs: add migrate page for metadata inode (+25/-2)
-
-Li Zefan (3) commits (+6/-6):
-    btrfs: Check if dest_offset is block-size aligned before cloning file (+3/-4)
-    btrfs: Show device attr correctly for symlinks (+1/-0)
-    btrfs: Set file size correctly in file clone (+2/-2)
-
-Miao Xie (3) commits (+195/-45):
-    btrfs: cleanup duplicate bio allocating functions (+8/-18)
-    btrfs: fix free dip and dip->csums twice (+3/-6)
-    btrfs: fix panic caused by direct IO (+184/-21)
-
-Mariusz Kozlowski (1) commits (+3/-3):
-    btrfs: make 1-bit signed fileds unsigned
-
-Arne Jansen (1) commits (+1/-1):
-    btrfs: Fix early enospc because 'unused' calculated with wrong sign.
-
-Ian Kent (1) commits (+6/-0):
-    Btrfs - fix race between btrfs_get_sb() and umount
-
-Total: (24) commits (+576/-118)
-
- fs/btrfs/compression.c  |   15 +---
- fs/btrfs/ctree.h        |    6 +-
- fs/btrfs/disk-io.c      |   38 +++++-
- fs/btrfs/export.c       |   76 ++++++++++++
- fs/btrfs/extent-tree.c  |    2 +-
- fs/btrfs/extent_io.c    |   77 ++++++++++---
- fs/btrfs/extent_io.h    |    3 +
- fs/btrfs/file.c         |    7 +
- fs/btrfs/inode.c        |  294 ++++++++++++++++++++++++++++++++++++++---------
- fs/btrfs/ioctl.c        |   31 ++++--
- fs/btrfs/ordered-data.c |   67 +++++++++++
- fs/btrfs/ordered-data.h |    3 +
- fs/btrfs/super.c        |   41 ++++++-
- fs/btrfs/transaction.c  |    5 +-
- fs/btrfs/tree-log.c     |   21 +++-
- 15 files changed, 572 insertions(+), 114 deletions(-)
+---1463811839-220736241-1291046608=:3923--
