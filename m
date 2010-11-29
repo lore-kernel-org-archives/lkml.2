@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab0K2IUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:20:36 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60325 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab0K2IUd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:20:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:content-type;
-        b=NzE4/beB7LgJnmeY6BtsESU/gKGy7Dt09Bank7zVgHl1mrt6GBG99gVZsvVvRorDQy
-         O57m2F7kDQ6nMvFbUbQ09cGUOyXVcAS5KNrouxW0r/7IF62Cpxx6ciduk0Q6Saefm2EZ
-         XVqcOiLnI7zYYjnawIxWJFwTHoWV8V5j3dtuA=
-MIME-Version: 1.0
-In-Reply-To: <20101129081639.GA5142@const.bordeaux.inria.fr>
-References: <1290941875.13526.15.camel@cai.gentoo> <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
- <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
- <1290954545.13526.27.camel@cai.gentoo> <20101128191152.GV10602@const.famille.thibault.fr>
- <1290993006.877.0.camel@cai.gentoo> <20101129081639.GA5142@const.bordeaux.inria.fr>
-From: microcai <microcai@fedoraproject.org>
-Date: Mon, 29 Nov 2010 16:20:11 +0800
-X-Google-Sender-Auth: vIUkQHXYlHGcgzIOH60IePXWc6U
-Message-ID: <AANLkTinmdRjEkmywaMevN5_A=2N8_pBsOAJj8PoAaznz@mail.gmail.com>
-Subject: Re: VT console need rewrite
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Microcai <microcai@fedoraproject.org>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1751491Ab0K2IWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:22:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727Ab0K2IWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 03:22:12 -0500
+Date: Mon, 29 Nov 2010 03:21:28 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andreas Dilger <adilger@dilger.ca>, David Howells <dhowells@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Amerigo Wang <amwang@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>
+Message-Id: <20101129082626.5991.46757.sendpatchset@localhost.localdomain>
+Subject: [Patch] frv: do some cleanups
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But isn't that basically what you are describing?
->
-> (i.e. what's the use of using a pts and /dev/fb, if not for a userlevel
-> terminal to actually do the work?)
->
+1. frv doesn't support SMP, remove the unless SMP bits.
+2. frv has its own alloc_task_struct, so define __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
+   (I am not sure if frv should use generic alloc_task_struct().)
 
-ok, try run zhcon on pts.  can you do that ?
+Signed-off-by: WANG Cong <amwang@redhat.com>
+---
+diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
+index f6bcb03..ab0a983 100644
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -364,7 +364,6 @@ menu "Power management options"
+ 
+ config ARCH_SUSPEND_POSSIBLE
+ 	def_bool y
+-	depends on !SMP
+ 
+ source kernel/power/Kconfig
+ endmenu
+diff --git a/arch/frv/include/asm/system.h b/arch/frv/include/asm/system.h
+index 0a6d8d9..6c10fd2 100644
+--- a/arch/frv/include/asm/system.h
++++ b/arch/frv/include/asm/system.h
+@@ -45,21 +45,12 @@ do {									\
+ #define wmb()			asm volatile ("membar" : : :"memory")
+ #define read_barrier_depends()	do { } while (0)
+ 
+-#ifdef CONFIG_SMP
+-#define smp_mb()			mb()
+-#define smp_rmb()			rmb()
+-#define smp_wmb()			wmb()
+-#define smp_read_barrier_depends()	read_barrier_depends()
+-#define set_mb(var, value) \
+-	do { xchg(&var, (value)); } while (0)
+-#else
+ #define smp_mb()			barrier()
+ #define smp_rmb()			barrier()
+ #define smp_wmb()			barrier()
+ #define smp_read_barrier_depends()	do {} while(0)
+ #define set_mb(var, value) \
+ 	do { var = (value); barrier(); } while (0)
+-#endif
+ 
+ extern void die_if_kernel(const char *, ...) __attribute__((format(printf, 1, 2)));
+ extern void free_initmem(void);
+diff --git a/arch/frv/include/asm/thread_info.h b/arch/frv/include/asm/thread_info.h
+index 11f33ea..d5c1a0a 100644
+--- a/arch/frv/include/asm/thread_info.h
++++ b/arch/frv/include/asm/thread_info.h
+@@ -21,6 +21,8 @@
+ 
+ #define THREAD_SIZE		8192
+ 
++#define __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
++
+ /*
+  * low level task data that entry.S needs immediate access to
+  * - this struct should fit entirely inside of one cache line
