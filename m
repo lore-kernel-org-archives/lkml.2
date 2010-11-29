@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab0K2KBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 05:01:49 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:37288 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab0K2KBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 05:01:48 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: microcai@fedoraproject.org
-Cc: linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-References: <1290941875.13526.15.camel@cai.gentoo>
-Date: Mon, 29 Nov 2010 11:01:46 +0100
-In-Reply-To: <1290941875.13526.15.camel@cai.gentoo>
-	(microcai@fedoraproject.org's message of "Sun, 28 Nov 2010 18:57:55
-	+0800")
-Message-ID: <87mxosla7p.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752844Ab0K2KBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:01:54 -0500
+Received: from mail.sysgo.com ([195.145.229.155]:52313 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752796Ab0K2KBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 05:01:52 -0500
+Date: Mon, 29 Nov 2010 11:01:59 +0100
+From: Pavel Machek <pma@sysgo.com>
+To: Sujith <Sujith.Manoharan@atheros.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "ath9k-devel@venema.h4ckr.net" <ath9k-devel@venema.h4ckr.net>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "chunkeey@googlemail.com" <chunkeey@googlemail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "rudolf.marek@sysgo.com" <rudolf.marek@sysgo.com>,
+        "cko@sysgo.com" <cko@sysgo.com>, "mfa@sysgo.com" <mfa@sysgo.com>,
+        "anl@sysgo.com" <anl@sysgo.com>
+Subject: Re: ath9k_htc vs. powerpc (was Re: working usb wifi card, that is
+ still possible to buy)
+Message-ID: <20101129100159.GC28833@pma.sysgo.com>
+References: <20101103092431.GA21138@pma.sysgo.com>
+ <20101124081616.GA30595@pma.sysgo.com>
+ <20101124131320.GA2611@pma.sysgo.com>
+ <4CED33E0.5040000@lwfinger.net>
+ <20101126083125.GA28982@pma.sysgo.com>
+ <20101126102026.GA11857@pma.sysgo.com>
+ <20101126112737.GB11857@pma.sysgo.com>
+ <19695.40541.335361.81396@gargle.gargle.HOWL>
+ <20101126123706.GA19755@pma.sysgo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101126123706.GA19755@pma.sysgo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microcai <microcai@fedoraproject.org> writes:
+Hi!
 
-> 	I'm implementing the UNICODE font of the framebuffer console, (see
-> http://lkml.org/lkml/2010/11/26/50 in case you do not got my email). But
-> current vt code is too bugy, too many direct assumes about vt buffer,
-> This makes me so hard to hack.  There is TODO telling me to add UNICODE
-> support, but no room for such code, that's why my patch is so tricky.
->
-> 	And the code itself, if you'll excuse me, it isn't as beautiful as rest
-> of the kernel.
-> 	So, it really really need a clean rewrite.I'm ganna take is hard job.	
-> 	And, please tell me if is worth to do so.
+> > > Sujith, I see you fought with endianness issues on ath9k_htc
+> > > driver. Was you able to test it on actual hardware? Should I try the
+> > > version just after your commit?
+> > 
+> > No, I never had a chance to test the driver on a big-endian system.
+> > I assume you are referring to this commit: "ath9k_htc: Fix sparse endian warnings" ?
+> 
+> Yes.
+> 
+> > Does using latest wireless-testing help ?
+> 
+> I updated to wireless-testing from today, and still same results.
+> 
+> > Or you can try compat-wireless to get the latest code.
+> 
+> wireless-testing is actually easier to be.
 
-To be honest I have doubts its worth it. This was discussed years and
-years ago and the conclusion back then that people who need unicode
-fonts should use them in X or another graphical console environment
-(there are plenty to chose from these days). Has this changed?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+...so I indentified two endianness problems in eeprom, but even with
+both fixed, it still will not associate. Is there some way to dump USB
+packets, then compare them between PC and PowerPC versions? Should I
+expect them to match?
+								Pavel
