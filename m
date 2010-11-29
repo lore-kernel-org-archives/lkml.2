@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab0K2INL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:13:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48154 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab0K2INJ (ORCPT
+	id S1751403Ab0K2IQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:16:04 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37949 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab0K2IQC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:13:09 -0500
+	Mon, 29 Nov 2010 03:16:02 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=eRK2CS0W7u/WArfLY4MOMeMJFs9VuN0tpCw9UAwKj6YC2emhirTL400rGiVgxmrPRF
-         kgTjZbZro+VDOHHOOi/MpUwLvpstVMCRKK1MEZy+FRUDY8R5uEkUK4eFIPX/P3g3TWBG
-         qoossTLFND2r1pCttL9fb0FqRSFF8jdpCjt2g=
-Date: Mon, 29 Nov 2010 09:12:51 +0100 (CET)
-From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-X-X-Sender: elektroman@localhost.localdomain
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-In-Reply-To: <201011271639.21694.arnd@arndb.de>
-Message-ID: <alpine.LNX.2.00.1011290912270.10937@localhost.localdomain>
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <alpine.LNX.2.00.1011271306420.7659@localhost.localdomain> <AANLkTinbAVFE+HZrx+9KUwx8=MKFHPqrhpOpAWAEQFv-@mail.gmail.com> <201011271639.21694.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GmRjfxP2PwTomqTCE9hEQVfIH7Z+lhJMxOMiwJJzmpGeoOzYphN5Veo2iPbfgJNxDb
+         /TbH+BQl7g9muFi0qetgKVSo6izuxz0ochY9xlCVsp2u7D4QwKFiJ6ZIcSXwAX+dDnx3
+         l/gMh+RjjKQqiT176x9URm0u8+mvnZJP1YjY8=
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2113523565-1291018387=:10937"
+In-Reply-To: <20101129072951.GA22803@localhost>
+References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
+	<c3b1c78f0e2eba5dfebda7c363c4274e649ab36a.1290956059.git.minchan.kim@gmail.com>
+	<20101129072951.GA22803@localhost>
+Date: Mon, 29 Nov 2010 17:16:01 +0900
+Message-ID: <AANLkTikuriwJr-UZg9=WXXwLt-u3sywkzkpZFBV1C4Db@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] move ClearPageReclaim
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, Nov 29, 2010 at 4:29 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Sun, Nov 28, 2010 at 11:02:56PM +0800, Minchan Kim wrote:
+>> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+>> preventing fast reclaiming readahead marker page.
+>>
+>> In this series, PG_reclaim is used by invalidated page, too.
+>> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+>> to reclaim asap. Then, when the dirty page will be writeback,
+>> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+>> It disturbs this serie's goal.
+>>
+>> I think it's okay to clear PG_readahead when the page is dirty, not
+>> writeback time. So this patch moves ClearPageReadahead.
+>> This patch needs Wu's opinion.
+>
+> It's a safe change. The possibility and consequence of races are both
+> small enough. However the patch could be simplified as follows?
 
---8323328-2113523565-1291018387=:10937
-Content-Type: TEXT/PLAIN; charset=iso-8859-2
-Content-Transfer-Encoding: 8BIT
+If all of file systems use it, I don't mind it.
+Do all of filesystems use it when the page is dirtied?
+I was not sure it.(It's why I added Cc. :)
+If it doesn't have a problem, I hope so.
+
+Thanks, Wu.
+
+>
+> Thanks,
+> Fengguang
+> ---
+>
+> --- linux-next.orig/mm/page-writeback.c 2010-11-29 15:14:54.000000000 +0800
+> +++ linux-next/mm/page-writeback.c      2010-11-29 15:15:02.000000000 +0800
+> @@ -1330,6 +1330,7 @@ int set_page_dirty(struct page *page)
+>  {
+>        struct address_space *mapping = page_mapping(page);
+>
+> +       ClearPageReclaim(page);
+>        if (likely(mapping)) {
+>                int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
+>  #ifdef CONFIG_BLOCK
+> @@ -1387,7 +1388,6 @@ int clear_page_dirty_for_io(struct page
+>
+>        BUG_ON(!PageLocked(page));
+>
+> -       ClearPageReclaim(page);
+>        if (mapping && mapping_cap_account_dirty(mapping)) {
+>                /*
+>                 * Yes, Virginia, this is indeed insane.
+>
 
 
 
-On Sat, 27 Nov 2010, Arnd Bergmann wrote:
-
-> On Saturday 27 November 2010 14:01:20 Micha³ Miros³aw wrote:
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index db524e7..74ea522 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -1164,7 +1164,7 @@ config ISA_DMA_API
-> >         bool
-> > 
-> >  config PCI
-> > -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
-> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
-> > +       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
-> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX ||
-> > ARCH_GEMINI
-> >         help
-> >           Find out whether you have a PCI motherboard. PCI is the name of a
-> >           bus system, i.e. the way the CPU talks to the other stuff inside
-> > 
-> 
-> This approach really does not scale as we add more boards to the list.
-> 
-> Better make a new CONFIG_HAVE_PCI option that you can select from the
-> individual boards, and make that the only dependency that CONFIG_PCI has.
-> 
-> 	Arnd
-> 
-Good idea.
-I write a patch for this.
-
-Ulli
---8323328-2113523565-1291018387=:10937--
+-- 
+Kind regards,
+Minchan Kim
