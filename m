@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0K2CfY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 21:35:24 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:64164 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754096Ab0K2CfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 21:35:22 -0500
-Message-ID: <4CF31157.6020905@cn.fujitsu.com>
-Date: Mon, 29 Nov 2010 10:35:03 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754627Ab0K2CgE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 21:36:04 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48011 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab0K2CgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 21:36:01 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH v2 1/3] deactivate invalidated pages
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <AANLkTikBvHn3Tc_RKTM8tGKjK1kgEZYsBCjXZSZ+Ri+-@mail.gmail.com>
+References: <20101129090514.829C.A69D9226@jp.fujitsu.com> <AANLkTikBvHn3Tc_RKTM8tGKjK1kgEZYsBCjXZSZ+Ri+-@mail.gmail.com>
+Message-Id: <20101129111900.82AB.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH 7/8] cfq-iosched: Enable deep hierarchy in CGgroup
-References: <4CDF7BC5.9080803@cn.fujitsu.com> <4CDF9D06.6070800@cn.fujitsu.com> <20101115195428.GE3396@redhat.com>
-In-Reply-To: <20101115195428.GE3396@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-29 10:35:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-29 10:35:34,
-	Serialize complete at 2010-11-29 10:35:34
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 29 Nov 2010 11:35:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Sun, Nov 14, 2010 at 04:25:42PM +0800, Gui Jianfeng wrote:
->> Currenlty, only level 0 and 1 CGroup directory is allowed to be created.
->> This patch enables deep hierarchy in CGgroup.
->>
-> 
-> I also had posted the patch. Today Jens applied it to
-> origin/for-2.6.38/rc2-holder and after -rc2 will move to 2.6.38/core. At
-> that point of time you can drop this patch from the series.
-> 
+Hi
 
-Ok.
-
-Gui
-
-> Vivek
+> > I don't like this change because fadvise(DONT_NEED) is rarely used
+> > function and this PG_reclaim trick doesn't improve so much. In the
+> > other hand, It increase VM state mess.
 > 
->> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->> ---
->>  block/blk-cgroup.c |    4 ----
->>  1 files changed, 0 insertions(+), 4 deletions(-)
->>
->> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
->> index b1febd0..455768a 100644
->> --- a/block/blk-cgroup.c
->> +++ b/block/blk-cgroup.c
->> @@ -1452,10 +1452,6 @@ blkiocg_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
->>  		goto done;
->>  	}
->>  
->> -	/* Currently we do not support hierarchy deeper than two level (0,1) */
->> -	if (parent != cgroup->top_cgroup)
->> -		return ERR_PTR(-EPERM);
->> -
->>  	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
->>  	if (!blkcg)
->>  		return ERR_PTR(-ENOMEM);
->> -- 
->> 1.6.5.2
->>
->>
->>
+> Chick-egg problem.
+> Why fadvise(DONT_NEED) is rarely used is it's hard to use effective.
+> mincore + fdatasync + fadvise series is very ugly.
+> This patch's goal is to solve it.
+
+Well, I haven't put opposition to your previous patch for this reason.
+I think every one have agree mincore + fdatasync + fadvise mess is ugly.
+
+However I doubt PG_reclaim trick is so effective. I mean, _if_ it's effective, our current
+streaming io heristics doesn't work so effective. It's bad. and if so, we should fix
+it generically. That's the reason why I prefer to use simple add_page_to_lru_list().
+
+Please remember why do we made this one. rsync has special io access pattern
+then our streaming io detection doesn't work so good. therefore we decided to
+improve manual knob. But, why do we need to make completely different behavior
+manual DONT_NEED suggestion and automatic DONT_NEED detection?
+
+That's my point.
+
+
+> PG_reclaim trick would prevent working set eviction.
+> If you fadvise call and there are the invalidated page which are
+> dirtying in middle of inactive LRU,
+> reclaimer would evict working set of inactive LRU's tail even if we
+> have a invalidated page in LRU.
+> It's bad.
 > 
+> About VM state mess, PG_readahead already have done it.
+> But I admit this patch could make it worse and that's why I Cced Wu Fengguang.
+> 
+> The problem it can make is readahead confusing and working set
+> eviction after writeback.
+> I can add ClearPageReclaim of mark_page_accessed for clear flag if the
+> page is accessed during race.
+> But I didn't add it in this version because I think it's very rare case.
+> 
+> I don't want to add new page flag due to this function or revert merge
+> patch of (PG_readahead and PG_reclaim)
+> 
+> 
+> >
+> > However, I haven't found any fault and unworked reason in this patch.
+> >
+> Thanks for the good review, KOSAKI. :)
+> 
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+
+
+
