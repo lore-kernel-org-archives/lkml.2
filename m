@@ -1,141 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab0K2Sbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:31:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16634 "EHLO mx1.redhat.com"
+	id S1753591Ab0K2ScP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:32:15 -0500
+Received: from 8bytes.org ([88.198.83.132]:46518 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab0K2Sbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:31:35 -0500
-Date: Mon, 29 Nov 2010 19:23:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>
-Subject: Re: [resend][PATCH 4/4] oom: don't ignore rss in nascent mm
-Message-ID: <20101129182332.GA21470@redhat.com>
-References: <20101125140253.GA29371@redhat.com> <20101125193659.GA14510@redhat.com> <20101129093803.829F.A69D9226@jp.fujitsu.com> <20101129113357.GA30657@redhat.com>
+	id S1751905Ab0K2ScO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:32:14 -0500
+Date: Mon, 29 Nov 2010 19:32:12 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] KVM: Make the instruction emulator aware of Nested
+	Virtualization
+Message-ID: <20101129183212.GD15575@8bytes.org>
+References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com> <4CED63DC.20608@redhat.com> <20101125114640.GC6031@amd.com> <20101125131351.GA9382@amd.com> <4CEE7E21.3060007@redhat.com> <20101125162313.GA9411@amd.com> <11557.1291051418@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101129113357.GA30657@redhat.com>
+In-Reply-To: <11557.1291051418@localhost>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29, Oleg Nesterov wrote:
->
-> I'll resend v2 today.
+On Mon, Nov 29, 2010 at 12:23:38PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> (Sorry for late reply...)
+> 
+> On Thu, 25 Nov 2010 17:23:13 +0100, "Roedel, Joerg" said:
+> > On Thu, Nov 25, 2010 at 10:17:53AM -0500, Avi Kivity wrote:
+> > > On 11/25/2010 03:13 PM, Roedel, Joerg wrote:
+> > > What about things like adding instructions and forgetting to add the 
+> > > corresponding svm.c code?
+> > Cannot happen. Every instruction that can be intercepted with SVM is
+> > already handled in this patch-set.
+> 
+> Call us back when Intel releases the i9 and i11 with new instructions
+> that need intercept handling. ;)
 
-OK, please see below, just for your review.
-
-I was going to sent it "officially" with the changelog/etc, but
-
-> I am still not sure about compat_copy_strings()...
-
-Yes, I think it needs the same checks. It should use get_arg_page()
-or we need more copy-and-paste code, I think it should also check
-fatal_signal_pending() like copy_strings() does.
-
-I was going to export get_arg_page/acct_arg_size, but it is so
-ugly. I'll try to find the way to unify copy_strings and
-compat_copy_strings, not sure it is possible to do cleanly.
-
-Probably this needs a separate patch in any case.
-
-Oleg.
-
-Changes:
-
-	- move acct_arg_size() under CONFIG_MMU
-
-	- add the "nop" version for NOMMMU
-
- include/linux/binfmts.h |    1 +
- fs/exec.c               |   32 ++++++++++++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 2 deletions(-)
-
---- K/include/linux/binfmts.h~acct_exec_mem	2010-08-19 11:35:00.000000000 +0200
-+++ K/include/linux/binfmts.h	2010-11-29 17:29:35.000000000 +0100
-@@ -29,6 +29,7 @@ struct linux_binprm{
- 	char buf[BINPRM_BUF_SIZE];
- #ifdef CONFIG_MMU
- 	struct vm_area_struct *vma;
-+	unsigned long vma_pages;
- #else
- # define MAX_ARG_PAGES	32
- 	struct page *page[MAX_ARG_PAGES];
---- K/fs/exec.c~acct_exec_mem	2010-11-25 15:16:56.000000000 +0100
-+++ K/fs/exec.c	2010-11-29 17:51:43.000000000 +0100
-@@ -164,6 +164,25 @@ out:
- 
- #ifdef CONFIG_MMU
- 
-+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+	struct mm_struct *mm = current->mm;
-+	long diff = (long)(pages - bprm->vma_pages);
-+
-+	if (!mm || !diff)
-+		return;
-+
-+	bprm->vma_pages = pages;
-+
-+#ifdef SPLIT_RSS_COUNTING
-+	add_mm_counter(mm, MM_ANONPAGES, diff);
-+#else
-+	spin_lock(&mm->page_table_lock);
-+	add_mm_counter(mm, MM_ANONPAGES, diff);
-+	spin_unlock(&mm->page_table_lock);
-+#endif
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -186,6 +205,8 @@ static struct page *get_arg_page(struct 
- 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
- 		struct rlimit *rlim;
- 
-+		acct_arg_size(bprm, size / PAGE_SIZE);
-+
- 		/*
- 		 * We've historically supported up to 32 pages (ARG_MAX)
- 		 * of argument strings even with small stacks
-@@ -276,6 +297,10 @@ static bool valid_arg_len(struct linux_b
- 
- #else
- 
-+static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -1003,6 +1028,7 @@ int flush_old_exec(struct linux_binprm *
- 	/*
- 	 * Release all of the old mmap stuff
- 	 */
-+	acct_arg_size(bprm, 0);
- 	retval = exec_mmap(bprm->mm);
- 	if (retval)
- 		goto out;
-@@ -1426,8 +1452,10 @@ int do_execve(const char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
--		mmput (bprm->mm);
-+	if (bprm->mm) {
-+		acct_arg_size(bprm, 0);
-+		mmput(bprm->mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
+How does that affect SVM?
 
