@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab0K2JFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 04:05:23 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:34250 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab0K2JFV (ORCPT
+	id S1752063Ab0K2JLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:11:46 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41317 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab0K2JLo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 04:05:21 -0500
-Date: Mon, 29 Nov 2010 10:05:10 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] kthread: NUMA aware kthread_create_on_cpu()
-Message-ID: <20101129090510.GA15763@basil.fritz.box>
-References: <1290972833.29196.90.camel@edumazet-laptop>
- <20101128224024.GA12300@basil.fritz.box>
- <1290984712.29196.100.camel@edumazet-laptop>
- <20101128230146.GB12300@basil.fritz.box>
- <1290987424.29196.128.camel@edumazet-laptop>
+	Mon, 29 Nov 2010 04:11:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=BMe990+KrxmIKXsuDvap5U+HdgyR6ULk9fau6kzTLzyg5jzaAoY7B08gxjkTvUAT/0
+         0SVcePevriS8B84hUuMMFFMNEymU0U3S5bXeiE2jDmx84jtTgyBhDz1csBZdcjZKvOlI
+         u0+B2oUVsdDKejClwp3odwuk+gJdIzN9J9C00=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290987424.29196.128.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101129085250.GF5218@cr0.nay.redhat.com>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
+ <20101129081619.GD5218@cr0.nay.redhat.com> <AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com>
+ <20101129085250.GF5218@cr0.nay.redhat.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 29 Nov 2010 17:11:23 +0800
+Message-ID: <AANLkTikK_ADMRR+8Po7m0VzzzVTm03+Twven0Y4Dx-uk@mail.gmail.com>
+Subject: Re: [PATCH] Built kernel without -O2 option
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gdb@sourceware.org, hellogcc@freelists.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 12:37:04AM +0100, Eric Dumazet wrote:
-> Le lundi 29 novembre 2010 à 00:01 +0100, Andi Kleen a écrit :
-> > On Sun, Nov 28, 2010 at 11:51:51PM +0100, Eric Dumazet wrote:
-> > > > Also this messes up the policy of the caller process. You really
-> > > > need to save/restore it.
-> > > 
-> > > Well, caller process duty is to create kthreads in a loop.
-> > 
-> > In this case any other allocations it may do
-> >  are still on those
-> > nodes.
-> 
-> As I said, it does only create_kthread() calls, and no "other
-> allocations".
+On Mon, Nov 29, 2010 at 16:52, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Mon, Nov 29, 2010 at 04:24:42PM +0800, Hui Zhu wrote:
+>>On Mon, Nov 29, 2010 at 16:16, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+>>> On Mon, Nov 29, 2010 at 11:56:15AM +0800, Hui Zhu wrote:
+>>>>Hi,
+>>>>
+>>>>Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>>>>qemu, kgtp or kgdb and so on.
+>>>>But the developer more like add a printk. It have a lot of reason, a big one is:
+>>>>(gdb) p ret
+>>>>$3 = <value optimized out>
+>>>>And the code execution order is not right.
+>>>>
+>>>>This is becuase the Kernel is bult with gcc -O2.  Gcc will not
+>>>>generate enough debug message with file with -O2.
+>>>>So GDB cannot work very well with Linux kernel.
+>>>>
+>>>>So I make a patch that add a option in "Kernel hacking" called "Close
+>>>>GCC optimization".  It will make kernel be built without -O2.
+>>>>
+>>>>I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
+>>>>
+>>>
+>>> The problem is that some functions _have to_ be inlined and gcc without -O2
+>>> doesn't inline them. Have check all the cases? I doubt.
+>>
+>>If they really need O2, I set  them to O2.
+>>Actually, this is the main work, find out the file that need the O2.  :)
+>>
+>>For example:
+>>ifdef CONFIG_CC_CLOSE_OPTIMIZATION
+>>CFLAGS_fpu.o                           += -O2
+>>CFLAGS_aesni-intel_glue.o              += -O2
+>>CFLAGS_ghash-clmulni-intel_glue.o      += -O2
+>>endif
+>
+> No, I didn't mean this, I meant some function that have to be inlined
+> are those who only work when being inlined, e.g. current_text_addr().
+>
+> I think it is not alone. :)
+>
+> Also, since many inline functions sit in hot-path, are there any
+> performance regressions with your patch applied?
+>
 
-Code changes. Your current setup seems fragile (also
-the static variable)
+I did some nm, looks each file that have inline have a special code
+for inline function.
 
-> > > > for the stack, so may be a larger patch.
-> > > 
-> > > I suggest arches that need slab to allocate kthread stacks do the
-> > > appropriate changes, because I am not able to make them myself.
-> > > 
-> > > On x86, we use page allocator only, so NUMA mempolicy is used.
-> > 
-> > task_struct is always allocated from slab.
-> 
-> Hmm, I meant stack (the thing that might be trashed a lot in ksoftirqd),
-> so it is included in struct thread_info
+> BTW, you need to Cc kbuild for makefile changes like this.
+>
 
-task_struct is quite hot too. Also your original mail said
-task struct i believe.
+Thanks for you remind me.
 
-> And got correct stacks. Are you sure we must use PREFERRED ?
-
-Yes.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Best,
+Hui
