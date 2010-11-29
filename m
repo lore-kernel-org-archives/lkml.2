@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab0K2TzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 14:55:23 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40407 "EHLO
+	id S1752166Ab0K2T42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 14:56:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51127 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab0K2TzV (ORCPT
+	with ESMTP id S1751220Ab0K2T41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 14:55:21 -0500
-Message-ID: <4CF40504.5060506@oracle.com>
-Date: Mon, 29 Nov 2010 11:54:44 -0800
+	Mon, 29 Nov 2010 14:56:27 -0500
+Message-ID: <4CF4055C.1060000@oracle.com>
+Date: Mon, 29 Nov 2010 11:56:12 -0800
 From: Randy Dunlap <randy.dunlap@oracle.com>
 Organization: Oracle Linux Engineering
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
@@ -20,15 +20,15 @@ CC: Herbert Xu <herbert@gondor.hengli.com.au>,
         Vinodh Gopal <vinodh.gopal@intel.com>, linux-next@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
 Subject: Re: linux-next: Tree for November 29 (aesni-intel)
-References: <4CF3F6CB.8080904@oracle.com> <1291058505-9384-1-git-send-email-minipli@googlemail.com> <4CF3FFAE.40906@oracle.com> <45B80502-8597-4650-990F-F23B4FC751B8@googlemail.com>
-In-Reply-To: <45B80502-8597-4650-990F-F23B4FC751B8@googlemail.com>
+References: <4CF3F6CB.8080904@oracle.com> <1291058505-9384-1-git-send-email-minipli@googlemail.com> <4CF3FFAE.40906@oracle.com> <358E1F68-6B24-4067-835E-94240025B0A3@googlemail.com>
+In-Reply-To: <358E1F68-6B24-4067-835E-94240025B0A3@googlemail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/10 11:45, Mathias Krause wrote:
+On 11/29/10 11:52, Mathias Krause wrote:
 > On 29.11.2010, 20:31 Randy Dunlap wrote:
 >> On 11/29/10 11:21, Mathias Krause wrote:
 >>> On 29.11.2010, 19:54 Randy Dunlap wrote:
@@ -96,28 +96,15 @@ On 11/29/10 11:45, Mathias Krause wrote:
 >> #define __x86_64__ 1
 >>
 >> So that's not the problem... and the patch below didn't help.
-> 
-> That's odd. The output of the commands looks good so the x86-64 specific code
-> should be left out for 32-bit builds. :/
-> 
 >> Sorry that I even asked about that.  What next?
 > 
-> Can you please post the full error message. Meanwhile I'm checking out a
-> linux-next tree, trying to reproduce your problem.
-> 
+> Sorry, I cannot reproduce the problem with the latest linux-next and commit
+> 559ad0ff1368baea14dbc3207d55b02bd69bda4b from cryptodev-2.6 applied. Please
+> ensure you've applied that patch.
 
-I just built with "make V=1" to see the full commands that are used, but
-that didn't help me either:
+OK, thanks for trying.
 
-  gcc -Wp,-MD,arch/x86/crypto/.aesni-intel_asm.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.4.1/include -I/lnx/src/NEXT/linux-next-20101129/arch/x86/include -Iinclude  -I/lnx/src/NEXT/linux-next-20101129/include -include include/generated/autoconf.h -D__KERNEL__ -D__ASSEMBLY__ -m32 -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DMODULE  -c -o arch/x86/crypto/aesni-intel_asm.o /lnx/src/NEXT/linux-next-20101129/arch/x86/crypto/aesni-intel_asm.S
-
-
-There are 2945 lines like this:
-
-linux-next-20101129/arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
-
-It's around 311 KB, so I'll just put it here instead of emailing it:
-http://oss.oracle.com/~rdunlap/doc/cry32.out
+Yes, I have applied that patch.
 
 -- 
 ~Randy
