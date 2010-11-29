@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab0K2TE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 14:04:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50737 "EHLO mail.zytor.com"
+	id S1751983Ab0K2TFC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 14:05:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33117 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998Ab0K2TE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 14:04:57 -0500
-Message-ID: <4CF3F8EA.2010808@zytor.com>
-Date: Mon, 29 Nov 2010 11:03:06 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S1750998Ab0K2TE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 14:04:59 -0500
+Date: Mon, 29 Nov 2010 20:03:13 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 28 of 66] _GFP_NO_KSWAPD
+Message-ID: <20101129190313.GA6118@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <b1b95be209a2927d21c7.1288798083@v2.random>
+ <20101118131839.GR8135@csn.ul.ie>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Pavel Machek <pavel@ucw.cz>, Kyle Moffett <kyle@moffetthome.net>,
-        Marcus Meissner <meissner@suse.de>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, akpm@osdl.org, w@1wt.eu,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-References: <20101116104600.GA24015@suse.de> <AANLkTi=F1vbwpOzyN9o0nuRtsEUTQx2j3==kLu9j7Ccb@mail.gmail.com> <20101118073126.GB32621@elte.hu> <20101123172437.GB8412@ucw.cz> <20101126073834.GC19589@elte.hu>
-In-Reply-To: <20101126073834.GC19589@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118131839.GR8135@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2010 11:38 PM, Ingo Molnar wrote:
+On Thu, Nov 18, 2010 at 01:18:39PM +0000, Mel Gorman wrote:
+> This is not an exact merge with what's currently in mm. Look at the top
+> of gfp.h and see "Plain integer GFP bitmasks. Do not use this
+> directly.". The 0x400000u definition needs to go there and this becomes
 > 
-> Yeah, restricting information is always a double edged sword - and by locking down 
-> we are implicitly assuming that the number of people trying to do harm is larger 
-> than the number of people trying to help. It is probably true though - and the 
-> damage they can inflict is becoming more and more serious (financially, legally and 
-> socially - and, in some cases, physically) with every year of humanity moving their 
-> lives to the 'net.
+> #define __GFP_NO_KSWAPD		((__force_gfp_t)____0x400000u)
 > 
-> So yes, the time has probably come to lock up "potentially harmful" information from 
-> the default unprivileged user on Linux - at least from a default kernel policies 
-> POV.
-> 
+> What you have just generates sparse warnings (I believe) so it's
+> harmless.
 
-The setting of these policies needs to be figured out sensibly.
+Agreed.
 
-One of my great complaints about several Linux distributions is that
-they keep forcing log files to be readable only by root, even though
-they do put the adm group in their default group file -- the adm group
-is traditionally the group allowed to read log files.
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -34,6 +34,7 @@ struct vm_area_struct;
+ #else
+ #define ___GFP_NOTRACK		0
+ #endif
++#define ___GFP_NO_KSWAPD	0x400000u
+ 
+ /*
+  * GFP bitmasks..
+@@ -81,7 +82,7 @@ struct vm_area_struct;
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
+ #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
+ 
+-#define __GFP_NO_KSWAPD	((__force gfp_t)0x400000u)
++#define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
+ 
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
 
-It is a *good* thing for a *restricted set* of users to have *readonly*
-access to this kind of information -- i.e., a group.  It is *not* a good
-thing for system security or reliability to force the administrator to
-assert root privileges to merely monitor information.
 
-	-hpa
+> Other than needing to define ____GFP_NO_KSWAPD
+
+3 underscores.
+
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+Added, thanks!
+Andrea
