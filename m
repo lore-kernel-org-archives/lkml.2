@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193Ab0K2I05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:26:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:20229 "EHLO mga01.intel.com"
+	id S1751629Ab0K2I1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:27:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab0K2I04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:26:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
-   d="scan'208";a="631123395"
-Date: Mon, 29 Nov 2010 16:26:51 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v2 2/3] move ClearPageReclaim
-Message-ID: <20101129082651.GA26715@localhost>
-References: <7b50614882592047dfd96f6ca2bb2d0baa8f5367.1290956059.git.minchan.kim@gmail.com>
- <c3b1c78f0e2eba5dfebda7c363c4274e649ab36a.1290956059.git.minchan.kim@gmail.com>
- <20101129072951.GA22803@localhost>
- <AANLkTikuriwJr-UZg9=WXXwLt-u3sywkzkpZFBV1C4Db@mail.gmail.com>
+	id S1751282Ab0K2I1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 03:27:07 -0500
+Date: Mon, 29 Nov 2010 10:25:53 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] vhost: correctly set bits of dirty pages
+Message-ID: <20101129082553.GA25759@redhat.com>
+References: <20101129054819.24923.26439.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+ <20101129081840.GB25496@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikuriwJr-UZg9=WXXwLt-u3sywkzkpZFBV1C4Db@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101129081840.GB25496@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:16:01PM +0800, Minchan Kim wrote:
-> On Mon, Nov 29, 2010 at 4:29 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Sun, Nov 28, 2010 at 11:02:56PM +0800, Minchan Kim wrote:
-> >> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
-> >> preventing fast reclaiming readahead marker page.
-> >>
-> >> In this series, PG_reclaim is used by invalidated page, too.
-> >> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
-> >> to reclaim asap. Then, when the dirty page will be writeback,
-> >> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
-> >> It disturbs this serie's goal.
-> >>
-> >> I think it's okay to clear PG_readahead when the page is dirty, not
-> >> writeback time. So this patch moves ClearPageReadahead.
-> >> This patch needs Wu's opinion.
-> >
-> > It's a safe change. The possibility and consequence of races are both
-> > small enough. However the patch could be simplified as follows?
-> 
-> If all of file systems use it, I don't mind it.
-> Do all of filesystems use it when the page is dirtied?
-> I was not sure it.(It's why I added Cc. :)
-> If it doesn't have a problem, I hope so.
-
-Please double check, but here is my findings:
-
-__set_page_dirty_buffers() is called by several fs' ->set_page_dirty()
-which are all called by set_page_dirty().
-
-set_page_dirty_lock() will call set_page_dirty().
-
-__set_page_dirty_no_writeback(): it have no connection to
-end_page_writeback(), so no need to set PG_reclaim.
-
-Thanks,
-Fengguang
-
-
-> > --- linux-next.orig/mm/page-writeback.c 2010-11-29 15:14:54.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c      2010-11-29 15:15:02.000000000 +0800
-> > @@ -1330,6 +1330,7 @@ int set_page_dirty(struct page *page)
-> >  {
-> >        struct address_space *mapping = page_mapping(page);
-> >
-> > +       ClearPageReclaim(page);
-> >        if (likely(mapping)) {
-> >                int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
-> >  #ifdef CONFIG_BLOCK
-> > @@ -1387,7 +1388,6 @@ int clear_page_dirty_for_io(struct page
-> >
-> >        BUG_ON(!PageLocked(page));
-> >
-> > -       ClearPageReclaim(page);
-> >        if (mapping && mapping_cap_account_dirty(mapping)) {
-> >                /*
-> >                 * Yes, Virginia, this is indeed insane.
-> >
+On Mon, Nov 29, 2010 at 10:18:40AM +0200, Michael S. Tsirkin wrote:
+> On Mon, Nov 29, 2010 at 01:48:20PM +0800, Jason Wang wrote:
+> > When counting pages we should increase it by 1 instead of VHOST_PAGE_SIZE,
+> > and also make log_write() can correctly process the request across
+> > pages with write_address not start at page boundary.
+> > 
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
 > 
 > 
+> Thanks, good catch!
+> But let's to it in small steps: first, a small patch to fix the bug:
+> I think this is equivalent, right?
 > 
-> -- 
-> Kind regards,
-> Minchan Kim
+> Subject: vhost: correctly set bits of dirty pages
+> 
+> When counting pages we should increase address by 1 instead of
+> VHOST_PAGE_SIZE, and also make log_write() can correctly process the
+> request across pages with write_address not starting at page boundary.
+> 
+> Reported-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+And then this on top:
+
+
+vhost: better variable name in logging
+
+We really store a page offset in write_address,
+so rename it write_page to avoid confusion.
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+---
+
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index d0a3552..1a3d3ed 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -884,15 +884,15 @@ static int set_bit_to_user(int nr, void __user *addr)
+ static int log_write(void __user *log_base,
+ 		     u64 write_address, u64 write_length)
+ {
++	u64 write_page = write_address / VHOST_PAGE_SIZE
+ 	int r;
+ 	if (!write_length)
+ 		return 0;
+ 	write_length += write_address % VHOST_PAGE_SIZE;
+-	write_address /= VHOST_PAGE_SIZE;
+ 	for (;;) {
+ 		u64 base = (u64)(unsigned long)log_base;
+-		u64 log = base + write_address / 8;
+-		int bit = write_address % 8;
++		u64 log = base + write_page / 8;
++		int bit = write_page % 8;
+ 		if ((u64)(unsigned long)log != log)
+ 			return -EFAULT;
+ 		r = set_bit_to_user(bit, (void __user *)(unsigned long)log);
+@@ -901,7 +901,7 @@ static int log_write(void __user *log_base,
+ 		if (write_length <= VHOST_PAGE_SIZE)
+ 			break;
+ 		write_length -= VHOST_PAGE_SIZE;
+-		write_address += 1;
++		write_page += 1;
+ 	}
+ 	return r;
+ }
