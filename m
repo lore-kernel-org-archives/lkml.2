@@ -1,93 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab0K2UUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:20:06 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36584 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab0K2UUC (ORCPT
+	id S1753425Ab0K2UVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:21:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59405 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0K2UVr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:20:02 -0500
+	Mon, 29 Nov 2010 15:21:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vU3FmVFCd8fIwBze9eHJ+rFhHB5ZMXWOAk8IHXjk8X4cnqZNudwbWUlBWiSEzZsurU
-         At7Z7STBAlSQsLIuJIDCYSnmbuyYNyixIRi8PRQJ6iEXKCCKydmGWMBDdIaQ7hKmB49v
-         ANxUoYgM2N3TyC8mD40WNMkETjq75jh4yQW9I=
-Message-ID: <4CF40AEF.7070200@gmail.com>
-Date: Mon, 29 Nov 2010 22:19:59 +0200
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
-References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011291745.22566.arnd@arndb.de> <4CF3F687.6040801@gmail.com> <201011292102.41155.arnd@arndb.de>
-In-Reply-To: <201011292102.41155.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        d=googlemail.com; s=gamma;
+        h=subject:x-duff:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=YQrTDtTToDCwsPkrTWJduW3O4y+mf+iZJDHR21ZFoSyDtbpP/ZGt7QeG+fOZhfvsmi
+         mZ8Id8MXjxJ1X67zwb7H+1PCYlsjCynmYKyoM3/+ZlfbapLJ5cWy6FABAhJ1DXmBilPX
+         HkiUkvDxNrmPD/qEZc6++fadrPj00f2f4p6/Q=
+Subject: Re: linux-next: Tree for November 29 (aesni-intel)
+X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Mathias Krause <minipli@googlemail.com>
+In-Reply-To: <4CF408FB.4060905@oracle.com>
+Date: Mon, 29 Nov 2010 21:21:41 +0100
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Huang Ying <ying.huang@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <41CA6D05-C836-4F43-8DD8-C7EA9948DACC@googlemail.com>
+References: <4CF3F6CB.8080904@oracle.com> <1291058505-9384-1-git-send-email-minipli@googlemail.com> <4CF3FFAE.40906@oracle.com> <45B80502-8597-4650-990F-F23B4FC751B8@googlemail.com> <4CF40504.5060506@oracle.com> <D271AB83-0E5F-4C1C-A4A7-CD0588E6C7B6@googlemail.com> <4CF408FB.4060905@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 10:02 PM, Arnd Bergmann wrote:
-> On Monday 29 November 2010 19:52:55 Paulius Zaleckas wrote:
->> On 11/29/2010 06:45 PM, Arnd Bergmann wrote:
->>> There are many differences between readl and __raw_readl, including
->>>
->>> * __raw_readl does not have barriers and does not serialize with
->>>     spinlocks, so it breaks on out-of-order CPUs.
->>> * __raw_readl does not have a specific endianess, while readl is
->>>     fixed little-endian, just as the hardware is in this case.
->>>     The endian-conversion is a NOP on little-endian ARM, but required
->>>     if you actually run on a big-endian ARM (you don't).
->>> * __raw_readl may not be atomic, gcc is free to split the access
->>>     into byte wise reads (it normally does not, unless you mark
->>>     the pointer __attribute__((packed))).
->>>
->>> In essence, it is almost never a good idea to use __raw_readl, and
->>> the double underscores should tell you so.
->>
->> You are wrong:
->>
->> Since CONFIG_ARM_DMA_MEM_BUFFERABLE is NOT defined for FA526 core,
->> no barriers are in use when using readl. It just translates into
->> le32_to_cpu(__raw_readl(x)). Now this CPU has physical pin for endianess
->> configuration and if you will chose big-endian you will fail to read
->> internal registers, because they ALSO change endianess and le32_to_cpu()
->> will screw it. However it is different when accessing registers through
->> PCI bus, then you need to use readl().
->
-> Ok, I only checked that the platform does not support big-endian Linux
-> kernel, not if the HW designers screwed up their registers, sorry about
-> that.
->
-> The other points are of course still valid: If the code ever gets
-> used on an out of order CPU, it is broken. More importantly, if someone
-> looks at the code as an example for writing another PCI support code,
-> it may end up getting copied to some place where it ends up causing
-> trouble.
->
-> The typical way to deal with mixed-endian hardware reliably is to have
-> a header file containing code like
->
-> #ifdef CONFIG_GEMINI_BIG_ENDIAN_IO
-> #define gemini_readl(x) __swab32(readl(x))
-> #define ...
-> #else
-> #define gemini_readl(x) readl(x))
-> #endif
->
-> This also takes care of the (not as unlikely as you'd hope) case that
-> the next person reusing the PCI hardware wires its endianess different
-> from the CPU endianess.
+On 29.11.2010, 21:11 Randy Dunlap wrote:
+> On 11/29/10 12:02, Mathias Krause wrote:
+>> On 29.11.2010, 20:54 Randy Dunlap wrote:
+>>> On 11/29/10 11:45, Mathias Krause wrote:
+>>>> On 29.11.2010, 20:31 Randy Dunlap wrote:
+>>>>> On 11/29/10 11:21, Mathias Krause wrote:
+>>>>>> On 29.11.2010, 19:54 Randy Dunlap wrote:
+>>>>>>> On 11/29/10 10:26, Mathias Krause wrote:
+>>>>>>>> On 29.11.2010, 17:31 Randy Dunlap wrote:
+>>>>>>>>> On Mon, 29 Nov 2010 14:03:35 +1100 Stephen Rothwell wrote:
+>>>>>>>>> 
+>>>>>>>>>> Hi all,
+>>>>>>>>>> 
+>>>>>>>>>> Changes since 20101126:
+>>>>>>>>> 
+>>>>>>>>> 
+>>>>>>>>> on i386 builds, I get tons of these (and more) errors:
+>>>>>>>>> 
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:842: Error: bad register name `%r13'
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:843: Error: bad register name `%r14'
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:844: Error: bad register name `%rsp'
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:849: Error: bad register name `%rsp'
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:850: Error: bad register name `%rsp'
+>>>>>>>>> arch/x86/crypto/aesni-intel_asm.S:851: Error: bad register name `%r9'
+>>>>>>>>> 
+>>>>>>>>> even though the kernel .config file says:
+>>>>>>>>> 
+>>>>>>>>> CONFIG_CRYPTO_AES=m
+>>>>>>>>> CONFIG_CRYPTO_AES_586=m
+>>>>>>>>> CONFIG_CRYPTO_AES_NI_INTEL=m
+>>>>>>>>> 
+>>>>>>>>> Should arch/x86/crypto/aesni-intel_asm.S be testing
+>>>>>>>>> #ifdef CONFIG_X86_64
+>>>>>>>>> instead of
+>>>>>>>>> #ifdef __x86_64__
+>>>>>>>>> or does that not matter?
+>>>>>>>>> 
+>>>>>>>>> or is this a toolchain issue?
+>>>>>>>> 
+>>>>>>>> Well, __x86_64__ should be a build-in define of the compiler while
+>>>>>>>> CONFIG_X86_64 is defined for 64 bit builds in include/generated/autoconf.h.
+>>>>>>>> So by using the latter we should be on the safe side but if your compiler
+>>>>>>>> defines __x86_64__ for 32-bit builds it's simply broken. Also git grep
+>>>>>>>> showed quite a few more places using __x86_64__ so those would miscompile on
+>>>>>>>> your toolchain, too.
+>>>>>>>> 
+>>>>>>>> But it looks like linux-next is just missing
+>>>>>>>> 559ad0ff1368baea14dbc3207d55b02bd69bda4b from Herbert's git repo at
+>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git.
+>>>>>>>> That should fix the build issue.
+>>>>>>> 
+>>>>>>> The build problem still happens when that patch is applied.
+>>>>>> 
+>>>>>> That's weird. So it must be something with your toolchain.
+>>>>>> Can you please post the output of the following commands?:
+>>>>>> 
+>>>>>> $ touch /tmp/null.c; cc -m32 -dD -E /tmp/null.c | grep -E 'x86|i.86'
+>>>>> 
+>>>>> #define __i386 1
+>>>>> #define __i386__ 1
+>>>>> #define i386 1
+>>>>> #define __i586 1
+>>>>> #define __i586__ 1
+>>>>> 
+>>>>>> $ touch /tmp/null.c; cc -m64 -dD -E /tmp/null.c | grep -E 'x86|i.86'
+>>>>> 
+>>>>> #define __x86_64 1
+>>>>> #define __x86_64__ 1
+>>>>> 
+>>>>> So that's not the problem... and the patch below didn't help.
+>>>> 
+>>>> That's odd. The output of the commands looks good so the x86-64 specific code
+>>>> should be left out for 32-bit builds. :/
+>>>> 
+>>>>> Sorry that I even asked about that.  What next?
+>>>> 
+>>>> Can you please post the full error message. Meanwhile I'm checking out a
+>>>> linux-next tree, trying to reproduce your problem.
+>>>> 
+>>> 
+>>> I just built with "make V=1" to see the full commands that are used, but
+>>> that didn't help me either:
+>>> 
+>>> gcc -Wp,-MD,arch/x86/crypto/.aesni-intel_asm.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.4.1/include -I/lnx/src/NEXT/linux-next-20101129/arch/x86/include -Iinclude  -I/lnx/src/NEXT/linux-next-20101129/include -include include/generated/autoconf.h -D__KERNEL__ -D__ASSEMBLY__ -m32 -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DMODULE  -c -o arch/x86/crypto/aesni-intel_asm.o /lnx/src/NEXT/linux-next-20101129/arch/x86/crypto/aesni-intel_asm.S
+>>> 
+>>> 
+>>> There are 2945 lines like this:
+>>> 
+>>> linux-next-20101129/arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
+>> 
+>> Well, in my tree (linux-next + 559ad0ff) line 841 is a comment. Albeit without
+>> 559ad0ff it's a 'push %r12'. So maybe you should apply the patch just once
+>> more to be sure. ;)
+> 
+> Touche.
+> What does that patch have to do with aesni-intel??
 
-Actually I am not very sure how CPU works in big endian mode :)
-I have never tried it and I think only some guys who made it did that.
-So readl will work for 99.99% of cases. In datasheet they say that:
-"All registers in Gemini use Little Endian and must be accessed by aligned
-32-bit word operations. The bus connection interface logic provides an Endian
-Conversion function."
-For me it looks like it can mean whatever you want :)
+The description should be clear enough: "crypto: aesni-intel - Fixed build error
+on x86-32".
+Here is the link to the patch: <http://git.kernel.org/?p=linux/kernel/git/herbert/cryptodev-2.6.git;a=patch;h=559ad0ff1368baea14dbc3207d55b02bd69bda4b>. Please apply it on
+top of your linux-next build.
+
+> I'm using the linux-next tarball of 20111129.
+> However, your s/__x86_64__/CONFIG_X86_64/ patch was applied, so I dropped it.
+
+Well I doubt it. The patch was made on top of 559ad0ff so it should have failed
+to apply in your tree since obviously 559ad0ff is missing.
+
+> new output file:
+> http://oss.oracle.com/~rdunlap/doc/cry4.out
+
+Same bug: 559ad0ff is still missing. Please apply the patch from the link above.
+
