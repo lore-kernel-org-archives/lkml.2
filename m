@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab0K2PPZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1754478Ab0K2PPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:15:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54919 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab0K2PPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Nov 2010 10:15:25 -0500
-Received: from cantor.suse.de ([195.135.220.2]:42418 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752261Ab0K2PPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:15:23 -0500
-Date: Mon, 29 Nov 2010 16:15:21 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        "Rafael J. Wysocki" <rjw@suse.com>
-Subject: Re: [REGRESSION] Suspend fails because of TPM modules
-In-Reply-To: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz>
-References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=iFr2LUHePNby84Lc3zEWpBl+XMiECWYefA2JFtn1QKBkku7D+LxGrmlpDqQwmL3B7p
+         Ht8zXDBC2pcm2J+wJc+xp/wZZ+e0CWA01XUxJ4OfhybgXdtk2WwMZXaqsPp1Q2h8MrEK
+         IsGTKob2hc6twTtytdHElIIIX7ktB1WoECN/k=
+Subject: [PATCH v2 4/4] kthread: use kthread_create_on_cpu()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1291023532.3435.29.camel@edumazet-laptop>
+References: <1290972833.29196.90.camel@edumazet-laptop>
+	 <20101128224024.GA12300@basil.fritz.box>
+	 <1290984712.29196.100.camel@edumazet-laptop>
+	 <20101128230146.GB12300@basil.fritz.box>
+	 <1290987424.29196.128.camel@edumazet-laptop>
+	 <20101129090510.GA15763@basil.fritz.box>
+	 <1291023532.3435.29.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Nov 2010 16:15:19 +0100
+Message-ID: <1291043719.3435.981.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010, Jiri Kosina wrote:
+ksoftirqd, kworker, migration, and pktgend kthreads can be created with
+kthread_create_on_cpu(), to get proper NUMA affinities for their stack
+and task_struct.
 
-> Hi,
-> 
-> on my thinkpad x200s (and I have seen reports on different HW as well), 
-> suspend fails when TPM modules are loaded.
-> 
-> 	tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
-> 	legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -5
-> 	PM: Device 00:0a failed to suspend: error -5
-> 	PM: Some devices failed to suspend
-> 
-> Once tpm, tpm_bios, tpm_tis and tpm modules are unloaded, suspend/resume 
-> works.
-> 
-> This is a regression. It definitely worked on this very same hardware on 
-> 2.6.34. Any kernel between .34 and .37 wasn't booted there, so I don't 
-> have any data of that kind.
-> 
-> I can try bisecting it, but if anyone sees immediately what the culprit 
-> might be, that'd be helpful.
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: linux-arch@vger.kernel.org
+---
+ kernel/softirq.c      |    3 ++-
+ kernel/stop_machine.c |    4 ++--
+ kernel/workqueue.c    |    4 ++--
+ net/core/pktgen.c     |    3 ++-
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
-I just found out, that if I modprobe tpm_tis module with
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 18f4be0..b2b7044 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -831,7 +831,8 @@ static int __cpuinit cpu_callback(struct notifier_block *nfb,
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+-		p = kthread_create(run_ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
++		p = kthread_create_on_cpu(run_ksoftirqd, hcpu, hotcpu,
++					  "ksoftirqd/%d", hotcpu);
+ 		if (IS_ERR(p)) {
+ 			printk("ksoftirqd for %i failed\n", hotcpu);
+ 			return notifier_from_errno(PTR_ERR(p));
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 2df820b..7c0f287 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -301,8 +301,8 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 	case CPU_UP_PREPARE:
+ 		BUG_ON(stopper->thread || stopper->enabled ||
+ 		       !list_empty(&stopper->works));
+-		p = kthread_create(cpu_stopper_thread, stopper, "migration/%d",
+-				   cpu);
++		p = kthread_create_on_cpu(cpu_stopper_thread, stopper, cpu,
++					  "migration/%d", cpu);
+ 		if (IS_ERR(p))
+ 			return notifier_from_errno(PTR_ERR(p));
+ 		get_task_struct(p);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 90db1bd..c8feaf4 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1318,8 +1318,8 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
+ 	worker->id = id;
+ 
+ 	if (!on_unbound_cpu)
+-		worker->task = kthread_create(worker_thread, worker,
+-					      "kworker/%u:%d", gcwq->cpu, id);
++		worker->task = kthread_create_on_cpu(worker_thread, worker, gcwq->cpu,
++						     "kworker/%u:%d", gcwq->cpu, id);
+ 	else
+ 		worker->task = kthread_create(worker_thread, worker,
+ 					      "kworker/u:%d", id);
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 33bc382..c921fe9 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -3785,7 +3785,8 @@ static int __init pktgen_create_thread(int cpu)
+ 	list_add_tail(&t->th_list, &pktgen_threads);
+ 	init_completion(&t->start_done);
+ 
+-	p = kthread_create(pktgen_thread_worker, t, "kpktgend_%d", cpu);
++	p = kthread_create_on_cpu(pktgen_thread_worker, t, cpu,
++				  "kpktgend_%d", cpu);
+ 	if (IS_ERR(p)) {
+ 		pr_err("kernel_thread() failed for cpu %d\n", t->cpu);
+ 		list_del(&t->th_list);
 
-	itpm=1
 
-parameter, the problem doesn't happen any more and suspend works fine.
-
-This definitely wasn't needed on older kernels though, so I'd consider 
-that still a regression.
-
-Also, can't we make the module automatically detect the machines on which 
-to apply the workaround? Let's say, based on DMI?
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
