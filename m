@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab0K2Swd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:52:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60726 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544Ab0K2Swc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:52:32 -0500
-Message-ID: <4CF3F62F.2000508@zytor.com>
-Date: Mon, 29 Nov 2010 10:51:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S1755187Ab0K2Sw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:52:59 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62926 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab0K2Sw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:52:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Woc1v6bmYfqzBFrWrkdHlQKnJIzZPrDNvXHWxiXCqYyNhgBpgD8U3yf2vG7g2oYgb4
+         QIT79mnBUXpeCaGUnPp9czjHCCFTCI/bZ9ENKtW+4rUAfDX6QRKl8XsKhb571kh2YrX9
+         JwcipIYPgQvu/bD5af73SVxyHDtp7/h5yToPs=
+Message-ID: <4CF3F687.6040801@gmail.com>
+Date: Mon, 29 Nov 2010 20:52:55 +0200
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below
- 4G
-References: <20101129183009.11256.33739.stgit@bob.kio> <201011291334.52909.bjorn.helgaas@hp.com>
-In-Reply-To: <201011291334.52909.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
+References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011282056.17389.arnd@arndb.de> <4CF3CF33.20407@gmail.com> <201011291745.22566.arnd@arndb.de>
+In-Reply-To: <201011291745.22566.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 12:34 PM, Bjorn Helgaas wrote:
-> On Monday, November 29, 2010 11:30:09 am Bjorn Helgaas wrote:
+On 11/29/2010 06:45 PM, Arnd Bergmann wrote:
+> On Monday 29 November 2010, Paulius Zaleckas wrote:
+>>> The I/O ordering is probably not what you think it is.
+>>> There is no ordering guarantee between __raw_writel and
+>>> spin_lock/spin_unlock, so you really should be using
+>>> readl/writel.
 >>
->> The last 1M before 4G contains the processor restart vector and usually
->> the system ROM.  We don't know the actual ROM size; I chose 1M because
->> that's how much Windows 7 appears to avoid.
->>
->> Without this check, we can allocate PCI space that will never work.  On
->> Matthew's HP 2530p, we put the Intel GTT "Flush Page" at the very last
->> page, which causes a spontaneous power-off:
->>
->>   pci_root PNP0A08:00: host bridge window [mem 0xfee01000-0xffffffff]
->>   fffff000-ffffffff : Intel Flush Page (assigned by intel-gtt)
->>
->> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23542
->> Reported-by: Matthew Garrett <mjg@redhat.com>
->> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
->> ---
->>
->>  arch/x86/include/asm/e820.h |    3 +++
->>  arch/x86/pci/i386.c         |   10 +++++++++-
->>  2 files changed, 12 insertions(+), 1 deletions(-)
->>
->>
->> diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
->> index 5be1542..c1e908f 100644
->> --- a/arch/x86/include/asm/e820.h
->> +++ b/arch/x86/include/asm/e820.h
->> @@ -72,6 +72,9 @@ struct e820map {
->>  #define BIOS_BEGIN		0x000a0000
->>  #define BIOS_END		0x00100000
->>  
->> +#define BIOS_ROM_BASE		0xfff00000
->> +#define BIOS_ROM_END		0x100000000ULL
-> 
-> I'm really not thrilled about hard-coding these addresses, so I'd
-> love it if somebody could suggest a way to discover them from the
-> BIOS.
-> 
-> The E820 map doesn't reserve the last page:
-> 
->   BIOS-e820: 00000000fed1c000 - 00000000fed20000 (reserved)
->   BIOS-e820: 00000000fffa0000 - 00000000fffa7000 (reserved)
-> 
-> and I don't think there's any ACPI device that does either.
-> 
+>> No he really should NOT use readl/writel. The ONLY difference
+>> between readl/writel and __raw_readl/__raw_writel is endianess
+>> conversion. __raw_*l is not doing it. Which to use depend only
+>> on HW.
+>
+> There are many differences between readl and __raw_readl, including
+>
+> * __raw_readl does not have barriers and does not serialize with
+>    spinlocks, so it breaks on out-of-order CPUs.
+> * __raw_readl does not have a specific endianess, while readl is
+>    fixed little-endian, just as the hardware is in this case.
+>    The endian-conversion is a NOP on little-endian ARM, but required
+>    if you actually run on a big-endian ARM (you don't).
+> * __raw_readl may not be atomic, gcc is free to split the access
+>    into byte wise reads (it normally does not, unless you mark
+>    the pointer __attribute__((packed))).
+>
+> In essence, it is almost never a good idea to use __raw_readl, and
+> the double underscores should tell you so.
 
-It is certainly reasonable to block off the last chunk of the 32-bit
-address space.  Some systems double-decode it to avoid issues with
-A20M#, so I would argue that we should avoid at least 2 MiB.
+You are wrong:
 
-As far as discovering them from the BIOS, there is a way to do it --
-E820.  This is a fallback for the case where the BIOS has plain and
-simply failed to provide it, and so a heuristic is probably the best we
-can do.  Probing is extremely unsafe.
-
-	-hpa
+Since CONFIG_ARM_DMA_MEM_BUFFERABLE is NOT defined for FA526 core,
+no barriers are in use when using readl. It just translates into
+le32_to_cpu(__raw_readl(x)). Now this CPU has physical pin for endianess
+configuration and if you will chose big-endian you will fail to read
+internal registers, because they ALSO change endianess and le32_to_cpu()
+will screw it. However it is different when accessing registers through
+PCI bus, then you need to use readl().
