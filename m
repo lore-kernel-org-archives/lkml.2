@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab0K2ATT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 19:19:19 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10774 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754270Ab0K2ATS (ORCPT
+	id S1754408Ab0K2AYk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 19:24:40 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44794 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303Ab0K2AYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 19:19:18 -0500
-Message-ID: <003c01cb8f5b$0f13e8b0$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
-        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
-References: <4CEF178C.2050506@dsn.okisemi.com> <4CEF835C.7000304@pengutronix.de>
-Subject: Re: [PATCH net-next-2.6 06/19 v5] can: EG20T PCH: Fix endianness issue
-Date: Mon, 29 Nov 2010 09:19:13 +0900
+	Sun, 28 Nov 2010 19:24:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LRAlBSf4HlO6LIYAdKcmJ+Scd5mDgJ0UPmJrjNIT/YNcfYDqmLnuyiV1p1rIxtm/fc
+         YiphdDUmlzDSsYMNYkJFpjfGx5SLwTrP4CBzUBbUIKAlySe9EeRipdn6Do4LeyiX3kpA
+         VBnRE4YIUWUOEzSIHQhlJisBzUcoClw27Tm9Y=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+In-Reply-To: <1290754316.25125.2.camel@mola>
+References: <1290754245.25125.1.camel@mola>
+	<1290754316.25125.2.camel@mola>
+Date: Sun, 28 Nov 2010 22:24:38 -0200
+Message-ID: <AANLkTinZeSjJ2RKmZ4L7eXZrsTQvE_2AZ3WmNXD8+t75@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ASoC: Fix resource leask in goni_wm8994.c
+From: Thiago Farina <tfransosi@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 26, 2010 6:52 PM, Marc Kleine-Budde wrote :
+There is a typo in the subject.
 
-> In an OOM situation the system is under pressure anyway. On low end
-> systems it not good to print a message to the log. AFAICS no other can
-> driver does this.
+leask -> leak
 
-Does the above mean it doesn't have to process for returned value of
-pch_can_rx_msg_lost  like below?
-> +   pch_can_rx_msg_lost(ndev, obj_num);
-> +   rcv_pkts++;
-> +   quota--;
-
-> AFAICS no other can driver does this.
-I can see ti_hecc.c calls dev_err when alloc_can_err_skb fails.
-
-Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
+no?
