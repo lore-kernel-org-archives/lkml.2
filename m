@@ -1,63 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab0K2PIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:08:41 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:59598 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069Ab0K2PIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:08:40 -0500
-Date: Mon, 29 Nov 2010 15:08:24 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
-	threshold when memory is low
-Message-ID: <20101129150824.GF13268@csn.ul.ie>
-References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie> <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101126160619.GP22651@bombadil.infradead.org> <20101129095618.GB13268@csn.ul.ie> <20101129131626.GF15818@bombadil.infradead.org>
+	id S1753098Ab0K2PK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:10:59 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54638 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab0K2PK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 10:10:58 -0500
+Date: Mon, 29 Nov 2010 16:09:41 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: [PATCH] HPET: Fix HPET readout for small deltas
+Message-ID: <20101129150941.GB1170@aftab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101129131626.GF15818@bombadil.infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 08:16:26AM -0500, Kyle McMartin wrote:
-> On Mon, Nov 29, 2010 at 09:56:19AM +0000, Mel Gorman wrote:
-> > Can you point me at a relevant bugzilla entry or forward me the bug report
-> > and I'll take a look?
-> > 
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=649694
-> 
 
-Ouch! I have been unable to create an exact copy of your kernel source as
-I'm not running Fedora. From a partial conversion of a source RPM, I saw no
-changes related to mm/vmscan.c. Is this accurate? I'm trying to establish
-if this is a mainline bug as well.
+Some HPET implementations might require longer delay when accessing the
+HPET than what 995bd3bb5c78f3ff71339803c0b8337ed36d64fb established (8
+cycles). Generally, the proper value should be programmed by BIOS and
+written into the ACPI HPET table as the main counter minimum tick in
+periodic mode (offset 53).
 
-Second, I see all the stack traces are marked with "?" making them
-unreliable. Is that anything to be concerned about?
+We assume that value as the minimum value a delta can be in order to
+reprogram the HPET successfully. For BIOSen which contain crap, we fall
+back to a default value of 128 cycles which should be sensible on all
+more or less sane HPET implementations.
 
-I see that one user has reported that the patches fixed the problem for him
-but I fear that this might be a co-incidence or that the patches close a
-race of some description. Specifically, I'm trying to identify if there is
-a situation where kswapd() constantly loops checking watermarks and never
-calling cond_resched(). This could conceivably happen if kswapd() is always
-checking sleeping_prematurely() at a higher order where as balance_pgdat()
-is always checks the watermarks at the lower order. I'm not seeing how this
-could happen in 2.6.35.6 though. If Fedora doesn't have special changes,
-it might mean that these patches do need to go into -stable as the
-cost of zone_page_state_snapshot() is far higher on larger machines than
-previously reported.
+LKML-Reference: <20101026112052.GA1672@arch.trippelsdorf.de>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+
+As noted before, this patch fixes the sluggishness issue on Markus' and
+my machine. And we definitely need some kind of fix for .37.
+
+
+ arch/x86/include/asm/hpet.h |    1 +
+ arch/x86/kernel/acpi/boot.c |   10 +++++++---
+ arch/x86/kernel/hpet.c      |    3 ++-
+ 3 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..01d9480 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -68,6 +68,7 @@ extern unsigned long force_hpet_address;
+ extern u8 hpet_blockid;
+ extern int hpet_force_user;
+ extern u8 hpet_msi_disable;
++extern u16 hpet_min_tick;
+ extern int is_hpet_enabled(void);
+ extern int hpet_enable(void);
+ extern void hpet_disable(void);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 71232b9..91a46bc 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -772,9 +772,6 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 		hpet_address >>= 32;
+ 	}
+ #endif
+-	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx\n",
+-	       hpet_tbl->id, hpet_address);
+-
+ 	/*
+ 	 * Allocate and initialize the HPET firmware resource for adding into
+ 	 * the resource tree during the lateinit timeframe.
+@@ -790,6 +787,13 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 	hpet_res->start = hpet_address;
+ 	hpet_res->end = hpet_address + (1 * 1024) - 1;
+ 
++	/* Accept only sensible values written by BIOS */
++	if (hpet_tbl->minimum_tick < hpet_min_tick)
++		hpet_min_tick = hpet_tbl->minimum_tick;
++
++	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx min tick: %d\n",
++		hpet_tbl->id, hpet_address, hpet_min_tick);
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ae03cab..a0b790a 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -40,6 +40,7 @@ u8					hpet_msi_disable;
+ static unsigned long			hpet_num_timers;
+ #endif
+ static void __iomem			*hpet_virt_address;
++u16					hpet_min_tick = 0x80;
+ 
+ struct hpet_dev {
+ 	struct clock_event_device	evt;
+@@ -408,7 +409,7 @@ static int hpet_next_event(unsigned long delta,
+ 	 */
+ 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
+ 
+-	return res < 8 ? -ETIME : 0;
++	return res < hpet_min_tick ? -ETIME : 0;
+ }
+ 
+ static void hpet_legacy_set_mode(enum clock_event_mode mode,
+-- 
+1.7.3.1.50.g1e633
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
