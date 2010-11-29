@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab0K2THq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 14:07:46 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:21586
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751266Ab0K2THo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 14:07:44 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz936eK1432N98dNa3c1kzz1202hzz8275dhz2dh2a8h691h668h67dh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
-Date: Mon, 29 Nov 2010 13:07:20 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <sodaville@linutronix.de>, <devicetree-discuss@lists.ozlabs.org>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
-Message-ID: <20101129130720.7d060e1c@udp111988uds.am.freescale.net>
-In-Reply-To: <1290984809.32570.208.camel@pasglop>
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
-	<1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
-	<1290808645.32570.158.camel@pasglop>
-	<20101128160449.GC30784@www.tglx.de>
-	<1290984809.32570.208.camel@pasglop>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1751594Ab0K2TIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 14:08:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49292 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab0K2TIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 14:08:00 -0500
+Message-ID: <4CF3F996.4090703@zytor.com>
+Date: Mon, 29 Nov 2010 11:05:58 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Ingo Molnar <mingo@elte.hu>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
+        tj@kernel.org, akpm@linux-foundation.org, w@1wt.eu,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+References: <20101116104600.GA24015@suse.de> <20101119191906.GA31760@xanatos> <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com> <20101126074809.GD19589@elte.hu> <20101129163308.GA2383@xanatos> <20101129180429.GB14046@elte.hu>
+In-Reply-To: <20101129180429.GB14046@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Nov 2010 19:08:40.0670 (UTC) FILETIME=[D57EA7E0:01CB8FF8]
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010 09:53:29 +1100
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> On Sun, 2010-11-28 at 17:04 +0100, Sebastian Andrzej Siewior wrote:
-> > >> +	isa@legacy {
-
-What is "@legacy"?  I don't think I've seen that in a unit address
-before, googling only turns up this device tree, and a quick grep
-through the ISA and base OF specs turns up nothing.
-
-> > >> +		device_type = "isa";
-> > >> +		compatible = "simple-bus";
-> > >
-> > >What does "simple-bus" means ?
-> > I added simple bus in order to get probed. But I now I rember that this
-> > is also supported per device_type. I get rid of it.
+On 11/29/2010 10:04 AM, Ingo Molnar wrote:
 > 
-> device_type is a nasty bugger, we are trying to get rid of Linux
-> reliance on it.
+> * Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
 > 
-> Things like "simple-bus" don't rock my boat either, it's adding to the
-> device-tree "informations" that are specific to the way Linux will
-> interpret it, which is not how it should be.
+>> On Fri, Nov 26, 2010 at 08:48:09AM +0100, Ingo Molnar wrote:
+>>>
+>>> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>>
+>>>> On Fri, Nov 19, 2010 at 11:19 AM, Sarah Sharp
+>>>> <sarah.a.sharp@linux.intel.com> wrote:
+>>>>>
+>>>>> .config and dmesg are attached.  The box is running klogd 1.5.5ubuntu3
+>>>>> (from Jaunty).  Yes, I know that's old.  I read the bit in the commit
+>>>>> about changing the permissions of kallsyms after boot, but if I can't
+>>>>> boot that doesn't help.  Perhaps this can be made a configuration
+>>>>> option?
+>>>>
+>>>> It's not worth a config option.
+>>>>
+>>>> If it actually breaks user-space, I think we should just revert it.
+>>>
+>>> Sarah,
+>>>
+>>> Does your system boot fine if we make /proc/kallsyms simply an empty file to 
+>>> unprivileged users? Something like the (untested ...) patch below.
+>>
+>> Yes, that works.  The system boots as normal. `cat /proc/kallsyms`
+>> returns an empty file, and `sudo cat /proc/kallsyms` does not.
+> 
+> Great! Marcus, mind respinning your patch with that approach?
+> 
 
-The motivation for simple-bus comes from Linux, but its definition is
-OS-neutral.  It indicates that no special bus knowledge is required to
-access the devices under it.
+Can we please not use CAP_SYS_ADMIN for this?  Relying on CAP_SYS_ADMIN
+is worse than anything else -- it is a fixed policy hardcoded in the
+kernel, with no ability for the system owner to delegate the policy
+outward, e.g. by adding group read permission and/or chgrp the file.
 
-I don't think it applies to ISA, though -- I/O space is special bus
-knowledge, and the "ranges" looks weird for memory-space as well.
-
-If we're going to get rid of device_type here, it would be nice to have
-some other way to indicate that this node follows the ISA binding,
-without having to recognize an implementation-specific compatible.
-
--Scott
-
+Delegating CAP_SYS_ADMIN, of course, otherwise known as "everything", is
+worse than anything...
+	
+	-hpa
