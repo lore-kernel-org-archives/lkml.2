@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab0K2Qpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:45:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57321 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab0K2Qp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:45:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
-Date: Mon, 29 Nov 2010 17:45:22 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011282056.17389.arnd@arndb.de> <4CF3CF33.20407@gmail.com>
-In-Reply-To: <4CF3CF33.20407@gmail.com>
+	id S1755183Ab0K2Qor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:44:47 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52267 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755130Ab0K2Qon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 11:44:43 -0500
+Date: Mon, 29 Nov 2010 17:44:18 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Message-ID: <20101129164418.GA9402@elte.hu>
+References: <20101121133744.GA10765@elte.hu>
+ <1290700829.4759.16.camel@maggy.simson.net>
+ <1290954299.30515.15.camel@marge.simson.net>
+ <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
+ <20101128201851.GA20555@elte.hu>
+ <1291031593.32004.19.camel@laptop>
+ <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011291745.22566.arnd@arndb.de>
-X-Provags-ID: V02:K0:n/b/BIGbLRpBW75HrwGwnSzZnNMFNc2WwpegjQR3jxd
- v/FyHbtCRwFzKaZ6GAftg9RwXuihIrYVzbRKypCMlxNYoSe+uJ
- s5pJG/PiMHo0VKKtqHa7vqC30avjc8w+Usou1/o0Q0KgvjiIOM
- F1UHvW22K1AMlcnFqnzI7GOagm4xwI3EroxsCYNJMzJpVstG5T
- EBKXMVNBEzGID9dNleJbg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 November 2010, Paulius Zaleckas wrote:
-> > The I/O ordering is probably not what you think it is.
-> > There is no ordering guarantee between __raw_writel and
-> > spin_lock/spin_unlock, so you really should be using
-> > readl/writel.
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Mon, Nov 29, 2010 at 3:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >
+> > Well we totally re-wrote the cgroup load-balancer in -tip. The thing currently 
+> > in -linus is a utter crap because its very strongly serialized across all cores 
+> > (some people spend like 25% of their time in there).
 > 
-> No he really should NOT use readl/writel. The ONLY difference
-> between readl/writel and __raw_readl/__raw_writel is endianess
-> conversion. __raw_*l is not doing it. Which to use depend only
-> on HW.
+> Well, it seems that the rewrite is more crap than the "utter crap" in current 
+> -git. What does that make -tip? Super-utter-crap?
 
-There are many differences between readl and __raw_readl, including
+Something along that line, or worse.
 
-* __raw_readl does not have barriers and does not serialize with
-  spinlocks, so it breaks on out-of-order CPUs.
-* __raw_readl does not have a specific endianess, while readl is
-  fixed little-endian, just as the hardware is in this case.
-  The endian-conversion is a NOP on little-endian ARM, but required
-  if you actually run on a big-endian ARM (you don't).
-* __raw_readl may not be atomic, gcc is free to split the access
-  into byte wise reads (it normally does not, unless you mark
-  the pointer __attribute__((packed))).
+> Peter - getting the wrong answer quickly is not any better than strong 
+> serialization.
 
-In essence, it is almost never a good idea to use __raw_readl, and
-the double underscores should tell you so.
+Yeah, obviously.
 
-	Arnd
+> Anyway, I'm happy to hear that the problem hasn't reached mainline yet.
+
+It wont.
+
+Thanks,
+
+	Ingo
