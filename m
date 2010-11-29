@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab0K2I7R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:59:17 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:32681
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751827Ab0K2I7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:59:15 -0500
-X-IronPort-AV: E=Sophos;i="4.59,275,1288566000"; 
-   d="scan'208";a="80371778"
-Date: Mon, 29 Nov 2010 09:59:13 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Microcai <microcai@fedoraproject.org>
-Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>, Theodore Tso <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101129085913.GN5142@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Microcai <microcai@fedoraproject.org>,
-	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-	Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-	linux-console@vger.kernel.org
-References: <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu> <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com> <1290954545.13526.27.camel@cai.gentoo> <20101128191152.GV10602@const.famille.thibault.fr> <1290993006.877.0.camel@cai.gentoo> <20101129081639.GA5142@const.bordeaux.inria.fr> <AANLkTinmdRjEkmywaMevN5_A=2N8_pBsOAJj8PoAaznz@mail.gmail.com> <20101129082711.GB5142@const.bordeaux.inria.fr> <1291020805.9785.0.camel@cai.gentoo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291020805.9785.0.camel@cai.gentoo>
-User-Agent: Mutt/1.5.12-2006-07-14
+	id S1751971Ab0K2JBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 04:01:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842Ab0K2JBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 04:01:14 -0500
+From: Xiaotian Feng <dfeng@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <dfeng@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] block: check for proper length of iov entries earlier in blk_rq_map_user_iov()
+Date: Mon, 29 Nov 2010 17:00:55 +0800
+Message-Id: <1291021255-2838-1-git-send-email-dfeng@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microcai, le Mon 29 Nov 2010 16:53:25 +0800, a écrit :
-> 在 2010-11-29一的 09:27 +0100，Samuel Thibault写道：
-> > microcai, le Mon 29 Nov 2010 16:20:11 +0800, a écrit :
-> > > > But isn't that basically what you are describing?
-> > > >
-> > > > (i.e. what's the use of using a pts and /dev/fb, if not for a userlevel
-> > > > terminal to actually do the work?)
-> > > >
-> > > 
-> > > ok, try run zhcon on pts.  can you do that ?
-> > 
-> > zhcon _provides_ a pts, that's what I mean.
-> 
-> So you agree zhcon can't run on pts.
+commit 9284bcf checks for proper length of iov entries in
+blk_rq_map_user_iov(). But if the map is unaligned, kernel
+will break out the loop without checking for the proper length.
+So we need to check the proper length before the unalign check.
 
-Sure. It doesn't make sense. But what zhcon does should be done in
-fbterm.
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+---
+ block/blk-map.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-> Then there's dozens of zhcon.
+diff --git a/block/blk-map.c b/block/blk-map.c
+index 5d5dbe4..e663ac2 100644
+--- a/block/blk-map.c
++++ b/block/blk-map.c
+@@ -201,12 +201,13 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
+ 	for (i = 0; i < iov_count; i++) {
+ 		unsigned long uaddr = (unsigned long)iov[i].iov_base;
+ 
++		if (!iov[i].iov_len)
++			return -EINVAL;
++
+ 		if (uaddr & queue_dma_alignment(q)) {
+ 			unaligned = 1;
+ 			break;
+ 		}
+-		if (!iov[i].iov_len)
+-			return -EINVAL;
+ 	}
+ 
+ 	if (unaligned || (q->dma_pad_mask & len) || map_data)
+-- 
+1.7.3.2
 
-What do you mean by this?
-
-Samuel
