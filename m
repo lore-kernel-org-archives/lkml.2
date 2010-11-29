@@ -1,99 +1,755 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab0K2DrL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 22:47:11 -0500
-Received: from rtitmf2.realsil.com.cn ([60.250.210.236]:2232 "EHLO
-	mf2.realtek.com.tw" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab0K2DrK (ORCPT
+	id S1754778Ab0K2D4j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 22:56:39 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50620 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab0K2D4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 22:47:10 -0500
-From: hayeswang <hayeswang@realtek.com>
-To: "'Ben Hutchings'" <benh@debian.org>,
-        "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'David Miller'" <davem@davemloft.net>, <564628@bugs.debian.org>
-References: <1290772470-23713-1-git-send-email-hayeswang@realtek.com> <1290779458.3051.45.camel@localhost> <20101126224914.GA12266@electric-eye.fr.zoreil.com> <1290813146.3051.58.camel@localhost>
-Subject: RE: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
-Date: Mon, 29 Nov 2010 11:47:07 +0800
-Message-ID: <CE0F8B12F31D4E82860F4CE06907E98B@realtek.com.tw>
+	Sun, 28 Nov 2010 22:56:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=MC+HvbiJ7eLp3TqBKVfBrhBgeQC6+q39luM5V+8RZDCoVpCveYBtZNzgAuEXP2HZxE
+         gk0JPiZSLWB6hh+4Sl7ik1vD82HBoJpx8Jt0KyDdarDN73DYiA/D6vQWF+T3uJUrILB8
+         OTonLUym6l+5O1TcFS5Jnyo3YmumE9cvIoXrU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcuNv30pOL1aNr0ITwmQSNXjzuSgJwBteDYg
-In-Reply-To: <1290813146.3051.58.camel@localhost>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 29 Nov 2010 11:56:15 +0800
+Message-ID: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
+Subject: [PATCH] Built kernel without -O2 option
+To: linux-kernel@vger.kernel.org
+Cc: gdb@sourceware.org, hellogcc@freelists.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excuse me, I have some questions about the firmware patch.
+Hi,
 
-1. I should convert the data into the binary files (.bin). Is it right?
+Now, there are a lot of ways to debug the Linux kernel with GDB, like
+qemu, kgtp or kgdb and so on.
+But the developer more like add a printk. It have a lot of reason, a big one is:
+(gdb) p ret
+$3 = <value optimized out>
+And the code execution order is not right.
 
-2. Where should I update the firmware files? Is the path the
-linux-2.6/firmeware?
-    However, according to linux-2.6/firmeware/README.AddingFirmware, I
-should
-    update they to another repository:
+This is becuase the Kernel is bult with gcc -O2.  Gcc will not
+generate enough debug message with file with -O2.
+So GDB cannot work very well with Linux kernel.
 
-	
-git://git.kernel.org/pub/scm/linux/kernel/git/dwmw2/linux-firmware.git
+So I make a patch that add a option in "Kernel hacking" called "Close
+GCC optimization".  It will make kernel be built without -O2.
 
-    Then, how the firmware merge with kernel-2.6? Or, where could I find the
-firmware
-    in the kernel-2.6 repository?
- 
-Best Regards,
-Hayes
+I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
+
+And I will put new patch in here and
+http://code.google.com/p/kgtp/downloads/list
+
+Thanks,
+Hui
+
+Signed-off-by: Hui Zhu <teawater@gmail.com>
+---
+ Makefile                                        |    2 ++
+ arch/x86/crypto/Makefile                        |    6 ++++++
+ arch/x86/include/asm/page_64_types.h            |    4 ++++
+ arch/x86/include/asm/uaccess_32.h               |    4 ++++
+ arch/x86/kernel/Makefile                        |    9 +++++++++
+ arch/x86/kvm/Makefile                           |    5 +++++
+ arch/x86/lib/Makefile                           |    4 ++++
+ arch/x86/power/Makefile                         |    4 ++++
+ crypto/Makefile                                 |    4 ++++
+ drivers/char/mwave/Makefile                     |    4 ++++
+ drivers/gpu/drm/i915/Makefile                   |    4 ++++
+ drivers/gpu/drm/i915/i915_drv.h                 |    4 ++++
+ drivers/gpu/drm/nouveau/Makefile                |    4 ++++
+ drivers/gpu/drm/radeon/Makefile                 |    4 ++++
+ drivers/infiniband/hw/qib/Makefile              |    4 ++++
+ drivers/net/can/sja1000/Makefile                |    4 ++++
+ drivers/staging/comedi/drivers/Makefile         |    4 ++++
+ drivers/staging/et131x/et1310_address_map.h     |    8 ++++++++
+ drivers/staging/rtl8187se/ieee80211/ieee80211.h |    8 ++++++++
+ drivers/staging/wlags49_h2/wl_internal.h        |    9 ++++++++-
+ drivers/usb/gadget/f_loopback.c                 |    2 ++
+ drivers/usb/gadget/f_sourcesink.c               |    2 ++
+ drivers/usb/gadget/g_zero.h                     |    2 ++
+ drivers/usb/host/Makefile                       |    4 ++++
+ fs/Makefile                                     |    5 +++++
+ include/linux/pagemap.h                         |    2 ++
+ init/Kconfig                                    |    1 +
+ kernel/Makefile                                 |    4 ++++
+ kernel/kfifo.c                                  |    3 +++
+ lib/Kconfig.debug                               |    8 ++++++++
+ lib/raid6/Makefile                              |    6 ++++++
+ mm/Makefile                                     |    6 ++++++
+ mm/memory.c                                     |    2 ++
+ mm/percpu.c                                     |    4 ++++
+ net/mac80211/cfg.c                              |    2 ++
+ net/mac80211/iface.c                            |   12 ++++++++++++
+ net/mac80211/mesh.h                             |    2 ++
+ net/mac80211/rx.c                               |    8 ++++++++
+ net/mac80211/sta_info.c                         |    2 ++
+ net/mac80211/status.c                           |    2 ++
+ net/mac80211/tx.c                               |    4 ++++
+ 41 files changed, 181 insertions(+), 1 deletion(-)
+
+--- a/Makefile
++++ b/Makefile
+@@ -540,8 +540,10 @@ all: vmlinux
+ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+ KBUILD_CFLAGS	+= -Os
+ else
++ifndef CONFIG_CC_CLOSE_OPTIMIZATION
+ KBUILD_CFLAGS	+= -O2
+ endif
++endif
+
+ include $(srctree)/arch/$(SRCARCH)/Makefile
+
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -2,6 +2,12 @@
+ # Arch-specific CryptoAPI modules.
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_fpu.o				+= -O2
++CFLAGS_aesni-intel_glue.o		+= -O2
++CFLAGS_ghash-clmulni-intel_glue.o	+= -O2
++endif
++
+ obj-$(CONFIG_CRYPTO_FPU) += fpu.o
+
+ obj-$(CONFIG_CRYPTO_AES_586) += aes-i586.o
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -1,7 +1,11 @@
+ #ifndef _ASM_X86_PAGE_64_DEFS_H
+ #define _ASM_X86_PAGE_64_DEFS_H
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++#define THREAD_ORDER	2
++#else
+ #define THREAD_ORDER	1
++#endif
+ #define THREAD_SIZE  (PAGE_SIZE << THREAD_ORDER)
+ #define CURRENT_MASK (~(THREAD_SIZE - 1))
+
+--- a/arch/x86/include/asm/uaccess_32.h
++++ b/arch/x86/include/asm/uaccess_32.h
+@@ -209,7 +209,11 @@ static inline unsigned long __must_check
+ 	if (likely(sz == -1 || sz >= n))
+ 		n = _copy_from_user(to, from, n);
+ 	else
++#ifndef CONFIG_CC_CLOSE_OPTIMIZATION
+ 		copy_from_user_overflow();
++#else
++		n = -EFAULT;
++#endif
+
+ 	return n;
+ }
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -31,6 +31,15 @@ GCOV_PROFILE_hpet.o		:= n
+ GCOV_PROFILE_tsc.o		:= n
+ GCOV_PROFILE_paravirt.o		:= n
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_process_$(BITS).o	+= -O2
++CFLAGS_entry_$(BITS).o		+= -O2
++CFLAGS_traps.o			+= -O2
++CFLAGS_i387.o			+= -O2
++CFLAGS_xsave.o			+= -O2
++CFLAGS_hpet.o			+= -O2
++endif
++
+ obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+--- a/arch/x86/kvm/Makefile
++++ b/arch/x86/kvm/Makefile
+@@ -5,6 +5,11 @@ CFLAGS_x86.o := -I.
+ CFLAGS_svm.o := -I.
+ CFLAGS_vmx.o := -I.
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_x86.o		+= -O2
++CFLAGS_emulate.o	+= -O2
++endif
++
+ kvm-y			+= $(addprefix ../../../virt/kvm/, kvm_main.o ioapic.o \
+ 				coalesced_mmio.o irq_comm.o eventfd.o \
+ 				assigned-dev.o)
+--- a/arch/x86/lib/Makefile
++++ b/arch/x86/lib/Makefile
+@@ -2,6 +2,10 @@
+ # Makefile for x86 specific library files.
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_memmove_64.o	+= -O2
++endif
++
+ inat_tables_script = $(srctree)/arch/x86/tools/gen-insn-attr-x86.awk
+ inat_tables_maps = $(srctree)/arch/x86/lib/x86-opcode-map.txt
+ quiet_cmd_inat_tables = GEN     $@
+--- a/arch/x86/power/Makefile
++++ b/arch/x86/power/Makefile
+@@ -3,5 +3,9 @@
+ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_cpu.o	:= $(nostackp)
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_cpu.o	+= -O2
++endif
++
+ obj-$(CONFIG_PM_SLEEP)		+= cpu.o
+ obj-$(CONFIG_HIBERNATION)	+= hibernate_$(BITS).o hibernate_asm_$(BITS).o
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -2,6 +2,10 @@
+ # Cryptographic API
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_xor.o	+= -O2
++endif
++
+ obj-$(CONFIG_CRYPTO) += crypto.o
+ crypto-objs := api.o cipher.o compress.o
+
+--- a/drivers/char/mwave/Makefile
++++ b/drivers/char/mwave/Makefile
+@@ -4,6 +4,10 @@
+ # See the README file in this directory for more info. <paulsch@us.ibm.com>
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_smapi.o	+= -O2
++endif
++
+ obj-$(CONFIG_MWAVE) += mwave.o
+
+ mwave-y := mwavedd.o smapi.o tp3780i.o 3780i.o
+--- a/drivers/gpu/drm/i915/Makefile
++++ b/drivers/gpu/drm/i915/Makefile
+@@ -2,6 +2,10 @@
+ # Makefile for the drm device driver.  This driver provides support for the
+ # Direct Rendering Infrastructure (DRI) in XFree86 4.1.0 and higher.
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_i915_gem.o	+= -O2
++endif
++
+ ccflags-y := -Iinclude/drm
+ i915-y := i915_drv.o i915_dma.o i915_irq.o i915_mem.o \
+ 	  i915_debugfs.o \
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1121,7 +1121,11 @@ extern int intel_setup_gmbus(struct drm_
+ extern void intel_teardown_gmbus(struct drm_device *dev);
+ extern void intel_gmbus_set_speed(struct i2c_adapter *adapter, int speed);
+ extern void intel_gmbus_force_bit(struct i2c_adapter *adapter, bool force_bit);
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline bool intel_gmbus_is_forced_bit(struct i2c_adapter *adapter)
++#else
+ extern inline bool intel_gmbus_is_forced_bit(struct i2c_adapter *adapter)
++#endif
+ {
+ 	return container_of(adapter, struct intel_gmbus, adapter)->force_bit;
+ }
+--- a/drivers/gpu/drm/nouveau/Makefile
++++ b/drivers/gpu/drm/nouveau/Makefile
+@@ -2,6 +2,10 @@
+ # Makefile for the drm device driver.  This driver provides support for the
+ # Direct Rendering Infrastructure (DRI) in XFree86 4.1.0 and higher.
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_nv50_instmem.o	+= -O2
++endif
++
+ ccflags-y := -Iinclude/drm
+ nouveau-y := nouveau_drv.o nouveau_state.o nouveau_channel.o nouveau_mem.o \
+              nouveau_object.o nouveau_irq.o nouveau_notifier.o \
+--- a/drivers/gpu/drm/radeon/Makefile
++++ b/drivers/gpu/drm/radeon/Makefile
+@@ -2,6 +2,10 @@
+ # Makefile for the drm device driver.  This driver provides support for the
+ # Direct Rendering Infrastructure (DRI) in XFree86 4.1.0 and higher.
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_radeon_gem.o	+= -O2
++endif
++
+ ccflags-y := -Iinclude/drm
+
+ hostprogs-y := mkregtable
+--- a/drivers/infiniband/hw/qib/Makefile
++++ b/drivers/infiniband/hw/qib/Makefile
+@@ -1,5 +1,9 @@
+ obj-$(CONFIG_INFINIBAND_QIB) += ib_qib.o
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_qib_iba7322.o	+= -O2
++endif
++
+ ib_qib-y := qib_cq.o qib_diag.o qib_dma.o qib_driver.o qib_eeprom.o \
+ 	qib_file_ops.o qib_fs.o qib_init.o qib_intr.o qib_keys.o \
+ 	qib_mad.o qib_mmap.o qib_mr.o qib_pcie.o qib_pio_copy.o \
+--- a/drivers/net/can/sja1000/Makefile
++++ b/drivers/net/can/sja1000/Makefile
+@@ -2,6 +2,10 @@
+ #  Makefile for the SJA1000 CAN controller drivers.
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_kvaser_pci.o	+= -O2
++endif
++
+ obj-$(CONFIG_CAN_SJA1000) += sja1000.o
+ obj-$(CONFIG_CAN_SJA1000_ISA) += sja1000_isa.o
+ obj-$(CONFIG_CAN_SJA1000_PLATFORM) += sja1000_platform.o
+--- a/drivers/staging/comedi/drivers/Makefile
++++ b/drivers/staging/comedi/drivers/Makefile
+@@ -1,6 +1,10 @@
+ # Makefile for individual comedi drivers
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_cb_pcidas64.o	+= -O2
++endif
++
+ # Comedi "helper" modules
+ obj-$(CONFIG_COMEDI)			+= pcm_common.o
+
+--- a/drivers/staging/et131x/et1310_address_map.h
++++ b/drivers/staging/et131x/et1310_address_map.h
+@@ -212,12 +212,20 @@ struct global_regs {			/* Location: */
+ #define INDEX10(x)	((x) & ET_DMA10_MASK)
+ #define INDEX4(x)	((x) & ET_DMA4_MASK)
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline void add_10bit(u32 *v, int n)
++#else
+ extern inline void add_10bit(u32 *v, int n)
++#endif
+ {
+ 	*v = INDEX10(*v + n) | (*v & ET_DMA10_WRAP);
+ }
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline void add_12bit(u32 *v, int n)
++#else
+ extern inline void add_12bit(u32 *v, int n)
++#endif
+ {
+ 	*v = INDEX12(*v + n) | (*v & ET_DMA12_WRAP);
+ }
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211.h
+@@ -1221,7 +1221,11 @@ static inline void *ieee80211_priv(struc
+ 	return ((struct ieee80211_device *)netdev_priv(dev))->priv;
+ }
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline int ieee80211_is_empty_essid(const char *essid, int essid_len)
++#else
+ extern inline int ieee80211_is_empty_essid(const char *essid, int essid_len)
++#endif
+ {
+ 	/* Single white space is for Linksys APs */
+ 	if (essid_len == 1 && essid[0] == ' ')
+@@ -1263,7 +1267,11 @@ extern inline int ieee80211_is_valid_mod
+ 	return 0;
+ }
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline int ieee80211_get_hdrlen(u16 fc)
++#else
+ extern inline int ieee80211_get_hdrlen(u16 fc)
++#endif
+ {
+ 	int hdrlen = 24;
+
+--- a/drivers/staging/wlags49_h2/wl_internal.h
++++ b/drivers/staging/wlags49_h2/wl_internal.h
+@@ -1022,8 +1022,11 @@ static inline void wl_unlock(struct wl_p
+ /********************************************************************/
+ /* Interrupt enable disable functions                               */
+ /********************************************************************/
+-
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline void wl_act_int_on(struct wl_private *lp)
++#else
+ extern inline void wl_act_int_on(struct wl_private *lp)
++#endif
+ {
+ 	/*
+ 	 * Only do something when the driver is handling
+@@ -1035,7 +1038,11 @@ extern inline void wl_act_int_on(struct
+ 	}
+ }
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++static inline void wl_act_int_off(struct wl_private *lp)
++#else
+ extern inline void wl_act_int_off(struct wl_private *lp)
++#endif
+ {
+ 	/*
+ 	 * Only do something when the driver is handling
+--- a/drivers/usb/gadget/f_loopback.c
++++ b/drivers/usb/gadget/f_loopback.c
+@@ -376,10 +376,12 @@ int __init loopback_add(struct usb_compo
+ 		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+
+ 	/* support OTG systems */
++#ifdef CONFIG_USB_OTG
+ 	if (gadget_is_otg(cdev->gadget)) {
+ 		loopback_driver.descriptors = otg_desc;
+ 		loopback_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+ 	}
++#endif
+
+ 	return usb_add_config(cdev, &loopback_driver, loopback_bind_config);
+ }
+--- a/drivers/usb/gadget/f_sourcesink.c
++++ b/drivers/usb/gadget/f_sourcesink.c
+@@ -526,10 +526,12 @@ int __init sourcesink_add(struct usb_com
+ 		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+
+ 	/* support OTG systems */
++#ifdef CONFIG_USB_OTG
+ 	if (gadget_is_otg(cdev->gadget)) {
+ 		sourcesink_driver.descriptors = otg_desc;
+ 		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+ 	}
++#endif
+
+ 	return usb_add_config(cdev, &sourcesink_driver, sourcesink_bind_config);
+ }
+--- a/drivers/usb/gadget/g_zero.h
++++ b/drivers/usb/gadget/g_zero.h
+@@ -10,7 +10,9 @@
+
+ /* global state */
+ extern unsigned buflen;
++#ifdef CONFIG_USB_OTG
+ extern const struct usb_descriptor_header *otg_desc[];
++#endif
+
+ /* common utilities */
+ struct usb_request *alloc_ep_req(struct usb_ep *ep);
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -4,6 +4,10 @@
+
+ ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_ehci-hcd.o	+= -O2
++endif
++
+ isp1760-y := isp1760-hcd.o isp1760-if.o
+
+ fhci-y := fhci-hcd.o fhci-hub.o fhci-q.o
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -13,6 +13,11 @@ obj-y :=	open.o read_write.o file_table.
+ 		pnode.o drop_caches.o splice.o sync.o utimes.o \
+ 		stack.o fs_struct.o statfs.o
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_compat_ioctl.o	+= -O2
++CFLAGS_binfmt_elf.o	+= -O2
++endif
++
+ ifeq ($(CONFIG_BLOCK),y)
+ obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
+ else
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -289,8 +289,10 @@ static inline pgoff_t linear_page_index(
+ 					unsigned long address)
+ {
+ 	pgoff_t pgoff;
++#ifdef CONFIG_HUGETLBFS
+ 	if (unlikely(is_vm_hugetlb_page(vma)))
+ 		return linear_hugepage_index(vma, address);
++#endif
+ 	pgoff = (address - vma->vm_start) >> PAGE_SHIFT;
+ 	pgoff += vma->vm_pgoff;
+ 	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -817,6 +817,7 @@ endif
+
+ config CC_OPTIMIZE_FOR_SIZE
+ 	bool "Optimize for size"
++	depends on !CC_CLOSE_OPTIMIZATION
+ 	default y
+ 	help
+ 	  Enabling this option will pass "-Os" instead of "-O2" to gcc
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -2,6 +2,10 @@
+ # Makefile for the linux kernel.
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_sched.o	+= -O2
++endif
++
+ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
+ 	    cpu.o exit.o itimer.o time.o softirq.o resource.o \
+ 	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+--- a/kernel/kfifo.c
++++ b/kernel/kfifo.c
+@@ -402,6 +402,9 @@ unsigned int __kfifo_max_r(unsigned int
+ 		return max;
+ 	return len;
+ }
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++EXPORT_SYMBOL(__kfifo_max_r);
++#endif
+
+ #define	__KFIFO_PEEK(data, out, mask) \
+ 	((data)[(out) & (mask)])
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -136,6 +136,14 @@ config DEBUG_SECTION_MISMATCH
+ 	  - Enable verbose reporting from modpost to help solving
+ 	    the section mismatches reported.
+
++config CC_CLOSE_OPTIMIZATION
++	bool "Close GCC optimization"
++	default n
++	help
++	  Enabling this option will let gcc build kernel without "-O2".
++
++	  If unsure, say N.
++
+ config DEBUG_KERNEL
+ 	bool "Kernel debugging"
+ 	help
+--- a/lib/raid6/Makefile
++++ b/lib/raid6/Makefile
+@@ -1,3 +1,9 @@
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_mmx.o	+= -O2
++CFLAGS_sse1.o	+= -O2
++CFLAGS_sse2.o	+= -O2
++endif
++
+ obj-$(CONFIG_RAID6_PQ)	+= raid6_pq.o
+
+ raid6_pq-y	+= algos.o recov.o tables.o int1.o int2.o int4.o \
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -2,6 +2,12 @@
+ # Makefile for the linux memory manager.
+ #
+
++ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++CFLAGS_slob.o	+= -O2
++CFLAGS_slab.o	+= -O2
++CFLAGS_slub.o	+= -O2
++endif
++
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2697,7 +2697,9 @@ static int do_swap_page(struct mm_struct
+
+ 	if (ksm_might_need_to_copy(page, vma, address)) {
+ 		swapcache = page;
++#ifdef CONFIG_KSM
+ 		page = ksm_does_need_to_copy(page, vma, address);
++#endif
+
+ 		if (unlikely(!page)) {
+ 			ret = VM_FAULT_OOM;
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1890,7 +1890,11 @@ void __init percpu_init_late(void)
+ 		int *map;
+ 		const size_t size = PERCPU_DYNAMIC_EARLY_SLOTS * sizeof(map[0]);
+
++#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
++		BUG_ON(size > PAGE_SIZE);
++#else
+ 		BUILD_BUG_ON(size > PAGE_SIZE);
++#endif
+
+ 		map = pcpu_mem_alloc(size);
+ 		BUG_ON(!map);
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -698,6 +698,7 @@ static void sta_apply_parameters(struct
+ 						  params->ht_capa,
+ 						  &sta->sta.ht_cap);
+
++#ifdef CONFIG_MAC80211_MESH
+ 	if (ieee80211_vif_is_mesh(&sdata->vif) && params->plink_action) {
+ 		switch (params->plink_action) {
+ 		case PLINK_ACTION_OPEN:
+@@ -708,6 +709,7 @@ static void sta_apply_parameters(struct
+ 			break;
+ 		}
+ 	}
++#endif
+ }
+
+ static int ieee80211_add_station(struct wiphy *wiphy, struct net_device *dev,
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -277,7 +277,9 @@ static int ieee80211_do_open(struct net_
+ 			local->fif_other_bss++;
+ 			ieee80211_configure_filter(local);
+
++#ifdef CONFIG_MAC80211_MESH
+ 			ieee80211_start_mesh(sdata);
++#endif
+ 		} else if (sdata->vif.type == NL80211_IFTYPE_AP) {
+ 			local->fif_pspoll++;
+ 			local->fif_probe_req++;
+@@ -512,7 +514,9 @@ static void ieee80211_do_stop(struct iee
+
+ 			ieee80211_configure_filter(local);
+
++#ifdef CONFIG_MAC80211_MESH
+ 			ieee80211_stop_mesh(sdata);
++#endif
+ 		}
+ 		/* fall through */
+ 	default:
+@@ -640,8 +644,10 @@ static void ieee80211_teardown_sdata(str
+ 		__skb_queue_purge(&sdata->fragments[i].skb_list);
+ 	sdata->fragment_next = 0;
+
++#ifdef CONFIG_MAC80211_MESH
+ 	if (ieee80211_vif_is_mesh(&sdata->vif))
+ 		mesh_rmc_free(sdata);
++#endif
+
+ 	flushed = sta_info_flush(local, sdata);
+ 	WARN_ON(flushed);
+@@ -817,7 +823,9 @@ static void ieee80211_iface_work(struct
+ 		case NL80211_IFTYPE_MESH_POINT:
+ 			if (!ieee80211_vif_is_mesh(&sdata->vif))
+ 				break;
++#ifdef CONFIG_MAC80211_MESH
+ 			ieee80211_mesh_rx_queued_mgmt(sdata, skb);
++#endif
+ 			break;
+ 		default:
+ 			WARN(1, "frame for unexpected interface type");
+@@ -838,7 +846,9 @@ static void ieee80211_iface_work(struct
+ 	case NL80211_IFTYPE_MESH_POINT:
+ 		if (!ieee80211_vif_is_mesh(&sdata->vif))
+ 			break;
++#ifdef CONFIG_MAC80211_MESH
+ 		ieee80211_mesh_work(sdata);
++#endif
+ 		break;
+ 	default:
+ 		break;
+@@ -892,8 +902,10 @@ static void ieee80211_setup_sdata(struct
+ 		ieee80211_ibss_setup_sdata(sdata);
+ 		break;
+ 	case NL80211_IFTYPE_MESH_POINT:
++#ifdef CONFIG_MAC80211_MESH
+ 		if (ieee80211_vif_is_mesh(&sdata->vif))
+ 			ieee80211_mesh_init_sdata(sdata);
++#endif
+ 		break;
+ 	case NL80211_IFTYPE_MONITOR:
+ 		sdata->dev->type = ARPHRD_IEEE80211_RADIOTAP;
+--- a/net/mac80211/mesh.h
++++ b/net/mac80211/mesh.h
+@@ -223,8 +223,10 @@ int ieee80211_fill_mesh_addresses(struct
+ int ieee80211_new_mesh_header(struct ieee80211s_hdr *meshhdr,
+ 		struct ieee80211_sub_if_data *sdata, char *addr4,
+ 		char *addr5, char *addr6);
++#ifdef CONFIG_MAC80211_MESH
+ int mesh_rmc_check(u8 *addr, struct ieee80211s_hdr *mesh_hdr,
+ 		struct ieee80211_sub_if_data *sdata);
++#endif
+ bool mesh_matches_local(struct ieee802_11_elems *ie,
+ 		struct ieee80211_sub_if_data *sdata);
+ void mesh_ids_set_default(struct ieee80211_if_mesh *mesh);
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -453,6 +453,14 @@ static int ieee80211_get_mmie_keyidx(str
+ }
 
 
-> -----Original Message-----
-> From: Ben Hutchings [mailto:benh@debian.org] 
-> Sent: Saturday, November 27, 2010 7:12 AM
-> To: Francois Romieu; Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; 
-> David Miller; 564628@bugs.debian.org
-> Subject: Re: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
-> 
-> On Fri, 2010-11-26 at 23:49 +0100, Francois Romieu wrote:
-> > Ben Hutchings <benh@debian.org> :
-> > > On Fri, 2010-11-26 at 19:54 +0800, Hayes Wang wrote:
-> > > > Correct the binary code (Low pass filter & DLY_CAP fine 
-> tune from uC).
-> > > > The incorrect ram code would make the nic working abnormally.
-> > > [...]
-> > > 
-> > > I'm glad you finally acknowledge that this is code rather than 
-> > > simple register initialisation.
-> > 
-> > I am not sure that Hayes is a native english speaker.
-> > 
-> > I am glad to see him posting here.
-> 
-> Right.
-> 
-> Hayes, by 'you' I meant Realtek, not you personally.  If my 
-> reply seemed aggressive, I apologise.
-> 
-> > [...]
-> > > Below are the changes Debian currently applies in preparation for 
-> > > proper licencing of the firmware.
-> > 
-> > Do you have some scripts to convert the data at hand ?
-> [...]
-> 
-> No, it's easy enough to convert a single array by copying it 
-> into a C file that dumps it to stdout (assuming the file's 
-> byte order is defined to match your own machine).
-> 
-> It might be worth adding some sort of header with a version 
-> and checksum.  Your choice, really.
-> 
-> Ben.
-> 
-> --
-> Ben Hutchings, Debian Developer and kernel team member
-> 
-> 
++#ifndef CONFIG_MAC80211_MESH
++static int mesh_rmc_check(u8 *sa, struct ieee80211s_hdr *mesh_hdr,
++		   struct ieee80211_sub_if_data *sdata)
++{
++	return 0;
++}
++#endif
++
+ static ieee80211_rx_result
+ ieee80211_rx_mesh_check(struct ieee80211_rx_data *rx)
+ {
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -465,8 +465,10 @@ int sta_info_insert_rcu(struct sta_info
+ 	rcu_read_lock();
+ 	mutex_unlock(&local->sta_mtx);
 
++#ifdef CONFIG_MAC80211_MESH
+ 	if (ieee80211_vif_is_mesh(&sdata->vif))
+ 		mesh_accept_plinks_update(sdata);
++#endif
+
+ 	return 0;
+  out_free:
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -237,8 +237,10 @@ void ieee80211_tx_status(struct ieee8021
+ 		}
+
+ 		rate_control_tx_status(local, sband, sta, skb);
++#ifdef CONFIG_MAC80211_MESH
+ 		if (ieee80211_vif_is_mesh(&sta->sdata->vif))
+ 			ieee80211s_update_metric(local, sta, skb);
++#endif
+
+ 		if (!(info->flags & IEEE80211_TX_CTL_INJECTED) &&
+ 		    (info->flags & IEEE80211_TX_STAT_ACK))
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1615,6 +1615,7 @@ static void ieee80211_xmit(struct ieee80
+ 	hdr = (struct ieee80211_hdr *) skb->data;
+ 	info->control.vif = &sdata->vif;
+
++#ifdef CONFIG_MAC80211_MESH
+ 	if (ieee80211_vif_is_mesh(&sdata->vif) &&
+ 	    ieee80211_is_data(hdr->frame_control) &&
+ 		!is_multicast_ether_addr(hdr->addr1))
+@@ -1623,6 +1624,7 @@ static void ieee80211_xmit(struct ieee80
+ 				rcu_read_unlock();
+ 				return;
+ 			}
++#endif
+
+ 	ieee80211_set_qos_hdr(local, skb);
+ 	ieee80211_tx(sdata, skb, false);
+@@ -2278,7 +2280,9 @@ struct sk_buff *ieee80211_beacon_get_tim
+ 		*pos++ = WLAN_EID_SSID;
+ 		*pos++ = 0x0;
+
++#ifdef CONFIG_MAC80211_MESH
+ 		mesh_mgmt_ies_add(skb, sdata);
++#endif
+ 	} else {
+ 		WARN_ON(1);
+ 		goto out;
