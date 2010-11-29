@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab0K2Tps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 14:45:48 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57975 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569Ab0K2Tpr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 14:45:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:x-duff:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=RNFgB61IdgoLmGpChGjARelQ56JPCcZw8ph0VWw0Cxlo9ow6dp3mYcTTGL4xNjxs4Y
-         7z1nol18IDg7OeGUITdpdIAp7Z8gDqEKLZVJ0RtcTMKLcrtHDWq5uB/sL/ODiFT+xh+z
-         9uRwaoIH+Xzrs16KRMuvoMWHWHMXmUwiWI6sU=
-Subject: Re: linux-next: Tree for November 29 (aesni-intel)
-X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
-Mime-Version: 1.0 (Apple Message framework v1082)
+	id S1752687Ab0K2Tq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 14:46:26 -0500
+Received: from kroah.org ([198.145.64.141]:54567 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab0K2TqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 14:46:25 -0500
+Date: Mon, 29 Nov 2010 11:43:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] staging: ft1000: Remove unused headers.
+Message-ID: <20101129194322.GA14086@kroah.com>
+References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>
+ <1290515373-16145-5-git-send-email-marek.belisko@open-nandra.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Mathias Krause <minipli@googlemail.com>
-In-Reply-To: <4CF3FFAE.40906@oracle.com>
-Date: Mon, 29 Nov 2010 20:45:39 +0100
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Huang Ying <ying.huang@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <45B80502-8597-4650-990F-F23B4FC751B8@googlemail.com>
-References: <4CF3F6CB.8080904@oracle.com> <1291058505-9384-1-git-send-email-minipli@googlemail.com> <4CF3FFAE.40906@oracle.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-X-Mailer: Apple Mail (2.1082)
+Content-Disposition: inline
+In-Reply-To: <1290515373-16145-5-git-send-email-marek.belisko@open-nandra.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.11.2010, 20:31 Randy Dunlap wrote:
-> On 11/29/10 11:21, Mathias Krause wrote:
->> On 29.11.2010, 19:54 Randy Dunlap wrote:
->>> On 11/29/10 10:26, Mathias Krause wrote:
->>>> On 29.11.2010, 17:31 Randy Dunlap wrote:
->>>>> On Mon, 29 Nov 2010 14:03:35 +1100 Stephen Rothwell wrote:
->>>>> 
->>>>>> Hi all,
->>>>>> 
->>>>>> Changes since 20101126:
->>>>> 
->>>>> 
->>>>> on i386 builds, I get tons of these (and more) errors:
->>>>> 
->>>>> arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
->>>>> arch/x86/crypto/aesni-intel_asm.S:842: Error: bad register name `%r13'
->>>>> arch/x86/crypto/aesni-intel_asm.S:843: Error: bad register name `%r14'
->>>>> arch/x86/crypto/aesni-intel_asm.S:844: Error: bad register name `%rsp'
->>>>> arch/x86/crypto/aesni-intel_asm.S:849: Error: bad register name `%rsp'
->>>>> arch/x86/crypto/aesni-intel_asm.S:850: Error: bad register name `%rsp'
->>>>> arch/x86/crypto/aesni-intel_asm.S:851: Error: bad register name `%r9'
->>>>> 
->>>>> even though the kernel .config file says:
->>>>> 
->>>>> CONFIG_CRYPTO_AES=m
->>>>> CONFIG_CRYPTO_AES_586=m
->>>>> CONFIG_CRYPTO_AES_NI_INTEL=m
->>>>> 
->>>>> Should arch/x86/crypto/aesni-intel_asm.S be testing
->>>>> #ifdef CONFIG_X86_64
->>>>> instead of
->>>>> #ifdef __x86_64__
->>>>> or does that not matter?
->>>>> 
->>>>> or is this a toolchain issue?
->>>> 
->>>> Well, __x86_64__ should be a build-in define of the compiler while
->>>> CONFIG_X86_64 is defined for 64 bit builds in include/generated/autoconf.h.
->>>> So by using the latter we should be on the safe side but if your compiler
->>>> defines __x86_64__ for 32-bit builds it's simply broken. Also git grep
->>>> showed quite a few more places using __x86_64__ so those would miscompile on
->>>> your toolchain, too.
->>>> 
->>>> But it looks like linux-next is just missing
->>>> 559ad0ff1368baea14dbc3207d55b02bd69bda4b from Herbert's git repo at
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git.
->>>> That should fix the build issue.
->>> 
->>> The build problem still happens when that patch is applied.
->> 
->> That's weird. So it must be something with your toolchain.
->> Can you please post the output of the following commands?:
->> 
->> $ touch /tmp/null.c; cc -m32 -dD -E /tmp/null.c | grep -E 'x86|i.86'
+On Tue, Nov 23, 2010 at 01:29:31PM +0100, Marek Belisko wrote:
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> ---
+>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |    9 ---------
+>  1 files changed, 0 insertions(+), 9 deletions(-)
 > 
-> #define __i386 1
-> #define __i386__ 1
-> #define i386 1
-> #define __i586 1
-> #define __i586__ 1
-> 
->> $ touch /tmp/null.c; cc -m64 -dD -E /tmp/null.c | grep -E 'x86|i.86'
-> 
-> #define __x86_64 1
-> #define __x86_64__ 1
-> 
-> So that's not the problem... and the patch below didn't help.
+> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+> index 8d2c059..3df4b4c 100644
+> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+> @@ -24,23 +24,14 @@
+>  // 6/05/06    Whc                Porting to Linux 2.6.9
+>  //
+>  //---------------------------------------------------------------------------
+> -#include <linux/module.h>
+> -#include <linux/kernel.h>
+>  #include <linux/sched.h>
 
-That's odd. The output of the commands looks good so the x86-64 specific code
-should be left out for 32-bit builds. :/
+Odds are you do want module.h and kernel.h but not sched.h, right?
 
-> Sorry that I even asked about that.  What next?
+> -#include <linux/signal.h>
+> -#include <linux/errno.h>
 
-Can you please post the full error message. Meanwhile I'm checking out a
-linux-next tree, trying to reproduce your problem.
+You have no error numbers in this driver?  I doubt that.
 
+>  #include <linux/poll.h>
+>  #include <linux/netdevice.h>
+>  #include <linux/delay.h>
+>  #include <linux/miscdevice.h>
+> -
+> -#include <linux/fs.h>
+> -#include <linux/kmod.h>
+
+These can be removed.
+
+>  #include <linux/ioctl.h>
+> -#include <linux/unistd.h>
+
+As can this.
+
+thanks,
+
+greg k-h
