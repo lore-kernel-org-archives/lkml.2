@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0K2KRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 05:17:07 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:12050 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752941Ab0K2KRF (ORCPT
+	id S1753014Ab0K2KSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:18:07 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:48113 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab0K2KSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 05:17:05 -0500
-X-IronPort-AV: E=Sophos;i="4.59,275,1288566000"; 
-   d="scan'208";a="89554485"
-Date: Mon, 29 Nov 2010 11:17:02 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Microcai <microcai@fedoraproject.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Lisa Milne <lisa@ltmnet.com>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101129101702.GS5142@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Microcai <microcai@fedoraproject.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, Ted Ts'o <tytso@mit.edu>,
-	Lisa Milne <lisa@ltmnet.com>,
-	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-	linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-References: <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com> <20101129020610.7ea7c79e.lisa@ltmnet.com> <1290961207.13526.31.camel@cai.gentoo> <20101128194624.GP2767@thunk.org> <1290993244.877.3.camel@cai.gentoo> <20101129085829.GM5142@const.bordeaux.inria.fr> <1291023157.9785.2.camel@cai.gentoo> <20101129095823.GQ5142@const.bordeaux.inria.fr> <1291025476.9785.5.camel@cai.gentoo>
+	Mon, 29 Nov 2010 05:18:06 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: pavel@pavlinux.ru
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Repalce strncmp by memcmp
+References: <4CF30B46.4000203@pavlinux.ru>
+Date: Mon, 29 Nov 2010 11:18:00 +0100
+In-Reply-To: <4CF30B46.4000203@pavlinux.ru> (Pavel Vasilyev's message of "Mon,
+	29 Nov 2010 05:09:10 +0300")
+Message-ID: <87eia4l9gn.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291025476.9785.5.camel@cai.gentoo>
-User-Agent: Mutt/1.5.12-2006-07-14
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microcai, le Mon 29 Nov 2010 18:11:16 +0800, a écrit :
-> 在 2010-11-29一的 10:58 +0100，Samuel Thibault写道：
-> > Simple unicode font (i.e. just go beyond the arbitrary historical-vga
-> > 512 glyphs limit for fbcon) might go in.  Double-width is
-> > questionable,
-> > but it can probably simple enough to be able to get in (there is
-> > already
-> > some code for it anyway).
-> > 
-> > But complete unicode support (with arabic ligatures, tibetan
-> > combinations, etc.) won't ever be accepted in the kernel as that's far
-> > too involved in terms of font rendering.  So the userland way needs to
-> > be fixed for these anyway, and then things like chinese will go
-> > along...
-> > 
-> > Samuel 
-> 
-> YES, my patch just include BMP(mostly CJK), not full UNICODE. IF it can
-> be included, then I can do more work to make sure it doesn't break old
-> stuff. And it's configurable. users don't have to be forced to use.
+Pavel Vasilyev <pavel@pavlinux.ru> writes:
 
-It seems you didn't get my point: what is the use of including CJK into
-kernel when that won't solve the issue for e.g. arabic, while fixing
-fbterm will solve the issue for both arabic and CJK?
+>     This patch replace all strncmp(a, b, c) by  memcmp(a, b, c).
 
-Samuel
+Those two calls are not equivalent. Think what happens when a or b
+are shorter than n and one of them is at the end of a page 
+before a memory hole.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
