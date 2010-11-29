@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab0K2UXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:23:37 -0500
-Received: from fieldses.org ([174.143.236.118]:40877 "EHLO fieldses.org"
+	id S1753507Ab0K2UcQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:32:16 -0500
+Received: from claw.goop.org ([74.207.240.146]:41892 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab0K2UXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:23:34 -0500
-Date: Mon, 29 Nov 2010 15:23:29 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Dave Quigley <dpquigl@davequigley.com>
-Cc: David Quigley <merlin@countercultured.net>, Eric Paris <eparis@redhat.com>,
-        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org,
-        Miklos Szeredi <miklos@szeredi.hu>, Steve French <sfrench@samba.org>
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
-Message-ID: <20101129202329.GC9897@fieldses.org>
-References: <1290016263-1637-1-git-send-email-josef@redhat.com>
- <20101117191817.GA26575@fieldses.org>
- <20101117192822.GB3818@localhost.localdomain>
- <20101117202617.GA31009@fieldses.org>
- <1290031941.14282.101.camel@localhost.localdomain>
- <4CE60AE9.2070101@countercultured.net>
- <20101119164236.GA29148@fieldses.org>
- <4CE7F97E.4040305@davequigley.com>
+	id S1751806Ab0K2UcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 15:32:15 -0500
+Message-ID: <4CF40DCB.5010007@goop.org>
+Date: Mon, 29 Nov 2010 12:32:11 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE7F97E.4040305@davequigley.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nick Piggin <npiggin@kernel.dk>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH RFC] vmalloc: eagerly clear ptes on vunmap
+References: <4CEF6B8B.8080206@goop.org> <20101127103656.GA6884@amd>
+In-Reply-To: <20101127103656.GA6884@amd>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 11:38:22AM -0500, Dave Quigley wrote:
-> On 11/19/2010 11:42 AM, J. Bruce Fields wrote:
-> >On Fri, Nov 19, 2010 at 12:28:09AM -0500, David Quigley wrote:
-> >>[snip]
-> >>>If you have persistent xattr support we need the dentry since the xattr
-> >>>code requires a dentry.  I have no idea why but that's what
-> >>>inode->i_op->getxattr() requires.
-> >>>
-> >>The original reason that the xattr operations take dentries is
-> >>because of p9fs and CIFS. CIFS uses the name of the file to grab the
-> >>extended attributes and so does p9fs. I had tried to remove this a
-> >>while ago but couldn't find a way around that.
-> >Both CIFS and FUSE are NFS-exportable, so both allow lookup by
-> >filehandle, so neither can count on getting a filename at this point.
-> >
-> >So, out of curiosity, do we know what will happen when selinux asks one
-> >of them for an xattr on a DCACHE_DISCONNECTED dentry?
-> >
-> 
-> SELinux uses several methods to determine file labeling. In the
-> policy filesystems such as xfs and the ext* series of filesystems
-> are marked as fs_use_xattr. In this process the file label is pulled
-> from the security.selinux xattr on disk. However CIFS and FUSE (and
-> NFS but our Labeled NFS changes are trying to fix this) all have the
-> filesystem marked as genfs.
+When unmapping a region in the vmalloc space, clear the ptes immediately.
+There's no point in deferring this because there's no amortization
+benefit.
 
-OK, fair enough.  It seems a little fragile to me, but it sounds like
-that works....
+The TLBs are left dirty, and they are flushed lazily to amortize the
+cost of the IPIs.
 
-> When mounting the filesystem the fs_type
-> is looked at to determine its labeling type. Since its genfs we
-> lookup what label was determined to be the default for that
-> filesystem type. In NFS's current state all NFS mounts regardless of
-> version get the uniform label of nfs_t for everything listed on an
-> nfs mount point. We have a similar situation for cifs and fuse. So
-> in this case SELinux should not be asking for the security.selinux
-> xattr from these file systems. However if a getxattr call to the
-> security.selinux xattr is made on these filesystems it will still
-> work I might be wrong but my understanding is just the a dentry in
-> the DCACHE_DISCONNECTED state is not negative but just isn't in the
-> tree anymore.
+This specific motivation for this patch is a regression since 2.6.36 when
+using NFS under Xen, triggered by the NFS client's use of vm_map_ram()
+introduced in 56e4ebf877b6043c289bda32a5a7385b80c17dee.  XFS also uses
+vm_map_ram() and could cause similar problems.
 
-More  like "yet" than "anymore"; we've looked up the inode by inode
-number (or something similar), not by name, so the dentry in this case
-ends up having a name "" and parent itself (like a root dentry).
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
 
---b.
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index a3d66b3..9960644 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -566,7 +566,6 @@ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
+ 			if (va->va_end > *end)
+ 				*end = va->va_end;
+ 			nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
+-			unmap_vmap_area(va);
+ 			list_add_tail(&va->purge_list, &valist);
+ 			va->flags |= VM_LAZY_FREEING;
+ 			va->flags &= ~VM_LAZY_FREE;
+@@ -616,6 +615,8 @@ static void purge_vmap_area_lazy(void)
+  */
+ static void free_unmap_vmap_area_noflush(struct vmap_area *va)
+ {
++	unmap_vmap_area(va);
++
+ 	va->flags |= VM_LAZY_FREE;
+ 	atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT, &vmap_lazy_nr);
+ 	if (unlikely(atomic_read(&vmap_lazy_nr) > lazy_max_pages()))
+@@ -944,8 +945,10 @@ static void vb_free(const void *addr, unsigned long size)
+ 		BUG_ON(vb->free);
+ 		spin_unlock(&vb->lock);
+ 		free_vmap_block(vb);
+-	} else
++	} else {
+ 		spin_unlock(&vb->lock);
++		vunmap_page_range((unsigned long)addr, (unsigned long)addr + size);
++	}
+ }
+ 
+ /**
+@@ -988,7 +991,6 @@ void vm_unmap_aliases(void)
+ 
+ 				s = vb->va->va_start + (i << PAGE_SHIFT);
+ 				e = vb->va->va_start + (j << PAGE_SHIFT);
+-				vunmap_page_range(s, e);
+ 				flush = 1;
+ 
+ 				if (s < start)
 
-> So looking at vfs_getxattr I had made some
-> modifications a while back to it. Assuming we have permissions to
-> access the file determined by xattr_permission and
-> security_inode_getxattr we check to see if it is in the security
-> namespace.  If it is in the security namespace we call
-> xattr_getsecurity which will attempt to get the security label from
-> the inode first (security_inode_getsecurity). Because the convention
-> is to call d_instantiate on inode create this should always work
-> assuming an LSM is loaded. If it fails and we don't have an lsm
-> loaded we fall back to checking the getxattr i_op and if that
-> doesn't exist we fail with EOPNOTSUPP. That is what should happen on
-> the getxattr call. I don't know if something is happening higher up
-> that makes it so we never get to vfs_getxattr in the event that the
-> dentry is in the DCACHE_DISCONNECTED state. If the DENTRY is
-> disconnected though I'm not sure how getxattr from userspace would
-> be able to have access to it except through a different name in the
-> namespace.
-> 
-> >>When trying to find a
-> >>solution I also got push back from Miklos (FUSE) as he views a
-> >>filesystem being able to make xattr decisions based on the path name
-> >>being a valid use-case.
-> >So selinux may initialize an inode differently depending on which
-> >pathname it happened to be looked up under first?
-> >
-> >Factoring the name into the xattr return sounds scary to me.
-> >
-> 
-> The only current use of determining file label from path name is the
-> situation that Eric Paris described with proc. I personally don't
-> agree with miklos that the path to the xattr should make it return
-> different information (unless im understanding him wrong). However
-> the same thing is at work for CIFS as it exposes the windows
-> alternate file streams which are accessed by adding the stream name
-> to the end of the filename with a separator which I can't remember
-> at the moment. If it was the situation that two fuse files shared
-> the same inode and the security.selinux xattr was filled differently
-> if it was accessed via /fuse/foo and /fuse/bar then yes the
-> situation you described might happen. Normally this isn't a problem
-> because file systems don't take the path into account so a hardlink
-> to the same inode will still obtain the same security label. In
-> reality the xattr is a piece of inode metadata and not a piece of
-> dentry metadata.
-> 
-> >--b.
-> >
-> 
+
