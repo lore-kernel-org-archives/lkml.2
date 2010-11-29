@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab0K2Fvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 00:51:36 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:35777 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab0K2Fve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 00:51:34 -0500
-Date: Mon, 29 Nov 2010 14:38:01 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 53 of 66] add numa awareness to hugepage allocations
-Message-Id: <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <223ee926614158fc1353.1288798108@v2.random>
-References: <patchbomb.1288798055@v2.random>
-	<223ee926614158fc1353.1288798108@v2.random>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752709Ab0K2Fzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 00:55:37 -0500
+Received: from ozlabs.org ([203.10.76.45]:49835 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab0K2Fzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 00:55:35 -0500
+Date: Mon, 29 Nov 2010 16:55:29 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-mips <linux-mips@linux-mips.org>,
+        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        sparclinux@vger.kernel.org
+Subject: Re: RFC: Mega rename of device tree routines from of_*() to dt_*()
+Message-ID: <20101129055529.GB17113@yookeroo>
+Mail-Followup-To: Michael Ellerman <michael@ellerman.id.au>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-arch <linux-arch@vger.kernel.org>,
+	linux-mips <linux-mips@linux-mips.org>,
+	microblaze-uclinux@itee.uq.edu.au,
+	devicetree-discuss@lists.ozlabs.org,
+	linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+	sparclinux@vger.kernel.org
+References: <1290607413.12457.44.camel@concordia>
+ <1290692075.689.20.camel@concordia>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
+Content-Disposition: inline
+In-Reply-To: <1290692075.689.20.camel@concordia>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -1655,7 +1672,11 @@ static void collapse_huge_page(struct mm
->  	unsigned long hstart, hend;
->  
->  	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
-> +#ifndef CONFIG_NUMA
->  	VM_BUG_ON(!*hpage);
-> +#else
-> +	VM_BUG_ON(*hpage);
-> +#endif
->  
->  	/*
->  	 * Prevent all access to pagetables with the exception of
-> @@ -1693,7 +1714,15 @@ static void collapse_huge_page(struct mm
->  	if (!pmd_present(*pmd) || pmd_trans_huge(*pmd))
->  		goto out;
->  
-> +#ifndef CONFIG_NUMA
->  	new_page = *hpage;
-> +#else
-> +	new_page = alloc_hugepage_vma(khugepaged_defrag(), vma, address);
-> +	if (unlikely(!new_page)) {
-> +		*hpage = ERR_PTR(-ENOMEM);
-> +		goto out;
-> +	}
-> +#endif
->  	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL)))
->  		goto out;
->  
-I think this should be:
 
-	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
-#ifdef CONFIG_NUMA
-		put_page(new_page);
-#endif
-		goto out;
-	}
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Daisuke Nishimura.
+On Fri, Nov 26, 2010 at 12:34:35AM +1100, Michael Ellerman wrote:
+> On Thu, 2010-11-25 at 01:03 +1100, Michael Ellerman wrote:
+> > Hi all,
+> >=20
+> > There were some murmurings on IRC last week about renaming the of_*()
+> > routines.
+> ...
+> > The thinking is that on many platforms that use the of_() routines
+> > OpenFirmware is not involved at all, this is true even on many powerpc
+> > platforms. Also for folks who don't know the OpenFirmware connection
+> > it reads as "of", as in "a can of worms".
+> ...
+> > So I'm hoping people with either say "YES this is a great idea", or "NO
+> > this is stupid".
+>=20
+> I'm still hoping, but so far it seems most people have got better things
+> to do, and of those that do have an opinion the balance is slightly
+> positive.
+>=20
+> So here's a first cut of a patch to add the new names. I've not touched
+> of_platform because that is supposed to go away. That will lead to some
+> odd looking code in the interim, but I think is the right approach.
+>=20
+> Most of these are straight renames, but some have changed more
+> substantially. The routines for the flat tree have all become fdt_foo().
 
-> @@ -1724,6 +1753,9 @@ static void collapse_huge_page(struct mm
->  		spin_unlock(&mm->page_table_lock);
->  		anon_vma_unlock(vma->anon_vma);
->  		mem_cgroup_uncharge_page(new_page);
-> +#ifdef CONFIG_NUMA
-> +		put_page(new_page);
-> +#endif
->  		goto out;
->  	}
->  
-> @@ -1759,7 +1791,9 @@ static void collapse_huge_page(struct mm
->  	mm->nr_ptes--;
->  	spin_unlock(&mm->page_table_lock);
->  
-> +#ifndef CONFIG_NUMA
->  	*hpage = NULL;
-> +#endif
->  	khugepaged_pages_collapsed++;
->  out:
->  	up_write(&mm->mmap_sem);
+I'm a little uneasy about using the same prefix as libfdt (fdt_foo())
+for routines that have a different implementation and different names
+/ semantics to the libfdt routines.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkzzQFAACgkQaILKxv3ab8aptgCfdeFXAx2mw0aSkvLCjjeK6/in
+bxcAn3B5S1BtG710FZ0hXoDDeRVuyxjk
+=0pcc
+-----END PGP SIGNATURE-----
+
+--LZvS9be/3tNcYl/X--
