@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab0K2Xj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:39:57 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:40097 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab0K2Xj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:39:56 -0500
-Date: Mon, 29 Nov 2010 15:39:51 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Milton Miller <miltonm@bga.com>, devicetree-discuss@lists.ozlabs.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
- (v4)
-Message-ID: <20101129153951.74202a84@queued.net>
-In-Reply-To: <20101116221241.21419250@queued.net>
-References: <20101111214546.4e573cad@queued.net>
-	<reply-olpc-3-v2@mdm.bga.com>
-	<20101112002704.50c629e2@queued.net>
-	<20101114095013.GB24206@elte.hu>
-	<4CE0B54E.6000101@zytor.com>
-	<20101115070254.GA25243@elte.hu>
-	<4CE17133.2050101@zytor.com>
-	<20101116221241.21419250@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755718Ab0K2Xo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:44:26 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48202 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751359Ab0K2XoZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 18:44:25 -0500
+Date: Mon, 29 Nov 2010 23:42:59 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mitch Bradley <wmb@firmworks.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, sodaville@linutronix.de,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+Message-ID: <20101129234259.586eb27a@lxorguk.ukuu.org.uk>
+In-Reply-To: <4CF40DF4.9060204@firmworks.com>
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
+	<1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
+	<1290808645.32570.158.camel@pasglop>
+	<20101128160449.GC30784@www.tglx.de>
+	<1290984809.32570.208.camel@pasglop>
+	<20101129130720.7d060e1c@udp111988uds.am.freescale.net>
+	<1291061128.32570.298.camel@pasglop>
+	<4CF40DF4.9060204@firmworks.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -32,70 +34,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> The usual layout is that the PCI bus is a direct child of
+> the root node, and the ISA bus is a child of the PCI bus.
+> That reflects the "Northbridge + Southbridge" wiring that
 
-Calling alloc_bootmem() for tiny chunks of memory over and over is really
-slow; on an XO-1, it caused the time between when the kernel started
-booting and when the display came alive (post-lxfb probe) to increase
-to 44s.  This patch optimizes the prom_early_alloc function by
-calling alloc_bootmem for 4k-sized blocks of memory, and handing out
-chunks of that to callers.  With this patch, the time between kernel load
-and display initialization decreased to 23s.  If there's a better way to
-do this early in the boot process, please let me know.
+That isn't strictly true either. On many PC devices the ISA bus (or LPC
+bus nowdays) has no heirarchy as such because ISA cycles get issued if
+the PCI cycles don't generate a response. In addition some cycles go to
+both busses on some chipsets and there are various bits of magic so the
+I/O spaces and particularly the memory spaces are intertwined.
 
-(Note: increasing the chunk size to 16k didn't noticably affect boot time,
-and wasted 9k.)
+So it's not a subordinate bus really, its a bit weirder. PCMCIA is
+probably a sub-bus when you've got a PCI/PCMCIA adapter but ISA in
+general is a bit fuzzy.
 
-v4: clarify comment, requested by hpa
-v3: fix wasted memory buglet found by Milton Miller, and style fix.
-v2: reorder prom_early_alloc as suggested by Grant.
+And then there are systems like PA-RISC where there are multiple entire
+PCI/ISA busses hung off the primary bus which is neither 8)
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- arch/x86/platform/olpc/olpc_dt.c |   28 +++++++++++++++++++++++-----
- 1 files changed, 23 insertions(+), 5 deletions(-)
+There are also various bits of "architectural" space which are on the
+motherboard (traditionally 0x00-0xFF) but some of which are on the CPU in
+some cases (Cyrix was 0x21/22 if I remember), and there are other
+architectural spaces like the ELCR which are "magic".
 
-diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
-index 7054697..dab8746 100644
---- a/arch/x86/platform/olpc/olpc_dt.c
-+++ b/arch/x86/platform/olpc/olpc_dt.c
-@@ -126,14 +126,32 @@ static unsigned int prom_early_allocated __initdata;
- 
- void * __init prom_early_alloc(unsigned long size)
- {
-+	static u8 *mem;
-+	static size_t free_mem;
- 	void *res;
- 
--	res = alloc_bootmem(size);
--	if (res)
--		memset(res, 0, size);
--
--	prom_early_allocated += size;
-+	if (free_mem < size) {
-+		const size_t chunk_size = max(PAGE_SIZE, size);
-+
-+		/*
-+		 * To mimimize the number of allocations, grab at least
-+		 * PAGE_SIZE of memory (that's an arbitrary choice that's
-+		 * fast enough on the platforms we care about while minimizing
-+		 * wasted bootmem) and hand off chunks of it to callers.
-+		 */
-+		res = alloc_bootmem(chunk_size);
-+		if (!res)
-+			return NULL;
-+		prom_early_allocated += chunk_size;
-+		memset(res, 0, chunk_size);
-+		free_mem = chunk_size;
-+		mem = res;
-+	}
- 
-+	/* allocate from the local cache */
-+	free_mem -= size;
-+	res = mem;
-+	mem += size;
- 	return res;
- }
- 
--- 
-1.7.2.3
+The PC is alas to computer architecture what perl is to programming
+languages.
 
+Alan
