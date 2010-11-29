@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab0K2Pch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:32:37 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:47493 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab0K2Pcg (ORCPT
+	id S1754466Ab0K2Pcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:32:42 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51227 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab0K2Pci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:32:36 -0500
-Date: Mon, 29 Nov 2010 15:32:24 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>,
-        jmorris@namei.org
-Subject: Re: [REGRESSION] Suspend fails because of TPM modules
-Message-ID: <20101129153224.GA10173@srcf.ucam.org>
-References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz> <4CF3C547.6020302@linux.vnet.ibm.com> <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
+	Mon, 29 Nov 2010 10:32:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IwNUEkn2EVxXBhH9H5No1ScmPiFptAkWGtPnUBK/KKLHKkUU3K1xf570HgEx9Oz84G
+         bfMV5tGwcIHetecfOz/KgdJHSwOutgY+fvp+3cvRLMoPsnSe4x0trn3B+cPoiZmcARsh
+         vSgLEkTye5gy0vlrswtu6ZSXXTeWIn+oFnZAc=
+Date: Mon, 29 Nov 2010 18:32:32 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Lin Mac <mkl0301@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] USB: cns3xxx: Add EHCI and OHCI bus glue for
+ cns3xxx SOCs
+Message-ID: <20101129153232.GA5161@oksana.dev.rtsoft.ru>
+References: <20101125171541.GA18152@suse.de>
+ <Pine.LNX.4.44L0.1011251521310.26094-100000@netrider.rowland.org>
+ <20101126151131.GA26602@oksana.dev.rtsoft.ru>
+ <20101126170348.GA3331@suse.de>
+ <20101126182328.GA20923@oksana.dev.rtsoft.ru>
+ <AANLkTinocHZBS4O7A2vhc-p6qX0wt04EfAi5Q2xgxSJW@mail.gmail.com>
+ <AANLkTik7tZen0R51tvjhGamp_e9ue_Xh09S-EGsoWPUT@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <AANLkTik7tZen0R51tvjhGamp_e9ue_Xh09S-EGsoWPUT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:26:19PM +0100, Jiri Kosina wrote:
+On Mon, Nov 29, 2010 at 11:58:15AM +0800, Lin Mac wrote:
+[...]
+> > +        * Set USB AHB INCR length to 16
+> > +        */
+> > +       if (atomic_inc_return(&usb_pwr_ref) == 0) {
+> There's a typo here, the 0 should be 1 instead.
 
-> Any ideas why other kernels were OK (.34) and didn't require this quirk on 
-> my machine at all?
+That was it. It works now.
 
-We previously ignored devices that had an invalid PNP ID in _HID, 
-whereas now we still pay attention to them if they have a valid ID in 
-_CID.
+[...]
+> Should I resend the patch?
+
+No need to, I've fixed the original commit.
+
+Thanks!
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
