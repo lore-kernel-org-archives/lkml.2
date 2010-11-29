@@ -1,32 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab0K2Ukj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:40:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40590 "EHLO mx1.redhat.com"
+	id S1753742Ab0K2Ulh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:41:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36099 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753690Ab0K2Uki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:40:38 -0500
-Subject: Re: [PATCH 2/2] fanotify: Dont try to open a file descriptor for
- the overflow event
-From: Eric Paris <eparis@redhat.com>
-To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20101124172604.GC18135@lsanfilippo.unix.rd.tt.avira.com>
-References: <20101124172604.GC18135@lsanfilippo.unix.rd.tt.avira.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Nov 2010 15:40:28 -0500
-Message-ID: <1291063228.3248.26.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753334Ab0K2Ulf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 15:41:35 -0500
+Date: Mon, 29 Nov 2010 15:41:27 -0500
+From: Josef Bacik <josef@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, eparis@redhat.com,
+        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        bfields@fieldses.org
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
+Message-ID: <20101129204126.GC2618@localhost.localdomain>
+References: <1290131575-2489-1-git-send-email-josef@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290131575-2489-1-git-send-email-josef@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-24 at 18:26 +0100, Lino Sanfilippo wrote:
-> We should not try to open a file descriptor for the overflow event since this
-> will always fail.
+On Thu, Nov 18, 2010 at 08:52:55PM -0500, Josef Bacik wrote:
+> While trying to track down some NFS problems with BTRFS, I kept noticing I was
+> getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+> figure out that it was SELinux that was giving me grief, with the following
+> denial
 > 
-> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+> comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+> tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+> 
+> Turns out this is because in d_obtain_alias if we can't find an alias we create
+> one and do all the normal instantiation stuff, but we don't do the
+> security_d_instantiate.
+> 
+> Usually we are protected from getting a hashed dentry that hasn't yet run
+> security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
+> option there, so in order to deal with the case that a second thread comes in
+> and finds our new dentry before we get to run security_d_instantiate(), we go
+> ahead and call it if we find a dentry already.  Eric assures me that this is ok
+> as the code checks to see if the dentry has been initialized already so calling
+> security_d_instantiate() against the same dentry multiple times is ok.  With
+> this patch I'm no longer getting errant -EACCESS values.
+> 
+> Signed-off-by: Josef Bacik <josef@redhat.com>
+> ---
+> V1->V2:
+> -added second security_d_instantiate() call
+> 
+>  fs/dcache.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 23702a9..119d489 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -1201,9 +1201,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
+>  	spin_unlock(&tmp->d_lock);
+>  
+>  	spin_unlock(&dcache_lock);
+> +	security_d_instantiate(tmp, inode);
+>  	return tmp;
+>  
+>   out_iput:
+> +	if (res && !IS_ERR(res))
+> +		security_d_instantiate(res, inode);
+>  	iput(inode);
+>  	return res;
+>  }
+> -- 
+> 1.6.6.1
+> 
 
-applied to for-next
+Hey Al,
 
+I forgot to cc you directly, is this ok with you, and if it is would you mind
+picking it up?  Thanks,
+
+Josef
