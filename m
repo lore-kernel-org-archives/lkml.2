@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab0K2Xo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:44:26 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48202 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751359Ab0K2XoZ (ORCPT
+	id S1755757Ab0K2Xpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:45:46 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33572 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab0K2Xpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:44:25 -0500
-Date: Mon, 29 Nov 2010 23:42:59 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mitch Bradley <wmb@firmworks.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, sodaville@linutronix.de,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
-Message-ID: <20101129234259.586eb27a@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CF40DF4.9060204@firmworks.com>
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
-	<1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
-	<1290808645.32570.158.camel@pasglop>
-	<20101128160449.GC30784@www.tglx.de>
-	<1290984809.32570.208.camel@pasglop>
-	<20101129130720.7d060e1c@udp111988uds.am.freescale.net>
-	<1291061128.32570.298.camel@pasglop>
-	<4CF40DF4.9060204@firmworks.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Nov 2010 18:45:45 -0500
+Content-Type: text/plain; charset=UTF-8
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-reply-to: <1291031690.32004.20.camel@laptop>
+References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com> <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com> <1290510512.2072.387.camel@laptop> <20101123124121.GA11101@ghostprotocols.net> <20101125154718.GE15875@ghostprotocols.net> <1291009409-sup-4332@au1.ibm.com> <1291031690.32004.20.camel@laptop>
+Date: Tue, 30 Nov 2010 10:45:40 +1100
+Message-Id: <1291073899-sup-7083@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The usual layout is that the PCI bus is a direct child of
-> the root node, and the ISA bus is a child of the PCI bus.
-> That reflects the "Northbridge + Southbridge" wiring that
+Hi Peter,
 
-That isn't strictly true either. On many PC devices the ISA bus (or LPC
-bus nowdays) has no heirarchy as such because ISA cycles get issued if
-the PCI cycles don't generate a response. In addition some cycles go to
-both busses on some chipsets and there are various bits of magic so the
-I/O spaces and particularly the memory spaces are intertwined.
+Excerpts from Peter Zijlstra's message of Mon Nov 29 22:54:50 +1100 2010:
+> On Mon, 2010-11-29 at 17:06 +1100, Ian Munsie wrote:
+> > This goes away if PERF_SAMPLE_CPU is added to the mix so that the
+> > timestamps are offset from the first event of *their* CPU, otherwise
+> > time-epoch can go negative, as it has done here. 
+> 
+> How does that happen, I though the power7 sched_clock() was fully
+> synchronized and monotonic across all cores?
 
-So it's not a subordinate bus really, its a bit weirder. PCMCIA is
-probably a sub-bus when you've got a PCI/PCMCIA adapter but ISA in
-general is a bit fuzzy.
+Oh the timestamps coming from the kernel are fine, I should have been
+clearer in my email. This bug is purely restricted to the userspace code
+that prints them out - in the perf_session__print_tstamp function. It
+tries to print the timestamps out so that they start at 0 and if it
+doesn't know what CPU the events came from it uses the very first event
+it sees as epoch, but at the moment that is not necessarily going to be
+the earliest event.
 
-And then there are systems like PA-RISC where there are multiple entire
-PCI/ISA busses hung off the primary bus which is neither 8)
+Thinking about it overnight, I realise that this should also go away if
+we sort them before printing things out at all, which is exactly what
+I'm proposing to do in my patches.
 
-There are also various bits of "architectural" space which are on the
-motherboard (traditionally 0x00-0xFF) but some of which are on the CPU in
-some cases (Cyrix was 0x21/22 if I remember), and there are other
-architectural spaces like the ELCR which are "magic".
-
-The PC is alas to computer architecture what perl is to programming
-languages.
-
-Alan
+Cheers,
+-Ian
