@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0K2OW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 09:22:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56991 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab0K2OW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 09:22:27 -0500
-Date: Mon, 29 Nov 2010 14:22:00 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-Message-ID: <20101129142200.GA14941@n2100.arm.linux.org.uk>
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <alpine.LNX.2.00.1011271306420.7659@localhost.localdomain> <AANLkTinbAVFE+HZrx+9KUwx8=MKFHPqrhpOpAWAEQFv-@mail.gmail.com> <201011271639.21694.arnd@arndb.de>
+	id S1754388Ab0K2ObQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 09:31:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19849 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754247Ab0K2ObP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 09:31:15 -0500
+Date: Mon, 29 Nov 2010 09:30:47 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the final tree (tip
+ tree related)
+Message-ID: <20101129143047.GM18100@redhat.com>
+References: <20101122133949.93201b15.sfr@canb.auug.org.au>
+ <20101129135023.4a931f86.sfr@canb.auug.org.au>
+ <20101129082916.GA12374@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201011271639.21694.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101129082916.GA12374@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 04:39:21PM +0100, Arnd Bergmann wrote:
-> On Saturday 27 November 2010 14:01:20 Michał Mirosław wrote:
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index db524e7..74ea522 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -1164,7 +1164,7 @@ config ISA_DMA_API
-> >         bool
-> > 
-> >  config PCI
-> > -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
-> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
-> > +       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
-> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX ||
-> > ARCH_GEMINI
-> >         help
-> >           Find out whether you have a PCI motherboard. PCI is the name of a
-> >           bus system, i.e. the way the CPU talks to the other stuff inside
-> > 
+On Mon, Nov 29, 2010 at 09:29:16AM +0100, Ingo Molnar wrote:
 > 
-> This approach really does not scale as we add more boards to the list.
+> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 > 
-> Better make a new CONFIG_HAVE_PCI option that you can select from the
-> individual boards, and make that the only dependency that CONFIG_PCI has.
+> > Hi all,
+> > 
+> > On Mon, 22 Nov 2010 13:39:49 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > >
+> > > After merging the final tree, today's linux-next build (sparc64 defconfig)
+> > > failed like this:
+> > > 
+> > > arch/sparc/kernel/nmi.c:54: error: redefinition of 'touch_nmi_watchdog'
+> > > include/linux/nmi.h:21: note: previous definition of 'touch_nmi_watchdog' was here
+> > > 
+> > > Caused (or, at least exposed) by commit
+> > > 5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a ("x86, nmi_watchdog: Remove the
+> > > old nmi_watchdog").  Sparc appears to have a touch_nmi_watchdog() and
+> > > defines ARCH_HAS_NMI_WATCHDOG but not CONFIG_HARDLOCKUP_DETECTOR.
+> > > 
+> > > I have reverted that commit for today (as well as commit
+> > > 072b198a4ad48bd722ec6d203d65422a4698eae7 "x86, nmi_watchdog: Remove all
+> > > stub function calls from old nmi_watchdog" that depends on it).
+> > 
+> > This build failure is back, so I have reverted the above commits again.
+> 
+> Don, have you got a fix for that?
 
-Be careful.  There are two things going on here:
+I do.  I posted it last week, but you wanted me to post something
+incremental instead.  I'll get that out today.
 
-1. those which PCI support is configurable
-2. those which always have PCI support
+Cheers,
+Don
 
-Making PCI "depend on HAVE_PCI" is wrong, and will throw up lots of
-Kconfig warnings, as those platforms which always have PCI support
-won't select HAVE_PCI - and making them do so such that "PCI support"
-gets offered to them - with the only possible value being 'Y' is
-silly.
-
-So, rather than HAVE_PCI, it should be MIGHT_HAVE_PCI, and that
-symbol needs to control whether the "PCI support" prompt is offered
-to the user, not whether PCI is available or not.
+> 
+> Thanks,
+> 
+> 	Ingo
