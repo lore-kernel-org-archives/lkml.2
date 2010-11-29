@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab0K2Liq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 06:38:46 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:45765 "EHLO mail.sysgo.com"
+	id S1753439Ab0K2Ll1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 06:41:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25146 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860Ab0K2Lin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 06:38:43 -0500
-Date: Mon, 29 Nov 2010 12:34:53 +0100
-From: Pavel Machek <pma@sysgo.com>
-To: Sujith <Sujith.Manoharan@atheros.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "ath9k-devel@venema.h4ckr.net" <ath9k-devel@venema.h4ckr.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "chunkeey@googlemail.com" <chunkeey@googlemail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "rudolf.marek@sysgo.com" <rudolf.marek@sysgo.com>,
-        "cko@sysgo.com" <cko@sysgo.com>, "mfa@sysgo.com" <mfa@sysgo.com>,
-        "anl@sysgo.com" <anl@sysgo.com>
-Subject: [PATCH] ath9k_htc more cleanups
-Message-ID: <20101129113453.GA29737@pma.sysgo.com>
-References: <20101103092431.GA21138@pma.sysgo.com>
- <20101124081616.GA30595@pma.sysgo.com>
- <20101124131320.GA2611@pma.sysgo.com>
- <4CED33E0.5040000@lwfinger.net>
- <20101126083125.GA28982@pma.sysgo.com>
- <20101126102026.GA11857@pma.sysgo.com>
- <20101126112737.GB11857@pma.sysgo.com>
- <19695.40541.335361.81396@gargle.gargle.HOWL>
- <20101126123706.GA19755@pma.sysgo.com>
- <20101129095915.GB28833@pma.sysgo.com>
+	id S1751860Ab0K2Ll0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 06:41:26 -0500
+Date: Mon, 29 Nov 2010 12:33:57 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>
+Subject: Re: [resend][PATCH 4/4] oom: don't ignore rss in nascent mm
+Message-ID: <20101129113357.GA30657@redhat.com>
+References: <20101125140253.GA29371@redhat.com> <20101125193659.GA14510@redhat.com> <20101129093803.829F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101129095915.GB28833@pma.sysgo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101129093803.829F.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes whitespace and fixes strings.
+On 11/29, KOSAKI Motohiro wrote:
+>
+> > The patch is not complete, compat_copy_strings() needs changes.
+> > But, shouldn't it use get_arg_page() too? Otherwise, where do
+> > we check RLIMIT_STACK?
+>
+> Because NOMMU doesn't have variable length argv. Instead it is still
+> using MAX_ARG_STRLEN as old MMU code.
+>
+> 32 pages hard coded argv limitation naturally prevent this nascent mm
+> issue.
 
-Signed-off-by: Pavel Machek <pma@sysgo.com>
+Ah, I didn't mean NOMMU. I meant compat_execve()->compat_copy_strings().
+If a 32bit process execs we seem to miss the RLIMIT_STACK check, no?
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_hst.c b/drivers/net/wireless/ath/ath9k/htc_hst.c
-index c41ab8c..ac4aed7 100644
---- a/drivers/net/wireless/ath/ath9k/htc_hst.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_hst.c
-@@ -16,7 +16,7 @@
- 
- #include "htc.h"
- 
--static int htc_issue_send(struct htc_target *target, struct sk_buff* skb,
-+static int htc_issue_send(struct htc_target *target, struct sk_buff *skb,
- 			  u16 len, u8 flags, u8 epid,
- 			  struct ath9k_htc_tx_ctl *tx_ctl)
- {
-@@ -239,7 +239,7 @@ int htc_connect_service(struct htc_target *target,
- 	/* Find an available endpoint */
- 	endpoint = get_next_avail_ep(target->endpoint);
- 	if (!endpoint) {
--		dev_err(target->dev, "Endpoint is not available for"
-+		dev_err(target->dev, "Endpoint is not available for "
- 			"service %d\n", service_connreq->service_id);
- 		return -EINVAL;
- 	}
-@@ -253,7 +253,7 @@ int htc_connect_service(struct htc_target *target,
- 	skb = alloc_skb(sizeof(struct htc_conn_svc_msg) +
- 			    sizeof(struct htc_frame_hdr), GFP_ATOMIC);
- 	if (!skb) {
--		dev_err(target->dev, "Failed to allocate buf to send"
-+		dev_err(target->dev, "Failed to allocate buf to send "
- 			"service connect req\n");
- 		return -ENOMEM;
- 	}
-@@ -274,6 +274,7 @@ int htc_connect_service(struct htc_target *target,
- 
- 	time_left = wait_for_completion_timeout(&target->cmd_wait, HZ);
- 	if (!time_left) {
-+		/* who frees skb */
- 		dev_err(target->dev, "Service connection timeout for: %d\n",
- 			service_connreq->service_id);
- 		return -ETIMEDOUT;
-@@ -434,7 +435,7 @@ struct htc_target *ath9k_htc_hw_alloc(void *hif_handle,
- 
- 	target = kzalloc(sizeof(struct htc_target), GFP_KERNEL);
- 	if (!target) {
--		printk(KERN_ERR "Unable to allocate memory for"
-+		printk(KERN_ERR "Unable to allocate memory for "
- 			"target device\n");
- 		return NULL;
- 	}
-diff --git a/drivers/net/wireless/ath/ath9k/htc_hst.h b/drivers/net/wireless/ath/ath9k/htc_hst.h
-index 6fc1b21..02f4074 100644
---- a/drivers/net/wireless/ath/ath9k/htc_hst.h
-+++ b/drivers/net/wireless/ath/ath9k/htc_hst.h
-@@ -165,7 +165,7 @@ struct htc_service_connreq {
- 
- /* Current service IDs */
- 
--enum htc_service_group_ids{
-+enum htc_service_group_ids {
- 	RSVD_SERVICE_GROUP = 0,
- 	WMI_SERVICE_GROUP = 1,
- 
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index 495432e..b309b68 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -287,7 +287,7 @@ static void ath_tx_return_buffer(struct ath_softc *sc, struct ath_buf *bf)
- 	spin_unlock_bh(&sc->tx.txbuflock);
- }
- 
--static struct ath_buf* ath_clone_txbuf(struct ath_softc *sc, struct ath_buf *bf)
-+static struct ath_buf *ath_clone_txbuf(struct ath_softc *sc, struct ath_buf *bf)
- {
- 	struct ath_buf *tbf;
- 
-@@ -666,7 +666,7 @@ static int ath_compute_num_delims(struct ath_softc *sc, struct ath_atx_tid *tid,
- 		ndelim += ATH_AGGR_ENCRYPTDELIM;
- 
- 	/*
--	 * Convert desired mpdu density from microeconds to bytes based
-+	 * Convert desired mpdu density from microseconds to bytes based
- 	 * on highest rate in rate series (i.e. first rate) to determine
- 	 * required minimum length for subframe. Take into account
- 	 * whether high rate is 20 or 40Mhz and half or full GI.
+> > The patch asks for the cleanups. In particular, I think exec_mmap()
+> > should accept bprm, not mm. But I'd prefer to do this later.
+> >
+> > Oleg.
+>
+> General request. Please consider to keep Brad's reported-by tag.
+
+Yes, yes, sure.
+
+> > +static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+
+OK.
+
+> Please move this function into #ifdef CONFIG_MMU. nommu code doesn't use it.
+
+Well it does, to revert the MM_ANONPAGES counter. I'll add the empty
+function for NOMMU.
+
+> > +{
+> > +	struct mm_struct *mm = current->mm;
+> > +	long diff = pages - bprm->vma_pages;
+>
+> I prefer to cast signed before assignment. It's safer more.
+
+OK.
+
+> > @@ -1003,6 +1024,7 @@ int flush_old_exec(struct linux_binprm *
+> >  	/*
+> >  	 * Release all of the old mmap stuff
+> >  	 */
+> > +	acct_arg_size(bprm, 0);
+>
+> Why do we need this unacct here? I mean 1) if exec_mmap() is success,
+> we don't need unaccount at all
+
+Yes, we already killed all sub-threads. But this doesn't mean nobody
+else can use current->mm, think about CLONE_VM. The simplest example
+is vfork().
+
+> 2) if exec_mmap() is failure, an epilogue of
+> do_execve() does unaccount thing.
+
+Yes.
+
+Thanks Kosaki!
+
+I'll resend v2 today. I am still not sure about compat_copy_strings()...
+
+Oleg.
 
