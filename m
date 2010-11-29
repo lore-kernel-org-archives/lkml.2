@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab0K2SQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:16:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51372 "EHLO mx1.redhat.com"
+	id S1755711Ab0K2STy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:19:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab0K2SQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:16:28 -0500
-Date: Mon, 29 Nov 2010 19:08:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 4/4] taskstats: Export "cdata_acct" with taskstats
-Message-ID: <20101129180854.GA21217@redhat.com>
-References: <20101119201108.269346583@linux.vnet.ibm.com> <20101119201144.871656307@linux.vnet.ibm.com> <20101125132639.GB25836@redhat.com> <1290705675.1941.73.camel@holzheu-laptop> <20101129164329.GA16648@redhat.com> <1291049917.1935.14.camel@holzheu-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291049917.1935.14.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752926Ab0K2STw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:19:52 -0500
+Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
+From: Eric Paris <eparis@redhat.com>
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
+        "agruen@linbit.com" <agruen@linbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <AANLkTikHyYZYfX7sg=edsC6uykM8gje+JsBUxpbYZ1q1@mail.gmail.com>
+References: <20101122002747.13674.69384.stgit@zaytsev.su>
+	 <20101122003357.13674.30341.stgit@zaytsev.su>
+	 <201011261011.55266.tvrtko.ursulin@sophos.com>
+	 <1291047294.3248.9.camel@localhost.localdomain>
+	 <AANLkTikHyYZYfX7sg=edsC6uykM8gje+JsBUxpbYZ1q1@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Nov 2010 13:14:33 -0500
+Message-ID: <1291054473.3248.24.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29, Michael Holzheu wrote:
->
-> Hello Oleg,
->
-> On Mon, 2010-11-29 at 17:43 +0100, Oleg Nesterov wrote:
-> > > I just did it like it is done in e.g. fs/proc/base.c (proc_pid_limits).
-> > > Can we remove the locking there, too?
-> >
-> > We can certainly remove more siglock's which were previously
-> > needed to access ->signal.
-> >
-> > This particular one is just wrong. We need task_lock(group_leader)
-> > to read signal->rlim atomically. However, it is not trivial to do
-> > this correctly. Probably we should ignore this minor problem.
-> >
-> > In any case, this ->siglock buys nothing today.
->
-> But at least to get the two values cutime and cstime consistent we need
-> the siglock? There could be a parallel update for
-> tsk->signal->cutime/cstime, while the taskstats are created, no?
+On Mon, 2010-11-29 at 19:51 +0300, Alexey Zaytsev wrote:
 
-I guess you mean 4/4 you sent. Probably you are right, I'll try
-to look tomorrow.
+[rewriting history!]
+> struct fanotify_event_metadata {
+>        __u32 event_len; /* Including the options */
+>        __u8 vers;
+>        __u8 options_offset; /* Aka header length */
+>        __u16 reserved;
+>        __aligned_u64 mask;
+>        __s32 fd;
+>        __s32 pid;
+>        /* Options go here. */
+> };
 
-Oleg.
+> and let's make both vers and options_offset u8, just in case we need the
+> other 2 bytes in the future:
+
+So the last discussion is around vers and options_offset.
+
+Alexy:				Tvrtko:
+__u8 vers;			__u16 vers;
+__u8 options_offset;		__u16 options_offset;
+__u16 unused;
+
+The only type of long option that first comes to mind is a filename.   A
+filename could easily blow out the __u8 options_offset.  I probably
+shouldn't put that in the event_metadata since it wouldn't be fixed
+length and it wouldn't allow fixed offset extention of the
+event_metadata, so maybe I shouldn't worry about it.  I'm trying to
+think of reasons why __u8 isn't adequate other than my usual "just make
+it bigger than we ever need"
+
+You'll notice I'm using __u64 for the mask, even though we don't come
+close to filling up an __u32 at this point.
+
+Even though I can't think of a likely reason __u8 is bad I think I like
+the 'Tvrtko' option better.  I think we should do a compromise:
+
+Eric:
+__u8 vers;
+__u8 unused;
+__u16 options_offset;
+
+If we ever overload vers we can expand into another field.  Would could
+change unused into vers2 and define the version as vers + vers2;  vers2
+could even exist somewhere else in the metadata.  That can be done once
+we get to version 254 while maintaining backwards compat beyond 255.  If
+we ever overflow options_offset we are screwed since old userspace
+wouldn't know how to handle things.
+
+So, if you want to send me a patch that implements the above (along with
+the obvious version bump to 3, I'll queue it up for this merge window
+even though we have an ABI compatible solution.
+
+-Eric
 
