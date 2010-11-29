@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab0K2Xao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:30:44 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57368 "EHLO e8.ny.us.ibm.com"
+	id S1755533Ab0K2Xb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:31:59 -0500
+Received: from ozlabs.org ([203.10.76.45]:50563 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658Ab0K2Xan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:30:43 -0500
-Date: Mon, 29 Nov 2010 15:30:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix ppc asm typo
-Message-ID: <20101129233037.GI2182@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101129223022.GA9205@linux.vnet.ibm.com>
- <20101129225220.GA512@Krystal>
- <20101129230820.GH2182@linux.vnet.ibm.com>
- <20101129231156.GA648@Krystal>
+	id S1752687Ab0K2Xb5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 18:31:57 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v2 0/4] kthread: NUMA aware kthread_create_on_cpu()
+Date: Tue, 30 Nov 2010 10:01:55 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic-pae; KDE/4.5.1; i686; ; )
+Cc: David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        netdev@vger.kernel.org, tj@kernel.org, tony.luck@intel.com,
+        fenghua.yu@intel.com
+References: <20101129090510.GA15763@basil.fritz.box> <20101129.093942.104054089.davem@davemloft.net> <1291053583.3435.1269.camel@edumazet-laptop>
+In-Reply-To: <1291053583.3435.1269.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129231156.GA648@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011301001.55968.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 06:11:56PM -0500, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > On Mon, Nov 29, 2010 at 05:52:20PM -0500, Mathieu Desnoyers wrote:
-> > > Hi Paul,
-> > > 
-> > > This patch has already been merged by me in the userspace RCU library:
-> > > 
-> > > commit e72f49371b233637eaf143265a73c7322d0710fd
-> > > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Date:   Wed Sep 23 03:09:59 2009 -0400
-> > > 
-> > >     ppc atomic: Fix asm format.
-> > >     
-> > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > >     Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-> > > 
-> > > It's therefore already integrated in the current releases.
+On Tue, 30 Nov 2010 04:29:43 am Eric Dumazet wrote:
+> Le lundi 29 novembre 2010 à 09:39 -0800, David Miller a écrit :
+> > From: Eric Dumazet <eric.dumazet@gmail.com>
+> > Date: Mon, 29 Nov 2010 16:13:23 +0100
 > > 
-> > Hmmm...  I wonder why v0.5.2 got me a compiler error, then...
-> 
-> Maybe you did a make install that got the headers installed system-wide, and the
-> search order is wrong ? (just a thought)
-> 
-> Did you build 0.5.2 from the tarballs or from the git repo ?
-
-Good point...  From a tarball that I extracted from the git repo.
-
-I will give it another try.
-
-							Thanx, Paul
-
-> Thanks,
-> 
-> Mathieu
-> 
+> > > Note : compiled and tested on x86_32 and x86_64 only, but these patches
+> > > take care of other arches as well.
+> > > 
+> > > Cc: linux-arch@vger.kernel.org 
+> > > 
+> > > Thanks for your feedback Andi !
 > > 
-> > 							Thanx, Paul
+> > I'm fine with these changes:
 > > 
-> > > Thanks,
-> > > 
-> > > Mathieu
-> > > 
-> > > 
-> > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > > Fix ppc asm typo.
-> > > > 
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > diff --git a/urcu/uatomic_arch_ppc.h b/urcu/uatomic_arch_ppc.h
-> > > > index 426b0f2..bb74934 100644
-> > > > --- a/urcu/uatomic_arch_ppc.h
-> > > > +++ b/urcu/uatomic_arch_ppc.h
-> > > > @@ -133,7 +133,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
-> > > >  			"bne- 1b\n"	 	/* retry if lost reservation */
-> > > >  			"isync\n"
-> > > >  		"2:\n"
-> > > > -				: "=&r"(old_val),
-> > > > +				: "=&r"(old_val)
-> > > >  				: "r"(addr), "r"((unsigned long)_new),
-> > > >  				  "r"((unsigned long)old)
-> > > >  				: "memory", "cc");
-> > > 
-> > > -- 
-> > > Mathieu Desnoyers
-> > > Operating System Efficiency R&D Consultant
-> > > EfficiOS Inc.
-> > > http://www.efficios.com
+> > Acked-by: David S. Miller <davem@davemloft.net>
+> > 
+> > Since the majority is non-networking it is pretty clear
+> > that someone other than me should integrate these patches.
+> > :-)
 > 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+> Sure !
+> 
+> I was thinking Andrew was the guy to carry this patch series, once
+> things settle down of course...
+
+I'm happy with that.
+
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+Cheers,
+Rusty.
