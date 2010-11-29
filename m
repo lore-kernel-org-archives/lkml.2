@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab0K2Rn6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 12:43:58 -0500
-Received: from mail.perches.com ([173.55.12.10]:1945 "EHLO mail.perches.com"
+	id S1755580Ab0K2Ro2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 12:44:28 -0500
+Received: from mail.perches.com ([173.55.12.10]:1941 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755386Ab0K2RmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 12:42:08 -0500
+	id S1755370Ab0K2RmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 12:42:07 -0500
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Szymon Janc <szymon@janc.net.pl>,
         =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirqus@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/11] forcedeth: Convert remaining dprintk to netdev_dbg
-Date: Mon, 29 Nov 2010 09:41:55 -0800
-Message-Id: <87181f5da23c220d242dfb0db151d8a489381ad6.1291051316.git.joe@perches.com>
+Subject: [PATCH 03/11] forcedeth: Use print_hex_dump
+Date: Mon, 29 Nov 2010 09:41:54 -0800
+Message-Id: <1b70e8ee9beb0642a1a68d9f84e166dcfdfb14c8.1291051316.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1291051316.git.joe@perches.com>
 References: <cover.1291051316.git.joe@perches.com>
@@ -22,115 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The remaining dprintk uses are emitted as KERN_INFO.
-Change these dprintk uses to netdev_dbg.
-Remove the now unused dprintk macros.
+Use the standard code to emit hex dumps.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/forcedeth.c |   31 ++++++++++++-------------------
- 1 files changed, 12 insertions(+), 19 deletions(-)
+ drivers/net/forcedeth.c |   54 ++++++++++++++--------------------------------
+ 1 files changed, 17 insertions(+), 37 deletions(-)
 
 diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
-index 1ac8b4e..b30a599 100644
+index 767d1eb..1ac8b4e 100644
 --- a/drivers/net/forcedeth.c
 +++ b/drivers/net/forcedeth.c
-@@ -66,12 +66,6 @@
- #include <asm/irq.h>
- #include <asm/system.h>
+@@ -2192,15 +2192,10 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
  
--#if 0
--#define dprintk			printk
--#else
--#define dprintk(x...)		do { } while (0)
--#endif
--
- #define TX_WORK_PER_LOOP  64
- #define RX_WORK_PER_LOOP  64
+ 	netdev_dbg(dev, "%s: entries %d queued for transmission. tx_flags_extra: %x\n",
+ 		   __func__, entries, tx_flags_extra);
+-	{
+-		int j;
+-		for (j = 0; j < 64; j++) {
+-			if ((j%16) == 0)
+-				dprintk("\n%03x:", j);
+-			dprintk(" %02x", ((unsigned char *)skb->data)[j]);
+-		}
+-		dprintk("\n");
+-	}
++#ifdef DEBUG
++	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 1,
++		       skb->data, 64, true);
++#endif
  
-@@ -3033,8 +3027,7 @@ static void nv_set_multicast(struct net_device *dev)
- 	writel(mask[0], base + NvRegMulticastMaskA);
- 	writel(mask[1], base + NvRegMulticastMaskB);
- 	writel(pff, base + NvRegPacketFilterFlags);
--	dprintk(KERN_INFO "%s: reconfiguration for multicast lists.\n",
--		dev->name);
-+	netdev_dbg(dev, "reconfiguration for multicast lists\n");
- 	nv_start_rx(dev);
- 	spin_unlock_irq(&np->lock);
- }
-@@ -3192,8 +3185,8 @@ set_speed:
- 	if (np->duplex == newdup && np->linkspeed == newls)
- 		return retval;
+ 	writel(NVREG_TXRXCTL_KICK|np->txrxctl_bits, get_hwbase(dev) + NvRegTxRxControl);
+ 	return NETDEV_TX_OK;
+@@ -2343,15 +2338,10 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
  
--	dprintk(KERN_INFO "%s: changing link setting from %d/%d to %d/%d.\n",
--			dev->name, np->linkspeed, np->duplex, newls, newdup);
-+	netdev_dbg(dev, "changing link setting from %d/%d to %d/%d\n",
-+		   np->linkspeed, np->duplex, newls, newdup);
+ 	netdev_dbg(dev, "%s: entries %d queued for transmission. tx_flags_extra: %x\n",
+ 		   __func__, entries, tx_flags_extra);
+-	{
+-		int j;
+-		for (j = 0; j < 64; j++) {
+-			if ((j%16) == 0)
+-				dprintk("\n%03x:", j);
+-			dprintk(" %02x", ((unsigned char *)skb->data)[j]);
+-		}
+-		dprintk("\n");
+-	}
++#ifdef DEBUG
++	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 1,
++		       skb->data, 64, true);
++#endif
  
- 	np->duplex = newdup;
- 	np->linkspeed = newls;
-@@ -3336,7 +3329,7 @@ static void nv_link_irq(struct net_device *dev)
+ 	writel(NVREG_TXRXCTL_KICK|np->txrxctl_bits, get_hwbase(dev) + NvRegTxRxControl);
+ 	return NETDEV_TX_OK;
+@@ -2666,16 +2656,11 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 		skb = np->get_rx_ctx->skb;
+ 		np->get_rx_ctx->skb = NULL;
  
- 	miistat = readl(base + NvRegMIIStatus);
- 	writel(NVREG_MIISTAT_LINKCHANGE, base + NvRegMIIStatus);
--	dprintk(KERN_INFO "%s: link change irq, status 0x%x.\n", dev->name, miistat);
-+	netdev_dbg(dev, "link change irq, status 0x%x\n", miistat);
+-		{
+-			int j;
+ 			netdev_dbg(dev, "Dumping packet (flags 0x%x)\n", flags);
+-			for (j = 0; j < 64; j++) {
+-				if ((j%16) == 0 && j)
+-					dprintk("\n%03x:", j);
+-				dprintk(" %02x", ((unsigned char *)skb->data)[j]);
+-			}
+-			dprintk("\n");
+-		}
++#ifdef DEBUG
++			print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET,
++				       16, 1, skb->data, 64, true);
++#endif
+ 		/* look at what we actually got: */
+ 		if (np->desc_ver == DESC_VER_1) {
+ 			if (likely(flags & NV_RX_DESCRIPTORVALID)) {
+@@ -2793,16 +2778,11 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 		skb = np->get_rx_ctx->skb;
+ 		np->get_rx_ctx->skb = NULL;
  
- 	if (miistat & (NVREG_MIISTAT_LINKCHANGE))
- 		nv_linkchange(dev);
-@@ -5243,7 +5236,7 @@ static int nv_open(struct net_device *dev)
- 		u32 miistat;
- 		miistat = readl(base + NvRegMIIStatus);
- 		writel(NVREG_MIISTAT_MASK_ALL, base + NvRegMIIStatus);
--		dprintk(KERN_INFO "startup: got 0x%08x.\n", miistat);
-+		netdev_dbg(dev, "startup: got 0x%08x\n", miistat);
- 	}
- 	/* set linkspeed to invalid value, thus force nv_update_linkspeed
- 	 * to init hw */
-@@ -5299,7 +5292,7 @@ static int nv_close(struct net_device *dev)
- 	base = get_hwbase(dev);
- 	nv_disable_hw_interrupts(dev, np->irqmask);
- 	pci_push(base);
--	dprintk(KERN_INFO "%s: Irqmask is zero again\n", dev->name);
-+	netdev_dbg(dev, "Irqmask is zero again\n");
- 
- 	spin_unlock_irq(&np->lock);
- 
-@@ -5649,11 +5642,11 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 	if (id->driver_data & DEV_NEED_TIMERIRQ)
- 		np->irqmask |= NVREG_IRQ_TIMER;
- 	if (id->driver_data & DEV_NEED_LINKTIMER) {
--		dprintk(KERN_INFO "%s: link timer on.\n", pci_name(pci_dev));
-+		netdev_dbg(dev, "%s: link timer on\n", pci_name(pci_dev));
- 		np->need_linktimer = 1;
- 		np->link_timeout = jiffies + LINK_TIMEOUT;
- 	} else {
--		dprintk(KERN_INFO "%s: link timer off.\n", pci_name(pci_dev));
-+		netdev_dbg(dev, "%s: link timer off\n", pci_name(pci_dev));
- 		np->need_linktimer = 0;
- 	}
- 
-@@ -5684,16 +5677,16 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 			np->mac_in_use = 1;
- 			if (np->mgmt_version > 0)
- 				np->mac_in_use = readl(base + NvRegMgmtUnitControl) & NVREG_MGMTUNITCONTROL_INUSE;
--			dprintk(KERN_INFO "%s: mgmt unit is running. mac in use %x.\n",
--				pci_name(pci_dev), np->mac_in_use);
-+			netdev_dbg(dev, "%s: mgmt unit is running. mac in use %x\n",
-+				   pci_name(pci_dev), np->mac_in_use);
- 			/* management unit setup the phy already? */
- 			if (np->mac_in_use &&
- 			    ((readl(base + NvRegTransmitterControl) & NVREG_XMITCTL_SYNC_MASK) ==
- 			     NVREG_XMITCTL_SYNC_PHY_INIT)) {
- 				/* phy is inited by mgmt unit */
- 				phyinitialized = 1;
--				dprintk(KERN_INFO "%s: Phy already initialized by mgmt unit.\n",
--					pci_name(pci_dev));
-+				netdev_dbg(dev, "%s: Phy already initialized by mgmt unit\n",
-+					   pci_name(pci_dev));
- 			} else {
- 				/* we need to init the phy */
- 			}
+-		{
+-			int j;
+-			netdev_dbg(dev, "Dumping packet (flags 0x%x)\n", flags);
+-			for (j = 0; j < 64; j++) {
+-				if ((j%16) == 0 && j)
+-					dprintk("\n%03x:", j);
+-				dprintk(" %02x", ((unsigned char *)skb->data)[j]);
+-			}
+-			dprintk("\n");
+-		}
++		netdev_dbg(dev, "Dumping packet (flags 0x%x)\n", flags);
++#ifdef DEBUG
++		print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 1,
++			       skb->data, 64, true);
++#endif
+ 		/* look at what we actually got: */
+ 		if (likely(flags & NV_RX2_DESCRIPTORVALID)) {
+ 			len = flags & LEN_MASK_V2;
 -- 
 1.7.3.2.245.g03276.dirty
 
