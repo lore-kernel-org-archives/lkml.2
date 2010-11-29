@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab0K2XrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 18:47:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755187Ab0K2XrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 18:47:17 -0500
-Message-ID: <4CF43BC9.8040603@redhat.com>
-Date: Mon, 29 Nov 2010 18:48:25 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-CC: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
-        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent
- by fsync
-References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
-In-Reply-To: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755811Ab0K2Xsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 18:48:54 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48212 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755775Ab0K2Xsx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 18:48:53 -0500
+Date: Mon, 29 Nov 2010 23:47:35 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Mitch Bradley <wmb@firmworks.com>, Scott Wood <scottwood@freescale.com>,
+        sodaville@linutronix.de,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+Message-ID: <20101129234735.4ce3a933@lxorguk.ukuu.org.uk>
+In-Reply-To: <1291063470.32570.312.camel@pasglop>
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
+	<1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
+	<1290808645.32570.158.camel@pasglop>
+	<20101128160449.GC30784@www.tglx.de>
+	<1290984809.32570.208.camel@pasglop>
+	<20101129130720.7d060e1c@udp111988uds.am.freescale.net>
+	<1291061128.32570.298.camel@pasglop>
+	<4CF40DF4.9060204@firmworks.com>
+	<1291063470.32570.312.camel@pasglop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 05:05 PM, Darrick J. Wong wrote:
-> On certain types of hardware, issuing a write cache flush takes a considerable
-> amount of time.  Typically, these are simple storage systems with write cache
-> enabled and no battery to save that cache after a power failure.  When we
-> encounter a system with many I/O threads that write data and then call fsync
-> after more transactions accumulate, ext4_sync_file performs a data-only flush,
-> the performance of which is suboptimal because each of those threads issues its
-> own flush command to the drive instead of trying to coordinate the flush,
-> thereby wasting execution time.
->
-> Instead of each fsync call initiating its own flush, there's now a flag to
-> indicate if (0) no flushes are ongoing, (1) we're delaying a short time to
-> collect other fsync threads, or (2) we're actually in-progress on a flush.
->
-> So, if someone calls ext4_sync_file and no flushes are in progress, the flag
-> shifts from 0->1 and the thread delays for a short time to see if there are any
-> other threads that are close behind in ext4_sync_file.  After that wait, the
-> state transitions to 2 and the flush is issued.  Once that's done, the state
-> goes back to 0 and a completion is signalled.
->
-> Those close-behind threads see the flag is already 1, and go to sleep until the
-> completion is signalled.  Instead of issuing a flush themselves, they simply
-> wait for that first thread to do it for them.  If they see that the flag is 2,
-> they wait for the current flush to finish, and start over.
->
-> However, there are a couple of exceptions to this rule.  First, there exist
-> high-end storage arrays with battery-backed write caches for which flush
-> commands take very little time (<  2ms); on these systems, performing the
-> coordination actually lowers performance.  Given the earlier patch to the block
-> layer to report low-level device flush times, we can detect this situation and
-> have all threads issue flushes without coordinating, as we did before.  The
-> second case is when there's a single thread issuing flushes, in which case it
-> can skip the coordination.
->
-> This author of this patch is aware that jbd2 has a similar flush coordination
-> scheme for journal commits.  An earlier version of this patch simply created a
-> new empty journal transaction and committed it, but that approach was shown to
-> increase the amount of write traffic heading towards the disk, which in turn
-> lowered performance considerably, especially in the case where directio was in
-> use.  Therefore, this patch adds the coordination code directly to ext4.
+> This is actually the case of most systems, tho those Atoms SoC are a bit
+> weird as, afaik, they don't really have PCI... they just simulate some
+> kind of PCI config space for on-chip devices ,at least that's my
+> understanding.
 
-Hi Darrick,
+This is true of a lot of devices on most "PCI" chipsets today. Even back
+to things like the VIA K6 era chipsets with the V-Bus, or the
+MediaGX/Geode where some of PCI space is a hallucination brought on by
+SMM traps and BIOS upgrades have been known to add devices to the bus
+which are not even neatly on their own sub-tree of any kind. Indeed some
+PCI devices may be half PCI half magic.
 
-Just curious why we would need to have batching in both places? Doesn't your 
-patch set make the jbd2 transaction batching redundant?
+> Sebastian, do you have a block diagram of the SoC ? Following the actual
+> bus hierarchy of the chip might be the best approach.
 
-I noticed that the patches have a default delay and a mount option to override 
-that default. The jbd2 code today tries to measure the average time needed in a 
-transaction and automatically tune itself. Can't we do something similar with 
-your patch set? (I hate to see yet another mount option added!)
+That may not be wise. Your real bus heirarchy may not be architecturally
+defined on some systems so you can't incorporate it into code, nor is it
+necessarily a heirarchy - eg some of the Geodes.
 
-Regards,
-
-Ric
-
-
+Alan
