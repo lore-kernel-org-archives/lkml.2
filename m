@@ -1,268 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0K2PX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:23:56 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:32977 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab0K2PXy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:23:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sj0GjF3y8TKsREm++ryt9ve4qCpD4bgdv4XUEI4AKY6LgpYrR9V/fkfkbG0pTOC5Nu
-         TL3AcUhe+Hlpbztrq5GpMuD2WfhhGA/R0ehuLFz0ufcTCpOvwRC2e9YQ3silCVZAL+A9
-         Jazp+Mxzbvc93HqmpC6rOftguNXI24B8grQ3c=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH v3 3/3] Prevent activation of page in madvise_dontneed
-Date: Tue, 30 Nov 2010 00:23:21 +0900
-Message-Id: <a0f2905bb64ce33909d7dd74146bfea826fec21a.1291043274.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1291043273.git.minchan.kim@gmail.com>
-References: <cover.1291043273.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1291043273.git.minchan.kim@gmail.com>
-References: <cover.1291043273.git.minchan.kim@gmail.com>
+	id S1753478Ab0K2P0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:26:23 -0500
+Received: from cantor.suse.de ([195.135.220.2]:42871 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab0K2P0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 10:26:22 -0500
+Date: Mon, 29 Nov 2010 16:26:19 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>,
+        jmorris@namei.org, mjg@redhat.com
+Subject: Re: [REGRESSION] Suspend fails because of TPM modules
+In-Reply-To: <4CF3C547.6020302@linux.vnet.ibm.com>
+Message-ID: <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
+References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz> <4CF3C547.6020302@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now zap_pte_range alwayas activates pages which are pte_young &&
-!VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
-it's unnecessary since the page wouldn't use any more.
+On Mon, 29 Nov 2010, Rajiv Andrade wrote:
 
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
+> > > on my thinkpad x200s (and I have seen reports on different HW as well),
+> > > suspend fails when TPM modules are loaded.
+> > > 
+> > > 	tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
+> > > 	legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -5
+> > > 	PM: Device 00:0a failed to suspend: error -5
+> > > 	PM: Some devices failed to suspend
+> > > 
+> > > Once tpm, tpm_bios, tpm_tis and tpm modules are unloaded, suspend/resume
+> > > works.
+> > > 
+> > > This is a regression. It definitely worked on this very same hardware on
+> > > 2.6.34. Any kernel between .34 and .37 wasn't booted there, so I don't
+> > > have any data of that kind.
+> > > 
+> > > I can try bisecting it, but if anyone sees immediately what the culprit
+> > > might be, that'd be helpful.
+> > I just found out, that if I modprobe tpm_tis module with
+> > 
+> > 	itpm=1
+> > 
+> > parameter, the problem doesn't happen any more and suspend works fine.
+> > 
+> > This definitely wasn't needed on older kernels though, so I'd consider
+> > that still a regression.
+> > 
+> > Also, can't we make the module automatically detect the machines on which
+> > to apply the workaround? Let's say, based on DMI?
+> > 
+> There's a patch already submitted that solves this:
+> http://marc.info/?l=linux-kernel&m=128769741101534&w=2
+> <http://marc.info/?l=linux-kernel&m=128769741101534&w=2>
+> 
+> This side effect (to solve the suspend issue) should increase its urgency I
+> think.
+> James, any thoughts?
 
-Changelog since v2:
- - remove unnecessary description
-Changelog since v1: 
- - change word from promote to activate
- - add activate argument to zap_pte_range and family function
+Yeah, Matthew has already pointed me to that patch, thanks. I will be 
+testing it shortly and providing my Tested-by: eventually.
 
----
- include/linux/mm.h |    4 ++--
- mm/madvise.c       |    4 ++--
- mm/memory.c        |   38 +++++++++++++++++++++++---------------
- mm/mmap.c          |    4 ++--
- 4 files changed, 29 insertions(+), 21 deletions(-)
+Any ideas why other kernels were OK (.34) and didn't require this quirk on 
+my machine at all?
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e097df6..6032881 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -779,11 +779,11 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
- int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
- 		unsigned long size);
- unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
--		unsigned long size, struct zap_details *);
-+		unsigned long size, struct zap_details *, bool activate);
- unsigned long unmap_vmas(struct mmu_gather **tlb,
- 		struct vm_area_struct *start_vma, unsigned long start_addr,
- 		unsigned long end_addr, unsigned long *nr_accounted,
--		struct zap_details *);
-+		struct zap_details *, bool activate);
- 
- /**
-  * mm_walk - callbacks for walk_page_range
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 319528b..8bc4b2d 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -171,9 +171,9 @@ static long madvise_dontneed(struct vm_area_struct * vma,
- 			.nonlinear_vma = vma,
- 			.last_index = ULONG_MAX,
- 		};
--		zap_page_range(vma, start, end - start, &details);
-+		zap_page_range(vma, start, end - start, &details, false);
- 	} else
--		zap_page_range(vma, start, end - start, NULL);
-+		zap_page_range(vma, start, end - start, NULL, false);
- 	return 0;
- }
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index 2c989f3..b8d38bd 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -891,7 +891,8 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma, pmd_t *pmd,
- 				unsigned long addr, unsigned long end,
--				long *zap_work, struct zap_details *details)
-+				long *zap_work, struct zap_details *details,
-+				bool activate)
- {
- 	struct mm_struct *mm = tlb->mm;
- 	pte_t *pte;
-@@ -949,7 +950,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 				if (pte_dirty(ptent))
- 					set_page_dirty(page);
- 				if (pte_young(ptent) &&
--				    likely(!VM_SequentialReadHint(vma)))
-+				    likely(!VM_SequentialReadHint(vma)) &&
-+					activate)
- 					mark_page_accessed(page);
- 				rss[MM_FILEPAGES]--;
- 			}
-@@ -989,7 +991,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma, pud_t *pud,
- 				unsigned long addr, unsigned long end,
--				long *zap_work, struct zap_details *details)
-+				long *zap_work, struct zap_details *details,
-+				bool activate)
- {
- 	pmd_t *pmd;
- 	unsigned long next;
-@@ -1002,7 +1005,7 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
- 			continue;
- 		}
- 		next = zap_pte_range(tlb, vma, pmd, addr, next,
--						zap_work, details);
-+					zap_work, details, activate);
- 	} while (pmd++, addr = next, (addr != end && *zap_work > 0));
- 
- 	return addr;
-@@ -1011,7 +1014,8 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
- static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma, pgd_t *pgd,
- 				unsigned long addr, unsigned long end,
--				long *zap_work, struct zap_details *details)
-+				long *zap_work, struct zap_details *details,
-+				bool activate)
- {
- 	pud_t *pud;
- 	unsigned long next;
-@@ -1024,7 +1028,7 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
- 			continue;
- 		}
- 		next = zap_pmd_range(tlb, vma, pud, addr, next,
--						zap_work, details);
-+					zap_work, details, activate);
- 	} while (pud++, addr = next, (addr != end && *zap_work > 0));
- 
- 	return addr;
-@@ -1033,7 +1037,8 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
- static unsigned long unmap_page_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma,
- 				unsigned long addr, unsigned long end,
--				long *zap_work, struct zap_details *details)
-+				long *zap_work, struct zap_details *details,
-+				bool activate)
- {
- 	pgd_t *pgd;
- 	unsigned long next;
-@@ -1052,7 +1057,7 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
- 			continue;
- 		}
- 		next = zap_pud_range(tlb, vma, pgd, addr, next,
--						zap_work, details);
-+						zap_work, details, activate);
- 	} while (pgd++, addr = next, (addr != end && *zap_work > 0));
- 	tlb_end_vma(tlb, vma);
- 	mem_cgroup_uncharge_end();
-@@ -1075,6 +1080,7 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
-  * @end_addr: virtual address at which to end unmapping
-  * @nr_accounted: Place number of unmapped pages in vm-accountable vma's here
-  * @details: details of nonlinear truncation or shared cache invalidation
-+ * @activate: whether pages included in the vma should be activated or not
-  *
-  * Returns the end address of the unmapping (restart addr if interrupted).
-  *
-@@ -1096,7 +1102,7 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
- unsigned long unmap_vmas(struct mmu_gather **tlbp,
- 		struct vm_area_struct *vma, unsigned long start_addr,
- 		unsigned long end_addr, unsigned long *nr_accounted,
--		struct zap_details *details)
-+		struct zap_details *details, bool activate)
- {
- 	long zap_work = ZAP_BLOCK_SIZE;
- 	unsigned long tlb_start = 0;	/* For tlb_finish_mmu */
-@@ -1149,8 +1155,8 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
- 
- 				start = end;
- 			} else
--				start = unmap_page_range(*tlbp, vma,
--						start, end, &zap_work, details);
-+				start = unmap_page_range(*tlbp, vma, start,
-+					end, &zap_work, details, activate);
- 
- 			if (zap_work > 0) {
- 				BUG_ON(start != end);
-@@ -1184,9 +1190,10 @@ out:
-  * @address: starting address of pages to zap
-  * @size: number of bytes to zap
-  * @details: details of nonlinear truncation or shared cache invalidation
-+ * @activate: whether pages included in the vma should be activated or not
-  */
- unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
--		unsigned long size, struct zap_details *details)
-+		unsigned long size, struct zap_details *details, bool activate)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct mmu_gather *tlb;
-@@ -1196,7 +1203,8 @@ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
- 	lru_add_drain();
- 	tlb = tlb_gather_mmu(mm, 0);
- 	update_hiwater_rss(mm);
--	end = unmap_vmas(&tlb, vma, address, end, &nr_accounted, details);
-+	end = unmap_vmas(&tlb, vma, address, end, &nr_accounted,
-+		details, activate);
- 	if (tlb)
- 		tlb_finish_mmu(tlb, address, end);
- 	return end;
-@@ -1220,7 +1228,7 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
- 	if (address < vma->vm_start || address + size > vma->vm_end ||
- 	    		!(vma->vm_flags & VM_PFNMAP))
- 		return -1;
--	zap_page_range(vma, address, size, NULL);
-+	zap_page_range(vma, address, size, NULL, false);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(zap_vma_ptes);
-@@ -2481,7 +2489,7 @@ again:
- 	}
- 
- 	restart_addr = zap_page_range(vma, start_addr,
--					end_addr - start_addr, details);
-+			end_addr - start_addr, details, true);
- 	need_break = need_resched() || spin_needbreak(details->i_mmap_lock);
- 
- 	if (restart_addr >= end_addr) {
-diff --git a/mm/mmap.c b/mm/mmap.c
-index b179abb..0ed5ab3 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1904,7 +1904,7 @@ static void unmap_region(struct mm_struct *mm,
- 	lru_add_drain();
- 	tlb = tlb_gather_mmu(mm, 0);
- 	update_hiwater_rss(mm);
--	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
-+	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL, true);
- 	vm_unacct_memory(nr_accounted);
- 	free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
- 				 next? next->vm_start: 0);
-@@ -2278,7 +2278,7 @@ void exit_mmap(struct mm_struct *mm)
- 	tlb = tlb_gather_mmu(mm, 1);
- 	/* update_hiwater_rss(mm) here? but nobody should be looking */
- 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
--	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
-+	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL, true);
- 	vm_unacct_memory(nr_accounted);
- 
- 	free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
 -- 
-1.7.0.4
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
