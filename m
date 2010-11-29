@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab0K2QbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:31:08 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:28151 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751408Ab0K2QbH (ORCPT
+	id S1754707Ab0K2Qcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:32:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53631 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab0K2Qce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:31:07 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: vS9R2tsVM1kMMEpetEnlKsQ29CCbDR0YcNoZ.VMKtj_gHiO
- bIBfYJlTaNq82sxmNcn.VIPbP76a0iZQ1s9uTW2TgJxL6WpGfm16BKsvkVON
- wYb5vyR4gyDktDDdP6e2a4VhvKugxRMVFHBOCocIvIre9GPggh8stmQXswZK
- D5ErQMzGZc2rbWYVNfsd0qQMJj33.flFWB0zg.lskggVmcqR7xkb5jXafTMu
- l3.fH0KkPSA--
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 29 Nov 2010 10:31:03 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [thisops uV2 04/10] x86: Support for
- this_cpu_add,sub,dec,inc_return
-In-Reply-To: <20101127150015.GE15365@Krystal>
-Message-ID: <alpine.DEB.2.00.1011291025410.3923@router.home>
-References: <20101126210937.383047168@linux.com> <20101126210951.303044608@linux.com> <20101127150015.GE15365@Krystal>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 29 Nov 2010 11:32:34 -0500
+Date: Mon, 29 Nov 2010 08:31:05 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Huang Ying <ying.huang@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>, linux-crypto@vger.kernel.org
+Subject: Re: linux-next: Tree for November 29 (aesni-intel)
+Message-Id: <20101129083105.e202e922.randy.dunlap@oracle.com>
+In-Reply-To: <20101129140335.19800705.sfr@canb.auug.org.au>
+References: <20101129140335.19800705.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Nov 2010, Mathieu Desnoyers wrote:
+On Mon, 29 Nov 2010 14:03:35 +1100 Stephen Rothwell wrote:
 
-> > +/*
-> > + * Add return operation
-> > + */
-> > +#define percpu_add_return_op(var, val)					\
-> > +({									\
-> > +	typedef typeof(var) pao_T__;					\
-> > +	typeof(var) pfo_ret__ = val;					\
-> > +	if (0) {							\
-> > +		pao_T__ pao_tmp__;					\
-> > +		pao_tmp__ = (val);					\
-> > +		(void)pao_tmp__;					\
-> > +	}								\
->
-> OK, I'm dumb: why is the above needed ?
+> Hi all,
+> 
+> Changes since 20101126:
 
-Ensure that the compiler agrees that  *var and val are compatible. Taken
-over from percpu_add_op().
 
+on i386 builds, I get tons of these (and more) errors:
+
+arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
+arch/x86/crypto/aesni-intel_asm.S:842: Error: bad register name `%r13'
+arch/x86/crypto/aesni-intel_asm.S:843: Error: bad register name `%r14'
+arch/x86/crypto/aesni-intel_asm.S:844: Error: bad register name `%rsp'
+arch/x86/crypto/aesni-intel_asm.S:849: Error: bad register name `%rsp'
+arch/x86/crypto/aesni-intel_asm.S:850: Error: bad register name `%rsp'
+arch/x86/crypto/aesni-intel_asm.S:851: Error: bad register name `%r9'
+
+even though the kernel .config file says:
+
+CONFIG_CRYPTO_AES=m
+CONFIG_CRYPTO_AES_586=m
+CONFIG_CRYPTO_AES_NI_INTEL=m
+
+Should arch/x86/crypto/aesni-intel_asm.S be testing
+#ifdef CONFIG_X86_64
+instead of
+#ifdef __x86_64__
+or does that not matter?
+
+or is this a toolchain issue?
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
