@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab0K2ITi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:19:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51289 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab0K2ITh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:19:37 -0500
-Date: Mon, 29 Nov 2010 10:18:41 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] vhost: correctly set bits of dirty pages
-Message-ID: <20101129081840.GB25496@redhat.com>
-References: <20101129054819.24923.26439.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+	id S1751519Ab0K2IUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:20:36 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60325 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab0K2IUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 03:20:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:content-type;
+        b=NzE4/beB7LgJnmeY6BtsESU/gKGy7Dt09Bank7zVgHl1mrt6GBG99gVZsvVvRorDQy
+         O57m2F7kDQ6nMvFbUbQ09cGUOyXVcAS5KNrouxW0r/7IF62Cpxx6ciduk0Q6Saefm2EZ
+         XVqcOiLnI7zYYjnawIxWJFwTHoWV8V5j3dtuA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129054819.24923.26439.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101129081639.GA5142@const.bordeaux.inria.fr>
+References: <1290941875.13526.15.camel@cai.gentoo> <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
+ <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
+ <1290954545.13526.27.camel@cai.gentoo> <20101128191152.GV10602@const.famille.thibault.fr>
+ <1290993006.877.0.camel@cai.gentoo> <20101129081639.GA5142@const.bordeaux.inria.fr>
+From: microcai <microcai@fedoraproject.org>
+Date: Mon, 29 Nov 2010 16:20:11 +0800
+X-Google-Sender-Auth: vIUkQHXYlHGcgzIOH60IePXWc6U
+Message-ID: <AANLkTinmdRjEkmywaMevN5_A=2N8_pBsOAJj8PoAaznz@mail.gmail.com>
+Subject: Re: VT console need rewrite
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Microcai <microcai@fedoraproject.org>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-console@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 01:48:20PM +0800, Jason Wang wrote:
-> When counting pages we should increase it by 1 instead of VHOST_PAGE_SIZE,
-> and also make log_write() can correctly process the request across
-> pages with write_address not start at page boundary.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> But isn't that basically what you are describing?
+>
+> (i.e. what's the use of using a pts and /dev/fb, if not for a userlevel
+> terminal to actually do the work?)
+>
 
-
-Thanks, good catch!
-But let's to it in small steps: first, a small patch to fix the bug:
-I think this is equivalent, right?
-
-Subject: vhost: correctly set bits of dirty pages
-
-When counting pages we should increase address by 1 instead of
-VHOST_PAGE_SIZE, and also make log_write() can correctly process the
-request across pages with write_address not starting at page boundary.
-
-Reported-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----
-
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 568eb70..d0a3552 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -887,6 +887,7 @@ static int log_write(void __user *log_base,
- 	int r;
- 	if (!write_length)
- 		return 0;
-+	write_length += write_address % VHOST_PAGE_SIZE;
- 	write_address /= VHOST_PAGE_SIZE;
- 	for (;;) {
- 		u64 base = (u64)(unsigned long)log_base;
-@@ -900,7 +901,7 @@ static int log_write(void __user *log_base,
- 		if (write_length <= VHOST_PAGE_SIZE)
- 			break;
- 		write_length -= VHOST_PAGE_SIZE;
--		write_address += VHOST_PAGE_SIZE;
-+		write_address += 1;
- 	}
- 	return r;
- }
+ok, try run zhcon on pts.  can you do that ?
