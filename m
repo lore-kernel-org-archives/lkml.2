@@ -1,174 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab0K2RiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 12:38:23 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:52160 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307Ab0K2RiV (ORCPT
+	id S1755306Ab0K2RjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 12:39:19 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36573
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750982Ab0K2RjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 12:38:21 -0500
-X-IronPort-AV: E=Sophos;i="4.59,276,1288569600"; 
-   d="scan'208";a="3097062"
-Date: Mon, 29 Nov 2010 17:38:16 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH v3] Use PHYSDEVOP_get_free_pirq to implement
- find_unbound_pirq
-In-Reply-To: <20101129152908.GA19818@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1011291734090.14723@kaball-desktop>
-References: <alpine.DEB.2.00.1011251101100.2373@kaball-desktop> <20101129152908.GA19818@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 29 Nov 2010 12:39:17 -0500
+Date: Mon, 29 Nov 2010 09:39:42 -0800 (PST)
+Message-Id: <20101129.093942.104054089.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: andi@firstfloor.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        netdev@vger.kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
+        tony.luck@intel.com, fenghua.yu@intel.com
+Subject: Re: [PATCH v2 0/4] kthread: NUMA aware kthread_create_on_cpu()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1291043604.3435.969.camel@edumazet-laptop>
+References: <20101129090510.GA15763@basil.fritz.box>
+	<1291023532.3435.29.camel@edumazet-laptop>
+	<1291043604.3435.969.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010, Konrad Rzeszutek Wilk wrote:
-> > @@ -611,9 +615,9 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
-> >  
-> >  	spin_lock(&irq_mapping_update_lock);
-> >  
-> > -	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
-> > +	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
-> >  		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
-> > -			pirq > nr_pirqs ? "nr_pirqs" :"",
-> > +			pirq > nr_irqs ? "nr_pirqs" :"",
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 29 Nov 2010 16:13:23 +0100
+
+> Note : compiled and tested on x86_32 and x86_64 only, but these patches
+> take care of other arches as well.
 > 
-> Seems odd to print "nr_pirqs" when that is out of the code.
+> Cc: linux-arch@vger.kernel.org 
 > 
-> >  			gsi > nr_irqs ? "nr_irqs" : "");
-> 
+> Thanks for your feedback Andi !
 
+I'm fine with these changes:
 
-good point, I updated the warning.
+Acked-by: David S. Miller <davem@davemloft.net>
 
----
-
-Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
-
-Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
-pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
-amount of pirq available.
-
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 2811bb9..7ab43c3 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -105,7 +105,6 @@ struct irq_info
- 
- static struct irq_info *irq_info;
- static int *pirq_to_irq;
--static int nr_pirqs;
- 
- static int *evtchn_to_irq;
- struct cpu_evtchn_s {
-@@ -385,12 +384,17 @@ static int get_nr_hw_irqs(void)
- 	return ret;
- }
- 
--/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-- * succeeded otherwise nr_pirqs won't hold the right value */
--static int find_unbound_pirq(void)
-+static int find_unbound_pirq(int type)
- {
--	int i;
--	for (i = nr_pirqs-1; i >= 0; i--) {
-+	int rc, i;
-+	struct physdev_get_free_pirq op_get_free_pirq;
-+	op_get_free_pirq.type = type;
-+
-+	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
-+	if (!rc)
-+		return op_get_free_pirq.pirq;
-+
-+	for (i = 0; i < nr_irqs; i++) {
- 		if (pirq_to_irq[i] < 0)
- 			return i;
- 	}
-@@ -611,10 +615,10 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
- 
- 	spin_lock(&irq_mapping_update_lock);
- 
--	if ((pirq > nr_pirqs) || (gsi > nr_irqs)) {
-+	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
- 		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
--			pirq > nr_pirqs ? "nr_pirqs" :"",
--			gsi > nr_irqs ? "nr_irqs" : "");
-+			pirq > nr_irqs ? "pirq" :"",
-+			gsi > nr_irqs ? "gsi" : "");
- 		goto out;
- 	}
- 
-@@ -672,7 +676,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
- 	if (*irq == -1)
- 		goto out;
- 
--	*pirq = find_unbound_pirq();
-+	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
- 	if (*pirq == -1)
- 		goto out;
- 
-@@ -1506,26 +1510,17 @@ void xen_callback_vector(void) {}
- 
- void __init xen_init_IRQ(void)
- {
--	int i, rc;
--	struct physdev_nr_pirqs op_nr_pirqs;
-+	int i;
- 
- 	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
- 				    GFP_KERNEL);
- 	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
- 
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
--	if (rc < 0) {
--		nr_pirqs = nr_irqs;
--		if (rc != -ENOSYS)
--			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
--	} else {
--		if (xen_pv_domain() && !xen_initial_domain())
--			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
--		else
--			nr_pirqs = op_nr_pirqs.nr_pirqs;
--	}
--	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
--	for (i = 0; i < nr_pirqs; i++)
-+	/* We are using nr_irqs as the maximum number of pirq available but
-+	 * that number is actually chosen by Xen and we don't know exactly
-+	 * what it is. Be careful choosing high pirq numbers. */
-+	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
-+	for (i = 0; i < nr_irqs; i++)
- 		pirq_to_irq[i] = -1;
- 
- 	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 2b2c66c..534cac8 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -188,6 +188,16 @@ struct physdev_nr_pirqs {
-     uint32_t nr_pirqs;
- };
- 
-+/* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
-+ * the hypercall returns a free pirq */
-+#define PHYSDEVOP_get_free_pirq    23
-+struct physdev_get_free_pirq {
-+    /* IN */ 
-+    int type;
-+    /* OUT */
-+    uint32_t pirq;
-+};
-+
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
+Since the majority is non-networking it is pretty clear
+that someone other than me should integrate these patches.
+:-)
