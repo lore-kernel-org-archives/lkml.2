@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab0K2Kjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 05:39:43 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:4648 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752748Ab0K2Kjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 05:39:42 -0500
-X-IronPort-AV: E=Sophos;i="4.59,275,1288566000"; 
-   d="scan'208";a="80382072"
-Date: Mon, 29 Nov 2010 11:39:39 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Microcai <microcai@fedoraproject.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Lisa Milne <lisa@ltmnet.com>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101129103939.GU5142@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Microcai <microcai@fedoraproject.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, Ted Ts'o <tytso@mit.edu>,
-	Lisa Milne <lisa@ltmnet.com>,
-	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-	linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-References: <20101129020610.7ea7c79e.lisa@ltmnet.com> <1290961207.13526.31.camel@cai.gentoo> <20101128194624.GP2767@thunk.org> <1290993244.877.3.camel@cai.gentoo> <20101129085829.GM5142@const.bordeaux.inria.fr> <1291023157.9785.2.camel@cai.gentoo> <20101129095823.GQ5142@const.bordeaux.inria.fr> <1291025476.9785.5.camel@cai.gentoo> <20101129101702.GS5142@const.bordeaux.inria.fr> <1291027200.9785.9.camel@cai.gentoo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291027200.9785.9.camel@cai.gentoo>
-User-Agent: Mutt/1.5.12-2006-07-14
+	id S1753173Ab0K2KpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 05:45:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5721 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab0K2KpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 05:45:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,275,1288594800"; 
+   d="scan'208";a="681922293"
+X-Mailbox-Line: From shaohui.zheng@intel.com Mon Nov 29 17:19:35 2010
+Message-Id: <20101129091750.950277284@intel.com>
+User-Agent: quilt/0.46-1
+Date: Mon, 29 Nov 2010 17:17:50 +0800
+From: shaohui.zheng@intel.com
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de
+Subject: [0/8, v5]  NUMA Hotplug Emulator(v5) - Feedbacks & Responses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microcai, le Mon 29 Nov 2010 18:40:00 +0800, a écrit :
-> 在 2010-11-29一的 11:17 +0100，Samuel Thibault写道：
-> > It seems you didn't get my point: what is the use of including CJK
-> > into
-> > kernel when that won't solve the issue for e.g. arabic, while fixing
-> > fbterm will solve the issue for both arabic and CJK?
-> 
-> You don't get my point.  fbterm of zhcon won't fit every thing.
+Hi, All
 
-Why?  Can't what zhcon does be integrated into fbterm?
+	Thanks for all the review comments and feedbacks, This patcheset is v5 NUMA
+Hotplug Emulator.
 
-Samuel
+* PATCHSET INTRODUCTION
+
+patch 1: Adds a numa=possible=<N> command line option to set an additional N nodes
+		 as being possible for memory hotplug. 
+	    
+patch 2: Add node hotplug emulation, introduce debugfs node/add_node interface
+
+patch 3: Abstract cpu register functions, make these interface friend for cpu
+		 hotplug emulation
+patch 4: Support cpu probe/release in x86, it provides a software method to hot
+		 add/remove cpu with sysfs interface.
+patch 5: Fake CPU socket with logical CPU on x86, to prevent the scheduling
+		 domain to build the incorrect hierarchy.
+patch 6: extend memory probe interface to support NUMA, we can add the memory to
+		 a specified node with the interface.
+patch 7: implement memory probe interface with debugfs
+patch 8: Documentation.
+
+* FEEDBACKS & RESPONSES
+
+David: Suggests to use a flexible method to to do node hotplug emulation. After
+       review our 2 versions emulator implemetations, David provides a better solution
+	   to solve both the flexibility and memory wasting issue. 
+	   
+	   Add numa=possible=<N> command line option, provide sysfs inteface
+	   /sys/devices/system/node/add_node interface, and move the inteface to debugfs
+	   /sys/kernel/debug/hotplug/add_node after hearing the voice from community.
+
+Greg KH: move the interface from hotplug/add_node to node/add_node
+
+Response: Accept David's node=possible=<n> command line options. After talking
+       with David, he agree to add his patch to our patchset, thanks David's solution(patch 1).
+
+	   David's original interface /sys/kernel/debug/hotplug/add_node is not so clear for
+	   node hotplug emulation, we accept Greg's suggestion, move the interface to ndoe/add_node  
+	   (patch 2)
+		 
+Dave Hansen: For memory hotplug, Dave reminds Greg KH's advice, suggest us to use configfs replace
+       sysfs. After Dave knows that it is just for test purpose, Dave thinks debugfs should
+	   be the best.
+
+Response: memory probe sysfs interface already exists, I'd like to still keep it, and extend it
+       to support memory add on a specified node(patch 6).
+
+	   We accepts Dave's suggestion, implement memory probe interface with debugfs(patch 7).
+
+-- 
+Thanks & Regards,
+Shaohui
+
+
