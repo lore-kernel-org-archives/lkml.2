@@ -1,387 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0K2RKB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 12:10:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32184 "EHLO mx1.redhat.com"
+	id S1754731Ab0K2RME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 12:12:04 -0500
+Received: from mx2.sophos.com ([195.166.81.53]:45329 "EHLO mx2.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab0K2RJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 12:09:59 -0500
-Date: Mon, 29 Nov 2010 19:09:01 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] vhost test module
-Message-ID: <20101129170901.GB4027@redhat.com>
-References: <20101129170431.GA4027@redhat.com>
+	id S1751233Ab0K2RMC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 12:12:02 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH 4/4] fanotify: Expose the file changes to the user
+Date: Mon, 29 Nov 2010 17:11:57 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc3; KDE/4.4.4; x86_64; ; )
+CC: Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        Scott Hassan <hassan@dotfunk.com>, Jan Kara <jack@suse.cz>,
+        "agruen@linbit.com" <agruen@linbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+References: <20101122002747.13674.69384.stgit@zaytsev.su> <201011261011.55266.tvrtko.ursulin@sophos.com> <1291047294.3248.9.camel@localhost.localdomain>
+In-Reply-To: <1291047294.3248.9.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129170431.GA4027@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201011291711.57876.tvrtko.ursulin@sophos.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a test module for vhost infrastructure.
-Intentionally not tied to kbuild to prevent people
-from installing and loading it accidentally.
+On Monday 29 Nov 2010 16:14:54 Eric Paris wrote:
+> On Fri, 2010-11-26 at 10:11 +0000, Tvrtko Ursulin wrote:
+> > On Monday 22 Nov 2010 00:37:21 Alexey Zaytsev wrote:
+> > >  struct fanotify_event_metadata {
+> > >
+> > > -       __u16 event_len;
+> > > +       __u16 event_len; /* Including the options */
+> > >
+> > >         __u8 vers;
+> > >
+> > > -       __u8 reserved;
+> > > +       __u8 options_offset; /* Aka header length */
+> > >
+> > >         __s32 fd;
+> > >         __aligned_u64 mask;
+> > >         __s32 pid;
+> > >
+> > > +       /* Options go here. */
+> > >
+> > >  };
+> >
+> > Also, options_offset is, if I understood it correctly, basically the
+> > lenght of fanotify_event_metadata. As such, isn't that field redundant
+> > since the lenght is implied from the protocol version?
+>
+> Ok, the way I envision the interface is the fanotify_event_metadata is
+> going to be information that is common for all event types.  If a
+> particular event type (in the case being brought forth MODIFY and
+> CLOSE_WRITE) needs more information it will use the optional headers.
+> I'd still like to be able to add generic info, ex: the uid of the
+> requesting process, to the generic event metadata.  We might also
+> someday want to use the optional headers for things like the inotify
+> move cookie.  Why waste space in every event when only the move type
+> events cared about this cookie?
+>
+> This necessitates options_offset.  Lets say I compile my userspace app
+> as version 3.  I know that fanotify_event_metadata is 14 bytes long in
+> version 3.  Thus I start looking at byte 15 for the first optional
+> header.  But the kernel is version 4 and fanotify_event_metadata is
+> actually 18 bytes long.  Whoops, userspace should be looking at byte 19
+> for the header but accidentally looked at byte 15.  options_offset will
+> allow a version 3 userspace to run on a version 4 kernel while skipping
+> bytes 15-18 which it doesn't understand.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+I see now what you want to do here. I assumed metadata is fixed for ever and
+all expansions will come via options. That is why I said offset field is
+redundant. If you want to leave option for changing metadata open then yes, I
+agree it is needed.
 
----
+> At the end of all of this discussion what did people finally agree on?
+> Something like this?
+>
+> struct fanotify_opt_hdr {
+>         __u16 type;
+>         __u16 len;
+>         /* Payload goes here. */
+> };
+>
+> struct fanotify_event_metadata {
+>         __u32 event_len; /* Including the options */
+>         __u16 vers;
+>         __u16 options_offset; /* Aka header length */
+>         __s32 fd;
+>         __aligned_u64 mask;
+>         __s32 pid;
+>         /* Options go here. */
+> };
+>
+> We could be ABI compatible if we let vers as a __u32 and added
+> options_offset at the end of the structure...   Do we have strong
+> feelings on either side about maintaining compatibility or about
+> structure lengths?
 
-diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
-new file mode 100644
-index 0000000..099f302
---- /dev/null
-+++ b/drivers/vhost/test.c
-@@ -0,0 +1,320 @@
-+/* Copyright (C) 2009 Red Hat, Inc.
-+ * Author: Michael S. Tsirkin <mst@redhat.com>
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2.
-+ *
-+ * test virtio server in host kernel.
-+ */
-+
-+#include <linux/compat.h>
-+#include <linux/eventfd.h>
-+#include <linux/vhost.h>
-+#include <linux/miscdevice.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/workqueue.h>
-+#include <linux/rcupdate.h>
-+#include <linux/file.h>
-+#include <linux/slab.h>
-+
-+#include "test.h"
-+#include "vhost.c"
-+
-+/* Max number of bytes transferred before requeueing the job.
-+ * Using this limit prevents one virtqueue from starving others. */
-+#define VHOST_TEST_WEIGHT 0x80000
-+
-+enum {
-+	VHOST_TEST_VQ = 0,
-+	VHOST_TEST_VQ_MAX = 1,
-+};
-+
-+struct vhost_test {
-+	struct vhost_dev dev;
-+	struct vhost_virtqueue vqs[VHOST_TEST_VQ_MAX];
-+};
-+
-+/* Expects to be always run from workqueue - which acts as
-+ * read-size critical section for our kind of RCU. */
-+static void handle_vq(struct vhost_test *n)
-+{
-+	struct vhost_virtqueue *vq = &n->dev.vqs[VHOST_TEST_VQ];
-+	unsigned out, in;
-+	int head;
-+	size_t len, total_len = 0;
-+	void *private;
-+
-+	private = rcu_dereference_check(vq->private_data, 1);
-+	if (!private)
-+		return;
-+
-+	mutex_lock(&vq->mutex);
-+	vhost_disable_notify(vq);
-+
-+	for (;;) {
-+		head = vhost_get_vq_desc(&n->dev, vq, vq->iov,
-+					 ARRAY_SIZE(vq->iov),
-+					 &out, &in,
-+					 NULL, NULL);
-+		/* On error, stop handling until the next kick. */
-+		if (unlikely(head < 0))
-+			break;
-+		/* Nothing new?  Wait for eventfd to tell us they refilled. */
-+		if (head == vq->num) {
-+			if (unlikely(vhost_enable_notify(vq))) {
-+				vhost_disable_notify(vq);
-+				continue;
-+			}
-+			break;
-+		}
-+		if (in) {
-+			vq_err(vq, "Unexpected descriptor format for TX: "
-+			       "out %d, int %d\n", out, in);
-+			break;
-+		}
-+		len = iov_length(vq->iov, out);
-+		/* Sanity check */
-+		if (!len) {
-+			vq_err(vq, "Unexpected 0 len for TX\n");
-+			break;
-+		}
-+		vhost_add_used_and_signal(&n->dev, vq, head, 0);
-+		total_len += len;
-+		if (unlikely(total_len >= VHOST_TEST_WEIGHT)) {
-+			vhost_poll_queue(&vq->poll);
-+			break;
-+		}
-+	}
-+
-+	mutex_unlock(&vq->mutex);
-+}
-+
-+static void handle_vq_kick(struct vhost_work *work)
-+{
-+	struct vhost_virtqueue *vq = container_of(work, struct vhost_virtqueue,
-+						  poll.work);
-+	struct vhost_test *n = container_of(vq->dev, struct vhost_test, dev);
-+
-+	handle_vq(n);
-+}
-+
-+static int vhost_test_open(struct inode *inode, struct file *f)
-+{
-+	struct vhost_test *n = kmalloc(sizeof *n, GFP_KERNEL);
-+	struct vhost_dev *dev;
-+	int r;
-+
-+	if (!n)
-+		return -ENOMEM;
-+
-+	dev = &n->dev;
-+	n->vqs[VHOST_TEST_VQ].handle_kick = handle_vq_kick;
-+	r = vhost_dev_init(dev, n->vqs, VHOST_TEST_VQ_MAX);
-+	if (r < 0) {
-+		kfree(n);
-+		return r;
-+	}
-+
-+	f->private_data = n;
-+
-+	return 0;
-+}
-+
-+static void *vhost_test_stop_vq(struct vhost_test *n,
-+				struct vhost_virtqueue *vq)
-+{
-+	void *private;
-+
-+	mutex_lock(&vq->mutex);
-+	private = rcu_dereference_protected(vq->private_data,
-+					 lockdep_is_held(&vq->mutex));
-+	rcu_assign_pointer(vq->private_data, NULL);
-+	mutex_unlock(&vq->mutex);
-+	return private;
-+}
-+
-+static void vhost_test_stop(struct vhost_test *n, void **privatep)
-+{
-+	*privatep = vhost_test_stop_vq(n, n->vqs + VHOST_TEST_VQ);
-+}
-+
-+static void vhost_test_flush_vq(struct vhost_test *n, int index)
-+{
-+	vhost_poll_flush(&n->dev.vqs[index].poll);
-+}
-+
-+static void vhost_test_flush(struct vhost_test *n)
-+{
-+	vhost_test_flush_vq(n, VHOST_TEST_VQ);
-+}
-+
-+static int vhost_test_release(struct inode *inode, struct file *f)
-+{
-+	struct vhost_test *n = f->private_data;
-+	void  *private;
-+
-+	vhost_test_stop(n, &private);
-+	vhost_test_flush(n);
-+	vhost_dev_cleanup(&n->dev);
-+	/* We do an extra flush before freeing memory,
-+	 * since jobs can re-queue themselves. */
-+	vhost_test_flush(n);
-+	kfree(n);
-+	return 0;
-+}
-+
-+static long vhost_test_run(struct vhost_test *n, int test)
-+{
-+	void *priv, *oldpriv;
-+	struct vhost_virtqueue *vq;
-+	int r, index;
-+
-+	if (test < 0 || test > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&n->dev.mutex);
-+	r = vhost_dev_check_owner(&n->dev);
-+	if (r)
-+		goto err;
-+
-+	for (index = 0; index < n->dev.nvqs; ++index) {
-+		/* Verify that ring has been setup correctly. */
-+		if (!vhost_vq_access_ok(&n->vqs[index])) {
-+			r = -EFAULT;
-+			goto err;
-+		}
-+	}
-+
-+	for (index = 0; index < n->dev.nvqs; ++index) {
-+		vq = n->vqs + index;
-+		mutex_lock(&vq->mutex);
-+		priv = test ? n : NULL;
-+
-+		/* start polling new socket */
-+		oldpriv = rcu_dereference_protected(vq->private_data,
-+						    lockdep_is_held(&vq->mutex));
-+		rcu_assign_pointer(vq->private_data, priv);
-+
-+		mutex_unlock(&vq->mutex);
-+
-+		if (oldpriv) {
-+			vhost_test_flush_vq(n, index);
-+		}
-+	}
-+
-+	mutex_unlock(&n->dev.mutex);
-+	return 0;
-+
-+err:
-+	mutex_unlock(&n->dev.mutex);
-+	return r;
-+}
-+
-+static long vhost_test_reset_owner(struct vhost_test *n)
-+{
-+	void *priv = NULL;
-+	long err;
-+	mutex_lock(&n->dev.mutex);
-+	err = vhost_dev_check_owner(&n->dev);
-+	if (err)
-+		goto done;
-+	vhost_test_stop(n, &priv);
-+	vhost_test_flush(n);
-+	err = vhost_dev_reset_owner(&n->dev);
-+done:
-+	mutex_unlock(&n->dev.mutex);
-+	return err;
-+}
-+
-+static int vhost_test_set_features(struct vhost_test *n, u64 features)
-+{
-+	mutex_lock(&n->dev.mutex);
-+	if ((features & (1 << VHOST_F_LOG_ALL)) &&
-+	    !vhost_log_access_ok(&n->dev)) {
-+		mutex_unlock(&n->dev.mutex);
-+		return -EFAULT;
-+	}
-+	n->dev.acked_features = features;
-+	smp_wmb();
-+	vhost_test_flush(n);
-+	mutex_unlock(&n->dev.mutex);
-+	return 0;
-+}
-+
-+static long vhost_test_ioctl(struct file *f, unsigned int ioctl,
-+			     unsigned long arg)
-+{
-+	struct vhost_test *n = f->private_data;
-+	void __user *argp = (void __user *)arg;
-+	u64 __user *featurep = argp;
-+	int test;
-+	u64 features;
-+	int r;
-+	switch (ioctl) {
-+	case VHOST_TEST_RUN:
-+		if (copy_from_user(&test, argp, sizeof test))
-+			return -EFAULT;
-+		return vhost_test_run(n, test);
-+	case VHOST_GET_FEATURES:
-+		features = VHOST_FEATURES;
-+		if (copy_to_user(featurep, &features, sizeof features))
-+			return -EFAULT;
-+		return 0;
-+	case VHOST_SET_FEATURES:
-+		if (copy_from_user(&features, featurep, sizeof features))
-+			return -EFAULT;
-+		if (features & ~VHOST_FEATURES)
-+			return -EOPNOTSUPP;
-+		return vhost_test_set_features(n, features);
-+	case VHOST_RESET_OWNER:
-+		return vhost_test_reset_owner(n);
-+	default:
-+		mutex_lock(&n->dev.mutex);
-+		r = vhost_dev_ioctl(&n->dev, ioctl, arg);
-+		vhost_test_flush(n);
-+		mutex_unlock(&n->dev.mutex);
-+		return r;
-+	}
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long vhost_test_compat_ioctl(struct file *f, unsigned int ioctl,
-+				   unsigned long arg)
-+{
-+	return vhost_test_ioctl(f, ioctl, (unsigned long)compat_ptr(arg));
-+}
-+#endif
-+
-+static const struct file_operations vhost_test_fops = {
-+	.owner          = THIS_MODULE,
-+	.release        = vhost_test_release,
-+	.unlocked_ioctl = vhost_test_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl   = vhost_test_compat_ioctl,
-+#endif
-+	.open           = vhost_test_open,
-+	.llseek		= noop_llseek,
-+};
-+
-+static struct miscdevice vhost_test_misc = {
-+	MISC_DYNAMIC_MINOR,
-+	"vhost-test",
-+	&vhost_test_fops,
-+};
-+
-+static int vhost_test_init(void)
-+{
-+	return misc_register(&vhost_test_misc);
-+}
-+module_init(vhost_test_init);
-+
-+static void vhost_test_exit(void)
-+{
-+	misc_deregister(&vhost_test_misc);
-+}
-+module_exit(vhost_test_exit);
-+
-+MODULE_VERSION("0.0.1");
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Michael S. Tsirkin");
-+MODULE_DESCRIPTION("Host kernel side for virtio simulator");
-diff --git a/drivers/vhost/test.h b/drivers/vhost/test.h
-new file mode 100644
-index 0000000..1fef5df
---- /dev/null
-+++ b/drivers/vhost/test.h
-@@ -0,0 +1,7 @@
-+#ifndef LINUX_VHOST_TEST_H
-+#define LINUX_VHOST_TEST_H
-+
-+/* Start a given test on the virtio null device. 0 stops all tests. */
-+#define VHOST_TEST_RUN _IOW(VHOST_VIRTIO, 0x31, int)
-+
-+#endif
-diff --git a/tools/virtio/vhost_test/Makefile b/tools/virtio/vhost_test/Makefile
-new file mode 100644
-index 0000000..a1d35b8
---- /dev/null
-+++ b/tools/virtio/vhost_test/Makefile
-@@ -0,0 +1,2 @@
-+obj-m += vhost_test.o
-+EXTRA_CFLAGS += -Idrivers/vhost
-diff --git a/tools/virtio/vhost_test/vhost_test.c b/tools/virtio/vhost_test/vhost_test.c
-new file mode 100644
-index 0000000..1873518
---- /dev/null
-+++ b/tools/virtio/vhost_test/vhost_test.c
-@@ -0,0 +1 @@
-+#include "test.c"
+No strong feelings here on either. I do not really think maintaining
+compatibility with an unreleased protocol is worth it. And I would not like to
+limit any field to 8-bits if possible.
+
+Tvrtko
+
+Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 991 2418 08.
