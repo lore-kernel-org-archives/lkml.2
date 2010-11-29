@@ -1,36 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab0K2GHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 01:07:36 -0500
-Received: from foo.birdnet.se ([213.88.146.6]:54149 "HELO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751160Ab0K2GHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 01:07:35 -0500
-Message-ID: <20101129060732.5130.qmail@stuge.se>
-Date: Mon, 29 Nov 2010 07:07:32 +0100
-From: Peter Stuge <peter@stuge.se>
-To: ath9k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org
-Subject: Re: [ath9k-devel] [PATCH wireless-next] ath: Rename ath_print to
-	ath_debug
-Mail-Followup-To: ath9k-devel@lists.ath9k.org, linux-kernel@vger.kernel.org
-References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com> <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
+	id S1754305Ab0K2GHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 01:07:43 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48854 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab0K2GHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 01:07:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
+In-Reply-To: <20101129055529.GB17113@yookeroo>
+References: <1290607413.12457.44.camel@concordia> <1290692075.689.20.camel@concordia>
+ <20101129055529.GB17113@yookeroo>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 28 Nov 2010 23:07:20 -0700
+X-Google-Sender-Auth: 5ZNSIXdbI5HOuG5KI0gVD2MP83w
+Message-ID: <AANLkTi=KBsMDvG2wZDu6ZtctWzd_bdQ=tO97eZu1R+VL@mail.gmail.com>
+Subject: Re: RFC: Mega rename of device tree routines from of_*() to dt_*()
+To: Michael Ellerman <michael@ellerman.id.au>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-mips <linux-mips@linux-mips.org>,
+        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez wrote:
-> On Sun, Nov 28, 2010 at 3:53 PM, Joe Perches <joe@perches.com> wrote:
-> > Make the function name match the function purpose.
-> > ath_debug is a debug only facility.
-> > ath_print seems too generic a name for a debug only use.
-> 
-> Nack, I don't see the point.
+On Sun, Nov 28, 2010 at 10:55 PM, David Gibson
+<david@gibson.dropbear.id.au> wrote:
+> On Fri, Nov 26, 2010 at 12:34:35AM +1100, Michael Ellerman wrote:
+>> Most of these are straight renames, but some have changed more
+>> substantially. The routines for the flat tree have all become fdt_foo().
+>
+> I'm a little uneasy about using the same prefix as libfdt (fdt_foo())
+> for routines that have a different implementation and different names
+> / semantics to the libfdt routines.
 
-The point is to improve readability. I like the patch.
+I'd also be okay with either dtflat_ or flatdt_ for the prefix on
+these routines.
 
-
-//Peter
+g.
