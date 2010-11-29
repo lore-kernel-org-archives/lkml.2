@@ -1,162 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab0K2Qoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 11:44:46 -0500
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:58236 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129Ab0K2Qon (ORCPT
+	id S1755242Ab0K2Qpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 11:45:31 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57321 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab0K2Qp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 11:44:43 -0500
-Message-Id: <20101129164435.557525646@linux.vnet.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 29 Nov 2010 17:42:40 +0100
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu
-Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch v2 3/4] taskstats: Introduce kernel.full_cdata sysctl
-References: <20101129164237.522034198@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=03-taskstats-top-improve-ctime-account-cdata_acct.patch
+	Mon, 29 Nov 2010 11:45:28 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
+Date: Mon, 29 Nov 2010 17:45:22 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011282056.17389.arnd@arndb.de> <4CF3CF33.20407@gmail.com>
+In-Reply-To: <4CF3CF33.20407@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011291745.22566.arnd@arndb.de>
+X-Provags-ID: V02:K0:n/b/BIGbLRpBW75HrwGwnSzZnNMFNc2WwpegjQR3jxd
+ v/FyHbtCRwFzKaZ6GAftg9RwXuihIrYVzbRKypCMlxNYoSe+uJ
+ s5pJG/PiMHo0VKKtqHa7vqC30avjc8w+Usou1/o0Q0KgvjiIOM
+ F1UHvW22K1AMlcnFqnzI7GOagm4xwI3EroxsCYNJMzJpVstG5T
+ EBKXMVNBEzGID9dNleJbg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+On Monday 29 November 2010, Paulius Zaleckas wrote:
+> > The I/O ordering is probably not what you think it is.
+> > There is no ordering guarantee between __raw_writel and
+> > spin_lock/spin_unlock, so you really should be using
+> > readl/writel.
+> 
+> No he really should NOT use readl/writel. The ONLY difference
+> between readl/writel and __raw_readl/__raw_writel is endianess
+> conversion. __raw_*l is not doing it. Which to use depend only
+> on HW.
 
-Version 2
----------
-* Implement sysctl instead of adding parallel cdata_acct
-* Call __account_cdata() in __exit_signal() without tsk siglock
+There are many differences between readl and __raw_readl, including
 
-Description
------------
-Currently the cumulative time accounting in Linux is not complete.
-Due to POSIX POSIX.1-2001, the CPU time of processes is not accounted
-to the cumulative time of the parents, if the parents ignore SIGCHLD
-or have set SA_NOCLDWAIT. This behaviour has the major drawback that
-it is not possible to calculate all consumed CPU time of a system by
-looking at the current tasks. CPU time can be lost.
+* __raw_readl does not have barriers and does not serialize with
+  spinlocks, so it breaks on out-of-order CPUs.
+* __raw_readl does not have a specific endianess, while readl is
+  fixed little-endian, just as the hardware is in this case.
+  The endian-conversion is a NOP on little-endian ARM, but required
+  if you actually run on a big-endian ARM (you don't).
+* __raw_readl may not be atomic, gcc is free to split the access
+  into byte wise reads (it normally does not, unless you mark
+  the pointer __attribute__((packed))).
 
-This patch adds a new sysctl "kernel.full_cdata" that allows to switch
-between the POSIX behavior and complete cumulative accounting.
-The default is the POSIX semantics.
+In essence, it is almost never a good idea to use __raw_readl, and
+the double underscores should tell you so.
 
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- Documentation/sysctl/kernel.txt |   12 ++++++++++++
- kernel/exit.c                   |   13 +++++++++----
- kernel/sysctl.c                 |   10 ++++++++++
- 3 files changed, 31 insertions(+), 4 deletions(-)
-
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -247,6 +247,18 @@ see the hostname(1) man page.
- 
- ==============================================================
- 
-+full_cdata:
-+
-+With "full_cdata = 0" (default) cumulative resource accounting
-+under Linux is done according to POSIX.1-2001: The resource
-+counters of processes are not accounted to the cumulative counters
-+of their parents, if the parents ignore SIGCHLD or have set
-+SA_NOCLDWAIT. With "full_cdata = 1" it is possible to enforce
-+that all dead processes without exception are accounted to their
-+parents.
-+
-+==============================================================
-+
- hotplug:
- 
- Path for the hotplug policy agent.
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -57,6 +57,8 @@
- #include <asm/pgtable.h>
- #include <asm/mmu_context.h>
- 
-+int full_cdata_enabled;
-+
- static void exit_mm(struct task_struct * tsk);
- 
- static void __unhash_process(struct task_struct *p, bool group_dead)
-@@ -77,7 +79,7 @@ static void __unhash_process(struct task
- static void __account_cdata(struct task_struct *p)
- {
- 	struct cdata *cd, *pcd, *tcd;
--	unsigned long maxrss;
-+	unsigned long maxrss, flags;
- 	cputime_t tgutime, tgstime;
- 
- 	/*
-@@ -104,7 +106,7 @@ static void __account_cdata(struct task_
- 	tcd = &p->signal->cdata_threads;
- 	cd = &p->signal->cdata_wait;
- 
--	spin_lock_irq(&p->real_parent->sighand->siglock);
-+	spin_lock_irqsave(&p->real_parent->sighand->siglock, flags);
- 	pcd->utime =
- 		cputime_add(pcd->utime,
- 		cputime_add(tgutime,
-@@ -137,7 +139,7 @@ static void __account_cdata(struct task_
- 		pcd->maxrss = maxrss;
- 	task_io_accounting_add(&p->real_parent->signal->ioac, &p->ioac);
- 	task_io_accounting_add(&p->real_parent->signal->ioac, &p->signal->ioac);
--	spin_unlock_irq(&p->real_parent->sighand->siglock);
-+	spin_unlock_irqrestore(&p->real_parent->sighand->siglock, flags);
- }
- 
- /*
-@@ -150,6 +152,9 @@ static void __exit_signal(struct task_st
- 	struct sighand_struct *sighand;
- 	struct tty_struct *uninitialized_var(tty);
- 
-+	if (group_dead && full_cdata_enabled)
-+		__account_cdata(tsk);
-+
- 	sighand = rcu_dereference_check(tsk->sighand,
- 					rcu_read_lock_held() ||
- 					lockdep_tasklist_lock_is_held());
-@@ -1292,7 +1297,7 @@ static int wait_task_zombie(struct wait_
- 	 * It can be ptraced but not reparented, check
- 	 * !task_detached() to filter out sub-threads.
- 	 */
--	if (likely(!traced) && likely(!task_detached(p)))
-+	if (likely(!traced) && likely(!task_detached(p)) && !full_cdata_enabled)
- 		__account_cdata(p);
- 
- 	/*
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -85,6 +85,7 @@
- #if defined(CONFIG_SYSCTL)
- 
- /* External variables not in a header file. */
-+extern int full_cdata_enabled;
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
- extern int max_threads;
-@@ -963,6 +964,15 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+	{
-+		.procname	= "full_cdata",
-+		.data		= &full_cdata_enabled,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
- /*
-  * NOTE: do not add new entries to this table unless you have read
-  * Documentation/sysctl/ctl_unnumbered.txt
-
+	Arnd
