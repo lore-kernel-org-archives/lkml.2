@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab0K2SxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:53:07 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:50520 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab0K2SxD convert rfc822-to-8bit (ORCPT
+	id S1753772Ab0K2SyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:54:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30367 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab0K2SyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:53:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N5MuCANW0rxcaA0KUsRXXa78vX33l+sSu4BsN9MXAoRMeiFfZ+X3NtESNVOStZW1Fb
-         BSmbPlC/CDjIbsHkBWElQ63kB9WRJXcgCT4z+IQh5/lTLuZwPN8EdPBUHm6HY2usogcZ
-         +5jfjaZ2YlzLNh+dowuvThxxqdMFTV1bJa7bo=
+	Mon, 29 Nov 2010 13:54:14 -0500
+Message-ID: <4CF3F6CB.8080904@oracle.com>
+Date: Mon, 29 Nov 2010 10:54:03 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20101129145717.GA20232@gondor.apana.org.au>
-References: <20101129140335.19800705.sfr@canb.auug.org.au>
-	<AANLkTikiZoNM9zpXw3wSK7-uqh+ZYMpJ+wg0wPpBs_kx@mail.gmail.com>
-	<20101129145717.GA20232@gondor.apana.org.au>
-Date: Mon, 29 Nov 2010 19:53:02 +0100
-Message-ID: <AANLkTinV35OkDownhmqU5=5=2c=6G+sWEhdYpobVMM-U@mail.gmail.com>
-Subject: Re: linux-next: Tree for November 29
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+To: Mathias Krause <minipli@googlemail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Huang Ying <ying.huang@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: linux-next: Tree for November 29 (aesni-intel)
+References: <20101129140335.19800705.sfr@canb.auug.org.au> <20101129083105.e202e922.randy.dunlap@oracle.com> <DAEDA952-8AD2-406D-9F37-33740F86FC59@googlemail.com>
+In-Reply-To: <DAEDA952-8AD2-406D-9F37-33740F86FC59@googlemail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/29 Herbert Xu <herbert@gondor.apana.org.au>:
-> On Mon, Nov 29, 2010 at 09:47:38AM +0000, Zimny Lech wrote:
->> Ave
+On 11/29/10 10:26, Mathias Krause wrote:
+> On 29.11.2010, 17:31 Randy Dunlap wrote:
+>> On Mon, 29 Nov 2010 14:03:35 +1100 Stephen Rothwell wrote:
 >>
->> 2010/11/29 Stephen Rothwell <sfr@canb.auug.org.au>:
->> > Hi all,
->> >
->> > Changes since 20101126:
+>>> Hi all,
+>>>
+>>> Changes since 20101126:
 >>
 >>
->> Setup is 14188 bytes (padded to 14336 bytes).
->> System is 1267 kB
->> CRC 61cea148
->> Kernel: arch/x86/boot/bzImage is ready  (#1)
->>   Building modules, stage 2.
->>   MODPOST 537 modules
->> ERROR: "sock_no_mmap" [crypto/algif_skcipher.ko] undefined!
->
-> I hope this patch fixes it for you.
+>> on i386 builds, I get tons of these (and more) errors:
+>>
+>> arch/x86/crypto/aesni-intel_asm.S:841: Error: bad register name `%r12'
+>> arch/x86/crypto/aesni-intel_asm.S:842: Error: bad register name `%r13'
+>> arch/x86/crypto/aesni-intel_asm.S:843: Error: bad register name `%r14'
+>> arch/x86/crypto/aesni-intel_asm.S:844: Error: bad register name `%rsp'
+>> arch/x86/crypto/aesni-intel_asm.S:849: Error: bad register name `%rsp'
+>> arch/x86/crypto/aesni-intel_asm.S:850: Error: bad register name `%rsp'
+>> arch/x86/crypto/aesni-intel_asm.S:851: Error: bad register name `%r9'
+>>
+>> even though the kernel .config file says:
+>>
+>> CONFIG_CRYPTO_AES=m
+>> CONFIG_CRYPTO_AES_586=m
+>> CONFIG_CRYPTO_AES_NI_INTEL=m
+>>
+>> Should arch/x86/crypto/aesni-intel_asm.S be testing
+>> #ifdef CONFIG_X86_64
+>> instead of
+>> #ifdef __x86_64__
+>> or does that not matter?
+>>
+>> or is this a toolchain issue?
+> 
+> Well, __x86_64__ should be a build-in define of the compiler while
+> CONFIG_X86_64 is defined for 64 bit builds in include/generated/autoconf.h.
+> So by using the latter we should be on the safe side but if your compiler
+> defines __x86_64__ for 32-bit builds it's simply broken. Also git grep
+> showed quite a few more places using __x86_64__ so those would miscompile on
+> your toolchain, too.
+> 
+> But it looks like linux-next is just missing
+> 559ad0ff1368baea14dbc3207d55b02bd69bda4b from Herbert's git repo at
+> git://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git.
+> That should fix the build issue.
 
-Thanks, I'll check it in tomorrows -next.
-
->
-> commit 7451708f39db19a8303bb7fb95f00aca9f673cb5
-> Author: Herbert Xu <herbert@gondor.apana.org.au>
-> Date:   Mon Nov 29 22:56:03 2010 +0800
->
->    crypto: af_alg - Add dependency on NET
->
->    Add missing dependency on NET since we require sockets for our
->    interface.
->
->    Should really be a select but kconfig doesn't like that:
->
->    net/Kconfig:6:error: found recursive dependency: NET -> NETWORK_FILESYSTEMS -> AFS_FS -> AF_RXRPC -> CRYPTO -> CRYPTO_USER_API_HASH -> CRYPTO_USER_API -> NET
->
->    Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
->    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
->
-> diff --git a/crypto/Kconfig b/crypto/Kconfig
-> index 467491d..96b0e55 100644
-> --- a/crypto/Kconfig
-> +++ b/crypto/Kconfig
-> @@ -848,6 +848,7 @@ config CRYPTO_USER_API
->
->  config CRYPTO_USER_API_HASH
->        tristate "User-space interface for hash algorithms"
-> +       depends on NET
->        select CRYPTO_HASH
->        select CRYPTO_USER_API
->        help
-> @@ -856,6 +857,7 @@ config CRYPTO_USER_API_HASH
->
->  config CRYPTO_USER_API_SKCIPHER
->        tristate "User-space interface for symmetric key cipher algorithms"
-> +       depends on NET
->        select CRYPTO_BLKCIPHER
->        select CRYPTO_USER_API
->        help
->
-> Thanks,
-> --
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
->
-
-
+The build problem still happens when that patch is applied.
 
 -- 
-Slawa!
-Zimny "Spie dziadu!" Lech z Wawelu
-
-That is not dead which can eternal lie.
-And with strange aeons even death may die.
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
