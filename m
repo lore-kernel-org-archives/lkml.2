@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab0K2H7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 02:59:35 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:42959 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751528Ab0K2H7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 02:59:34 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKvq8kxR8I07/2dsb2JhbACifHLBKg2FOgSPdQ
-Date: Mon, 29 Nov 2010 08:59:31 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] rdc321x-gpio: fix null pointer dereference while
-	accessing platform_data
-Message-ID: <20101129075931.GF4046@infomag.iguana.be>
-References: <201011261039.54817.florian@openwrt.org> <20101126121546.GM5520@sortiz-mobl>
+	id S1751520Ab0K2IDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:03:48 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:13548 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751103Ab0K2IDr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 03:03:47 -0500
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+To: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Scott Goldman <scottjg@vmware.com>
+Date: Mon, 29 Nov 2010 00:03:45 -0800
+Subject: RE: linux-next: Tree for November 26
+Thread-Topic: linux-next: Tree for November 26
+Thread-Index: AcuODnmji8dTNTojReOcAD108kbNHwBiHkFW
+Message-ID: <89E2752CFA8EC044846EB8499819134102BD7E186A@EXCH-MBX-4.vmware.com>
+References: <20101126132823.7ef94f07.sfr@canb.auug.org.au>,<AANLkTinJUT=j_P9FSB=GWTLy4Bkr68iWmB2O=5Q3gcT-@mail.gmail.com>
+In-Reply-To: <AANLkTinJUT=j_P9FSB=GWTLy4Bkr68iWmB2O=5Q3gcT-@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-2"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101126121546.GM5520@sortiz-mobl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel, Florian,
+Thanks for reporting.
+Thanks to Scott, the fix went in net-next tree, commit number : e9248fbd6b6f7ef1917bfffe998654e40dfb4cfd
 
-You also have my ACK for the watchdog driver.
+->Shreyas
 
-Kind regards,
-Wim.
+________________________________________
+From: Zimny Lech [napohybelskurwysynom2010@gmail.com]
+Sent: Saturday, November 27, 2010 12:38 AM
+To: Stephen Rothwell
+Cc: linux-next@vger.kernel.org; LKML; Shreyas Bhatewara; VMware, Inc.; netdev@vger.kernel.org
+Subject: Re: linux-next: Tree for November 26
 
-> Hi Florian,
-> 
-> On Fri, Nov 26, 2010 at 10:39:54AM +0100, Florian Fainelli wrote:
-> > rdc321x-gpio currently fetches its driver specific data by using the platform_
-> > device->platform_data pointer, this is wrong because the mfd device which
-> > registers our platform_device has been added using mfd_add_device() which sets
-> > the platform_device->driver_data pointer instead.
-> > 
-> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> > CC: stable@kernel.org
-> I'll take those 2 patches.
-> 
-> Cheers,
-> Samuel.
-> 
-> -- 
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+Ave
+
+2010/11/26 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Hi all,
+>
+> Changes since 20101125:
+
+
+  CC      drivers/net/vmxnet3/vmxnet3_drv.o
+  CC      drivers/net/vmxnet3/vmxnet3_ethtool.o
+/home/test/linux-2.6/drivers/net/vmxnet3/vmxnet3_ethtool.c: In
+function 'vmxnet3_get_rss_indir':
+/home/test/linux-2.6/drivers/net/vmxnet3/vmxnet3_ethtool.c:562:40:
+error: 'struct vmxnet3_adapter' has no member named 'rss_conf'
+/home/test/linux-2.6/drivers/net/vmxnet3/vmxnet3_ethtool.c: In
+function 'vmxnet3_set_rss_indir':
+/home/test/linux-2.6/drivers/net/vmxnet3/vmxnet3_ethtool.c:578:40:
+error: 'struct vmxnet3_adapter' has no member named 'rss_conf'
+make[4]: *** [drivers/net/vmxnet3/vmxnet3_ethtool.o] Error 1
+make[3]: *** [drivers/net/vmxnet3] Error 2
+make[2]: *** [drivers/net] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
+
+
+
+--
+Slawa!
+Zimny "¯yj i pozwól umrzeæ" Lech z Wawelu
+
+That is not dead which can eternal lie.
+And with strange aeons even death may die.
