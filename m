@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab0K2AmQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Nov 2010 19:42:16 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41905 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab0K2AmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Nov 2010 19:42:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=nFibTbalwgMd1/ev0dqyn13ckDLEB9IT3Tz/Hh+Jf4xAnk1PwqNLXD2/jzQvzn0P+i
-         UlB22cryBDfKPtlfoMuDIH+xe3SjRx5754mMyMHejGOJQ33bBlL/K4hFcY4IQVi4ygFd
-         zZRnOb1wOp3OZ1BqVzQQwA8twssq4rz/TaphM=
-From: Thiago Farina <tfransosi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] apic/io_apic.c: Remove unused variable 'desc'.
-Date: Sun, 28 Nov 2010 22:42:01 -0200
-Message-Id: <9354bfd606c4f42b8433bfb1be173198e94f1d87.1290991196.git.tfransosi@gmail.com>
-X-Mailer: git-send-email 1.7.3.2.343.g7d43d
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754492Ab0K2AxH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Nov 2010 19:53:07 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:54575 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754270Ab0K2AxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Nov 2010 19:53:04 -0500
+Date: Mon, 29 Nov 2010 11:52:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andres Salomon <dilinger@queued.net>
+Subject: linux-next: build warning after merge of the mfd tree
+Message-Id: <20101129115257.9a78ad14.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__29_Nov_2010_11_52_57_+1100_MogseOtbvw2HzhUh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix the following warning:
+--Signature=_Mon__29_Nov_2010_11_52_57_+1100_MogseOtbvw2HzhUh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-arch/x86/kernel/apic/io_apic.c: In function ‘ack_apic_level’:
-arch/x86/kernel/apic/io_apic.c:2433: warning: unused variable ‘desc’
+Hi Samuel,
 
-Signed-off-by: Thiago Farina <tfransosi@gmail.com>
----
- arch/x86/kernel/apic/io_apic.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+After merging the mfd tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 7cc0a72..31c493d 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2430,7 +2430,6 @@ static void ack_apic_level(struct irq_data *data)
- {
- 	struct irq_cfg *cfg = data->chip_data;
- 	int i, do_unmask_irq = 0, irq = data->irq;
--	struct irq_desc *desc = irq_to_desc(irq);
- 	unsigned long v;
- 
- 	irq_complete_move(cfg);
--- 
-1.7.3.2.343.g7d43d
+drivers/mfd/cs5535-mfd.c: In function 'cs5535_mfd_probe':
+drivers/mfd/cs5535-mfd.c:106: warning: format '%d' expects type 'int', but =
+argument 3 has type 'long unsigned int'
 
+Introduced by commit a0d4503a044e67ac46adfe8f42eddefd2b60f85e ("mfd: Add
+cs5535-mfd driver for AMD Geode's CS5535/CS5536 support").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__29_Nov_2010_11_52_57_+1100_MogseOtbvw2HzhUh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM8vlpAAoJEDMEi1NhKgbsT2sH/je1ehpGwkU1LHcmGzQGdI5z
+Xw35JaHSpVbhPw22/JPcUso28yHCN3ZiHulzBKYaKUFeJJ+VT6wu3HujZ1eG0YgP
+CEJne4xUc7lNCu62IPRQfkqIA/io+0Z0oIHniXxFbkWvNd+X9uQD9ow0bglqcCWX
+5272r4ihj/JqCEBg+9r3vuzLNc0ZYpAH2PDkA84ICdeIbcLuD6f7tJZkgw2Jgvvb
+hx4hA51mI7SMryCR6WwWe2Gbp6GCLZV4WvwbSeO/KrYkY001gHrVPEfG4muiz86I
+t0f8vXyOneET3d+QoWu0Y8vBn6YvEmw2kcoB8OyZu+NJ7bhA0J/V9DSznWoYAOQ=
+=CYK4
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Nov_2010_11_52_57_+1100_MogseOtbvw2HzhUh--
