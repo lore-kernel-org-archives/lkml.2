@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab0K2SF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 13:05:26 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51122 "EHLO mx2.mail.elte.hu"
+	id S1755450Ab0K2SGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 13:06:21 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44535 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab0K2SFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 13:05:24 -0500
-Date: Mon, 29 Nov 2010 19:04:29 +0100
+	id S1751585Ab0K2SGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 13:06:20 -0500
+Date: Mon, 29 Nov 2010 19:06:05 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, w@1wt.eu,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101129180429.GB14046@elte.hu>
-References: <20101116104600.GA24015@suse.de>
- <20101119191906.GA31760@xanatos>
- <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com>
- <20101126074809.GD19589@elte.hu>
- <20101129163308.GA2383@xanatos>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>, Frede_Feuerstein@gmx.net,
+        603229@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Scheduler grouping failure; division by zero in
+ select_task_rq_fair
+Message-ID: <20101129180605.GC14046@elte.hu>
+References: <1290449310.3868.13.camel@localhost>
+ <1290470134.6770.929.camel@localhost>
+ <1290514638.3892.16.camel@localhost>
+ <1290900814.3292.84.camel@localhost>
+ <1290920436.4255.1025.camel@localhost>
+ <1290975266.3292.316.camel@localhost>
+ <1291031425.32004.16.camel@laptop>
+ <20101129162605.GH8695@decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101129163308.GA2383@xanatos>
+In-Reply-To: <20101129162605.GH8695@decadent.org.uk>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,34 +40,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+* Ben Hutchings <ben@decadent.org.uk> wrote:
 
-> On Fri, Nov 26, 2010 at 08:48:09AM +0100, Ingo Molnar wrote:
+> On Mon, Nov 29, 2010 at 12:50:25PM +0100, Peter Zijlstra wrote:
+> > On Sun, 2010-11-28 at 20:14 +0000, Ben Hutchings wrote:
 > > 
-> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > > [    0.856002] Pid: 2, comm: kthreadd Not tainted 2.6.32-5-amd64 #1 W1100z/2100z
 > > 
-> > > On Fri, Nov 19, 2010 at 11:19 AM, Sarah Sharp
-> > > <sarah.a.sharp@linux.intel.com> wrote:
-> > > >
-> > > > .config and dmesg are attached.  The box is running klogd 1.5.5ubuntu3
-> > > > (from Jaunty).  Yes, I know that's old.  I read the bit in the commit
-> > > > about changing the permissions of kallsyms after boot, but if I can't
-> > > > boot that doesn't help.  Perhaps this can be made a configuration
-> > > > option?
-> > > 
-> > > It's not worth a config option.
-> > > 
-> > > If it actually breaks user-space, I think we should just revert it.
-> > 
-> > Sarah,
-> > 
-> > Does your system boot fine if we make /proc/kallsyms simply an empty file to 
-> > unprivileged users? Something like the (untested ...) patch below.
+> > What's in that kernel? is that simply the latest .32-stable?
 > 
-> Yes, that works.  The system boots as normal. `cat /proc/kallsyms`
-> returns an empty file, and `sudo cat /proc/kallsyms` does not.
+> No, we have quite a few backported driver features and some bug fixes
+> that aren't in stable yet.  No scheduler or topology changes except
+> reverting 669c55e9f99b90e46eaa0f98a67ec53d46dc969a for ABI reasons
+> (which I guess we don't actually need to do).
+> 
+> > > [    0.536554] CPU0 attaching sched-domain:
+> > > [    0.540004]  domain 0: span 0-1 level MC
+> > > [    0.548002]   groups: 0 1
+> > > [    0.560003]   domain 1: span 0-3 level NODE
+> > > [    0.568002]    groups:
+> > > [    0.574179] ERROR: domain->cpu_power not set
+> > > [    0.576002]
+> > > [    0.580002] ERROR: groups don't span domain->span
+> > > [    0.584004] CPU1 attaching sched-domain:
+> > > [    0.588007]  domain 0: span 0-1 level MC
+> > > [    0.596002]   groups: 1 0 (cpu_power = 1023)
+> > > [    0.612002] ERROR: parent span is not a superset of domain->span
+> > > [    0.616003]   domain 1: span 1-3 level CPU
+> > > [    0.624002]    groups: 1 (cpu_power = 2048) 2-3 (cpu_power = 2048)
+> > > [    0.644003]    domain 2: span 0-3 level NODE
+> > > [    0.652004]     groups: 1-3 (cpu_power = 4096)
+> > > [    0.668002] ERROR: domain->cpu_power not set
+> > > [    0.672002]
+> > > [    0.676002] ERROR: groups don't span domain->span
+> > > [    0.680004] CPU2 attaching sched-domain:
+> > > [    0.684003]  domain 0: span 2-3 level MC
+> > > [    0.692003]   groups: 2 3
+> > > [    0.704003]   domain 1: span 1-3 level CPU
+> > > [    0.712003]    groups: 2-3 (cpu_power = 2048) 1 (cpu_power = 2048)
+> > > [    0.736003]    domain 2: span 0-3 level NODE
+> > > [    0.744003]     groups: 1-3 (cpu_power = 4096)
+> > > [    0.760003] ERROR: domain->cpu_power not set
+> > > [    0.764003]
+> > > [    0.768003] ERROR: groups don't span domain->span
+> > > [    0.772004] CPU3 attaching sched-domain:
+> > > [    0.776003]  domain 0: span 2-3 level MC
+> > > [    0.784003]   groups: 3 2
+> > > [    0.794183]   domain 1: span 1-3 level CPU
+> > > [    0.800003]    groups: 2-3 (cpu_power = 2048) 1 (cpu_power = 2048)
+> > > [    0.822183]    domain 2: span 0-3 level NODE
+> > > [    0.828003]     groups: 1-3 (cpu_power = 4096)
+> > > [    0.842180] ERROR: domain->cpu_power not set
+> > > [    0.844003]
+> > > [    0.848003] ERROR: groups don't span domain->span
+> > 
+> > Hrm that smells like the architecture topology setup is wrecked, looks
+> > like the NUMA setup is bonkers.
+> [...]
+> 
+> Right, that's what I thought.  Question is whether the topology setup
+> code should fix this up or whether the schedular init should (as it
+> appears to have done before 2.6.32).
 
-Great! Marcus, mind respinning your patch with that approach?
+We definitely want to robustify scheduler init code to not crash and to (if 
+possible) print a warning about the borkage.
 
 Thanks,
 
