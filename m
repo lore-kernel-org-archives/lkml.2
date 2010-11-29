@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab0K2UcQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 15:32:16 -0500
-Received: from claw.goop.org ([74.207.240.146]:41892 "EHLO claw.goop.org"
+	id S1753518Ab0K2Ud3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 15:33:29 -0500
+Received: from rs35.luxsci.com ([66.216.127.90]:48808 "EHLO rs35.luxsci.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab0K2UcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 15:32:15 -0500
-Message-ID: <4CF40DCB.5010007@goop.org>
-Date: Mon, 29 Nov 2010 12:32:11 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1752202Ab0K2Ud2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 15:33:28 -0500
+Message-ID: <4CF40DF4.9060204@firmworks.com>
+Date: Mon, 29 Nov 2010 10:32:52 -1000
+From: Mitch Bradley <wmb@firmworks.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@kernel.dk>
-CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH RFC] vmalloc: eagerly clear ptes on vunmap
-References: <4CEF6B8B.8080206@goop.org> <20101127103656.GA6884@amd>
-In-Reply-To: <20101127103656.GA6884@amd>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Scott Wood <scottwood@freescale.com>, sodaville@linutronix.de,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>	<1290706801-7323-4-git-send-email-bigeasy@linutronix.de>	<1290808645.32570.158.camel@pasglop>	<20101128160449.GC30784@www.tglx.de>	<1290984809.32570.208.camel@pasglop>	<20101129130720.7d060e1c@udp111988uds.am.freescale.net> <1291061128.32570.298.camel@pasglop>
+In-Reply-To: <1291061128.32570.298.camel@pasglop>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When unmapping a region in the vmalloc space, clear the ptes immediately.
-There's no point in deferring this because there's no amortization
-benefit.
+The usual layout is that the PCI bus is a direct child of
+the root node, and the ISA bus is a child of the PCI bus.
+That reflects the "Northbridge + Southbridge" wiring that
+was common at the time that PCI was first introduced.
+It's usually the case that faster and wider buses are closer
+to the root, with speed and address width decreasing as you
+go away from the root.
 
-The TLBs are left dirty, and they are flushed lazily to amortize the
-cost of the IPIs.
+The fact that PCI configuration accesses are done via I/O
+port 0x3fc doesn't make it a child of the ISA bus, because
+I/O space is inherent in the x86 CPU architecture and thus
+can be considered to be part of the root address space.
 
-This specific motivation for this patch is a regression since 2.6.36 when
-using NFS under Xen, triggered by the NFS client's use of vm_map_ram()
-introduced in 56e4ebf877b6043c289bda32a5a7385b80c17dee.  XFS also uses
-vm_map_ram() and could cause similar problems.
+In the systems that I have worked with, the ISA bridge is a
+first-class PCI device with a PCI config header, so it fits
+naturally underneath the PCI bus.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index a3d66b3..9960644 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -566,7 +566,6 @@ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
- 			if (va->va_end > *end)
- 				*end = va->va_end;
- 			nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
--			unmap_vmap_area(va);
- 			list_add_tail(&va->purge_list, &valist);
- 			va->flags |= VM_LAZY_FREEING;
- 			va->flags &= ~VM_LAZY_FREE;
-@@ -616,6 +615,8 @@ static void purge_vmap_area_lazy(void)
-  */
- static void free_unmap_vmap_area_noflush(struct vmap_area *va)
- {
-+	unmap_vmap_area(va);
-+
- 	va->flags |= VM_LAZY_FREE;
- 	atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT, &vmap_lazy_nr);
- 	if (unlikely(atomic_read(&vmap_lazy_nr) > lazy_max_pages()))
-@@ -944,8 +945,10 @@ static void vb_free(const void *addr, unsigned long size)
- 		BUG_ON(vb->free);
- 		spin_unlock(&vb->lock);
- 		free_vmap_block(vb);
--	} else
-+	} else {
- 		spin_unlock(&vb->lock);
-+		vunmap_page_range((unsigned long)addr, (unsigned long)addr + size);
-+	}
- }
- 
- /**
-@@ -988,7 +991,6 @@ void vm_unmap_aliases(void)
- 
- 				s = vb->va->va_start + (i << PAGE_SHIFT);
- 				e = vb->va->va_start + (j << PAGE_SHIFT);
--				vunmap_page_range(s, e);
- 				flush = 1;
- 
- 				if (s < start)
+Here are the properties for PCI and ISA on the OLPC XO-1.5
+platform (Via C7 x86 CPU with Via VX855 IO chip):
 
 
+ok dev /pci
+ok .properties
+interrupt-map            00000800 00000000 00000000 00000001 ff86bf34 0000000a 00000000
+                         00006000 00000000 00000000 00000001 ff86bf34 0000000a 00000000
+                         00008000 00000000 00000000 00000001 ff86bf34 0000000a 00000000
+                         00008100 00000000 00000000 00000002 ff86bf34 00000009 00000000
+                         00008200 00000000 00000000 00000003 ff86bf34 0000000b 00000000
+                         00008400 00000000 00000000 00000004 ff86bf34 0000000a 00000000
+                         0000a000 00000000 00000000 00000001 ff86bf34 00000009 00000000
+interrupt-map-mask       0000ff00 00000000 00000000 00000007
+#interrupt-cells         00000001
+slot-names               00000000
+slave-only               00000000
+clock-frequency          01fca055
+bus-range                00000000 00000000
+#size-cells              00000002
+#address-cells           00000003
+device_type              pci
+name                     pci
+
+ok dev /pci/isa
+ok .properties
+devsel-speed             00000001
+class-code               00060100
+subsystem-vendor-id      0000152d
+subsystem-id             00000833
+max-latency              00000000
+min-grant                00000000
+revision-id              00000000
+device-id                00008409
+vendor-id                00001106
+interrupt-parent         ff86bf34
+#interrupt-cells         00000002
+ranges                   00000000 00000000 02000000 00000000 00000000 01000000
+                         00000001 00000000 01000000 00000000 00000000 00010000
+clock-frequency          007ea5e0
+reg                      00008800 00000000 00000000 00000000 00000000
+#size-cells              00000001
+#address-cells           00000002
+device_type              isa
+name                     isa
+
+Note that the PCI node has no reg property.  On a system with multiple independent PCI buses at the top level, it would be necessary to distinguish them with reg properties reflecting their different addresses in the root address space.  PC-style architectures typically (always?) have a single top-level PCI domain, so I've never never needed to do that in x86 land.  It used to be pretty common on PPC "big iron".
