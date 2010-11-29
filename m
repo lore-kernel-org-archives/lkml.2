@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab0K2W2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 17:28:41 -0500
-Received: from tex.lwn.net ([70.33.254.29]:45363 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860Ab0K2W2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 17:28:40 -0500
-Date: Mon, 29 Nov 2010 15:28:38 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-Message-ID: <20101129152838.4ff57277@bike.lwn.net>
-In-Reply-To: <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
-	<20101129131737.3dd6eb03@bike.lwn.net>
-	<Pine.LNX.4.64.1011292147540.27962@axis700.grange>
-	<20101129214128.GA9691@kroah.com>
-	<Pine.LNX.4.64.1011292300300.27962@axis700.grange>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.23.2; x86_64-redhat-linux-gnu)
+	id S1754795Ab0K2WaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 17:30:09 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:50222 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab0K2WaH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 17:30:07 -0500
+Subject: Re: linux-next: build failure after merge of the final tree (tip
+ tree related)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101129135045.15aec5ed.sfr@canb.auug.org.au>
+References: <20101129135045.15aec5ed.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 29 Nov 2010 23:30:19 +0100
+Message-ID: <1291069819.32004.493.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010 23:10:50 +0100 (CET)
-Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+On Mon, 2010-11-29 at 13:50 +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+> 
+> arch/sparc/kernel/perf_event.c:1326: error: 'init_hw_perf_event' undeclared here (not in a function)
+> 
+> Caused by commit 004417a6d468e24399e383645c068b498eed84ad ("perf, arch:
+> Cleanup perf-pmu init vs lockup-detector").
+> 
+> I reverted that commit for today.
 
-> In my case I have two platform devices: CEU and CSI2. In some cases (with 
-> parallel sensors) CEU operates on its own. With serial (CSI-2) camera 
-> sensors we need the CSI2 driver. So, I want to 
-> try_module_get(csi2_dev->driver->owner) the CSI2 driver from my CEU 
-> driver. This call can Oops if not done safely. Am I missing something? Is 
-> there an easier way to achieve the same?
+Ingo, can we back-merge this?
 
-This looks exactly like what the V4L2 subdev mechanism was meant to do.
-Is there a reason you can't use that interface?
+---
+ arch/sparc/kernel/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index 75c5b12..39348b1 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1323,7 +1323,7 @@ int __init init_hw_perf_events(void)
+ 
+ 	return 0;
+ }
+-early_initcall(init_hw_perf_event);
++early_initcall(init_hw_perf_events);
+ 
+ void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ 			   struct pt_regs *regs)
 
-jon
