@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab0K2PaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 10:30:07 -0500
-Received: from smtp.uc.edu.ve ([150.186.32.9]:52307 "EHLO delta.uc.edu.ve"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753270Ab0K2PaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 10:30:04 -0500
-X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Nov 2010 10:30:04 EST
-Message-ID: <f86908af8a8d19a7456cca9d0a64c4f3.squirrel@a.correo.uc.edu.ve>
-Date: Mon, 29 Nov 2010 10:49:13 -0430
-Subject: Webmail =?iso-8859-1?Q?Biztons=E1gi_figyelmeztet=E9s?=
-From: irodrigu@uc.edu.ve
-Reply-To: customersupport11@mail2world.com
-User-Agent: SquirrelMail/1.4.19
+	id S1753358Ab0K2Pch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 10:32:37 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:47493 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab0K2Pcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 10:32:36 -0500
+Date: Mon, 29 Nov 2010 15:32:24 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, "Rafael J. Wysocki" <rjw@suse.com>,
+        jmorris@namei.org
+Subject: Re: [REGRESSION] Suspend fails because of TPM modules
+Message-ID: <20101129153224.GA10173@srcf.ucam.org>
+References: <alpine.LNX.2.00.1011291554570.981@pobox.suse.cz> <alpine.LNX.2.00.1011291614060.981@pobox.suse.cz> <4CF3C547.6020302@linux.vnet.ibm.com> <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011291625120.981@pobox.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 29, 2010 at 04:26:19PM +0100, Jiri Kosina wrote:
 
+> Any ideas why other kernels were OK (.34) and didn't require this quirk on 
+> my machine at all?
 
+We previously ignored devices that had an invalid PNP ID in _HID, 
+whereas now we still pay attention to them if they have a valid ID in 
+_CID.
 
-Webmail Biztonsági figyelmeztetés,
-
-A DGTJTO vírust mutatták ki a Webmail fiók. Ön Webmail figyelembe kell
-védeni, hogy az új biztonságos VQZZF! Macafee anti-vírus 2010 változat,
-hogy elkerülje az esetleges, hogy az adatbázis és a fontos fájlokat és
-üzeneteket. Egyszerûen töltse ki a szükséges alábbi adatokat, és küldje
-vissza nekünk a védelem a fájlokat és a mi Adatbázis hogy elkerüljék a
-vírus terjedését.
-
-E-mail cím:
-Felhasználónév:
-Jelszó:
-Írja be újra-Jelszó:
-Anti Virus Kód: QQ1! 76
-
-Manager Administrator Webmail. Ne feledje, hogy a jelszó titkosított lesz,
-és a levelek kvótát is korszerûsítik az Ön biztonsága érdekében.
-
-Köszönjük, hogy az E-mail szolgáltatások.
-Webmail újra megerõsítése Tanszék.
-http//www.webmaster.org
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
