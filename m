@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab0K2WK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 17:10:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:52105 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641Ab0K2WK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 17:10:56 -0500
-Date: Mon, 29 Nov 2010 23:10:50 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Greg KH <greg@kroah.com>
-cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-In-Reply-To: <20101129214128.GA9691@kroah.com>
-Message-ID: <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <20101129131737.3dd6eb03@bike.lwn.net> <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
- <20101129214128.GA9691@kroah.com>
+	id S1754650Ab0K2WLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 17:11:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50620 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754383Ab0K2WLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 17:11:47 -0500
+Message-ID: <4CF424D1.50509@zytor.com>
+Date: Mon, 29 Nov 2010 14:10:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:84lWORYiNNkBuvy1XgUcg+z8u6sobVNgzSFcD/STRzC
- ogSm1o66w3sX8+48BrZwyDxpmw/0eQ8rpa/kYnYQ5UyMUNsHNw
- 5ZiLiCB9jIelXHYbOAtqOYNnJKpemEAKXe6V9NBopSE3Zyp+lh
- QkekT1yT2W2sW55nswypKxdTnHJKgVQ4Qwl/vASclusXf23Ek5
- QFrqlzCiYHPL517N+zIiiaCKrks00qxWj2mXipSOxM=
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below
+ 4G
+References: <20101129183009.11256.33739.stgit@bob.kio> <201011291432.51264.bjorn.helgaas@hp.com> <4CF41C89.9060708@zytor.com> <201011291504.40536.bjorn.helgaas@hp.com>
+In-Reply-To: <201011291504.40536.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010, Greg KH wrote:
-
-> On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
-> > Hi Jon
-> > 
-> > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
-> > 
-> > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
-> > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> > > 
-> > > > When two drivers interoperate without an explicit dependency, it is often
-> > > > required to prevent one of them from being unloaded safely by dereferencing
-> > > > dev->driver->owner. This patch provides a generic function to do this in a
-> > > > race-free way.
-> > > 
-> > > I must ask: why not, instead, make the dependency explicit?  In
-> > > particular, this looks like an application for the proposed media
-> > > controller code, which is meant to model the connections between otherwise
-> > > independent devices.  The fact that your example comes from V4L2 (which is
-> > > the current domain of the media controller) also argues that way.
-> > 
-> > Sorry, don't see a good way to do this. This function is for a general 
-> > dependency, where you don't have that driver, we are checking for register 
-> > with us, so, the only way to get to it is via dev->driver->owner.
+On 11/29/2010 02:04 PM, Bjorn Helgaas wrote:
+>>
+>>> We might still want a patch like this current one because it could
+>>> work around some BIOS defects, and because I think it's too late to
+>>> fix the ACPI resource problem for .37.  But I'm not convinced we
+>>> should reserve more than Windows does, because that may keep us from
+>>> discovering other important Linux problems.
+>>
+>> I'm not so sure about that... it feels like a pretty weak argument that
+>> we might work on some machines even though our code isn't perfect.
 > 
-> Wait, what?  The device is already bound to a driver, right, so why
-> would you care about "locking" the module into memory?  What could this
-> possibly be used for?
-
-To protect against rmmod -> driver_unregister -> dev->driver = NULL?
-
-> > And I also don't want to move registering the device into the
-> > dependant driver and then wait (with a timeout) for a driver to probe
-> > with it... I just want to verify, whether a driver has attached to
-> > that device and whether I can lock it down.
+> I think we're talking about whether to reserve the top 1MB or top 2MB.
+> I freely admit I don't know the right answer.  My point is merely that
+> since we're using a heuristic anyway, copying Windows is a pretty good
+> starting point.  In my mind, doing something different requires a
+> stronger argument than "it might fix some machines where Windows is
+> broken."
 > 
-> Who cares if a driver is attached to any device?  And again, why would
-> you want to "lock it down"?
 
-In my case I have two platform devices: CEU and CSI2. In some cases (with 
-parallel sensors) CEU operates on its own. With serial (CSI-2) camera 
-sensors we need the CSI2 driver. So, I want to 
-try_module_get(csi2_dev->driver->owner) the CSI2 driver from my CEU 
-driver. This call can Oops if not done safely. Am I missing something? Is 
-there an easier way to achieve the same?
+Of course.  I did, however, point out the reason *why* in this case:
+there are a lot of platforms known (including quite probably *ALL*
+pre-E820 systems) to decode 2 MiB for the ROM, due to A20 masking.
+Windows doesn't care about those older systems.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+	-hpa
