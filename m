@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222Ab0K2ILc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 03:11:32 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49458 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab0K2ILb (ORCPT
+	id S1751266Ab0K2INL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 03:13:11 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48154 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab0K2INJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 03:11:31 -0500
+	Mon, 29 Nov 2010 03:13:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LtcUmfeew+iX4sSYLdeNVfQupVKV62QBTu1kYd4jQklqggfMpgyPFShxQjZu9PuaTm
-         n4Hweo2YTh2bx8Bpe4/PAHmO4kxy0803Ype0knxpoVBXhMh8cC26Bw/FlYfMmAP+E2e1
-         YlIIUoY9G6bXAfBDCyuP2vEXM5DZdNq6Zw48c=
-Date: Mon, 29 Nov 2010 16:16:19 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gdb@sourceware.org, hellogcc@freelists.org
-Subject: Re: [PATCH] Built kernel without -O2 option
-Message-ID: <20101129081619.GD5218@cr0.nay.redhat.com>
-References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
+        d=googlemail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=eRK2CS0W7u/WArfLY4MOMeMJFs9VuN0tpCw9UAwKj6YC2emhirTL400rGiVgxmrPRF
+         kgTjZbZro+VDOHHOOi/MpUwLvpstVMCRKK1MEZy+FRUDY8R5uEkUK4eFIPX/P3g3TWBG
+         qoossTLFND2r1pCttL9fb0FqRSFF8jdpCjt2g=
+Date: Mon, 29 Nov 2010 09:12:51 +0100 (CET)
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+X-X-Sender: elektroman@localhost.localdomain
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
+In-Reply-To: <201011271639.21694.arnd@arndb.de>
+Message-ID: <alpine.LNX.2.00.1011290912270.10937@localhost.localdomain>
+References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <alpine.LNX.2.00.1011271306420.7659@localhost.localdomain> <AANLkTinbAVFE+HZrx+9KUwx8=MKFHPqrhpOpAWAEQFv-@mail.gmail.com> <201011271639.21694.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2113523565-1291018387=:10937"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:56:15AM +0800, Hui Zhu wrote:
->Hi,
->
->Now, there are a lot of ways to debug the Linux kernel with GDB, like
->qemu, kgtp or kgdb and so on.
->But the developer more like add a printk. It have a lot of reason, a big one is:
->(gdb) p ret
->$3 = <value optimized out>
->And the code execution order is not right.
->
->This is becuase the Kernel is bult with gcc -O2.  Gcc will not
->generate enough debug message with file with -O2.
->So GDB cannot work very well with Linux kernel.
->
->So I make a patch that add a option in "Kernel hacking" called "Close
->GCC optimization".  It will make kernel be built without -O2.
->
->I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-The problem is that some functions _have to_ be inlined and gcc without -O2
-doesn't inline them. Have check all the cases? I doubt.
+--8323328-2113523565-1291018387=:10937
+Content-Type: TEXT/PLAIN; charset=iso-8859-2
+Content-Transfer-Encoding: 8BIT
 
-Also, what is size of vmlinux before applying your patch and after that?
-Does it increase too much?
+
+
+On Sat, 27 Nov 2010, Arnd Bergmann wrote:
+
+> On Saturday 27 November 2010 14:01:20 Micha³ Miros³aw wrote:
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index db524e7..74ea522 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -1164,7 +1164,7 @@ config ISA_DMA_API
+> >         bool
+> > 
+> >  config PCI
+> > -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
+> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
+> > +       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB ||
+> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX ||
+> > ARCH_GEMINI
+> >         help
+> >           Find out whether you have a PCI motherboard. PCI is the name of a
+> >           bus system, i.e. the way the CPU talks to the other stuff inside
+> > 
+> 
+> This approach really does not scale as we add more boards to the list.
+> 
+> Better make a new CONFIG_HAVE_PCI option that you can select from the
+> individual boards, and make that the only dependency that CONFIG_PCI has.
+> 
+> 	Arnd
+> 
+Good idea.
+I write a patch for this.
+
+Ulli
+--8323328-2113523565-1291018387=:10937--
