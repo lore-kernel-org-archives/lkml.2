@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab0K3Dho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 22:37:44 -0500
-Received: from kroah.org ([198.145.64.141]:56739 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab0K3Dhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 22:37:43 -0500
-Date: Mon, 29 Nov 2010 19:29:15 -0800
-From: Greg KH <greg@kroah.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>, Greg KH <gregkh@suse.de>,
-        Scott Wood <scottwood@freescale.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        devicetree-discuss@vger.kernel.org
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101130032915.GA13386@kroah.com>
-References: <4CE5657D.8060105@freescale.com>
- <20101118121356.3491da72@udp111988uds.am.freescale.net>
- <1290594227.4446.12.camel@concordia>
- <20101124120818.7951bcb4@udp111988uds.am.freescale.net>
- <20101124182353.GA10589@suse.de>
- <1290638647.14502.10.camel@concordia>
- <20101129214439.GA9830@kroah.com>
- <4CF42053.8060801@freescale.com>
- <20101129223030.GA14663@kroah.com>
- <4CF42B02.1030009@freescale.com>
+	id S1753078Ab0K3DkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 22:40:03 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:56991 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab0K3DkB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 22:40:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=EoVEyMcCPceISYfWWJX1efa5e1ldSSLqSQ2LU2WixyNCQiaWVe8teMs1Hes1TlFale
+         8e7/H1VBkRV8bn71Agsw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF42B02.1030009@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101129192033.GA18372@elte.hu>
+References: <20101121133744.GA10765@elte.hu> <1290700829.4759.16.camel@maggy.simson.net>
+ <1290954299.30515.15.camel@marge.simson.net> <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
+ <20101128201851.GA20555@elte.hu> <1291031593.32004.19.camel@laptop>
+ <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+ <1291052268.32004.171.camel@laptop> <1291057565.20709.2.camel@marge.simson.net>
+ <20101129192033.GA18372@elte.hu>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 29 Nov 2010 19:39:27 -0800
+Message-ID: <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:36:50PM -0600, Timur Tabi wrote:
-> Greg KH wrote:
-> > I really don't want to get into it, but the networking code is the only
-> > thing that allows this due to the userspace "want" to rename devices
-> > because we can't create symlinks to network devices like we can for all
-> > other devices (as they use device nodes.)
-> > 
-> > When this function is called, userspace had better know exactly what is
-> > going on as it can get confused due to the lack of uevents happening.
-> 
-> Thanks for the explanation, but I'm just concerned that you'll add a comment
-> that says, "don't call this function".  A quick grep will show that there are
-> users of this function, and we'll have this exact conversation all over again.
+On Mon, Nov 29, 2010 at 11:20 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Mike Galbraith <efault@gmx.de> wrote:
+>
+>> > I know, from the testing so far we _thought_ it was fairly sane. Apparently
+>> > there's still some work to do.
+>>
+>> Damn thing bisected to:
+>>
+>> commit 92fd4d4d67b945c0766416284d4ab236b31542c4
+>> Merge: fe7de49 e53beac
+>> Author: Ingo Molnar <mingo@elte.hu>
+>> Date:   Thu Nov 18 13:22:14 2010 +0100
+>>
+>>     Merge commit 'v2.6.37-rc2' into sched/core
+>>
+>>     Merge reason: Move to a .37-rc base.
+>>
+>>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>>
+>> 92fd4d4d67b945c0766416284d4ab236b31542c4 is the first bad commit
+>
+> Hm, i'd suggest to double check the two originator points:
+>
+>  e53beac - is it really 'bad' ?
+>  fe7de49 - is it really 'good'?
+>
+> Thanks,
+>
+>        Ingo
+>
 
-Care to turn the above into a patch?  I'll be glad to apply that as well
-:)
+https://lkml.org/lkml/2010/11/29/566
 
-thanks,
+Should fix this.  We missed this in testing as the delay between
+last-task-exit and group destruction was always sufficiently large as
+to ensure that the task_group had aged out of shares updates (as
+opposed to requiring explicit removal).
 
-greg k-h
+With autogroup obviously the window here is essentially instantaneous
+which leads to the buggy removal code being executed.
