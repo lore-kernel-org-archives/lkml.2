@@ -1,62 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab0K3TTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:19:25 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:51356 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752480Ab0K3TTX (ORCPT
+	id S1750902Ab0K3TT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:19:27 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:22330 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756082Ab0K3TTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:19:23 -0500
-Date: Tue, 30 Nov 2010 20:19:14 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Grant Edwards <grant.b.edwards@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-Message-ID: <20101130191913.GA5295@ucw.cz>
-References: <i9kk4o$svc$1@dough.gmane.org>
- <4CC418A9.6090602@evidence.eu.com>
- <4CDA630F.4060903@atmel.com>
- <20101110172842.GC12371@suse.de>
- <4CDBC3EC.6020707@evidence.eu.com>
- <20101116143016.GB6527@ucw.cz>
- <AANLkTi=grehSnfWzCDtSXXmNb=-NAwbHHJ_P1XPyOuw8@mail.gmail.com>
- <20101116172013.102e06a6@lxorguk.ukuu.org.uk>
- <ibuh1v$uh6$1@dough.gmane.org>
- <20101116200426.75085b68@lxorguk.ukuu.org.uk>
+	Tue, 30 Nov 2010 14:19:25 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: fBnLVx8VM1lYwKH57WIbs8GoRD1.6.ohdKkfmIVY8xtvdwb
+ PJPZZRyyCdE8dK.lZ.PXeAO0uAd01dt_IeFjabnSz.AVHVKJNy_uXvZGnOq0
+ YpszuNqLLYl0mahTGA.YmYo9A7YHBTQzLmoZQN_lksT8v3ZR7HQh2sktO2YI
+ DePg3gLUvGNsyHY.sRDrauUGKTLGpfm8NBEgYAZCR3xFsgu06lu6CZMkiwX_
+ MIyMqkRR6wuS3a4_BUfCji2uvWFPHzgc4hRRljx5bZOUjrNvY3M66VZ.X
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 30 Nov 2010 13:19:23 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] Refactor zone_reclaim
+In-Reply-To: <20101130101520.17475.79978.stgit@localhost6.localdomain6>
+Message-ID: <alpine.DEB.2.00.1011301319060.3134@router.home>
+References: <20101130101126.17475.18729.stgit@localhost6.localdomain6> <20101130101520.17475.79978.stgit@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116200426.75085b68@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-11-16 20:04:26, Alan Cox wrote:
-> > Comtrol, Moxa, B&B, Sealevel, and others all sell PCI cards and
-> > Ethernet attached serial ports that have selectable interfaces
-> > (typically RS-232/422/485).  Comtrol and Moxa have had drivers in the
-> > kernel tree for ages, but they've always had to use custom ioctl calls
-> > for things like configuring 232/485/422 mode and half/full-duplex
-> > mode.
-> 
-> Ok so what is needed that isn't covered by the current termiox and
-> TIOCG/SRS485 ioctls ?
 
-IIRC selection of 232/485/422 mode was missing from proposed api.
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
-> > Having a standard API for things like interface mode, half-full
-> > duplex, inter-character timeout, 9-bit mode, and so on would be life a
-> > lot easier for those of us who maintain Linux serial drivers...
-> 
-> 9bit mode is a real problem with the tty layer defined in terms of 8bit
-> streams but yes.
-
-Well, if you wanted to have some fun... kontron card is able to
-timestamp incoming characters, and saves state of the control signals
-when character is received...
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
