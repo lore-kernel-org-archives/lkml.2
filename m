@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab0K3Oo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:44:27 -0500
-Received: from zfrontend2.aha.ru ([195.2.83.148]:64972 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751473Ab0K3Oo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:44:26 -0500
-From: "werner" <w.landgraf@ru.ru>
-Subject: Re: [PATCH] staging: easycap needs  smp_lock.h, fixes build
- error
-To: randy.dunlap@oracle.com, greg@kroah.com, linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Tue, 30 Nov 2010 10:44:21 -0400
-Message-ID: <web-413291852@zbackend1.aha.ru>
-In-Reply-To: <20101122121237.38cdd369.randy.dunlap@oracle.com>
-References: <web-407197955@zbackend1.aha.ru>
- 	<20101122043520.GA10958@kroah.com>
- 	<20101121205626.4589e544.randy.dunlap@oracle.com>
- 	<20101121211311.05963007.randy.dunlap@oracle.com>
- 	<20101122194736.GA29830@kroah.com>
- <20101122121237.38cdd369.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+	id S1753244Ab0K3Oqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:46:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:36073 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0K3Oq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 09:46:28 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=qK-MKYc896kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=v-1sjdctxtBzdkx4BhoA:9 a=Nq1X4wQ_rON_DoIdo0TOCmJFsnEA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: matthieu castet <castet.matthieu@free.fr>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Dave Jones <davej@redhat.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <201011301005.29532.rusty@rustcorp.com.au>
+References: <4CE2F914.9070106@free.fr>
+	 <20101129181542.GA11630@home.goodmis.org>
+	 <201011301005.29532.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 30 Nov 2010 09:46:23 -0500
+Message-ID: <1291128383.27486.35.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HELLO
-
-I dont believe this ... my 2.6.37-rc4 compilation gone bad 
-again, because of the same error, and I have to recompile 
-/ re-package it, what needs some hours again ..  :(  :(
-
-  The correction below worked on 2.6.37-rc3 (i.e. insert 
-#include <linux/smp_lock.h>  into easycap_main.h)
-
-
-WHY THIS WASN'T PATCHED SINCE LONG TIME ?   Is the 
-situation of the kernel developers similar bad like of the 
-open office developers, so that they should be exchanged 
-???
-
-
-w.landgraf
-
-===========================================================
-On Mon, 22 Nov 2010 12:12:37 -0800
-  Randy Dunlap <randy.dunlap@oracle.com> wrote:
->From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 2010-11-30 at 10:05 +1030, Rusty Russell wrote:
+> On Tue, 30 Nov 2010 04:45:42 am Steven Rostedt wrote:
+> > This patch breaks function tracer:
+> ...
+> > Here we set the text read only before we call the notifiers. The
+> > function tracer changes the calls to mcount into nops via a notifier
+> > call so this must be done after the module notifiers.
 > 
-> Add header file to fix build error:
+> That seems fine.
 > 
-> drivers/staging/easycap/easycap_main.c:4251: error: 
->implicit declaration of function 'lock_kernel'
-> drivers/staging/easycap/easycap_main.c:4254: error: 
->implicit declaration of function 'unlock_kernel'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
-> drivers/staging/easycap/easycap.h |    1 +
-> 1 file changed, 1 insertion(+)
-> 
-> --- lnx-2637-rc3.orig/drivers/staging/easycap/easycap.h
-> +++ lnx-2637-rc3/drivers/staging/easycap/easycap.h
-> @@ -75,6 +75,7 @@
-> #include <linux/errno.h>
-> #include <linux/init.h>
-> #include <linux/slab.h>
-> +#include <linux/smp_lock.h>
-> #include <linux/module.h>
-> #include <linux/kref.h>
-> #include <linux/usb.h>
-> 
-> 
+> I note that both before and after this patch we potentially execute code
+> in the module (via parse_args) before we set it ro & nx.  But fixing this
+> last bit of coverage is probably not worth the pain...
 
-"werner" <w.landgraf@ru.ru>
----
-Professional hosting for everyone - http://www.host.ru
+Rusty, can I take this as an "Acked-by"?
+
+Thanks,
+
+-- Steve
+
+
