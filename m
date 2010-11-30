@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab0K3Qlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:41:53 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35397 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751528Ab0K3Qlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:41:52 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19H8W9YUOdHxa3uF02qHudugfCOBurrQIQfTruSsB
-	zfCERc2Duj//Vs
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101130141320.GA22588@elte.hu>
-References: <20101128201851.GA20555@elte.hu>
-	 <1291031593.32004.19.camel@laptop>
-	 <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
-	 <1291052268.32004.171.camel@laptop>
-	 <1291057565.20709.2.camel@marge.simson.net>
-	 <20101129192033.GA18372@elte.hu>
-	 <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
-	 <1291090455.7550.7.camel@marge.simson.net>
-	 <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
-	 <1291123083.28239.18.camel@marge.simson.net>
-	 <20101130141320.GA22588@elte.hu>
-Content-Type: text/plain
-Date: Tue, 30 Nov 2010 17:41:46 +0100
-Message-Id: <1291135306.28239.38.camel@marge.simson.net>
+	id S1754168Ab0K3QmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:42:06 -0500
+Received: from verein.lst.de ([213.95.11.210]:47286 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717Ab0K3QmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:42:03 -0500
+Date: Tue, 30 Nov 2010 17:41:24 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
+        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
+        Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent by fsync
+Message-ID: <20101130164124.GA30858@lst.de>
+References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 15:13 +0100, Ingo Molnar wrote:
-> * Mike Galbraith <efault@gmx.de> wrote:
-> 
-> > On Mon, 2010-11-29 at 20:23 -0800, Paul Turner wrote:
-> > 
-> > > I've left some machines running tip + fix above + autogroup to see if
-> > > anything else emerges.  Hasn't crashed yet, I'll leave it going
-> > > overnight.
-> > 
-> > Thanks.  Below is the hopefully final version against tip.  The last I
-> > sent contained a couple remnants.
-> 
-> Note, I removed this chunk:
-> 
-> >  kernel/sched_debug.c                |   29 ++--
-> 
-> > Index: linux-2.6/kernel/sched_debug.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/sched_debug.c
-> > +++ linux-2.6/kernel/sched_debug.c
-> > @@ -87,6 +87,20 @@ static void print_cfs_group_stats(struct
-> >  }
-> >  #endif
-> >  
-> > +#if defined(CONFIG_CGROUP_SCHED) && \
-> > +	(defined(CONFIG_FAIR_GROUP_SCHED) || defined(CONFIG_RT_GROUP_SCHED))
-> > +static void task_group_path(struct task_group *tg, char *buf, int buflen)
-> > +{
-> > +	/* may be NULL if the underlying cgroup isn't fully-created yet */
-> > +	if (!tg->css.cgroup) {
-> > +		if (!autogroup_path(tg, buf, buflen))
-> > +			buf[0] = '\0';
-> > +		return;
-> > +	}
-> > +	cgroup_path(tg->css.cgroup, buf, buflen);
-> > +}
-> > +#endif
-> > +
-> >  static void
-> >  print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
-> >  {
-> > @@ -115,7 +129,7 @@ print_task(struct seq_file *m, struct rq
-> >  		char path[64];
-> >  
-> >  		rcu_read_lock();
-> > -		cgroup_path(task_group(p)->css.cgroup, path, sizeof(path));
-> > +		task_group_path(task_group(p), path, sizeof(path));
-> >  		rcu_read_unlock();
-> >  		SEQ_printf(m, " %s", path);
-> >  	}
-> > @@ -147,19 +161,6 @@ static void print_rq(struct seq_file *m,
-> >  	read_unlock_irqrestore(&tasklist_lock, flags);
-> >  }
-> >  
-> > -#if defined(CONFIG_CGROUP_SCHED) && \
-> > -	(defined(CONFIG_FAIR_GROUP_SCHED) || defined(CONFIG_RT_GROUP_SCHED))
-> > -static void task_group_path(struct task_group *tg, char *buf, int buflen)
-> > -{
-> > -	/* may be NULL if the underlying cgroup isn't fully-created yet */
-> > -	if (!tg->css.cgroup) {
-> > -		buf[0] = '\0';
-> > -		return;
-> > -	}
-> > -	cgroup_path(tg->css.cgroup, buf, buflen);
-> > -}
-> > -#endif
-> > -
-> >  void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
-> >  {
-> >  	s64 MIN_vruntime = -1, min_vruntime, max_vruntime = -1,
-> 
-> Because it didn't build (for obvious reasons - the CONFIG conditions dont match up), 
-> but more importantly it's quite ugly. Some existing 'path' variables are 64 byte, 
-> some are 128 byte - so there's pre-existing damage - i removed it all.
-
-Won't removing that hunk bring back oops if you cat /proc/sched_debug?
-
-cfs_rq[0]:/autogroup-88
-  .exec_clock                    : 0.228697
-  .MIN_vruntime                  : 0.000001
-  .min_vruntime                  : 0.819879
-  .max_vruntime                  : 0.000001
-  .spread                        : 0.000000
-  .spread0                       : -22925903.100800
-
-> Could we do this debugging code in a bit saner way please? (as a delta patch on top 
-> of the -tip that i'll push out in the next hour or so.)
-
-Guess I'll try.
-
-	-Mike
+FYI, here's an updated version of my patch to not run pure flushes
+that also works on SCSI/ATA and not just virtio.  I suspect the patch
+alone might not be enough, but together with a variant of Neil's
+suggestion might do the trick, with my patch taking care of the
+highend-devices and Neil's scheme of taking care of stupid SATA disks.
 
 
-
+Index: linux-2.6/block/blk-flush.c
+===================================================================
+--- linux-2.6.orig/block/blk-flush.c	2010-11-30 17:27:33.108254088 +0100
++++ linux-2.6/block/blk-flush.c	2010-11-30 17:27:38.790004333 +0100
+@@ -143,6 +143,17 @@ struct request *blk_do_flush(struct requ
+ 	unsigned skip = 0;
+ 
+ 	/*
++	 * Just issue pure flushes directly.
++	 */
++	if (!blk_rq_sectors(rq)) {
++		if (!do_preflush) {
++			__blk_end_request_all(rq, 0);
++			return NULL;
++		}
++		return rq;
++	}
++
++	/*
+ 	 * Special case.  If there's data but flush is not necessary,
+ 	 * the request can be issued directly.
+ 	 *
+Index: linux-2.6/drivers/scsi/scsi_lib.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/scsi_lib.c	2010-11-30 17:27:33.120254298 +0100
++++ linux-2.6/drivers/scsi/scsi_lib.c	2010-11-30 17:27:38.791003634 +0100
+@@ -1060,7 +1060,7 @@ int scsi_setup_blk_pc_cmnd(struct scsi_d
+ 	 * that does not transfer data, in which case they may optionally
+ 	 * submit a request without an attached bio.
+ 	 */
+-	if (req->bio) {
++	if (req->bio && !(req->cmd_flags & REQ_FLUSH)) {
+ 		int ret;
+ 
+ 		BUG_ON(!req->nr_phys_segments);
