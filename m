@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab0K3VDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:03:25 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:44986 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752266Ab0K3VDY (ORCPT
+	id S1755606Ab0K3VFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:05:14 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:46870 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab0K3VFL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:03:24 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 6pDZfQIVM1l5O_mQ_gGkIXtAus.2cG2JLuzkcfr5KR76LVk
- nxgI2bQEANVJOyQfAefXFEhzTKRvFQ0XhsOSgaGidD_YlNGP7TQzGCFMgJVJ
- iR7g2SA48.omYw4dfv5aCwZAYPLLrVhgwYsYL3JBzbUYoFhxD8HclrASziwG
- YdXGb8VmNSjLi_RXv9kNm2NG.1nf4oldVTZJMlncnttjvt_G1NcXP9tG5NKt
- a7UCydCN3aJFf_I2kVlPQmiW1n8ftJkryt.QkrqQ-
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 30 Nov 2010 15:03:20 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
-Subject: Re: [thisops uV3 15/18] Xen: Use this_cpu_ops
-In-Reply-To: <4CF56463.3040109@goop.org>
-Message-ID: <alpine.DEB.2.00.1011301501320.4039@router.home>
-References: <20101130190707.457099608@linux.com> <20101130190850.002148257@linux.com> <4CF56463.3040109@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 30 Nov 2010 16:05:11 -0500
+Date: Tue, 30 Nov 2010 22:05:10 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Andreas Mohr <andi@lisas.de>, "David S. Miller" <davem@davemloft.net>,
+        stable@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        dhollis@davehollis.com, Phil Chang <pchang23@sbcglobal.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -stable] Add USB PID for new MOSCHIP USB ethernet
+ controller MCS7832 variant
+Message-ID: <20101130210510.GA6057@rhlx01.hs-esslingen.de>
+References: <20101130200737.GA5185@rhlx01.hs-esslingen.de>
+ <20101130202712.GB16171@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20101130202712.GB16171@suse.de>
+X-Priority: none
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, Jeremy Fitzhardinge wrote:
+On Tue, Nov 30, 2010 at 12:27:12PM -0800, Greg KH wrote:
+> On Tue, Nov 30, 2010 at 09:07:37PM +0100, Andreas Mohr wrote:
+> > Due to active notification of the new MCS7832 version by the manufacturer
+> > today (Mr. Milton; thanks!) -- quote: "functionality same as MCS7830",
+> > I'm now submitting this patch, intended for networking.git and -stable.
+> 
+> This is not how you get stuff into the stable kernel trees, sorry.
+> Please read Documentation/stable_kernel_rules.txt for how to do that.
 
-> On 11/30/2010 11:07 AM, Christoph Lameter wrote:
-> >  static irqreturn_t xen_timer_interrupt(int irq, void *dev_id)
-> >  {
-> > -	struct clock_event_device *evt = &__get_cpu_var(xen_clock_events);
-> >  	irqreturn_t ret;
-> >
-> >  	ret = IRQ_NONE;
-> > -	if (evt->event_handler) {
-> > -		evt->event_handler(evt);
-> > +	if (__this_cpu_read(xen_clock_events.event_handler)) {
-> > +		__this_cpu_read(xen_clock_events.event_handler)(evt);
->
-> Really?  What code does this generate?  If this is generating two
-> segment-prefixed reads rather than getting the address and doing normal
-> reads on it, then I don't think it is an improvement.
+>From having read that perhaps 2 or 3 times (randomly)
+and following a couple dozen -stable mails I had the impression that
+remembering the constraints would be quite easy; obviously not - sorry!
+Did have some doubts about the number of hunks, though.
+And obviously violated the "must be upstream" rule.
 
-Lets drop that hunk. No point to do optimizations at that location then.
+So what to do?
+Shovel patch as-is to networking only (optionally specifying the
+somewhat unclearly formulated Cc: stable mechanism)?
+Or rather minimalist-reduce the patch, then dito?
 
-evt is also not defined then. Without the evt address determination via
-__get_cpu_var we have at least 2 prefixed load and one address
-calculation to figure out the parameter to pass. No win.
+> Sometimes I wonder why we even write documentation if no one ever reads
+> it...
 
+I could also mention some (strangely familiar) cases where people _didn't_
+write kernel docs which many people likely would have liked to read
+to avoid wasting half-millions of dollars... *smirk*
+
+
+Thanks,
+
+Andreas Mohr
