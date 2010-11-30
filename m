@@ -1,236 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab0K3ULH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 15:11:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33352 "EHLO
+	id S932107Ab0K3ULX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 15:11:23 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33393 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab0K3ULF (ORCPT
+	with ESMTP id S932095Ab0K3ULU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 15:11:05 -0500
+	Tue, 30 Nov 2010 15:11:20 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/11] perf session: Fix list sort algorithm
-Date: Tue, 30 Nov 2010 18:10:47 -0200
-Message-Id: <1291147856-17459-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/11] perf events: Precalculate the header space for PERF_SAMPLE_ fields
+Date: Tue, 30 Nov 2010 18:10:46 -0200
+Message-Id: <1291147856-17459-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1291147856-17459-1-git-send-email-acme@infradead.org>
 References: <1291147856-17459-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The homebrewn sort algorithm fails to sort in time order. One of the problem
-spots is that it fails to deal with equal timestamps correctly.
+PERF_SAMPLE_{CALLCHAIN,RAW} have variable lenghts per sample, but the others
+can be precalculated, reducing a bit the per sample cost.
 
-My first gut reaction was to replace the fancy list with an rbtree, but the
-performance is 3 times worse.
-
-Rewrite it so it works.
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <20101130163819.908482530@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |  113 +++++++++++++++++++--------------------------
- tools/perf/util/session.h |    4 +-
- 2 files changed, 49 insertions(+), 68 deletions(-)
+ include/linux/perf_event.h |    2 +
+ kernel/perf_event.c        |  150 ++++++++++++++++++++++++++-----------------
+ 2 files changed, 93 insertions(+), 59 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3ae6955..daca557 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -104,7 +104,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 	self->mmap_window = 32;
- 	self->machines = RB_ROOT;
- 	self->repipe = repipe;
--	INIT_LIST_HEAD(&self->ordered_samples.samples_head);
-+	INIT_LIST_HEAD(&self->ordered_samples.samples);
- 	machine__init(&self->host_machine, "", HOST_KERNEL_ID);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index cbf04cc..adf6d99 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -758,6 +758,8 @@ struct perf_event {
+ 	u64				shadow_ctx_time;
  
- 	if (mode == O_RDONLY) {
-@@ -393,27 +393,33 @@ struct sample_queue {
- static void flush_sample_queue(struct perf_session *s,
- 			       struct perf_event_ops *ops)
- {
--	struct list_head *head = &s->ordered_samples.samples_head;
--	u64 limit = s->ordered_samples.next_flush;
-+	struct ordered_samples *os = &s->ordered_samples;
-+	struct list_head *head = &os->samples;
- 	struct sample_queue *tmp, *iter;
-+	u64 limit = os->next_flush;
-+	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
+ 	struct perf_event_attr		attr;
++	u16				header_size;
++	u16				read_size;
+ 	struct hw_perf_event		hw;
  
- 	if (!ops->ordered_samples || !limit)
- 		return;
+ 	struct perf_event_context	*ctx;
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index af1e63f..aede712 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -312,9 +312,75 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 		ctx->nr_stat++;
+ }
  
- 	list_for_each_entry_safe(iter, tmp, head, list) {
- 		if (iter->timestamp > limit)
--			return;
--
--		if (iter == s->ordered_samples.last_inserted)
--			s->ordered_samples.last_inserted = NULL;
-+			break;
- 
- 		ops->sample((event_t *)iter->event, s);
- 
--		s->ordered_samples.last_flush = iter->timestamp;
-+		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
- 		free(iter->event);
- 		free(iter);
- 	}
++/*
++ * Called at perf_event creation and when events are attached/detached from a
++ * group.
++ */
++static void perf_event__read_size(struct perf_event *event)
++{
++	int entry = sizeof(u64); /* value */
++	int size = 0;
++	int nr = 1;
 +
-+	if (list_empty(head)) {
-+		os->last_sample = NULL;
-+	} else if (last_ts <= limit) {
-+		os->last_sample =
-+			list_entry(head->prev, struct sample_queue, list);
++	if (event->attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
++		size += sizeof(u64);
++
++	if (event->attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
++		size += sizeof(u64);
++
++	if (event->attr.read_format & PERF_FORMAT_ID)
++		entry += sizeof(u64);
++
++	if (event->attr.read_format & PERF_FORMAT_GROUP) {
++		nr += event->group_leader->nr_siblings;
++		size += sizeof(u64);
 +	}
++
++	size += entry * nr;
++	event->read_size = size;
++}
++
++static void perf_event__header_size(struct perf_event *event)
++{
++	struct perf_sample_data *data;
++	u64 sample_type = event->attr.sample_type;
++	u16 size = 0;
++
++	perf_event__read_size(event);
++
++	if (sample_type & PERF_SAMPLE_IP)
++		size += sizeof(data->ip);
++
++	if (sample_type & PERF_SAMPLE_TID)
++		size += sizeof(data->tid_entry);
++
++	if (sample_type & PERF_SAMPLE_TIME)
++		size += sizeof(data->time);
++
++	if (sample_type & PERF_SAMPLE_ADDR)
++		size += sizeof(data->addr);
++
++	if (sample_type & PERF_SAMPLE_ID)
++		size += sizeof(data->id);
++
++	if (sample_type & PERF_SAMPLE_STREAM_ID)
++		size += sizeof(data->stream_id);
++
++	if (sample_type & PERF_SAMPLE_CPU)
++		size += sizeof(data->cpu_entry);
++
++	if (sample_type & PERF_SAMPLE_PERIOD)
++		size += sizeof(data->period);
++
++	if (sample_type & PERF_SAMPLE_READ)
++		size += event->read_size;
++
++	event->header_size = size;
++}
++
+ static void perf_group_attach(struct perf_event *event)
+ {
+-	struct perf_event *group_leader = event->group_leader;
++	struct perf_event *group_leader = event->group_leader, *pos;
+ 
+ 	/*
+ 	 * We can have double attach due to group movement in perf_event_open.
+@@ -333,6 +399,11 @@ static void perf_group_attach(struct perf_event *event)
+ 
+ 	list_add_tail(&event->group_entry, &group_leader->sibling_list);
+ 	group_leader->nr_siblings++;
++
++	perf_event__header_size(group_leader);
++
++	list_for_each_entry(pos, &group_leader->sibling_list, group_entry)
++		perf_event__header_size(pos);
  }
  
  /*
-@@ -465,71 +471,50 @@ static int process_finished_round(event_t *event __used,
- 	return 0;
- }
- 
--static void __queue_sample_end(struct sample_queue *new, struct list_head *head)
--{
--	struct sample_queue *iter;
--
--	list_for_each_entry_reverse(iter, head, list) {
--		if (iter->timestamp < new->timestamp) {
--			list_add(&new->list, &iter->list);
--			return;
--		}
--	}
--
--	list_add(&new->list, head);
--}
--
--static void __queue_sample_before(struct sample_queue *new,
--				  struct sample_queue *iter,
--				  struct list_head *head)
--{
--	list_for_each_entry_continue_reverse(iter, head, list) {
--		if (iter->timestamp < new->timestamp) {
--			list_add(&new->list, &iter->list);
--			return;
--		}
--	}
--
--	list_add(&new->list, head);
--}
--
--static void __queue_sample_after(struct sample_queue *new,
--				 struct sample_queue *iter,
--				 struct list_head *head)
--{
--	list_for_each_entry_continue(iter, head, list) {
--		if (iter->timestamp > new->timestamp) {
--			list_add_tail(&new->list, &iter->list);
--			return;
--		}
--	}
--	list_add_tail(&new->list, head);
--}
--
- /* The queue is ordered by time */
- static void __queue_sample_event(struct sample_queue *new,
- 				 struct perf_session *s)
- {
--	struct sample_queue *last_inserted = s->ordered_samples.last_inserted;
--	struct list_head *head = &s->ordered_samples.samples_head;
-+	struct ordered_samples *os = &s->ordered_samples;
-+	struct sample_queue *sample = os->last_sample;
-+	u64 timestamp = new->timestamp;
-+	struct list_head *p;
- 
-+	os->last_sample = new;
- 
--	if (!last_inserted) {
--		__queue_sample_end(new, head);
-+	if (!sample) {
-+		list_add(&new->list, &os->samples);
-+		os->max_timestamp = timestamp;
- 		return;
+@@ -391,7 +462,7 @@ static void perf_group_detach(struct perf_event *event)
+ 	if (event->group_leader != event) {
+ 		list_del_init(&event->group_entry);
+ 		event->group_leader->nr_siblings--;
+-		return;
++		goto out;
  	}
  
- 	/*
--	 * Most of the time the current event has a timestamp
--	 * very close to the last event inserted, unless we just switched
--	 * to another event buffer. Having a sorting based on a list and
--	 * on the last inserted event that is close to the current one is
--	 * probably more efficient than an rbtree based sorting.
-+	 * last_sample might point to some random place in the list as it's
-+	 * the last queued event. We expect that the new event is close to
-+	 * this.
- 	 */
--	if (last_inserted->timestamp >= new->timestamp)
--		__queue_sample_before(new, last_inserted, head);
--	else
--		__queue_sample_after(new, last_inserted, head);
-+	if (sample->timestamp <= timestamp) {
-+		while (sample->timestamp <= timestamp) {
-+			p = sample->list.next;
-+			if (p == &os->samples) {
-+				list_add_tail(&new->list, &os->samples);
-+				os->max_timestamp = timestamp;
-+				return;
-+			}
-+			sample = list_entry(p, struct sample_queue, list);
-+		}
-+		list_add_tail(&new->list, &sample->list);
-+	} else {
-+		while (sample->timestamp > timestamp) {
-+			p = sample->list.prev;
-+			if (p == &os->samples) {
-+				list_add(&new->list, &os->samples);
-+				return;
-+			}
-+			sample = list_entry(p, struct sample_queue, list);
-+		}
-+		list_add(&new->list, &sample->list);
-+	}
+ 	if (!list_empty(&event->group_entry))
+@@ -410,6 +481,12 @@ static void perf_group_detach(struct perf_event *event)
+ 		/* Inherit group flags from the previous leader */
+ 		sibling->group_flags = event->group_flags;
+ 	}
++
++out:
++	perf_event__header_size(event->group_leader);
++
++	list_for_each_entry(tmp, &event->group_leader->sibling_list, group_entry)
++		perf_event__header_size(tmp);
  }
  
- static int queue_sample_event(event_t *event, struct sample_data *data,
-@@ -559,10 +544,6 @@ static int queue_sample_event(event_t *event, struct sample_data *data,
- 	memcpy(new->event, event, event->header.size);
+ static inline int
+@@ -2289,31 +2366,6 @@ static int perf_release(struct inode *inode, struct file *file)
+ 	return perf_event_release_kernel(event);
+ }
  
- 	__queue_sample_event(new, s);
--	s->ordered_samples.last_inserted = new;
+-static int perf_event_read_size(struct perf_event *event)
+-{
+-	int entry = sizeof(u64); /* value */
+-	int size = 0;
+-	int nr = 1;
 -
--	if (new->timestamp > s->ordered_samples.max_timestamp)
--		s->ordered_samples.max_timestamp = new->timestamp;
+-	if (event->attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+-		size += sizeof(u64);
+-
+-	if (event->attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+-		size += sizeof(u64);
+-
+-	if (event->attr.read_format & PERF_FORMAT_ID)
+-		entry += sizeof(u64);
+-
+-	if (event->attr.read_format & PERF_FORMAT_GROUP) {
+-		nr += event->group_leader->nr_siblings;
+-		size += sizeof(u64);
+-	}
+-
+-	size += entry * nr;
+-
+-	return size;
+-}
+-
+ u64 perf_event_read_value(struct perf_event *event, u64 *enabled, u64 *running)
+ {
+ 	struct perf_event *child;
+@@ -2428,7 +2480,7 @@ perf_read_hw(struct perf_event *event, char __user *buf, size_t count)
+ 	if (event->state == PERF_EVENT_STATE_ERROR)
+ 		return 0;
  
- 	return 0;
- }
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 9fa0fc2..a00f32e 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -17,8 +17,8 @@ struct ordered_samples {
- 	u64			last_flush;
- 	u64			next_flush;
- 	u64			max_timestamp;
--	struct list_head	samples_head;
--	struct sample_queue	*last_inserted;
-+	struct list_head	samples;
-+	struct sample_queue	*last_sample;
- };
+-	if (count < perf_event_read_size(event))
++	if (count < event->read_size)
+ 		return -ENOSPC;
  
- struct perf_session {
+ 	WARN_ON_ONCE(event->ctx->parent_ctx);
+@@ -3606,59 +3658,34 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 	data->type = sample_type;
+ 
+ 	header->type = PERF_RECORD_SAMPLE;
+-	header->size = sizeof(*header);
++	header->size = sizeof(*header) + event->header_size;
+ 
+ 	header->misc = 0;
+ 	header->misc |= perf_misc_flags(regs);
+ 
+-	if (sample_type & PERF_SAMPLE_IP) {
++	if (sample_type & PERF_SAMPLE_IP)
+ 		data->ip = perf_instruction_pointer(regs);
+ 
+-		header->size += sizeof(data->ip);
+-	}
+-
+ 	if (sample_type & PERF_SAMPLE_TID) {
+ 		/* namespace issues */
+ 		data->tid_entry.pid = perf_event_pid(event, current);
+ 		data->tid_entry.tid = perf_event_tid(event, current);
+-
+-		header->size += sizeof(data->tid_entry);
+ 	}
+ 
+-	if (sample_type & PERF_SAMPLE_TIME) {
++	if (sample_type & PERF_SAMPLE_TIME)
+ 		data->time = perf_clock();
+ 
+-		header->size += sizeof(data->time);
+-	}
+-
+-	if (sample_type & PERF_SAMPLE_ADDR)
+-		header->size += sizeof(data->addr);
+-
+-	if (sample_type & PERF_SAMPLE_ID) {
++	if (sample_type & PERF_SAMPLE_ID)
+ 		data->id = primary_event_id(event);
+ 
+-		header->size += sizeof(data->id);
+-	}
+-
+-	if (sample_type & PERF_SAMPLE_STREAM_ID) {
++	if (sample_type & PERF_SAMPLE_STREAM_ID)
+ 		data->stream_id = event->id;
+ 
+-		header->size += sizeof(data->stream_id);
+-	}
+-
+ 	if (sample_type & PERF_SAMPLE_CPU) {
+ 		data->cpu_entry.cpu		= raw_smp_processor_id();
+ 		data->cpu_entry.reserved	= 0;
+-
+-		header->size += sizeof(data->cpu_entry);
+ 	}
+ 
+-	if (sample_type & PERF_SAMPLE_PERIOD)
+-		header->size += sizeof(data->period);
+-
+-	if (sample_type & PERF_SAMPLE_READ)
+-		header->size += perf_event_read_size(event);
+-
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
+ 
+@@ -3726,7 +3753,7 @@ perf_event_read_event(struct perf_event *event,
+ 		.header = {
+ 			.type = PERF_RECORD_READ,
+ 			.misc = 0,
+-			.size = sizeof(read_event) + perf_event_read_size(event),
++			.size = sizeof(read_event) + event->read_size,
+ 		},
+ 		.pid = perf_event_pid(event, task),
+ 		.tid = perf_event_tid(event, task),
+@@ -5715,6 +5742,11 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	mutex_unlock(&current->perf_event_mutex);
+ 
+ 	/*
++	 * Precalculate sample_data sizes
++	 */
++	perf_event__header_size(event);
++
++	/*
+ 	 * Drop the reference on the group_event after placing the
+ 	 * new event on the sibling_list. This ensures destruction
+ 	 * of the group leader will find the pointer to itself in
 -- 
 1.6.2.5
 
