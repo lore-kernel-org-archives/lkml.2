@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab0K3PXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:23:18 -0500
-Received: from igw2.watson.ibm.com ([129.34.20.6]:45834 "EHLO
-	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab0K3PXQ convert rfc822-to-8bit (ORCPT
+	id S1753829Ab0K3P0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:26:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60099 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab0K3P0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:23:16 -0500
-Subject: Re: [PATCH v1.5 3/5] key: add tpm_send command
-From: David Safford <safford@watson.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: kjhall@us.ibm.com, Serge Hallyn <serge.hallyn@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-In-Reply-To: <19268.1291127520@redhat.com>
-References: <20101124023238.GA26540@tiny>
-	 <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1290556456.2604.14.camel@localhost.localdomain>
-	 <19268.1291127520@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 30 Nov 2010 10:22:46 -0500
-Message-ID: <1291130566.2737.29.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+	Tue, 30 Nov 2010 10:26:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+Subject: Re: [PATCH] a new UniCore32 arch-dependent patch for linux-2.6.37-rc1
+Date: Tue, 30 Nov 2010 16:26:42 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "'Greg KH'" <greg@kroah.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <00a701cb8883$649d39f0$2dd7add0$@mprc.pku.edu.cn> <201011291735.19556.arnd@arndb.de> <009b01cb9079$6605cd90$321168b0$@mprc.pku.edu.cn>
+In-Reply-To: <009b01cb9079$6605cd90$321168b0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011301626.42547.arnd@arndb.de>
+X-Provags-ID: V02:K0:1gv2IPqKo78vmvzNxb173Glc18mtIHc2/wrr9XoCL7D
+ 4IuusCcFRamkoGmyREVxegb5bCAgeF88a11bpr216IICQOGa9O
+ tUFIZRSJJceg3ay+coc+23eVXwFjrLznDsFESoaLvByjQyTkSc
+ Qn2Vd3cdrocoWMCfnNz8vh6pih5CTKp38GLPFgZf91sYsYp4Ln
+ QFNqO0XRCnW49ymKcHTDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 14:32 +0000, David Howells wrote:
-> Serge Hallyn <serge.hallyn@canonical.com> wrote:
-> 
-> > > +int tpm_send(u32 chip_num, void *cmd, size_t buflen)
+On Tuesday 30 November 2010, Guan Xuetao wrote:
+> > On Saturday 27 November 2010, Guan Xuetao wrote:
+> > > >
+> > > > In what way does the architecture enforce this? What are the
+> > > > contents of this page? Can you make it an actual VDSO rather than a
+> > > > magic page that sits in the user address space?
+> > > Page table is created for vector page and exceptions entry stub.
+> > > However, vector page is not in the user address space.
 > > 
-> > Hate to nit-pick, but any particular reason you're not following the
-> > rest of the file and using 'struct tpm_cmd_t *cmd' here?
+> > Interesting. So if it's not mapped into user space, why do you even need to
+> > have the vectors at a specific page? I think ARM only maps it to the high page
+> > because that page is shared to user space, while most architectures just have
+> > their interrupt vectors in the linar mapping, since the hardware typically uses
+> > the physical address to find it.
 > 
-> Ummm...  Something else I've just noticed...
-> 
-> 	static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
-> 					       size_t bufsiz)
-> 
-> would suggest that buf is read-only, but tpm_transit() keeps casting it away,
-> and especially, casts it away before passing it to chip->vendor.recv()...
-> This would seem to indicate a logic error somewhere.
-> 
-> Certainly, tpm_atml_recv() modifies the buffer it is given to...
+> In UniCore-32, when MMU enabled, vector page address is virtual address.
 
-as does tpm_tis_recv(). By the TCG spec, the return data should go in the
-same input buffer.
+Ok. I see.
 
-> I suspect the argument and reply buffer pointers should be passed separately.
+The arch_exit_mmap() and arch_setup_additional_pages() functions seems to refer to
+how ARM maps this page into user space as well, you should probably change that.
 
-It seems more like a spurious "const" in tpm_transmit(). This has been in the
-code for a long time. Good catch. I'll draft a cleanup for these and some
-other nits and send to Rajiv...
+I've finished the second half of the code review now, I'll follow up with an
+email but drop the personal Cc to everyone besides us, in case people are getting
+bored from the discussion by now ;-)
 
-thanks!
-dave
-
-> David
-> 
-
+	Arnd
