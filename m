@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab0K3V3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:29:20 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:42804 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab0K3V3T (ORCPT
+	id S1751933Ab0K3VcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:32:09 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50959 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab0K3VcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:29:19 -0500
-Date: Tue, 30 Nov 2010 22:29:18 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Greg KH <gregkh@suse.de>
-Cc: Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -stable] Add USB PID for new MOSCHIP USB ethernet
- controller MCS7832 variant
-Message-ID: <20101130212918.GA20472@rhlx01.hs-esslingen.de>
-References: <20101130200737.GA5185@rhlx01.hs-esslingen.de>
- <20101130202712.GB16171@suse.de>
- <20101130210510.GA6057@rhlx01.hs-esslingen.de>
- <20101130211354.GA7635@suse.de>
+	Tue, 30 Nov 2010 16:32:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=tLKAPTM9k4ZjouWQvyne9nSzy3mRo8Re6/kKztHc2lZJNxMbZS79Ygsb081M53AuU/
+         9azwf1hZfbijIo/ssSi1kAmCefyV/VvXME8Gy8f8pTQ888KLBKz5QbdlAZ5PTcK+DEJ8
+         03ORqDxQaXf/Z07n8lB8BE2U08u8Vl5q54XlE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130211354.GA7635@suse.de>
-X-Priority: none
-User-Agent: Mutt/1.5.20 (2009-08-17)
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 30 Nov 2010 13:31:46 -0800
+Message-ID: <AANLkTi=ywUP8QUDGqotutccf9E2a1b5U2bKNZDWa3PG3@mail.gmail.com>
+Subject: CONFIG_SND_HDA_INTEL regression on 2.6.37-rc3 - no audio
+To: alsa-devel@alsa-project.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[trimmed receivers since it's less relevant]
+I just booted 2.6.37-rc3 and noticed my sound with
+CONFIG_SND_HDA_INTEL stopped working, I get no audio at all. Is this a
+known regression? I can bisect if not.
 
-On Tue, Nov 30, 2010 at 01:13:54PM -0800, Greg KH wrote:
-> On Tue, Nov 30, 2010 at 10:05:10PM +0100, Andreas Mohr wrote:
-> > From having read that perhaps 2 or 3 times (randomly)
-> > and following a couple dozen -stable mails I had the impression that
-> > remembering the constraints would be quite easy; obviously not - sorry!
-> > Did have some doubts about the number of hunks, though.
-> > And obviously violated the "must be upstream" rule.
-> > 
-> > So what to do?
-> 
-> Read the line in that file that says:
-> 	 - To have the patch automatically included in the stable tree,
-> 	   add the tag
-> 	        Cc: stable@kernel.org
-> 	   in the sign-off area. Once the patch is merged it will be
-> 	   applied to the stable tree without anything else needing to
-> 	   be done by the author or subsystem maintainer.
-> 
-> > Shovel patch as-is to networking only (optionally specifying the
-> > somewhat unclearly formulated Cc: stable mechanism)?
-> > Or rather minimalist-reduce the patch, then dito?
-> 
-> See above.
+$ lsmod| grep snd
+snd_hda_codec_analog    79955  1
+snd_hda_intel          25446  3
+snd_hda_codec         101539  2 snd_hda_codec_analog,snd_hda_intel
+snd_hwdep               6546  1 snd_hda_codec
+snd_pcm                88139  3 snd_hda_intel,snd_hda_codec
+snd_seq_midi            5900  0
+snd_rawmidi            21916  1 snd_seq_midi
+snd_seq_midi_event      7291  1 snd_seq_midi
+snd_seq                56979  2 snd_seq_midi,snd_seq_midi_event
+snd_timer              23148  2 snd_pcm,snd_seq
+snd_seq_device          6912  3 snd_seq_midi,snd_rawmidi,snd_seq
+snd                    63192  15
+snd_hda_codec_analog,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_pcm,thinkpad_acpi,snd_rawmidi,snd_seq,snd_timer,snd_seq_device
+soundcore               1240  1 snd
+snd_page_alloc          8716  2 snd_hda_intel,snd_pcm
 
-Hmm, that doesn't fully answer it.
-Anyway, I know what I'll do.
-
-> > > Sometimes I wonder why we even write documentation if no one ever reads
-> > > it...
-> > 
-> > I could also mention some (strangely familiar) cases where people _didn't_
-> > write kernel docs which many people likely would have liked to read
-> > to avoid wasting half-millions of dollars... *smirk*
-> 
-> Examples?  And are those people likely to put up the money to write
-> those docs?  That's the big problem, people like to complain, but not
-> pay anyone to do the work...
-
-I was sheepishly referring to an earlier patch.
-Indeed, there's too much complaining and a dearth of activity sometimes.
-
-> thanks,
-> 
-> greg k-h
-
-Andreas Mohr
+  Luis
