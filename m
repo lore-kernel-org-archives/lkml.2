@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab0K3PA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:00:26 -0500
-Received: from smtp-out5.blueyonder.co.uk ([195.188.213.8]:34726 "EHLO
-	smtp-out5.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751498Ab0K3PAY (ORCPT
+	id S1753425Ab0K3PBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:01:20 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58558 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0K3PBT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:00:24 -0500
-Message-ID: <4CF5116B.8040204@blueyonder.co.uk>
-Date: Tue, 30 Nov 2010 14:59:55 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6 ThunderBrowse/3.3.2
-MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>,
-        opensuse factory list <opensuse-factory@opensuse.org>
-Subject: 2.6.37-rc3-git installed modules zero bytes long
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Nov 2010 10:01:19 -0500
+Subject: Re: [PATCH v4] sched: automated per session task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+In-Reply-To: <20101130145323.GA3291@elte.hu>
+References: <1290954299.30515.15.camel@marge.simson.net>
+	 <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
+	 <20101128201851.GA20555@elte.hu> <1291031593.32004.19.camel@laptop>
+	 <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+	 <1291052268.32004.171.camel@laptop>
+	 <1291057565.20709.2.camel@marge.simson.net>
+	 <20101129192033.GA18372@elte.hu>
+	 <1291103647.24405.5.camel@marge.simson.net>
+	 <20101130141804.GB22588@elte.hu>  <20101130145323.GA3291@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 30 Nov 2010 16:01:27 +0100
+Message-ID: <1291129287.32004.880.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-openSUSE 11.3 on one box and openSUSE 11.4 Milestone 4 on the other.
-I have a message that says the built modules not found. When I check 
-e.g /lib/modules/2.7.37-rc3-git7-smp, most modules are zero bytes long.
-I have to "make modules_install" and use modprobe on each.
-To get the network up on the 11.3 box "modprobe r6189" then "rcnetwork 
-restart", "modprobe rtl8187", "/etc/init.d/network-remotefs start", 
-etc., etc.
-Then ifconfig is OK for those devices.
-eth_s1_0  Link encap:Ethernet  HWaddr 00:1C:F0:BB:14:E1
-           inet addr:192.168.10.10  Bcast:192.168.10.255  Mask:255.255.255.0
-           inet6 addr: fe80::21c:f0ff:febb:14e1/64 Scope:Link
-           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-           RX packets:1927 errors:0 dropped:0 overruns:0 frame:0
-           TX packets:1923 errors:0 dropped:0 overruns:0 carrier:0
-           collisions:0 txqueuelen:1000
-           RX bytes:287532 (280.7 Kb)  TX bytes:283044 (276.4 Kb)
-           Interrupt:17 Base address:0xe000
-wlan0     Link encap:Ethernet  HWaddr 00:15:AF:23:04:37
-           inet addr:192.168.1.4  Bcast:192.168.1.255  Mask:255.255.255.0
-           inet6 addr: fe80::215:afff:fe23:437/64 Scope:Link
-           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-           RX packets:25 errors:0 dropped:0 overruns:0 frame:0
-           TX packets:62 errors:0 dropped:0 overruns:0 carrier:0
-           collisions:0 txqueuelen:1000
-           RX bytes:4324 (4.2 Kb)  TX bytes:18470 (18.0 Kb)
+On Tue, 2010-11-30 at 15:53 +0100, Ingo Molnar wrote:
+> another detail is that i needed this fix:
+> 
+> --- linux.orig/init/Kconfig
+> +++ linux/init/Kconfig
+> @@ -790,6 +790,7 @@ endif # NAMESPACES
+>  
+>  config SCHED_AUTOGROUP
+>  	bool "Automatic process group scheduling"
+> +	select EVENTFD
+>  	select CGROUPS
+>  	select CGROUP_SCHED
+>  	select FAIR_GROUP_SCHED
+> 
+> Because CGROUPS depends on eventfd infrastructure.
 
-On 11.3 module-init-tools-3.12-1.3.x86_64
-On 11.4 Milestone 4 module-init-tools-3.12-5.3.x86_64
-
-tindog:/usr/src/linux-2.6.37-rc3-git7 # grep MODULE .config
-CONFIG_MODULES=y
-# CONFIG_MODULE_FORCE_LOAD is not set
-CONFIG_MODULE_UNLOAD=y
-CONFIG_MODULE_FORCE_UNLOAD=y
-CONFIG_MODULE_SRCVERSION_ALL=y
-
-
-Another guy has emailed me saying he's seen the same.
-11.3
-====
-gcc version 4.5.0 20100604 [gcc-4_5-branch revision 160292] (SUSE Linux)
-11.4 Milestone 4
-================
-gcc version 4.5.1 20101116 [gcc-4_5-branch revision 166793] (SUSE Linux)
-Regards
-Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
-
+Shouldn't then cgroups select that?
