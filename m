@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0K3Rzj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:55:39 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:48942 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab0K3Rzi (ORCPT
+	id S1755529Ab0K3SAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:00:52 -0500
+Received: from mga14.intel.com ([143.182.124.37]:36320 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab0K3SAu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:55:38 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device driver owner
-Date: Tue, 30 Nov 2010 18:55:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange> <Pine.LNX.4.64.1011301803540.18790@axis700.grange> <20101130171509.GA18794@kroah.com>
-In-Reply-To: <20101130171509.GA18794@kroah.com>
+	Tue, 30 Nov 2010 13:00:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,281,1288594800"; 
+   d="scan'208";a="355086566"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Tue, 30 Nov 2010 10:00:47 -0800
+Subject: RE: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print
+ support
+Thread-Topic: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status
+ print support
+Thread-Index: AcuQO1TWaGXJqlS/R26i7YDiOKoC1AAfGwGQ
+Message-ID: <987664A83D2D224EAE907B061CE93D530191E8BCF1@orsmsx505.amr.corp.intel.com>
+References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
+	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
+ <20101129190343.7d7cea12.akpm@linux-foundation.org>
+In-Reply-To: <20101129190343.7d7cea12.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011301855.56228.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+> +	for (i = 0; i < strs_size; i++) {
+> +		if (!(bits & (1U << i)))
+> +			continue;
+> +		str = strs[i];
+> +		if (len && len + strlen(str) + 2 > 80) {
+> +			printk("\n");
+> +			len = 0;
+> +		}
+> +		if (!len)
+> +			len = pr_pfx(pfx, "%s", str);
+> +		else
+> +			len += printk(", %s", str);
+> +	}
+> +	if (len)
+> +		printk("\n");
 
-On Tuesday 30 November 2010 18:15:09 Greg KH wrote:
-> On Tue, Nov 30, 2010 at 06:09:46PM +0100, Guennadi Liakhovetski wrote:
-> > On Tue, 30 Nov 2010, Greg KH wrote:
-> > > On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
-> > > > On Mon, 29 Nov 2010, Greg KH wrote:
-> > > > > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski 
-wrote:
-> > > > > > On Mon, 29 Nov 2010, Greg KH wrote:
+Does printk() offer any guarantees about getting all the characters
+from a single printk() call out to the console without interleaving
+with messages from printk() calls on other cpus?  If it does, then
+it would be a good idea to sprintf() the parts of this message to
+a buffer and then use one printk() call.  I think I read that netconsole
+ends up with one packet on the wire for each call to printk().
 
-[snip]
+Trying to parse output jumbled together from multiple cpus
+doesn't sound like fun.
 
-> > > > > > > Wait, what?  The device is already bound to a driver, right, so
-> > > > > > > why would you care about "locking" the module into memory? 
-> > > > > > > What could this possibly be used for?
-> > > > > > 
-> > > > > > To protect against rmmod -> driver_unregister -> dev->driver =
-> > > > > > NULL?
-> > > > > 
-> > > > > But again, why would some other driver ever care about what some
-> > > > > random dev->driver would be?
-> > > > 
-> > > > It's not a random one, call it a "companion device."
-> > > 
-> > > Ok, but again go back to Jon's original proposal to just call the
-> > > functions in that driver from yours, causing the implicit module
-> > > ordering issue to be automatically resolved.
-> > 
-> > Greg, in this specific case - yes, I could do this. But (1) there is no
-> > need for that - both drivers implement and use the v4l2-subdev API and
-> > thus stay generic. In the host driver this adds the convenience, that it
-> > doesn't have to call to the CSI2 driver explicitly at all - it just calls
-> > the v4l2-subdev function like "call .s_mbus_fmt for all subdev drivers"
-> > and the function is called for the sensor and the CSI2 driver. (2) what
-> > about the other location I pointed out earlier in the v4l2 core? There
-> > drivers are absolutely generic. I also suspect these are not the only
-> > cases, where this helper would come in handy. I added the media list to
-> > CC for any more opinions on this matter.
-> 
-> I agree, it probably would not solve all of the different issues that
-> people might have for this type of thing, and this isn't the first time
-> I've heard it be requested either.
-> 
-> But, this patch is just trying to increment a module owner of a device
-> that is bound to a driver, which is the wrong level to be thinking of
-> it.
-> 
-> If you request a module to be loaded, what would possibly cause it to be
-> unbound that you need to have this "safely" in place?  Why would the
-> module be unloaded?  And if it was unloaded, doesn't that imply that
-> someone else wanted it unloaded so keeping that from happening would be
-> a bit rude, right?
-
-It depends on your definition of rude. I would consider the kernel even more 
-rude if it accepted my unload request and then crashed.
-
-I've recently run into a problem similar to Guennadi's with the OMAP3 ISP 
-driver. The driver instantiates several V4L2 I2C sub-devices for the camera 
-sensors and the lens and flash controllers. The sub-device drivers get 
-platform data when they're probed, and receive callbacks to the board code to 
-turn power on/off and configure clocks (it's a bit more complex than just 
-that, but you get the idea). The board code callbacks then call to the OMAP3 
-ISP driver to configure clocks, because the sensor clock is provided by the 
-OMAP3 ISP.
-
-Now, when the user opens the sensor's subdev device node (/dev/v4l-subdev*), 
-the subdev open function will turn the sensor clock on. To do that it will 
-call the OMAP3 ISP driver through board code. If the OMAP3 ISP driver is 
-unloaded at that point things will go pretty bad.
-
-The way we deal with this is to try_module_get() on the OMAP3 ISP driver in 
-the subdev open() handlers. I'm of course opened to alternatives.
-
-> Look at network modules, we always allow them to be unloaded, even if
-> the device is "in use" and that doesn't cause problems.  So why would
-> you need to do this when we are trying (over the past 10 years or so) to
-> move away from the "lock the module in place because we know better than
-> the user" model?
-
-We need to lock the module in place if its code can be called from another 
-driver. Coming up with a lock-free way to handle this would be similar to 
-removing the try_module_get() call from cdev_get(). Maybe it could be done, 
-but I'm not sure it should.
-
--- 
-Regards,
-
-Laurent Pinchart
+-Tony
