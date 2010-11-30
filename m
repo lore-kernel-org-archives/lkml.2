@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab0K3JUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:20:19 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48527 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab0K3JUP (ORCPT
+	id S1755039Ab0K3J0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:26:23 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38614 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab0K3J0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:20:15 -0500
+	Tue, 30 Nov 2010 04:26:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=aX2EKtg1/3ODe85rYpN5Mc/W/jWHq1uzAyTMt0m7AN8DNDLihMTUYlY2QxxHxYbkr6
-         TqYe/EUE32+tKDrF1F+x6ELnZ3tyVrc12UfNKzLxCWAD+L2X+adnQOzzIat6TG5UaX90
-         m56IhelaRo2UPJZi3IqinHWVuLd0MSqYgbdzU=
-Subject: Re: 2.6.35 -> 2.6.36 panic when vlan and promisc with tg3
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Michael Leun <lkml20101129@newton.leun.net>
-Cc: Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <20101130095944.41b5f7b6@xenia.leun.net>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	 <4CF442FA.4070701@candelatech.com> <20101130095944.41b5f7b6@xenia.leun.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Nov 2010 10:20:09 +0100
-Message-ID: <1291108809.2904.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=VQHrsqb4lxNklSC2kITsquVVuw0FVEFInNStM1Lq6Be5dx1E6d2ZYIxrfjZFGKbN7B
+         dlNo7x6s++20BTxdsARkKKQjVXC009OIps5dfrUfTWbUmRpjMzr3k1JotiNhbloxpeQG
+         UeAHywFcbBNUiDH7Xyh2pBuENFZUnnyCJswIM=
+Date: Tue, 30 Nov 2010 17:31:06 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Mark Wielaard <mjw@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Hui Zhu <teawater@gmail.com>,
+        linux-kernel@vger.kernel.org, gdb@sourceware.org,
+        hellogcc@freelists.org
+Subject: Re: [PATCH] Built kernel without -O2 option
+Message-ID: <20101130093106.GD5203@cr0.nay.redhat.com>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
+ <87r5e4lab7.fsf@basil.nowhere.org>
+ <1291025536.2904.6.camel@springer.wildebeest.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291025536.2904.6.camel@springer.wildebeest.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 30 novembre 2010 à 09:59 +0100, Michael Leun a écrit :
-> On Mon, 29 Nov 2010 16:19:06 -0800
-> Ben Greear <greearb@candelatech.com> wrote:
-> 
-> > On 11/29/2010 11:17 AM, Michael Leun wrote:
-> > > UG: unable to handle kernel paging request at 01cc921c
-> > > IP: [<c034bfce>] vlan_hwaccel_do_receive+0x59/0xd0
-> > > *pdpt = 0000000036a2a001 *pde = 0000000000000000
-> > > Oops: 0002 [#1] SMP
-> > > last sysfs
-> > >
-> > > Then machine dead.
-> > >
-> > > In 2.6.35.x this did not happen (but vlans broken - cannot see vlan
-> > > tags with tcpdump),
-> > 
-> > Try this patch:
-> > 
-> > http://permalink.gmane.org/gmane.linux.network/176566
-> > 
-> > It looks like this hasn't made it into stable yet?
-> 
-> > > To reproduce:
-> > >
-> > > ip link set eth0 up
-> > > vconfig add eth0 2
-> > > ip link set eth0 promisc on
-> 
-> It makes it better - it does not crash anymore on this commands - but
-> if you add an "tcpdump -i eth0 -n" at the end it does. So,
-> unfortunately no real solution.
-> 
-> I guess, "dropping packet no one is interested in" (as noted in the
-> patch) does not work very well if tcpdump is actually interested?
-> 
+On Mon, Nov 29, 2010 at 11:12:16AM +0100, Mark Wielaard wrote:
+>On Mon, 2010-11-29 at 10:59 +0100, Andi Kleen wrote:
+>> Hui Zhu <teawater@gmail.com> writes:
+>> 
+>> > Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>> > qemu, kgtp or kgdb and so on.
+>> > But the developer more like add a printk. It have a lot of reason, a big one is:
+>> > (gdb) p ret
+>> > $3 = <value optimized out>
+>> > And the code execution order is not right.
+>> 
+>> Really the right place to fix a lot of this would be gcc (and perhaps
+>> gdb). I suspect with some careful work the debugging experience
+>> for -O2 could be improved a lot.
+>> I also believe the latest gccs already have improvements in this area.
+>
+>The VTA branch was merged for GCC 4.5
+>http://gcc.gnu.org/wiki/Var_Tracking_Assignments
+>Which helps a lot with generating dwarf for previously "optimized out"
+>values. There were also a couple of papers on generating even better
+>debuginfo at the recent GCC Summit: http://gcc.gnu.org/wiki/summit2010
+>
+>Jakub Jelínek, Improving debug info for optimized away parameters
+>http://gcc.gnu.org/wiki/summit2010?action=AttachFile&do=get&target=jelinek.pdf
+>Alexandre Oliva, Consistent Views at Recommended Breakpoints
+>http://gcc.gnu.org/wiki/summit2010?action=AttachFile&do=get&target=oliva.pdf
+>
 
-Could you try with following patch instead, for net/core/dev.c 
-
-(and keep the net/8021q/vlan_core.c part)
-
---- net/core/dev.c.orig
-+++ net/core/dev.c
-@@ -2891,6 +2891,9 @@
- ncls:
- #endif
- 
-+	if (unlikely(vlan_tx_tag_present(skb)))
-+		goto bypass;
-+
- 	/* Handle special case of bridge or macvlan */
- 	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
-@@ -2927,6 +2930,7 @@
- 		}
- 	}
- 
-+bypass:
- 	if (pt_prev) {
- 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
- 	} else {
-
-
+Cool! It would be much more convenient if this is solved by gcc.
