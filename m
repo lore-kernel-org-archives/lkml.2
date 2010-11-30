@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab0K3Sva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:51:30 -0500
-Received: from serv04.lahn.de ([213.239.197.57]:60828 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab0K3Sv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:51:28 -0500
-Date: Tue, 30 Nov 2010 19:49:45 +0100
-From: Michael Leun <lkml20101129@newton.leun.net>
-To: linux-kernel@vger.kernel.org
-Subject: kernel BUG at mm/truncate.c:475!
-Message-ID: <20101130194945.58962c44@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+	id S1756088Ab0K3SwC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:52:02 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:51747 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751784Ab0K3SwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:52:00 -0500
+Subject: [PATCH] sched: make pushable_tasks CONFIG_SMP dependant.
+From: Dario Faggioli <raistlin@linux.it>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Nick Piggin <nickpiggin@yahoo.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-1IlWWQtHyKpw/XR5p/7p"
+Date: Tue, 30 Nov 2010 19:51:33 +0100
+Message-ID: <1291143093.2697.298.camel@Palantir>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-happenes sporadically, cannot reproduce at will.
 
+--=-1IlWWQtHyKpw/XR5p/7p
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Nov 30 15:24:55 elektra kernel: [ 6604.258610] ------------[ cut here ]------------
-Nov 30 15:24:55 elektra kernel: [ 6604.258628] kernel BUG at mm/truncate.c:475!
-Nov 30 15:24:55 elektra kernel: [ 6604.258633] invalid opcode: 0000 [#1] PREEMPT SMP
-Nov 30 15:24:55 elektra kernel: [ 6604.258640] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-Nov 30 15:24:55 elektra kernel: [ 6604.258646] CPU 3
-Nov 30 15:24:55 elektra kernel: [ 6604.258649] Modules linked in: veth fuse af_packet bridge 8021q garp stp llc vboxnetadp vboxnetflt vboxdrv nouveau ttm drm_kms_helper drm i2c_algo_bit snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ip6t_REJECT ipt_REJECT ip6t_LOG ipt_LOG xt_limit xt_recent nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_mangle iptable_mangle iptable_nat ip6table_filter ip6_tables iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables nls_utf8 loop arc4 ecb snd_hda_codec_nvhdmi iwlagn iwlcore snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep mac80211 snd_pcm ohci1394 ieee1394 cfg80211 snd_timer sdhci_pci snd sdhci pcmcia firewire_ohci e1000e mmc_core yenta_socket soundcore firewire_core pcmcia_rsrc crc_itu_t pcmcia_core ppdev mcs7830 dm9601 dell_laptop usbnet rfkill snd_page_alloc dell_wmi shpchp sr_mod parport_pc !
- sg cdrom wmi dcdbas intel_ips parport i
-Nov 30 15:24:55 elektra kernel: ntel_agp i2c_i801 pci_hotplug iTCO_wdt pcspkr iTCO_vendor_support button video battery ac ext4 jbd2 crc16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt usbhid linear ehci_hcd usbcore sd_mod dm_snapshot dm_mod fan processor ahci libahci libata scsi_mod thermal thermal_sys
-Nov 30 15:24:55 elektra kernel: [ 6604.258914]
-Nov 30 15:24:55 elektra kernel: [ 6604.258918] Pid: 31399, comm: cut Not tainted 2.6.36.1 #2 0N5KHN/Latitude E6510
-Nov 30 15:24:55 elektra kernel: [ 6604.258924] RIP: 0010:[<ffffffff810ee5e1>]  [<ffffffff810ee5e1>] invalidate_inode_pages2_range+0x271/0x350
-Nov 30 15:24:55 elektra kernel: [ 6604.258939] RSP: 0018:ffff8800774d5b58  EFLAGS: 00010246
-Nov 30 15:24:55 elektra kernel: [ 6604.258944] RAX: 0000000000000000 RBX: ffffea0001ea2f40 RCX: ffff8800c05a5bd0
-Nov 30 15:24:55 elektra kernel: [ 6604.258950] RDX: 0000000000000000 RSI: ffff8800774d5a28 RDI: ffff8800c0521a18
-Nov 30 15:24:55 elektra kernel: [ 6604.258956] RBP: ffff8800774d5c38 R08: ffff8800c05a5bd0 R09: ffff8800774d5ae8
-Nov 30 15:24:55 elektra kernel: [ 6604.258962] R10: 0000000000000008 R11: 0000000000000001 R12: ffff8800774d5b98
-Nov 30 15:24:55 elektra kernel: [ 6604.258969] R13: 0000000000000000 R14: ffff8800c05219d8 R15: 0000000000000000
-Nov 30 15:24:55 elektra kernel: [ 6604.258980] FS:  0000000000000000(0000) GS:ffff880001cc0000(0000) knlGS:0000000000000000
-Nov 30 15:24:55 elektra kernel: [ 6604.258992] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-Nov 30 15:24:55 elektra kernel: [ 6604.258999] CR2: 00007f3ad2337290 CR3: 00000000850b3000 CR4: 00000000000006e0
-Nov 30 15:24:55 elektra kernel: [ 6604.259010] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Nov 30 15:24:55 elektra kernel: [ 6604.259019] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Nov 30 15:24:55 elektra kernel: [ 6604.259028] Process cut (pid: 31399, threadinfo ffff8800774d4000, task ffff8800a2bbae40)
-Nov 30 15:24:55 elektra kernel: [ 6604.259038] Stack:
-Nov 30 15:24:55 elektra kernel: [ 6604.259042]  ffffffff81074300 ffff8800c05219f0 00000001774d5b60 0000000000000001
-Nov 30 15:24:55 elektra kernel: [ 6604.259054] <0> ffffffffffffffff 00000000c41fec70 000000000000000e 0000000000000000
-Nov 30 15:24:55 elektra kernel: [ 6604.259069] <0> ffffea0001ea2f40 ffffea0001a246c8 ffffea0001a24690 ffffea0001a47348
-Nov 30 15:24:55 elektra kernel: [ 6604.259087] Call Trace:
-Nov 30 15:24:55 elektra kernel: [ 6604.259094]  [<ffffffff81074300>] ? autoremove_wake_function+0x0/0x40
-Nov 30 15:24:55 elektra kernel: [ 6604.259101]  [<ffffffff810ee6d2>] invalidate_inode_pages2+0x12/0x20
-Nov 30 15:24:55 elektra kernel: [ 6604.259111]  [<ffffffffa0848ce0>] fuse_finish_open+0x60/0x70 [fuse]
-Nov 30 15:24:55 elektra kernel: [ 6604.259118]  [<ffffffffa0848d71>] fuse_open_common+0x81/0x90 [fuse]
-Nov 30 15:24:55 elektra kernel: [ 6604.259125]  [<ffffffffa0848d80>] ? fuse_open+0x0/0x10 [fuse]
-Nov 30 15:24:55 elektra kernel: [ 6604.259132]  [<ffffffffa0848d8b>] fuse_open+0xb/0x10 [fuse]
-Nov 30 15:24:55 elektra kernel: [ 6604.259139]  [<ffffffff81137a1a>] __dentry_open+0x11a/0x3c0
-Nov 30 15:24:55 elektra kernel: [ 6604.259147]  [<ffffffff811efbda>] ? security_inode_permission+0x1a/0x20
-Nov 30 15:24:55 elektra kernel: [ 6604.259154]  [<ffffffff81138cc4>] nameidata_to_filp+0x54/0x70
-Nov 30 15:24:55 elektra kernel: [ 6604.259160]  [<ffffffff81147168>] do_last+0x488/0x760
-Nov 30 15:24:55 elektra kernel: [ 6604.259166]  [<ffffffff81147868>] do_filp_open+0x428/0x670
-Nov 30 15:24:55 elektra kernel: [ 6604.259173]  [<ffffffffa0842983>] ? fuse_request_free+0x13/0x20 [fuse]
-Nov 30 15:24:55 elektra kernel: [ 6604.259181]  [<ffffffffa0842a48>] ? fuse_put_request+0xb8/0xc0 [fuse]
-Nov 30 15:24:55 elektra kernel: [ 6604.259193]  [<ffffffff81138d40>] do_sys_open+0x60/0x120
-Nov 30 15:24:55 elektra kernel: [ 6604.259205]  [<ffffffff81138e1b>] sys_open+0x1b/0x20
-Nov 30 15:24:55 elektra kernel: [ 6604.259217]  [<ffffffff81002f02>] system_call_fastpath+0x16/0x1b
-Nov 30 15:24:55 elektra kernel: [ 6604.259228] Code: fe ff ff 0f 1f 80 00 00 00 00 48 89 c6 31 c9 48 c1 e6 0c ba 00 10 00 00 4c 89 f7 e8 ba 37 01 00 8b 43 0c 85 c0 0f 88 2e ff ff ff <0f> 0b 0f 1f 44 00 00 48 89 df e8 30 39 ff ff 8b 85 50 ff ff ff
-Nov 30 15:24:55 elektra kernel: [ 6604.259394] RIP  [<ffffffff810ee5e1>] invalidate_inode_pages2_range+0x271/0x350
-Nov 30 15:24:55 elektra kernel: [ 6604.259412]  RSP <ffff8800774d5b58>
-Nov 30 15:24:55 elektra kernel: [ 6604.265642] ---[ end trace 019ef068b5f8e921 ]---
+As noted by Peter Zijlstra here https://lkml.org/lkml/2010/11/10/391
+(while reviewing other stuff, though), tracking pushable tasks
+only makes sense on SMPs.
 
--- 
-MfG,
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
+---
+ include/linux/init_task.h |    9 ++++++++-
+ include/linux/sched.h     |    2 ++
+ kernel/sched.c            |    2 ++
+ 3 files changed, 12 insertions(+), 1 deletions(-)
 
-Michael Leun
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 1f8c06c..6ed8812 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -12,6 +12,13 @@
+ #include <linux/securebits.h>
+ #include <net/net_namespace.h>
+=20
++#ifdef CONFIG_SMP
++# define INIT_PUSHABLE_TASKS(tsk)					\
++	.pushable_tasks =3D PLIST_NODE_INIT(tsk.pushable_tasks, MAX_PRIO),
++#else
++# define INIT_PUSHABLE_TASKS(tsk)
++#endif
++
+ extern struct files_struct init_files;
+ extern struct fs_struct init_fs;
+=20
+@@ -137,7 +144,7 @@ extern struct cred init_cred;
+ 		.nr_cpus_allowed =3D NR_CPUS,				\
+ 	},								\
+ 	.tasks		=3D LIST_HEAD_INIT(tsk.tasks),			\
+-	.pushable_tasks =3D PLIST_NODE_INIT(tsk.pushable_tasks, MAX_PRIO), \
++	INIT_PUSHABLE_TASKS(tsk)					\
+ 	.ptraced	=3D LIST_HEAD_INIT(tsk.ptraced),			\
+ 	.ptrace_entry	=3D LIST_HEAD_INIT(tsk.ptrace_entry),		\
+ 	.real_parent	=3D &tsk,						\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b0fc8ee..eae4131 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1244,7 +1244,9 @@ struct task_struct {
+ #endif
+=20
+ 	struct list_head tasks;
++#ifdef CONFIG_SMP
+ 	struct plist_node pushable_tasks;
++#endif
+=20
+ 	struct mm_struct *mm, *active_mm;
+ #if defined(SPLIT_RSS_COUNTING)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 0debad9..166f9f8 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2595,7 +2595,9 @@ void sched_fork(struct task_struct *p, int clone_flag=
+s)
+ 	/* Want to start with kernel preemption disabled. */
+ 	task_thread_info(p)->preempt_count =3D 1;
+ #endif
++#ifdef CONFIG_SMP
+ 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
++#endif
+=20
+ 	put_cpu();
+ }
+--=20
+1.7.2.3
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
+--=-1IlWWQtHyKpw/XR5p/7p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkz1R60ACgkQk4XaBE3IOsR1AwCff8ux11nntUcl8n4ZDDXcI4fa
+BuAAnjrotdZO/EIAQvetotU0gHeNZ6Aj
+=/YP1
+-----END PGP SIGNATURE-----
+
+--=-1IlWWQtHyKpw/XR5p/7p--
 
