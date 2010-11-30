@@ -1,58 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab0K3UHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 15:07:47 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:7823 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab0K3UHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 15:07:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=tfCYKcILNJb7nPijU8Jao8gtuI9c2gz2LeDNyLMWP5UWaMwQS+mw8CysG+u4jISAwd
-         34WZGz4Fj2gffExtyWzg==
-Date: Tue, 30 Nov 2010 12:07:39 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
-In-Reply-To: <20101130220221.832B.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1011301205510.12979@chino.kir.corp.google.com>
-References: <20101123160259.7B9C.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011271737110.3764@chino.kir.corp.google.com> <20101130220221.832B.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756643Ab0K3UIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 15:08:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755761Ab0K3UIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 15:08:04 -0500
+Date: Tue, 30 Nov 2010 21:01:07 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>
+Subject: [PATCH 2/4] exec: introduce "bool compat" argument
+Message-ID: <20101130200107.GF11905@redhat.com>
+References: <20101125140253.GA29371@redhat.com> <20101125193659.GA14510@redhat.com> <20101129093803.829F.A69D9226@jp.fujitsu.com> <20101129113357.GA30657@redhat.com> <20101129182332.GA21470@redhat.com> <20101130195456.GA11905@redhat.com> <20101130200016.GD11905@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130200016.GD11905@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, KOSAKI Motohiro wrote:
+No functional changes, preparation to simplify the review.
 
-> > Because NOTHING breaks with the new mapping.  Eight months later since 
-> > this was initially proposed on linux-mm, you still cannot show a single 
-> > example that depended on the exponential mapping of oom_adj.  I'm not 
-> > going to continue responding to your criticism about this point since your 
-> > argument is completely and utterly baseless.
-> 
-> No regression mean no break. Not single nor multiple. see?
-> 
+And the new (and currently unused) "bool compat" argument to
+get_arg_ptr(), count(), and copy_strings().
 
-Nothing breaks.  If something did, you could respond to my answer above 
-and provide a single example of a real-world example that broke as a 
-result of the new linear mapping.
+Add this argument to do_execve() as well, and rename it to
+do_execve_common().
 
-> All situation can be calculated on userland. User process can be know
-> their bindings.
-> 
+Reintroduce do_execve() as a trivial wrapper() on top of
+do_execve_common(compat => false).
 
-Yes, but the proportional priority-based oom_score_adj values allow users 
-to avoid recalculating and writing that value anytime a mempolicy 
-attachment changes, its nodemask changes, it moves to another cpuset, its 
-set of mems changes, its memcg attachment changes, its limit is modiifed, 
-etc.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ fs/exec.c |   33 +++++++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
+
+--- K/fs/exec.c~2_is_compat_arg	2010-11-30 19:14:54.000000000 +0100
++++ K/fs/exec.c	2010-11-30 19:47:24.000000000 +0100
+@@ -391,7 +391,7 @@ err:
+ }
+ 
+ static const char __user *
+-get_arg_ptr(const char __user * const __user *argv, int argc)
++get_arg_ptr(const char __user * const __user *argv, int argc, bool compat)
+ {
+ 	const char __user *ptr;
+ 
+@@ -404,13 +404,13 @@ get_arg_ptr(const char __user * const __
+ /*
+  * count() counts the number of strings in array ARGV.
+  */
+-static int count(const char __user * const __user * argv, int max)
++static int count(const char __user * const __user *argv, int max, bool compat)
+ {
+ 	int i = 0;
+ 
+ 	if (argv != NULL) {
+ 		for (;;) {
+-			const char __user *p = get_arg_ptr(argv, i);
++			const char __user *p = get_arg_ptr(argv, i, compat);
+ 
+ 			if (!p)
+ 				break;
+@@ -435,7 +435,7 @@ static int count(const char __user * con
+  * ensures the destination page is created and not swapped out.
+  */
+ static int copy_strings(int argc, const char __user *const __user *argv,
+-			struct linux_binprm *bprm)
++			struct linux_binprm *bprm, bool compat)
+ {
+ 	struct page *kmapped_page = NULL;
+ 	char *kaddr = NULL;
+@@ -448,7 +448,7 @@ static int copy_strings(int argc, const 
+ 		unsigned long pos;
+ 
+ 		ret = -EFAULT;
+-		str = get_arg_ptr(argv, argc);
++		str = get_arg_ptr(argv, argc, compat);
+ 		if (IS_ERR(str))
+ 			goto out;
+ 
+@@ -531,7 +531,8 @@ int copy_strings_kernel(int argc, const 
+ 	int r;
+ 	mm_segment_t oldfs = get_fs();
+ 	set_fs(KERNEL_DS);
+-	r = copy_strings(argc, (const char __user *const  __user *)argv, bprm);
++	r = copy_strings(argc, (const char __user *const  __user *)argv,
++				bprm, false);
+ 	set_fs(oldfs);
+ 	return r;
+ }
+@@ -1382,10 +1383,10 @@ EXPORT_SYMBOL(search_binary_handler);
+ /*
+  * sys_execve() executes a new program.
+  */
+-int do_execve(const char * filename,
++static int do_execve_common(const char *filename,
+ 	const char __user *const __user *argv,
+ 	const char __user *const __user *envp,
+-	struct pt_regs * regs)
++	struct pt_regs *regs, bool compat)
+ {
+ 	struct linux_binprm *bprm;
+ 	struct file *file;
+@@ -1427,11 +1428,11 @@ int do_execve(const char * filename,
+ 	if (retval)
+ 		goto out_file;
+ 
+-	bprm->argc = count(argv, MAX_ARG_STRINGS);
++	bprm->argc = count(argv, MAX_ARG_STRINGS, compat);
+ 	if ((retval = bprm->argc) < 0)
+ 		goto out;
+ 
+-	bprm->envc = count(envp, MAX_ARG_STRINGS);
++	bprm->envc = count(envp, MAX_ARG_STRINGS, compat);
+ 	if ((retval = bprm->envc) < 0)
+ 		goto out;
+ 
+@@ -1444,11 +1445,11 @@ int do_execve(const char * filename,
+ 		goto out;
+ 
+ 	bprm->exec = bprm->p;
+-	retval = copy_strings(bprm->envc, envp, bprm);
++	retval = copy_strings(bprm->envc, envp, bprm, compat);
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	retval = copy_strings(bprm->argc, argv, bprm);
++	retval = copy_strings(bprm->argc, argv, bprm, compat);
+ 	if (retval < 0)
+ 		goto out;
+ 
+@@ -1492,6 +1493,14 @@ out_ret:
+ 	return retval;
+ }
+ 
++int do_execve(const char *filename,
++	const char __user *const __user *argv,
++	const char __user *const __user *envp,
++	struct pt_regs *regs)
++{
++	return do_execve_common(filename, argv, envp, regs, false);
++}
++
+ void set_binfmt(struct linux_binfmt *new)
+ {
+ 	struct mm_struct *mm = current->mm;
+
