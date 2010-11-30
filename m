@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0K3SJA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:09:00 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:55905 "EHLO mgw-sa01.nokia.com"
+	id S1755820Ab0K3SJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:09:11 -0500
+Received: from mga01.intel.com ([192.55.52.88]:10501 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465Ab0K3SI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:08:59 -0500
-Message-ID: <4CF53D8B.7060907@nokia.com>
-Date: Tue, 30 Nov 2010 20:08:11 +0200
-From: Adrian Hunter <adrian.hunter@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Yunpeng Gao <yunpeng.gao@intel.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3]mmc: enable runtime PM support for block driver
-References: <20101128054818.GB3318@intel.com>
-In-Reply-To: <20101128054818.GB3318@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755775Ab0K3SJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:09:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,281,1288594800"; 
+   d="scan'208";a="862783379"
+Subject: Re: [PATCH 0/2] Fix dmar fault interrupt problems
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>
+In-Reply-To: <4CF4B597.4030708@jp.fujitsu.com>
+References: <4CF4B597.4030708@jp.fujitsu.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 30 Nov 2010 10:09:13 -0800
+Message-Id: <1291140553.2623.10.camel@sbsiddha-MOBL3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Nov 2010 18:08:11.0954 (UTC) FILETIME=[8D064920:01CB90B9]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/11/10 07:48, ext Yunpeng Gao wrote:
->
->> From 51e4d34f19b48552a10a9f6b69f51c5aeed18d03 Mon Sep 17 00:00:00 2001
-> From: Yunpeng Gao<yunpeng.gao@intel.com>
-> Date: Sun, 28 Nov 2010 08:01:01 +0800
-> Subject: [PATCH] Enable runtime pm support for block driver of mmc stack.
->
-> Follow the kernel runtime pm framework, this patch enable
-> runtime pm support for block driver of mmc stack.
-> To validate it, it needs runtime pm support for mmc bus
-> and host controller to be enabled also.
->
-> Signed-off-by: Yunpeng Gao<yunpeng.gao@intel.com>
-> ---
->   drivers/mmc/card/block.c |   24 +++++++++++++++++++++---
->   1 files changed, 21 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 217f820..8a35814 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -31,6 +31,7 @@
->   #include<linux/mutex.h>
->   #include<linux/scatterlist.h>
->   #include<linux/string_helpers.h>
-> +#include<linux/pm_runtime.h>
->
->   #include<linux/mmc/card.h>
->   #include<linux/mmc/host.h>
-> @@ -560,14 +561,24 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
->
->   static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
->   {
-> +	struct mmc_blk_data *md = mq->data;
-> +	struct mmc_card *card = md->queue.card;
-> +	int ret;
-> +
-> +	pm_runtime_get_sync(&card->dev);
+On Tue, 2010-11-30 at 00:28 -0800, Kenji Kaneshige wrote:
+> Hi,
+> 
+> Here are patches to fix the following problems regarding dmar fault interrupt.
+> 
+> - No dmar fault event is notified in x2apic cluster mode
+> - Changing IRQ affinity of dmar fault interrupt causes "No irq handler
+>   for vector (irq XX)" message and dmar fault interrupts are never
+>   notified after that.
 
-Wouldn't it be better to "get" when the queue thread wakes up
-and "put" before it goes to sleep?
+Kenji, In addition to these two, there are couple of more patches that
+are needed to fix the kexec/kdump issue that we are debugging on RH
+bugzilla.
 
-> +
->   	if (req->cmd_flags&  REQ_DISCARD) {
->   		if (req->cmd_flags&  REQ_SECURE)
-> -			return mmc_blk_issue_secdiscard_rq(mq, req);
-> +			ret = mmc_blk_issue_secdiscard_rq(mq, req);
->   		else
-> -			return mmc_blk_issue_discard_rq(mq, req);
-> +			ret = mmc_blk_issue_discard_rq(mq, req);
->   	} else {
-> -		return mmc_blk_issue_rw_rq(mq, req);
-> +		ret = mmc_blk_issue_rw_rq(mq, req);
->   	}
-> +
-> +	pm_runtime_put(&card->dev);
-> +
-> +	return ret;
->   }
->
->   static inline int mmc_blk_readonly(struct mmc_card *card)
-> @@ -709,6 +720,11 @@ static int mmc_blk_probe(struct mmc_card *card)
->
->   	mmc_set_drvdata(card, md);
->   	add_disk(md->disk);
-> +
-> +	/* Indicate to runtime PM core that our device is active */
-> +	pm_runtime_set_active(&card->dev);
-> +	pm_runtime_enable(&card->dev);
-> +
->   	return 0;
->
->    out:
-> @@ -732,6 +748,8 @@ static void mmc_blk_remove(struct mmc_card *card)
->   		mmc_blk_put(md);
->   	}
->   	mmc_set_drvdata(card, NULL);
-> +
-> +	pm_runtime_disable(&card->dev);
->   }
->
->   #ifdef CONFIG_PM
+I will post all these 4 patches shortly. I already noticed and queued
+the second patch (dmar irq migration)  you mentioned.
+
+thanks,
+suresh
 
