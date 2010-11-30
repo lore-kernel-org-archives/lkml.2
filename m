@@ -1,33 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab0K3Xwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:52:30 -0500
-Received: from vms173011pub.verizon.net ([206.46.173.11]:54566 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab0K3Xw3 (ORCPT
+	id S1752415Ab0K3X4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:56:48 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38495 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab0K3X4q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:52:29 -0500
-Date: Tue, 30 Nov 2010 18:52:23 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] acpi: Provide decls for standalone compilation of video.h
- without ACPI (v2)
-In-reply-to: <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-Message-id: <alpine.LFD.2.00.1011301852150.3354@x980>
-References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk>
- <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 30 Nov 2010 18:56:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ut8IVt8O9PSvZ7w0AJyb5AYvs2HHbEHICAmfN5RgUwUBYcSIBImGGacS6H+yBjRDEy
+         fuafTdeUe34pafhwrMS3YWhXaoWWXJzGVNY+bKHfQZCZJ62pyQOyxGUw7rE9OlJ5TKw2
+         LhRvHVB9NW8f5FAIEgSiNHYOfRKJFqCjU6aV0=
+MIME-Version: 1.0
+In-Reply-To: <987664A83D2D224EAE907B061CE93D530191E8BCF1@orsmsx505.amr.corp.intel.com>
+References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
+	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
+	<20101129190343.7d7cea12.akpm@linux-foundation.org>
+	<987664A83D2D224EAE907B061CE93D530191E8BCF1@orsmsx505.amr.corp.intel.com>
+Date: Wed, 1 Dec 2010 07:56:46 +0800
+Message-ID: <AANLkTimxPqx_VUBBrmgA1gzYz1p4kC1SQBJO-vv570f+@mail.gmail.com>
+Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-applied
+On Wed, Dec 1, 2010 at 2:00 AM, Luck, Tony <tony.luck@intel.com> wrote:
+>> +     for (i = 0; i < strs_size; i++) {
+>> +             if (!(bits & (1U << i)))
+>> +                     continue;
+>> +             str = strs[i];
+>> +             if (len && len + strlen(str) + 2 > 80) {
+>> +                     printk("\n");
+>> +                     len = 0;
+>> +             }
+>> +             if (!len)
+>> +                     len = pr_pfx(pfx, "%s", str);
+>> +             else
+>> +                     len += printk(", %s", str);
+>> +     }
+>> +     if (len)
+>> +             printk("\n");
+>
+> Does printk() offer any guarantees about getting all the characters
+> from a single printk() call out to the console without interleaving
+> with messages from printk() calls on other cpus?  If it does, then
+> it would be a good idea to sprintf() the parts of this message to
+> a buffer and then use one printk() call.  I think I read that netconsole
+> ends up with one packet on the wire for each call to printk().
+>
+> Trying to parse output jumbled together from multiple cpus
+> doesn't sound like fun.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+Yes. Will do that.
 
+Best Regards,
+Huang Ying
