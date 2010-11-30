@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab0K3KQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 05:16:06 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53761 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab0K3KQD (ORCPT
+	id S1755452Ab0K3KQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 05:16:40 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53345 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab0K3KQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 05:16:03 -0500
-Subject: [PATCH 2/3] Refactor zone_reclaim
+	Tue, 30 Nov 2010 05:16:38 -0500
+Subject: [PATCH 3/3] Provide control over unmapped pages
 To: linux-mm@kvack.org, Christoph Lameter <cl@linux.com>
 From: Balbir Singh <balbir@linux.vnet.ibm.com>
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         kvm <kvm@vger.kernel.org>
-Date: Tue, 30 Nov 2010 15:45:55 +0530
-Message-ID: <20101130101520.17475.79978.stgit@localhost6.localdomain6>
+Date: Tue, 30 Nov 2010 15:46:31 +0530
+Message-ID: <20101130101602.17475.32611.stgit@localhost6.localdomain6>
 In-Reply-To: <20101130101126.17475.18729.stgit@localhost6.localdomain6>
 References: <20101130101126.17475.18729.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -24,72 +24,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor zone_reclaim, move reusable functionality outside
-of zone_reclaim. Make zone_reclaim_unmapped_pages modular
+Provide control using zone_reclaim() and a boot parameter. The
+code reuses functionality from zone_reclaim() to isolate unmapped
+pages and reclaim them as a priority, ahead of other mapped pages.
 
 Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
 ---
- mm/vmscan.c |   35 +++++++++++++++++++++++------------
- 1 files changed, 23 insertions(+), 12 deletions(-)
+ include/linux/swap.h |    5 ++-
+ mm/page_alloc.c      |    7 +++--
+ mm/vmscan.c          |   72 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 79 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index eba53e7..78b0830 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -252,11 +252,12 @@ extern int vm_swappiness;
+ extern int remove_mapping(struct address_space *mapping, struct page *page);
+ extern long vm_total_pages;
+ 
+-#ifdef CONFIG_NUMA
+-extern int zone_reclaim_mode;
+ extern int sysctl_min_unmapped_ratio;
+ extern int sysctl_min_slab_ratio;
+ extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
++extern bool should_balance_unmapped_pages(struct zone *zone);
++#ifdef CONFIG_NUMA
++extern int zone_reclaim_mode;
+ #else
+ #define zone_reclaim_mode 0
+ static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 62b7280..4228da3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1662,6 +1662,9 @@ zonelist_scan:
+ 			unsigned long mark;
+ 			int ret;
+ 
++			if (should_balance_unmapped_pages(zone))
++				wakeup_kswapd(zone, order);
++
+ 			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+ 			if (zone_watermark_ok(zone, order, mark,
+ 				    classzone_idx, alloc_flags))
+@@ -4136,10 +4139,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 
+ 		zone->spanned_pages = size;
+ 		zone->present_pages = realsize;
+-#ifdef CONFIG_NUMA
+-		zone->node = nid;
+ 		zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
+ 						/ 100;
++#ifdef CONFIG_NUMA
++		zone->node = nid;
+ 		zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
+ #endif
+ 		zone->name = zone_names[j];
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 325443a..0ac444f 100644
+index 0ac444f..98950f4 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2719,6 +2719,27 @@ static long zone_pagecache_reclaimable(struct zone *zone)
+@@ -145,6 +145,21 @@ static DECLARE_RWSEM(shrinker_rwsem);
+ #define scanning_global_lru(sc)	(1)
+ #endif
+ 
++static unsigned long balance_unmapped_pages(int priority, struct zone *zone,
++						struct scan_control *sc);
++static int unmapped_page_control __read_mostly;
++
++static int __init unmapped_page_control_parm(char *str)
++{
++	unmapped_page_control = 1;
++	/*
++	 * XXX: Should we tweak swappiness here?
++	 */
++	return 1;
++}
++__setup("unmapped_page_control", unmapped_page_control_parm);
++
++
+ static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+ 						  struct scan_control *sc)
+ {
+@@ -2223,6 +2238,12 @@ loop_again:
+ 				shrink_active_list(SWAP_CLUSTER_MAX, zone,
+ 							&sc, priority, 0);
+ 
++			/*
++			 * We do unmapped page balancing once here and once
++			 * below, so that we don't lose out
++			 */
++			balance_unmapped_pages(priority, zone, &sc);
++
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone), 0, 0)) {
+ 				end_zone = i;
+@@ -2258,6 +2279,11 @@ loop_again:
+ 				continue;
+ 
+ 			sc.nr_scanned = 0;
++			/*
++			 * Balance unmapped pages upfront, this should be
++			 * really cheap
++			 */
++			balance_unmapped_pages(priority, zone, &sc);
+ 
+ 			/*
+ 			 * Call soft limit reclaim before calling shrink_zone.
+@@ -2491,7 +2517,8 @@ void wakeup_kswapd(struct zone *zone, int order)
+ 		pgdat->kswapd_max_order = order;
+ 	if (!waitqueue_active(&pgdat->kswapd_wait))
+ 		return;
+-	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
++	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0) &&
++		!should_balance_unmapped_pages(zone))
+ 		return;
+ 
+ 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
+@@ -2740,6 +2767,49 @@ zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
  }
  
  /*
-+ * Helper function to reclaim unmapped pages, we might add something
-+ * similar to this for slab cache as well. Currently this function
-+ * is shared with __zone_reclaim()
++ * Routine to balance unmapped pages, inspired from the code under
++ * CONFIG_NUMA that does unmapped page and slab page control by keeping
++ * min_unmapped_pages in the zone. We currently reclaim just unmapped
++ * pages, slab control will come in soon, at which point this routine
++ * should be called balance cached pages
 + */
-+static inline void
-+zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
-+				unsigned long nr_pages)
++static unsigned long balance_unmapped_pages(int priority, struct zone *zone,
++						struct scan_control *sc)
 +{
-+	int priority;
-+	/*
-+	 * Free memory by calling shrink zone with increasing
-+	 * priorities until we have enough memory freed.
-+	 */
-+	priority = ZONE_RECLAIM_PRIORITY;
-+	do {
-+		shrink_zone(priority, zone, sc);
-+		priority--;
-+	} while (priority >= 0 && sc->nr_reclaimed < nr_pages);
++	if (unmapped_page_control &&
++		(zone_unmapped_file_pages(zone) > zone->min_unmapped_pages)) {
++		struct scan_control nsc;
++		unsigned long nr_pages;
++
++		nsc = *sc;
++
++		nsc.swappiness = 0;
++		nsc.may_writepage = 0;
++		nsc.may_unmap = 0;
++		nsc.nr_reclaimed = 0;
++
++		nr_pages = zone_unmapped_file_pages(zone) -
++				zone->min_unmapped_pages;
++		/* Magically try to reclaim eighth the unmapped cache pages */
++		nr_pages >>= 3;
++
++		zone_reclaim_unmapped_pages(zone, &nsc, nr_pages);
++		return nsc.nr_reclaimed;
++	}
++	return 0;
++}
++
++#define UNMAPPED_PAGE_RATIO 16
++bool should_balance_unmapped_pages(struct zone *zone)
++{
++	if (unmapped_page_control &&
++		(zone_unmapped_file_pages(zone) >
++			UNMAPPED_PAGE_RATIO * zone->min_unmapped_pages))
++		return true;
++	return false;
 +}
 +
 +/*
   * Try to free up some pages from this zone through reclaim.
   */
  static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
-@@ -2727,7 +2748,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	const unsigned long nr_pages = 1 << order;
- 	struct task_struct *p = current;
- 	struct reclaim_state reclaim_state;
--	int priority;
- 	struct scan_control sc = {
- 		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
- 		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
-@@ -2751,17 +2771,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	reclaim_state.reclaimed_slab = 0;
- 	p->reclaim_state = &reclaim_state;
- 
--	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
--		/*
--		 * Free memory by calling shrink zone with increasing
--		 * priorities until we have enough memory freed.
--		 */
--		priority = ZONE_RECLAIM_PRIORITY;
--		do {
--			shrink_zone(priority, zone, &sc);
--			priority--;
--		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
--	}
-+	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages)
-+		zone_reclaim_unmapped_pages(zone, &sc, nr_pages);
- 
- 	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
- 	if (nr_slab_pages0 > zone->min_slab_pages) {
 
