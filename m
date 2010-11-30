@@ -1,58 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab0K3VSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:18:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51788 "EHLO mga11.intel.com"
+	id S1751703Ab0K3VUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:20:42 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:37721 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab0K3VSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:18:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,281,1288594800"; 
-   d="scan'208";a="631744771"
-Message-ID: <4CF56A28.7070909@linux.intel.com>
-Date: Tue, 30 Nov 2010 13:18:32 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Mitch Bradley <wmb@firmworks.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        Scott Wood <scottwood@freescale.com>, Sebastian@www.tglx.de,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [sodaville] [PATCH 03/11] x86/dtb: Add a device tree for CE4100
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>	<1290706801-7323-4-git-send-email-bigeasy@linutronix.de>	<1290808645.32570.158.camel@pasglop>	<20101128160449.GC30784@www.tglx.de>	<1290984809.32570.208.camel@pasglop>	<20101129130720.7d060e1c@udp111988uds.am.freescale.net>	<1291061128.32570.298.camel@pasglop>	<4CF40DF4.9060204@firmworks.com> <20101129234259.586eb27a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101129234259.586eb27a@lxorguk.ukuu.org.uk>
+	id S1751222Ab0K3VUk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 16:20:40 -0500
+Date: Tue, 30 Nov 2010 22:20:25 +0100
+From: mat <castet.matthieu@free.fr>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+Message-ID: <20101130222025.3ccf5c00@mat-laptop>
+In-Reply-To: <20101129181542.GA11630@home.goodmis.org>
+References: <4CE2F914.9070106@free.fr>
+	<20101129181542.GA11630@home.goodmis.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 03:42 PM, Alan Cox wrote:
->> The usual layout is that the PCI bus is a direct child of
->> the root node, and the ISA bus is a child of the PCI bus.
->> That reflects the "Northbridge + Southbridge" wiring that
+Hi,
+
+Le Mon, 29 Nov 2010 13:15:42 -0500,
+Steven Rostedt <rostedt@goodmis.org> a écrit :
+
+> This patch breaks function tracer:
 > 
-> That isn't strictly true either. On many PC devices the ISA bus (or LPC
-> bus nowdays) has no heirarchy as such because ISA cycles get issued if
-> the PCI cycles don't generate a response. In addition some cycles go to
-> both busses on some chipsets and there are various bits of magic so the
-> I/O spaces and particularly the memory spaces are intertwined.
+> ------------[ cut here ]------------
+> WARNING: at kernel/trace/ftrace.c:1014 ftrace_bug+0x114/0x171()
+> Hardware name: Precision WorkStation 470    
+> Modules linked in: i2c_core(+)
+> Pid: 86, comm: modprobe Not tainted 2.6.37-rc2+ #68
+> Call Trace:
+>  [<ffffffff8104e957>] warn_slowpath_common+0x85/0x9d
+>  [<ffffffffa00026db>] ? __process_new_adapter+0x7/0x34 [i2c_core]
+>  [<ffffffffa00026db>] ? __process_new_adapter+0x7/0x34 [i2c_core]
+>  [<ffffffff8104e989>] warn_slowpath_null+0x1a/0x1c
+>  [<ffffffff810a9dfe>] ftrace_bug+0x114/0x171
+>  [<ffffffffa00026db>] ? __process_new_adapter+0x7/0x34 [i2c_core]
+>  [<ffffffff810aa0db>] ftrace_process_locs+0x1ae/0x274
+>  [<ffffffffa00026db>] ? __process_new_adapter+0x7/0x34 [i2c_core]
+>  [<ffffffff810aa29e>] ftrace_module_notify+0x39/0x44
+>  [<ffffffff814405cf>] notifier_call_chain+0x37/0x63
+>  [<ffffffff8106e054>] __blocking_notifier_call_chain+0x46/0x5b
+>  [<ffffffff8106e07d>] blocking_notifier_call_chain+0x14/0x16
+>  [<ffffffff8107ffde>] sys_init_module+0x73/0x1f3
+>  [<ffffffff8100acf2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 2aff4f4ca53ec746 ]---
+> ftrace faulted on writing [<ffffffffa00026db>]
+> __process_new_adapter+0x7/0x34 [i2c_core]
 > 
-> So it's not a subordinate bus really, its a bit weirder. PCMCIA is
-> probably a sub-bus when you've got a PCI/PCMCIA adapter but ISA in
-> general is a bit fuzzy.
+> 
+> On Tue, Nov 16, 2010 at 10:35:16PM +0100, matthieu castet wrote:
+> >  
+> > @@ -2650,6 +2810,18 @@ static struct module *load_module(void
+> > __user *umod, kfree(info.strmap);
+> >  	free_copy(&info);
+> >  
+> > +	/* Set RO and NX regions for core */
+> > +	set_section_ro_nx(mod->module_core,
+> > +				mod->core_text_size,
+> > +				mod->core_ro_size,
+> > +				mod->core_size);
+> > +
+> > +	/* Set RO and NX regions for init */
+> > +	set_section_ro_nx(mod->module_init,
+> > +				mod->init_text_size,
+> > +				mod->init_ro_size,
+> > +				mod->init_size);
+> > +
+> 
+> Here we set the text read only before we call the notifiers. The
+> function tracer changes the calls to mcount into nops via a notifier
+> call so this must be done after the module notifiers.
+> 
+> >  	/* Done! */
+> >  	trace_module_load(mod);
+> >  	return mod;
+> > @@ -2753,6 +2925,7 @@ SYSCALL_DEFINE3(init_module, void __user *,
+> > umod, mod->symtab = mod->core_symtab;
+> >  	mod->strtab = mod->core_strtab;
+> >  #endif
+> > +	unset_section_ro_nx(mod, mod->module_init);
+> >  	module_free(mod, mod->module_init);
+> >  	mod->module_init = NULL;
+> >  	mod->init_size = 0;
+> 
+> Below is the patch that fixes this bug.
+> 
+> -- Steve
+> 
+> Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/kernel/module.c b/kernel/module.c
+> index ba421e6..5ccf52c 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2804,18 +2804,6 @@ static struct module *load_module(void __user
+> *umod, kfree(info.strmap);
+>  	free_copy(&info);
+>  
+> -	/* Set RO and NX regions for core */
+> -	set_section_ro_nx(mod->module_core,
+> -				mod->core_text_size,
+> -				mod->core_ro_size,
+> -				mod->core_size);
+> -
+> -	/* Set RO and NX regions for init */
+> -	set_section_ro_nx(mod->module_init,
+> -				mod->init_text_size,
+> -				mod->init_ro_size,
+> -				mod->init_size);
+> -
+>  	/* Done! */
+>  	trace_module_load(mod);
+>  	return mod;
+> @@ -2876,6 +2864,18 @@ SYSCALL_DEFINE3(init_module, void __user *,
+> umod, blocking_notifier_call_chain(&module_notify_list,
+>  			MODULE_STATE_COMING, mod);
+>  
+> +	/* Set RO and NX regions for core */
+> +	set_section_ro_nx(mod->module_core,
+> +				mod->core_text_size,
+> +				mod->core_ro_size,
+> +				mod->core_size);
+> +
+> +	/* Set RO and NX regions for init */
+> +	set_section_ro_nx(mod->module_init,
+> +				mod->init_text_size,
+> +				mod->init_ro_size,
+> +				mod->init_size);
+> +
+>  	do_mod_ctors(mod);
+>  	/* Start the module */
+>  	if (mod->init != NULL)
+> 
 > 
 
-Actually, it can go both ways -- there are ISA/LPC busses which are true
-childs of PCI busses -- in particular, are subject to the decoding
-restrictions of the host bridge -- and there are those that aren't
-logically even if they are physically.  The reason for this is that
-subtractive decoding can be done either at the back end (as in a classic
-PCI/ISA system with a single PCI bus) or at the front end (as in
-HyperTransport for example.)
+That's look fine for me.
 
-	-hpa
+But I wonder why ftrace_arch_code_modify_prepare isn't called ?
+
+It is only called when we start/stop tracing ?
+
+Matthieu
