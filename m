@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab0K3D0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 22:26:23 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58216
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751725Ab0K3D0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 22:26:22 -0500
-Date: Mon, 29 Nov 2010 19:26:48 -0800 (PST)
-Message-Id: <20101129.192648.189681876.davem@davemloft.net>
-To: jesse@nicira.com
-Cc: greearb@candelatech.com, lkml20101129@newton.leun.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: 2.6.35 -> 2.6.36 panic when vlan and promisc with tg3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTi=HHD9KCn8SHDQbbsNJCWDy+iWH8JmzhVUQAvVm@mail.gmail.com>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	<4CF442FA.4070701@candelatech.com>
-	<AANLkTi=HHD9KCn8SHDQbbsNJCWDy+iWH8JmzhVUQAvVm@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752852Ab0K3D1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 22:27:52 -0500
+Received: from cantor.suse.de ([195.135.220.2]:33771 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab0K3D1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 22:27:51 -0500
+Date: Mon, 29 Nov 2010 19:26:25 -0800
+From: Greg KH <gregkh@suse.de>
+To: Benjamin Poirier <benjamin.poirier@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Johan Hovold <jhovold@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andreas Mohr <andi@lisas.de>,
+        Daniel Sangorrin <daniel.sangorrin@gmail.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: BUG, regression. usb-serial adapter broken by PM?
+Message-ID: <20101130032625.GB12851@suse.de>
+References: <4CF458CE.2050603@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF458CE.2050603@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesse Gross <jesse@nicira.com>
-Date: Mon, 29 Nov 2010 19:10:06 -0800
-
-> On Mon, Nov 29, 2010 at 4:19 PM, Ben Greear <greearb@candelatech.com> wrote:
->> On 11/29/2010 11:17 AM, Michael Leun wrote:
->>>
->>> Hi,
->>>
->>> only kernel message I was able to capture on serial were:
->>>
->>> UG: unable to handle kernel paging request at 01cc921c
->>> IP: [<c034bfce>] vlan_hwaccel_do_receive+0x59/0xd0
->>> *pdpt = 0000000036a2a001 *pde = 0000000000000000
->>> Oops: 0002 [#1] SMP
->>> last sysfs
->>>
->>> Then machine dead.
->>>
->>> In 2.6.35.x this did not happen (but vlans broken - cannot see vlan
->>> tags with tcpdump),
->>
->> Try this patch:
->>
->> http://permalink.gmane.org/gmane.linux.network/176566
->>
->> It looks like this hasn't made it into stable yet?
+On Mon, Nov 29, 2010 at 08:52:14PM -0500, Benjamin Poirier wrote:
+> Hello,
 > 
-> It didn't make it into 2.6.36.1.
+> Recently, my usb-serial converter has become unusable. Attempts to open
+> the device always fail with:
+> open("/dev/ttyUSB0", O_RDONLY)          = -1 EAGAIN (Resource temporarily unavailable)
 > 
-> David, I know that you already acked this patch but it sounds like
-> Greg would prefer to get it from you directly:
-> https://lkml.org/lkml/2010/11/19/685
+> The device is a:
+> ID 0c52:2101 Sealevel Systems, Inc. Serial Converter
+> and uses the ftdi_sio driver.
+> 
+> I've bisected this problem to
+> commit 1bfee5bc86fdaecc912e06080583eddab7263df2
+> Author: Alan Stern <stern@rowland.harvard.edu>
+> Date:   Sat Sep 25 23:35:00 2010 +0200
+> 
+>     PM / Runtime: Merge synchronous and async runtime routines
+> 
+> I have other usb-serial converters that use other drivers and that are
+> unaffected. I have noticed the problem on a x86_64 machine (.config
+> here: http://pastebin.ca/2006414) and can reproduce it in kvm (with usb
+> passthrough, .config here: http://pastebin.ca/2006416).
+> 
+> I'll be glad to provide more info or try patches.
 
-I haven't made any -stable submissions in a week or two, and that is
-on purpose.  I want all of those things to cook for a while, and I intend
-to send my huge queue to Greg over the next day or two.
+A patch to resolve this was sent to linux-usb@vger.kernel.org yesterday,
+can you try that one out (sorry, can't dig it out at the moment...)
+
+thanks,
+
+greg k-h
