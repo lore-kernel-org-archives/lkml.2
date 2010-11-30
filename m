@@ -1,87 +1,531 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab0K3NtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 08:49:00 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:42016 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab0K3Ns7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 08:48:59 -0500
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291123083.28239.18.camel@marge.simson.net>
-References: <20101121133744.GA10765@elte.hu>
-	 <1290700829.4759.16.camel@maggy.simson.net>
-	 <1290954299.30515.15.camel@marge.simson.net>
-	 <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
-	 <20101128201851.GA20555@elte.hu> <1291031593.32004.19.camel@laptop>
-	 <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
-	 <1291052268.32004.171.camel@laptop>
-	 <1291057565.20709.2.camel@marge.simson.net>
-	 <20101129192033.GA18372@elte.hu>
-	 <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
-	 <1291090455.7550.7.camel@marge.simson.net>
-	 <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
-	 <1291123083.28239.18.camel@marge.simson.net>
+	id S1752440Ab0K3Nxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 08:53:52 -0500
+Received: from mail.perches.com ([173.55.12.10]:2004 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751651Ab0K3Nxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 08:53:50 -0500
+Subject: [PATCH] regulator: Add and use rdev_<level> macros
+From: Joe Perches <joe@perches.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <20101130105205.GA7403@rakim.wolfsonmicro.main>
+References: <20101129220046.GB8335@opensource.wolfsonmicro.com>
+	 <3c50480be4c6fe95a01d79e3c95fba0d9175a81b.1291079473.git.joe@perches.com>
+	 <20101130105205.GA7403@rakim.wolfsonmicro.main>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 30 Nov 2010 14:48:07 +0100
-Message-ID: <1291124887.32004.791.camel@laptop>
+Date: Tue, 30 Nov 2010 05:53:48 -0800
+Message-ID: <1291125228.18026.32.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 14:18 +0100, Mike Galbraith wrote:
-> 
-> From: Mike Galbraith <efault@gmx.de>
-> Date: Tue Nov 30 14:07:12 CET 2010
-> Subject: [PATCH] sched: Improve desktop interactivity: Implement automated per session task groups
-> 
-> A recurring complaint from CFS users is that parallel kbuild has a negative
-> impact on desktop interactivity.  This patch implements an idea from Linus,
-> to automatically create task groups.  Currently, only per session autogroups
-> are implemented, but the patch leaves the way open for enhancement.
-> 
-> Implementation: each task's signal struct contains an inherited pointer to
-> a refcounted autogroup struct containing a task group pointer, the default
-> for all tasks pointing to the init_task_group.  When a task calls setsid(),
-> a new task group is created, the process is moved into the new task group,
-> and a reference to the preveious task group is dropped.  Child processes
-> inherit this task group thereafter, and increase it's refcount.  When the
-> last thread of a process exits, the process's reference is dropped, such
-> that when the last process referencing an autogroup exits, the autogroup
-> is destroyed.
-> 
-> At runqueue selection time, IFF a task has no cgroup assignment, its current
-> autogroup is used.
-> 
-> Autogroup bandwidth is controllable via setting it's nice level through the
-> proc filesystem.  cat /proc/<pid>/autogroup displays the task's group and the
-> group's nice level.  echo <nice level> > /proc/<pid>/autogroup Sets the task
-> group's shares to the weight of nice <level> task.  Setting nice level is rate
-> limited for !admin users due to the abuse risk of task group locking.
-> 
-> The feature is enabled from boot by default if CONFIG_SCHED_AUTOGROUP=y is
-> selected, but can be disabled via the boot option noautogroup, and can also
-> be turned on/off on the fly via..
->         echo [01] > /proc/sys/kernel/sched_autogroup_enabled.
-> ..which will automatically move tasks to/from the root task group.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> LKML-Reference: <1290281700.28711.9.camel@maggy.simson.net>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu> 
+On Tue, 2010-11-30 at 10:52 +0000, Mark Brown wrote:
+> On Mon, Nov 29, 2010 at 05:12:56PM -0800, Joe Perches wrote:
+> > Just to please broonie...
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> As usual when fixing review issues please revise your original patch
+> rather than posting a fresh patch.
 
-Looks good to me, Thanks Mike!
+Here's an earlier comment:
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Thu, 2010-11-18 at 13:30 +0000, Mark Brown wrote:
+> This looks reasonable, please rebase on top of Daniel's patches and
+> submit it properly (with changelog and so on). 
+
+Sometimes it's simpler for an upstream maintainer to do
+something like:
+
+git am -s <patch1.mbox>
+patch -p1 < patch2.mbox
+git commit --amend file
+
+instead of back and forthing.
+
+---
+Use rdev_<level> convenience macros to emit rdev_get_name(rdev)
+along with whatever format/arg... is supplied.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/regulator/core.c |  146 ++++++++++++++++++++-------------------------
+ 1 files changed, 65 insertions(+), 81 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 64a56a7..bc841b8 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -32,6 +32,15 @@
+ 
+ #include "dummy.h"
+ 
++#define rdev_err(rdev, fmt, ...)					\
++	pr_err("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
++#define rdev_warn(rdev, fmt, ...)					\
++	pr_warn("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
++#define rdev_info(rdev, fmt, ...)					\
++	pr_info("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
++#define rdev_dbg(rdev, fmt, ...)					\
++	pr_debug("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
++
+ static DEFINE_MUTEX(regulator_list_mutex);
+ static LIST_HEAD(regulator_list);
+ static LIST_HEAD(regulator_map_list);
+@@ -114,11 +123,11 @@ static int regulator_check_voltage(struct regulator_dev *rdev,
+ 	BUG_ON(*min_uV > *max_uV);
+ 
+ 	if (!rdev->constraints) {
+-		pr_err("no constraints for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "no constraints\n");
+ 		return -ENODEV;
+ 	}
+ 	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)) {
+-		pr_err("operation not allowed for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "operation not allowed\n");
+ 		return -EPERM;
+ 	}
+ 
+@@ -140,11 +149,11 @@ static int regulator_check_current_limit(struct regulator_dev *rdev,
+ 	BUG_ON(*min_uA > *max_uA);
+ 
+ 	if (!rdev->constraints) {
+-		pr_err("no constraints for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "no constraints\n");
+ 		return -ENODEV;
+ 	}
+ 	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_CURRENT)) {
+-		pr_err("operation not allowed for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "operation not allowed\n");
+ 		return -EPERM;
+ 	}
+ 
+@@ -173,15 +182,15 @@ static int regulator_check_mode(struct regulator_dev *rdev, int mode)
+ 	}
+ 
+ 	if (!rdev->constraints) {
+-		pr_err("no constraints for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "no constraints\n");
+ 		return -ENODEV;
+ 	}
+ 	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_MODE)) {
+-		pr_err("operation not allowed for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "operation not allowed\n");
+ 		return -EPERM;
+ 	}
+ 	if (!(rdev->constraints->valid_modes_mask & mode)) {
+-		pr_err("invalid mode %x for %s\n", mode, rdev_get_name(rdev));
++		rdev_err(rdev, "invalid mode %x\n", mode);
+ 		return -EINVAL;
+ 	}
+ 	return 0;
+@@ -191,11 +200,11 @@ static int regulator_check_mode(struct regulator_dev *rdev, int mode)
+ static int regulator_check_drms(struct regulator_dev *rdev)
+ {
+ 	if (!rdev->constraints) {
+-		pr_err("no constraints for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "no constraints\n");
+ 		return -ENODEV;
+ 	}
+ 	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_DRMS)) {
+-		pr_err("operation not allowed for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "operation not allowed\n");
+ 		return -EPERM;
+ 	}
+ 	return 0;
+@@ -592,18 +601,17 @@ static int suspend_set_state(struct regulator_dev *rdev,
+ 	 */
+ 	if (!rstate->enabled && !rstate->disabled) {
+ 		if (can_set_state)
+-			pr_warning("No configuration for %s\n",
+-				   rdev_get_name(rdev));
++			rdev_warn(rdev, "No configuration\n");
+ 		return 0;
+ 	}
+ 
+ 	if (rstate->enabled && rstate->disabled) {
+-		pr_err("invalid configuration for %s\n", rdev_get_name(rdev));
++		rdev_err(rdev, "invalid configuration\n");
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (!can_set_state) {
+-		pr_err("no way to set suspend state\n");
++		rdev_err(rdev, "no way to set suspend state\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -612,14 +620,14 @@ static int suspend_set_state(struct regulator_dev *rdev,
+ 	else
+ 		ret = rdev->desc->ops->set_suspend_disable(rdev);
+ 	if (ret < 0) {
+-		pr_err("failed to enabled/disable\n");
++		rdev_err(rdev, "failed to enabled/disable\n");
+ 		return ret;
+ 	}
+ 
+ 	if (rdev->desc->ops->set_suspend_voltage && rstate->uV > 0) {
+ 		ret = rdev->desc->ops->set_suspend_voltage(rdev, rstate->uV);
+ 		if (ret < 0) {
+-			pr_err("failed to set voltage\n");
++			rdev_err(rdev, "failed to set voltage\n");
+ 			return ret;
+ 		}
+ 	}
+@@ -627,7 +635,7 @@ static int suspend_set_state(struct regulator_dev *rdev,
+ 	if (rdev->desc->ops->set_suspend_mode && rstate->mode > 0) {
+ 		ret = rdev->desc->ops->set_suspend_mode(rdev, rstate->mode);
+ 		if (ret < 0) {
+-			pr_err("failed to set mode\n");
++			rdev_err(rdev, "failed to set mode\n");
+ 			return ret;
+ 		}
+ 	}
+@@ -705,14 +713,13 @@ static void print_constraints(struct regulator_dev *rdev)
+ 	if (constraints->valid_modes_mask & REGULATOR_MODE_STANDBY)
+ 		count += sprintf(buf + count, "standby");
+ 
+-	printk(KERN_INFO "regulator: %s: %s\n", rdev_get_name(rdev), buf);
++	rdev_info(rdev, "regulator: %s\n", buf);
+ }
+ 
+ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 	struct regulation_constraints *constraints)
+ {
+ 	struct regulator_ops *ops = rdev->desc->ops;
+-	const char *name = rdev_get_name(rdev);
+ 	int ret;
+ 	unsigned selector;
+ 
+@@ -725,8 +732,8 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 				       rdev->constraints->max_uV,
+ 				       &selector);
+ 			if (ret < 0) {
+-				pr_err("failed to apply %duV constraint to %s\n",
+-					rdev->constraints->min_uV, name);
++				rdev_err(rdev, "failed to apply %duV constraint\n",
++					 rdev->constraints->min_uV);
+ 				rdev->constraints = NULL;
+ 				return ret;
+ 			}
+@@ -758,8 +765,7 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* else require explicit machine-level constraints */
+ 		if (cmin <= 0 || cmax <= 0 || cmax < cmin) {
+-			pr_err("invalid '%s' voltage constraints\n",
+-				name);
++			rdev_err(rdev, "invalid voltage constraints\n");
+ 			return -EINVAL;
+ 		}
+ 
+@@ -780,20 +786,19 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* final: [min_uV..max_uV] valid iff constraints valid */
+ 		if (max_uV < min_uV) {
+-			pr_err("unsupportable '%s' voltage constraints\n",
+-				name);
++			rdev_err(rdev, "unsupportable voltage constraints\n");
+ 			return -EINVAL;
+ 		}
+ 
+ 		/* use regulator's subset of machine constraints */
+ 		if (constraints->min_uV < min_uV) {
+-			pr_debug("override '%s' min_uV, %d -> %d\n",
+-				 name, constraints->min_uV, min_uV);
++			rdev_dbg(rdev, "override min_uV, %d -> %d\n",
++				 constraints->min_uV, min_uV);
+ 			constraints->min_uV = min_uV;
+ 		}
+ 		if (constraints->max_uV > max_uV) {
+-			pr_debug("override '%s' max_uV, %d -> %d\n",
+-				 name, constraints->max_uV, max_uV);
++			rdev_dbg(rdev, "override max_uV, %d -> %d\n",
++				 constraints->max_uV, max_uV);
+ 			constraints->max_uV = max_uV;
+ 		}
+ 	}
+@@ -816,13 +821,10 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 	struct regulation_constraints *constraints)
+ {
+ 	int ret = 0;
+-	const char *name;
+ 	struct regulator_ops *ops = rdev->desc->ops;
+ 
+ 	rdev->constraints = constraints;
+ 
+-	name = rdev_get_name(rdev);
+-
+ 	ret = machine_constraints_voltage(rdev, constraints);
+ 	if (ret != 0)
+ 		goto out;
+@@ -831,8 +833,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 	if (constraints->initial_state) {
+ 		ret = suspend_prepare(rdev, constraints->initial_state);
+ 		if (ret < 0) {
+-			pr_err("failed to set suspend state for %s\n",
+-				name);
++			rdev_err(rdev, "failed to set suspend state\n");
+ 			rdev->constraints = NULL;
+ 			goto out;
+ 		}
+@@ -840,16 +841,14 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 
+ 	if (constraints->initial_mode) {
+ 		if (!ops->set_mode) {
+-			pr_err("no set_mode operation for %s\n",
+-				name);
++			rdev_err(rdev, "no set_mode operation\n");
+ 			ret = -EINVAL;
+ 			goto out;
+ 		}
+ 
+ 		ret = ops->set_mode(rdev, constraints->initial_mode);
+ 		if (ret < 0) {
+-			pr_err("failed to set initial mode for %s: %d\n",
+-				name, ret);
++			rdev_err(rdev, "failed to set initial mode: %d\n", ret);
+ 			goto out;
+ 		}
+ 	}
+@@ -860,7 +859,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 	if ((constraints->always_on || constraints->boot_on) && ops->enable) {
+ 		ret = ops->enable(rdev);
+ 		if (ret < 0) {
+-			pr_err("failed to enable %s\n", name);
++			rdev_err(rdev, "failed to enable\n");
+ 			rdev->constraints = NULL;
+ 			goto out;
+ 		}
+@@ -888,8 +887,8 @@ static int set_supply(struct regulator_dev *rdev,
+ 	err = sysfs_create_link(&rdev->dev.kobj, &supply_rdev->dev.kobj,
+ 				"supply");
+ 	if (err) {
+-		pr_err("could not add device link %s err %d\n",
+-			supply_rdev->dev.kobj.name, err);
++		rdev_err(rdev, "could not add device link %s err %d\n",
++			 supply_rdev->dev.kobj.name, err);
+ 		       goto out;
+ 	}
+ 	rdev->supply = supply_rdev;
+@@ -945,10 +944,10 @@ static int set_consumer_device_supply(struct regulator_dev *rdev,
+ 			continue;
+ 
+ 		dev_dbg(consumer_dev, "%s/%s is '%s' supply; fail %s/%s\n",
+-				dev_name(&node->regulator->dev),
+-				node->regulator->desc->name,
+-				supply,
+-				dev_name(&rdev->dev), rdev_get_name(rdev));
++			dev_name(&node->regulator->dev),
++			node->regulator->desc->name,
++			supply,
++			dev_name(&rdev->dev), rdev_get_name(rdev));
+ 		return -EBUSY;
+ 	}
+ 
+@@ -1019,8 +1018,7 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
+ 		regulator->dev_attr.show = device_requested_uA_show;
+ 		err = device_create_file(dev, &regulator->dev_attr);
+ 		if (err < 0) {
+-			pr_warning("could not add regulator_dev"
+-				" requested microamps sysfs entry\n");
++			rdev_warn(rdev, "could not add regulator_dev requested microamps sysfs entry\n");
+ 			goto attr_name_err;
+ 		}
+ 
+@@ -1037,8 +1035,8 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
+ 		err = sysfs_create_link(&rdev->dev.kobj, &dev->kobj,
+ 					buf);
+ 		if (err) {
+-			pr_warning("could not add device link %s err %d\n",
+-			       dev->kobj.name, err);
++			rdev_warn(rdev, "could not add device link %s err %d\n",
++				  dev->kobj.name, err);
+ 			goto link_name_err;
+ 		}
+ 	}
+@@ -1075,7 +1073,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 	int ret;
+ 
+ 	if (id == NULL) {
+-		pr_err("regulator: get() with no identifier\n");
++		pr_err("get() with no identifier\n");
+ 		return regulator;
+ 	}
+ 
+@@ -1109,8 +1107,8 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 	 * substitute in a dummy regulator so consumers can continue.
+ 	 */
+ 	if (!has_full_constraints) {
+-		pr_warning("%s supply %s not found, using dummy regulator\n",
+-			   devname, id);
++		pr_warn("%s supply %s not found, using dummy regulator\n",
++			devname, id);
+ 		rdev = dummy_regulator_rdev;
+ 		goto found;
+ 	}
+@@ -1261,8 +1259,7 @@ static int _regulator_enable(struct regulator_dev *rdev)
+ 			ret = _regulator_enable(rdev->supply);
+ 			mutex_unlock(&rdev->supply->mutex);
+ 			if (ret < 0) {
+-				pr_err("failed to enable %s: %d\n",
+-				       rdev_get_name(rdev), ret);
++				rdev_err(rdev, "failed to enable: %d\n", ret);
+ 				return ret;
+ 			}
+ 		}
+@@ -1289,8 +1286,7 @@ static int _regulator_enable(struct regulator_dev *rdev)
+ 			if (ret >= 0) {
+ 				delay = ret;
+ 			} else {
+-				pr_warning("enable_time() failed for %s: %d\n",
+-					   rdev_get_name(rdev),
++				rdev_warn(rdev, "enable_time() failed: %d\n",
+ 					   ret);
+ 				delay = 0;
+ 			}
+@@ -1316,8 +1312,7 @@ static int _regulator_enable(struct regulator_dev *rdev)
+ 			trace_regulator_enable_complete(rdev_get_name(rdev));
+ 
+ 		} else if (ret < 0) {
+-			pr_err("is_enabled() failed for %s: %d\n",
+-				rdev_get_name(rdev), ret);
++			rdev_err(rdev, "is_enabled() failed: %d\n", ret);
+ 			return ret;
+ 		}
+ 		/* Fallthrough on positive return values - already enabled */
+@@ -1374,8 +1369,7 @@ static int _regulator_disable(struct regulator_dev *rdev,
+ 
+ 			ret = rdev->desc->ops->disable(rdev);
+ 			if (ret < 0) {
+-				pr_err("failed to disable %s\n",
+-					rdev_get_name(rdev));
++				rdev_err(rdev, "failed to disable\n");
+ 				return ret;
+ 			}
+ 
+@@ -1447,8 +1441,7 @@ static int _regulator_force_disable(struct regulator_dev *rdev,
+ 		/* ah well, who wants to live forever... */
+ 		ret = rdev->desc->ops->disable(rdev);
+ 		if (ret < 0) {
+-			pr_err("failed to force disable %s\n",
+-				rdev_get_name(rdev));
++			rdev_err(rdev, "failed to force disable\n");
+ 			return ret;
+ 		}
+ 		/* notify other consumers that power has been forced off */
+@@ -1889,8 +1882,7 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
+ 	/* get output voltage */
+ 	output_uV = rdev->desc->ops->get_voltage(rdev);
+ 	if (output_uV <= 0) {
+-		pr_err("invalid output voltage found for %s\n",
+-			rdev_get_name(rdev));
++		rdev_err(rdev, "invalid output voltage found\n");
+ 		goto out;
+ 	}
+ 
+@@ -1900,8 +1892,7 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
+ 	else
+ 		input_uV = rdev->constraints->input_uV;
+ 	if (input_uV <= 0) {
+-		pr_err("invalid input voltage found for %s\n",
+-			rdev_get_name(rdev));
++		rdev_err(rdev, "invalid input voltage found\n");
+ 		goto out;
+ 	}
+ 
+@@ -1914,16 +1905,14 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
+ 						 total_uA_load);
+ 	ret = regulator_check_mode(rdev, mode);
+ 	if (ret < 0) {
+-		pr_err("failed to get optimum mode for %s @"
+-			" %d uA %d -> %d uV\n",  rdev_get_name(rdev),
+-			total_uA_load, input_uV, output_uV);
++		rdev_err(rdev, "failed to get optimum mode @ %d uA %d -> %d uV\n",
++			 total_uA_load, input_uV, output_uV);
+ 		goto out;
+ 	}
+ 
+ 	ret = rdev->desc->ops->set_mode(rdev, mode);
+ 	if (ret < 0) {
+-		pr_err("failed to set optimum mode %x for %s\n",
+-			 mode, rdev_get_name(rdev));
++		rdev_err(rdev, "failed to set optimum mode %x\n", mode);
+ 		goto out;
+ 	}
+ 	ret = mode;
+@@ -2054,7 +2043,7 @@ int regulator_bulk_enable(int num_consumers,
+ 	return 0;
+ 
+ err:
+-	printk(KERN_ERR "Failed to enable %s: %d\n", consumers[i].supply, ret);
++	pr_err("Failed to enable %s: %d\n", consumers[i].supply, ret);
+ 	for (--i; i >= 0; --i)
+ 		regulator_disable(consumers[i].consumer);
+ 
+@@ -2089,8 +2078,7 @@ int regulator_bulk_disable(int num_consumers,
+ 	return 0;
+ 
+ err:
+-	printk(KERN_ERR "Failed to disable %s: %d\n", consumers[i].supply,
+-	       ret);
++	pr_err("Failed to disable %s: %d\n", consumers[i].supply, ret);
+ 	for (--i; i >= 0; --i)
+ 		regulator_enable(consumers[i].consumer);
+ 
+@@ -2472,7 +2460,7 @@ int regulator_suspend_prepare(suspend_state_t state)
+ 		mutex_unlock(&rdev->mutex);
+ 
+ 		if (ret < 0) {
+-			pr_err("failed to prepare %s\n", rdev_get_name(rdev));
++			rdev_err(rdev, "failed to prepare\n");
+ 			goto out;
+ 		}
+ 	}
+@@ -2594,7 +2582,6 @@ static int __init regulator_init_complete(void)
+ 	struct regulator_ops *ops;
+ 	struct regulation_constraints *c;
+ 	int enabled, ret;
+-	const char *name;
+ 
+ 	mutex_lock(&regulator_list_mutex);
+ 
+@@ -2606,8 +2593,6 @@ static int __init regulator_init_complete(void)
+ 		ops = rdev->desc->ops;
+ 		c = rdev->constraints;
+ 
+-		name = rdev_get_name(rdev);
+-
+ 		if (!ops->disable || (c && c->always_on))
+ 			continue;
+ 
+@@ -2628,10 +2613,10 @@ static int __init regulator_init_complete(void)
+ 		if (has_full_constraints) {
+ 			/* We log since this may kill the system if it
+ 			 * goes wrong. */
+-			pr_info("disabling %s\n", name);
++			rdev_info(rdev, "disabling\n");
+ 			ret = ops->disable(rdev);
+ 			if (ret != 0) {
+-				pr_err("couldn't disable %s: %d\n", name, ret);
++				rdev_err(rdev, "couldn't disable: %d\n", ret);
+ 			}
+ 		} else {
+ 			/* The intention is that in future we will
+@@ -2639,8 +2624,7 @@ static int __init regulator_init_complete(void)
+ 			 * so warn even if we aren't going to do
+ 			 * anything here.
+ 			 */
+-			pr_warning("incomplete constraints, leaving %s on\n",
+-				   name);
++			rdev_warn(rdev, "incomplete constraints, leaving on\n");
+ 		}
+ 
+ unlock:
+-- 
+1.7.3.2.245.g03276.dirty
+
+
+
