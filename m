@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab0K3Mm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 07:42:56 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17824 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752442Ab0K3Mmz (ORCPT
+	id S1752447Ab0K3MvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 07:51:00 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:39510 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab0K3Mu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 07:42:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKp/9Ex5LdV4/2dsb2JhbACjDHLDAoVHBA
-Date: Tue, 30 Nov 2010 23:42:49 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC] vmalloc: eagerly clear ptes on vunmap
-Message-ID: <20101130124249.GB15778@amd>
-References: <4CEF6B8B.8080206@goop.org>
- <20101127103656.GA6884@amd>
- <4CF40DCB.5010007@goop.org>
+	Tue, 30 Nov 2010 07:50:58 -0500
+Message-ID: <5B8D58FB9E1C487FA94F2498E0B9E9AB@wipblrx0099946>
+From: "Hemanth V" <hemanthv@ti.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <saaguirre@ti.com>,
+        <Shubhrajyoti@ti.com>, "Jonathan Cameron" <jic23@cam.ac.uk>
+References: <37129.10.24.255.17.1291028260.squirrel@dbdmail.itg.ti.com> <4CF38E4D.3070309@cam.ac.uk> <20101130075911.GC15731@core.coreip.homeip.net>
+Subject: Re: PATCH V4 1/2] input: CMA3000 Accelerometer Driver
+Date: Tue, 30 Nov 2010 18:20:43 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF40DCB.5010007@goop.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5843
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 12:32:11PM -0800, Jeremy Fitzhardinge wrote:
-> When unmapping a region in the vmalloc space, clear the ptes immediately.
-> There's no point in deferring this because there's no amortization
-> benefit.
-> 
-> The TLBs are left dirty, and they are flushed lazily to amortize the
-> cost of the IPIs.
-> 
-> This specific motivation for this patch is a regression since 2.6.36 when
-> using NFS under Xen, triggered by the NFS client's use of vm_map_ram()
-> introduced in 56e4ebf877b6043c289bda32a5a7385b80c17dee.  XFS also uses
-> vm_map_ram() and could cause similar problems.
+----- Original Message ----- 
+From: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+>
+> Yep, almost there.
+>
+> Hemanth, does the driver still work if you apply the patch below?
 
-I do wonder whether there are cache benefits from batching page table
-updates, especially the batched per cpu maps (and in your version they
-get double-cleared as well).  I think this patch is good, but I think
-perhaps making it configurable would be nice.
+Yes works pretty well, Thanks for your efforts
 
-So... main question, does it allow Xen to use lazy flushing and avoid
-vm_unmap_aliases() calls?
+Some minor changes as below required.
 
+<snip>
 
-> 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> 
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index a3d66b3..9960644 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -566,7 +566,6 @@ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
->  			if (va->va_end > *end)
->  				*end = va->va_end;
->  			nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
-> -			unmap_vmap_area(va);
->  			list_add_tail(&va->purge_list, &valist);
->  			va->flags |= VM_LAZY_FREEING;
->  			va->flags &= ~VM_LAZY_FREE;
-> @@ -616,6 +615,8 @@ static void purge_vmap_area_lazy(void)
->   */
->  static void free_unmap_vmap_area_noflush(struct vmap_area *va)
->  {
-> +	unmap_vmap_area(va);
+> +struct cma3000_accl_data {
+> + const struct cma3000_bus_ops *bus_ops;
+> + const struct cma3000_platform_data *pdata;
 > +
->  	va->flags |= VM_LAZY_FREE;
->  	atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT, &vmap_lazy_nr);
->  	if (unlikely(atomic_read(&vmap_lazy_nr) > lazy_max_pages()))
-> @@ -944,8 +945,10 @@ static void vb_free(const void *addr, unsigned long size)
->  		BUG_ON(vb->free);
->  		spin_unlock(&vb->lock);
->  		free_vmap_block(vb);
-> -	} else
-> +	} else {
->  		spin_unlock(&vb->lock);
-> +		vunmap_page_range((unsigned long)addr, (unsigned long)addr + size);
-> +	}
->  }
->  
->  /**
-> @@ -988,7 +991,6 @@ void vm_unmap_aliases(void)
->  
->  				s = vb->va->va_start + (i << PAGE_SHIFT);
->  				e = vb->va->va_start + (j << PAGE_SHIFT);
-> -				vunmap_page_range(s, e);
->  				flush = 1;
->  
->  				if (s < start)
-> 
+> + struct device *dev;
+> + struct input_dev *input_dev;
+> +
+> + int bit_to_mg;
+> + int irq;
+> +
+> + int g_range;
+> + u8 mode;
+> +
+> + struct mutex mutex;
+
+Need a comment to overcome checkpatch warning.
+
+>
+> - pr_info("CMA3000 Accelerometer : Revision %x\n", ret);
+> + data->dev = dev;
+> + data->input_dev = input_dev;
+> + data->bus_ops = bops;
+> + data->pdata = pdata;
+
+Need to add data->irq = irq, else exit routine will dump stack
+
+>
+> - data->input_dev->name = "cma3000-accelerometer";
+> + data->g_range = pdata->g_range;
+> + if (data->g_range != CMARANGE_2G && data->g_range != CMA3000_RANGE8G) {
+
+Need to change this to "data->g_range != CMARANGE_2G   && data->g_range != 
+CMARANGE_8G "
+
+> - input_set_abs_params(data->input_dev, ABS_Z, -g_range,
+> - g_range, fuzz_z, 0);
+> - input_set_abs_params(data->input_dev, ABS_MISC, 0,
+> - 1, 0, 0);
+
+We use this ABS_MISC event to report free fall.
+
+
+
