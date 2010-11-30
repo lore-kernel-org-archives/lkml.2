@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab0K3Ie3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 03:34:29 -0500
-Received: from twtpemsw2.wistron.com.tw ([220.128.88.32]:3460 "EHLO
-	twtpemsw2.wistron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab0K3Ie2 convert rfc822-to-8bit (ORCPT
+	id S1754649Ab0K3Ig4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 03:36:56 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52575 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab0K3Igz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 03:34:28 -0500
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2010 03:34:28 EST
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 30 Nov 2010 03:36:55 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4CF4B778.90604@jp.fujitsu.com>
+Date: Tue, 30 Nov 2010 17:36:08 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] intel_mid_dma: Fix section mismatch warnings
-Date: Tue, 30 Nov 2010 16:24:15 +0800
-Message-ID: <C0A2BC8065D6AE4BA759B25FE7A3795E036E7186@WHQBEMAIL1.whq.wistron>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] intel_mid_dma: Fix section mismatch warnings
-Thread-Index: AcuQZ/nYyrmoTPQoTOCOTL7hIxDOPw==
-From: <Major_Lee@wistron.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <dan.j.williams@intel.com>, <vinod.koul@intel.com>
-X-OriginalArrivalTime: 30 Nov 2010 08:24:22.0801 (UTC) FILETIME=[FE05B810:01CB9067]
+To: tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: [PATCH] genirq: fix incorrect proc spurious output
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following section mismatch warnings.
+Fix the problem that all the /proc/irq/XX/spurious files shows the IRQ
+0 information.
 
-WARNING: drivers/built-in.o(.data+0xfa10): Section mismatch in reference
-from the variable intel_mid_dma_pci to the function
-.devinit.text:intel_mid_dma_probe()
-The variable intel_mid_dma_pci references the function __devinit
-intel_mid_dma_probe() If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the
-variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
-*_console, 
+Current irq_spurious_proc_open() passes on NULL as the 3rd argument,
+which is used as an IRQ number in irq_spurious_proc_show(), to the
+single_open(). Because of this, all the /proc/irq/XX/spurious file
+shows IRQ 0 information regardless of the IRQ number.
 
-WARNING: drivers/built-in.o(.data+0xfa14): Section mismatch in reference
-from the variable intel_mid_dma_pci to the function
-.devexit.text:intel_mid_dma_remove()
-The variable intel_mid_dma_pci references the function __devexit
-intel_mid_dma_remove() If the reference is valid then annotate the
-variable with __exit* (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
-*_console, 
+To fix the problem, irq_spurious_proc_open() must pass on the
+appropreate data (IRQ number) to single_open().
 
-WARNING: vmlinux.o(.data+0x18490): Section mismatch in reference from
-the variable intel_mid_dma_pci to the function
-.devinit.text:intel_mid_dma_probe()
-The variable intel_mid_dma_pci references the function __devinit
-intel_mid_dma_probe() If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the
-variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
-*_console, 
+Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-WARNING: vmlinux.o(.data+0x18494): Section mismatch in reference from
-the variable intel_mid_dma_pci to the function
-.devexit.text:intel_mid_dma_remove()
-The variable intel_mid_dma_pci references the function __devexit
-intel_mid_dma_remove() If the reference is valid then annotate the
-variable with __exit* (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
-*_console, 
-
-Signed-off-by: Major Lee <major_lee@wistron.com>
 ---
- intel_mid_dma.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/irq/proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -uprN a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
---- a/drivers/dma/intel_mid_dma.c	2010-11-26 18:10:06.000000000
-+0800
-+++ b/drivers/dma/intel_mid_dma.c	2010-11-30 13:13:00.238892000
-+0800
-@@ -1222,7 +1222,7 @@ static void middma_shutdown(struct pci_d
-  * Initilize the PCI device, map BARs, query driver data.
-  * Call setup_dma to complete contoller and chan initilzation
-  */
--static int __devinit intel_mid_dma_probe(struct pci_dev *pdev,
-+static int intel_mid_dma_probe(struct pci_dev *pdev,
- 					const struct pci_device_id *id)
+Index: linux-next-20101125/kernel/irq/proc.c
+===================================================================
+--- linux-next-20101125.orig/kernel/irq/proc.c
++++ linux-next-20101125/kernel/irq/proc.c
+@@ -214,7 +214,7 @@ static int irq_spurious_proc_show(struct
+ 
+ static int irq_spurious_proc_open(struct inode *inode, struct file *file)
  {
- 	struct middma_device *device;
-@@ -1306,7 +1306,7 @@ err_enable_device:
-  * Free up all resources and data
-  * Call shutdown_dma to complete contoller and chan cleanup
-  */
--static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
-+static void intel_mid_dma_remove(struct pci_dev *pdev)
- {
- 	struct middma_device *device = pci_get_drvdata(pdev);
- 	middma_shutdown(pdev);
+-	return single_open(file, irq_spurious_proc_show, NULL);
++	return single_open(file, irq_spurious_proc_show, PDE(inode)->data);
+ }
+ 
+ static const struct file_operations irq_spurious_proc_fops = {
+
