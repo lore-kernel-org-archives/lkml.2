@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab0K3W13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:27:29 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45454 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab0K3W11 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:27:27 -0500
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Julia Lawall <julia@diku.dk>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Subject: [PATCH] perf tools: fix event parsing of comma-separated tracepoint events
-Date: Tue, 30 Nov 2010 14:27:01 -0800
-Message-Id: <1291156021-17711-1-git-send-email-cjashfor@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754670Ab0K3W2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:28:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753999Ab0K3W17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 17:27:59 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, gorcunov@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 2/9] x86, NMI: Add touch_nmi_watchdog to io_check_error delay
+Date: Tue, 30 Nov 2010 17:27:23 -0500
+Message-Id: <1291156050-4482-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
+References: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are number of issues that prevent the use of multiple tracepoint
-events being specified in a -e/--event switch, separated by commas.
+From: Huang Ying <ying.huang@intel.com>
 
-For example, perf stat -e irq:irq_handler_entry,irq:irq_handler_exit ...
-fails because the tracepoint event parsing code doesn't recognize the
-comma separator properly.
+Prevent the long delay in io_check_error making NMI watchdog timeout.
 
-This patch corrects those issues.
-
-Reported-by: Michael Ellerman <michaele@au1.ibm.com>
-Signed-off-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/util/parse-events.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+ arch/x86/kernel/traps.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 898aa94..73215e7 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -434,7 +434,7 @@ parse_single_tracepoint_event(char *sys_name,
- 	id = atoll(id_buf);
- 	attr->config = id;
- 	attr->type = PERF_TYPE_TRACEPOINT;
--	*strp = evt_name + evt_length;
-+	*strp += strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 10a43f5..c7fd1ce 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -353,9 +353,11 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
+ 	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
+ 	outb(reason, NMI_REASON_PORT);
  
- 	attr->sample_type |= PERF_SAMPLE_RAW;
- 	attr->sample_type |= PERF_SAMPLE_TIME;
-@@ -495,7 +495,7 @@ static enum event_result parse_tracepoint_event(const char **strp,
- 				    struct perf_event_attr *attr)
- {
- 	const char *evt_name;
--	char *flags;
-+	char *flags = NULL, *comma_loc;
- 	char sys_name[MAX_EVENT_LENGTH];
- 	unsigned int sys_length, evt_length;
- 
-@@ -514,6 +514,11 @@ static enum event_result parse_tracepoint_event(const char **strp,
- 	sys_name[sys_length] = '\0';
- 	evt_name = evt_name + 1;
- 
-+	comma_loc = strchr(evt_name, ',');
-+	if (comma_loc) {
-+		/* take the event name up to the comma */
-+		evt_name = strndup(evt_name, comma_loc - evt_name);
+-	i = 2000;
+-	while (--i)
+-		udelay(1000);
++	i = 20000;
++	while (--i) {
++		touch_nmi_watchdog();
++		udelay(100);
 +	}
- 	flags = strchr(evt_name, ':');
- 	if (flags) {
- 		/* split it out: */
-@@ -524,9 +529,8 @@ static enum event_result parse_tracepoint_event(const char **strp,
- 	evt_length = strlen(evt_name);
- 	if (evt_length >= MAX_EVENT_LENGTH)
- 		return EVT_FAILED;
--
- 	if (strpbrk(evt_name, "*?")) {
--		*strp = evt_name + evt_length;
-+		*strp += strlen(sys_name) + evt_length;
- 		return parse_multiple_tracepoint_event(sys_name, evt_name,
- 						       flags);
- 	} else
+ 
+ 	reason &= ~NMI_REASON_CLEAR_IOCHK;
+ 	outb(reason, NMI_REASON_PORT);
 -- 
 1.7.3.2
 
