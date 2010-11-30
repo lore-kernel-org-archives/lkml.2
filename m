@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab0K3Vpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:45:40 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54442 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab0K3Vpj (ORCPT
+	id S1751222Ab0K3Vup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:50:45 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:47129 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751020Ab0K3Vuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:45:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=W1MU100gwmQ3cgOTIK5XukJxErZVYFAH3OEg9SXNpsq2R0PgMvK/V1c84O2s42NJPz
-         3VZxss/3+tnO/yuKhPL659fFRuojgx1NyC3jDd5dWPP9Nf5GZ1CyQ1Tvozl+ah/wanuM
-         qcd9fg52HD+i66T8PiJzcWEXoF/EEPyqFnW8Q=
+	Tue, 30 Nov 2010 16:50:44 -0500
+Message-ID: <4CF57197.7070000@euromail.se>
+Date: Tue, 30 Nov 2010 22:50:15 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <1291153197.4814.11.camel@amalthea>
-References: <AANLkTi=ywUP8QUDGqotutccf9E2a1b5U2bKNZDWa3PG3@mail.gmail.com>
-	<1291153197.4814.11.camel@amalthea>
-Date: Tue, 30 Nov 2010 16:45:37 -0500
-Message-ID: <AANLkTindpiARKKEKgxtsA4ft9UYEJz4yz+kFQRpZ195X@mail.gmail.com>
-Subject: Re: [alsa-devel] CONFIG_SND_HDA_INTEL regression on 2.6.37-rc3 - no audio
-From: Daniel Chen <seven.steps@gmail.com>
-To: Tony Vroon <tony@linx.net>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] input: mt: Move tracking and pointer emulation to
+ input-mt
+References: <1291014802-17061-1-git-send-email-rydberg@euromail.se> <1291014802-17061-4-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1291014802-17061-4-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PNY5Z-00076O-BI.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PNY5Z-00076O-BI 0c272ab4ac542c6b8722f066a8c25138
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 4:39 PM, Tony Vroon <tony@linx.net> wrote:
-> (The only audio regression in 2.6.37 that I'm aware of was Realtek
-> ALC269-related and has already been fixed. It left me without volume
-> control until -rc3)
+> @@ -132,12 +128,10 @@ static void parse_touch(struct w8001 *w8001)
 
-A couple others (both AC'97 and HDA) have popped up since 2.6.32, and
-they're resolve as they're reported.
+>  			input_report_abs(dev, ABS_MT_POSITION_X, x);
+>  			input_report_abs(dev, ABS_MT_POSITION_Y, y);
+>  			input_report_abs(dev, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
+> -			if (w8001->trkid[i] < 0)
+> -				w8001->trkid[i] = trkid++ & MAX_TRACKING_ID;
+> +			input_report_slot_state(dev, true);
 
-Best,
--Dan
+
+			input_mt_report_slot_state(dev, true);
+
+>  		} else {
+> -			w8001->trkid[i] = -1;
+> +			input_report_slot_state(dev, false);
+
+
+			input_mt_report_slot_state(dev, false);
+
+>  		}
+> -		input_report_abs(dev, ABS_MT_TRACKING_ID, w8001->trkid[i]);
+>  	}
+>  
+>  	input_sync(dev);
+
+
+Henrik
+
