@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab0K3Qb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:31:57 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:42329 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab0K3Qb4 (ORCPT
+	id S1751902Ab0K3Qgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:36:38 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21695 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab0K3Qgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:31:56 -0500
-Date: Tue, 30 Nov 2010 11:31:50 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Jeff Garzik <jeff@garzik.org>,
+	Tue, 30 Nov 2010 11:36:37 -0500
+Date: Tue, 30 Nov 2010 08:36:07 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-Message-ID: <20101130163150.GA25668@bombadil.infradead.org>
-References: <20101022012302.GA7487@havoc.gtf.org>
- <20101129180755.GK15818@bombadil.infradead.org>
- <4CF506A6.4020200@kernel.org>
- <20101130153839.GM15818@bombadil.infradead.org>
- <4CF52652.4030802@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF52652.4030802@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Michal Marek <mmarek@suse.cz>, WANG Cong <amwang@redhat.com>
+Subject: Re: [PATCH] headers_check: better search for functions in headers
+Message-Id: <20101130083607.3e1e6ec5.randy.dunlap@oracle.com>
+In-Reply-To: <1291134119-12903-1-git-send-email-virtuoso@slind.org>
+References: <1291134119-12903-1-git-send-email-virtuoso@slind.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 05:29:06PM +0100, Tejun Heo wrote:
-> > Be happy to apply any debug patches, but I plan on replacing the drive
-> > with a faster one at some point in the next few weeks.
-> 
-> Can you please apply the following patch and report the resulting
-> kernel log?  You're on ahci, right?
-> 
+On Tue, 30 Nov 2010 18:21:59 +0200 Alexander Shishkin wrote:
 
-Yup, building now.
+> Some headers don't bother with "extern" in function prototypes,
+> which results in said prototypes being unnoticed and exported
+> to userland.
+> 
+> This patch slightly improves detection of such cases by checking
+> for C type names as well in the beginning of a line.
+> 
+> Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+> CC: Stephen Hemminger <shemminger@vyatta.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Michal Marek <mmarek@suse.cz>
+> CC: WANG Cong <amwang@redhat.com>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  scripts/headers_check.pl |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/headers_check.pl b/scripts/headers_check.pl
+> index 50d6cfd..e0e25a1 100644
+> --- a/scripts/headers_check.pl
+> +++ b/scripts/headers_check.pl
+> @@ -64,7 +64,7 @@ sub check_include
+>  
+>  sub check_declarations
+>  {
+> -	if ($line =~m/^\s*extern\b/) {
+> +	if ($line =~m/^(\s*extern|unsigned|char|short|int|long|void)\b/) {
+>  		printf STDERR "$filename:$lineno: " .
+>  		              "userspace cannot call function or variable " .
 
-> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> index ebc08d6..b1c39db 100644
-> --- a/drivers/ata/libahci.c
-> +++ b/drivers/ata/libahci.c
-> @@ -1560,6 +1560,10 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
->  	}
-> 
->  	/* okay, let's hand over to EH */
-> +	if (active_qc && ata_tag_internal(active_qc->tag))
-> +		ata_dev_printk(active_qc->dev, KERN_WARNING,
-> +			       "ahci: internal command failure, irq_stat=0x%x\n",
-> +			       irq_stat);
-> 
->  	if (irq_stat & PORT_IRQ_FREEZE)
->  		ata_port_freeze(ap);
-> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-> index 7f77c67..7cf236b 100644
-> --- a/drivers/ata/libata-core.c
-> +++ b/drivers/ata/libata-core.c
-> @@ -1668,6 +1668,10 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
-> 
->  	/* perform minimal error analysis */
->  	if (qc->flags & ATA_QCFLAG_FAILED) {
-> +		ata_dev_printk(dev, KERN_WARNING,
-> +			       "internal command failure: stat=0x%x ehi_desc=\"%s\"\n",
-> +			       qc->tf.command, dev->link->eh_info.desc);
-> +
->  		if (qc->result_tf.command & (ATA_ERR | ATA_DF))
->  			qc->err_mask |= AC_ERR_DEV;
-> 
-> 
+s/call/reference/ ?
+
+>  		              "defined in the kernel\n";
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
