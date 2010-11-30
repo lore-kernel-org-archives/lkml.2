@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0K3TI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:08:57 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:41381 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756003Ab0K3TIv (ORCPT
+	id S1755818Ab0K3TJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:09:38 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:37382 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756197Ab0K3TIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:08:51 -0500
+	Tue, 30 Nov 2010 14:08:53 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Te6sC_QVM1kJ..xug5BsVp6Kipus4wpH94YhfNduJnmBcXR
- WSQW5eaGOVSFqdTLPPqPtptrLlI3q_nWYe9j5mHYF6DIiWHNIwZpXQBZCa4L
- 6H3jkF6ZgwrOv8tIRKmkstjiJAJOJjnIQrPkltSB87LbgURufZKFHnmNqAJV
- OGkNkGW1gwjAfxgPOaze3DxEnAQtloTvcreYXhyuKUfQwXGhqSsgLbUn6gF6
- JeOjTewohNZ_J8hMFUls.r_v3YTcxwwN7_0mYSBhMYoBqa.QFvg--
+X-YMail-OSG: lIafO_sVM1nROeQ3GahAieGKdIFwGBuo8tTY58cgTMn1bow
+ bQLJvO2E0MBuq9vMDyQHXFZV.PcSjsWlOT6LCLIO9pm3eOT1WKs6gtc4DBjZ
+ ZIjJb7vaSGTbBY5xVcmM_FXANZITTalQbfCNX3vlDQPkDOOi6f.8CX9tZUhA
+ 2w5kEVvDIxZT_Ox_ifG3bL_hS6F3oaYZ8a80KapHhSMP_MyHY0BvGJT6pLdj
+ 6MmEjSmP1E6K86fcqz04xz2hlv55ADIcRmmjXD9F1.c5GnJW2VNmK5APaxSy
+ WWJjuLOKVLx37ckThctHaf.o4Nhze3No-
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101130190847.543945676@linux.com>
+Message-Id: <20101130190851.727701203@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Nov 2010 13:07:18 -0600
+Date: Tue, 30 Nov 2010 13:07:25 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, William Hubbs <w.d.hubbs@gmail.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: linux-mm@kvack.org
-Subject: [thisops uV3 11/18] x86: Use this_cpu_ops for current_cpu_data accesses
+Subject: [thisops uV3 18/18] Fakekey: Simplify speakup_fake_key_pressed through this_cpu_ops
 References: <20101130190707.457099608@linux.com>
-Content-Disposition: inline; filename=x86_current_cpu_data
+Content-Disposition: inline; filename=this_cpu_fake_key
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current_cpu_data accesses are per cpu accesses. We can also use
-this_cpu_ops if a scalar is retrieved.
+The whole function can be expressed as a simple this_cpu_read() operation.
+The function overhead is now likely multiple times that of the single
+instruction that is executed in it.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: William Hubbs <w.d.hubbs@gmail.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    2 +-
- arch/x86/kernel/cpu/intel_cacheinfo.c     |    4 ++--
- arch/x86/kernel/smpboot.c                 |   10 +++++-----
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/staging/speakup/fakekey.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/smpboot.c
+Index: linux-2.6/drivers/staging/speakup/fakekey.c
 ===================================================================
---- linux-2.6.orig/arch/x86/kernel/smpboot.c	2010-11-30 11:53:03.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/smpboot.c	2010-11-30 11:57:02.000000000 -0600
-@@ -430,7 +430,7 @@ void __cpuinit set_cpu_sibling_map(int c
- 
- 	cpumask_set_cpu(cpu, c->llc_shared_map);
- 
--	if (current_cpu_data.x86_max_cores == 1) {
-+	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
- 		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
- 		c->booted_cores = 1;
- 		return;
-@@ -1377,7 +1377,7 @@ void play_dead_common(void)
- 
- 	mb();
- 	/* Ack it */
--	__get_cpu_var(cpu_state) = CPU_DEAD;
-+	__this_cpu_write(cpu_state, CPU_DEAD);
- 
- 	/*
- 	 * With physical CPU hotplug, we should halt the cpu
-@@ -1401,7 +1401,7 @@ static inline void mwait_play_dead(void)
- 		return;
- 	if (!cpu_has(&current_cpu_data, X86_FEATURE_CLFLSH))
- 		return;
--	if (current_cpu_data.cpuid_level < CPUID_MWAIT_LEAF)
-+	if (__this_cpu_read(cpu_info.cpuid_level) < CPUID_MWAIT_LEAF)
- 		return;
- 
- 	eax = CPUID_MWAIT_LEAF;
-@@ -1452,7 +1452,7 @@ static inline void mwait_play_dead(void)
- 
- static inline void hlt_play_dead(void)
+--- linux-2.6.orig/drivers/staging/speakup/fakekey.c	2010-11-30 12:10:12.000000000 -0600
++++ linux-2.6/drivers/staging/speakup/fakekey.c	2010-11-30 12:14:12.000000000 -0600
+@@ -96,10 +96,5 @@ void speakup_fake_down_arrow(void)
+ 	 */
+ bool speakup_fake_key_pressed(void)
  {
--	if (current_cpu_data.x86 >= 4)
-+	if (__this_cpu_read(cpu_info.x86) >= 4)
- 		wbinvd();
- 
- 	while (1) {
-Index: linux-2.6/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/cpufreq/powernow-k8.c	2010-11-30 11:53:03.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/cpu/cpufreq/powernow-k8.c	2010-11-30 11:53:33.000000000 -0600
-@@ -521,7 +521,7 @@ static void check_supported_cpu(void *_r
- 
- 	*rc = -ENODEV;
- 
--	if (current_cpu_data.x86_vendor != X86_VENDOR_AMD)
-+	if (__this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_AMD)
- 		return;
- 
- 	eax = cpuid_eax(CPUID_PROCESSOR_SIGNATURE);
-Index: linux-2.6/arch/x86/kernel/cpu/intel_cacheinfo.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/intel_cacheinfo.c	2010-11-30 11:53:03.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/cpu/intel_cacheinfo.c	2010-11-30 11:53:33.000000000 -0600
-@@ -266,7 +266,7 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_
- 		line_size = l2.line_size;
- 		lines_per_tag = l2.lines_per_tag;
- 		/* cpu_data has errata corrections for K7 applied */
--		size_in_kb = current_cpu_data.x86_cache_size;
-+		size_in_kb = __this_cpu_read(cpu_info.x86_cache_size);
- 		break;
- 	case 3:
- 		if (!l3.val)
-@@ -288,7 +288,7 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_
- 	eax->split.type = types[leaf];
- 	eax->split.level = levels[leaf];
- 	eax->split.num_threads_sharing = 0;
--	eax->split.num_cores_on_die = current_cpu_data.x86_max_cores - 1;
-+	eax->split.num_cores_on_die = __this_cpu_read(cpu_info.x86_max_cores) - 1;
- 
- 
- 	if (assoc == 0xffff)
+-	bool is_pressed;
+-
+-	is_pressed = get_cpu_var(reporting_keystroke);
+-	put_cpu_var(reporting_keystroke);
+-
+-	return is_pressed;
++	return this_cpu_read(reporting_keystroke);
+ }
 
