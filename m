@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab0K3WNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:13:33 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:50535 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752603Ab0K3WNc convert rfc822-to-8bit (ORCPT
+	id S1753064Ab0K3WQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:16:59 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40164 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab0K3WQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:13:32 -0500
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="489180551"
-Subject: Re: [PATCH] NFS: Fix a readdirplus bug
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
-References: <1291138954-10310-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Tue, 30 Nov 2010 17:13:24 -0500
-Message-ID: <1291155204.2998.31.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 30 Nov 2010 22:13:31.0706 (UTC) FILETIME=[D2AE31A0:01CB90DB]
+	Tue, 30 Nov 2010 17:16:58 -0500
+Date: Tue, 30 Nov 2010 22:16:15 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Colin Cross <ccross@android.com>, Varun Swara <Varun.Swara@arm.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: TWD: Consolidate local timers support
+Message-ID: <20101130221615.GA9424@n2100.arm.linux.org.uk>
+References: <20101130173105.GA26929@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130173105.GA26929@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 14:10 -0800, Linus Torvalds wrote:
-> On Tue, Nov 30, 2010 at 9:42 AM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > When comparing filehandles in the helper nfs_same_file(), we should not be
-> > using 'strncmp()': filehandles are not null terminated strings.
+On Tue, Nov 30, 2010 at 08:31:05PM +0300, Anton Vorontsov wrote:
+> This greatly reduces amount of platform-specific code, and thus
+> makes it easier to add local timers for new platforms.
 > 
-> Hmm. Applied, but sadly Nick Bowler <nbowler@elliptictech.com> reports
-> that it doesn't actually fix his problem, so there is still a serious
-> regression there.
-> 
->                 Linus
+> Technically, it's not very nice to place machine-specific (i.e.
+> local_timer_setup()) routine into the machine-agnostic code.
+> But the true thing is: currently all machines want the same thing.
 
-OK. I'll follow up that problem with him.
+I've just been talking to someone this week about (presumably) non-TWD
+local timers.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+I suspect your patch is all part of the "lets try to get ARM building
+for every platform in the world in one kernel" but it's really painful
+to see carefully abstracted interfaces being trodden on by this argument
+- which is just going to make things more difficult in the future.
