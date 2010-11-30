@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab0K3VFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:05:13 -0500
-Received: from kroah.org ([198.145.64.141]:35477 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab0K3VFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:05:11 -0500
-Date: Tue, 30 Nov 2010 12:55:33 -0800
-From: Greg KH <greg@kroah.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-Message-ID: <20101130205533.GA7057@kroah.com>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <201011301855.56228.laurent.pinchart@ideasonboard.com>
- <20101130183225.GA27680@kroah.com>
- <201011302143.09966.laurent.pinchart@ideasonboard.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011302143.09966.laurent.pinchart@ideasonboard.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756458Ab0K3VF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:05:56 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31150 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756255Ab0K3VFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 16:05:54 -0500
+Date: Tue, 30 Nov 2010 12:33:09 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Miao Xie <miaox@cn.fujitsu.com>, Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] btrfs: Correct printing of sector_t
+Message-Id: <20101130123309.d84cc69c.randy.dunlap@oracle.com>
+In-Reply-To: <alpine.DEB.2.00.1011302128450.6502@ayla.of.borg>
+References: <alpine.DEB.2.00.1011302128450.6502@ayla.of.borg>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 09:43:09PM +0100, Laurent Pinchart wrote:
-> > > The way we deal with this is to try_module_get() on the OMAP3 ISP driver
-> > > in the subdev open() handlers. I'm of course opened to alternatives.
-> > 
-> > Do it like the rest of the kernel does it, lock the module in place with
-> > the module pointer it passed to you before calling open in that module.
-> > Nothing new here at all.
+On Tue, 30 Nov 2010 21:30:01 +0100 (CET) Geert Uytterhoeven wrote:
+
+> If CONFIG_LBDAF=y, `sector_t' becomes `u64' instead of `unsigned long':
 > 
-> That doesn't work in this case, because we have two modules. Module A is the 
-> master and instantiates an I2C device handled by module B. Module B creates a 
-> character device and sets itself as the owner. When the corresponding device 
-> node is opened, module B's refcount is incremented, but module A refcount 
-> isn't, even though module B can call to module A through board code using 
-> function pointers provided in the platform data.
+> fs/btrfs/inode.c: In function ‘btrfs_end_dio_bio’:
+> fs/btrfs/inode.c:5717: warning: format ‘%lu’ expects type ‘long unsigned int’, but argument 4 has type ‘sector_t’
+> 
+> Hence always cast it to `unsigned long long' for printing.
+> 
+> Introduced by commit e65e1535542931e51189832264cd282e5899e4b9 ("btrfs: fix
+> panic caused by direct IO")
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Again, this is something we have been doing for years just fine.  Look
-at the usb-serial core.  It "owns" the device node yet the child drivers
-are the ones actually handling the data.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Just never call the function pointer unless the module is loaded, it's
-that simple.  If you need to add proper module ownership to the platform
-data pointers, so be it.
 
-thanks,
+> ---
+>  fs/btrfs/inode.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index 8039390..fbffe5f 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -5712,9 +5712,9 @@ static void btrfs_end_dio_bio(struct bio *bio, int err)
+>  
+>  	if (err) {
+>  		printk(KERN_ERR "btrfs direct IO failed ino %lu rw %lu "
+> -		      "disk_bytenr %lu len %u err no %d\n",
+> -		      dip->inode->i_ino, bio->bi_rw, bio->bi_sector,
+> -		      bio->bi_size, err);
+> +		      "disk_bytenr %llu len %u err no %d\n",
+> +		      dip->inode->i_ino, bio->bi_rw,
+> +		      (unsigned long long)bio->bi_sector, bio->bi_size, err);
+>  		dip->errors = 1;
+>  
+>  		/*
+> -- 
+> 1.7.0.4
+> 
+> Gr{oetje,eeting}s,
+> 
+> 						Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+> 							    -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-greg k-h
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
