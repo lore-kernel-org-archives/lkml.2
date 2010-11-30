@@ -1,121 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab0K3EiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:38:04 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34461 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753907Ab0K3EiB (ORCPT
+	id S1753907Ab0K3Eia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:38:30 -0500
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:39028 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753172Ab0K3Ei3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:38:01 -0500
-Message-ID: <4CF47F89.5030209@dsn.okisemi.com>
-Date: Tue, 30 Nov 2010 13:37:29 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 29 Nov 2010 23:38:29 -0500
+Date: Tue, 30 Nov 2010 15:38:17 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 3/3] xfs: demultiplex xfs_icsb_modify_counters()
+Message-ID: <20101130043817.GE3556@dastard>
+References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
+ <1290991002-18680-4-git-send-email-david@fromorbit.com>
+ <20101129091920.GB13902@infradead.org>
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v6 16/20] can: EG20T PCH: Move MSI processing
- to probe/remove processing
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101129091920.GB13902@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, in case this driver is integrated as module, and when this
-module is re-installed, no interrupts is to be occurred.
-For the above issue, move MSI processing to open/release processing.
+On Mon, Nov 29, 2010 at 04:19:20AM -0500, Christoph Hellwig wrote:
+> On Mon, Nov 29, 2010 at 11:36:41AM +1100, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > With the conversion to percpu counters, xfs_icsb_modify_counters() really does
+> > not need to exist. Convert the inode counter modifications to use a common
+> > helper function for the one place that calls them, and add another function for
+> > the free block modification and convert all the callers to use that.
+> 
+> > +xfs_icsb_modify_inodes(
+> > +	xfs_mount_t	*mp,
+> 
+> struct xfs_mount, please.
+> 
+> > +	int		cntr,
+> > +	int64_t		delta,
+> > +	int		rsvd)
+> 
+> the rsvd argument isn't used at all.
+> 
+> > +{
+> > +	int		ret = 0;
+> > +
+> > +	ASSERT(cntr == XFS_ICSB_ICOUNT || cntr == XFS_ICSB_IFREE);
+> > +
+> > +	ret = xfs_icsb_add(mp, cntr, delta, 0);
+> > +	if (ret < 0) {
+> > +		ASSERT(0);
+> > +		return XFS_ERROR(EINVAL);
+> > +	}
+> > +	return 0;
+> 
+> You could get rdif of the ret argument as we don't care about the
+> value.  I also don't think we need the assert here - the caller already
+> does one for us.
+> 
+> > +xfs_icsb_modify_free_blocks(
+> > +	xfs_mount_t	*mp,
+> 
+> same here.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+Ok, makes sense. I'll clean it up.
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 6508dca..f8b4a66 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -851,15 +851,6 @@ static int pch_can_open(struct net_device *ndev)
- 	struct pch_can_priv *priv = netdev_priv(ndev);
- 	int retval;
- 
--	retval = pci_enable_msi(priv->dev);
--	if (retval) {
--		netdev_err(ndev, "PCH CAN opened without MSI\n");
--		priv->use_msi = 0;
--	} else {
--		netdev_err(ndev, "PCH CAN opened with MSI\n");
--		priv->use_msi = 1;
--	}
--
- 	/* Regstering the interrupt. */
- 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
- 			     ndev->name, ndev);
-@@ -885,9 +876,6 @@ static int pch_can_open(struct net_device *ndev)
- err_open_candev:
- 	free_irq(priv->dev->irq, ndev);
- req_irq_err:
--	if (priv->use_msi)
--		pci_disable_msi(priv->dev);
--
- 	pch_can_release(priv);
- 
- 	return retval;
-@@ -901,8 +889,6 @@ static int pch_close(struct net_device *ndev)
- 	napi_disable(&priv->napi);
- 	pch_can_release(priv);
- 	free_irq(priv->dev->irq, ndev);
--	if (priv->use_msi)
--		pci_disable_msi(priv->dev);
- 	close_candev(ndev);
- 	priv->can.state = CAN_STATE_STOPPED;
- 	return 0;
-@@ -981,12 +967,14 @@ static void __devexit pch_can_remove(struct pci_dev *pdev)
- 	struct pch_can_priv *priv = netdev_priv(ndev);
- 
- 	unregister_candev(priv->ndev);
--	free_candev(priv->ndev);
- 	pci_iounmap(pdev, priv->regs);
-+	if (priv->use_msi)
-+		pci_disable_msi(priv->dev);
- 	pci_release_regions(pdev);
- 	pci_disable_device(pdev);
- 	pci_set_drvdata(pdev, NULL);
- 	pch_can_reset(priv);
-+	free_candev(priv->ndev);
- }
- 
- #ifdef CONFIG_PM
-@@ -1244,6 +1232,15 @@ static int __devinit pch_can_probe(struct pci_dev *pdev,
- 
- 	netif_napi_add(ndev, &priv->napi, pch_can_poll, PCH_RX_OBJ_END);
- 
-+	rc = pci_enable_msi(priv->dev);
-+	if (rc) {
-+		netdev_err(ndev, "PCH CAN opened without MSI\n");
-+		priv->use_msi = 0;
-+	} else {
-+		netdev_err(ndev, "PCH CAN opened with MSI\n");
-+		priv->use_msi = 1;
-+	}
-+
- 	rc = register_candev(ndev);
- 	if (rc) {
- 		dev_err(&pdev->dev, "Failed register_candev %d\n", rc);
-@@ -1253,6 +1250,8 @@ static int __devinit pch_can_probe(struct pci_dev *pdev,
- 	return 0;
- 
- probe_exit_reg_candev:
-+	if (priv->use_msi)
-+		pci_disable_msi(priv->dev);
- 	free_candev(ndev);
- probe_exit_alloc_candev:
- 	pci_iounmap(pdev, addr);
+Cheers,
+
+Dave.
 -- 
-1.6.0.6
+Dave Chinner
+david@fromorbit.com
