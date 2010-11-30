@@ -1,92 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab0K3LTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 06:19:35 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59282 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273Ab0K3LTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 06:19:34 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Free memory never fully used, swapping
-Cc: kosaki.motohiro@jp.fujitsu.com, Simon Kirby <sim@hostway.ca>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-In-Reply-To: <20101130104136.GK13268@csn.ul.ie>
-References: <20101130152002.8307.A69D9226@jp.fujitsu.com> <20101130104136.GK13268@csn.ul.ie>
-Message-Id: <20101130201821.8319.A69D9226@jp.fujitsu.com>
+	id S1755743Ab0K3LVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 06:21:00 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50226 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755588Ab0K3LU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 06:20:59 -0500
+Date: Tue, 30 Nov 2010 12:20:41 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
+Message-ID: <20101130112041.GC15564@cmpxchg.org>
+References: <cover.1291043273.git.minchan.kim@gmail.com>
+ <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
+ <20101129165706.GH13268@csn.ul.ie>
+ <20101129224130.GA1989@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Nov 2010 20:19:28 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101129224130.GA1989@barrios-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Nov 30, 2010 at 07:41:30AM +0900, Minchan Kim wrote:
 
-> > > > >  out:
-> > > > > -	if (!all_zones_ok) {
-> > > > > +	if (!(all_zones_ok || (order && any_zone_ok))) {
-> > > > 
-> > > > This doesn't work ;)
-> > > > kswapd have to clear ZONE_CONGESTED flag before enter sleeping.
-> > > > otherwise nobody can clear it.
-> > > > 
-> > > 
-> > > Does it not do it earlier in balance_pgdat() here
-> > > 
-> > >                                 /*
-> > >                                  * If a zone reaches its high watermark,
-> > >                                  * consider it to be no longer congested. It's
-> > >                                  * possible there are dirty pages backed by
-> > >                                  * congested BDIs but as pressure is
-> > >                                  * relieved, spectulatively avoid congestion waits
-> > >                                  */
-> > >                                 zone_clear_flag(zone, ZONE_CONGESTED);
-> > >                                 if (i <= pgdat->high_zoneidx)
-> > >                                         any_zone_ok = 1;
-> > 
-> > zone_clear_flag(zone, ZONE_CONGESTED) only clear one zone status. other
-> > zone remain old status.
-> > 
-> 
-> Ah now I get you. kswapd does not necessarily balance all zones so it needs
-> to unconditionally clear them all before it goes to sleep in case. At
-> some time in the future, the tagging of ZONE_CONGESTED needs more
-> thinking about.
->
+> diff --git a/mm/swap.c b/mm/swap.c
+> index 19e0812..1f1f435 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -275,28 +275,51 @@ void add_page_to_unevictable_list(struct page *page)
+>   * into inative list's head. Because the VM expects the page would
+>   * be writeout by flusher. The flusher's writeout is much effective
+>   * than reclaimer's random writeout.
+> + *
+> + * If the page isn't page_mapped and dirty/writeback, the page
+> + * could reclaim asap using PG_reclaim.
+> + *
+> + * 1. active, mapped page -> none
+> + * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
+> + * 3. inactive, mapped page -> none
+> + * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
+> + * 5. Others -> none
+> + *
+> + * In 4, why it moves inactive's head, the VM expects the page would
+> + * be writeout by flusher. The flusher's writeout is much effective than
+> + * reclaimer's random writeout.
+>   */
+>  static void __lru_deactivate(struct page *page, struct zone *zone)
+>  {
+>  	int lru, file;
+> -	unsigned long vm_flags;
+> +	int active = 0;
 
-This is a option.
+vm_flags is never used in this series.
 
+> -	if (!PageLRU(page) || !PageActive(page))
+> +	if (!PageLRU(page))
+>  		return;
+> -
+>  	/* Some processes are using the page */
+>  	if (page_mapped(page))
+>  		return;
+> -
+> -	file = page_is_file_cache(page);
+> -	lru = page_lru_base_type(page);
+> -	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
+> -	ClearPageActive(page);
+> -	ClearPageReferenced(page);
+> -	add_page_to_lru_list(zone, page, lru);
+> -	__count_vm_event(PGDEACTIVATE);
+> -
+> -	update_page_reclaim_stat(zone, page, file, 0);
+> +	if (PageActive(page))
+> +		active = 1;
 
-> > > > Say, we have to fill below condition.
-> > > >  - All zone are successing zone_watermark_ok(order-0)
-> > > 
-> > > We should loop around at least once with order == 0 where all_zones_ok
-> > > is checked.
-> > 
-> > But no gurantee. IOW kswapd early stopping increase GFP_ATOMIC allocation
-> > failure risk, I think.
-> > 
-> 
-> Force all zones to be balanced for order-0?
+	active = PageActive(page)
 
-Yes.
+> +	if (PageWriteback(page) || PageDirty(page)) {
+> +		/*
+> +		 * PG_reclaim could be raced with end_page_writeback
+> +		 * It can make readahead confusing.  But race window
+> +		 * is _really_ small and  it's non-critical problem.
+> +		 */
+> +		SetPageReclaim(page);
+> +
+> +		file = page_is_file_cache(page);
+> +		lru = page_lru_base_type(page);
+> +		del_page_from_lru_list(zone, page, lru + active);
+> +		ClearPageActive(page);
+> +		ClearPageReferenced(page);
+> +		add_page_to_lru_list(zone, page, lru);
+> +		if (active)
+> +			__count_vm_event(PGDEACTIVATE);
+> +		update_page_reclaim_stat(zone, page, file, 0);
+> +	}
 
-I think following change does.
+If we lose the race with writeback, the completion handler won't see
+PG_reclaim, won't move the page, and we have an unwanted clean cache
+page on the active list.  Given the pagevec caching of those pages it
+could be rather likely that IO completes before the above executes.
 
-	if (i <= pgdat->high_zoneidx)
-- 		 any_zone_ok = 1;
-+		order = sc.order = 0;
+Shouldn't this be
 
+	if (PageWriteback() || PageDirty()) {
+		SetPageReclaim()
+		move_to_inactive_head()
+	} else {
+		move_to_inactive_tail()
+	}
 
-This is more conservative.
+instead?
 
-
-
+	Hannes
