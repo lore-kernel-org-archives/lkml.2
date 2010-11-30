@@ -1,106 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab0K3Ehy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:37:54 -0500
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:51664 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753034Ab0K3Ehx (ORCPT
+	id S1753954Ab0K3EiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:38:04 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34461 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753907Ab0K3EiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:37:53 -0500
-Date: Tue, 30 Nov 2010 15:37:41 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 2/3] xfs: use generic per-cpu counter infrastructure
-Message-ID: <20101130043741.GD3556@dastard>
-References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
- <1290991002-18680-3-git-send-email-david@fromorbit.com>
- <20101129091610.GA13902@infradead.org>
+	Mon, 29 Nov 2010 23:38:01 -0500
+Message-ID: <4CF47F89.5030209@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 13:37:29 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129091610.GA13902@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 v6 16/20] can: EG20T PCH: Move MSI processing
+ to probe/remove processing
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:16:10AM -0500, Christoph Hellwig wrote:
-> On Mon, Nov 29, 2010 at 11:36:40AM +1100, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > XFS has a per-cpu counter implementation for in-core superblock
-> > counters that pre-dated the generic implementation. It is complex
-> > and baroque as it is tailored directly to the needs of ENOSPC
-> > detection.
-> > 
-> > Now that the generic percpu counter infrastructure has the
-> > percpu_counter_add_unless_lt() function that implements the
-> > necessary threshold checks for us, switch the XFS per-cpu
-> > superblock counters to use the generic percpu counter
-> > infrastructure.
-> 
-> Looks good, but a few comments below:
-> 
-> > +/*
-> > + * Per-cpu incore superblock counters
-> > + *
-> > + * Simple concept, difficult implementation, now somewhat simplified by generic
-> > + * per-cpu counter support.  This provides distributed per cpu counters for
-> > + * contended fields (e.g.  free block count).
-> 
-> The kind of historic comments like now simplified by  .. don't make any
-> sense after only a short while.  I'd just remove the first senstence
-> above, as the details of the problems are explained much better later.
+Currently, in case this driver is integrated as module, and when this
+module is re-installed, no interrupts is to be occurred.
+For the above issue, move MSI processing to open/release processing.
 
-Ok, will do.
-> 
-> > +static inline int
-> > +xfs_icsb_add(
-> > +	struct xfs_mount	*mp,
-> > +	int			counter,
-> > +	int64_t			delta,
-> > +	int64_t			threshold)
-> > +{
-> > +	int			ret;
-> > +
-> > +	ret = percpu_counter_add_unless_lt(&mp->m_icsb[counter], delta,
-> > +								threshold);
-> > +	if (ret < 0)
-> > +		return -ENOSPC;
-> > +	return 0;
-> > +}
-> > +
-> > +static inline void
-> > +xfs_icsb_set(
-> > +	struct xfs_mount	*mp,
-> > +	int			counter,
-> > +	int64_t			value)
-> > +{
-> > +	percpu_counter_set(&mp->m_icsb[counter], value);
-> > +}
-> > +
-> > +static inline int64_t
-> > +xfs_icsb_sum(
-> > +	struct xfs_mount	*mp,
-> > +	int			counter)
-> > +{
-> > +	return percpu_counter_sum_positive(&mp->m_icsb[counter]);
-> > +}
-> 
-> I still don't like these wrappers.  They are all local to xfs_mount.c,
-> and only have a single function calling them.  See the RFC patch below
-> which removes them, and imho makes the code more readable.  Especially
-> in xfs _add case where we can get rid of one level of error remapping,
-> and go directly from the weird percpu return values to the positive
-> xfs errors instead of doing a detour via the negative linux errors.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/net/can/pch_can.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-Ok, if we need to tweak the batch size in future, then we can deal
-with it then. I'll clean it up as you suggest...
-
-Cheers,
-
-Dave.
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 6508dca..f8b4a66 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -851,15 +851,6 @@ static int pch_can_open(struct net_device *ndev)
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	int retval;
+ 
+-	retval = pci_enable_msi(priv->dev);
+-	if (retval) {
+-		netdev_err(ndev, "PCH CAN opened without MSI\n");
+-		priv->use_msi = 0;
+-	} else {
+-		netdev_err(ndev, "PCH CAN opened with MSI\n");
+-		priv->use_msi = 1;
+-	}
+-
+ 	/* Regstering the interrupt. */
+ 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
+ 			     ndev->name, ndev);
+@@ -885,9 +876,6 @@ static int pch_can_open(struct net_device *ndev)
+ err_open_candev:
+ 	free_irq(priv->dev->irq, ndev);
+ req_irq_err:
+-	if (priv->use_msi)
+-		pci_disable_msi(priv->dev);
+-
+ 	pch_can_release(priv);
+ 
+ 	return retval;
+@@ -901,8 +889,6 @@ static int pch_close(struct net_device *ndev)
+ 	napi_disable(&priv->napi);
+ 	pch_can_release(priv);
+ 	free_irq(priv->dev->irq, ndev);
+-	if (priv->use_msi)
+-		pci_disable_msi(priv->dev);
+ 	close_candev(ndev);
+ 	priv->can.state = CAN_STATE_STOPPED;
+ 	return 0;
+@@ -981,12 +967,14 @@ static void __devexit pch_can_remove(struct pci_dev *pdev)
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 
+ 	unregister_candev(priv->ndev);
+-	free_candev(priv->ndev);
+ 	pci_iounmap(pdev, priv->regs);
++	if (priv->use_msi)
++		pci_disable_msi(priv->dev);
+ 	pci_release_regions(pdev);
+ 	pci_disable_device(pdev);
+ 	pci_set_drvdata(pdev, NULL);
+ 	pch_can_reset(priv);
++	free_candev(priv->ndev);
+ }
+ 
+ #ifdef CONFIG_PM
+@@ -1244,6 +1232,15 @@ static int __devinit pch_can_probe(struct pci_dev *pdev,
+ 
+ 	netif_napi_add(ndev, &priv->napi, pch_can_poll, PCH_RX_OBJ_END);
+ 
++	rc = pci_enable_msi(priv->dev);
++	if (rc) {
++		netdev_err(ndev, "PCH CAN opened without MSI\n");
++		priv->use_msi = 0;
++	} else {
++		netdev_err(ndev, "PCH CAN opened with MSI\n");
++		priv->use_msi = 1;
++	}
++
+ 	rc = register_candev(ndev);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "Failed register_candev %d\n", rc);
+@@ -1253,6 +1250,8 @@ static int __devinit pch_can_probe(struct pci_dev *pdev,
+ 	return 0;
+ 
+ probe_exit_reg_candev:
++	if (priv->use_msi)
++		pci_disable_msi(priv->dev);
+ 	free_candev(ndev);
+ probe_exit_alloc_candev:
+ 	pci_iounmap(pdev, addr);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.6.0.6
