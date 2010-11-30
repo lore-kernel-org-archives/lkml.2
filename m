@@ -1,92 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab0K3EhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:37:18 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34426 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753034Ab0K3EhQ (ORCPT
+	id S1753897Ab0K3Ehy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:37:54 -0500
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:51664 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753034Ab0K3Ehx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:37:16 -0500
-Message-ID: <4CF47F5C.3010805@dsn.okisemi.com>
-Date: Tue, 30 Nov 2010 13:36:44 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 29 Nov 2010 23:37:53 -0500
+Date: Tue, 30 Nov 2010 15:37:41 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 2/3] xfs: use generic per-cpu counter infrastructure
+Message-ID: <20101130043741.GD3556@dastard>
+References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
+ <1290991002-18680-3-git-send-email-david@fromorbit.com>
+ <20101129091610.GA13902@infradead.org>
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v6 15/20] can: EG20T PCH: Comment optimization
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101129091610.GA13902@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment optimization.
+On Mon, Nov 29, 2010 at 04:16:10AM -0500, Christoph Hellwig wrote:
+> On Mon, Nov 29, 2010 at 11:36:40AM +1100, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > XFS has a per-cpu counter implementation for in-core superblock
+> > counters that pre-dated the generic implementation. It is complex
+> > and baroque as it is tailored directly to the needs of ENOSPC
+> > detection.
+> > 
+> > Now that the generic percpu counter infrastructure has the
+> > percpu_counter_add_unless_lt() function that implements the
+> > necessary threshold checks for us, switch the XFS per-cpu
+> > superblock counters to use the generic percpu counter
+> > infrastructure.
+> 
+> Looks good, but a few comments below:
+> 
+> > +/*
+> > + * Per-cpu incore superblock counters
+> > + *
+> > + * Simple concept, difficult implementation, now somewhat simplified by generic
+> > + * per-cpu counter support.  This provides distributed per cpu counters for
+> > + * contended fields (e.g.  free block count).
+> 
+> The kind of historic comments like now simplified by  .. don't make any
+> sense after only a short while.  I'd just remove the first senstence
+> above, as the details of the problems are explained much better later.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+Ok, will do.
+> 
+> > +static inline int
+> > +xfs_icsb_add(
+> > +	struct xfs_mount	*mp,
+> > +	int			counter,
+> > +	int64_t			delta,
+> > +	int64_t			threshold)
+> > +{
+> > +	int			ret;
+> > +
+> > +	ret = percpu_counter_add_unless_lt(&mp->m_icsb[counter], delta,
+> > +								threshold);
+> > +	if (ret < 0)
+> > +		return -ENOSPC;
+> > +	return 0;
+> > +}
+> > +
+> > +static inline void
+> > +xfs_icsb_set(
+> > +	struct xfs_mount	*mp,
+> > +	int			counter,
+> > +	int64_t			value)
+> > +{
+> > +	percpu_counter_set(&mp->m_icsb[counter], value);
+> > +}
+> > +
+> > +static inline int64_t
+> > +xfs_icsb_sum(
+> > +	struct xfs_mount	*mp,
+> > +	int			counter)
+> > +{
+> > +	return percpu_counter_sum_positive(&mp->m_icsb[counter]);
+> > +}
+> 
+> I still don't like these wrappers.  They are all local to xfs_mount.c,
+> and only have a single function calling them.  See the RFC patch below
+> which removes them, and imho makes the code more readable.  Especially
+> in xfs _add case where we can get rid of one level of error remapping,
+> and go directly from the weird percpu return values to the positive
+> xfs errors instead of doing a detour via the negative linux errors.
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 1009d9b..6508dca 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
- 	else
- 		ie = PCH_IF_MCONT_RXIE;
- 
--	/* Reading the receive buffer data from RAM to Interface1/2 registers */
-+	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
- 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
- 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
- 
-@@ -860,7 +860,7 @@ static int pch_can_open(struct net_device *ndev)
- 		priv->use_msi = 1;
- 	}
- 
--	/* Regsitering the interrupt. */
-+	/* Regstering the interrupt. */
- 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
- 			     ndev->name, ndev);
- 	if (retval) {
-@@ -960,7 +960,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 
- 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
- 
--	/* Updating the size of the data. */
-+	/* Set the size of the data. Update if2_mcont */
- 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
- 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
- 
-@@ -1061,8 +1061,8 @@ static u32 pch_can_get_rx_buffer_link(struct pch_can_priv *priv, u32 buffer_num)
- 
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return value. */
-+	int i;
-+	int retval;
- 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
- 	int counter = PCH_COUNTER_LIMIT;
- 
-@@ -1119,8 +1119,8 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- 
- static int pch_can_resume(struct pci_dev *pdev)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return variable. */
-+	int i;
-+	int retval;
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct pch_can_priv *priv = netdev_priv(dev);
- 
+Ok, if we need to tweak the batch size in future, then we can deal
+with it then. I'll clean it up as you suggest...
+
+Cheers,
+
+Dave.
 -- 
-1.6.0.6
-
+Dave Chinner
+david@fromorbit.com
