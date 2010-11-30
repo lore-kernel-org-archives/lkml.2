@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab0K3TCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:02:44 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33275 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab0K3TCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:02:43 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19lxdAdCB26ecUY3+ItkJEO
-Date: Tue, 30 Nov 2010 11:00:58 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Greg KH <greg@kroah.com>, Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 1/4] drivers: hwspinlock: add generic framework
-Message-ID: <20101130190058.GX17222@atomide.com>
-References: <1290526740-27624-1-git-send-email-ohad@wizery.com>
- <1290526740-27624-2-git-send-email-ohad@wizery.com>
+	id S1756167Ab0K3TDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:03:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617Ab0K3TDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:03:23 -0500
+Date: Tue, 30 Nov 2010 20:01:59 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 53 of 66] add numa awareness to hugepage allocations
+Message-ID: <20101130190159.GJ30389@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <223ee926614158fc1353.1288798108@v2.random>
+ <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
+ <20101129161103.GE24474@random.random>
+ <20101130093804.23f8c355.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290526740-27624-2-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101130093804.23f8c355.nishimura@mxp.nes.nec.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ohad Ben-Cohen <ohad@wizery.com> [101123 07:27]:
-> Add a common, platform-independent, hwspinlock framework.
-> 
-> Hardware spinlock devices are needed, e.g., in order to access data
-> that is shared between remote processors, that otherwise have no
-> alternative mechanism to accomplish synchronization and mutual exclusion
-> operations.
+On Tue, Nov 30, 2010 at 09:38:04AM +0900, Daisuke Nishimura wrote:
+> I'm sorry if I miss something, "new_page" will be reused in !CONFIG_NUMA case
+> as you say, but, in CONFIG_NUMA case, it is allocated in this function
+> (collapse_huge_page()) by alloc_hugepage_vma(), and is not freed when memcg's
+> charge failed.
+> Actually, we do in collapse_huge_page():
+> 	if (unlikely(!isolated)) {
+> 		...
+> #ifdef CONFIG_NUMA
+> 		put_page(new_page);
+> #endif
+> 		goto out;
+> 	}
+> later. I think we need a similar logic in memcg's failure path too.
 
-<snip>
+Apologies, you really found a minor memleak in case of memcg
+accounting failure.
 
-> +  int hwspin_lock(struct hwspinlock *hwlock);
-> +   - lock a previously assigned hwspinlock. If the hwspinlock is already
-> +     taken, the function will busy loop waiting for it to be released.
-> +     Note: if a faulty remote core never releases this lock, this function
-> +     will deadlock.
-> +     This function will fail only if hwlock is invalid. Otherwise, it will
-> +     always succeed (or deadlock; see above) and it will never sleep.
-> +     Upon a successful return from this function, preemption is disabled so
-> +     the caller must not sleep, and is advised to release the hwspinlock as
-> +     soon as possible, in order to minimize remote cores polling on the
-> +     hardware interconnect.
-...
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1726,7 +1726,7 @@ static void collapse_huge_page(struct mm
+ 	}
+ #endif
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL)))
+-		goto out;
++		goto out_put_page;
+ 
+ 	anon_vma_lock(vma->anon_vma);
+ 
+@@ -1755,10 +1755,7 @@ static void collapse_huge_page(struct mm
+ 		spin_unlock(&mm->page_table_lock);
+ 		anon_vma_unlock(vma->anon_vma);
+ 		mem_cgroup_uncharge_page(new_page);
+-#ifdef CONFIG_NUMA
+-		put_page(new_page);
+-#endif
+-		goto out;
++		goto out_put_page;
+ 	}
+ 
+ 	/*
+@@ -1799,6 +1796,13 @@ static void collapse_huge_page(struct mm
+ 	khugepaged_pages_collapsed++;
+ out:
+ 	up_write(&mm->mmap_sem);
++	return;
++
++out_put_page:
++#ifdef CONFIG_NUMA
++	put_page(new_page);
++#endif
++	goto out;
+ }
+ 
+ static int khugepaged_scan_pmd(struct mm_struct *mm,
 
-> +  int hwspin_lock_timeout(struct hwspinlock *hwlock, unsigned long timeout);
-> +   - lock a previously-assigned hwspinlock with a timeout limit (specified in
-> +     jiffies). If the hwspinlock is already taken, the function will busy loop
-> +     waiting for it to be released, but give up when the timeout meets jiffies.
-> +     If timeout is 0, the function will never give up (therefore if a faulty
-> +     remote core never releases the hwspinlock, it will deadlock).
-> +     Upon a successful return from this function, preemption is disabled so
-> +     the caller must not sleep, and is advised to release the hwspinlock as
-> +     soon as possible, in order to minimize remote cores polling on the
-> +     hardware interconnect.
-> +     Returns 0 when successful and an appropriate error code otherwise (most
-> +     notably -ETIMEDOUT if the hwspinlock is still busy after timeout meets
-> +     jiffies). The function will never sleep.
 
-Do we even need the hwspin_lock variants, why can't we always use the
-hwspin_lock_timeout variants?
 
-To me the idea of looping waiting for some external system to release
-a lock is not a good idea..
+I was too optimistic that there wasn't really a bug, I thought it was
+some confusion about the hpage usage that differs with numa and not
+numa.
 
-Regards,
-
-Tony
+On a side note, the CONFIG_NUMA case will later change further to move
+the allocation out of the mmap_sem write mode to make the fs
+submitting I/O from userland and doing memory allocations in the I/O
+paths happier.
