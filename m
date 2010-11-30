@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0K3W0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:26:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33631 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab0K3W0D (ORCPT
+	id S1754109Ab0K3W1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:27:25 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34952 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab0K3W1X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:26:03 -0500
-Date: Tue, 30 Nov 2010 22:24:57 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Anton Vorontsov <avorontsov@mvista.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jamie Iles <jamie.iles@picochip.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU
-	bootup
-Message-ID: <20101130222457.GB9424@n2100.arm.linux.org.uk>
-References: <20101130171626.GA6165@oksana.dev.rtsoft.ru> <20101130171658.GA24034@oksana.dev.rtsoft.ru>
+	Tue, 30 Nov 2010 17:27:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130171658.GA24034@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1291108809.2904.3.camel@edumazet-laptop>
+References: <20101129201716.1d0257c4@xenia.leun.net>
+	<4CF442FA.4070701@candelatech.com>
+	<20101130095944.41b5f7b6@xenia.leun.net>
+	<1291108809.2904.3.camel@edumazet-laptop>
+Date: Tue, 30 Nov 2010 14:27:22 -0800
+Message-ID: <AANLkTik8Wn5B9Ovn5yp5fR+Y=CyfXkqta7JpaN6EqsvE@mail.gmail.com>
+Subject: Re: 2.6.35 -> 2.6.36 panic when vlan and promisc with tg3
+From: Jesse Gross <jesse@nicira.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Michael Leun <lkml20101129@newton.leun.net>,
+        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 08:16:58PM +0300, Anton Vorontsov wrote:
-> For CNS3xxx we want to reuse the original ARM approach of booting
-> secondary CPUs. This patch factors out VExpress' code into a common
-> file, so that now platform code can call these routines.
-> 
-> Note that this patch doesn't convert VExpress platform to the
-> generic routines. Plus, there are also a lot of other platforms
-> that might benefit from this change, but we'll convert them via
-> separate patches.
+On Tue, Nov 30, 2010 at 1:20 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mardi 30 novembre 2010 à 09:59 +0100, Michael Leun a écrit :
+>> On Mon, 29 Nov 2010 16:19:06 -0800
+>> Ben Greear <greearb@candelatech.com> wrote:
+>>
+>> > On 11/29/2010 11:17 AM, Michael Leun wrote:
+>> > > UG: unable to handle kernel paging request at 01cc921c
+>> > > IP: [<c034bfce>] vlan_hwaccel_do_receive+0x59/0xd0
+>> > > *pdpt = 0000000036a2a001 *pde = 0000000000000000
+>> > > Oops: 0002 [#1] SMP
+>> > > last sysfs
+>> > >
+>> > > Then machine dead.
+>> > >
+>> > > In 2.6.35.x this did not happen (but vlans broken - cannot see vlan
+>> > > tags with tcpdump),
+>> >
+>> > Try this patch:
+>> >
+>> > http://permalink.gmane.org/gmane.linux.network/176566
+>> >
+>> > It looks like this hasn't made it into stable yet?
+>>
+>> > > To reproduce:
+>> > >
+>> > > ip link set eth0 up
+>> > > vconfig add eth0 2
+>> > > ip link set eth0 promisc on
+>>
+>> It makes it better - it does not crash anymore on this commands - but
+>> if you add an "tcpdump -i eth0 -n" at the end it does. So,
+>> unfortunately no real solution.
+>>
+>> I guess, "dropping packet no one is interested in" (as noted in the
+>> patch) does not work very well if tcpdump is actually interested?
+>>
+>
+> Could you try with following patch instead, for net/core/dev.c
+>
+> (and keep the net/8021q/vlan_core.c part)
+>
+> --- net/core/dev.c.orig
+> +++ net/core/dev.c
+> @@ -2891,6 +2891,9 @@
+>  ncls:
+>  #endif
+>
+> +       if (unlikely(vlan_tx_tag_present(skb)))
+> +               goto bypass;
+> +
+>        /* Handle special case of bridge or macvlan */
+>        rx_handler = rcu_dereference(skb->dev->rx_handler);
+>        if (rx_handler) {
+> @@ -2927,6 +2930,7 @@
+>                }
+>        }
+>
+> +bypass:
+>        if (pt_prev) {
+>                ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+>        } else {
 
-I still think that we can do better with this - especially once the
-crappy situation with the hotplug CPU code gets resolved.
+Hmm, it looks like I forgot an else between pt_prev->func() and
+kfree_skb() in my patch.  Yours is cleaner, so I like it better
+anyways (assuming it fixes the problem).
 
-The SCU does not require the pen_release code.  What currently requires
-that is the hotplug CPU code to allow offlined CPUs to be re-woken.  If
-these CPUs can be properly shutdown, and brought back online via their
-reset vector, they can be brought back online via the same method used
-for their initial boot.
-
-What that means is, as we send each individual CPU an IPI, we don't
-need the pen_release mess nor the holding pen, and all this code can go.
-
-If all that code is tied into a generic "SCU" support option, then we
-have to ensure that _all_ SCU using platforms can use this method before
-we switch to it, rather than doing it on a per-platform basis as we can
-now.
+Thanks.
