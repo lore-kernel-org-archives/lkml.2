@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab0K3Oxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:53:33 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37985 "EHLO mx3.mail.elte.hu"
+	id S1753371Ab0K3O5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:57:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13499 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753371Ab0K3Oxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:53:32 -0500
-Date: Tue, 30 Nov 2010 15:53:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101130145323.GA3291@elte.hu>
-References: <1290954299.30515.15.camel@marge.simson.net>
- <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
- <20101128201851.GA20555@elte.hu>
- <1291031593.32004.19.camel@laptop>
- <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
- <1291052268.32004.171.camel@laptop>
- <1291057565.20709.2.camel@marge.simson.net>
- <20101129192033.GA18372@elte.hu>
- <1291103647.24405.5.camel@marge.simson.net>
- <20101130141804.GB22588@elte.hu>
+	id S1751761Ab0K3O5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 09:57:14 -0500
+Date: Tue, 30 Nov 2010 09:57:12 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] maximize dispatching in block throttle
+Message-ID: <20101130145712.GD26758@redhat.com>
+References: <AANLkTi=aqMR0uNCgz40pdUG1288CMxLRnZdVxzZuBzGw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101130141804.GB22588@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.3
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.3 required=5.9 tests=BAYES_00,FUZZY_VPILL autolearn=no SpamAssassin version=3.2.5
-	0.7 FUZZY_VPILL            BODY: Attempt to obfuscate words in spam
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AANLkTi=aqMR0uNCgz40pdUG1288CMxLRnZdVxzZuBzGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 26, 2010 at 10:46:01PM +0800, Hillf Danton wrote:
+> When dispatching bio, the quantum is divided into read/write budgets,
+> and dispatching for write could not exceed the write budget even if
+> the read budget is not exhausted, either dispatching for read.
+> 
+> It is changed to exhaust the quantum, if possible, in this work for
+> dispatching bio.
+> 
+> Though it is hard to understand that 50/50 division is not selected,
+> the difference between divisions could impact little on dispatching as
+> much as quantum allows then.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
 
-another detail is that i needed this fix:
+Hi Hillf,
 
---- linux.orig/init/Kconfig
-+++ linux/init/Kconfig
-@@ -790,6 +790,7 @@ endif # NAMESPACES
- 
- config SCHED_AUTOGROUP
- 	bool "Automatic process group scheduling"
-+	select EVENTFD
- 	select CGROUPS
- 	select CGROUP_SCHED
- 	select FAIR_GROUP_SCHED
+Even if there are not enough READS/WRITES to consume the quantum, I don't
+think that it changes anyting much. The next dispatch round will be
+scheduled almost immediately (If there are bios which are ready to
+be dispatched). Look at throtl_schedule_next_dispatch().
 
-Because CGROUPS depends on eventfd infrastructure.
+Have you noticed some issues/improvements with this patch?
 
-Thanks,
+Generally READS are more latency sensitive as compared to WRITE hence
+I thought of dispatching more READS per quantum.
 
-	Ingo
+Thanks
+Vivek
+
+> 
+> --- a/block/blk-throttle.c	2010-11-01 19:54:12.000000000 +0800
+> +++ b/block/blk-throttle.c	2010-11-26 21:49:00.000000000 +0800
+> @@ -647,11 +647,16 @@ static int throtl_dispatch_tg(struct thr
+>  	unsigned int max_nr_reads = throtl_grp_quantum*3/4;
+>  	unsigned int max_nr_writes = throtl_grp_quantum - nr_reads;
+>  	struct bio *bio;
+> +	int read_throttled = 0, write_throttled = 0;
+> 
+>  	/* Try to dispatch 75% READS and 25% WRITES */
+> -
+> + try_read:
+>  	while ((bio = bio_list_peek(&tg->bio_lists[READ]))
+> -		&& tg_may_dispatch(td, tg, bio, NULL)) {
+> +		&& ! read_throttled) {
+> +		if (! tg_may_dispatch(td, tg, bio, NULL)) {
+> +			read_throttled = 1;
+> +			break;
+> +		}
+> 
+>  		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+>  		nr_reads++;
+> @@ -659,9 +664,15 @@ static int throtl_dispatch_tg(struct thr
+>  		if (nr_reads >= max_nr_reads)
+>  			break;
+>  	}
+> -
+> +	if (! bio)
+> +		read_throttled = 1;
+> + try_write:
+>  	while ((bio = bio_list_peek(&tg->bio_lists[WRITE]))
+> -		&& tg_may_dispatch(td, tg, bio, NULL)) {
+> +		&& ! write_throttled) {
+> +		if (! tg_may_dispatch(td, tg, bio, NULL)) {
+> +			write_throttled = 1;
+> +			break;
+> +		}
+> 
+>  		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+>  		nr_writes++;
+> @@ -669,7 +680,23 @@ static int throtl_dispatch_tg(struct thr
+>  		if (nr_writes >= max_nr_writes)
+>  			break;
+>  	}
+> +	if (! bio)
+> +		write_throttled = 1;
+> +
+> +	if (write_throttled && read_throttled)
+> +		goto out;
+> 
+> +	if (! (throtl_grp_quantum > nr_writes + nr_reads))
+> +		goto out;
+> +		
+> +	if (read_throttled) {
+> +		max_nr_writes = throtl_grp_quantum - nr_reads;
+> +		goto try_write;
+> +	} else {
+> +		max_nr_reads = throtl_grp_quantum - nr_writes;
+> +		goto try_read;
+> +	}
+> + out:
+>  	return nr_reads + nr_writes;
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
