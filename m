@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0K3PtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:49:10 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57959 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab0K3PtI (ORCPT
+	id S1754088Ab0K3PzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:55:00 -0500
+Received: from bay0-omc4-s16.bay0.hotmail.com ([65.54.190.218]:45383 "EHLO
+	bay0-omc4-s16.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752677Ab0K3Py6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:49:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=gkJKPpUeSVPG6sogyHGI3RnsyT1XzJ5TrYR92VKeUB8jj/TLvpEWInXI0e6NMRyVS9
-         KY+6hfGS2mwLkR+1kJH+jj4GXbRbGsY6SBnj4gGAfgCDkNFDuxE615Vp1/X9iROADcbH
-         9ivjw3/DQWzEiTgu5n5GXSgte+Y4J0T9Kd3VI=
+	Tue, 30 Nov 2010 10:54:58 -0500
+X-Greylist: delayed 407 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2010 10:54:58 EST
+X-Originating-IP: [71.6.48.170]
+X-Originating-Email: [tobynbertram@hotmail.com]
+Message-ID: <BAY130-DS5A81442DAC5CC69983A4ADE250@phx.gbl>
+From: Tobyn Bertram <tobynbertram@hotmail.com>
+To: "'Li, Yan I'" <yan.i.li@intel.com>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, "'Takashi Iwai'" <tiwai@suse.de>,
+        "'Ding, Jian-feng'" <jian-feng.ding@intel.com>,
+        <linux-kernel@vger.kernel.org>, <meego-kernel@lists.meego.com>
+References: <aefc1833eeede37ae6ea4a9ddeaa602eb7d31101.1290823698.git.yan.i.li@intel.com> <ddb890ce98e91c7422da64168b1624c1e62a02ee.1291101955.git.yan.i.li@intel.com> <20101130075026.GA15731@core.coreip.homeip.net> <20101130080759.GA17830@thyme.bj.intel.com>
+Subject: RE: [PATCH v2] Input: Bug 18122 - Support Lenovo S10-3t's 2-button ClickPad
+Date: Tue, 30 Nov 2010 07:48:12 -0800
 MIME-Version: 1.0
-In-Reply-To: <006601cb9024$c9369110$5ba3b330$%kim@samsung.com>
-References: <008201cb8c58$363980e0$a2ac82a0$%kim@samsung.com>
-	<4CEFFBE6.9040909@gmail.com>
-	<006601cb9024$c9369110$5ba3b330$%kim@samsung.com>
-Date: Tue, 30 Nov 2010 17:49:07 +0200
-Message-ID: <AANLkTinuYg2LzwZJUnpT0-b3Gi+vOJr-_fi4o874DAFG@mail.gmail.com>
-Subject: Re: [GIT PULL] Samsung fixes for 2.6.37-rc4
-From: Darius Augulis <augulis.darius@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>, ben-linux@fluff.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20101130080759.GA17830@thyme.bj.intel.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+thread-index: AcuQZbc1/7KRH9QOQD6ivgJ8oYASJQAPrQ+Q
+X-OriginalArrivalTime: 30 Nov 2010 15:48:11.0185 (UTC) FILETIME=[FDC6AA10:01CB90A5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben, Kukjin,
+I do not have a S10-3t.  I have a HP DV7t with a standard 1 button Clickpad.
+I am sorry for any confusion.
 
-could you please both find out who must 'handle' it?
-Do you think it's normal to force people to ping you for the same four
-lines patch for 4 months or more?
-I think, it's at least not optimal and not good for kernel development process.
+I think that 2 different Clickpads will need to be defined: 1 button
+Clickpads and 2 button Clickpads.  Maybe like this?
 
-thanks,
-Darius
+#define SYN_CAP_CLICKPAD1BTN(ex0c)		((ex0c) & 0x100000)
+#define SYN_CAP_CLICKPAD2BTN(ex0c)		((ex0c) & 0x000100)
 
+Tobyn
 
-On Tue, Nov 30, 2010 at 2:23 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Darius Augulis wrote:
->>
->> Hi Kukjin,
->>
-> Hi,
->
->> you have missed "serial: samsung: fix device name" again.
->> Please, don't forget to add it to your tree, better do it right now.
->> Perhaps it's fifth or sixth time when remind about that...
->>
-> I remember, I've replied about that like following.
-> Maybe you missed...
->
-> ---
->> you have missed "serial: samsung: fix device name" which is hanging here
->> for a long time and was decided to merge in 2.6.37-rc1.
->> Please, pick it up.
->>
-> Hmm...I thought it should be handled by Ben Dooks at that time.
->
-> Anyway, as Ben said, I'm thinking it should be sent upstream when merge
-> window
-> even though have missed it in the last merge window.
->
-> However, if Ben is ok to merge this during 37-rc, will merge it into
-> s5p-fixes-
-> for-linus for 37-rc.
-> ---
->
-> But I still thinking it should be handled by Ben Dooks...
+-----Original Message-----
+From: Li, Yan I [mailto:yan.i.li@intel.com] 
+Sent: Tuesday, November 30, 2010 12:08 AM
+To: Dmitry Torokhov; tobynbertram@hotmail.com
+Cc: linux-input@vger.kernel.org; Takashi Iwai; Ding, Jian-feng;
+linux-kernel@vger.kernel.org; meego-kernel@lists.meego.com
+Subject: Re: [PATCH v2] Input: Bug 18122 - Support Lenovo S10-3t's 2-button
+ClickPad
 
-handle what? You have Ben ack to merge it. I'm confused how 'optimal'
-is development process when have to ping the same people for the same
-four lines patch for 4 months. You both  Do you think I really have to
-ask help for arm, serial or linux-stable maintainers to 'hadle' this?
-Because I gave up believing it's possible to do by samsung
-maintainers.
+On Tue, Nov 30, 2010 at 03:50:26PM +0800, Dmitry Torokhov wrote:
+> On Tue, Nov 30, 2010 at 03:44:06PM +0800, Yan Li wrote:
+> > This is for kernel bug #18122 and MeeGo bug #4807, version 2.
+> > 
+> > Lenovo S10-3t's ClickPad is a 2-button ClickPad that reports BTN_LEFT
+> > and BTN_RIGHT as normal touchpad, unlike the 1-button ClickPad used in
+> > HP mini 210 that reports solely BTN_MIDDLE.
+> > 
+> > Of c0-cap response, the 1-button ClickPad has the 20-bit set while
+> > 2-button ClickPad has the 8-bit set.
+> > 
+> > This patch makes the kernel only handle 1-button ClickPad specially,
+> > and treat 2-button ClickPad as same as other normal touchpads.
+> > 
+> 
+> As Takashi mentioned, HP Clickpads have the same 0x0c signature than
+> Lenovos non-clickpads so this is not that simple. We need to wait and
+> see if Christopher will shed some light here...
 
->
-> Thanks.
->
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
->
->
+So the only exception is the one reported by tob. These are the bits
+I've collected:
+
+Yan's S10-3t: model: 1, fw: 7.4, id: 0x1e0b1, caps:
+0xd04771/0xa40000/0x4a0500 (2 button clickpad)
+tob's S10-3t: model: 1, fw: 7.4, id: 0x1e0b1, caps:
+0xd04771/0xe40000/0x5a0400 (?)
+hp Envy 14/mini210:
+              model: 1, fw: 7.4, id: 0x1e0b1, caps:
+0xd04771/0xe40000/0x5a0400 (1 button clickpad)
+
+I asked tob to double-check his model and whether his touchpad emits
+BTN_MIDDLE or not but get no reply yet. I've checked 4 S10-3t
+purchased at different dates and all of them show same exc0 cap, but I
+have to say other models selling in other parts of the world may be
+still different.
+
+-- 
+Best regards,
+Li, Yan
+
+MeeGo Team, Opensource Technology Center, SSG, Intel
+Office tel.: +86-10-82171695 (inet: 8-758-1695)
+OpenPGP key: 5C6C31EF
+IRC: yanli on network irc.freenode.net
+
