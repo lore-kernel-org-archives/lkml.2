@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab0K3Ria (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:38:30 -0500
-Received: from imap.ru.mvista.com ([213.79.90.228]:12498 "EHLO
+	id S1755163Ab0K3Ric (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:38:32 -0500
+Received: from imap.ru.mvista.com ([213.79.90.228]:12505 "EHLO
 	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752465Ab0K3Ri1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752512Ab0K3Ri1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Nov 2010 12:38:27 -0500
-Date: Tue, 30 Nov 2010 20:16:26 +0300
+Date: Tue, 30 Nov 2010 20:17:10 +0300
 From: Anton Vorontsov <avorontsov@mvista.com>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Tony Lindgren <tony@atomide.com>, Kukjin Kim <kgene.kim@samsung.com>,
@@ -20,68 +20,74 @@ Cc: Tony Lindgren <tony@atomide.com>, Kukjin Kim <kgene.kim@samsung.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-tegra@vger.kernel.org
-Subject: [PATCH v4 0/8] SMP support for CNS3xxx + some SMP SCU cleanups
-Message-ID: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
+Subject: [PATCH 7/8] ARM: tegra: Switch to generic SCU routines
+Message-ID: <20101130171710.GG24034@oksana.dev.rtsoft.ru>
+References: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+This shrinks platform-specific code a little bit.
 
-This is a reincarnation of my old series that was posted some time
-ago, i.e. http://www.spinics.net/lists/arm-kernel/msg94291.html
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
+ arch/arm/mach-tegra/platsmp.c |   36 ++----------------------------------
+ 1 files changed, 2 insertions(+), 34 deletions(-)
 
-The main change is that boot protocol routines were split into
-its own file, i.e. smp_scu_boot.c. And now there are all platforms
-converted to the common SCU routines (where possible).
+diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+index 1c0fd92..bf5433a 100644
+--- a/arch/arm/mach-tegra/platsmp.c
++++ b/arch/arm/mach-tegra/platsmp.c
+@@ -115,42 +115,10 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+  */
+ void __init smp_init_cpus(void)
+ {
+-	unsigned int i, ncores = scu_get_core_count(scu_base);
+-
+-	for (i = 0; i < ncores; i++)
+-		cpu_set(i, cpu_possible_map);
++	scu_init_cpus(scu_base);
+ }
+ 
+ void __init smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = scu_get_core_count(scu_base);
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	smp_store_cpu_info(cpu);
+-
+-	/*
+-	 * are we trying to boot more cores than exist?
+-	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	/*
+-	 * Initialise the SCU if there are more than one CPU and let
+-	 * them know where to start. Note that, on modern versions of
+-	 * MILO, the "poke" doesn't actually do anything until each
+-	 * individual core is sent a soft interrupt to get it out of
+-	 * WFI
+-	 */
+-	if (max_cpus > 1) {
+-		percpu_timer_setup();
+-		scu_enable(scu_base);
+-	}
++	scu_prepare_cpus(scu_base, max_cpus);
+ }
+-- 
+1.7.0.5
 
-Russell suggested to get rid of the holding pen thing, I believe
-this is doable, but for now I don't want to change code behaviour.
-Just consolidate it as much as possible.
-
-For convenience, the patches are available in GIT repository (based
-on Russell's devel tree):
-
-  git://git.infradead.org/users/cbou/linux-cns3xxx.git smp
-
-Diffstat looks quite good, I think. Especially, considering that
-the series contains SMP addition for a platform, :-)
-
- arch/arm/Kconfig                                   |    2 +-
- arch/arm/include/asm/smp_scu.h                     |    9 +
- arch/arm/kernel/Makefile                           |    2 +-
- arch/arm/kernel/smp_scu_boot.c                     |  149 ++++++++++++++++++
- .../headsmp.S => kernel/smp_scu_head.S}            |   11 +-
- arch/arm/mach-cns3xxx/Kconfig                      |    1 +
- arch/arm/mach-cns3xxx/Makefile                     |    1 +
- arch/arm/mach-cns3xxx/include/mach/smp.h           |   28 ++++
- arch/arm/mach-cns3xxx/platsmp.c                    |   69 +++++++++
- arch/arm/mach-omap2/omap-smp.c                     |   64 +--------
- arch/arm/mach-realview/Makefile                    |    2 +-
- arch/arm/mach-realview/hotplug.c                   |    5 +-
- arch/arm/mach-realview/platsmp.c                   |  161 ++------------------
- arch/arm/mach-s5pv310/Makefile                     |    2 +-
- arch/arm/mach-s5pv310/headsmp.S                    |   41 -----
- arch/arm/mach-s5pv310/hotplug.c                    |    5 +-
- arch/arm/mach-s5pv310/platsmp.c                    |  125 +---------------
- arch/arm/mach-tegra/platsmp.c                      |   36 +----
- arch/arm/mach-ux500/Makefile                       |    2 +-
- arch/arm/mach-ux500/headsmp.S                      |   38 -----
- arch/arm/mach-ux500/hotplug.c                      |    5 +-
- arch/arm/mach-ux500/include/mach/smp.h             |    3 -
- arch/arm/mach-ux500/platsmp.c                      |  115 +-------------
- arch/arm/mach-vexpress/Makefile                    |    2 +-
- arch/arm/mach-vexpress/headsmp.S                   |   39 -----
- arch/arm/mach-vexpress/platsmp.c                   |  150 ++-----------------
- 26 files changed, 318 insertions(+), 749 deletions(-)
- create mode 100644 arch/arm/kernel/smp_scu_boot.c
- rename arch/arm/{mach-realview/headsmp.S => kernel/smp_scu_head.S} (81%)
- create mode 100644 arch/arm/mach-cns3xxx/include/mach/smp.h
- create mode 100644 arch/arm/mach-cns3xxx/platsmp.c
- delete mode 100644 arch/arm/mach-s5pv310/headsmp.S
- delete mode 100644 arch/arm/mach-ux500/headsmp.S
- delete mode 100644 arch/arm/mach-vexpress/headsmp.S
