@@ -1,331 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab0KXSqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Nov 2010 13:46:08 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57795 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752515Ab0KXSqG (ORCPT
+	id S1754848Ab0K3XBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:01:14 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:58249 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab0K3XBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Nov 2010 13:46:06 -0500
-Date: Sat, 1 Jan 2000 13:11:04 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Hans Beck?rus <hans.beckerus@telia.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: NBD and 2.6 kernel MIPS problem
-Message-ID: <20000101121104.GA2583@ucw.cz>
-References: <4CED455F.3050709@telia.com>
+	Tue, 30 Nov 2010 18:01:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=MnQATH28Nb5aIRTa1viXLHIKr6u4K17X/9ZqbfRv2b3sM++JQZxf9kwz3tJAB0sjer
+         db0bP+HiGs86FD2PqQUw==
+Date: Tue, 30 Nov 2010 15:00:59 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Michael Leun <lkml20101129@newton.leun.net>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: kernel BUG at mm/truncate.c:475!
+In-Reply-To: <20101130194945.58962c44@xenia.leun.net>
+Message-ID: <alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com>
+References: <20101130194945.58962c44@xenia.leun.net>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CED455F.3050709@telia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, 30 Nov 2010, Michael Leun wrote:
 
-> Hi, I recently compiled the NBD kernel module for a 2.6 ucLibc
-> kernel and are experiencing
-> some crash problems. Are there any known issues with the 2.6 range
-> of kernels together with NBD?
+> happenes sporadically, cannot reproduce at will.
+> 
+> 
+> Nov 30 15:24:55 elektra kernel: [ 6604.258610] ------------[ cut here ]------------
+> Nov 30 15:24:55 elektra kernel: [ 6604.258628] kernel BUG at mm/truncate.c:475!
+> Nov 30 15:24:55 elektra kernel: [ 6604.258633] invalid opcode: 0000 [#1] PREEMPT SMP
+> Nov 30 15:24:55 elektra kernel: [ 6604.258640] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+> Nov 30 15:24:55 elektra kernel: [ 6604.258646] CPU 3
+> Nov 30 15:24:55 elektra kernel: [ 6604.258649] Modules linked in: veth fuse af_packet bridge 8021q garp stp llc vboxnetadp vboxnetflt vboxdrv nouveau ttm drm_kms_helper drm i2c_algo_bit snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ip6t_REJECT ipt_REJECT ip6t_LOG ipt_LOG xt_limit xt_recent nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_mangle iptable_mangle iptable_nat ip6table_filter ip6_tables iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables nls_utf8 loop arc4 ecb snd_hda_codec_nvhdmi iwlagn iwlcore snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep mac80211 snd_pcm ohci1394 ieee1394 cfg80211 snd_timer sdhci_pci snd sdhci pcmcia firewire_ohci e1000e mmc_core yenta_socket soundcore firewire_core pcmcia_rsrc crc_itu_t pcmcia_core ppdev mcs7830 dm9601 dell_laptop usbnet rfkill snd_page_alloc dell_wmi shpchp sr_mod parport_p!
+ c !
+>  sg cdrom wmi dcdbas intel_ips parport i
+> Nov 30 15:24:55 elektra kernel: ntel_agp i2c_i801 pci_hotplug iTCO_wdt pcspkr iTCO_vendor_support button video battery ac ext4 jbd2 crc16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt usbhid linear ehci_hcd usbcore sd_mod dm_snapshot dm_mod fan processor ahci libahci libata scsi_mod thermal thermal_sys
+> Nov 30 15:24:55 elektra kernel: [ 6604.258914]
+> Nov 30 15:24:55 elektra kernel: [ 6604.258918] Pid: 31399, comm: cut Not tainted 2.6.36.1 #2 0N5KHN/Latitude E6510
+> Nov 30 15:24:55 elektra kernel: [ 6604.258924] RIP: 0010:[<ffffffff810ee5e1>]  [<ffffffff810ee5e1>] invalidate_inode_pages2_range+0x271/0x350
+> Nov 30 15:24:55 elektra kernel: [ 6604.258939] RSP: 0018:ffff8800774d5b58  EFLAGS: 00010246
+> Nov 30 15:24:55 elektra kernel: [ 6604.258944] RAX: 0000000000000000 RBX: ffffea0001ea2f40 RCX: ffff8800c05a5bd0
+> Nov 30 15:24:55 elektra kernel: [ 6604.258950] RDX: 0000000000000000 RSI: ffff8800774d5a28 RDI: ffff8800c0521a18
+> Nov 30 15:24:55 elektra kernel: [ 6604.258956] RBP: ffff8800774d5c38 R08: ffff8800c05a5bd0 R09: ffff8800774d5ae8
+> Nov 30 15:24:55 elektra kernel: [ 6604.258962] R10: 0000000000000008 R11: 0000000000000001 R12: ffff8800774d5b98
+> Nov 30 15:24:55 elektra kernel: [ 6604.258969] R13: 0000000000000000 R14: ffff8800c05219d8 R15: 0000000000000000
+> Nov 30 15:24:55 elektra kernel: [ 6604.258980] FS:  0000000000000000(0000) GS:ffff880001cc0000(0000) knlGS:0000000000000000
+> Nov 30 15:24:55 elektra kernel: [ 6604.258992] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> Nov 30 15:24:55 elektra kernel: [ 6604.258999] CR2: 00007f3ad2337290 CR3: 00000000850b3000 CR4: 00000000000006e0
+> Nov 30 15:24:55 elektra kernel: [ 6604.259010] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Nov 30 15:24:55 elektra kernel: [ 6604.259019] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Nov 30 15:24:55 elektra kernel: [ 6604.259028] Process cut (pid: 31399, threadinfo ffff8800774d4000, task ffff8800a2bbae40)
+> Nov 30 15:24:55 elektra kernel: [ 6604.259038] Stack:
+> Nov 30 15:24:55 elektra kernel: [ 6604.259042]  ffffffff81074300 ffff8800c05219f0 00000001774d5b60 0000000000000001
+> Nov 30 15:24:55 elektra kernel: [ 6604.259054] <0> ffffffffffffffff 00000000c41fec70 000000000000000e 0000000000000000
+> Nov 30 15:24:55 elektra kernel: [ 6604.259069] <0> ffffea0001ea2f40 ffffea0001a246c8 ffffea0001a24690 ffffea0001a47348
+> Nov 30 15:24:55 elektra kernel: [ 6604.259087] Call Trace:
+> Nov 30 15:24:55 elektra kernel: [ 6604.259094]  [<ffffffff81074300>] ? autoremove_wake_function+0x0/0x40
+> Nov 30 15:24:55 elektra kernel: [ 6604.259101]  [<ffffffff810ee6d2>] invalidate_inode_pages2+0x12/0x20
+> Nov 30 15:24:55 elektra kernel: [ 6604.259111]  [<ffffffffa0848ce0>] fuse_finish_open+0x60/0x70 [fuse]
+> Nov 30 15:24:55 elektra kernel: [ 6604.259118]  [<ffffffffa0848d71>] fuse_open_common+0x81/0x90 [fuse]
+> Nov 30 15:24:55 elektra kernel: [ 6604.259125]  [<ffffffffa0848d80>] ? fuse_open+0x0/0x10 [fuse]
+> Nov 30 15:24:55 elektra kernel: [ 6604.259132]  [<ffffffffa0848d8b>] fuse_open+0xb/0x10 [fuse]
+> Nov 30 15:24:55 elektra kernel: [ 6604.259139]  [<ffffffff81137a1a>] __dentry_open+0x11a/0x3c0
+> Nov 30 15:24:55 elektra kernel: [ 6604.259147]  [<ffffffff811efbda>] ? security_inode_permission+0x1a/0x20
+> Nov 30 15:24:55 elektra kernel: [ 6604.259154]  [<ffffffff81138cc4>] nameidata_to_filp+0x54/0x70
+> Nov 30 15:24:55 elektra kernel: [ 6604.259160]  [<ffffffff81147168>] do_last+0x488/0x760
+> Nov 30 15:24:55 elektra kernel: [ 6604.259166]  [<ffffffff81147868>] do_filp_open+0x428/0x670
+> Nov 30 15:24:55 elektra kernel: [ 6604.259173]  [<ffffffffa0842983>] ? fuse_request_free+0x13/0x20 [fuse]
+> Nov 30 15:24:55 elektra kernel: [ 6604.259181]  [<ffffffffa0842a48>] ? fuse_put_request+0xb8/0xc0 [fuse]
+> Nov 30 15:24:55 elektra kernel: [ 6604.259193]  [<ffffffff81138d40>] do_sys_open+0x60/0x120
+> Nov 30 15:24:55 elektra kernel: [ 6604.259205]  [<ffffffff81138e1b>] sys_open+0x1b/0x20
+> Nov 30 15:24:55 elektra kernel: [ 6604.259217]  [<ffffffff81002f02>] system_call_fastpath+0x16/0x1b
+> Nov 30 15:24:55 elektra kernel: [ 6604.259228] Code: fe ff ff 0f 1f 80 00 00 00 00 48 89 c6 31 c9 48 c1 e6 0c ba 00 10 00 00 4c 89 f7 e8 ba 37 01 00 8b 43 0c 85 c0 0f 88 2e ff ff ff <0f> 0b 0f 1f 44 00 00 48 89 df e8 30 39 ff ff 8b 85 50 ff ff ff
+> Nov 30 15:24:55 elektra kernel: [ 6604.259394] RIP  [<ffffffff810ee5e1>] invalidate_inode_pages2_range+0x271/0x350
+> Nov 30 15:24:55 elektra kernel: [ 6604.259412]  RSP <ffff8800774d5b58>
+> Nov 30 15:24:55 elektra kernel: [ 6604.265642] ---[ end trace 019ef068b5f8e921 ]---
 
-Nothing known to me, but I no longer maintain nbd. I suggest you ask
-lkml and Paul...
+BUG_ON(page_mapped(page)) in invalidate_inode_pages2_range():
+that's interesting, it may relate to another BUG_ON(page_mapped(page))
+that's been reported recently.
 
-									Pavel
+This is a 2.6.36.1 kernel you're running: any idea what was the first
+kernel on which you started seeing such errors?  and what was the last
+good kernel on which you ran the same kind of load but saw no problems?
 
-> The nbd-server and nbd-client seems ok though and handshaking works.
-> The platform is MIPS based.
-> 
-> I also get these syslog entries when doing insmod:
-> 
-> nbd: no version for "struct_module" found: kernel tainted.
-> nbd: registered device at major 43
-> 
-> The major device information I understand but not the first one.
-> 
-> Best regards,
-> Hans
-> 
-> /tmp/usbmounts/sda1 # ./nbd-client 192.168.0.30 1024 /dev/nbd/0
-> Negotiation: ..size = 20480KB
-> bs=1024, sz=20480
-> 
-> /tmp/usbmounts/sda1 # mkdir /tmp/x
-> /tmp/usbmounts/sda1 # mount /dev/nbd/0 /tmp/x
-> Segmentation fault
-> 
-> syslog output:
-> 
-> CPU 0 Unable to handle kernel paging request at virtual address
-> 0000c604, epc == 803100c4, ra == c0076ccc
-> Oops in arch/mips/mm/fault.c::do_page_fault, line 229[#1]:
-> Cpu 0
-> $ 0   : 00000000 10007f00 00000050 00000050
-> $ 4   : 0000c5f8 8083c18c 0000c5f8 8083c18c
-> $ 8   : 812b1c24 812b1c2c 00000000 810f9428
-> $12   : 00000000 00001269 81a1ff7c 805aad20
-> $16   : 812b1c10 806860f8 8159804c 812b1c18
-> $20   : 00000002 801ad7cc 80028000 00000000
-> $24   : 00000000 c0076c70
-> $28   : 812b0000 812b1ba8 00000001 c0076ccc
-> Hi    : 00000000
-> Lo    : 00000002
-> epc   : 803100c4 elv_remove_request+0x14/0x58     Tainted: GF
-> ra    : c0076ccc do_nbd_request+0x5c/0x3b8 [nbd]
-> Status: 10007f02    KERNEL EXL
-> Cause : c8808008
-> BadVA : 0000c604
-> PrId  : 00019378
-> Modules linked in: nbd ohci_hcd ehci_hcd sata_mars libata
-> Process mount (pid: 657, threadinfo=812b0000, task=810f9428)
-> Stack : 00000000 812b1c18 80313a94 80313a84 8083c18c 812b1bbc
-> 812b1c10 806860f8
->         00000000 80313af0 80160888 812b1bbc 812b1bbc 812b1bdc
-> 801ad810 806d9bc0
->         00000000 00000001 80316378 812b1bdc 80432350 00000000
-> 806d9bc0 00000001
->         80490c30 0000000c 800b5c04 00000002 00000000 810f9428
-> 801608cc 806860f8
->         806860f8 00000000 800b5c04 00000002 00000000 810f9428
-> 801608cc 812b1c24
->         ...
-> Call Trace:
->  [<80313a94>] __generic_unplug_device+0x3c/0x64
->  [<80313a84>] __generic_unplug_device+0x2c/0x64
->  [<80313af0>] generic_unplug_device+0x34/0x78
->  [<80160888>] autoremove_wake_function+0x0/0x44
->  [<801ad810>] sync_buffer+0x44/0x5c
->  [<80316378>] submit_bio+0xc4/0xe0
->  [<80432350>] out_of_line_wait_on_bit+0x1d8/0x240
->  [<801608cc>] wake_bit_function+0x0/0x9c
->  [<801608cc>] wake_bit_function+0x0/0x9c
->  [<801b163c>] submit_bh+0x1bc/0x344
->  [<801b66a0>] __bread+0x1e4/0x21c
->  [<801b6678>] __bread+0x1bc/0x21c
->  [<801ba2bc>] sb_set_blocksize+0x28/0x6c
->  [<8021a27c>] ext3_fill_super+0x188/0x17fc
->  [<8021a230>] ext3_fill_super+0x13c/0x17fc
->  [<802d288c>] snprintf+0x14/0x20
->  [<801fedf4>] disk_name+0x44/0xc4
->  [<801b9c9c>] get_sb_bdev+0x29c/0x308
->  [<8017dff8>] kmem_cache_alloc+0x5c/0x98
->  [<8017a610>] __get_free_pages+0x2c/0x64
->  [<8021c7f4>] ext3_get_sb+0x18/0x24
->  [<8021a0f4>] ext3_fill_super+0x0/0x17fc
->  [<801b9f38>] do_kern_mount+0x68/0x1c0
->  [<801b9f00>] do_kern_mount+0x30/0x1c0
->  [<801c8ca4>] path_lookup+0x524/0x548
->  [<8017a258>] __alloc_pages+0x110/0x430
->  [<801e0404>] do_mount+0x810/0x874
->  [<801fe228>] filesystems_read_proc+0x34/0x6c
->  [<8017a610>] __get_free_pages+0x2c/0x64
->  [<80120900>] tlb_do_page_fault_0+0x100/0x108
->  [<8017a258>] __alloc_pages+0x110/0x430
->  [<8017a610>] __get_free_pages+0x2c/0x64
->  [<801dfb04>] copy_mount_options+0x3c/0x12c
->  [<80433d60>] __lock_text_end+0xea0/0x16d8
->  [<801e0f00>] sys_mount+0xa4/0x100
->  [<801abbd8>] sys_read+0x58/0xa0
->  [<801978c0>] sys_brk+0x100/0x128
->  [<8011dea0>] stack_done+0x20/0x3c
->  [<8011dea0>] stack_done+0x20/0x3c
-> 
-> 
-> Code: 8ca20008  30420050  24030050 <14430004> 8c88000c  8c82015c
-> 24420001  ac82015c  8cc20008
-> eth0 Regs : 0xb8016000
->  00 1c 85 0b 6c 49 00 00 00 00 00 80 00 00 00 00
->  1a 11 76 d3 00 00 00 00 00 00 00 00 00 00 00 00
->  1e 2a 58 a9 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 02 03 f5 00 00
->  00 00 0c 00 00 00 00 0e 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 e0 00 00 00 84 01 78 6d
->  08 0a 04 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> eth0 Regs : 0xb8016100
->  a1 98 54 00 00 11 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  a1 98 50 00 00 13 02 00 00 00 00 00 00 00 00 00
-> eth0 Regs : 0xb8016200
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  12 00 10 00 00 0c 34 0c 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> eth0 RxFDP : 0xa1985000
->  00 08 00 80 10 50 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 40 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 20 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 b6 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 40 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 30 0d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 0e 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 8d 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 10 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 40 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 10 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 b0 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 f0 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 a0 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 20 67 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 70 4d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 53 01 00 00 00 00 00 00 00 00
->  00 08 00 80 10 90 51 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 8d 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 8f 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 40 52 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 20 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 60 02 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 80 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 00 0b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 4b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 f0 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 a0 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 80 9a 01 00 00 00 00 00 00 00 00
->  00 08 00 80 10 e0 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 30 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 d0 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 d0 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 b0 8d 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 8f 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 20 b8 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 80 0e 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 70 52 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 30 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 30 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 e0 41 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 4c 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 d0 4b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 00 3c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 a0 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 f0 9a 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 05 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 70 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 90 a7 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 20 9d 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 c0 09 00 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 50 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 70 4e 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 80 9c 01 00 00 00 00 ff ff 00 00
->  00 08 00 80 10 b0 9b 01 00 00 00 00 ff ff 00 00
->  00 08 00 c0 10 70 0e 01 00 00 00 00 ff ff 00 00
-> note: mount[657] exited with preempt_count 1
-> scheduling while atomic: mount/0x10000001/657
-> Call Trace:
->  [<8042f9f8>] schedule+0x74/0xe18
->  [<804316e4>] cond_resched+0x44/0x84
->  [<801905d8>] unmap_vmas+0x514/0x5a4
->  [<80182258>] __pagevec_lru_add_active+0x28c/0x2b0
->  [<8018280c>] lru_add_drain+0x22c/0x288
->  [<80197970>] exit_mmap+0x88/0x21c
->  [<80138c5c>] mmput+0xf0/0x268
->  [<8013e3b4>] printk+0x1c/0x28
->  [<80141000>] do_exit+0x1cc/0x11cc
->  [<8011afec>] __die_if_kernel+0x0/0x30
->  [<8011afbc>] __die+0xd4/0x104
->  [<8013e3b4>] printk+0x1c/0x28
->  [<801202a4>] do_page_fault+0x314/0x450
->  [<803100c4>] elv_remove_request+0x14/0x58
->  [<c0076ccc>] do_nbd_request+0x5c/0x3b8 [nbd]
->  [<8017a258>] __alloc_pages+0x110/0x430
->  [<80176fe8>] mempool_alloc+0x88/0x1dc
->  [<80160888>] autoremove_wake_function+0x0/0x44
->  [<80160888>] autoremove_wake_function+0x0/0x44
->  [<801ad7cc>] sync_buffer+0x0/0x5c
->  [<80120900>] tlb_do_page_fault_0+0x100/0x108
->  [<803195b8>] exact_lock+0x10/0x28
->  [<801ad7cc>] sync_buffer+0x0/0x5c
->  [<c0076c70>] do_nbd_request+0x0/0x3b8 [nbd]
->  [<c0076ccc>] do_nbd_request+0x5c/0x3b8 [nbd]
->  [<803100c4>] elv_remove_request+0x14/0x58
->  [<80313a94>] __generic_unplug_device+0x3c/0x64
->  [<80313a84>] __generic_unplug_device+0x2c/0x64
->  [<80313af0>] generic_unplug_device+0x34/0x78
->  [<80160888>] autoremove_wake_function+0x0/0x44
->  [<801ad810>] sync_buffer+0x44/0x5c
->  [<80316378>] submit_bio+0xc4/0xe0
->  [<80432350>] out_of_line_wait_on_bit+0x1d8/0x240
->  [<801608cc>] wake_bit_function+0x0/0x9c
->  [<801608cc>] wake_bit_function+0x0/0x9c
->  [<801b163c>] submit_bh+0x1bc/0x344
->  [<801b66a0>] __bread+0x1e4/0x21c
->  [<801b6678>] __bread+0x1bc/0x21c
->  [<801ba2bc>] sb_set_blocksize+0x28/0x6c
->  [<8021a27c>] ext3_fill_super+0x188/0x17fc
->  [<8021a230>] ext3_fill_super+0x13c/0x17fc
->  [<802d288c>] snprintf+0x14/0x20
->  [<801fedf4>] disk_name+0x44/0xc4
->  [<801b9c9c>] get_sb_bdev+0x29c/0x308
->  [<8017dff8>] kmem_cache_alloc+0x5c/0x98
->  [<8017a610>] __get_free_pages+0x2c/0x64
->  [<8021c7f4>] ext3_get_sb+0x18/0x24
->  [<8021a0f4>] ext3_fill_super+0x0/0x17fc
->  [<801b9f38>] do_kern_mount+0x68/0x1c0
->  [<801b9f00>] do_kern_mount+0x30/0x1c0
->  [<801c8ca4>] path_lookup+0x524/0x548
->  [<8017a258>] __alloc_pages+0x110/0x430
->  [<801e0404>] do_mount+0x810/0x874
->  [<801fe228>] filesystems_read_proc+0x34/0x6c
->  [<8017a610>] __get_free_pages+0x2c/0x64
->  [<80120900>] tlb_do_page_fault_0+0x100/0x108
->  [<8017a258>] __alloc_pages+0x110/0x430
->  [<8017a610>] __get_free_pages+0x2c/0x64
->  [<801dfb04>] copy_mount_options+0x3c/0x12c
->  [<80433d60>] __lock_text_end+0xea0/0x16d8
->  [<801e0f00>] sys_mount+0xa4/0x100
->  [<801abbd8>] sys_read+0x58/0xa0
->  [<801978c0>] sys_brk+0x100/0x128
->  [<8011dea0>] stack_done+0x20/0x3c
->  [<8011dea0>] stack_done+0x20/0x3c
-> 
-> 
-> 
-> 
-> 
-> 
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Hugh
