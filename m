@@ -1,83 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab0K3JKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:10:33 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59221 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754693Ab0K3JKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:10:30 -0500
-Date: Tue, 30 Nov 2010 09:09:46 GMT
-From: tip-bot for Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, pjt@google.com,
-        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, pjt@google.com, efault@gmx.de,
-        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
-In-Reply-To: <20101130005740.080828123@google.com>
-References: <20101130005740.080828123@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix unregister_fair_sched_group()
-Message-ID: <tip-822bc180a7f7a7bc5fcaaea195f41b487cc8cae8@git.kernel.org>
-Git-Commit-ID: 822bc180a7f7a7bc5fcaaea195f41b487cc8cae8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 09:09:48 +0000 (UTC)
+	id S1754900Ab0K3JL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:11:57 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:48050 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab0K3JLy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 04:11:54 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+Subject: Re: [v4] ppc44x:PHY fixup for USB on canyonlands board
+Message-Id: <mdm-canyonlands-reply2@mdm.bga.com>
+In-Reply-To: <201011291313.oATDD1AF028975@amcc.com>
+References: <201011291313.oATDD1AF028975@amcc.com>
+To: Rupjyoti Sarmah <rsarmah@amcc.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, rsarmah@apm.com,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>
+Date: Tue, 30 Nov 2010 03:11:27 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  822bc180a7f7a7bc5fcaaea195f41b487cc8cae8
-Gitweb:     http://git.kernel.org/tip/822bc180a7f7a7bc5fcaaea195f41b487cc8cae8
-Author:     Paul Turner <pjt@google.com>
-AuthorDate: Mon, 29 Nov 2010 16:55:40 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 30 Nov 2010 10:07:10 +0100
+I prepared these comments for v1, but aparently forgot to send them,
+so I'll do so now.
 
-sched: Fix unregister_fair_sched_group()
 
-In the flipping and flopping between calling
-unregister_fair_sched_group() on a per-cpu versus per-group basis
-we ended up in a bad state.
+On Mon, 29 Nov 2010 about 03:13:01 -0000, Rupjyoti Sarmah wrote:
+> This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
+> 
+> Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+> 
+> ---
+> index a303703..3c5d63c 100644
+> --- a/arch/powerpc/boot/dts/canyonlands.dts
+> +++ b/arch/powerpc/boot/dts/canyonlands.dts
+> @@ -224,6 +224,13 @@
+>  					};
+>  				};
+>  
+> +				cpld@2,0 {
+> +					#address-cells = <1>;
+> +					#size-cells = <1>;
 
-Remove from the list for the passed cpu as opposed to some
-arbitrary index.
+why does this node have #address-cells and #size-cells but no children? 
 
-( This fixes explosions w/ autogroup as well as a group
-  creation/destruction stress test. )
+> +					compatible = "amcc,ppc460ex-bcsr";
+> +					reg = <2 0x0 0x9>;
+> +				};
+> +
+>  				ndfc@3,0 {
+>  					compatible = "ibm,ndfc";
+>  					reg = <0x00000003 0x00000000 0x00002000>;
+..
+> diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
+> new file mode 100644
+> index 0000000..4917c31
+> --- /dev/null
+> +++ b/arch/powerpc/platforms/44x/canyonlands.c
+> @@ -0,0 +1,120 @@
+> +
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Paul Turner <pjt@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>
-LKML-Reference: <20101130005740.080828123@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> +static __initdata struct of_device_id ppc44x_of_bus[] = {
+..
+> +static int __init ppc44x_device_probe(void)
+> +{
+> +	of_platform_bus_probe(NULL, ppc44x_of_bus, NULL);
+> +
+> +	return 0;
+> +}
+> +machine_device_initcall(canyonlands, ppc44x_device_probe);
+> +
+> +/* Using this code only for the Canyonlands board.  */
+> +
+> +static int __init ppc44x_probe(void)
+> +{
+> +	unsigned long root = of_get_flat_dt_root();
+> +	if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
+> +		ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
+> +		return 1;
+> +		}
+> +	return 0;
+> +}
+> +
+> +/* USB PHY fixup code on Canyonlands kit. */
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 35a6373..66ef579 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8085,7 +8085,6 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long flags;
--	int i;
- 
- 	/*
- 	* Only empty task groups can be destroyed; so we can speculatively
-@@ -8095,7 +8094,7 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
- 		return;
- 
- 	raw_spin_lock_irqsave(&rq->lock, flags);
--	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
-+	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
- #else /* !CONFG_FAIR_GROUP_SCHED */
+All of the above have ppc44x prefix, but have been copied to this
+canyonlands file.   While there is no build error because they
+are all static it will be less confusing if they had a canyonlands
+prefix instead.
+
+> +
+> +static int __init ppc460ex_canyonlands_fixup(void)
+> +{
+> +	u8 __iomem *bcsr ;
+> +	void __iomem *vaddr;
+> +	struct device_node *np;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
+> +	if (!np) {
+> +		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	bcsr = of_iomap(np, 0);
+> +	of_node_put(np);
+> +
+> +	if (!bcsr) {
+> +		printk(KERN_CRIT "Could not remap bcsr\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
+> +	vaddr = of_iomap(np, 0);
+> +	if (!vaddr) {
+> +		printk(KERN_CRIT "Could not get gpio node address\n");
+> +		return -ENODEV;
+> +	}
+> +	/* Disable USB, through the BCSR7 bits */
+> +	setbits8(&bcsr[7], BCSR_USB_EN);
+> +
+> +	/* Wait for a while after reset */
+> +	msleep(100);
+> +
+> +	/* Enable USB here */
+> +	clrbits8(&bcsr[7], BCSR_USB_EN);
+> +
+> +	/*
+> +	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
+> +	 * source after USB reset.This configuration is done through GPIO0_TSRH
+> +	 * and GPIO0_OSRH bits 0:1 and 6:7.
+
+Missing spaces before the second sentence.
+
+Rather then telling us which bits are being set, which is fairly
+obvoius from the code, it would be more helpful to say what
+alternate1 output source means.
+
+I'm curious why you set these after the reset when they were not
+set before.  Should they be set to something else temporarly during
+the reset?
+
+> +	 */
+> +	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
+> +	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
+> +	of_node_put(np);
+> +	return 0;
+
+The error paths in this function leave incorrect refcounts on the
+nodes, and no path does of_unmap of the regions even though the
+variables with the address goes out of scope.
+
+> +}
+> +machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
+> +define_machine(canyonlands) {
+> +	.name = "Canyonlands",
+> +	.probe = ppc44x_probe,
+> +	.progress = udbg_progress,
+> +	.init_IRQ = uic_init_tree,
+> +	.get_irq = uic_get_irq,
+> +	.restart = ppc4xx_reset_system,
+> +	.calibrate_decr = generic_calibrate_decr,
+> +};
+
+
+Also, you shouldn't need the select PPC44x_SIMPLE in the CANYONLANDS
+stanza in arch/powerpc/platforms/44x/Kconfig.
+
+milton
