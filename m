@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab0K3XaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:30:05 -0500
-Received: from vms173005pub.verizon.net ([206.46.173.5]:48894 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab0K3XaD (ORCPT
+	id S1752063Ab0K3XaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:30:24 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39206 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab0K3XaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:30:03 -0500
-Date: Tue, 30 Nov 2010 18:29:42 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        rui.zhang@intel.com
-Subject: [PATCH] ACPI: video: fix build error when VIDEO_OUTPUT_CONTROL=n
-In-reply-to: <1288292779-23347-1-git-send-email-jwjstone@fastmail.fm>
-Message-id: <alpine.LFD.2.00.1011301828410.3354@x980>
-References: <1288292779-23347-1-git-send-email-jwjstone@fastmail.fm>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 30 Nov 2010 18:30:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:subject
+         :x-enigmail-version:content-type:content-transfer-encoding;
+        b=CL2GMPHicwMw1DYfTPV1WUe46ud83azGLIXt1o6IKv12bhefS4UzqcyYj7Y0G7k/1T
+         r+IKJ4Q12pz3MzfUwVtGaNJCgLGmbxcLKwfDOuWZeTi/1kc3LMbTaCR/AOwQWknJuaqI
+         fNA46ulCTi16l9uT/GYPZD2clGm/pjL5Cc1Dc=
+Message-ID: <4CF58906.4080604@doube.net>
+Date: Tue, 30 Nov 2010 23:30:14 +0000
+From: Michael Doube <michael@doube.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Fwd: Re: [tpmdd-devel] [REGRESSION] Suspend fails because of TPM
+ modules
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+>  Is this regressions from older kernels as well?
 
-drivers/built-in.o: In function `acpi_video_bus_put_devices':
-video.c:(.text+0x79663): undefined reference to
-`video_output_unregister'
-drivers/built-in.o: In function `acpi_video_bus_add':
-video.c:(.text+0x7b0b3): undefined reference to `video_output_register'
+Only inasmuch as older Ubuntu kernels loaded tpm_infineon (where suspend
+was OK) and more recent ones load tpm_tis (where suspend is broken).
+ I've never seen a tpm_tis that didn't break suspend on my hardware
+(Vaio SZ650).
 
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- include/linux/video_output.h |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+https://bugzilla.kernel.org/show_bug.cgi?id=20132
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/602049
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/657386
 
-diff --git a/include/linux/video_output.h b/include/linux/video_output.h
-index 2fb46bc..c630194 100644
---- a/include/linux/video_output.h
-+++ b/include/linux/video_output.h
-@@ -34,9 +34,23 @@ struct output_device {
- 	struct device dev;
- };
- #define to_output_device(obj) container_of(obj, struct output_device, dev)
-+#ifdef CONFIG_VIDEO_OUTPUT_CONTROL
- struct output_device *video_output_register(const char *name,
- 	struct device *dev,
- 	void *devdata,
- 	struct output_properties *op);
- void video_output_unregister(struct output_device *dev);
-+#else
-+static struct output_device *video_output_register(const char *name,
-+        struct device *dev,
-+        void *devdata,
-+        struct output_properties *op)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+static void video_output_unregister(struct output_device *dev)
-+{
-+	return;
-+};
-+#endif
- #endif
--- 
-1.7.3.2.343.g7d43d
+Michael
+
+
+
+
 
