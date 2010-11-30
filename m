@@ -1,67 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab0K3Tne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:43:34 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40338 "EHLO hera.kernel.org"
+	id S1752433Ab0K3Tqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:46:53 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45336 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab0K3Tnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:43:33 -0500
-Message-ID: <4CF553A3.8030000@kernel.org>
-Date: Tue, 30 Nov 2010 20:42:27 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org, brgerst@gmail.com, penberg@kernel.org
-Subject: Re: [PATCH UPDATED#2 04/16] x86: Use local variable to cache	smp_processor_id()
- in setup_local_APIC()
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org> <4CF53E61.1030307@kernel.org> <20101130182251.GC20818@lenovo>
-In-Reply-To: <20101130182251.GC20818@lenovo>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 19:42:58 +0000 (UTC)
+	id S1751220Ab0K3Tqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:46:51 -0500
+From: David Sin <davidsin@ti.com>
+To: Greg KH <greg@kroah.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: David Sin <davidsin@ti.com>
+Subject: [RFC v2 0/8] TI DMM-TILER driver
+Date: Tue, 30 Nov 2010 13:58:51 -0600
+Message-Id: <1291147139-23472-1-git-send-email-davidsin@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2010 07:22 PM, Cyrill Gorcunov wrote:
-> On Tue, Nov 30, 2010 at 07:11:45PM +0100, Tejun Heo wrote:
->> This is a trivial clean up.
->>
->> * Move initialization of @cpu inside preemption disabled region as
->>   suggested by Cyrill Gorcunov.
->>
->> Signed-off-by: Tejun Heo <tj@kernel.org>
->> Cc: Yinghai Lu <yinghai@kernel.org>
->> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
->> ---
->> Alright, updated yet again, but I frankly don't see the point in these
-> 
-> code structure, if we would be referring variable taken inside preempt
-> off this always look suspicious, i think you agree with me :)
+Tiling and Isometric Lightweight Engine for Rotation (TILER) driver
 
-Not really.  smp_processor_id() outside of preemption/irq disabled
-area is suspicious exactly the same and having @cpu initialized at the
-head of the function has the advantage of making it clear that the
-function as a whole is special w.r.t. which cpu it runs on.  In fact,
-I think it's actually worse to put it inside preemption disabled area
-as it gives the wrong impression that the function isn't special and
-might be able to handle being called from another cpu.  In fact,
-caching smp_processor_id() in @cpu is better than calling it every
-time as it makes it clear that the function is bound to that cpu.
+Dynamic Memory Manager (DMM) is a hardware block made by Texas Instruments.
+Within the DMM exists at least one TILER hardware component.  Its purpose is to
+organize video/image memory in a 2-dimensional fashion to limit memory
+bandwidth and facilitate 0 effort rotation and mirroring.  The TILER driver
+facilitates allocating, freeing, as well as mapping 2D blocks (areas) in the
+TILER container(s).  It also facilitates rotating and mirroring the allocated
+blocks or its rectangular subsections.
 
-That said, I really don't think this matters one way or the other.
-This function is called during smp bring up to initialize the CPU.
-Things don't get much more arch/cpu dependent than this and the code
-is thoroughly tested on each and every boot and power management
-operations.  How @cpu is cached and used just doesn't matter, which is
-why I didn't really care about it and changed as suggested.  So, let's
-just let it go.
+TERMINOLOGY
 
-Thanks.
+"slot"
 
--- 
-tejun
+The basic TILER driver operates on blocks of slots.  A slot is the granularity
+of the TILER hardware device.  For all current uses it is 4K, but could also be
+16 or 64K.  The DMM-TILER TRM refers to this as "page" but we want to separate
+this concept from the MMU pages.
+
+"page"
+
+The granularity of the MMU, used by the kernel.  This is 4K.
+
+"block"
+
+The TILER hardware component supports 1D and 2D blocks.  A 2D block is a
+rectangular arrangement of slots with arbitrary width and height in a 2D 
+container.  A 1D block is a linear arrangement of slots with arbitrary length
+ in a 1D container.  This TILER driver only supports 2D blocks.
+
+"container"
+
+The TILER driver supports an arbitrary TILER container size.  However, for
+all current implementations it is 256 by 128 slots.  The container currently can
+only be used as a 2D container.
+
+"reserved area"
+
+Each block resides within a reserved area in the container.  This area may
+be larger than the actual set of slots that a block occupies.  The reason for
+this is to protect access from one block into another.  Since TILER container is
+mmap-ped into user space as individual pages, all slots that are spanned by
+that page become visible to the user.  The tiler driver allows restricting the
+granularity of the reserved area (default alignment) as well as the mapped
+area (granularity).
+
+Changes made from RFC v1: http://www.spinics.net/lists/linux-omap/msg33867.html
+
+Santosh Shilimkar:
+1) Correct documentation location
+2) Remove ioremap of RAM
+3) Implement probe function and hwmod
+4) Correct commenting style
+5) Reduce use of barrier instances
+
+Linus Walleij:
+1) Define TCM acryonym  
+
+Russell King:
+1) Implement probe function
+2) Fix spelling mistake
+3) Remove GFP_ATOMIC flag when calling dma_alloc_coherent for PAT array mem
+4) Replace alloc_page and flush range calls with dma_alloc_coherent
+
+Nishanth Menon:
+1) Address infinite while loop when reading dmm register
+
+Benoit Cousson:
+1) Fix source file headers
+2) Correct logical errors in device file
+
+Kevin Hilman:
+1) Move DMM/TILER source code into driver/misc/tiler until a recommendation 
+is made as to where it should go
+
+List of pending items in proposed order:
+
+* Determine driver source code location
+  (Currently, resides in drivers/misc/tiler)
+* Add area packing support (multiple blocks can reside in the same band/area)
+ to optimize area use
+* Add group-ID support (to specify which blocks can reside together in the
+ same area)
+* Add multiple search directions to TCM-SiTA
+* Add 1D block support (including adding 1D search algo to TCM-SiTA)
+* Optimize mutex handling (don.t hold mutex during memory
+ allocation/mapping/cache flushing)
+* Add block reference counting, support for sharing blocks
+* Move all kernel-API-s to tiler-iface.c
+* Support orphaned block support (in preparation for process cleanup support)
+* Change block identification from physical address to key-ID pair
+ (in preparation for user space support, and process security)
+* Add support for process security (blocks from separate processes never
+ reside in the same band)
+* Support file interface (ioctl and mmap)
+* Support for buffers (ordered list of blocks that are mapped to userspace
+ together, such as YUV420sp)
+* Support 1D user buffer mapping into TILER container
+* Support for block pre-reservation (to further optimize area use)
+
+David Sin (1):
+  TILER-DMM: DMM-PAT driver for TI TILER
+
+Lajos Molnar (6):
+  TILER-DMM: Container manager interface and utility definitons
+  TILER-DMM: TILER Memory Manager interface and implementation
+  TILER-DMM: TILER interface file and documentation
+  TILER-DMM: Geometry and view manipulation functions
+  TILER-DMM: Main TILER driver implementation
+  TILER-DMM: Linking TILER driver into the Linux kernel build
+
+Ravi Ramachandra (1):
+  TILER-DMM: Sample TCM implementation: Simple TILER Allocator (SiTA)
+
+ Documentation/arm/OMAP/TILER             |  126 +++++++++
+ arch/arm/mach-omap2/Makefile             |    1 +
+ arch/arm/mach-omap2/dmm-omap44xx.c       |   81 ++++++
+ arch/arm/mach-omap2/include/mach/dmm.h   |   92 +++++++
+ arch/arm/mach-omap2/include/mach/tiler.h |  173 ++++++++++++
+ drivers/misc/Kconfig                     |    5 +
+ drivers/misc/Makefile                    |    1 +
+ drivers/misc/tiler/Kconfig               |   72 +++++
+ drivers/misc/tiler/Makefile              |    7 +
+ drivers/misc/tiler/_tiler.h              |   48 ++++
+ drivers/misc/tiler/dmm-main.c            |  187 +++++++++++++
+ drivers/misc/tiler/tcm.h                 |  171 ++++++++++++
+ drivers/misc/tiler/tcm/Makefile          |    1 +
+ drivers/misc/tiler/tcm/_tcm-sita.h       |   61 +++++
+ drivers/misc/tiler/tcm/tcm-sita.c        |  422 ++++++++++++++++++++++++++++++
+ drivers/misc/tiler/tcm/tcm-sita.h        |   28 ++
+ drivers/misc/tiler/tcm/tcm-utils.h       |   51 ++++
+ drivers/misc/tiler/tiler-geom.c          |  362 +++++++++++++++++++++++++
+ drivers/misc/tiler/tiler-iface.c         |   66 +++++
+ drivers/misc/tiler/tiler-main.c          |  405 ++++++++++++++++++++++++++++
+ drivers/misc/tiler/tmm-pat.c             |  266 +++++++++++++++++++
+ drivers/misc/tiler/tmm.h                 |  103 ++++++++
+ 22 files changed, 2729 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/arm/OMAP/TILER
+ create mode 100644 arch/arm/mach-omap2/dmm-omap44xx.c
+ create mode 100644 arch/arm/mach-omap2/include/mach/dmm.h
+ create mode 100644 arch/arm/mach-omap2/include/mach/tiler.h
+ create mode 100644 drivers/misc/tiler/Kconfig
+ create mode 100644 drivers/misc/tiler/Makefile
+ create mode 100644 drivers/misc/tiler/_tiler.h
+ create mode 100644 drivers/misc/tiler/dmm-main.c
+ create mode 100644 drivers/misc/tiler/tcm.h
+ create mode 100644 drivers/misc/tiler/tcm/Makefile
+ create mode 100644 drivers/misc/tiler/tcm/_tcm-sita.h
+ create mode 100644 drivers/misc/tiler/tcm/tcm-sita.c
+ create mode 100644 drivers/misc/tiler/tcm/tcm-sita.h
+ create mode 100644 drivers/misc/tiler/tcm/tcm-utils.h
+ create mode 100644 drivers/misc/tiler/tiler-geom.c
+ create mode 100644 drivers/misc/tiler/tiler-iface.c
+ create mode 100644 drivers/misc/tiler/tiler-main.c
+ create mode 100644 drivers/misc/tiler/tmm-pat.c
+ create mode 100644 drivers/misc/tiler/tmm.h
+
