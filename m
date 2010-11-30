@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0K3IdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 03:33:00 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43181 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab0K3Ic7 (ORCPT
+	id S1754619Ab0K3Ie3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 03:34:29 -0500
+Received: from twtpemsw2.wistron.com.tw ([220.128.88.32]:3460 "EHLO
+	twtpemsw2.wistron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278Ab0K3Ie2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 03:32:59 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4CF4B686.2020902@jp.fujitsu.com>
-Date: Tue, 30 Nov 2010 17:32:06 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 30 Nov 2010 03:34:28 -0500
+X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2010 03:34:28 EST
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        suresh.b.siddha@intel.com
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, indou.takao@jp.fujitsu.com
-Subject: [PATCH 2/2] dmar: Fix dmar interrupt affinity handling
-References: <4CF4B597.4030708@jp.fujitsu.com>
-In-Reply-To: <4CF4B597.4030708@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] intel_mid_dma: Fix section mismatch warnings
+Date: Tue, 30 Nov 2010 16:24:15 +0800
+Message-ID: <C0A2BC8065D6AE4BA759B25FE7A3795E036E7186@WHQBEMAIL1.whq.wistron>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] intel_mid_dma: Fix section mismatch warnings
+Thread-Index: AcuQZ/nYyrmoTPQoTOCOTL7hIxDOPw==
+From: <Major_Lee@wistron.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <dan.j.williams@intel.com>, <vinod.koul@intel.com>
+X-OriginalArrivalTime: 30 Nov 2010 08:24:22.0801 (UTC) FILETIME=[FE05B810:01CB9067]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the problem that changing IRQ affinity of dmar fault interrupt
-causes "No irq handler for vector (irq XX)" message and dmar fault
-interrupts are never notified after that.
+Fix the following section mismatch warnings.
 
-The dmar_msi_set_affinity() must configure upper address register of
-remapping hardware interrupt in x2apic mode.
+WARNING: drivers/built-in.o(.data+0xfa10): Section mismatch in reference
+from the variable intel_mid_dma_pci to the function
+.devinit.text:intel_mid_dma_probe()
+The variable intel_mid_dma_pci references the function __devinit
+intel_mid_dma_probe() If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the
+variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console, 
 
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+WARNING: drivers/built-in.o(.data+0xfa14): Section mismatch in reference
+from the variable intel_mid_dma_pci to the function
+.devexit.text:intel_mid_dma_remove()
+The variable intel_mid_dma_pci references the function __devexit
+intel_mid_dma_remove() If the reference is valid then annotate the
+variable with __exit* (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console, 
 
+WARNING: vmlinux.o(.data+0x18490): Section mismatch in reference from
+the variable intel_mid_dma_pci to the function
+.devinit.text:intel_mid_dma_probe()
+The variable intel_mid_dma_pci references the function __devinit
+intel_mid_dma_probe() If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the
+variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console, 
+
+WARNING: vmlinux.o(.data+0x18494): Section mismatch in reference from
+the variable intel_mid_dma_pci to the function
+.devexit.text:intel_mid_dma_remove()
+The variable intel_mid_dma_pci references the function __devexit
+intel_mid_dma_remove() If the reference is valid then annotate the
+variable with __exit* (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console, 
+
+Signed-off-by: Major Lee <major_lee@wistron.com>
 ---
- arch/x86/kernel/apic/io_apic.c |    3 +++
- 1 file changed, 3 insertions(+)
+ intel_mid_dma.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-next-20101125/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-next-20101125.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-next-20101125/arch/x86/kernel/apic/io_apic.c
-@@ -3413,6 +3413,9 @@ dmar_msi_set_affinity(struct irq_data *d
- 	msg.data |= MSI_DATA_VECTOR(cfg->vector);
- 	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
- 	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
-+	msg.address_hi = MSI_ADDR_BASE_HI;
-+	if (x2apic_enabled())
-+		msg.address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
- 
- 	dmar_msi_write(irq, &msg);
- 
-
-
+diff -uprN a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+--- a/drivers/dma/intel_mid_dma.c	2010-11-26 18:10:06.000000000
++0800
++++ b/drivers/dma/intel_mid_dma.c	2010-11-30 13:13:00.238892000
++0800
+@@ -1222,7 +1222,7 @@ static void middma_shutdown(struct pci_d
+  * Initilize the PCI device, map BARs, query driver data.
+  * Call setup_dma to complete contoller and chan initilzation
+  */
+-static int __devinit intel_mid_dma_probe(struct pci_dev *pdev,
++static int intel_mid_dma_probe(struct pci_dev *pdev,
+ 					const struct pci_device_id *id)
+ {
+ 	struct middma_device *device;
+@@ -1306,7 +1306,7 @@ err_enable_device:
+  * Free up all resources and data
+  * Call shutdown_dma to complete contoller and chan cleanup
+  */
+-static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
++static void intel_mid_dma_remove(struct pci_dev *pdev)
+ {
+ 	struct middma_device *device = pci_get_drvdata(pdev);
+ 	middma_shutdown(pdev);
