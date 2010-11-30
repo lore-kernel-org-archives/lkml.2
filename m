@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab0K3T1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:27:09 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60365 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756199Ab0K3T1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:27:07 -0500
-Date: Tue, 30 Nov 2010 20:26:48 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
-        Charles Marker <Charles.Marker@atheros.com>,
-        Jouni Malinen <Jouni.Malinen@atheros.com>,
-        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
-        Don Breslin <Don.Breslin@atheros.com>,
-        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
-Subject: Re: Challenges with doing hardware bring up with Linux first
-Message-ID: <20101130192648.GA1623@ucw.cz>
-References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
- <20101118113441.74fcdc21@lxorguk.ukuu.org.uk>
- <AANLkTikOZbtyhsk0OBb4OdUi6qj-7k_hU-aW_Pkhfpq0@mail.gmail.com>
+	id S1756299Ab0K3T3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:29:15 -0500
+Received: from sous-sol.org ([216.99.217.87]:33052 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752433Ab0K3T3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:29:14 -0500
+Date: Tue, 30 Nov 2010 11:28:45 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>
+Subject: Re: [PATCH 0/2] Fix dmar fault interrupt problems
+Message-ID: <20101130192845.GI10050@sequoia.sous-sol.org>
+References: <4CF4B597.4030708@jp.fujitsu.com>
+ <1291140553.2623.10.camel@sbsiddha-MOBL3>
+ <20101130181314.GH10050@sequoia.sous-sol.org>
+ <1291141220.2623.13.camel@sbsiddha-MOBL3>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikOZbtyhsk0OBb4OdUi6qj-7k_hU-aW_Pkhfpq0@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1291141220.2623.13.camel@sbsiddha-MOBL3>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> >> everything else can be independent code. For ath9k in particular this
-> >> means we keep ath9k_hw shared between our Operating Systems and that's
-> >> it. In addition to this I believe opening up the common drivers for
-> >
-> > The Linux copy needs to be GPL,
+* Suresh Siddha (suresh.b.siddha@intel.com) wrote:
+> On Tue, 2010-11-30 at 10:13 -0800, Chris Wright wrote:
+> > * Suresh Siddha (suresh.b.siddha@intel.com) wrote:
+> > > On Tue, 2010-11-30 at 00:28 -0800, Kenji Kaneshige wrote:
+> > > > Hi,
+> > > > 
+> > > > Here are patches to fix the following problems regarding dmar fault interrupt.
+> > > > 
+> > > > - No dmar fault event is notified in x2apic cluster mode
+> > > > - Changing IRQ affinity of dmar fault interrupt causes "No irq handler
+> > > >   for vector (irq XX)" message and dmar fault interrupts are never
+> > > >   notified after that.
+> > > 
+> > > Kenji, In addition to these two, there are couple of more patches that
+> > > are needed to fix the kexec/kdump issue that we are debugging on RH
+> > > bugzilla.
+> > > 
+> > > I will post all these 4 patches shortly. I already noticed and queued
+> > > the second patch (dmar irq migration)  you mentioned.
+> > 
+> > And one of them (the additional call to flushing existing dmar faults)
+> > is not needed.
 > 
-> GPL-Compatible you mean, right. I mean we have ath9k_hw with
-> permissive licensed files.
+> yes, that patch is not needed for the current kexec/kdump issue. But
+> nevertheless that is an issue that needs to be addressed aswell.
 
-GPL-compatible is not right word. It has to be either GPL, or so
-permissive that anyone is allowed to turn it into GPL.
+AFAICT, it just becomes a duplicate call in a narrow window.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+native_smp_prepare_cpus() (or APIC_init_uniprocessor()):
+ enable_IR_x2apic()
+  enable_IR()
+   enable_intr_remapping() <-- clears faults
+ default_setup_apic_routing()
+   enable_drhd_fault_handling() <-- added call to clear faults
+
+That's what I meant by not needed.
+
+thanks,
+-chris
