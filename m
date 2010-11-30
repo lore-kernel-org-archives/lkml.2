@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab0K3Eiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:38:52 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34510 "EHLO
+	id S1753404Ab0K3EkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:40:00 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34657 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753133Ab0K3Eiu (ORCPT
+	by vger.kernel.org with ESMTP id S1751418Ab0K3Ej7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:38:50 -0500
-Message-ID: <4CF47FBA.6050902@dsn.okisemi.com>
-Date: Tue, 30 Nov 2010 13:38:18 +0900
+	Mon, 29 Nov 2010 23:39:59 -0500
+Message-ID: <4CF47FFE.2060003@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 13:39:26 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
@@ -20,81 +20,79 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v6 17/20] can: EG20T PCH: Fix incorrect return
- processing
+Subject: [PATCH net-next-2.6 v6 18/20] can: EG20T PCH: Optimize "if" condition
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix incorrect return processing
+For reduce "if" condition, easy to read/understand the code,
+optimize "if" condition in rx/tx processing.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   19 ++++++++++---------
- 1 files changed, 10 insertions(+), 9 deletions(-)
+ drivers/net/can/pch_can.c |   26 ++++++++++----------------
+ 1 files changed, 10 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index f8b4a66..743385b 100644
+index 743385b..e11ec36 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -586,9 +586,11 @@ static irqreturn_t pch_can_interrupt(int irq, void *dev_id)
- 	struct net_device *ndev = (struct net_device *)dev_id;
- 	struct pch_can_priv *priv = netdev_priv(ndev);
+@@ -752,19 +752,16 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
  
-+	if (!pch_can_int_pending(priv))
-+		return IRQ_NONE;
-+
- 	pch_can_set_int_enables(priv, PCH_CAN_NONE);
- 	napi_schedule(&priv->napi);
--
- 	return IRQ_HANDLED;
- }
+ 	if (int_stat == PCH_STATUS_INT) {
+ 		reg_stat = ioread32(&priv->regs->stat);
+-		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
+-			if (reg_stat & PCH_BUS_OFF ||
+-			   (reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL) {
+-				pch_can_error(ndev, reg_stat);
+-				quota--;
+-			}
+-		}
  
-@@ -677,8 +679,10 @@ static int pch_can_rx_normal(struct net_device *ndev, u32 obj_num, int quota)
- 		}
- 
- 		skb = alloc_can_skb(priv->ndev, &cf);
--		if (!skb)
--			return -ENOMEM;
-+		if (!skb) {
-+			netdev_err(ndev, "alloc_can_skb Failed\n");
-+			return rcv_pkts;
+-		if (reg_stat & PCH_TX_OK)
+-			pch_can_bit_clear(&priv->regs->stat, PCH_TX_OK);
++		if ((reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) &&
++		   ((reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL)) {
++			pch_can_error(ndev, reg_stat);
++			quota--;
 +		}
  
- 		/* Get Received data */
- 		id2 = ioread32(&priv->regs->ifregs[0].id2);
-@@ -739,8 +743,8 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
- 	struct net_device *ndev = napi->dev;
- 	struct pch_can_priv *priv = netdev_priv(ndev);
- 	u32 int_stat;
--	int rcv_pkts = 0;
- 	u32 reg_stat;
-+	int quota_save = quota;
+-		if (reg_stat & PCH_RX_OK)
+-			pch_can_bit_clear(&priv->regs->stat, PCH_RX_OK);
++		if (reg_stat & (PCH_TX_OK | PCH_RX_OK))
++			pch_can_bit_clear(&priv->regs->stat,
++					  reg_stat & (PCH_TX_OK | PCH_RX_OK));
  
- 	int_stat = pch_can_int_pending(priv);
- 	if (!int_stat)
-@@ -769,10 +773,7 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
- 		goto end;
+ 		int_stat = pch_can_int_pending(priv);
+ 	}
+@@ -906,14 +903,13 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	if (can_dropped_invalid_skb(ndev, skb))
+ 		return NETDEV_TX_OK;
  
- 	if ((int_stat >= PCH_RX_OBJ_START) && (int_stat <= PCH_RX_OBJ_END)) {
--		rcv_pkts += pch_can_rx_normal(ndev, int_stat, quota);
--		quota -= rcv_pkts;
--		if (quota < 0)
--			goto end;
-+		quota -= pch_can_rx_normal(ndev, int_stat, quota);
- 	} else if ((int_stat >= PCH_TX_OBJ_START) &&
- 		   (int_stat <= PCH_TX_OBJ_END)) {
- 		/* Handle transmission interrupt */
-@@ -783,7 +784,7 @@ end:
- 	napi_complete(napi);
- 	pch_can_set_int_enables(priv, PCH_CAN_ALL);
++	tx_obj_no = priv->tx_obj;
+ 	if (priv->tx_obj == PCH_TX_OBJ_END) {
+ 		if (ioread32(&priv->regs->treq2) & PCH_TREQ2_TX_MASK)
+ 			netif_stop_queue(ndev);
  
--	return rcv_pkts;
-+	return quota_save - quota;
- }
+-		tx_obj_no = priv->tx_obj;
+ 		priv->tx_obj = PCH_TX_OBJ_START;
+ 	} else {
+-		tx_obj_no = priv->tx_obj;
+ 		priv->tx_obj++;
+ 	}
  
- static int pch_set_bittiming(struct net_device *ndev)
+@@ -932,9 +928,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	id2 |= PCH_ID_MSGVAL;
+ 
+ 	/* If remote frame has to be transmitted.. */
+-	if (cf->can_id & CAN_RTR_FLAG)
+-		id2 &= ~PCH_ID2_DIR;
+-	else
++	if (!(cf->can_id & CAN_RTR_FLAG))
+ 		id2 |= PCH_ID2_DIR;
+ 
+ 	iowrite32(id2, &priv->regs->ifregs[1].id2);
 -- 
 1.6.0.6
