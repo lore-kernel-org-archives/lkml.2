@@ -1,51 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab0K3EaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:30:08 -0500
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:51903 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204Ab0K3EaH (ORCPT
+	id S1753316Ab0K3Ebd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:31:33 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:21508 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752710Ab0K3Ebc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:30:07 -0500
-Date: Tue, 30 Nov 2010 15:30:01 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] lib: percpu counter add unless less than
- functionality
-Message-ID: <20101130043001.GC3556@dastard>
-References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
- <1290991002-18680-2-git-send-email-david@fromorbit.com>
- <1291032530.32004.26.camel@laptop>
+	Mon, 29 Nov 2010 23:31:32 -0500
+Message-ID: <4CF47E03.9050800@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 13:30:59 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291032530.32004.26.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 v6 11/20] can: EG20T PCH: Fix coding rule violation.
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 01:08:50PM +0100, Peter Zijlstra wrote:
-> On Mon, 2010-11-29 at 11:36 +1100, Dave Chinner wrote:
-> > +int percpu_counter_add_unless_lt(struct percpu_counter *fbc, s64 amount,
-> > +                                                       s64 threshold);
-> 
-> It might make sense to implement that as;
-> 
->   __percpu_counter_add_unless_lt(struct percpu_counter *fbc,
-> 				 s64 amount,
-> 				 s64 threshold,
-> 				 s32 batch);
-> 
-> That way its consistent with the __percpu_counter_add() implementation
-> where you can also specify the batch value.
+Fix coding rule violation.
 
-Good point. I'll fix that up.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+---
+ drivers/net/can/pch_can.c |   45 +++++++++++++++++++++------------------------
+ 1 files changed, 21 insertions(+), 24 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 09d0844..8e607ad 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -89,9 +89,11 @@
+ 
+ #define PCH_CAN_CLK		50000000	/* 50MHz */
+ 
+-/* Define the number of message object.
++/*
++ * Define the number of message object.
+  * PCH CAN communications are done via Message RAM.
+- * The Message RAM consists of 32 message objects. */
++ * The Message RAM consists of 32 message objects.
++ */
+ #define PCH_RX_OBJ_NUM		26
+ #define PCH_TX_OBJ_NUM		6
+ #define PCH_RX_OBJ_START	1
+@@ -126,7 +128,7 @@ enum pch_can_mode {
+ 	PCH_CAN_ALL,
+ 	PCH_CAN_NONE,
+ 	PCH_CAN_STOP,
+-	PCH_CAN_RUN
++	PCH_CAN_RUN,
+ };
+ 
+ struct pch_can_if_regs {
+@@ -290,21 +292,20 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_RXIE;
+ 
+-	/* Reading the receive buffer data from RAM to Interface1 registers */
++	/* Reading the receive buffer data from RAM to Interface1/2 registers */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ 
+-	/* Setting the IF1MASK1 register to access MsgVal and RxIE bits */
++	/* Setting the IF1/2MASK1 register to access MsgVal and RxIE bits */
+ 	iowrite32(PCH_CMASK_RDWR | PCH_CMASK_ARB | PCH_CMASK_CTRL,
+ 		  &priv->regs->ifregs[dir].cmask);
+ 
+ 	if (set) {
+-		/* Setting the MsgVal and RxIE bits */
++		/* Setting the MsgVal and RxIE/TxIE bits */
+ 		pch_can_bit_set(&priv->regs->ifregs[dir].mcont, ie);
+ 		pch_can_bit_set(&priv->regs->ifregs[dir].id2, PCH_ID_MSGVAL);
+-
+ 	} else {
+-		/* Resetting the MsgVal and RxIE bits */
++		/* Clearing the MsgVal and RxIE/TxIE bits */
+ 		pch_can_bit_clear(&priv->regs->ifregs[dir].mcont, ie);
+ 		pch_can_bit_clear(&priv->regs->ifregs[dir].id2, PCH_ID_MSGVAL);
+ 	}
+@@ -362,8 +363,7 @@ static void pch_can_config_rx_tx_buffers(struct pch_can_priv *priv)
+ 	int i;
+ 
+ 	for (i = PCH_RX_OBJ_START; i <= PCH_RX_OBJ_END; i++) {
+-		iowrite32(PCH_CMASK_RX_TX_GET,
+-			&priv->regs->ifregs[0].cmask);
++		iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[0].creq, i);
+ 
+ 		iowrite32(0x0, &priv->regs->ifregs[0].id1);
+@@ -385,16 +385,14 @@ static void pch_can_config_rx_tx_buffers(struct pch_can_priv *priv)
+ 				  0x1fff | PCH_MASK2_MDIR_MXTD);
+ 
+ 		/* Setting CMASK for writing */
+-		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+-			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+-			  &priv->regs->ifregs[0].cmask);
++		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK | PCH_CMASK_ARB |
++			  PCH_CMASK_CTRL, &priv->regs->ifregs[0].cmask);
+ 
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[0].creq, i);
+ 	}
+ 
+ 	for (i = PCH_TX_OBJ_START; i <= PCH_TX_OBJ_END; i++) {
+-		iowrite32(PCH_CMASK_RX_TX_GET,
+-			&priv->regs->ifregs[1].cmask);
++		iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[1].cmask);
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[1].creq, i);
+ 
+ 		/* Resetting DIR bit for reception */
+@@ -409,9 +407,8 @@ static void pch_can_config_rx_tx_buffers(struct pch_can_priv *priv)
+ 		pch_can_bit_clear(&priv->regs->ifregs[1].mask2, 0x1fff);
+ 
+ 		/* Setting CMASK for writing */
+-		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+-			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+-			  &priv->regs->ifregs[1].cmask);
++		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK | PCH_CMASK_ARB |
++			  PCH_CMASK_CTRL, &priv->regs->ifregs[1].cmask);
+ 
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[1].creq, i);
+ 	}
+@@ -470,8 +467,9 @@ static void pch_can_int_clr(struct pch_can_priv *priv, u32 mask)
+ 
+ 		pch_can_rw_msg_obj(&priv->regs->ifregs[0].creq, mask);
+ 	} else if ((mask >= PCH_TX_OBJ_START) && (mask <= PCH_TX_OBJ_END)) {
+-		/* Setting CMASK for clearing interrupts for
+-					 frame transmission. */
++		/*
++		 * Setting CMASK for clearing interrupts for frame transmission.
++		 */
+ 		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_CTRL | PCH_CMASK_ARB,
+ 			  &priv->regs->ifregs[1].cmask);
+ 
+@@ -596,7 +594,6 @@ static irqreturn_t pch_can_interrupt(int irq, void *dev_id)
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 
+ 	pch_can_set_int_enables(priv, PCH_CAN_NONE);
+-
+ 	napi_schedule(&priv->napi);
+ 
+ 	return IRQ_HANDLED;
+@@ -1037,11 +1034,11 @@ static u32 pch_can_get_rxtx_ir(struct pch_can_priv *priv, u32 buff_num,
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ 
+ 	if (((ioread32(&priv->regs->ifregs[dir].id2)) & PCH_ID_MSGVAL) &&
+-			((ioread32(&priv->regs->ifregs[dir].mcont)) & ie)) {
++			((ioread32(&priv->regs->ifregs[dir].mcont)) & ie))
+ 		enable = 1;
+-	} else {
++	else
+ 		enable = 0;
+-	}
++
+ 	return enable;
+ }
+ 
 -- 
-Dave Chinner
-david@fromorbit.com
+1.6.0.6
