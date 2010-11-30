@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab0K3DkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 22:40:03 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:56991 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab0K3DkB convert rfc822-to-8bit (ORCPT
+	id S1753181Ab0K3Dlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 22:41:46 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40138 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752710Ab0K3Dlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 22:40:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=EoVEyMcCPceISYfWWJX1efa5e1ldSSLqSQ2LU2WixyNCQiaWVe8teMs1Hes1TlFale
-         8e7/H1VBkRV8bn71Agsw==
-MIME-Version: 1.0
-In-Reply-To: <20101129192033.GA18372@elte.hu>
-References: <20101121133744.GA10765@elte.hu> <1290700829.4759.16.camel@maggy.simson.net>
- <1290954299.30515.15.camel@marge.simson.net> <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
- <20101128201851.GA20555@elte.hu> <1291031593.32004.19.camel@laptop>
- <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
- <1291052268.32004.171.camel@laptop> <1291057565.20709.2.camel@marge.simson.net>
- <20101129192033.GA18372@elte.hu>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 29 Nov 2010 19:39:27 -0800
-Message-ID: <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Mon, 29 Nov 2010 22:41:45 -0500
+Date: Mon, 29 Nov 2010 19:40:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print
+ support
+Message-Id: <20101129194033.393e1f70.akpm@linux-foundation.org>
+In-Reply-To: <1291087752.12648.95.camel@yhuang-dev>
+References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
+	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
+	<20101129190343.7d7cea12.akpm@linux-foundation.org>
+	<1291087752.12648.95.camel@yhuang-dev>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:20 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Mike Galbraith <efault@gmx.de> wrote:
->
->> > I know, from the testing so far we _thought_ it was fairly sane. Apparently
->> > there's still some work to do.
->>
->> Damn thing bisected to:
->>
->> commit 92fd4d4d67b945c0766416284d4ab236b31542c4
->> Merge: fe7de49 e53beac
->> Author: Ingo Molnar <mingo@elte.hu>
->> Date:   Thu Nov 18 13:22:14 2010 +0100
->>
->>     Merge commit 'v2.6.37-rc2' into sched/core
->>
->>     Merge reason: Move to a .37-rc base.
->>
->>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
->>
->> 92fd4d4d67b945c0766416284d4ab236b31542c4 is the first bad commit
->
-> Hm, i'd suggest to double check the two originator points:
->
->  e53beac - is it really 'bad' ?
->  fe7de49 - is it really 'good'?
->
-> Thanks,
->
->        Ingo
->
+On Tue, 30 Nov 2010 11:29:12 +0800 Huang Ying <ying.huang@intel.com> wrote:
 
-https://lkml.org/lkml/2010/11/29/566
+> On Tue, 2010-11-30 at 11:03 +0800, Andrew Morton wrote:
+> > On Tue, 30 Nov 2010 10:51:40 +0800 Huang Ying <ying.huang@intel.com> wrote:
+> > 
+> > > printk is one of the methods to report hardware errors to user space.
+> > > Hardware error information reported by firmware to Linux kernel is in
+> > > the format of APEI generic error status (struct
+> > > acpi_hes_generic_status).  This patch adds print support for the
+> > > format, so that the corresponding hardware error information can be
+> > > reported to user space via printk.
+> > > 
+> > > PCIe AER information print is not implemented yet.  Will refactor the
+> > > original PCIe AER information printing code to avoid code duplicating.
+> > > 
+> > > ...
+> > >  
+> > > +#define pr_pfx(pfx, fmt, ...)			\
+> > > +	printk("%s" fmt, pfx, ##__VA_ARGS__)
+> > 
+> > hm, why does so much code create little printk helper macros.  Isn't
+> > there something generic somewhere?
+> 
+> Sorry, I do not find the generic code for this helper. But I think this
+> macro may be helpful for others too, who need to determine the log level
+> only at runtime. Here corrected errors should have log level:
+> KERN_WARNING, while uncorrected errors should have log level: KERN_ERR.
 
-Should fix this.  We missed this in testing as the delay between
-last-task-exit and group destruction was always sufficiently large as
-to ensure that the task_group had aged out of shares updates (as
-opposed to requiring explicit removal).
+Oh, is that what it does.  Replacing "pfx" everywhere with "loglevel"
+(or similar) would have been much clearer?
 
-With autogroup obviously the window here is essentially instantaneous
-which leads to the buggy removal code being executed.
+> Do you think it is a good idea to make this macro generic?
+
+hm, maybe.  It's the sort of thing which gives rise to much
+chin-scratching, which is why people usually avoid doing it ;) If the
+macro is well-named and its intended use is quite clear then yes, it's
+probably worth pursuing.
+
+> > This patchset appears to implement a new kernel->userspace interface. 
+> > But that interface isn't actually described anywhere, so reviewers must
+> > reverse-engineer the interface from the implementation to be able to
+> > review the interface.  Nobody bothers doing that so we end up with an
+> > unreviewed interface, which we must maintain for eternity.
+> > 
+> > Please fully document all proposed interfaces?
+> 
+> Sorry. I don't realize that printk-ing something means implementing a
+> new kernel->userspace interface. I think the messages resulted are
+> self-explaining for human. Is it sufficient just to add example messages
+> in patch description?
+
+Well normally a printk() isn't really considered a "userspace
+interface".  This allows us to change them even though there surely
+_are_ existing tools which treat particular messages as a userspace
+interface.  But I don't recall hearing of much breakage from changed
+kernel printks.
+
+However in this case you are avowedly treating the printks as a
+userspace interface, with the intention that software be written to
+parse them, yes?  So once they're in place, we cannot change them?  That
+makes it more important.
+
