@@ -1,147 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab0K3GbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 01:31:09 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45822 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab0K3GbH (ORCPT
+	id S1753832Ab0K3GhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 01:37:22 -0500
+Received: from rtitmf2.realtek.com.tw ([60.250.210.236]:4311 "EHLO
+	mf2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab0K3GhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 01:31:07 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Free memory never fully used, swapping
-Cc: kosaki.motohiro@jp.fujitsu.com, Simon Kirby <sim@hostway.ca>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-In-Reply-To: <20101126111122.GK26037@csn.ul.ie>
-References: <20101126195118.B6E7.A69D9226@jp.fujitsu.com> <20101126111122.GK26037@csn.ul.ie>
-Message-Id: <20101130152002.8307.A69D9226@jp.fujitsu.com>
+	Tue, 30 Nov 2010 01:37:21 -0500
+From: hayeswang <hayeswang@realtek.com>
+To: "'Stephen Hemminger'" <shemminger@vyatta.com>,
+        "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: "'Ben Hutchings'" <benh@debian.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "'David Miller'" <davem@davemloft.net>,
+        <564628@bugs.debian.org>
+References: <1290772470-23713-1-git-send-email-hayeswang@realtek.com>     <1290779458.3051.45.camel@localhost>     <20101126224914.GA12266@electric-eye.fr.zoreil.com>     <1290813146.3051.58.camel@localhost>     <CE0F8B12F31D4E82860F4CE06907E98B@realtek.com.tw>     <20101129233334.GA2888@electric-eye.fr.zoreil.com> <20101129161344.059239d6@nehalam>
+Subject: RE: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
+Date: Tue, 30 Nov 2010 14:37:18 +0800
+Message-ID: <D55F10610749464CA0876CBA5325BB69@realtek.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Nov 2010 15:31:03 +0900 (JST)
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcuQI3cpgUwkWnn1QDONQBdlwtb5TgAMI5cg
+In-Reply-To: <20101129161344.059239d6@nehalam>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-> On Fri, Nov 26, 2010 at 08:03:04PM +0900, KOSAKI Motohiro wrote:
-> > Two points.
-> > 
-> > > @@ -2310,10 +2324,12 @@ loop_again:
-> > >  				 * spectulatively avoid congestion waits
-> > >  				 */
-> > >  				zone_clear_flag(zone, ZONE_CONGESTED);
-> > > +				if (i <= pgdat->high_zoneidx)
-> > > +					any_zone_ok = 1;
-> > >  			}
-> > >  
-> > >  		}
-> > > -		if (all_zones_ok)
-> > > +		if (all_zones_ok || (order && any_zone_ok))
-> > >  			break;		/* kswapd: all done */
-> > >  		/*
-> > >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> > > @@ -2336,7 +2352,7 @@ loop_again:
-> > >  			break;
-> > >  	}
-> > >  out:
-> > > -	if (!all_zones_ok) {
-> > > +	if (!(all_zones_ok || (order && any_zone_ok))) {
-> > 
-> > This doesn't work ;)
-> > kswapd have to clear ZONE_CONGESTED flag before enter sleeping.
-> > otherwise nobody can clear it.
-> > 
+Hi Romieu,
+
+Let me explain that not all of the phy settings are the ram code (or firmware).
+Some of them are the initialization sequence. Only the "Low pass filter &
+DLY_CAP fine tune from uC" is the firmware. And there is no firmware before
+RTL8111D. That is, except 8111DP, the chips which have firmware are 8111d,
+8111e,and 8105 now.
+
+Now, I would modify my patch according to the example from Ben. And I would
+update the firmware and licence to linux-firmware.
+
+Thanks for everybody who help and answer to me.
+ 
+Best Regards,
+Hayes
+
+
+> -----Original Message-----
+> From: Stephen Hemminger [mailto:shemminger@vyatta.com] 
+> Sent: Tuesday, November 30, 2010 8:14 AM
+> To: Francois Romieu
+> Cc: Hayeswang; 'Ben Hutchings'; netdev@vger.kernel.org; 
+> linux-kernel@vger.kernel.org; 'David Miller'; 564628@bugs.debian.org
+> Subject: Re: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
 > 
-> Does it not do it earlier in balance_pgdat() here
+> On Tue, 30 Nov 2010 00:33:34 +0100
+> Francois Romieu <romieu@fr.zoreil.com> wrote:
 > 
->                                 /*
->                                  * If a zone reaches its high watermark,
->                                  * consider it to be no longer congested. It's
->                                  * possible there are dirty pages backed by
->                                  * congested BDIs but as pressure is
->                                  * relieved, spectulatively avoid congestion waits
->                                  */
->                                 zone_clear_flag(zone, ZONE_CONGESTED);
->                                 if (i <= pgdat->high_zoneidx)
->                                         any_zone_ok = 1;
-
-zone_clear_flag(zone, ZONE_CONGESTED) only clear one zone status. other
-zone remain old status.
-
-
-
-> > Say, we have to fill below condition.
-> >  - All zone are successing zone_watermark_ok(order-0)
+> > hayeswang <hayeswang@realtek.com> :
+> > > Excuse me, I have some questions about the firmware patch.
+> > > 
+> > > 1. I should convert the data into the binary files 
+> (.bin). Is it right?
+> > 
+> > You may do it.
+> > 
+> > Fwiw I have cooked something for it in the attached patch 
+> #9 this WE. 
+> > Feel free to take bits from it. I will not do more changes 
+> while you work on it.
+> > 
+> > > 2. Where should I update the firmware files? Is the path the 
+> > > linux-2.6/firmware?
+> > 
+> > ! This directory is only here to contain firmware images extracted 
+> > from old ! device drivers which predate the common use of 
+> request_firmware().
+> > 
+> > It is fine for the existing code.
+> > 
+> > > However, according to 
+> linux-2.6/firmeware/README.AddingFirmware, I 
+> > > should update they to another repository:
+> > > 	
+> > > 
+> git://git.kernel.org/pub/scm/linux/kernel/git/dwmw2/linux-firmware.g
+> > > it
+> > 
+> > /me scratches head.
+> > 
+> > Assuming Realtek does not intend to stand this code / data 
+> as GPLable, yes.
+> > It will help people staying clear from non-free code, it will help 
+> > packaging something useful and it will remove some cruft 
+> from the code.
+> > 
+> > So everybody will end happy. Especially after an aspirin.
 > 
-> We should loop around at least once with order == 0 where all_zones_ok
-> is checked.
-
-But no gurantee. IOW kswapd early stopping increase GFP_ATOMIC allocation
-failure risk, I think.
-
-
-> >  - At least one zone are successing zone_watermark_ok(high-order)
+> The plan is to do away with linux-2.6/firmware entirely.
+> Distributions are shipping the firmware from linux-firmware, 
+> not the kernel files.
 > 
-> This is preferable but it's possible for kswapd to go to sleep without
-> this condition being satisified.
-
-Yes.
-
 > 
-> > 
-> > 
-> > > @@ -2417,6 +2439,7 @@ static int kswapd(void *p)
-> > >  		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> > >  		new_order = pgdat->kswapd_max_order;
-> > >  		pgdat->kswapd_max_order = 0;
-> > > +		pgdat->high_zoneidx = MAX_ORDER;
-> > 
-> > I don't think MAX_ORDER is correct ;)
-> > 
-> >         high_zoneidx = pgdat->high_zoneidx;
-> >         pgdat->high_zoneidx = pgdat->nr_zones - 1;
-> > 
-> > ?
-> > 
+> ------Please consider the environment before printing this e-mail. 
 > 
-> Bah. It should have been MAX_NR_ZONES. This happens to still work because
-> MAX_ORDER will always be higher than MAX_NR_ZONES but it's wrong.
-
-Well, no. balance_pgdat() shuldn't read pgdat->high_zoneidx. please remember why
-balance balance_pgdat() don't read pgdat->kswapd_max_order directly. wakeup_kswapd()
-change pgdat->kswapd_max_order and pgdat->high_zoneidx without any lock. so, 
-we need to afraid following bad scenario.
-
-
-T1: wakeup_kswapd(order=0, HIGHMEM)
-T2: enter balance_kswapd()
-T1: wakeup_kswapd(order=1, DMA32)
-T2: exit balance_kswapd()
-      kswapd() erase pgdat->high_zoneidx and decide to don't sleep (because
-      old-order=0, new-order=1). So now we will start unnecessary HIGHMEM
-      reclaim.
-
-
-
 > 
-> > And, we have another kswapd_max_order reading place. (after kswapd_try_to_sleep)
-> > We need it too.
-> > 
-> 
-> I'm not quite sure what you mean here. kswapd_max_order is read again
-> after kswapd tries to sleep (or wakes for that matter) but it'll be in
-> response to another caller having tried to wake kswapd indicating that
-> those high orders really are needed.
-
-My expected bad scenario was written above. 
-
-Thanks.
-
-
 
