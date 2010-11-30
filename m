@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab0K3Cno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 21:43:44 -0500
-Received: from nbd.name ([46.4.11.11]:54476 "EHLO nbd.name"
+	id S1752066Ab0K3CpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 21:45:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:61780 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab0K3Cnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 21:43:43 -0500
-Message-ID: <4CF464D6.2020507@openwrt.org>
-Date: Tue, 30 Nov 2010 03:43:34 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1751716Ab0K3CpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 21:45:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
+   d="scan'208";a="354763109"
+Date: Tue, 30 Nov 2010 09:22:05 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [2/8, v5] NUMA Hotplug Emulator: Add node hotplug emulation
+Message-ID: <20101130012205.GB3021@shaohui>
+References: <20101129091750.950277284@intel.com>
+ <20101129091935.703824659@intel.com>
+ <alpine.DEB.2.00.1011291600020.21653@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: peter@stuge.se, ath9k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [ath9k-devel] [PATCH wireless-next] ath: Rename ath_print to
- ath_debug
-References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>	 <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>	 <20101129060732.5130.qmail@stuge.se>  <4CF42C17.2070500@openwrt.org> <1291081185.16349.133.camel@Joe-Laptop>
-In-Reply-To: <1291081185.16349.133.camel@Joe-Laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011291600020.21653@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-30 2:39 AM, Joe Perches wrote:
-> On Mon, 2010-11-29 at 23:41 +0100, Felix Fietkau wrote:
->> On 2010-11-29 7:07 AM, Peter Stuge wrote:
->> > Luis R. Rodriguez wrote:
->> >> On Sun, Nov 28, 2010 at 3:53 PM, Joe Perches <joe@perches.com> wrote:
->> >> > Make the function name match the function purpose.
->> >> > ath_debug is a debug only facility.
->> >> > ath_print seems too generic a name for a debug only use.
->> >> Nack, I don't see the point.
->> > 
->> > The point is to improve readability. I like the patch.
->> And how exactly does this improve readability? Don't get me wrong, I
->> generally like to see more cleanups merged to the ath/ath9k drivers
->> (they do need it, after all).
+On Mon, Nov 29, 2010 at 04:01:18PM -0800, David Rientjes wrote:
+> On Mon, 29 Nov 2010, shaohui.zheng@intel.com wrote:
 > 
-> It's considered polite to cc the patch author.
-Sorry, I forgot to add you back. The Cc list was cleared somewhere in
-this thread and I added a few entries back, but apparently accidentally
-dropped some of them again.
+> > From: David Rientjes <rientjes@google.com>
+> > 
+> > Add an interface to allow new nodes to be added when performing memory
+> > hot-add.  This provides a convenient interface to test memory hotplug
+> > notifier callbacks and surrounding hotplug code when new nodes are
+> > onlined without actually having a machine with such hotpluggable SRAT
+> > entries.
+> > 
+> > This adds a new debugfs interface at /sys/kernel/debug/hotplug/add_node
+> > that behaves in a similar way to the memory hot-add "probe" interface.
+> > Its format is size@start, where "size" is the size of the new node to be
+> > added and "start" is the physical address of the new memory.
+> > 
+> 
+> Looks like you've changed some of the references in my changlog to 
+> node/add_node, but not others, such as the above.  I'd actually much 
+> rather prefer to take Greg's latest suggestion of doing 
+> s/hotplug/mem_hotplug instead.
+> 
+> Would it be possible to repost the patch with that change?
+> 
+> Thanks!
 
-> print is generic, debug is specific.
-> This function has a specific use for debugging
-> not a generic use all for logging.
-> 
-> If it was ath_print(level, etc) with KERN_<level>
-> passed as the first argument that'd be similar
-> to other kernel calls.  As is, it's not.
-> 
->> But in my opinion, simple renaming churn like this does nothing but
->> annoy people who want to get other work done at the same time.
-> 
-> This sort of thing can be done when other changes have
-> just been merged to minimize conflicts.
-> 
->> Consider the large number of lines touched (and the potential merge
->> conflicts with other code because of that), relative to the microscopic
->> aesthetic gain (if any).
->> 
->> Instead I'd like to see more cleanups that go beyond trivial function
->> renames.
-> 
-> I gauge my willingness to spend time on subsystems on
-> the maintainers willingness to merge things that improve
-> readability and correctness.
-I'm not trying to discourage you from spending time on improving this
-code, just doubting the usefulness of such simple function renames.
+We have two memory hotplug interfaces here:
+add_node: add a new NUMA node
+probe: add memory section
 
-- Felix
+so puting add_node to node/add_node and puting probe to memory/probe should make sense. 
+it is similar with sysfs hierarchy.
+
+if we want to move the add_node to mem_hotplug/add_node, I'd prefer to put the probe
+interface to mem_hotplug/probe since they are also related to memory hotplug.
+
+I will include this change in next patchset.
+
+-- 
+Thanks & Regards,
+Shaohui
+
