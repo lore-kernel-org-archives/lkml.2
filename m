@@ -1,133 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0K3Iqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 03:46:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:50859 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754559Ab0K3IpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 03:45:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,279,1288594800"; 
-   d="scan'208";a="578932991"
-X-Mailbox-Line: From shaohui.zheng@intel.com Tue Nov 30 15:14:36 2010
-Message-Id: <20101130071436.836186525@intel.com>
-References: <20101130071324.908098411@intel.com>
-User-Agent: quilt/0.46-1
-Date: Tue, 30 Nov 2010 15:13:26 +0800
-From: shaohui.zheng@intel.com
-To: akpm@linux-foundation.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Shaohui Zheng <shaohui.zheng@intel.com>,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: [2/8, v6] NUMA Hotplug Emulator: Add numa=possible option
-Content-Disposition: inline; filename=002-add-node-possible-option.patch
+	id S1754667Ab0K3Ir6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 03:47:58 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:40568
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753835Ab0K3Ir5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 03:47:57 -0500
+X-SpamScore: -32
+X-BigFish: VPS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i691h637h668h67dh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LCOWFP-01-7DQ-02
+X-M-MSG: 
+Date: Tue, 30 Nov 2010 09:47:53 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+CC: Joerg Roedel <joro@8bytes.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] KVM: Make the instruction emulator aware of Nested
+ Virtualization
+Message-ID: <20101130084753.GF2258@amd.com>
+References: <1290622715-8382-1-git-send-email-joerg.roedel@amd.com>
+ <4CED63DC.20608@redhat.com>
+ <20101125114640.GC6031@amd.com>
+ <20101125131351.GA9382@amd.com>
+ <4CEE7E21.3060007@redhat.com>
+ <20101125162313.GA9411@amd.com>
+ <11557.1291051418@localhost>
+ <20101129183212.GD15575@8bytes.org>
+ <18726.1291060870@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <18726.1291060870@localhost>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:  David Rientjes <rientjes@google.com>
+On Mon, Nov 29, 2010 at 03:01:10PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 29 Nov 2010 19:32:12 +0100, Joerg Roedel said:
+> > On Mon, Nov 29, 2010 at 12:23:38PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> > > (Sorry for late reply...)
+> > > 
+> > > On Thu, 25 Nov 2010 17:23:13 +0100, "Roedel, Joerg" said:
+> > > > On Thu, Nov 25, 2010 at 10:17:53AM -0500, Avi Kivity wrote:
+> > > > > On 11/25/2010 03:13 PM, Roedel, Joerg wrote:
+> > > > > What about things like adding instructions and forgetting to add the 
+> > > > > corresponding svm.c code?
+> > > > Cannot happen. Every instruction that can be intercepted with SVM is
+> > > > already handled in this patch-set.
+> > > 
+> > > Call us back when Intel releases the i9 and i11 with new instructions
+> > > that need intercept handling. ;)
+> > 
+> > How does that affect SVM?
+> 
+> It will quite possibly include instructions that can be intercepted with SVM
+> that are not in this patch set.  At which point Joerg's comment can apply - it
+> will be possible to add it in one place and forget to add it in the svm.c code.
 
-Adds a numa=possible=<N> command line option to set an additional N nodes
-as being possible for memory hotplug.  This set of possible nodes
-controls nr_node_ids and the sizes of several dynamically allocated node
-arrays.
+SVM is AMD-only. So if an instruction does not exist on AMD there will
+also be no specific intercept for it. For newly added instructions to
+the AMD ISA which can then be intercepted I have to do bringup work
+anyway. This will include adding these intercepts to the code in this
+patch-set.
 
-This allows memory hotplug to create new nodes for newly added memory
-rather than binding it to existing nodes.
-
-The first use-case for this will be node hotplug emulation which will use
-these possible nodes to create new nodes to test the memory hotplug
-callbacks and surrounding memory hotplug code.
-
-CC: Shaohui Zheng <shaohui.zheng@intel.com>
-CC: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Documentation/x86/x86_64/boot-options.txt |    4 ++++
- arch/x86/mm/numa_64.c                     |   18 +++++++++++++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -174,6 +174,10 @@ NUMA
- 		If given as an integer, fills all system RAM with N fake nodes
- 		interleaved over physical nodes.
- 
-+  numa=possible=<N>
-+		Sets an additional N nodes as being possible for memory
-+		hotplug.
-+
- ACPI
- 
-   acpi=off	Don't enable ACPI
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -33,6 +33,7 @@ s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
- int numa_off __initdata;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
-+static unsigned long __initdata numa_possible_nodes;
- 
- /*
-  * Map cpu index to node index
-@@ -611,7 +612,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- 
- #ifdef CONFIG_NUMA_EMU
- 	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, k8))
--		return;
-+		goto out;
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
-@@ -619,14 +620,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- #ifdef CONFIG_ACPI_NUMA
- 	if (!numa_off && acpi && !acpi_scan_nodes(start_pfn << PAGE_SHIFT,
- 						  last_pfn << PAGE_SHIFT))
--		return;
-+		goto out;
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
- 
- #ifdef CONFIG_K8_NUMA
- 	if (!numa_off && k8 && !k8_scan_nodes())
--		return;
-+		goto out;
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
-@@ -646,6 +647,15 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- 		numa_set_node(i, 0);
- 	memblock_x86_register_active_regions(0, start_pfn, last_pfn);
- 	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
-+out: __maybe_unused
-+	for (i = 0; i < numa_possible_nodes; i++) {
-+		int nid;
-+
-+		nid = first_unset_node(node_possible_map);
-+		if (nid == MAX_NUMNODES)
-+			break;
-+		node_set(nid, node_possible_map);
-+	}
- }
- 
- unsigned long __init numa_free_all_bootmem(void)
-@@ -675,6 +685,8 @@ static __init int numa_setup(char *opt)
- 	if (!strncmp(opt, "noacpi", 6))
- 		acpi_numa = -1;
- #endif
-+	if (!strncmp(opt, "possible=", 9))
-+		numa_possible_nodes = simple_strtoul(opt + 9, NULL, 0);
- 	return 0;
- }
- early_param("numa", numa_setup);
+	Joerg
 
 -- 
-Thanks & Regards,
-Shaohui
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
