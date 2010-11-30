@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab0K3Oc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:32:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46783 "EHLO mx1.redhat.com"
+	id S1752095Ab0K3Oge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:36:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51307 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab0K3Oc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:32:26 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20101124023238.GA26540@tiny>
-References: <20101124023238.GA26540@tiny> <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com> <1290556456.2604.14.camel@localhost.localdomain>
-To: kjhall@us.ibm.com, Serge Hallyn <serge.hallyn@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: [PATCH v1.5 3/5] key: add tpm_send command
-Date: Tue, 30 Nov 2010 14:32:00 +0000
-Message-ID: <19268.1291127520@redhat.com>
+	id S1750936Ab0K3Ogd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 09:36:33 -0500
+Date: Tue, 30 Nov 2010 09:36:31 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add rb_next in block throttle
+Message-ID: <20101130143631.GC26758@redhat.com>
+References: <AANLkTimV=6=Je=k6UW=ivJtmR0ONoTrscM2i8YJd5JjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimV=6=Je=k6UW=ivJtmR0ONoTrscM2i8YJd5JjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@canonical.com> wrote:
-
-> > +int tpm_send(u32 chip_num, void *cmd, size_t buflen)
+On Fri, Nov 26, 2010 at 10:06:27PM +0800, Hillf Danton wrote:
+> When selecting group for dispatching, the first entry of the service
+> tree is sequentially dequeued, then the first entry is recomputed by
+> calling rb_first().
 > 
-> Hate to nit-pick, but any particular reason you're not following the
-> rest of the file and using 'struct tpm_cmd_t *cmd' here?
+> When the first is removed from service tree, new first could also be
+> computed with rb_next(), since it could be faster than rb_first in
+> this special environment.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
 
-Ummm...  Something else I've just noticed...
+Ok. So set the leftmost element with the help of rb_next() at the time of
+deletion of existing leftmost element. Not sure whether it is cheaper or
+not but does not harm doing it this way.
 
-	static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
-					       size_t bufsiz)
+Have you tested it to make sure nothing is broken?
 
-would suggest that buf is read-only, but tpm_transit() keeps casting it away,
-and especially, casts it away before passing it to chip->vendor.recv()...
-This would seem to indicate a logic error somewhere.
+Thanks
+Vivek
 
-Certainly, tpm_atml_recv() modifies the buffer it is given to...
-
-I suspect the argument and reply buffer pointers should be passed separately.
-
-David
+> 
+> --- a/block/blk-throttle.c	2010-11-01 19:54:12.000000000 +0800
+> +++ b/block/blk-throttle.c	2010-11-26 21:27:40.000000000 +0800
+> @@ -251,7 +251,7 @@ static void rb_erase_init(struct rb_node
+>  static void throtl_rb_erase(struct rb_node *n, struct throtl_rb_root *root)
+>  {
+>  	if (root->left == n)
+> -		root->left = NULL;
+> +		root->left = rb_next(n);
+>  	rb_erase_init(n, &root->rb);
+>  	--root->count;
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
