@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab0K3JJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:09:44 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56749 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab0K3JJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:09:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hv/CsEQVUv8KNjmcQpoTFd0gBBUb6qGbM6EMP+Gk8pPD+CpQeWG0Til9tK0Ct5gP6n
-         /+3M35QWHcGPgynr36yfFGyX15HRvAOTxqezHiDWsGFuChLyd/qe+269w8ukFhrrVLZU
-         7qr63hnMLS3lnRwFfQKzjWZDqTZNpirOt4wFg=
-Date: Tue, 30 Nov 2010 01:09:34 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] input: mt: Add pressure to pointer emulation code
-Message-ID: <20101130090934.GC3952@core.coreip.homeip.net>
-References: <1291014802-17061-1-git-send-email-rydberg@euromail.se>
- <1291014802-17061-5-git-send-email-rydberg@euromail.se>
- <20101129094715.GA9303@core.coreip.homeip.net>
- <4CF38C67.20509@euromail.se>
+	id S1754922Ab0K3JKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:10:33 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59221 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754693Ab0K3JKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 04:10:30 -0500
+Date: Tue, 30 Nov 2010 09:09:46 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, pjt@google.com,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, efault@gmx.de,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
+In-Reply-To: <20101130005740.080828123@google.com>
+References: <20101130005740.080828123@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix unregister_fair_sched_group()
+Message-ID: <tip-822bc180a7f7a7bc5fcaaea195f41b487cc8cae8@git.kernel.org>
+Git-Commit-ID: 822bc180a7f7a7bc5fcaaea195f41b487cc8cae8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4CF38C67.20509@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 09:09:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 12:20:07PM +0100, Henrik Rydberg wrote:
-> >> @@ -124,9 +125,13 @@ void input_mt_report_pointer_emulation(struct input_dev
-> *dev)
-> 
-> >>  	if (oldest) {
-> >>  		int x = input_mt_get_value(oldest, ABS_MT_POSITION_X);
-> >>  		int y = input_mt_get_value(oldest, ABS_MT_POSITION_Y);
-> >> +		int p = input_mt_get_value(oldest, ABS_MT_PRESSURE);
-> > 
-> > What if device does not report ABS_MT_PRESSURE/ABS_PRESSURE? Do we rely
-> > on input core to suppress unsupported events? A comment would be nice...
-> 
-> 
-> Yes, the setup values are the only ones producing output here. How about this
-> addition to the function text: "The input core ensures only the KEY and ABS axes
-> already setup for this device will produce output."?
+Commit-ID:  822bc180a7f7a7bc5fcaaea195f41b487cc8cae8
+Gitweb:     http://git.kernel.org/tip/822bc180a7f7a7bc5fcaaea195f41b487cc8cae8
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Mon, 29 Nov 2010 16:55:40 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 30 Nov 2010 10:07:10 +0100
 
-Yep, that works.
+sched: Fix unregister_fair_sched_group()
 
-> 
-> > Also, is there a gelper to set up pointer emulation capabilities for MT
-> > device?
-> 
-> 
-> This is certainly the plan with time, but currently it seemed best to leave the
-> rest of the event setup code untouched.
-> 
+In the flipping and flopping between calling
+unregister_fair_sched_group() on a per-cpu versus per-group basis
+we ended up in a bad state.
 
-OK, just throwing ideas around ;)
+Remove from the list for the passed cpu as opposed to some
+arbitrary index.
 
--- 
-Dmitry
+( This fixes explosions w/ autogroup as well as a group
+  creation/destruction stress test. )
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Paul Turner <pjt@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+LKML-Reference: <20101130005740.080828123@google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 35a6373..66ef579 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8085,7 +8085,6 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	unsigned long flags;
+-	int i;
+ 
+ 	/*
+ 	* Only empty task groups can be destroyed; so we can speculatively
+@@ -8095,7 +8094,7 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
+ 		return;
+ 
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+-	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
++	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ }
+ #else /* !CONFG_FAIR_GROUP_SCHED */
