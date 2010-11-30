@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab0K3UF6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 15:05:58 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:37748 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756614Ab0K3UF5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 15:05:57 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: t9icndMVM1lkedhQ9IbTVoElV_SjsvDakDiWcihSJo_RKoH
- JZwamxuRY6pnf.XTwOyvTjZSGkvnK1mmKBvJ8lLZXvMMt1nX71iFunwiRWQF
- KbZxaY4pIqkghEsG4MC385Ew9hrsGCfKkPgi_SHbZdIK6SZZIx_7wS8g59Ks
- otvSWWYm1THgGExQFfv.0QAyaqmrjrMCa6V5CMfHxKTkRqNZ4_IBIGSGkDsy
- 0siuCjRtQTTKVyYiv8.g3OzPAP9u_AAjvaRD5_6hpW9vsYNvzVA69ZTUG8Qi
- .DurXrtRpLC2dsNK9ivB4
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 30 Nov 2010 14:05:53 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: akpm@linux-foundation.org
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [extra] timers: Use this_cpu_read
-In-Reply-To: <20101130190707.457099608@linux.com>
-Message-ID: <alpine.DEB.2.00.1011301404490.4039@router.home>
-References: <20101130190707.457099608@linux.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756604Ab0K3UHQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 15:07:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755761Ab0K3UHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 15:07:14 -0500
+Date: Tue, 30 Nov 2010 21:00:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>
+Subject: [PATCH 0/4] exec: unify compat/non-compat code
+Message-ID: <20101130200016.GD11905@redhat.com>
+References: <20101125140253.GA29371@redhat.com> <20101125193659.GA14510@redhat.com> <20101129093803.829F.A69D9226@jp.fujitsu.com> <20101129113357.GA30657@redhat.com> <20101129182332.GA21470@redhat.com> <20101130195456.GA11905@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130195456.GA11905@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: timers: Use this_cpu_read
+(remove stable)
 
-Eric asked for this.
+On 11/30, Oleg Nesterov wrote:
+>
+> I'll send the cleanups which unify compat/non-compat code on
+> top of these fixes, this is not stable material.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+On top of
 
----
- kernel/timer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	[PATCH 1/2] exec: make argv/envp memory visible to oom-killer
+	[PATCH 2/2] exec: copy-and-paste the fixes into compat_do_execve() paths
 
-Index: linux-2.6/kernel/timer.c
-===================================================================
---- linux-2.6.orig/kernel/timer.c	2010-11-30 14:01:41.000000000 -0600
-+++ linux-2.6/kernel/timer.c	2010-11-30 14:02:05.000000000 -0600
-@@ -1249,7 +1249,7 @@ static unsigned long cmp_next_hrtimer_ev
-  */
- unsigned long get_next_timer_interrupt(unsigned long now)
- {
--	struct tvec_base *base = __get_cpu_var(tvec_bases);
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
- 	unsigned long expires;
+Imho, execve code in fs/compat.c must die. It is very hard to
+maintain this copy-and-paste horror.
 
- 	spin_lock(&base->lock);
-@@ -1292,7 +1292,7 @@ void update_process_times(int user_tick)
-  */
- static void run_timer_softirq(struct softirq_action *h)
- {
--	struct tvec_base *base = __get_cpu_var(tvec_bases);
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
-
- 	hrtimer_run_pending();
-
+Oleg.
 
