@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0K3JCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:02:50 -0500
-Received: from serv04.lahn.de ([213.239.197.57]:33827 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab0K3JCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:02:47 -0500
-Date: Tue, 30 Nov 2010 09:59:44 +0100
-From: Michael Leun <lkml20101129@newton.leun.net>
-To: Ben Greear <greearb@candelatech.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: 2.6.35 -> 2.6.36 panic when vlan and promisc with tg3
-Message-ID: <20101130095944.41b5f7b6@xenia.leun.net>
-In-Reply-To: <4CF442FA.4070701@candelatech.com>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	<4CF442FA.4070701@candelatech.com>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754814Ab0K3JIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:08:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41194 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835Ab0K3JIO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 04:08:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rT9o2UyftCJElTtZLXiAQehv+fFsRjPsnJnRlRRycxwcsm5MTZt26PgF139IX32FKy
+         5zo7WpafLqy+xaYff5HpPT1CuNzYs51iQi9qtZV3KX+Nv+CPCwP06RC7Xiz9FLf6wxKj
+         Bc+5CDH33LErI0lalaX0QUImTnvtA/AYyv6Jk=
+MIME-Version: 1.0
+In-Reply-To: <4CF4B778.90604@jp.fujitsu.com>
+References: <4CF4B778.90604@jp.fujitsu.com>
+Date: Tue, 30 Nov 2010 17:08:13 +0800
+Message-ID: <AANLkTinSYu9JhqY8NAH+sNAKuO9cUZwJTxK46_8nx3Qh@mail.gmail.com>
+Subject: Re: [PATCH] genirq: fix incorrect proc spurious output
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010 16:19:06 -0800
-Ben Greear <greearb@candelatech.com> wrote:
+2010/11/30 Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>:
+> Fix the problem that all the /proc/irq/XX/spurious files shows the IRQ
+> 0 information.
+>
+> Current irq_spurious_proc_open() passes on NULL as the 3rd argument,
+> which is used as an IRQ number in irq_spurious_proc_show(), to the
+> single_open(). Because of this, all the /proc/irq/XX/spurious file
+> shows IRQ 0 information regardless of the IRQ number.
+>
+> To fix the problem, irq_spurious_proc_open() must pass on the
+> appropreate data (IRQ number) to single_open().
+>
+> Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-> On 11/29/2010 11:17 AM, Michael Leun wrote:
-> > UG: unable to handle kernel paging request at 01cc921c
-> > IP: [<c034bfce>] vlan_hwaccel_do_receive+0x59/0xd0
-> > *pdpt = 0000000036a2a001 *pde = 0000000000000000
-> > Oops: 0002 [#1] SMP
-> > last sysfs
-> >
-> > Then machine dead.
-> >
-> > In 2.6.35.x this did not happen (but vlans broken - cannot see vlan
-> > tags with tcpdump),
-> 
-> Try this patch:
-> 
-> http://permalink.gmane.org/gmane.linux.network/176566
-> 
-> It looks like this hasn't made it into stable yet?
+Looks good.
 
-> > To reproduce:
-> >
-> > ip link set eth0 up
-> > vconfig add eth0 2
-> > ip link set eth0 promisc on
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
 
-It makes it better - it does not crash anymore on this commands - but
-if you add an "tcpdump -i eth0 -n" at the end it does. So,
-unfortunately no real solution.
+BTW, it's introduced by a1afb6371bb5341057056194d1168753f6d77242
+So should we Cc'ing stable?
 
-I guess, "dropping packet no one is interested in" (as noted in the
-patch) does not work very well if tcpdump is actually interested?
-
--- 
-MfG,
-
-Michael Leun
-
+>
+> ---
+>  kernel/irq/proc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux-next-20101125/kernel/irq/proc.c
+> ===================================================================
+> --- linux-next-20101125.orig/kernel/irq/proc.c
+> +++ linux-next-20101125/kernel/irq/proc.c
+> @@ -214,7 +214,7 @@ static int irq_spurious_proc_show(struct
+>
+>  static int irq_spurious_proc_open(struct inode *inode, struct file *file)
+>  {
+> -       return single_open(file, irq_spurious_proc_show, NULL);
+> +       return single_open(file, irq_spurious_proc_show, PDE(inode)->data);
+>  }
+>
+>  static const struct file_operations irq_spurious_proc_fops = {
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
