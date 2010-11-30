@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab0K3QhM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:37:12 -0500
-Received: from kroah.org ([198.145.64.141]:42614 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab0K3QhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:37:09 -0500
-Date: Tue, 30 Nov 2010 08:24:13 -0800
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-Message-ID: <20101130162413.GA17505@kroah.com>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local>
- <201011261224.59490.arnd@arndb.de>
- <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com>
- <201011301621.48140.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011301621.48140.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752832Ab0K3QjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:39:12 -0500
+Received: from xenotime.net ([72.52.115.56]:54105 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751525Ab0K3QjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:39:10 -0500
+Date: Tue, 30 Nov 2010 08:39:08 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] DOCUMENTATION: Correct inline docs to match parm name.
+Message-Id: <20101130083908.0af69035.rdunlap@xenotime.net>
+In-Reply-To: <alpine.DEB.2.00.1011300629580.21294@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1011300629580.21294@localhost6.localdomain6>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 04:21:47PM +0100, Arnd Bergmann wrote:
-> On Tuesday 30 November 2010, Linus Walleij wrote:
-> > 2010/11/26 Arnd Bergmann <arnd@arndb.de>:
-> > 
-> > > * When you say that the devices are static, I hope you do not mean
-> > >  static in the C language sense. We used to allow devices to be
-> > >  declared as "static struct" and registered using
-> > >  platform_device_register (or other bus specific functions). This
-> > >  is no longer valid and we are removing the existing users, do not
-> > >  add new ones. When creating a platform device, use
-> > >  platform_device_register_simple or platform_device_register_resndata.
-> > 
-> > Is this part of the generic ARM runtime multi-platform kernel
-> > and device trees shebang?
-> > 
-> > The Ux500 still isn't in that sector, it needs extensive rewriting
-> > of arch/arm/mach-ux500 to be done first, so as to support e.g.
-> > U8500 and U5500 with a single kernel image.
-> > 
-> > Trying to skin that cat that as part of this review is a bit too
-> > much to ask IMO, I'd rather have the author of this driver
-> > adapt to whatever platform data registration mechanism is
-> > in place for the merge window. Else it needs fixing as part
-> > of a bigger endavour to root out compile-time platform
-> > configuration.
+On Tue, 30 Nov 2010 06:31:07 -0500 (EST) Robert P. J. Day wrote:
+
 > 
-> The 'no static devices' rule is something that Greg brought up
-> at the embedded developer session during PlumbersConf this year,
-> I wasn't aware of the problem before that either.
+> Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
 > 
-> It is not related to the multi-platform kernel work and it's
-> not ARM specific.
+> ---
 > 
-> Maybe Greg can give a short explanation of the impact of this.
-> AFAIR, static device definitions still work, but there are
-> plans to remove that capability in the future.
+>   the actual parameter name is "parent", not "dparent".
+> 
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 23702a9..eaebae4 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -1485,7 +1485,7 @@ out:
+>  /**
+>   * d_validate - verify dentry provided from insecure source
+>   * @dentry: The dentry alleged to be valid child of @dparent
+> - * @dparent: The parent dentry (known to be valid)
+> + * @parent: The parent dentry (known to be valid)
+>   *
+>   * An insecure source has sent us a dentry, here we verify it and dget() it.
+>   * This is used by ncpfs in its readdir implementation.
 
-That is exactly correct.
+I've already sent this patch to Al Viro (VFS maintainer).
 
-A struct device is a dynamically referenced thing, and as such, should
-be dynamically created and it will be automatically destroyed when it
-needs to when everyone is finished with it.  By making a struct device
-static, that kind of defeats the whole purpose of reference counting the
-thing, not to mention making freeing the object when finished a bit
-difficult :)
-
-thanks,
-
-greg k-h
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
