@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab0K3QTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:19:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19529 "EHLO mx1.redhat.com"
+	id S1754569Ab0K3QU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:20:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32497 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754267Ab0K3QTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:19:49 -0500
-Subject: Re: [PATCH] fanotify: dont destroy mark when ignore mask is cleared
-From: Eric Paris <eparis@redhat.com>
-To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20101130155951.GB4814@lsanfilippo.unix.rd.tt.avira.com>
-References: <20101130121635.277910@gmx.net>
-	 <20101130155951.GB4814@lsanfilippo.unix.rd.tt.avira.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Nov 2010 11:19:39 -0500
-Message-ID: <1291133979.3169.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751222Ab0K3QU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:20:58 -0500
+Date: Tue, 30 Nov 2010 11:20:44 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, fweisbec@gmail.com, yinghai@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, NMI: add back unknown_nmi_panic and
+ nmi_watchdog sysctls
+Message-ID: <20101130162044.GB18100@redhat.com>
+References: <1291068437-5331-1-git-send-email-dzickus@redhat.com>
+ <1291068437-5331-3-git-send-email-dzickus@redhat.com>
+ <20101130131517.GA16372@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130131517.GA16372@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 16:59 +0100, Lino Sanfilippo wrote:
-> On Tue, Nov 30, 2010 at 01:16:35PM +0100, Lino Sanfilippo wrote:
-> 
-> > I guess it is a question of safe vs racy.  Yes it is safe, nothing will
-> > explode or panic.  But we might have a race between one task removing an
-> > event type causing the mask to go to 0 and we should destroy the mark
-> > and another task adding an event type.  If it raced just right we might
-> > destroy the mark after the second task added to it.  I guess we really
-> > need to serialize fsnotify_mark() per group to solve the race...
+On Tue, Nov 30, 2010 at 04:15:17PM +0300, Cyrill Gorcunov wrote:
+> On Mon, Nov 29, 2010 at 05:07:17PM -0500, Don Zickus wrote:
+> > Originally adapted from Huang Ying's patch which moved the unknown_nmi_panic
+> > to the traps.c file.  Because the old nmi watchdog was deleted before this
+> > change happened, the unknown_nmi_panic sysctl was lost.  This re-adds it.
 > > 
-> > Do you want to take a stab at fixing these things or should I?
+> > Also, the nmi_watchdog sysctl was re-implemented and its documentation
+> > updated accordingly.
 > > 
-> > -Eric
+> > Patch-inspired-by: Huang Ying <ying.huang@intel.com>
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
 > 
-> IMHO the right thing to serialize this would be to do 
+> Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
 > 
-> LOCK(groups->mark_lock)
-> - get the inode mark
-> - set the marks mask
-> - possibly destroy the mask
-> UNLOCK(groups->mark_lock)
+> (a 'thing' below which could be addressed later)
+> ...
+> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> > index d91b07d..140344d 100644
+> > --- a/kernel/sysctl.c
+> > +++ b/kernel/sysctl.c
+> > @@ -733,6 +733,22 @@ static struct ctl_table kern_table[] = {
+> >  		.extra1		= &zero,
+> >  		.extra2		= &one,
+> >  	},
+> > +	{
+> > +		.procname       = "nmi_watchdog",
+> > +		.data           = &watchdog_enabled,
+> > +		.maxlen         = sizeof (int),
+> > +		.mode           = 0644,
+> > +		.proc_handler   = proc_dowatchdog_enabled,
+> > +	},
+> > +#endif
+> > +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
 > 
-> But we cant do this since setting the marks mask requires the lock of the mark 
-> - which would mean an incorrect lock order according to fsnotify_add_mark():
-> 
-> mark->lock
-> group->mark_lock
-> inode->i_lock
-> 
-> What we could do very easily is use another mutex instead (use an existing one like the 
-> groups notification_mutex, or a completely new one) which is responsible for synchronising
-> add_mark()/remove_mark().
+> This kinda wonders me -- do we have CONFIG_X86_LOCAL_APIC set _without_
+> CONFIG_X86? I mean CONFIG_X86_LOCAL_APIC is per x86, no?
 
-I'd think a new per group mutex would be the right way to go.  I'm not
-sure how I feel about notification_mutex.  I guess you can go ahead and
-overload it and we can split it off later if someone finds it to be a
-performance blocker.
+Probably, I was just copying-n-pasting what was there previously.  I can
+chop it off.
 
--Eric
-
-
+Cheers,
+Don
