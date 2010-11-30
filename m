@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610Ab0K3VPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:15:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48927 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962Ab0K3VPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:15:21 -0500
-Date: Tue, 30 Nov 2010 13:13:54 -0800
-From: Greg KH <gregkh@suse.de>
-To: Andreas Mohr <andi@lisas.de>
-Cc: "David S. Miller" <davem@davemloft.net>, stable@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, dhollis@davehollis.com,
-        Phil Chang <pchang23@sbcglobal.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -stable] Add USB PID for new MOSCHIP USB ethernet
- controller MCS7832 variant
-Message-ID: <20101130211354.GA7635@suse.de>
-References: <20101130200737.GA5185@rhlx01.hs-esslingen.de>
- <20101130202712.GB16171@suse.de>
- <20101130210510.GA6057@rhlx01.hs-esslingen.de>
+	id S1751723Ab0K3VRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:17:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:59199 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab0K3VRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 16:17:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH] drivers: char: hvc: add arm JTAG DCC console support
+Date: Tue, 30 Nov 2010 22:17:19 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linuxppc-dev@lists.ozlabs.org
+References: <1291145141-18301-1-git-send-email-dwalker@codeaurora.org> <alpine.LFD.2.00.1011301455400.9313@xanadu.home>
+In-Reply-To: <alpine.LFD.2.00.1011301455400.9313@xanadu.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130210510.GA6057@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011302217.19596.arnd@arndb.de>
+X-Provags-ID: V02:K0:lqwCgjpLksGUNvFhHX/sMsDDC0xLSAeOoamhFgAl46q
+ cZljQ6spaus2Smbxft9kNNbWiPzrQSs7lObAH4JNxX2+Ac3vAY
+ SZqRzpSvr8v51IdVHnB8HuXv4BCqroVUvcm3ZLucI75CcMRszG
+ +c4ranFLuXi65F47BHpG2whKyYxHNxobJsii8jwKtzSaMBOIVl
+ BYyv+HPp6tSs/0RbvaEGw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 10:05:10PM +0100, Andreas Mohr wrote:
-> On Tue, Nov 30, 2010 at 12:27:12PM -0800, Greg KH wrote:
-> > On Tue, Nov 30, 2010 at 09:07:37PM +0100, Andreas Mohr wrote:
-> > > Due to active notification of the new MCS7832 version by the manufacturer
-> > > today (Mr. Milton; thanks!) -- quote: "functionality same as MCS7830",
-> > > I'm now submitting this patch, intended for networking.git and -stable.
-> > 
-> > This is not how you get stuff into the stable kernel trees, sorry.
-> > Please read Documentation/stable_kernel_rules.txt for how to do that.
+On Tuesday 30 November 2010, Nicolas Pitre wrote:
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Nicolas Pitre <nico@fluxnic.net>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Cc: Mike Frysinger <vapier@gentoo.org>
+> > Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
 > 
-> From having read that perhaps 2 or 3 times (randomly)
-> and following a couple dozen -stable mails I had the impression that
-> remembering the constraints would be quite easy; obviously not - sorry!
-> Did have some doubts about the number of hunks, though.
-> And obviously violated the "must be upstream" rule.
-> 
-> So what to do?
+> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-Read the line in that file that says:
-	 - To have the patch automatically included in the stable tree,
-	   add the tag
-	        Cc: stable@kernel.org
-	   in the sign-off area. Once the patch is merged it will be
-	   applied to the stable tree without anything else needing to
-	   be done by the author or subsystem maintainer.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-> Shovel patch as-is to networking only (optionally specifying the
-> somewhat unclearly formulated Cc: stable mechanism)?
-> Or rather minimalist-reduce the patch, then dito?
+> This doesn't support both ARMv6 and ARMv7 at run time, but this can 
+> trivially be added later when needed.
 
-See above.
-
-> > Sometimes I wonder why we even write documentation if no one ever reads
-> > it...
-> 
-> I could also mention some (strangely familiar) cases where people _didn't_
-> write kernel docs which many people likely would have liked to read
-> to avoid wasting half-millions of dollars... *smirk*
-
-Examples?  And are those people likely to put up the money to write
-those docs?  That's the big problem, people like to complain, but not
-pay anyone to do the work...
-
-thanks,
-
-greg k-h
+I was about to make a similar comment when I saw yours ;-)
