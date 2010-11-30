@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0K3W2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:28:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5872 "EHLO mx1.redhat.com"
+	id S1755035Ab0K3W2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:28:21 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:43108 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754848Ab0K3W2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:28:06 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, gorcunov@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dongdong Deng <dongdong.deng@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 7/9] x86: Avoid calling arch_trigger_all_cpu_backtrace() at the same time
-Date: Tue, 30 Nov 2010 17:27:28 -0500
-Message-Id: <1291156050-4482-8-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
-References: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
+	id S1754822Ab0K3W2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 17:28:18 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] PM: Prevent dpm_prepare() from returning errors unnecessarily
+Date: Tue, 30 Nov 2010 23:27:24 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ming Lei <tom.leiming@gmail.com>
+References: <Pine.LNX.4.44L0.1011301008110.1686-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011301008110.1686-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011302327.24222.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongdong Deng <dongdong.deng@windriver.com>
+On Tuesday, November 30, 2010, Alan Stern wrote:
+> On Mon, 29 Nov 2010, Rafael J. Wysocki wrote:
+> 
+> > > Oh, I see.  This is a tricky issue.  Every driver for a device that can
+> > > have wakeup-enabled children needs to worry about the race between
+> > > suspending the device and receiving a wakeup request from a child.  
+> > > For example, in drivers/usb/core/hcd-pci.c, the suspend_common()
+> > > routine goes out of its way to return -EBUSY if device_may_wakeup() is
+> > > true and the controller's root hub has a pending wakeup request.
+> > > 
+> > > How should drivers handle this in general?  Should we make an effort to
+> > > convert them to use the wakeup framework so they they can let the PM
+> > > core take care of these races?
+> > 
+> > I think so.
+> > 
+> > We also need to put a pm_check_wakeup_events() check into dpm_suspend() IMO,
+> > so that we abort the suspending of devices as soon as a wakeup event is
+> > reported.
+> 
+> You might as well add that into this patch.
 
-The spin_lock_debug/rcu_cpu_stall detector uses
-trigger_all_cpu_backtrace() to dump cpu backtrace.
-Therefore it is possible that trigger_all_cpu_backtrace()
-could be called at the same time on different CPUs, which
-triggers and 'unknown reason NMI' warning. The following case
-illustrates the problem:
+I'll do that in a separate patch.
 
-      CPU1                    CPU2                     ...   CPU N
-                       trigger_all_cpu_backtrace()
-                       set "backtrace_mask" to cpu mask
-                               |
-generate NMI interrupts  generate NMI interrupts       ...
-    \                          |                               /
-     \                         |                              /
+> > > Do we have to consider similar races during runtime suspend?
+> > 
+> > Ideally, yes, but I'm not sure if that's generally possible.  IMO, it won't be
+> > a big deal if a parent device is suspended and immediately resumed occasionally
+> > due to a pending wakeup signal from one of its children.  It may be a problem
+> > if that happens too often, though.
+> 
+> Okay.
+> 
+> > Does it mean you're fine with the patch?
+> 
+> Provided you repair the error that Lei Ming pointed out.  That's the 
+> problem with functions that return Boolean values -- you have to name 
+> them very carefully.  Ideally the name should be a predicate or a
+> question.
 
-The "backtrace_mask" will be cleaned by the first NMI interrupt
-at nmi_watchdog_tick(), then the following NMI interrupts generated
-by other cpus's arch_trigger_all_cpu_backtrace() will be taken as
-unknown reason NMI interrupts.
+I already have fixed it.
 
-This patch uses a test_and_set to avoid the problem, and stop the
-arch_trigger_all_cpu_backtrace() from calling to avoid dumping a
-double cpu backtrace info when there is already a
-trigger_all_cpu_backtrace() in progress.
+The name is unfortunate indeed, perhaps it's better to call that function
+pm_new_wakeup_events() or something like this.
 
-Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/apic/hw_nmi.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index ddb29bf..b36dd01 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -36,10 +36,20 @@ EXPORT_SYMBOL(touch_nmi_watchdog);
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
- 
-+/* "in progress" flag of arch_trigger_all_cpu_backtrace */
-+static unsigned long backtrace_flag;
-+
- void arch_trigger_all_cpu_backtrace(void)
- {
- 	int i;
- 
-+	if (test_and_set_bit(0, &backtrace_flag))
-+		/*
-+		 * If there is already a trigger_all_cpu_backtrace() in progress
-+		 * (backtrace_flag == 1), don't output double cpu dump infos.
-+		 */
-+		return;
-+
- 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
- 
- 	printk(KERN_INFO "sending NMI to all CPUs:\n");
-@@ -51,6 +61,9 @@ void arch_trigger_all_cpu_backtrace(void)
- 			break;
- 		mdelay(1);
- 	}
-+
-+	clear_bit(0, &backtrace_flag);
-+	smp_mb__after_clear_bit();
- }
- 
- static int __kprobes
--- 
-1.7.3.2
-
+Thanks,
+Rafael
