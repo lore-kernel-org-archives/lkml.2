@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab0K3QMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:12:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28651 "EHLO mx1.redhat.com"
+	id S1754442Ab0K3QRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:17:47 -0500
+Received: from hera.kernel.org ([140.211.167.34]:47346 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751297Ab0K3QMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:12:14 -0500
-Message-ID: <4CF5221E.8080603@redhat.com>
-Date: Tue, 30 Nov 2010 17:11:10 +0100
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753014Ab0K3QRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:17:46 -0500
+Message-ID: <4CF5238F.7020300@kernel.org>
+Date: Tue, 30 Nov 2010 17:17:19 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-CC: "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/9] scsi: megaraid_sas - Driver created the self work
- queue for OCR
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A961D6@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A961E4@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A961F2@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A96213@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A96218@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A9621E@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30106A9621E@cosmail02.lsi.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
+        penberg@kernel.org
+Subject: [PATCH UPDATED 04/16] x86: Use local variable to cache smp_processor_id()
+ in setup_local_APIC()
+References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org>
+In-Reply-To: <1290871325-3055-5-git-send-email-tj@kernel.org>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 16:17:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2010 06:37 PM, Yang, Bo wrote:
-> Driver created the owner work queue (don't use global work queue). This queue will be used for online controller reset routine.
->
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
->
-> ---
-> drivers/scsi/megaraid/megaraid_sas.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
->   
-> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
-> new/drivers/scsi/megaraid/megaraid_sas.c ---
-> old/drivers/scsi/megaraid/megaraid_sas.c 2010-11-17 13:46:11.000000000
-> -0500 +++ new/drivers/scsi/megaraid/megaraid_sas.c 2010-11-17
-> 13:47:46.000000000 -0500 @@ -108,6 +108,7 @@ static struct
-> megasas_mgmt_info megasas_ static struct fasync_struct
-> *megasas_async_queue; static DEFINE_MUTEX(megasas_async_queue_mutex);
-> +static struct workqueue_struct *megasas_ocr_wq; static int
-> megasas_poll_wait_aen; static
-> DECLARE_WAIT_QUEUE_HEAD(megasas_poll_wait); static u32
-> support_poll_for_event; @@ -2435,7 +2436,7 @@
-> megasas_deplete_reply_queue(struct megas printk(KERN_NOTICE "megasas:
-> fwState=%x, stage:%d\n", fw_state, instance->adprecovery); -
-> schedule_work(&instance->work_init); + queue_work(megasas_ocr_wq,
-> &instance->work_init); return IRQ_HANDLED; } else { @@ -5157,6
-> +5158,11 @@ static int __init megasas_init(void) goto err_pcidrv; } +
-> megasas_ocr_wq = create_workqueue("megasas_ocr"); + + if (
-> !megasas_ocr_wq ) + printk(KERN_DEBUG "megasas: Failed to create
-> workqueue.\n"); + 
-What happens later, when you pass the null pointer to the queue_work ?
-I'm not sure this will work.
+Subject: x86: Use local variable to cache smp_processor_id() in setup_local_APIC()
 
-> rval = driver_create_file(&megasas_pci_driver.driver,
-> &driver_attr_version); if (rval) @@ -5228,6 +5234,11 @@ static void
-> __exit megasas_exit(void) &driver_attr_release_date);
-> driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
-> + if (megasas_ocr_wq) { + destroy_workqueue(megasas_ocr_wq); +
-> megasas_ocr_wq = NULL; + } +
-> pci_unregister_driver(&megasas_pci_driver);
-> unregister_chrdev(megasas_mgmt_majorno, "megaraid_sas_ioctl"); } 
+This is a trivial clean up.
 
+* Move initialization of @cpu inside preemption disabled region as
+  suggested by Cyrill Gorcunov.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+---
+Updated as suggested.  Git tree updated too.
+
+Thanks.
+
+ arch/x86/kernel/apic/apic.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+Index: work/arch/x86/kernel/apic/apic.c
+===================================================================
+--- work.orig/arch/x86/kernel/apic/apic.c
++++ work/arch/x86/kernel/apic/apic.c
+@@ -1202,7 +1202,7 @@ static void __cpuinit lapic_setup_esr(vo
+ void __cpuinit setup_local_APIC(void)
+ {
+ 	unsigned int value, queued;
+-	int i, j, acked = 0;
++	int cpu, i, j, acked = 0;
+ 	unsigned long long tsc = 0, ntsc;
+ 	long long max_loops = cpu_khz;
+
+@@ -1226,6 +1226,7 @@ void __cpuinit setup_local_APIC(void)
+ 	perf_events_lapic_init();
+
+ 	preempt_disable();
++	cpu = smp_processor_id();
+
+ 	/*
+ 	 * Double-check whether this APIC is really registered.
+@@ -1342,21 +1343,19 @@ void __cpuinit setup_local_APIC(void)
+ 	 * TODO: set up through-local-APIC from through-I/O-APIC? --macro
+ 	 */
+ 	value = apic_read(APIC_LVT0) & APIC_LVT_MASKED;
+-	if (!smp_processor_id() && (pic_mode || !value)) {
++	if (!cpu && (pic_mode || !value)) {
+ 		value = APIC_DM_EXTINT;
+-		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n",
+-				smp_processor_id());
++		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n", cpu);
+ 	} else {
+ 		value = APIC_DM_EXTINT | APIC_LVT_MASKED;
+-		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n",
+-				smp_processor_id());
++		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n", cpu);
+ 	}
+ 	apic_write(APIC_LVT0, value);
+
+ 	/*
+ 	 * only the BP should see the LINT1 NMI signal, obviously.
+ 	 */
+-	if (!smp_processor_id())
++	if (!cpu)
+ 		value = APIC_DM_NMI;
+ 	else
+ 		value = APIC_DM_NMI | APIC_LVT_MASKED;
+@@ -1368,7 +1367,7 @@ void __cpuinit setup_local_APIC(void)
+
+ #ifdef CONFIG_X86_MCE_INTEL
+ 	/* Recheck CMCI information after local APIC is up on CPU #0 */
+-	if (smp_processor_id() == 0)
++	if (cpu == 0)
+ 		cmci_recheck();
+ #endif
+ }
