@@ -1,111 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab0K3W2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:28:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28587 "EHLO mx1.redhat.com"
+	id S1754845Ab0K3W2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:28:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47427 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999Ab0K3W2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:28:01 -0500
+	id S1753999Ab0K3W2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 17:28:04 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
         Andi Kleen <andi@firstfloor.org>, gorcunov@gmail.com,
         LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 8/9] panic:  ratelimit panic messages
-Date: Tue, 30 Nov 2010 17:27:29 -0500
-Message-Id: <1291156050-4482-9-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 3/9] x86, NMI: Rewrite NMI handler
+Date: Tue, 30 Nov 2010 17:27:24 -0500
+Message-Id: <1291156050-4482-4-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
 References: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes when things go bad, so much spew is coming on the console it is hard
-to figure out what happened.  This patch allows you to ratelimit the panic
-messages with the intent that the first panic message will provide the info
-we need to figure out what happened.
+From: Huang Ying <ying.huang@intel.com>
 
-Adds new kernel param 'panic_ratelimit=on/<integer in seconds>'
+The original NMI handler is quite outdated in many aspects. This patch
+try to fix it.
 
+The order to process the NMI sources are changed as follow:
+
+notify_die(DIE_NMI_IPI);
+notify_die(DIE_NMI);
+/* process io port 0x61 */
+nmi_watchdog_touch();
+unknown_nmi();
+
+DIE_NMI_IPI is used to process CPU specific NMI sources, such as perf
+event, oprofile, crash IPI, etc. While DIE_NMI is used to process
+non-CPU-specific NMI sources, such as APEI (ACPI Platform Error
+Interface) GHES (Generic Hardware Error Source), etc. Non-CPU-specific
+NMI sources can be processed on any CPU,
+
+DIE_NMI_IPI must be processed before DIE_NMI. For example, perf event
+trigger a NMI on CPU 1, at the same time, APEI GHES trigger another
+NMI on CPU 0. If DIE_NMI is processed before DIE_NMI_IPI, it is
+possible that APEI GHES is processed on CPU 1, while unknown NMI is
+gotten on CPU 0.
+
+In this new order of processing, performance sensitive NMI sources
+such as oprofile or perf event will have better performance because
+the time consuming IO port reading is done after them.
+
+Only one NMI is eaten for each NMI handler call, even for PCI SERR and
+IOCHK NMIs. Because one NMI should be raised for each of them, eating
+too many NMI will cause unnecessary unknown NMI.
+
+The die value used in NMI sources are fixed accordingly.
+
+The NMI handler in the patch is designed by Andi Kleen.
+
+v3:
+
+- Make DIE_NMI and DIE_NMI_UNKNOWN work in more traditional way.
+
+v2:
+
+- Split process NMI reason (0x61) on non-BSP into another patch
+
+Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- Documentation/kernel-parameters.txt |    6 ++++++
- kernel/panic.c                      |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c  |    1 -
+ arch/x86/kernel/traps.c           |   63 ++++++++++++++++++++-----------------
+ arch/x86/oprofile/nmi_int.c       |    1 -
+ arch/x86/oprofile/nmi_timer_int.c |    2 +-
+ drivers/char/ipmi/ipmi_watchdog.c |    2 +-
+ drivers/watchdog/hpwdt.c          |    2 +-
+ 6 files changed, 37 insertions(+), 34 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5e55e46..79d1df8 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1807,6 +1807,12 @@ and is between 256 and 4096 characters. It is defined in the file
- 	panic=		[KNL] Kernel behaviour on panic
- 			Format: <timeout>
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 817d2b1..48aa91f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1229,7 +1229,6 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 		return NOTIFY_DONE;
  
-+	panic_ratelimit=	[KNL] ratelimit the panic messages
-+			Useful for slowing down multiple panics to capture
-+			the first one before it scrolls off the screen
-+			Format: "on" or some integer in seconds
-+			"on" defaults to 10 minutes
-+
- 	parkbd.port=	[HW] Parallel port number the keyboard adapter is
- 			connected to, default is 0.
- 			Format: <parport#>
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 4c13b1a..fe89e04 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
- #include <linux/nmi.h>
- #include <linux/dmi.h>
-+#include <linux/ratelimit.h>
+ 	switch (cmd) {
+-	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+ 		break;
+ 	case DIE_NMIUNKNOWN:
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index c7fd1ce..5184b21 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -394,41 +394,46 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	unsigned char reason = 0;
+ 	int cpu;
  
- #define PANIC_TIMER_STEP 100
- #define PANIC_BLINK_SPD 18
-@@ -48,6 +49,31 @@ static long no_blink(int state)
- long (*panic_blink)(int state);
- EXPORT_SYMBOL(panic_blink);
+-	cpu = smp_processor_id();
++	/*
++	 * CPU-specific NMI must be processed before non-CPU-specific
++	 * NMI, otherwise we may lose it, because the CPU-specific
++	 * NMI can not be detected/processed on other CPUs.
++	 */
++
++	/*
++	 * CPU-specific NMI: send to specific CPU or NMI sources must
++	 * be processed on specific CPU
++	 */
++	if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, 0, 2, SIGINT)
++	    == NOTIFY_STOP)
++		return;
  
-+/* setting default to 0 effectively disables it */
-+DEFINE_RATELIMIT_STATE(panic_ratelimit_state, 0, 1);
-+
-+static int __init panic_ratelimit_setup(char *str)
-+{
-+	int interval;
-+
-+	if (!strncmp(str, "on", 2))
-+		/* default to 10 minutes */
-+		interval = 600 * HZ;
-+	else
-+		interval = simple_strtoul(str, NULL, 0) * HZ;
-+
-+	panic_ratelimit_state.interval = interval;
-+	return 1;
-+}
-+__setup("panic_ratelimit=", panic_ratelimit_setup);
-+
-+static int __panic_ratelimit(const char *func)
-+{
-+	return ___ratelimit(&panic_ratelimit_state, func);
-+}
-+
-+#define panic_ratelimit() __panic_ratelimit(__func__)
-+
- /**
-  *	panic - halt the system
-  *	@fmt: The text string to print
-@@ -63,6 +89,10 @@ NORET_TYPE void panic(const char * fmt, ...)
- 	long i, i_next = 0;
- 	int state = 0;
++	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
++	cpu = smp_processor_id();
+ 	/* Only the BSP gets external NMIs from the system. */
+-	if (!cpu)
++	if (!cpu) {
+ 		reason = get_nmi_reason();
+-
+-	if (!(reason & NMI_REASON_MASK)) {
+-		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+-								== NOTIFY_STOP)
+-			return;
+-
+-#ifdef CONFIG_X86_LOCAL_APIC
+-		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+-							== NOTIFY_STOP)
+-			return;
++		if (reason & NMI_REASON_MASK) {
++			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
++			    == NOTIFY_STOP)
++				return;
++			if (reason & NMI_REASON_SERR)
++				pci_serr_error(reason, regs);
++			else if (reason & NMI_REASON_IOCHK)
++				io_check_error(reason, regs);
++#ifdef CONFIG_X86_32
++			/*
++			 * Reassert NMI in case it became active
++			 * meanwhile as it's edge-triggered:
++			 */
++			reassert_nmi();
+ #endif
+-		unknown_nmi_error(reason, regs);
+-
+-		return;
++			return;
++		}
+ 	}
+-	if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
++	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+ 		return;
+-
+-	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+-	if (reason & NMI_REASON_SERR)
+-		pci_serr_error(reason, regs);
+-	if (reason & NMI_REASON_IOCHK)
+-		io_check_error(reason, regs);
+-#ifdef CONFIG_X86_32
+-	/*
+-	 * Reassert NMI in case it became active meanwhile
+-	 * as it's edge-triggered:
+-	 */
+-	reassert_nmi();
+-#endif
++	unknown_nmi_error(reason, regs);
+ }
  
-+	if (!panic_ratelimit())
-+		for(;;)
-+			cpu_relax();
-+
- 	/*
- 	 * It's possible to come here directly from a panic-assertion and
- 	 * not have preempt disabled. Some functions called from here want
+ dotraplinkage notrace __kprobes void
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 4e8baad..ee7ff0e 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -64,7 +64,6 @@ static int profile_exceptions_notify(struct notifier_block *self,
+ 	int ret = NOTIFY_DONE;
+ 
+ 	switch (val) {
+-	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+ 		if (ctr_running)
+ 			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
+diff --git a/arch/x86/oprofile/nmi_timer_int.c b/arch/x86/oprofile/nmi_timer_int.c
+index 0636dd9..fb40645 100644
+--- a/arch/x86/oprofile/nmi_timer_int.c
++++ b/arch/x86/oprofile/nmi_timer_int.c
+@@ -25,7 +25,7 @@ static int profile_timer_exceptions_notify(struct notifier_block *self,
+ 	int ret = NOTIFY_DONE;
+ 
+ 	switch (val) {
+-	case DIE_NMI:
++	case DIE_NMI_IPI:
+ 		oprofile_add_sample(args->regs, 0);
+ 		ret = NOTIFY_STOP;
+ 		break;
+diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
+index f4d334f..320668f 100644
+--- a/drivers/char/ipmi/ipmi_watchdog.c
++++ b/drivers/char/ipmi/ipmi_watchdog.c
+@@ -1081,7 +1081,7 @@ ipmi_nmi(struct notifier_block *self, unsigned long val, void *data)
+ {
+ 	struct die_args *args = data;
+ 
+-	if (val != DIE_NMI)
++	if (val != DIE_NMIUNKNOWN)
+ 		return NOTIFY_OK;
+ 
+ 	/* Hack, if it's a memory or I/O error, ignore it. */
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index c19f4a2..717c67b 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -469,7 +469,7 @@ static int hpwdt_pretimeout(struct notifier_block *nb, unsigned long ulReason,
+ 	unsigned long rom_pl;
+ 	static int die_nmi_called;
+ 
+-	if (ulReason != DIE_NMI && ulReason != DIE_NMI_IPI)
++	if (ulReason != DIE_NMIUNKNOWN)
+ 		goto out;
+ 
+ 	if (!hpwdt_nmi_decoding)
 -- 
 1.7.3.2
 
