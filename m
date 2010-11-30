@@ -1,115 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab0K3RsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:48:22 -0500
-Received: from kroah.org ([198.145.64.141]:45744 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755201Ab0K3RsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:48:13 -0500
-Date: Tue, 30 Nov 2010 09:46:05 -0800
-From: Greg KH <greg@kroah.com>
-To: Robert Lukassen <Robert.Lukassen@tomtom.com>
-Cc: Jef Driesen <jefdriesen@telenet.be>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: g_serial: Allow to override the default VID/PID
-Message-ID: <20101130174605.GC19977@kroah.com>
-References: <4CE6F807.1090607@telenet.be>
- <1290209554-7026-1-git-send-email-jefdriesen@telenet.be>
- <20101120001247.GB17421@kroah.com>
- <4CE853BF.80504@telenet.be>
- <D6DB9C7EDECDA944B870F62B587008622C8A42@NL-EXC-06.intra.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D6DB9C7EDECDA944B870F62B587008622C8A42@NL-EXC-06.intra.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755041Ab0K3Rt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:49:57 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:35104 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab0K3Rt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 12:49:56 -0500
+Date: Tue, 30 Nov 2010 18:49:49 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Haavard Skinnemoen has left Atmel
+Message-ID: <20101130184949.4e54dba3@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 11:20:55AM +0100, Robert Lukassen wrote:
-> Hi,
-> 
-> I just revisited the patch I submitted and I can see that it needs 
-> fixing. The intention of the patch was to provide the idVendor & 
-> idProduct kernel module parameter overrides to the individual 
-> functions at 'bind()' time. Prior to the patch, the overrides were 
-> done after the bind, making it hard for individual functions to 
-> determine the correct value for idVendor (some functions may need 
-> to use that value, e.g. USB audio when it registers itself
-> as an ALSA device; it would want to use the same Vendor id).
-> 
-> The patch makes sure that that happens, however, right after the bind()
-> the patched values are lost due to the copying of the gadget specific
-> device descriptor. Here's the snippet from 2.6.34:
-> 
->  999        usb_gadget_set_selfpowered(gadget);
-> 1000
-> 
-> 1001        /* interface and string IDs start at zero via kzalloc.
-> 1002         * we force endpoints to start unassigned; few controller
-> 1003         * drivers will zero ep->driver_data.
-> 1004         */
-> 1005        usb_ep_autoconfig_reset(cdev->gadget);
-> 1006
-> 1007        /* composite gadget needs to assign strings for whole device (like
-> 1008         * serial number), register function drivers, potentially update
-> 1009         * power state and consumption, etc
-> 1010         */
-> 1011        status = composite->bind(cdev);
-> 1012        if (status < 0)
-> 1013                goto fail;
-> 1014
-> 1015        cdev->desc = *composite->dev;
-> 1016        cdev->desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
-> 1017
-> 1018        /* standardized runtime overrides for device ID data */
-> 1019        if (idVendor)
-> 1020                cdev->desc.idVendor = cpu_to_le16(idVendor);
-> 1021        if (idProduct)
-> 1022                cdev->desc.idProduct = cpu_to_le16(idProduct);
-> 1023        if (bcdDevice)
-> 1024                cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
-> 1025
-> 
-> In line 1015, the composite device descriptor is copied to the cdev->desc
-> field. Then the values get patched.
-> 
-> My patch just moved lines 1018-1024, so that the functions could access
-> the patched values. The ill side effect is that these patched values
-> are lost when the *composite->dev (== device descriptor) is copied 
-> in line 1015.
-> 
-> It would seem that the patch should also have moved lines 1015-1016 in front 
-> of the composite->bind(cdev) call.
-> 
-> It would require all composite gadgets (such as serial.c) and all functions
-> (such as f_acm.c) to do any modifications to the device descriptor as passed 
-> to them in the 'bind' call. For functions that is natural, as they should be
-> unaware of the gadget that uses them. 
-> 
-> The composite gadgets such as 'serial' seem to deal with it differently.
-> The serial.c gadget refers to the device descriptor as 'device_desc', and it
-> is a static struct. It references it in its 'init' function (which is ok, it is
-> prior to the registration point) and in the gs_bind() call. At that point it should
-> probably not be using 'device_desc', but cdev->desc.
-> 
-> I think we can go one of two ways. I'd be happy to go over the composite gadgets and 
-> change their use of their device descriptors, such that they use cdev->desc at
-> bind() time. Combining that with the moving the copying of the *composite->dev
-> to before calling 'composite->bind()' would make things consistent.
-> 
-> The other way is reverting my original patch. For those functions that need access
-> to the overridden idVendor/idProduct code, we'll need to work out another
-> (generic) solution.
+Haavard's e-mail address at Atmel is no longer valid.
 
-So, do you want me to revert your original patch and wait for you to
-come up with a "better" solution?
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+---
+ drivers/dma/dmatest.c               |    2 +-
+ drivers/i2c/busses/i2c-gpio.c       |    2 +-
+ drivers/net/macb.c                  |    2 +-
+ drivers/spi/atmel_spi.c             |    2 +-
+ drivers/usb/gadget/atmel_usba_udc.c |    2 +-
+ drivers/video/backlight/ltv350qv.c  |    2 +-
+ scripts/checkstack.pl               |    2 +-
+ 7 files changed, 7 insertions(+), 7 deletions(-)
 
-That seems like the correct thing to do at the moment.
+--- linux-2.6.37-rc3.orig/drivers/dma/dmatest.c	2010-10-21 10:01:12.000000000 +0200
++++ linux-2.6.37-rc3/drivers/dma/dmatest.c	2010-11-30 18:43:39.000000000 +0100
+@@ -624,5 +624,5 @@ static void __exit dmatest_exit(void)
+ }
+ module_exit(dmatest_exit);
+ 
+-MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
++MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_LICENSE("GPL v2");
+--- linux-2.6.37-rc3.orig/drivers/i2c/busses/i2c-gpio.c	2010-08-02 00:11:14.000000000 +0200
++++ linux-2.6.37-rc3/drivers/i2c/busses/i2c-gpio.c	2010-11-30 18:43:10.000000000 +0100
+@@ -219,7 +219,7 @@ static void __exit i2c_gpio_exit(void)
+ }
+ module_exit(i2c_gpio_exit);
+ 
+-MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
++MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_DESCRIPTION("Platform-independent bitbanging I2C driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:i2c-gpio");
+--- linux-2.6.37-rc3.orig/drivers/net/macb.c	2010-11-02 09:19:35.000000000 +0100
++++ linux-2.6.37-rc3/drivers/net/macb.c	2010-11-30 18:43:22.000000000 +0100
+@@ -1351,5 +1351,5 @@ module_exit(macb_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Atmel MACB Ethernet driver");
+-MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
++MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_ALIAS("platform:macb");
+--- linux-2.6.37-rc3.orig/drivers/spi/atmel_spi.c	2010-11-02 09:19:36.000000000 +0100
++++ linux-2.6.37-rc3/drivers/spi/atmel_spi.c	2010-11-30 18:43:31.000000000 +0100
+@@ -931,6 +931,6 @@ static void __exit atmel_spi_exit(void)
+ module_exit(atmel_spi_exit);
+ 
+ MODULE_DESCRIPTION("Atmel AT32/AT91 SPI Controller driver");
+-MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
++MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:atmel_spi");
+--- linux-2.6.37-rc3.orig/drivers/usb/gadget/atmel_usba_udc.c	2010-11-30 15:53:30.000000000 +0100
++++ linux-2.6.37-rc3/drivers/usb/gadget/atmel_usba_udc.c	2010-11-30 18:43:48.000000000 +0100
+@@ -2093,6 +2093,6 @@ static void __exit udc_exit(void)
+ module_exit(udc_exit);
+ 
+ MODULE_DESCRIPTION("Atmel USBA UDC driver");
+-MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
++MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:atmel_usba_udc");
+--- linux-2.6.37-rc3.orig/drivers/video/backlight/ltv350qv.c	2010-08-02 00:11:14.000000000 +0200
++++ linux-2.6.37-rc3/drivers/video/backlight/ltv350qv.c	2010-11-30 18:43:00.000000000 +0100
+@@ -326,7 +326,7 @@ static void __exit ltv350qv_exit(void)
+ module_init(ltv350qv_init);
+ module_exit(ltv350qv_exit);
+ 
+-MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
++MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_DESCRIPTION("Samsung LTV350QV LCD Driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("spi:ltv350qv");
+--- linux-2.6.37-rc3.orig/scripts/checkstack.pl	2010-08-02 00:11:14.000000000 +0200
++++ linux-2.6.37-rc3/scripts/checkstack.pl	2010-11-30 18:43:57.000000000 +0100
+@@ -12,7 +12,7 @@
+ #	sh64 port by Paul Mundt
+ #	Random bits by Matt Mackall <mpm@selenic.com>
+ #	M68k port by Geert Uytterhoeven and Andreas Schwab
+-#	AVR32 port by Haavard Skinnemoen <hskinnemoen@atmel.com>
++#	AVR32 port by Haavard Skinnemoen (Atmel)
+ #	PARISC port by Kyle McMartin <kyle@parisc-linux.org>
+ #	sparc port by Martin Habets <errandir_news@mph.eclipse.co.uk>
+ #
 
-thanks,
 
-greg k-h
+-- 
+Jean Delvare
