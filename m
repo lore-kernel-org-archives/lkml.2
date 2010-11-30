@@ -1,98 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0K3USU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 15:18:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:32359 "EHLO mga02.intel.com"
+	id S1756617Ab0K3UTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 15:19:15 -0500
+Received: from mail.perches.com ([173.55.12.10]:2024 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab0K3UST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 15:18:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,281,1288594800"; 
-   d="scan'208";a="682487475"
-Subject: Re: [PATCH 1/2] dmar: fix fault interrupt setup
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>
-In-Reply-To: <4CF4B628.7060903@jp.fujitsu.com>
-References: <4CF4B597.4030708@jp.fujitsu.com>
-	 <4CF4B628.7060903@jp.fujitsu.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 30 Nov 2010 12:18:24 -0800
-Message-Id: <1291148304.5836.1.camel@sbsiddha-MOBL3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1751905Ab0K3UTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 15:19:14 -0500
+From: Joe Perches <joe@perches.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ath9k: hif_usb: Reduce indent 1 column
+Date: Tue, 30 Nov 2010 12:19:11 -0800
+Message-Id: <75c6310f61e2df007dfe87c4cafbfeb0482ae569.1291148304.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 00:30 -0800, Kenji Kaneshige wrote: 
-> Fix the problem dmar fault event is not notified in x2apic cluster mode.
-> 
-> In the current code, dmar fault event is configured before setting up
-> the x86_cpu_to_logical_apicid percpu variable in x2apic cluster
-> mode. Because of this, invalid apic ID is used for dmar fault
-> interrupt and this cuases the problem.
-> 
-> To fix the problem, do dmar fault event configuration after local apic
-> setup (after end_local_APIC_setup()).
-> 
-> Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> 
-> 
-> ---
->  arch/x86/kernel/apic/apic.c     |    9 +++++++++
->  arch/x86/kernel/apic/probe_64.c |    7 -------
->  2 files changed, 9 insertions(+), 7 deletions(-)
-> 
-> Index: linux-next-20101125/arch/x86/kernel/apic/apic.c
-> ===================================================================
-> --- linux-next-20101125.orig/arch/x86/kernel/apic/apic.c
-> +++ linux-next-20101125/arch/x86/kernel/apic/apic.c
-> @@ -1745,6 +1745,15 @@ int __init APIC_init_uniprocessor(void)
->  
->  	end_local_APIC_setup();
->  
-> +#ifdef CONFIG_INTR_REMAP
-> +	/*
-> +	 * Now that local APIC setup is completed, configure the fault
-> +	 * handling for interrupt remapping.
-> +	 */
-> +	if (intr_remapping_enabled)
-> +		enable_drhd_fault_handling();
-> +#endif
+Invert test and return early.
+Move variable declarations to local scope.
+Don't initialize variables to 0 unnecessarily.
 
-BTW, this is wrong. APIC_init_uniprocessor() gets called only for UP
-kernel. I will move it to the end_local_APIC_setup()
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/ath/ath9k/hif_usb.c |  106 +++++++++++++++---------------
+ 1 files changed, 53 insertions(+), 53 deletions(-)
 
-> +
->  #ifdef CONFIG_X86_IO_APIC
->  	if (smp_found_config && !skip_ioapic_setup && nr_ioapics)
->  		setup_IO_APIC();
-> Index: linux-next-20101125/arch/x86/kernel/apic/probe_64.c
-> ===================================================================
-> --- linux-next-20101125.orig/arch/x86/kernel/apic/probe_64.c
-> +++ linux-next-20101125/arch/x86/kernel/apic/probe_64.c
-> @@ -79,13 +79,6 @@ void __init default_setup_apic_routing(v
->  		/* need to update phys_pkg_id */
->  		apic->phys_pkg_id = apicid_phys_pkg_id;
->  	}
-> -
-> -	/*
-> -	 * Now that apic routing model is selected, configure the
-> -	 * fault handling for intr remapping.
-> -	 */
-> -	if (intr_remapping_enabled)
-> -		enable_drhd_fault_handling();
->  }
->  
->  /* Same for both flat and physical. */
-> 
-> 
+diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
+index ae842db..63bf9a7 100644
+--- a/drivers/net/wireless/ath/ath9k/hif_usb.c
++++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
+@@ -363,9 +363,9 @@ static void ath9k_hif_usb_rx_stream(struct hif_device_usb *hif_dev,
+ 				    struct sk_buff *skb)
+ {
+ 	struct sk_buff *nskb, *skb_pool[MAX_PKT_NUM_IN_TRANSFER];
+-	int index = 0, i = 0, chk_idx, len = skb->len;
+-	int rx_remain_len = 0, rx_pkt_len = 0;
+-	u16 pkt_len, pkt_tag, pool_index = 0;
++	int index = 0, i = 0, len = skb->len;
++	int rx_remain_len, rx_pkt_len;
++	u16 pool_index = 0;
+ 	u8 *ptr;
+ 
+ 	spin_lock(&hif_dev->rx_lock);
+@@ -399,64 +399,64 @@ static void ath9k_hif_usb_rx_stream(struct hif_device_usb *hif_dev,
+ 	spin_unlock(&hif_dev->rx_lock);
+ 
+ 	while (index < len) {
++		u16 pkt_len;
++		u16 pkt_tag;
++		u16 pad_len;
++		int chk_idx;
++
+ 		ptr = (u8 *) skb->data;
+ 
+ 		pkt_len = ptr[index] + (ptr[index+1] << 8);
+ 		pkt_tag = ptr[index+2] + (ptr[index+3] << 8);
+ 
+-		if (pkt_tag == ATH_USB_RX_STREAM_MODE_TAG) {
+-			u16 pad_len;
+-
+-			pad_len = 4 - (pkt_len & 0x3);
+-			if (pad_len == 4)
+-				pad_len = 0;
+-
+-			chk_idx = index;
+-			index = index + 4 + pkt_len + pad_len;
+-
+-			if (index > MAX_RX_BUF_SIZE) {
+-				spin_lock(&hif_dev->rx_lock);
+-				hif_dev->rx_remain_len = index - MAX_RX_BUF_SIZE;
+-				hif_dev->rx_transfer_len =
+-					MAX_RX_BUF_SIZE - chk_idx - 4;
+-				hif_dev->rx_pad_len = pad_len;
+-
+-				nskb = __dev_alloc_skb(pkt_len + 32,
+-						       GFP_ATOMIC);
+-				if (!nskb) {
+-					dev_err(&hif_dev->udev->dev,
+-					"ath9k_htc: RX memory allocation"
+-					" error\n");
+-					spin_unlock(&hif_dev->rx_lock);
+-					goto err;
+-				}
+-				skb_reserve(nskb, 32);
+-				RX_STAT_INC(skb_allocated);
+-
+-				memcpy(nskb->data, &(skb->data[chk_idx+4]),
+-				       hif_dev->rx_transfer_len);
+-
+-				/* Record the buffer pointer */
+-				hif_dev->remain_skb = nskb;
++		if (pkt_tag != ATH_USB_RX_STREAM_MODE_TAG) {
++			RX_STAT_INC(skb_dropped);
++			return;
++		}
++
++		pad_len = 4 - (pkt_len & 0x3);
++		if (pad_len == 4)
++			pad_len = 0;
++
++		chk_idx = index;
++		index = index + 4 + pkt_len + pad_len;
++
++		if (index > MAX_RX_BUF_SIZE) {
++			spin_lock(&hif_dev->rx_lock);
++			hif_dev->rx_remain_len = index - MAX_RX_BUF_SIZE;
++			hif_dev->rx_transfer_len =
++				MAX_RX_BUF_SIZE - chk_idx - 4;
++			hif_dev->rx_pad_len = pad_len;
++
++			nskb = __dev_alloc_skb(pkt_len + 32, GFP_ATOMIC);
++			if (!nskb) {
++				dev_err(&hif_dev->udev->dev,
++					"ath9k_htc: RX memory allocation error\n");
+ 				spin_unlock(&hif_dev->rx_lock);
+-			} else {
+-				nskb = __dev_alloc_skb(pkt_len + 32, GFP_ATOMIC);
+-				if (!nskb) {
+-					dev_err(&hif_dev->udev->dev,
+-					"ath9k_htc: RX memory allocation"
+-					" error\n");
+-					goto err;
+-				}
+-				skb_reserve(nskb, 32);
+-				RX_STAT_INC(skb_allocated);
+-
+-				memcpy(nskb->data, &(skb->data[chk_idx+4]), pkt_len);
+-				skb_put(nskb, pkt_len);
+-				skb_pool[pool_index++] = nskb;
++				goto err;
+ 			}
++			skb_reserve(nskb, 32);
++			RX_STAT_INC(skb_allocated);
++
++			memcpy(nskb->data, &(skb->data[chk_idx+4]),
++			       hif_dev->rx_transfer_len);
++
++			/* Record the buffer pointer */
++			hif_dev->remain_skb = nskb;
++			spin_unlock(&hif_dev->rx_lock);
+ 		} else {
+-			RX_STAT_INC(skb_dropped);
+-			return;
++			nskb = __dev_alloc_skb(pkt_len + 32, GFP_ATOMIC);
++			if (!nskb) {
++				dev_err(&hif_dev->udev->dev,
++					"ath9k_htc: RX memory allocation error\n");
++				goto err;
++			}
++			skb_reserve(nskb, 32);
++			RX_STAT_INC(skb_allocated);
++
++			memcpy(nskb->data, &(skb->data[chk_idx+4]), pkt_len);
++			skb_put(nskb, pkt_len);
++			skb_pool[pool_index++] = nskb;
+ 		}
+ 	}
+ 
+-- 
+1.7.3.2.245.g03276.dirty
 
