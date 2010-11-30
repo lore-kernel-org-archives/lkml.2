@@ -1,202 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab0K3RFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:05:39 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:55478
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755069Ab0K3RFe (ORCPT
+	id S1754821Ab0K3RJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:09:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:56042 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab0K3RJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:05:34 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i691h668h67dh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCPJEY-01-0X4-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 5/6] KVM: SVM: Add manipulation functions for misc intercepts
-Date: Tue, 30 Nov 2010 18:04:00 +0100
-Message-ID: <1291136641-4874-6-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291136641-4874-1-git-send-email-joerg.roedel@amd.com>
-References: <1291136641-4874-1-git-send-email-joerg.roedel@amd.com>
+	Tue, 30 Nov 2010 12:09:50 -0500
+Date: Tue, 30 Nov 2010 18:09:46 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Greg KH <greg@kroah.com>
+cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
+ driver owner
+In-Reply-To: <20101130165614.GA18564@kroah.com>
+Message-ID: <Pine.LNX.4.64.1011301803540.18790@axis700.grange>
+References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
+ <20101129131737.3dd6eb03@bike.lwn.net> <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
+ <20101129214128.GA9691@kroah.com> <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
+ <20101129223209.GB14663@kroah.com> <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
+ <20101130165614.GA18564@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:+8kkP9q7Wdd7R5nsLP3Im3BgvvlgERCJv7OZkjqDzS4
+ rzWJyqt3dPjXQZ1RFHD+JKEn7NP1CDjkIRMXC5wKUUGmyDogLX
+ 4IZimrznBANAMQ88LVX/B3jjNGbre6nd4eDs1ACcEsal/ZVMjw
+ 0NfhZEnDMqaINEtNickb7xqnSbp7W3ivJgbl14Im5THofR7hTC
+ VtxiMqTNPF4BkVLCigg/+G9B10KbcehabLJunwXDuw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch wraps changes to the misc intercepts of SVM
-into seperate functions to abstract nested-svm better and
-prepare the implementation of the vmcb-clean-bits feature.
+On Tue, 30 Nov 2010, Greg KH wrote:
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
+> > On Mon, 29 Nov 2010, Greg KH wrote:
+> > 
+> > > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski wrote:
+> > > > On Mon, 29 Nov 2010, Greg KH wrote:
+> > > > 
+> > > > > On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
+> > > > > > Hi Jon
+> > > > > > 
+> > > > > > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
+> > > > > > 
+> > > > > > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
+> > > > > > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> > > > > > > 
+> > > > > > > > When two drivers interoperate without an explicit dependency, it is often
+> > > > > > > > required to prevent one of them from being unloaded safely by dereferencing
+> > > > > > > > dev->driver->owner. This patch provides a generic function to do this in a
+> > > > > > > > race-free way.
+> > > > > > > 
+> > > > > > > I must ask: why not, instead, make the dependency explicit?  In
+> > > > > > > particular, this looks like an application for the proposed media
+> > > > > > > controller code, which is meant to model the connections between otherwise
+> > > > > > > independent devices.  The fact that your example comes from V4L2 (which is
+> > > > > > > the current domain of the media controller) also argues that way.
+> > > > > > 
+> > > > > > Sorry, don't see a good way to do this. This function is for a general 
+> > > > > > dependency, where you don't have that driver, we are checking for register 
+> > > > > > with us, so, the only way to get to it is via dev->driver->owner.
+> > > > > 
+> > > > > Wait, what?  The device is already bound to a driver, right, so why
+> > > > > would you care about "locking" the module into memory?  What could this
+> > > > > possibly be used for?
+> > > > 
+> > > > To protect against rmmod -> driver_unregister -> dev->driver = NULL?
+> > > 
+> > > But again, why would some other driver ever care about what some random
+> > > dev->driver would be?
+> > 
+> > It's not a random one, call it a "companion device."
+> 
+> Ok, but again go back to Jon's original proposal to just call the
+> functions in that driver from yours, causing the implicit module
+> ordering issue to be automatically resolved.
+
+Greg, in this specific case - yes, I could do this. But (1) there is no 
+need for that - both drivers implement and use the v4l2-subdev API and 
+thus stay generic. In the host driver this adds the convenience, that it 
+doesn't have to call to the CSI2 driver explicitly at all - it just calls 
+the v4l2-subdev function like "call .s_mbus_fmt for all subdev drivers" 
+and the function is called for the sensor and the CSI2 driver. (2) what 
+about the other location I pointed out earlier in the v4l2 core? There 
+drivers are absolutely generic. I also suspect these are not the only 
+cases, where this helper would come in handy. I added the media list to CC 
+for any more opinions on this matter.
+
+Thanks
+Guennadi
 ---
- arch/x86/kvm/svm.c |   84 +++++++++++++++++++++++++++++++--------------------
- 1 files changed, 51 insertions(+), 33 deletions(-)
-
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 783142e..6b51d31 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -277,6 +277,24 @@ static inline void clr_exception_intercept(struct vcpu_svm *svm, int bit)
- 	recalc_intercepts(svm);
- }
- 
-+static inline void set_intercept(struct vcpu_svm *svm, int bit)
-+{
-+	struct vmcb *vmcb = get_host_vmcb(svm);
-+
-+	vmcb->control.intercept |= (1ULL << bit);
-+
-+	recalc_intercepts(svm);
-+}
-+
-+static inline void clr_intercept(struct vcpu_svm *svm, int bit)
-+{
-+	struct vmcb *vmcb = get_host_vmcb(svm);
-+
-+	vmcb->control.intercept &= ~(1ULL << bit);
-+
-+	recalc_intercepts(svm);
-+}
-+
- static inline void enable_gif(struct vcpu_svm *svm)
- {
- 	svm->vcpu.arch.hflags |= HF_GIF_MASK;
-@@ -862,29 +880,29 @@ static void init_vmcb(struct vcpu_svm *svm)
- 	set_exception_intercept(svm, UD_VECTOR);
- 	set_exception_intercept(svm, MC_VECTOR);
- 
--	control->intercept =	(1ULL << INTERCEPT_INTR) |
--				(1ULL << INTERCEPT_NMI) |
--				(1ULL << INTERCEPT_SMI) |
--				(1ULL << INTERCEPT_SELECTIVE_CR0) |
--				(1ULL << INTERCEPT_CPUID) |
--				(1ULL << INTERCEPT_INVD) |
--				(1ULL << INTERCEPT_HLT) |
--				(1ULL << INTERCEPT_INVLPG) |
--				(1ULL << INTERCEPT_INVLPGA) |
--				(1ULL << INTERCEPT_IOIO_PROT) |
--				(1ULL << INTERCEPT_MSR_PROT) |
--				(1ULL << INTERCEPT_TASK_SWITCH) |
--				(1ULL << INTERCEPT_SHUTDOWN) |
--				(1ULL << INTERCEPT_VMRUN) |
--				(1ULL << INTERCEPT_VMMCALL) |
--				(1ULL << INTERCEPT_VMLOAD) |
--				(1ULL << INTERCEPT_VMSAVE) |
--				(1ULL << INTERCEPT_STGI) |
--				(1ULL << INTERCEPT_CLGI) |
--				(1ULL << INTERCEPT_SKINIT) |
--				(1ULL << INTERCEPT_WBINVD) |
--				(1ULL << INTERCEPT_MONITOR) |
--				(1ULL << INTERCEPT_MWAIT);
-+	set_intercept(svm, INTERCEPT_INTR);
-+	set_intercept(svm, INTERCEPT_NMI);
-+	set_intercept(svm, INTERCEPT_SMI);
-+	set_intercept(svm, INTERCEPT_SELECTIVE_CR0);
-+	set_intercept(svm, INTERCEPT_CPUID);
-+	set_intercept(svm, INTERCEPT_INVD);
-+	set_intercept(svm, INTERCEPT_HLT);
-+	set_intercept(svm, INTERCEPT_INVLPG);
-+	set_intercept(svm, INTERCEPT_INVLPGA);
-+	set_intercept(svm, INTERCEPT_IOIO_PROT);
-+	set_intercept(svm, INTERCEPT_MSR_PROT);
-+	set_intercept(svm, INTERCEPT_TASK_SWITCH);
-+	set_intercept(svm, INTERCEPT_SHUTDOWN);
-+	set_intercept(svm, INTERCEPT_VMRUN);
-+	set_intercept(svm, INTERCEPT_VMMCALL);
-+	set_intercept(svm, INTERCEPT_VMLOAD);
-+	set_intercept(svm, INTERCEPT_VMSAVE);
-+	set_intercept(svm, INTERCEPT_STGI);
-+	set_intercept(svm, INTERCEPT_CLGI);
-+	set_intercept(svm, INTERCEPT_SKINIT);
-+	set_intercept(svm, INTERCEPT_WBINVD);
-+	set_intercept(svm, INTERCEPT_MONITOR);
-+	set_intercept(svm, INTERCEPT_MWAIT);
- 
- 	control->iopm_base_pa = iopm_base;
- 	control->msrpm_base_pa = __pa(svm->msrpm);
-@@ -935,8 +953,8 @@ static void init_vmcb(struct vcpu_svm *svm)
- 	if (npt_enabled) {
- 		/* Setup VMCB for Nested Paging */
- 		control->nested_ctl = 1;
--		control->intercept &= ~((1ULL << INTERCEPT_TASK_SWITCH) |
--					(1ULL << INTERCEPT_INVLPG));
-+		clr_intercept(svm, INTERCEPT_TASK_SWITCH);
-+		clr_intercept(svm, INTERCEPT_INVLPG);
- 		clr_exception_intercept(svm, PF_VECTOR);
- 		clr_cr_intercept(svm, INTERCEPT_CR3_READ);
- 		clr_cr_intercept(svm, INTERCEPT_CR3_WRITE);
-@@ -951,7 +969,7 @@ static void init_vmcb(struct vcpu_svm *svm)
- 
- 	if (boot_cpu_has(X86_FEATURE_PAUSEFILTER)) {
- 		control->pause_filter_count = 3000;
--		control->intercept |= (1ULL << INTERCEPT_PAUSE);
-+		set_intercept(svm, INTERCEPT_PAUSE);
- 	}
- 
- 	enable_gif(svm);
-@@ -1125,12 +1143,12 @@ static void svm_cache_reg(struct kvm_vcpu *vcpu, enum kvm_reg reg)
- 
- static void svm_set_vintr(struct vcpu_svm *svm)
- {
--	svm->vmcb->control.intercept |= 1ULL << INTERCEPT_VINTR;
-+	set_intercept(svm, INTERCEPT_VINTR);
- }
- 
- static void svm_clear_vintr(struct vcpu_svm *svm)
- {
--	svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_VINTR);
-+	clr_intercept(svm, INTERCEPT_VINTR);
- }
- 
- static struct vmcb_seg *svm_seg(struct kvm_vcpu *vcpu, int seg)
-@@ -2307,7 +2325,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 	}
- 
- 	/* We don't want to see VMMCALLs from a nested guest */
--	svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_VMMCALL);
-+	clr_intercept(svm, INTERCEPT_VMMCALL);
- 
- 	svm->vmcb->control.lbr_ctl = nested_vmcb->control.lbr_ctl;
- 	svm->vmcb->control.int_vector = nested_vmcb->control.int_vector;
-@@ -2555,7 +2573,7 @@ static int cpuid_interception(struct vcpu_svm *svm)
- static int iret_interception(struct vcpu_svm *svm)
- {
- 	++svm->vcpu.stat.nmi_window_exits;
--	svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_IRET);
-+	clr_intercept(svm, INTERCEPT_IRET);
- 	svm->vcpu.arch.hflags |= HF_IRET_MASK;
- 	return 1;
- }
-@@ -3101,7 +3119,7 @@ static void svm_inject_nmi(struct kvm_vcpu *vcpu)
- 
- 	svm->vmcb->control.event_inj = SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_NMI;
- 	vcpu->arch.hflags |= HF_NMI_MASK;
--	svm->vmcb->control.intercept |= (1ULL << INTERCEPT_IRET);
-+	set_intercept(svm, INTERCEPT_IRET);
- 	++vcpu->stat.nmi_injections;
- }
- 
-@@ -3168,10 +3186,10 @@ static void svm_set_nmi_mask(struct kvm_vcpu *vcpu, bool masked)
- 
- 	if (masked) {
- 		svm->vcpu.arch.hflags |= HF_NMI_MASK;
--		svm->vmcb->control.intercept |= (1ULL << INTERCEPT_IRET);
-+		set_intercept(svm, INTERCEPT_IRET);
- 	} else {
- 		svm->vcpu.arch.hflags &= ~HF_NMI_MASK;
--		svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_IRET);
-+		clr_intercept(svm, INTERCEPT_IRET);
- 	}
- }
- 
--- 
-1.7.1
-
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
