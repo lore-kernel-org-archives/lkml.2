@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab0K3RNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:13:48 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:50114 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751289Ab0K3RNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:13:47 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/aVSk/R4Xa8aFl+DBKodVw0N3WrseSaqrTm9TSZh
-	NUGujJzzQb7RpI
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101130151749.GE26758@redhat.com>
-References: <20101128201851.GA20555@elte.hu>
-	 <1291031593.32004.19.camel@laptop>
-	 <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
-	 <1291052268.32004.171.camel@laptop>
-	 <1291057565.20709.2.camel@marge.simson.net>
-	 <20101129192033.GA18372@elte.hu>
-	 <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
-	 <1291090455.7550.7.camel@marge.simson.net>
-	 <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
-	 <1291123083.28239.18.camel@marge.simson.net>
-	 <20101130151749.GE26758@redhat.com>
-Content-Type: text/plain
-Date: Tue, 30 Nov 2010 18:13:41 +0100
-Message-Id: <1291137221.28239.70.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1754859Ab0K3RPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:15:14 -0500
+Received: from kroah.org ([198.145.64.141]:37492 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab0K3RPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 12:15:12 -0500
+Date: Tue, 30 Nov 2010 09:15:09 -0800
+From: Greg KH <greg@kroah.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
+ driver owner
+Message-ID: <20101130171509.GA18794@kroah.com>
+References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
+ <20101129131737.3dd6eb03@bike.lwn.net>
+ <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
+ <20101129214128.GA9691@kroah.com>
+ <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
+ <20101129223209.GB14663@kroah.com>
+ <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
+ <20101130165614.GA18564@kroah.com>
+ <Pine.LNX.4.64.1011301803540.18790@axis700.grange>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1011301803540.18790@axis700.grange>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 10:17 -0500, Vivek Goyal wrote:
+On Tue, Nov 30, 2010 at 06:09:46PM +0100, Guennadi Liakhovetski wrote:
+> On Tue, 30 Nov 2010, Greg KH wrote:
+> 
+> > On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
+> > > On Mon, 29 Nov 2010, Greg KH wrote:
+> > > 
+> > > > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski wrote:
+> > > > > On Mon, 29 Nov 2010, Greg KH wrote:
+> > > > > 
+> > > > > > On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
+> > > > > > > Hi Jon
+> > > > > > > 
+> > > > > > > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
+> > > > > > > 
+> > > > > > > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
+> > > > > > > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> > > > > > > > 
+> > > > > > > > > When two drivers interoperate without an explicit dependency, it is often
+> > > > > > > > > required to prevent one of them from being unloaded safely by dereferencing
+> > > > > > > > > dev->driver->owner. This patch provides a generic function to do this in a
+> > > > > > > > > race-free way.
+> > > > > > > > 
+> > > > > > > > I must ask: why not, instead, make the dependency explicit?  In
+> > > > > > > > particular, this looks like an application for the proposed media
+> > > > > > > > controller code, which is meant to model the connections between otherwise
+> > > > > > > > independent devices.  The fact that your example comes from V4L2 (which is
+> > > > > > > > the current domain of the media controller) also argues that way.
+> > > > > > > 
+> > > > > > > Sorry, don't see a good way to do this. This function is for a general 
+> > > > > > > dependency, where you don't have that driver, we are checking for register 
+> > > > > > > with us, so, the only way to get to it is via dev->driver->owner.
+> > > > > > 
+> > > > > > Wait, what?  The device is already bound to a driver, right, so why
+> > > > > > would you care about "locking" the module into memory?  What could this
+> > > > > > possibly be used for?
+> > > > > 
+> > > > > To protect against rmmod -> driver_unregister -> dev->driver = NULL?
+> > > > 
+> > > > But again, why would some other driver ever care about what some random
+> > > > dev->driver would be?
+> > > 
+> > > It's not a random one, call it a "companion device."
+> > 
+> > Ok, but again go back to Jon's original proposal to just call the
+> > functions in that driver from yours, causing the implicit module
+> > ordering issue to be automatically resolved.
+> 
+> Greg, in this specific case - yes, I could do this. But (1) there is no 
+> need for that - both drivers implement and use the v4l2-subdev API and 
+> thus stay generic. In the host driver this adds the convenience, that it 
+> doesn't have to call to the CSI2 driver explicitly at all - it just calls 
+> the v4l2-subdev function like "call .s_mbus_fmt for all subdev drivers" 
+> and the function is called for the sensor and the CSI2 driver. (2) what 
+> about the other location I pointed out earlier in the v4l2 core? There 
+> drivers are absolutely generic. I also suspect these are not the only 
+> cases, where this helper would come in handy. I added the media list to CC 
+> for any more opinions on this matter.
 
-> Hi Mike,
+I agree, it probably would not solve all of the different issues that
+people might have for this type of thing, and this isn't the first time
+I've heard it be requested either.
 
-Hi,
+But, this patch is just trying to increment a module owner of a device
+that is bound to a driver, which is the wrong level to be thinking of
+it.
 
-> I was wonderig if these autogroups can be visible in regular cgroup
-> hierarchy so that once somebody mounts cpu controller, these are visible?
+If you request a module to be loaded, what would possibly cause it to be
+unbound that you need to have this "safely" in place?  Why would the
+module be unloaded?  And if it was unloaded, doesn't that imply that
+someone else wanted it unloaded so keeping that from happening would be
+a bit rude, right?
 
-No, autogroup is not auto-cgroup.  You get zero whistles and zero bells
-with autogroup.  Only dirt simple automated task groups.
+Look at network modules, we always allow them to be unloaded, even if
+the device is "in use" and that doesn't cause problems.  So why would
+you need to do this when we are trying (over the past 10 years or so) to
+move away from the "lock the module in place because we know better than
+the user" model?
 
-> I was wondering why is a good idea to create a separate interface for
-> autogroups through proc and not try to integrate it with cgroup interface.
+thanks,
 
-I only put an interface there at all because it was requested, and made
-it a dirt simple 'nice level' interface because there's nothing simpler
-than 'nice'.  The whole autogroup thing is intended for folks who don't
-want to set up cgroups, shares yadayada, so tying it into the cgroups
-interface seems kinda pointless.
-
-> Without it now any user space tool shall have to either disable the
-> autogroup feature completely or now also worry about /proc interface
-> and there also autogroups are searchable through pid and there is no
-> direct way to access these.
-
-Maybe I should make it disable itself when you mount big brother.
-
-> IIUC, these autogroups create flat setup and are at same level as
-> init_task_group and are not children of it. Currently cpu cgroup 
-> is hierarchical by default and any new cgroup is child of init_task_group
-> and that could lead to representation issues.
-
-Well, it's flat, but autogroup does..
-	tg = sched_create_group(&init_task_group);
-
-> Well, will we not get same kind of latency boost if we make these autogroups
-> children of root? If yes, then hierarchical representation issue of autogroup
-> will be a moot point.
-
-No problem then.
-
-> We already have /proc/<pid>/cgroup interface which points to tasks's
-> cgroup. We probably can avoid creating /proc/<pid>/autgroup if there
-> is an associated cgroup which appears in cgroup hierachy and then user
-> can change the weight of group through cgroup interface (instead of
-> introducing another interface).
-
-That's possible (for someone familiar with cgroups;), but I don't see
-any reason for a wedding.
-
-	-Mike
-
+greg k-h
