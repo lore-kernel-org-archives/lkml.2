@@ -1,94 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab0K3Xbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:31:32 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:56600 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab0K3Xbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:31:31 -0500
-Date: Tue, 30 Nov 2010 15:31:30 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
-        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
-        Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent
-	by fsync
-Message-ID: <20101130233130.GG18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com> <20101130113906.176ffcad@notabene.brown>
+	id S1752222Ab0K3Xc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:32:59 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45956 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab0K3Xc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 18:32:57 -0500
+Date: Tue, 30 Nov 2010 23:32:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jamie Iles <jamie.iles@picochip.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU
+	bootup
+Message-ID: <20101130233204.GB14383@n2100.arm.linux.org.uk>
+References: <20101130171626.GA6165@oksana.dev.rtsoft.ru> <20101130171658.GA24034@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101130113906.176ffcad@notabene.brown>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <20101130171658.GA24034@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 11:39:06AM +1100, Neil Brown wrote:
-> On Mon, 29 Nov 2010 14:05:36 -0800 "Darrick J. Wong" <djwong@us.ibm.com>
-> wrote:
-> 
-> > On certain types of hardware, issuing a write cache flush takes a considerable
-> > amount of time.  Typically, these are simple storage systems with write cache
-> > enabled and no battery to save that cache after a power failure.  When we
-> > encounter a system with many I/O threads that write data and then call fsync
-> > after more transactions accumulate, ext4_sync_file performs a data-only flush,
-> > the performance of which is suboptimal because each of those threads issues its
-> > own flush command to the drive instead of trying to coordinate the flush,
-> > thereby wasting execution time.
-> > 
-> > Instead of each fsync call initiating its own flush, there's now a flag to
-> > indicate if (0) no flushes are ongoing, (1) we're delaying a short time to
-> > collect other fsync threads, or (2) we're actually in-progress on a flush.
-> > 
-> > So, if someone calls ext4_sync_file and no flushes are in progress, the flag
-> > shifts from 0->1 and the thread delays for a short time to see if there are any
-> > other threads that are close behind in ext4_sync_file.  After that wait, the
-> > state transitions to 2 and the flush is issued.  Once that's done, the state
-> > goes back to 0 and a completion is signalled.
-> 
-> I haven't seen any of the preceding discussion do I might be missing
-> something important, but this seems needlessly complex and intrusive.
-> In particular, I don't like adding code to md to propagate these timings up
-> to the fs, and I don't the arbitrary '2ms' number.
-> 
-> Would it not be sufficient to simply gather flushes while a flush is pending.
-> i.e
->   - if no flush is pending, set the 'flush pending' flag, submit a flush,
->     then clear the flag.
->   - if a flush is pending, then wait for it to complete, and then submit a
->     single flush on behalf of all pending flushes.
-> 
-> That way when flush is fast, you do a flush every time, and when it is slow
-> you gather multiple flushes together.
-> I think it would issues a few more flushes than your scheme, but it would be
-> a much neater solution.  Have you tried that and found it to be insufficient?
+On Tue, Nov 30, 2010 at 08:16:58PM +0300, Anton Vorontsov wrote:
+> +/*
+> + * Initialise the CPU possible map early - this describes the CPUs
+> + * which may be present or become present in the system.
+> + */
+> +void __init scu_init_cpus(void __iomem *scu_base)
+> +{
+> +	unsigned int ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+> +	unsigned int i;
+> +
+> +	/* sanity check */
+> +	if (ncores == 0) {
+> +		pr_err("%s: strange CM count of 0? Default to 1\n", __func__);
+> +		ncores = 1;
+> +	}
+> +
+> +	if (ncores > NR_CPUS) {
+> +		pr_warn("%s: no. of cores (%d) greater than configured "
+> +		       "maximum of %d - clipping\n", __func__, ncores, NR_CPUS);
+> +		ncores = NR_CPUS;
+> +	}
+> +
+> +	for (i = 0; i < ncores; i++)
+> +		set_cpu_possible(i, true);
+> +}
+> +
+> +void __init scu_prepare_cpus(void __iomem *scu_base, unsigned int max_cpus)
+> +{
+> +	unsigned int ncores = num_possible_cpus();
+> +	unsigned int cpu = smp_processor_id();
+> +	int i;
+> +
+> +	smp_store_cpu_info(cpu);
+> +
+> +	/*
+> +	 * are we trying to boot more cores than exist?
+> +	 */
+> +	if (max_cpus > ncores)
+> +		max_cpus = ncores;
+> +
+> +	/*
+> +	 * Initialise the present map, which describes the set of CPUs
+> +	 * actually populated at the present time.
+> +	 */
+> +	for (i = 0; i < max_cpus; i++)
+> +		set_cpu_present(i, true);
+> +
+> +	/*
+> +	 * Initialise the SCU if there are more than one CPU and let
+> +	 * them know where to start.
+> +	 */
+> +	if (max_cpus > 1) {
+> +		/*
+> +		 * Enable the local timer or broadcast device for the
+> +		 * boot CPU, but only if we have more than one CPU.
+> +		 */
+> +		percpu_timer_setup();
+> +
+> +		scu_enable(scu_base);
+> +	}
+> +}
 
-Some time ago I actually did test the patchset with the schedule_hrtimeout
-removed, which I think is fairly close to what you've suggested.  As I recall,
-it did help a bit, though not as much as also instituting the wait to limit the
-% of disk execution time spent on flushes.  That said, I think you might be
-right about the completion races, so I'll try to code up your suggestion to
-see what happens with a newer kernel.
+Note that I'll go with factoring this out into arch/arm/kernel/smp_scu.c
+for the time being, but I'm not convinced about the other parts yet.
 
---D
-> 
-> Thanks,
-> NeilBrown
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +	sub	r4, r4, r5
+> +	add	r6, r6, r4
+> +#if __LINUX_ARM_ARCH__ >= 7
+> +	dsb
+> +#endif
+
+Another question though - probably for Linus though - why is the u8500
+code needing this dsb whereas other ARMv7 implementations don't appear
+to require it?
