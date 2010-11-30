@@ -1,243 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab0K3M3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 07:29:34 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:48270 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab0K3M3c (ORCPT
+	id S1753025Ab0K3Mm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 07:42:56 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17824 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752442Ab0K3Mmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 07:29:32 -0500
-X-Greylist: delayed 1278 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2010 07:29:32 EST
-Date: Tue, 30 Nov 2010 13:08:13 +0100
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] genirq: Provide reverse compat handling for irq_chip methods.
-Message-ID: <20101130120813.GR12037@mail.wantstofly.org>
-Mime-Version: 1.0
+	Tue, 30 Nov 2010 07:42:55 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKp/9Ex5LdV4/2dsb2JhbACjDHLDAoVHBA
+Date: Tue, 30 Nov 2010 23:42:49 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Nick Piggin <npiggin@kernel.dk>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC] vmalloc: eagerly clear ptes on vunmap
+Message-ID: <20101130124249.GB15778@amd>
+References: <4CEF6B8B.8080206@goop.org>
+ <20101127103656.GA6884@amd>
+ <4CF40DCB.5010007@goop.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <4CF40DCB.5010007@goop.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel/irq/chip.c provides compat wrappers for when users of the
-new-style (->irq_foo()) irq_chip methods try to call into irq_chips
-that provide only old-style (->foo()) methods, but doesn't currently
-provide compatibility in the other direction.
+On Mon, Nov 29, 2010 at 12:32:11PM -0800, Jeremy Fitzhardinge wrote:
+> When unmapping a region in the vmalloc space, clear the ptes immediately.
+> There's no point in deferring this because there's no amortization
+> benefit.
+> 
+> The TLBs are left dirty, and they are flushed lazily to amortize the
+> cost of the IPIs.
+> 
+> This specific motivation for this patch is a regression since 2.6.36 when
+> using NFS under Xen, triggered by the NFS client's use of vm_map_ram()
+> introduced in 56e4ebf877b6043c289bda32a5a7385b80c17dee.  XFS also uses
+> vm_map_ram() and could cause similar problems.
 
-As there exist chained irq flow handlers outside kernel/irq/ that have
-not been converted over to call the new methods yet, this means that
-the irq_chips that they are chained off can't be converted to the new
-methods yet.
+I do wonder whether there are cache benefits from batching page table
+updates, especially the batched per cpu maps (and in your version they
+get double-cleared as well).  I think this patch is good, but I think
+perhaps making it configurable would be nice.
 
-This patch adds reverse compat wrappers, so that old-style flow
-handlers can call into new-style irq_chips, too, and the flow handlers
-and irq_chips can be converted to the new API independently.
+So... main question, does it allow Xen to use lazy flushing and avoid
+vm_unmap_aliases() calls?
 
-Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
----
- kernel/irq/chip.c |  142 +++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 138 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index baa5c4a..9a73b0e 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -298,15 +298,106 @@ static int compat_irq_retrigger(struct irq_data *data)
- 	return data->chip->retrigger(data->irq);
- }
- 
--static void compat_bus_lock(struct irq_data *data)
-+static void compat_irq_bus_lock(struct irq_data *data)
- {
- 	data->chip->bus_lock(data->irq);
- }
- 
--static void compat_bus_sync_unlock(struct irq_data *data)
-+static void compat_irq_bus_sync_unlock(struct irq_data *data)
- {
- 	data->chip->bus_sync_unlock(data->irq);
- }
-+
-+/* And the other way around */
-+static void compat_mask(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_mask(data);
-+}
-+
-+static void compat_unmask(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_unmask(data);
-+}
-+
-+static void compat_ack(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_ack(data);
-+}
-+
-+static void compat_mask_ack(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_mask_ack(data);
-+}
-+
-+static void compat_eoi(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_eoi(data);
-+}
-+
-+static void compat_enable(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_enable(data);
-+}
-+
-+static void compat_disable(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_disable(data);
-+}
-+
-+static void compat_shutdown(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_shutdown(data);
-+}
-+
-+static unsigned int compat_startup(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return data->chip->irq_startup(data);
-+}
-+
-+static int compat_set_affinity(unsigned int irq, const struct cpumask *dest)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return data->chip->irq_set_affinity(data, dest, 0);
-+}
-+
-+static int compat_set_type(unsigned int irq, unsigned int type)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return data->chip->irq_set_type(data, type);
-+}
-+
-+static int compat_set_wake(unsigned int irq, unsigned int on)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return data->chip->irq_set_wake(data, on);
-+}
-+
-+static int compat_retrigger(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return data->chip->irq_retrigger(data);
-+}
-+
-+static void compat_bus_lock(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_bus_lock(data);
-+}
-+
-+static void compat_bus_sync_unlock(unsigned int irq)
-+{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	data->chip->irq_bus_sync_unlock(data);
-+}
- #endif
- 
- /*
-@@ -321,12 +412,23 @@ void irq_chip_set_defaults(struct irq_chip *chip)
- 	 */
- 	if (chip->enable)
- 		chip->irq_enable = compat_irq_enable;
-+	else if (chip->irq_enable)
-+		chip->enable = compat_enable;
-+
- 	if (chip->disable)
- 		chip->irq_disable = compat_irq_disable;
-+	else if (chip->irq_disable)
-+		chip->disable = compat_disable;
-+
- 	if (chip->shutdown)
- 		chip->irq_shutdown = compat_irq_shutdown;
-+	else if (chip->irq_shutdown)
-+		chip->shutdown = compat_shutdown;
-+
- 	if (chip->startup)
- 		chip->irq_startup = compat_irq_startup;
-+	else if (chip->irq_startup)
-+		chip->startup = compat_startup;
- #endif
- 	/*
- 	 * The real defaults
-@@ -355,27 +457,59 @@ void irq_chip_set_defaults(struct irq_chip *chip)
- 	 * Now fix up the remaining compat handlers
- 	 */
- 	if (chip->bus_lock)
--		chip->irq_bus_lock = compat_bus_lock;
-+		chip->irq_bus_lock = compat_irq_bus_lock;
-+	else if (chip->irq_bus_lock)
-+		chip->bus_lock = compat_bus_lock;
-+
- 	if (chip->bus_sync_unlock)
--		chip->irq_bus_sync_unlock = compat_bus_sync_unlock;
-+		chip->irq_bus_sync_unlock = compat_irq_bus_sync_unlock;
-+	else if (chip->irq_bus_sync_unlock)
-+		chip->bus_sync_unlock = compat_bus_sync_unlock;
-+
- 	if (chip->mask)
- 		chip->irq_mask = compat_irq_mask;
-+	else if (chip->irq_mask)
-+		chip->mask = compat_mask;
-+
- 	if (chip->unmask)
- 		chip->irq_unmask = compat_irq_unmask;
-+	else if (chip->irq_unmask)
-+		chip->unmask = compat_unmask;
-+
- 	if (chip->ack)
- 		chip->irq_ack = compat_irq_ack;
-+	else if (chip->irq_ack)
-+		chip->ack = compat_ack;
-+
- 	if (chip->mask_ack)
- 		chip->irq_mask_ack = compat_irq_mask_ack;
-+	else if (chip->irq_mask_ack)
-+		chip->mask_ack = compat_mask_ack;
-+
- 	if (chip->eoi)
- 		chip->irq_eoi = compat_irq_eoi;
-+	else if (chip->irq_eoi)
-+		chip->eoi = compat_eoi;
-+
- 	if (chip->set_affinity)
- 		chip->irq_set_affinity = compat_irq_set_affinity;
-+	else if (chip->irq_set_affinity)
-+		chip->set_affinity = compat_set_affinity;
-+
- 	if (chip->set_type)
- 		chip->irq_set_type = compat_irq_set_type;
-+	else if (chip->irq_set_type)
-+		chip->set_type = compat_set_type;
-+
- 	if (chip->set_wake)
- 		chip->irq_set_wake = compat_irq_set_wake;
-+	else if (chip->irq_set_wake)
-+		chip->set_wake = compat_set_wake;
-+
- 	if (chip->retrigger)
- 		chip->irq_retrigger = compat_irq_retrigger;
-+	else if (chip->irq_retrigger)
-+		chip->retrigger = compat_retrigger;
- #endif
- }
- 
--- 
-1.7.1
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> 
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index a3d66b3..9960644 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -566,7 +566,6 @@ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
+>  			if (va->va_end > *end)
+>  				*end = va->va_end;
+>  			nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
+> -			unmap_vmap_area(va);
+>  			list_add_tail(&va->purge_list, &valist);
+>  			va->flags |= VM_LAZY_FREEING;
+>  			va->flags &= ~VM_LAZY_FREE;
+> @@ -616,6 +615,8 @@ static void purge_vmap_area_lazy(void)
+>   */
+>  static void free_unmap_vmap_area_noflush(struct vmap_area *va)
+>  {
+> +	unmap_vmap_area(va);
+> +
+>  	va->flags |= VM_LAZY_FREE;
+>  	atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT, &vmap_lazy_nr);
+>  	if (unlikely(atomic_read(&vmap_lazy_nr) > lazy_max_pages()))
+> @@ -944,8 +945,10 @@ static void vb_free(const void *addr, unsigned long size)
+>  		BUG_ON(vb->free);
+>  		spin_unlock(&vb->lock);
+>  		free_vmap_block(vb);
+> -	} else
+> +	} else {
+>  		spin_unlock(&vb->lock);
+> +		vunmap_page_range((unsigned long)addr, (unsigned long)addr + size);
+> +	}
+>  }
+>  
+>  /**
+> @@ -988,7 +991,6 @@ void vm_unmap_aliases(void)
+>  
+>  				s = vb->va->va_start + (i << PAGE_SHIFT);
+>  				e = vb->va->va_start + (j << PAGE_SHIFT);
+> -				vunmap_page_range(s, e);
+>  				flush = 1;
+>  
+>  				if (s < start)
+> 
