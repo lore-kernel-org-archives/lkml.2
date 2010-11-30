@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0K3OCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:02:08 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35244 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab0K3OCF (ORCPT
+	id S1752896Ab0K3OCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:02:21 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58860 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab0K3OCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:02:05 -0500
+	Tue, 30 Nov 2010 09:02:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EaF/gttqBxpzqcZdDuI6woo2siBUQ8WsWkRs7VvK5JkvuQnWIjYXuH+sF/6BrErxza
-         3gAdlw8RZrb0pQTvUoqUf3hQezdEMZWJS8MUGx634/8FiQZ8YUxlTHxu3z3tcJfCBB4R
-         1ozxoY5ewts11TpHD5qN1JaNetanSRgDD+F1g=
-Date: Tue, 30 Nov 2010 23:01:52 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
-Message-ID: <20101130140152.GA1528@barrios-desktop>
-References: <cover.1291043273.git.minchan.kim@gmail.com>
- <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
- <20101130100933.82E9.A69D9226@jp.fujitsu.com>
- <20101130091822.GJ13268@csn.ul.ie>
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=WZmwu8Z4Z/bZ+ZDN1r19BQAjUi3frb2IPizzHtik7rJ+ngRCYNYbJhz1V2luxdI74v
+         MGOTYT8SAHImEt3ZG2AeMsmgvJbLLR8mareNGB5U97D8Kkx5ceJtJt1k9R6UyVgRemeW
+         oPZzakIxlEUQ1QWVI2EhIg6PGWspLy5/tAtcs=
+Date: Tue, 30 Nov 2010 12:02:13 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 3/6] perf: Add timestamp to COMM and MMAP events
+Message-ID: <20101130140213.GB9217@ghostprotocols.net>
+References: <1290490544-14349-1-git-send-email-imunsie@au1.ibm.com>
+ <1290490544-14349-4-git-send-email-imunsie@au1.ibm.com>
+ <1290510512.2072.387.camel@laptop>
+ <20101123124121.GA11101@ghostprotocols.net>
+ <20101125154718.GE15875@ghostprotocols.net>
+ <1291009409-sup-4332@au1.ibm.com>
+ <1291031690.32004.20.camel@laptop>
+ <1291073899-sup-7083@au1.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101130091822.GJ13268@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1291073899-sup-7083@au1.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 09:18:22AM +0000, Mel Gorman wrote:
-> On Tue, Nov 30, 2010 at 10:10:20AM +0900, KOSAKI Motohiro wrote:
-> > > invalidate_mapping_pages is very big hint to reclaimer.
-> > > It means user doesn't want to use the page any more.
-> > > So in order to prevent working set page eviction, this patch
-> > > move the page into tail of inactive list by PG_reclaim.
-> > > 
-> > > Please, remember that pages in inactive list are working set
-> > > as well as active list. If we don't move pages into inactive list's
-> > > tail, pages near by tail of inactive list can be evicted although
-> > > we have a big clue about useless pages. It's totally bad.
-> > > 
-> > > Now PG_readahead/PG_reclaim is shared.
-> > > fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
-> > > preventing fast reclaiming readahead marker page.
-> > > 
-> > > In this series, PG_reclaim is used by invalidated page, too.
-> > > If VM find the page is invalidated and it's dirty, it sets PG_reclaim
-> > > to reclaim asap. Then, when the dirty page will be writeback,
-> > > clear_page_dirty_for_io will clear PG_reclaim unconditionally.
-> > > It disturbs this serie's goal.
-> > > 
-> > > I think it's okay to clear PG_readahead when the page is dirty, not
-> > > writeback time. So this patch moves ClearPageReadahead.
-> > > 
-> > > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> > > Acked-by: Rik van Riel <riel@redhat.com>
-> > > Cc: Wu Fengguang <fengguang.wu@intel.com>
-> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > > Cc: Nick Piggin <npiggin@kernel.dk>
-> > > Cc: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > I still dislike this one. I doubt this trick makes much benefit in real
-> > world workload.
-> > 
-> 
-> I would agree except as said elsewhere, it's a chicken and egg problem.
-> We don't have a real world test because fadvise is not useful in its
-> current iteration. I'm hoping that there will be a test comparing
-> 
-> rsync		on vanilla kernel
-> rsync		on patched kernel
-> rsync+patch	on vanilla kernel
-> rsync+patch	on patched kernel
-> 
-> Are the results of such a test likely to happen?
+Em Tue, Nov 30, 2010 at 10:45:40AM +1100, Ian Munsie escreveu:
+> Excerpts from Peter Zijlstra's message of Mon Nov 29 22:54:50 +1100 2010:
+> > On Mon, 2010-11-29 at 17:06 +1100, Ian Munsie wrote:
+> > > This goes away if PERF_SAMPLE_CPU is added to the mix so that the
+> > > timestamps are offset from the first event of *their* CPU,
+> > > otherwise time-epoch can go negative, as it has done here. 
 
-Ben, Could you get the rsync execution time(user/sys) and 
-'cat /proc/vmstat' result before/after?
-If Ben is busy, I will try to get a data. but I need enough time.
+> > How does that happen, I though the power7 sched_clock() was fully
+> > synchronized and monotonic across all cores?
 
-I expect rsync+patch on patched kernel should have a less allocstall, less pgscan 
-so fast execution time.
+> Oh the timestamps coming from the kernel are fine, I should have been
+> clearer in my email. This bug is purely restricted to the userspace code
+> that prints them out - in the perf_session__print_tstamp function. It
+> tries to print the timestamps out so that they start at 0 and if it
+> doesn't know what CPU the events came from it uses the very first event
+> it sees as epoch, but at the moment that is not necessarily going to be
+> the earliest event.
+ 
+> Thinking about it overnight, I realise that this should also go away if
+> we sort them before printing things out at all, which is exactly what
+> I'm proposing to do in my patches.
 
-> 
-> -- 
-> Mel Gorman
-> Part-time Phd Student                          Linux Technology Center
-> University of Limerick                         IBM Dublin Software Lab
+I removed that in the current version of this patch series:
 
--- 
-Kind regards,
-Minchan Kim
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/sample_id_all.v3
+
+Now I'm just testing if a new perf.data file can be processed just fine
+by older tools (not possible in the sample_id_all.v1 series) and other
+combinations of older kernels with the new tool.
+
+Probably I'll fold two patches and then submit for review.
+
+- Arnaldo
