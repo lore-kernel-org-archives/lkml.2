@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab0K3NIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 08:08:01 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53023 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab0K3NIA convert rfc822-to-8bit (ORCPT
+	id S1751686Ab0K3NPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 08:15:24 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36853 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab0K3NPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 08:08:00 -0500
+	Tue, 30 Nov 2010 08:15:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aXEPOfUgpG117KMMwzfJcBmsYPZvvX0okXyZefHYA7wywxBgxAfqImbTCVoC/rAqwh
-         vs9V7wUMJu0/xWhbRg8dOr2KQz2DIk73cfqhEIl1oHdRTAes1Qh8Mjp5tI1SEoWPzTn5
-         bm65PiemFwDkJmYAgxeRZZfs4r41IbE1/MhkA=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GYk3P+/LcRQoN6ESJxrsH2lJRgDy0sD+yYzS5zrNmQ1fRcoMnmb+ihEidbgwDKHg0W
+         fAhQxsbyscdiMQ6ycaIjLBa2I355DWY9X2Zhgs5ku62+5EctYJ/wj9zHtMOE1pFYUTYR
+         msazodqHSX5PeDROGGfr1b9AFgUN47p4et3ek=
+Date: Tue, 30 Nov 2010 16:15:17 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, fweisbec@gmail.com, yinghai@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, NMI: add back unknown_nmi_panic and
+	nmi_watchdog sysctls
+Message-ID: <20101130131517.GA16372@lenovo>
+References: <1291068437-5331-1-git-send-email-dzickus@redhat.com> <1291068437-5331-3-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201011281312.49949.rjw@sisk.pl>
-References: <201011281312.49949.rjw@sisk.pl>
-Date: Tue, 30 Nov 2010 21:07:58 +0800
-Message-ID: <AANLkTi=tgEug5EUpqV1-GLFh9rsD5obAyExe+V=CjsbO@mail.gmail.com>
-Subject: Re: [PATCH] PM: Prevent dpm_prepare() from returning errors unnecessarily
-From: Ming Lei <tom.leiming@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291068437-5331-3-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Currently dpm_prepare() returns error code if it finds that a device
-> being suspended has a pending runtime resume request.  However, it
-> should not do that if the checking for wakeup events is not enabled.
-> On the other hand, if the checking for wakeup events is enabled, it
-> can return error when a wakeup event is detected, regardless of its
-> source.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/power/main.c |   11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
->
-> Index: linux-2.6/drivers/base/power/main.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/power/main.c
-> +++ linux-2.6/drivers/base/power/main.c
-> @@ -26,6 +26,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/sched.h>
->  #include <linux/async.h>
-> +#include <linux/suspend.h>
->
->  #include "../base.h"
->  #include "power.h"
-> @@ -1052,8 +1053,10 @@ static int dpm_prepare(pm_message_t stat
->                mutex_unlock(&dpm_list_mtx);
->
->                pm_runtime_get_noresume(dev);
-> -               if (pm_runtime_barrier(dev) && device_may_wakeup(dev)) {
-> -                       /* Wake-up requested during system sleep transition. */
-> +               if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> +                       pm_wakeup_event(dev, 0);
-> +
-> +               if (pm_check_wakeup_events()) {
+On Mon, Nov 29, 2010 at 05:07:17PM -0500, Don Zickus wrote:
+> Originally adapted from Huang Ying's patch which moved the unknown_nmi_panic
+> to the traps.c file.  Because the old nmi watchdog was deleted before this
+> change happened, the unknown_nmi_panic sysctl was lost.  This re-adds it.
+> 
+> Also, the nmi_watchdog sysctl was re-implemented and its documentation
+> updated accordingly.
+> 
+> Patch-inspired-by: Huang Ying <ying.huang@intel.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-If pm_check_wakeup_events returns true, it means there is no wakeup event
-coming, so seems should handle normal suspend prepare, but why
-abort the suspend here?
+Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
 
->                        pm_runtime_put_sync(dev);
->                        error = -EBUSY;
->                } else {
+(a 'thing' below which could be addressed later)
+...
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index d91b07d..140344d 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -733,6 +733,22 @@ static struct ctl_table kern_table[] = {
+>  		.extra1		= &zero,
+>  		.extra2		= &one,
+>  	},
+> +	{
+> +		.procname       = "nmi_watchdog",
+> +		.data           = &watchdog_enabled,
+> +		.maxlen         = sizeof (int),
+> +		.mode           = 0644,
+> +		.proc_handler   = proc_dowatchdog_enabled,
+> +	},
+> +#endif
+> +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
 
+This kinda wonders me -- do we have CONFIG_X86_LOCAL_APIC set _without_
+CONFIG_X86? I mean CONFIG_X86_LOCAL_APIC is per x86, no?
 
-
-thanks,
--- 
-Lei Ming
+  Cyrill
