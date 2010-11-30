@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0K3SlR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:41:17 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58410 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab0K3SlQ (ORCPT
+	id S1756043Ab0K3SqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:46:09 -0500
+Received: from a0.64.7aae.static.theplanet.com ([174.122.100.160]:39331 "EHLO
+	bea.beahmlane.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754155Ab0K3SqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:41:16 -0500
-Date: Tue, 30 Nov 2010 18:40:49 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>, Greg KH <greg@kroah.com>,
-        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-Message-ID: <20101130184049.GC8521@n2100.arm.linux.org.uk>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local> <201011261224.59490.arnd@arndb.de> <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com> <201011301621.48140.arnd@arndb.de>
+	Tue, 30 Nov 2010 13:46:08 -0500
+X-Greylist: delayed 26181 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2010 13:46:08 EST
+Message-ID: <20101130050802.1625686zus482as2@174.122.100.180>
+Date: Tue, 30 Nov 2010 05:08:02 -0600
+From: "David L. Robert" <davidlrob@yahoo.com.hk>
+Reply-to: dlroberts11@yahoo.cn
+To: undisclosed-recipients:;
+Subject: Proposal for business deal, Call Me
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <201011301621.48140.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bea.beahmlane.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - yahoo.com.hk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 04:21:47PM +0100, Arnd Bergmann wrote:
-> On Tuesday 30 November 2010, Linus Walleij wrote:
-> > 2010/11/26 Arnd Bergmann <arnd@arndb.de>:
-> > 
-> > > * When you say that the devices are static, I hope you do not mean
-> > >  static in the C language sense. We used to allow devices to be
-> > >  declared as "static struct" and registered using
-> > >  platform_device_register (or other bus specific functions). This
-> > >  is no longer valid and we are removing the existing users, do not
-> > >  add new ones. When creating a platform device, use
-> > >  platform_device_register_simple or platform_device_register_resndata.
-> > 
-> > Is this part of the generic ARM runtime multi-platform kernel
-> > and device trees shebang?
-> > 
-> > The Ux500 still isn't in that sector, it needs extensive rewriting
-> > of arch/arm/mach-ux500 to be done first, so as to support e.g.
-> > U8500 and U5500 with a single kernel image.
-> > 
-> > Trying to skin that cat that as part of this review is a bit too
-> > much to ask IMO, I'd rather have the author of this driver
-> > adapt to whatever platform data registration mechanism is
-> > in place for the merge window. Else it needs fixing as part
-> > of a bigger endavour to root out compile-time platform
-> > configuration.
-> 
-> The 'no static devices' rule is something that Greg brought up
-> at the embedded developer session during PlumbersConf this year,
-> I wasn't aware of the problem before that either.
-> 
-> It is not related to the multi-platform kernel work and it's
-> not ARM specific.
-> 
-> Maybe Greg can give a short explanation of the impact of this.
-> AFAIR, static device definitions still work, but there are
-> plans to remove that capability in the future.
+Dear,
 
-There's lots of static devices, not only platform devices, in the ARM
-tree.  It's going to be a hell of a lot of work to fix this all up
-properly.
 
-I hope that the capability for static devices won't disappear until
-the huge pile of work on ARM has been completed.
+I am proposing an interesting business proposal wherein you will be  
+benefited by 40 percent of the business.
+
+  I will explain the entire detail that will be follow once I heard from you.
+
+On your positive response, I will outline the things that we will do  
+to help in the success of this process.
+
+Give me a call once you go through this proposal or send your response  
+to davidl.robert@yahoo.com.hk I hope we can work together which will  
+be mutually
+beneficial to both of us.
+
+Yours sincerely.
+
+David L. Robert
+Mob: +44 701 11 64380
+
+
