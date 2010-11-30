@@ -1,101 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab0K3SFW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:05:22 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:42957 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754560Ab0K3SFT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:05:19 -0500
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: Tomas Henzl <thenzl@redhat.com>
-CC: "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Tue, 30 Nov 2010 11:05:35 -0700
-Subject: RE: [PATCH 7/9] scsi: megaraid_sas - Driver created the self work
- queue for OCR
-Thread-Topic: [PATCH 7/9] scsi: megaraid_sas - Driver created the self work
- queue for OCR
-Thread-Index: AcuQqUC9voeXQiFpRrqrpeSHWgigPQACJHFg
-Message-ID: <4B6A08C587958942AA3002690DD4F8C30106BBFEB5@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A961D6@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A961E4@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A961F2@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A96213@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A96218@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A9621E@cosmail02.lsi.com>
- <4CF5221E.8080603@redhat.com>
-In-Reply-To: <4CF5221E.8080603@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755575Ab0K3SHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:07:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60395 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab0K3SHI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:07:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=W8Os7EEH1HFIB3HfhjfReqjSfH4ccCsMCEb2+j2pT2IbCRufu75oU2Xzbiihc2mpao
+         wflo33GkBLgHZPYZVekcp2/ThlVX1aHFC6ZJ8XFUWvLpP1GIsKjsEv3erV1GtBEB2a1a
+         v7GE6/UmGeppx7dVYyEJIpX86heI9AMIgaSDI=
 MIME-Version: 1.0
+In-Reply-To: <20101130184949.4e54dba3@endymion.delvare>
+References: <20101130184949.4e54dba3@endymion.delvare>
+Date: Tue, 30 Nov 2010 13:07:06 -0500
+Message-ID: <AANLkTikgWX9CqWCNVPfRYNbeFS9q5akTEJmqnVef3kSz@mail.gmail.com>
+Subject: Re: [PATCH] Haavard Skinnemoen has left Atmel
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Jiri Kosina <trivial@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomas,
+Hi,
 
-In which case megasas_ocr_wq will hit NULL if create_workqueue create work queue success? If create_workqueue failed, OCR may have the problem.  But do you know if create_workqueue has the number limitation for creating work queues (how many work queue can it created? 10 or 20)?
+On Tue, Nov 30, 2010 at 12:49 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> Haavard's e-mail address at Atmel is no longer valid.
+>
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Who are you to propose such a change ? I would have expected to see
+such changes from someone with an @atmel.com email, not with a
+@linux-fr.org address.
 
 Thanks,
+ - Arnaud
 
-Bo Yang
-
------Original Message-----
-From: Tomas Henzl [mailto:thenzl@redhat.com]
-Sent: Tuesday, November 30, 2010 11:11 AM 
-To: Yang, Bo
-Cc: 'James.Bottomley@HansenPartnership.com'; 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'
-Subject: Re: [PATCH 7/9] scsi: megaraid_sas - Driver created the self work queue for OCR
-
-On 11/19/2010 06:37 PM, Yang, Bo wrote:
-> Driver created the owner work queue (don't use global work queue). This queue will be used for online controller reset routine.
->
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
->
 > ---
-> drivers/scsi/megaraid/megaraid_sas.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
->   
-> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
-> new/drivers/scsi/megaraid/megaraid_sas.c ---
-> old/drivers/scsi/megaraid/megaraid_sas.c 2010-11-17 13:46:11.000000000
-> -0500 +++ new/drivers/scsi/megaraid/megaraid_sas.c 2010-11-17
-> 13:47:46.000000000 -0500 @@ -108,6 +108,7 @@ static struct
-> megasas_mgmt_info megasas_ static struct fasync_struct
-> *megasas_async_queue; static DEFINE_MUTEX(megasas_async_queue_mutex);
-> +static struct workqueue_struct *megasas_ocr_wq; static int
-> megasas_poll_wait_aen; static
-> DECLARE_WAIT_QUEUE_HEAD(megasas_poll_wait); static u32
-> support_poll_for_event; @@ -2435,7 +2436,7 @@
-> megasas_deplete_reply_queue(struct megas printk(KERN_NOTICE "megasas:
-> fwState=%x, stage:%d\n", fw_state, instance->adprecovery); -
-> schedule_work(&instance->work_init); + queue_work(megasas_ocr_wq,
-> &instance->work_init); return IRQ_HANDLED; } else { @@ -5157,6
-> +5158,11 @@ static int __init megasas_init(void) goto err_pcidrv; } +
-> megasas_ocr_wq = create_workqueue("megasas_ocr"); + + if (
-> !megasas_ocr_wq ) + printk(KERN_DEBUG "megasas: Failed to create
-> workqueue.\n"); + 
-What happens later, when you pass the null pointer to the queue_work ?
-I'm not sure this will work.
-
-> rval = driver_create_file(&megasas_pci_driver.driver,
-> &driver_attr_version); if (rval) @@ -5228,6 +5234,11 @@ static void
-> __exit megasas_exit(void) &driver_attr_release_date);
-> driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
-> + if (megasas_ocr_wq) { + destroy_workqueue(megasas_ocr_wq); +
-> megasas_ocr_wq = NULL; + } +
-> pci_unregister_driver(&megasas_pci_driver);
-> unregister_chrdev(megasas_mgmt_majorno, "megaraid_sas_ioctl"); } 
-
+>  drivers/dma/dmatest.c               |    2 +-
+>  drivers/i2c/busses/i2c-gpio.c       |    2 +-
+>  drivers/net/macb.c                  |    2 +-
+>  drivers/spi/atmel_spi.c             |    2 +-
+>  drivers/usb/gadget/atmel_usba_udc.c |    2 +-
+>  drivers/video/backlight/ltv350qv.c  |    2 +-
+>  scripts/checkstack.pl               |    2 +-
+>  7 files changed, 7 insertions(+), 7 deletions(-)
+>
+> --- linux-2.6.37-rc3.orig/drivers/dma/dmatest.c 2010-10-21 10:01:12.000000000 +0200
+> +++ linux-2.6.37-rc3/drivers/dma/dmatest.c      2010-11-30 18:43:39.000000000 +0100
+> @@ -624,5 +624,5 @@ static void __exit dmatest_exit(void)
+>  }
+>  module_exit(dmatest_exit);
+>
+> -MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
+> +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_LICENSE("GPL v2");
+> --- linux-2.6.37-rc3.orig/drivers/i2c/busses/i2c-gpio.c 2010-08-02 00:11:14.000000000 +0200
+> +++ linux-2.6.37-rc3/drivers/i2c/busses/i2c-gpio.c      2010-11-30 18:43:10.000000000 +0100
+> @@ -219,7 +219,7 @@ static void __exit i2c_gpio_exit(void)
+>  }
+>  module_exit(i2c_gpio_exit);
+>
+> -MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
+> +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_DESCRIPTION("Platform-independent bitbanging I2C driver");
+>  MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("platform:i2c-gpio");
+> --- linux-2.6.37-rc3.orig/drivers/net/macb.c    2010-11-02 09:19:35.000000000 +0100
+> +++ linux-2.6.37-rc3/drivers/net/macb.c 2010-11-30 18:43:22.000000000 +0100
+> @@ -1351,5 +1351,5 @@ module_exit(macb_exit);
+>
+>  MODULE_LICENSE("GPL");
+>  MODULE_DESCRIPTION("Atmel MACB Ethernet driver");
+> -MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
+> +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_ALIAS("platform:macb");
+> --- linux-2.6.37-rc3.orig/drivers/spi/atmel_spi.c       2010-11-02 09:19:36.000000000 +0100
+> +++ linux-2.6.37-rc3/drivers/spi/atmel_spi.c    2010-11-30 18:43:31.000000000 +0100
+> @@ -931,6 +931,6 @@ static void __exit atmel_spi_exit(void)
+>  module_exit(atmel_spi_exit);
+>
+>  MODULE_DESCRIPTION("Atmel AT32/AT91 SPI Controller driver");
+> -MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
+> +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("platform:atmel_spi");
+> --- linux-2.6.37-rc3.orig/drivers/usb/gadget/atmel_usba_udc.c   2010-11-30 15:53:30.000000000 +0100
+> +++ linux-2.6.37-rc3/drivers/usb/gadget/atmel_usba_udc.c        2010-11-30 18:43:48.000000000 +0100
+> @@ -2093,6 +2093,6 @@ static void __exit udc_exit(void)
+>  module_exit(udc_exit);
+>
+>  MODULE_DESCRIPTION("Atmel USBA UDC driver");
+> -MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
+> +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("platform:atmel_usba_udc");
+> --- linux-2.6.37-rc3.orig/drivers/video/backlight/ltv350qv.c    2010-08-02 00:11:14.000000000 +0200
+> +++ linux-2.6.37-rc3/drivers/video/backlight/ltv350qv.c 2010-11-30 18:43:00.000000000 +0100
+> @@ -326,7 +326,7 @@ static void __exit ltv350qv_exit(void)
+>  module_init(ltv350qv_init);
+>  module_exit(ltv350qv_exit);
+>
+> -MODULE_AUTHOR("Haavard Skinnemoen <hskinnemoen@atmel.com>");
+> +MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_DESCRIPTION("Samsung LTV350QV LCD Driver");
+>  MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("spi:ltv350qv");
+> --- linux-2.6.37-rc3.orig/scripts/checkstack.pl 2010-08-02 00:11:14.000000000 +0200
+> +++ linux-2.6.37-rc3/scripts/checkstack.pl      2010-11-30 18:43:57.000000000 +0100
+> @@ -12,7 +12,7 @@
+>  #      sh64 port by Paul Mundt
+>  #      Random bits by Matt Mackall <mpm@selenic.com>
+>  #      M68k port by Geert Uytterhoeven and Andreas Schwab
+> -#      AVR32 port by Haavard Skinnemoen <hskinnemoen@atmel.com>
+> +#      AVR32 port by Haavard Skinnemoen (Atmel)
+>  #      PARISC port by Kyle McMartin <kyle@parisc-linux.org>
+>  #      sparc port by Martin Habets <errandir_news@mph.eclipse.co.uk>
+>  #
+>
+>
+> --
+> Jean Delvare
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
