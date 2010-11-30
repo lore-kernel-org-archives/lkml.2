@@ -1,33 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab0K3XYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:24:13 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:59212 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab0K3XYM (ORCPT
+	id S1751733Ab0K3XZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:25:24 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:58070
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751602Ab0K3XZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:24:12 -0500
-Date: Wed, 1 Dec 2010 00:24:11 +0100
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Ash Hughes <ashley.hughes@blueyonder.co.uk>
-Cc: "'Simon Guinot'" <simon@sequanux.org>, nico@fluxnic.net,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ARM Orion: added Buffalo LS-CHL support
-Message-ID: <20101130232411.GE15575@mail.wantstofly.org>
-References: <000401cb89d0$8d1927b0$a74b7710$@blueyonder.co.uk> <20101124010442.GA1377@kw.sim.vm.gnt> <007301cb90d8$fb633670$f229a350$@blueyonder.co.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <007301cb90d8$fb633670$f229a350$@blueyonder.co.uk>
-User-Agent: Mutt/1.4.2.2i
+	Tue, 30 Nov 2010 18:25:23 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h691h668h67dh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <amit.kucheria@canonical.com>, <eric@eukrea.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCH] ARM: imx: Add support for low power suspend on MX51.
+Date: Tue, 30 Nov 2010 17:31:39 -0600
+Message-ID: <1291159899-32017-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 09:53:09PM -0000, Ash Hughes wrote:
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-> Adds support for Buffalo Linkstation Live v3 (LS-CHL) NAS drives. Indentation fixed and fan speeds added
-> Signed-off-by: Ash Hughes <ashley.hughes@blueyonder.co.uk>
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
 
-Acked-by: Lennert Buytenhek <buytenh@wantstofly.org>
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/Makefile           |    1 +
+ arch/arm/mach-mx5/pm.c               |   70 ++++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/mxc.h |    1 +
+ 3 files changed, 72 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm.c
+
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 026cd85..906bc71 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -5,6 +5,7 @@
+ # Object file lists.
+ obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o
+ 
++obj-$(CONFIG_PM) += pm.o
+ obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+diff --git a/arch/arm/mach-mx5/pm.c b/arch/arm/mach-mx5/pm.c
+new file mode 100644
+index 0000000..417cce1
+--- /dev/null
++++ b/arch/arm/mach-mx5/pm.c
+@@ -0,0 +1,70 @@
++/*
++ *  Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <linux/suspend.h>
++#include <asm/mach/map.h>
++#include <mach/system.h>
++#include "crm_regs.h"
++
++static int mx5_suspend_enter(suspend_state_t state)
++{
++	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
++
++	/* always allow platform to issue a deep sleep mode request */
++	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
++
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		ccm_clpcr |= (0x2 << MXC_CCM_CLPCR_LPM_OFFSET);
++		ccm_clpcr |= (0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET);
++		ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
++		ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
++		break;
++	case PM_SUSPEND_STANDBY:
++		ccm_clpcr |= (0x1 << MXC_CCM_CLPCR_LPM_OFFSET);
++		ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
++		ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
++		    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
++	arm_srpgcr |= MXC_SRPGCR_PCR;
++
++	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
++	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
++	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
++
++	if (tzic_enable_wake(0) != 0)
++		return -EAGAIN;
++
++	cpu_do_idle();
++	return 0;
++}
++
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
++};
++
++static int __init mx5_pm_init(void)
++{
++	if (cpu_is_mx51())
++		suspend_set_ops(&mx5_suspend_ops);
++	return 0;
++}
++device_initcall(mx5_pm_init);
+diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
+index 4abbdd1..dc685d4 100644
+--- a/arch/arm/plat-mxc/include/mach/mxc.h
++++ b/arch/arm/plat-mxc/include/mach/mxc.h
+@@ -52,6 +52,7 @@
+ 
+ #ifndef __ASSEMBLY__
+ extern unsigned int __mxc_cpu_type;
++int tzic_enable_wake(int is_idle);
+ #endif
+ 
+ #ifdef CONFIG_ARCH_MX1
+-- 
+1.6.0.4
+
+
