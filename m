@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab0K3SPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:15:36 -0500
-Received: from sous-sol.org ([216.99.217.87]:55632 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755592Ab0K3SPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:15:35 -0500
-Date: Tue, 30 Nov 2010 10:13:14 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>
-Subject: Re: [PATCH 0/2] Fix dmar fault interrupt problems
-Message-ID: <20101130181314.GH10050@sequoia.sous-sol.org>
-References: <4CF4B597.4030708@jp.fujitsu.com>
- <1291140553.2623.10.camel@sbsiddha-MOBL3>
+	id S1755975Ab0K3SQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:16:08 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50644 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755854Ab0K3SQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:16:07 -0500
+Date: Tue, 30 Nov 2010 18:14:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jamie Iles <jamie.iles@picochip.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/8] ARM: cns3xxx: Add support for SMP
+Message-ID: <20101130181442.GA9137@n2100.arm.linux.org.uk>
+References: <20101130171626.GA6165@oksana.dev.rtsoft.ru> <20101130171700.GB24034@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291140553.2623.10.camel@sbsiddha-MOBL3>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101130171700.GB24034@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Suresh Siddha (suresh.b.siddha@intel.com) wrote:
-> On Tue, 2010-11-30 at 00:28 -0800, Kenji Kaneshige wrote:
-> > Hi,
-> > 
-> > Here are patches to fix the following problems regarding dmar fault interrupt.
-> > 
-> > - No dmar fault event is notified in x2apic cluster mode
-> > - Changing IRQ affinity of dmar fault interrupt causes "No irq handler
-> >   for vector (irq XX)" message and dmar fault interrupts are never
-> >   notified after that.
+On Tue, Nov 30, 2010 at 08:17:00PM +0300, Anton Vorontsov wrote:
+> Nothing fancy needs to be done, just use generic SCU routines.
 > 
-> Kenji, In addition to these two, there are couple of more patches that
-> are needed to fix the kexec/kdump issue that we are debugging on RH
-> bugzilla.
-> 
-> I will post all these 4 patches shortly. I already noticed and queued
-> the second patch (dmar irq migration)  you mentioned.
+> Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
 
-And one of them (the additional call to flushing existing dmar faults)
-is not needed.  So the quirk plus ensuring ir faults show up as msi
-interrupts should be sufficient.
+This I assume is an age old patch.
 
-thanks,
--chris
+> diff --git a/arch/arm/mach-cns3xxx/include/mach/smp.h b/arch/arm/mach-cns3xxx/include/mach/smp.h
+> new file mode 100644
+> index 0000000..44aa7ea
+> --- /dev/null
+> +++ b/arch/arm/mach-cns3xxx/include/mach/smp.h
+> @@ -0,0 +1,28 @@
+> +/*
+> + * Copyright 2002 ARM Ltd.
+> + * Copyright 2008 Cavium Networks
+> + *
+> + * This file is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, Version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __MACH_SMP_H
+> +#define __MACH_SMP_H
+> +
+> +#include <asm/hardware/gic.h>
+> +
+> +#define hard_smp_processor_id()				\
+> +	({						\
+> +		unsigned int cpunum;			\
+> +		__asm__("mrc p15, 0, %0, c0, c0, 5"	\
+> +			: "=r" (cpunum));		\
+> +		cpunum &= 0x0F;				\
+> +	})
+
+#include <asm/smp_mpidr.h>
+
+replaces this, but it's not actually necessary - it's only used by some
+bug checking code in the CPU hotplug code.  I'm shortly going to be
+deleting all hard_smp_processor_id() implementations.
