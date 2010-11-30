@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab0K3PLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:11:53 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49204 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab0K3PLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:11:52 -0500
-Date: Tue, 30 Nov 2010 16:11:29 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101130151129.GA5901@elte.hu>
-References: <20101128201851.GA20555@elte.hu>
- <1291031593.32004.19.camel@laptop>
- <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
- <1291052268.32004.171.camel@laptop>
- <1291057565.20709.2.camel@marge.simson.net>
- <20101129192033.GA18372@elte.hu>
- <1291103647.24405.5.camel@marge.simson.net>
- <20101130141804.GB22588@elte.hu>
- <20101130145323.GA3291@elte.hu>
- <1291129287.32004.880.camel@laptop>
+	id S1753518Ab0K3PNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:13:45 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:37841 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751393Ab0K3PNo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 10:13:44 -0500
+Date: Tue, 30 Nov 2010 10:13:43 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM: Prevent dpm_prepare() from returning errors
+ unnecessarily
+In-Reply-To: <201011292304.11856.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1011301008110.1686-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291129287.32004.880.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.3
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.3 required=5.9 tests=BAYES_00,FUZZY_VPILL autolearn=no SpamAssassin version=3.2.5
-	0.7 FUZZY_VPILL            BODY: Attempt to obfuscate words in spam
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 29 Nov 2010, Rafael J. Wysocki wrote:
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Tue, 2010-11-30 at 15:53 +0100, Ingo Molnar wrote:
-> > another detail is that i needed this fix:
+> > Oh, I see.  This is a tricky issue.  Every driver for a device that can
+> > have wakeup-enabled children needs to worry about the race between
+> > suspending the device and receiving a wakeup request from a child.  
+> > For example, in drivers/usb/core/hcd-pci.c, the suspend_common()
+> > routine goes out of its way to return -EBUSY if device_may_wakeup() is
+> > true and the controller's root hub has a pending wakeup request.
 > > 
-> > --- linux.orig/init/Kconfig
-> > +++ linux/init/Kconfig
-> > @@ -790,6 +790,7 @@ endif # NAMESPACES
-> >  
-> >  config SCHED_AUTOGROUP
-> >  	bool "Automatic process group scheduling"
-> > +	select EVENTFD
-> >  	select CGROUPS
-> >  	select CGROUP_SCHED
-> >  	select FAIR_GROUP_SCHED
-> > 
-> > Because CGROUPS depends on eventfd infrastructure.
+> > How should drivers handle this in general?  Should we make an effort to
+> > convert them to use the wakeup framework so they they can let the PM
+> > core take care of these races?
 > 
-> Shouldn't then cgroups select that?
+> I think so.
+> 
+> We also need to put a pm_check_wakeup_events() check into dpm_suspend() IMO,
+> so that we abort the suspending of devices as soon as a wakeup event is
+> reported.
 
-It depends on it so selecting it is fine. !EVENTFD is a CONFIG_EMBEDDED-only thing 
-anyway.
+You might as well add that into this patch.
 
-Thanks,
+> > Do we have to consider similar races during runtime suspend?
+> 
+> Ideally, yes, but I'm not sure if that's generally possible.  IMO, it won't be
+> a big deal if a parent device is suspended and immediately resumed occasionally
+> due to a pending wakeup signal from one of its children.  It may be a problem
+> if that happens too often, though.
 
-	Ingo
+Okay.
+
+> Does it mean you're fine with the patch?
+
+Provided you repair the error that Lei Ming pointed out.  That's the 
+problem with functions that return Boolean values -- you have to name 
+them very carefully.  Ideally the name should be a predicate or a
+question.
+
+Alan Stern
+
