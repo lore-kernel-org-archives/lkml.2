@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab0K3TrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:47:24 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56219 "EHLO comal.ext.ti.com"
+	id S1756525Ab0K3Tr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:47:29 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:56222 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756443Ab0K3TrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:47:19 -0500
+	id S1756443Ab0K3TrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:47:24 -0500
 From: David Sin <davidsin@ti.com>
 To: Greg KH <greg@kroah.com>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Lajos Molnar <molnar@ti.com>, David Sin <davidsin@ti.com>
-Subject: [RFC v2 6/8] TILER-DMM: Geometry and view manipulation functions
-Date: Tue, 30 Nov 2010 13:58:57 -0600
-Message-Id: <1291147139-23472-7-git-send-email-davidsin@ti.com>
+Subject: [RFC v2 7/8] TILER-DMM: Main TILER driver implementation
+Date: Tue, 30 Nov 2010 13:58:58 -0600
+Message-Id: <1291147139-23472-8-git-send-email-davidsin@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1291147139-23472-1-git-send-email-davidsin@ti.com>
 References: <1291147139-23472-1-git-send-email-davidsin@ti.com>
@@ -22,83 +22,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lajos Molnar <molnar@ti.com>
 
-This patch contains information on TILER geometry, as well as
-tiler_view_t object manipulation functions.
+This patch contains the TILER driver and implementation of the TILER
+block manipulation and mapping functions.
 
-It also contains an internal TILER header file to share geometric
-information with other TILER files.
+It also contains the makefile and config file for the TILER driver.
 
 Signed-off-by: Lajos Molnar <molnar@ti.com>
 Signed-off-by: David Sin <davidsin@ti.com>
 ---
- drivers/misc/tiler/_tiler.h     |   48 +++++
- drivers/misc/tiler/tiler-geom.c |  362 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 410 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/tiler/_tiler.h
- create mode 100644 drivers/misc/tiler/tiler-geom.c
+ arch/arm/mach-omap2/Makefile     |    1 +
+ drivers/misc/tiler/Kconfig       |   72 +++++++
+ drivers/misc/tiler/Makefile      |    7 +
+ drivers/misc/tiler/tiler-iface.c |   66 ++++++
+ drivers/misc/tiler/tiler-main.c  |  405 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 551 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/tiler/Kconfig
+ create mode 100644 drivers/misc/tiler/Makefile
+ create mode 100644 drivers/misc/tiler/tiler-iface.c
+ create mode 100644 drivers/misc/tiler/tiler-main.c
 
-diff --git a/drivers/misc/tiler/_tiler.h b/drivers/misc/tiler/_tiler.h
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index ebd2589..d55e29c 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -183,3 +183,4 @@ obj-y					+= $(nand-m) $(nand-y)
+ smc91x-$(CONFIG_SMC91X)			:= gpmc-smc91x.o
+ obj-y					+= $(smc91x-m) $(smc91x-y)
+ obj-$(CONFIG_ARCH_OMAP4)		+= hwspinlocks.o
++obj-$(CONFIG_ARCH_OMAP4)		+= dmm-omap44xx.o
+diff --git a/drivers/misc/tiler/Kconfig b/drivers/misc/tiler/Kconfig
 new file mode 100644
-index 0000000..0f00330
+index 0000000..9b8bfed
 --- /dev/null
-+++ b/drivers/misc/tiler/_tiler.h
-@@ -0,0 +1,48 @@
-+/*
-+ * TI TILER driver internal shared definitions.
-+ *
-+ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++++ b/drivers/misc/tiler/Kconfig
+@@ -0,0 +1,72 @@
++config HAVE_TI_DMM
++	bool
++	default y
++	depends on ARCH_OMAP4
 +
-+#ifndef _TILER_H
-+#define _TILER_H
++menuconfig TI_DMM
++        tristate "TI DMM support"
++        default y
++        depends on HAVE_TI_DMM
++        help
++           DMM driver for TI chips.
 +
-+#include <linux/kernel.h>
-+#include <mach/tiler.h>
-+#include "tcm.h"
++menuconfig TI_TILER
++        tristate "TI TILER support"
++        default y
++        depends on TI_DMM
++        help
++           TILER driver for TI chips.  The TI TILER device
++           enables video rotation on certain TI chips such as OMAP4 or
++           TI816x.  Video rotation will be limited without TILER support.
 +
-+#define TILER_FORMATS		(TILFMT_MAX - TILFMT_MIN + 1)
++config TILER_GRANULARITY
++        int "Allocation granularity (2^n)"
++        range 1 4096
++        default 128
++        depends on TI_TILER
++        help
++           This option sets the default TILER allocation granularity.  It can
++           be overriden by the tiler.grain boot argument.
 +
-+/* tiler geometry information */
-+struct tiler_geom {
-+	u32 x_shft;	/* unused X-bits (as part of bpp) */
-+	u32 y_shft;	/* unused Y-bits (as part of bpp) */
-+	u32 bpp;	/* bytes per pixel */
-+	u32 slot_w;	/* width of each slot (in pixels) */
-+	u32 slot_h;	/* height of each slot (in pixels) */
-+};
++           The allocation granularity is the smallest TILER block size (in
++           bytes) managed distinctly by the TILER driver.  TILER blocks of any
++           size are managed in chunks of at least this size.
 +
-+/* methods and variables shared between source files */
-+struct tiler_ops {
-+	/* geometry operations */
-+	void (*xy) (u32 ssptr, u32 *x, u32 *y);
-+	u32 (*addr) (enum tiler_fmt fmt, u32 x, u32 y);
-+	const struct tiler_geom * (*geom) (enum tiler_fmt fmt);
++           Must be a 2^n in the range of 1 to 4096; however, the TILER driver
++           may use a larger supported granularity.
 +
-+	u32 page;		/* page size */
-+	u32 width;		/* container width */
-+	u32 height;		/* container height */
-+};
++           Supported values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024,
++           2048, 4096.
 +
-+void tiler_geom_init(struct tiler_ops *tiler);
++config TILER_ALIGNMENT
++        int "Allocation alignment (2^n)"
++        range 1 4096
++        default 4096
++        depends on TI_TILER
++        help
++           This option sets the default TILER allocation alignment.  It can
++           be overriden by the tiler.align boot argument.
 +
-+#endif
-diff --git a/drivers/misc/tiler/tiler-geom.c b/drivers/misc/tiler/tiler-geom.c
++           Must be a 2^n in the range of 1 to 4096; however, it is naturally
++           aligned to the TILER granularity.
++
++           Supported values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024,
++           2048, 4096.
++
++config TILER_CACHE_LIMIT
++        int "Memory limit to cache free pages in MBytes"
++        range 0 128
++        default 40
++        depends on TI_TILER
++        help
++           This option sets the minimum memory that TILER retains even if
++           there is less TILER allocated memory is use.  The unused memory is
++           instead stored in a cache to speed up allocation and freeing of
++           physical pages.
++
++           This option can be overriden by the tiler.cache boot argument.
++
++           While initially TILER will use less memory than this limit (0), it
++           will not release any memory used until it reaches this limit.
++           Thereafter, TILER will release any unused memory immediately as
++           long as there it is above this threshold.
+diff --git a/drivers/misc/tiler/Makefile b/drivers/misc/tiler/Makefile
 new file mode 100644
-index 0000000..df5fe2c
+index 0000000..7dbc828
 --- /dev/null
-+++ b/drivers/misc/tiler/tiler-geom.c
-@@ -0,0 +1,362 @@
++++ b/drivers/misc/tiler/Makefile
+@@ -0,0 +1,7 @@
++obj-$(CONFIG_TI_DMM) += dmm.o
++dmm-objs = dmm-main.o
++
++obj-$(CONFIG_TI_TILER) += tcm/
++
++obj-$(CONFIG_TI_TILER) += tiler.o
++tiler-objs = tiler-geom.o tiler-main.o tiler-iface.o tmm-pat.o
+diff --git a/drivers/misc/tiler/tiler-iface.c b/drivers/misc/tiler/tiler-iface.c
+new file mode 100644
+index 0000000..3c64c00
+--- /dev/null
++++ b/drivers/misc/tiler/tiler-iface.c
+@@ -0,0 +1,66 @@
 +/*
-+ * TILER geometry functions for TI TILER hardware block.
++ * TILER driver interace functions for TI TILER hardware block.
 + *
 + * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
 + *
@@ -113,352 +163,467 @@ index 0000000..df5fe2c
 + */
 +
 +#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/mm.h>
++#include <linux/mm_types.h>
++#include <asm/mach/map.h>
++
 +#include "_tiler.h"
 +
-+/* bits representing the same slot in DMM-TILER hw-block */
-+#define SLOT_WIDTH_BITS		6
-+#define SLOT_HEIGHT_BITS	6
++/*
++ * Memory-Map Kernel APIs
++ */
 +
-+/* bits reserved to describe coordinates in DMM-TILER hw-block */
-+#define CONT_WIDTH_BITS		14
-+#define CONT_HEIGHT_BITS	13
++s32 tiler_mmap_blk(struct tiler_block_t *blk, u32 offs, u32 size,
++				struct vm_area_struct *vma, u32 voffs)
++{
++	u32 v, p, len;
 +
-+static struct tiler_geom geom[TILER_FORMATS] = {
-+	{
-+		.x_shft = 0,
-+		.y_shft = 0,
-+	},
-+	{
-+		.x_shft = 0,
-+		.y_shft = 1,
-+	},
-+	{
-+		.x_shft = 1,
-+		.y_shft = 1,
-+	},
++	/* don't allow mremap */
++	vma->vm_flags |= VM_DONTEXPAND | VM_RESERVED;
++
++	/* mapping must fit into vma */
++	BUG_ON(vma->vm_start > vma->vm_start + voffs ||
++		vma->vm_start + voffs > vma->vm_start + voffs + size ||
++		vma->vm_start + voffs + size > vma->vm_end);
++
++	/* mapping must fit into block */
++	BUG_ON(offs > offs + size || offs + size > tiler_size(blk));
++
++	v = tiler_vstride(blk);
++	p = tiler_pstride(blk);
++
++	/* remap block portion */
++	len = v - (offs % v);	/* initial area to map */
++	while (size) {
++		/* restrict to size still needs mapping */
++		if (len > size)
++			len = size;
++
++		vma->vm_pgoff = (blk->phys + offs) >> PAGE_SHIFT;
++		if (remap_pfn_range(vma, vma->vm_start + voffs, vma->vm_pgoff,
++				    len, vma->vm_page_prot))
++			return -EAGAIN;
++		voffs += len;
++		offs += len + p - v;
++		size -= len;
++		len = v;	/* subsequent area to map */
++	}
++	return 0;
++}
++EXPORT_SYMBOL(tiler_mmap_blk);
++
+diff --git a/drivers/misc/tiler/tiler-main.c b/drivers/misc/tiler/tiler-main.c
+new file mode 100644
+index 0000000..64bcdd0
+--- /dev/null
++++ b/drivers/misc/tiler/tiler-main.c
+@@ -0,0 +1,405 @@
++/*
++ * TILER driver main support functions for TI TILER hardware block.
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/errno.h>
++#include <linux/mutex.h>
++#include <linux/dma-mapping.h>
++#include <linux/pagemap.h>
++#include <linux/slab.h>
++
++#include <mach/dmm.h>
++#include "tmm.h"
++#include "_tiler.h"
++#include "tcm/tcm-sita.h"
++
++static uint default_align = CONFIG_TILER_ALIGNMENT;
++static uint granularity = CONFIG_TILER_GRANULARITY;
++
++module_param_named(align, default_align, uint, 0444);
++MODULE_PARM_DESC(align, "Default block ssptr alignment");
++module_param_named(grain, granularity, uint, 0444);
++MODULE_PARM_DESC(grain, "Granularity (bytes)");
++
++static struct tiler_ops tiler;		/* shared methods and variables */
++
++static struct list_head blocks;		/* all tiler blocks */
++
++static struct mutex mtx;
++static struct tcm *tcm[TILER_FORMATS];
++static struct tmm *tmm[TILER_FORMATS];
++static u32 *dmac_va;
++static dma_addr_t dmac_pa;
++
++/* info for a block */
++struct mem_info {
++	struct list_head global;	/* global blocks */
++	struct tiler_block_t blk;	/* block info */
++	struct tcm_area area;
++	u32 *mem;			/* list of alloced phys addresses */
 +};
 +
-+/* tiler space addressing bitfields */
-+#define MASK_XY_FLIP		(1 << 31)
-+#define MASK_Y_INVERT		(1 << 30)
-+#define MASK_X_INVERT		(1 << 29)
-+#define SHIFT_ACC_MODE		27
-+#define MASK_ACC_MODE		3
++/*
++ *  TILER Memory Manager (TMM) connectors
++ */
 +
-+/* calculated constants */
-+#define TILER_PAGE		(1 << (SLOT_WIDTH_BITS + SLOT_HEIGHT_BITS))
-+#define TILER_WIDTH		(1 << (CONT_WIDTH_BITS - SLOT_WIDTH_BITS))
-+#define TILER_HEIGHT		(1 << (CONT_HEIGHT_BITS - SLOT_HEIGHT_BITS))
-+
-+#define VIEW_SIZE		(1u << (CONT_WIDTH_BITS + CONT_HEIGHT_BITS))
-+#define VIEW_MASK		(VIEW_SIZE - 1u)
-+
-+#define MASK(bits) ((1 << (bits)) - 1)
-+
-+#define TILER_FMT(x)	((enum tiler_fmt) \
-+		((x >> SHIFT_ACC_MODE) & MASK_ACC_MODE))
-+
-+#define MASK_VIEW		(MASK_X_INVERT | MASK_Y_INVERT | MASK_XY_FLIP)
-+
-+/* location of the various tiler views in physical address space */
-+#define TILVIEW_8BIT	0x60000000u
-+#define TILVIEW_16BIT	(TILVIEW_8BIT  + VIEW_SIZE)
-+#define TILVIEW_32BIT	(TILVIEW_16BIT + VIEW_SIZE)
-+#define TILVIEW_PAGE	(TILVIEW_32BIT + VIEW_SIZE)
-+#define TILVIEW_END	(TILVIEW_PAGE  + VIEW_SIZE)
-+
-+/* create tsptr by adding view orientation and access mode */
-+#define TIL_ADDR(x, orient, a)\
-+	((u32) (x) | (orient) | ((a) << SHIFT_ACC_MODE))
-+
-+bool is_tiler_addr(u32 phys)
++/* wrapper around tmm_map */
++static s32 refill_pat(struct tmm *tmm, struct tcm_area *area, u32 *ptr)
 +{
-+	return phys >= TILVIEW_8BIT && phys < TILVIEW_END;
-+}
-+EXPORT_SYMBOL(is_tiler_addr);
++	s32 res = 0;
++	struct pat_area p_area = {0};
 +
-+u32 tiler_bpp(const struct tiler_block_t *b)
-+{
-+	enum tiler_fmt fmt = tiler_fmt(b->phys);
-+	BUG_ON(fmt == TILFMT_INVALID || fmt == TILFMT_PAGE);
++	p_area.x0 = area->p0.x;
++	p_area.y0 = area->p0.y;
++	p_area.x1 = area->p1.x;
++	p_area.y1 = area->p1.y;
 +
-+	return geom[fmt].bpp;
-+}
-+EXPORT_SYMBOL(tiler_bpp);
++	memcpy(dmac_va, ptr, sizeof(*ptr) * tcm_sizeof(*area));
 +
-+/* return the stride of a tiler-block in tiler space */
-+static inline s32 tiler_stride(u32 tsptr)
-+{
-+	enum tiler_fmt fmt = TILER_FMT(tsptr);
++	if (tmm_map(tmm, p_area, dmac_pa))
++		res = -EFAULT;
 +
-+	if (fmt == TILFMT_PAGE)
-+		return 0;
-+	else if (tsptr & MASK_XY_FLIP)
-+		return 1 << (CONT_HEIGHT_BITS + geom[fmt].x_shft);
-+	else
-+		return 1 << (CONT_WIDTH_BITS + geom[fmt].y_shft);
++	return res;
 +}
 +
-+u32 tiler_pstride(const struct tiler_block_t *b)
++/* wrapper around tmm_clear */
++static void clear_pat(struct tmm *tmm, struct tcm_area *area)
 +{
-+	enum tiler_fmt fmt = tiler_fmt(b->phys);
-+	BUG_ON(fmt == TILFMT_INVALID);
++	struct pat_area p_area = {0};
 +
-+	/* return the virtual stride for page mode */
-+	if (fmt == TILFMT_PAGE)
-+		return tiler_vstride(b);
++	p_area.x0 = area->p0.x;
++	p_area.y0 = area->p0.y;
++	p_area.x1 = area->p1.x;
++	p_area.y1 = area->p1.y;
 +
-+	return tiler_stride(b->phys & ~MASK_VIEW);
-+}
-+EXPORT_SYMBOL(tiler_pstride);
-+
-+enum tiler_fmt tiler_fmt(u32 phys)
-+{
-+	if (!is_tiler_addr(phys))
-+		return TILFMT_INVALID;
-+
-+	return TILER_FMT(phys);
-+}
-+EXPORT_SYMBOL(tiler_fmt);
-+
-+/* returns the tiler geometry information for a format */
-+static const struct tiler_geom *get_geom(enum tiler_fmt fmt)
-+{
-+	if (fmt >= TILFMT_MIN && fmt <= TILFMT_MAX)
-+		return geom + fmt;
-+	return NULL;
++	tmm_clear(tmm, p_area);
 +}
 +
 +/*
-+ * Returns the natural x and y coordinates for a pixel in tiler space address.
-+ * That is, the coordinates for the same pixel in the natural (non-rotated,
-+ * non-mirrored) view. This allows to uniquely identify a tiler pixel in any
-+ * view orientation.
++ *  Area handling methods
 + */
-+static void tiler_get_natural_xy(u32 tsptr, u32 *x, u32 *y)
++
++/* verify input params and calculate tiler container params for a block */
++static s32 __analyze_area(enum tiler_fmt fmt, u32 width, u32 height,
++			  u16 *x_area, u16 *y_area, u16 *align, u16 *offs)
 +{
-+	u32 x_bits, y_bits, offset;
-+	enum tiler_fmt fmt;
++	/* input: width, height is in pixels, *align, *offs in bytes */
++	/* output: x_area, y_area, *align in slots */
 +
-+	fmt = TILER_FMT(tsptr);
++	/* slot width, height, and row size */
++	u32 slot_row, min_align;
++	const struct tiler_geom *g;
 +
-+	x_bits = CONT_WIDTH_BITS - geom[fmt].x_shft;
-+	y_bits = CONT_HEIGHT_BITS - geom[fmt].y_shft;
-+	offset = (tsptr & VIEW_MASK) >> (geom[fmt].x_shft + geom[fmt].y_shft);
-+
-+	/* separate coordinate bitfields based on view orientation */
-+	if (tsptr & MASK_XY_FLIP) {
-+		*x = offset >> y_bits;
-+		*y = offset & MASK(y_bits);
-+	} else {
-+		*x = offset & MASK(x_bits);
-+		*y = offset >> x_bits;
-+	}
-+
-+	/* account for mirroring */
-+	if (tsptr & MASK_X_INVERT)
-+		*x ^= MASK(x_bits);
-+	if (tsptr & MASK_Y_INVERT)
-+		*y ^= MASK(y_bits);
-+}
-+
-+/* calculate the tiler space address of a pixel in a view orientation */
-+static u32 tiler_get_address(u32 orient, enum tiler_fmt fmt, u32 x, u32 y)
-+{
-+	u32 x_bits, y_bits, tmp, x_mask, y_mask, alignment;
-+
-+	x_bits = CONT_WIDTH_BITS - geom[fmt].x_shft;
-+	y_bits = CONT_HEIGHT_BITS - geom[fmt].y_shft;
-+	alignment = geom[fmt].x_shft + geom[fmt].y_shft;
-+
-+	/* validate coordinate */
-+	x_mask = MASK(x_bits);
-+	y_mask = MASK(y_bits);
-+	if (x < 0 || x > x_mask || y < 0 || y > y_mask)
-+		return 0;
-+
-+	/* account for mirroring */
-+	if (orient & MASK_X_INVERT)
-+		x ^= x_mask;
-+	if (orient & MASK_Y_INVERT)
-+		y ^= y_mask;
-+
-+	/* get coordinate address */
-+	if (orient & MASK_XY_FLIP)
-+		tmp = ((x << y_bits) + y);
-+	else
-+		tmp = ((y << x_bits) + x);
-+
-+	return TIL_ADDR((tmp << alignment), orient, fmt);
-+}
-+
-+void tilview_create(struct tiler_view_t *view, u32 phys, u32 width, u32 height)
-+{
-+	BUG_ON(!is_tiler_addr(phys));
-+
-+	view->tsptr = phys & ~MASK_VIEW;
-+	view->bpp = geom[TILER_FMT(phys)].bpp;
-+	view->width = width;
-+	view->height = height;
-+	view->h_inc = view->bpp;
-+	view->v_inc = tiler_stride(view->tsptr);
-+}
-+EXPORT_SYMBOL(tilview_create);
-+
-+void tilview_get(struct tiler_view_t *view, struct tiler_block_t *blk)
-+{
-+	view->tsptr = blk->phys & ~MASK_VIEW;
-+	view->bpp = tiler_bpp(blk);
-+	view->width = blk->width;
-+	view->height = blk->height;
-+	view->h_inc = view->bpp;
-+	view->v_inc = tiler_stride(view->tsptr);
-+}
-+EXPORT_SYMBOL(tilview_get);
-+
-+s32 tilview_crop(struct tiler_view_t *view, u32 left, u32 top, u32 width,
-+								u32 height)
-+{
-+	/* check for valid crop */
-+	if (left + width < left || left + width > view->width ||
-+	    top + height < top || top + height > view->height)
++	/* width and height must be positive, format must be 2D */
++	if (!width || !height || fmt == TILFMT_PAGE)
 +		return -EINVAL;
 +
-+	view->tsptr += left * view->h_inc + top * view->v_inc;
-+	view->width = width;
-+	view->height = height;
++	/* align must be 2 power */
++	if (*align & (*align - 1))
++		return -EINVAL;
++
++	/* format must be valid */
++	g = tiler.geom(fmt);
++	if (!g)
++		return -EINVAL;
++
++	/* get the # of bytes per row in 1 slot */
++	slot_row = g->slot_w * g->bpp;
++
++	/* minimum alignment is at least 1 slot.  Use default if needed */
++	min_align = max(slot_row, granularity);
++	*align = ALIGN(*align ? : default_align, min_align);
++
++	/* offset must be multiple of bpp */
++	if (*offs & (g->bpp - 1) || *offs >= *align)
++		return -EINVAL;
++
++	/* round down the offset to the nearest slot size, and increase width
++	   to allow space for having the correct offset */
++	width += (*offs & (min_align - 1)) / g->bpp;
++
++	/* expand width to block size */
++	width = ALIGN(width, min_align / g->bpp);
++
++	/* adjust to slots */
++	*x_area = DIV_ROUND_UP(width, g->slot_w);
++	*y_area = DIV_ROUND_UP(height, g->slot_h);
++	*align /= slot_row;
++
++	if (*x_area > tiler.width || *y_area > tiler.height)
++		return -ENOMEM;
 +	return 0;
 +}
-+EXPORT_SYMBOL(tilview_crop);
 +
-+/* calculate tilerspace address and stride after view orientation change */
-+static void reorient(struct tiler_view_t *view, u32 orient)
++/* allocate a mem_info structure and reserves a 2d container area */
++static struct mem_info *get_2d_area(u16 w, u16 h, u16 align, struct tcm *tcm)
 +{
-+	u32 x, y;
++	struct mem_info *mi = NULL;
 +
-+	tiler_get_natural_xy(view->tsptr, &x, &y);
-+	view->tsptr = tiler_get_address(orient,
-+					TILER_FMT(view->tsptr), x, y);
-+	view->v_inc = tiler_stride(view->tsptr);
++	/* reserve a block struct */
++	mi = kmalloc(sizeof(*mi), GFP_KERNEL);
++	if (!mi)
++		return mi;
++	memset(mi, 0, sizeof(*mi));
++
++	/* reserve an area */
++	if (tcm_reserve_2d(tcm, w, h, align, &mi->area)) {
++		kfree(mi);
++		return NULL;
++	}
++
++	return mi;
 +}
 +
-+s32 tilview_rotate(struct tiler_view_t *view, s32 rotation)
-+{
-+	u32 orient;
++/*
++ *  Block operations
++ */
 +
-+	if (rotation % 90)
++/* free a block */
++static s32 free_block(struct mem_info *mi)
++{
++	/* release memory */
++	if (mi->mem)
++		tmm_free(tmm[tiler_fmt(mi->blk.phys)], mi->mem);
++	clear_pat(tmm[tiler_fmt(mi->blk.phys)], &mi->area);
++
++	/* unreserve area */
++	tcm_free(&mi->area);
++
++	/* have mutex */
++
++	/* safe deletion as list may not have been assigned */
++	if (mi->global.next)
++		list_del(&mi->global);
++
++	kfree(mi);
++	return 0;
++}
++
++/* create an empty block with just an area and add it to the global list */
++static struct mem_info *get_area(enum tiler_fmt fmt, u32 width, u32 height,
++							u16 align, u16 offs)
++{
++	u16 x, y;
++	struct mem_info *mi = NULL;
++	const struct tiler_geom *g = tiler.geom(fmt);
++
++	/* calculate dimensions and alignment in slots */
++	if (__analyze_area(fmt, width, height, &x, &y, &align, &offs))
++		return NULL;
++
++	mi = get_2d_area(x, y, align, tcm[fmt]);
++	if (!mi)
++		return NULL;
++
++	/* have mutex */
++	list_add(&mi->global, &blocks);
++
++	mi->blk.phys = tiler.addr(fmt,
++		mi->area.p0.x * g->slot_w, mi->area.p0.y * g->slot_h)
++		+ offs;
++	return mi;
++}
++
++/* allocate a new tiler block */
++static s32 alloc_block(enum tiler_fmt fmt, u32 width, u32 height,
++		u32 align, u32 offs, struct mem_info **info)
++{
++	struct mem_info *mi = NULL;
++
++	*info = NULL;
++
++	/* only support up to page alignment */
++	if (align > PAGE_SIZE || offs >= (align ? : default_align))
 +		return -EINVAL;
 +
-+	/* normalize rotation to quarters */
-+	rotation = (rotation / 90) & 3;
-+	if (!rotation)
-+		return 0; /* nothing to do */
++	mutex_lock(&mtx);
 +
-+	/* PAGE mode view cannot be rotated */
-+	if (TILER_FMT(view->tsptr) == TILFMT_PAGE)
-+		return -EPERM;
++	/* reserve area in tiler container */
++	mi = get_area(fmt, width, height, align, offs);
++	if (!mi)
++		goto nomem;
++
++	mi->blk.width = width;
++	mi->blk.height = height;
++
++	/* allocate and map if mapping is supported */
++	if (tmm_can_map(tmm[fmt])) {
++		mi->mem = tmm_get(tmm[fmt], tcm_sizeof(mi->area));
++		if (!mi->mem)
++			goto cleanup;
++
++		/* program PAT */
++		if (refill_pat(tmm[fmt], &mi->area, mi->mem))
++			goto cleanup;
++	}
++	*info = mi;
++	mutex_unlock(&mtx);
++	return 0;
++
++cleanup:
++	free_block(mi);
++nomem:
++	mutex_unlock(&mtx);
++	return -ENOMEM;
++}
++
++/*
++ *  Driver code
++ */
++
++/* driver initialization */
++static s32 __init tiler_init(void)
++{
++	s32 r = 0;
++	struct tcm *sita = NULL;
++	struct tmm *tmm_pat = NULL;
++
++	tiler_geom_init(&tiler);
++
++	/* check module parameters for correctness */
++	if (default_align > PAGE_SIZE ||
++	    default_align & (default_align - 1) ||
++	    granularity < 1 || granularity > PAGE_SIZE ||
++	    granularity & (granularity - 1))
++		return -EINVAL;
 +
 +	/*
-+	 * first adjust top-left corner. NOTE: it rotates counter-clockwise:
-+	 * 0 < 3
-+	 * v   ^
-+	 * 1 > 2
++	 * Array of physical pages for PAT programming, which must be a 16-byte
++	 * aligned physical address.
 +	 */
-+	if (rotation < 3)
-+		view->tsptr += (view->height - 1) * view->v_inc;
-+	if (rotation > 1)
-+		view->tsptr += (view->width - 1) * view->h_inc;
++	dmac_va = dma_alloc_coherent(NULL, tiler.width * tiler.height *
++					sizeof(*dmac_va), &dmac_pa, GFP_KERNEL);
++	if (!dmac_va)
++		return -ENOMEM;
 +
-+	/* then rotate view itself */
-+	orient = view->tsptr & MASK_VIEW;
++	/* Allocate tiler container manager (we share 1 on OMAP4) */
++	sita = sita_init(tiler.width, tiler.height, NULL);
 +
-+	/* rotate first 2 quarters */
-+	if (rotation & 2) {
-+		orient ^= MASK_X_INVERT;
-+		orient ^= MASK_Y_INVERT;
++	tcm[TILFMT_8BIT]  = sita;
++	tcm[TILFMT_16BIT] = sita;
++	tcm[TILFMT_32BIT] = sita;
++
++	/* Allocate tiler memory manager (must have 1 unique TMM per TCM ) */
++	tmm_pat = tmm_pat_init(0);
++	tmm[TILFMT_8BIT]  = tmm_pat;
++	tmm[TILFMT_16BIT] = tmm_pat;
++	tmm[TILFMT_32BIT] = tmm_pat;
++
++	if (!sita || !tmm_pat) {
++		r = -ENOMEM;
++		goto error;
 +	}
 +
-+	/* rotate last quarter */
-+	if (rotation & 1) {
-+		orient ^= (orient & MASK_XY_FLIP) ?
-+			MASK_X_INVERT : MASK_Y_INVERT;
++	mutex_init(&mtx);
++	INIT_LIST_HEAD(&blocks);
 +
-+		/* swap x & y */
-+		orient ^= MASK_XY_FLIP;
-+		swap(view->height, view->width);
++error:
++	if (r) {
++		tcm_deinit(sita);
++		tmm_deinit(tmm_pat);
++		dma_free_coherent(NULL, tiler.width * tiler.height *
++					sizeof(*dmac_va), dmac_va, dmac_pa);
 +	}
 +
-+	/* finally reorient view */
-+	reorient(view, orient);
-+	return 0;
-+}
-+EXPORT_SYMBOL(tilview_rotate);
-+
-+s32 tilview_flip(struct tiler_view_t *view, bool flip_x, bool flip_y)
-+{
-+	u32 orient;
-+	orient = view->tsptr & MASK_VIEW;
-+
-+	if (!flip_x && !flip_y)
-+		return 0; /* nothing to do */
-+
-+	/* PAGE mode view cannot be flipped */
-+	if (TILER_FMT(view->tsptr) == TILFMT_PAGE)
-+		return -EPERM;
-+
-+	/* adjust top-left corner */
-+	if (flip_x)
-+		view->tsptr += (view->width - 1) * view->h_inc;
-+	if (flip_y)
-+		view->tsptr += (view->height - 1) * view->v_inc;
-+
-+	/* flip view orientation */
-+	if (orient & MASK_XY_FLIP)
-+		swap(flip_x, flip_y);
-+
-+	if (flip_x)
-+		orient ^= MASK_X_INVERT;
-+	if (flip_y)
-+		orient ^= MASK_Y_INVERT;
-+
-+	/* finally reorient view */
-+	reorient(view, orient);
-+	return 0;
-+}
-+EXPORT_SYMBOL(tilview_flip);
-+
-+/* return the alias address for a coordinate */
-+static inline u32 alias_address(enum tiler_fmt fmt, u32 x, u32 y)
-+{
-+	return tiler_get_address(0, fmt, x, y) + TILVIEW_8BIT;
++	return r;
 +}
 +
-+/* get the coordinates for an alias address */
-+static inline void alias_xy(u32 ssptr, u32 *x, u32 *y)
++/* driver cleanup */
++static void __exit tiler_exit(void)
 +{
-+	tiler_get_natural_xy(ssptr & ~MASK_VIEW, x, y);
-+}
++	int i, j;
++	struct mem_info *mi, *mi_;
 +
-+/* initialize shared geometric data */
-+void tiler_geom_init(struct tiler_ops *tiler)
-+{
-+	struct tiler_geom *g;
++	mutex_lock(&mtx);
 +
-+	tiler->xy = alias_xy;
-+	tiler->addr = alias_address;
-+	tiler->geom = get_geom;
++	/* free all blocks */
++	list_for_each_entry_safe(mi, mi_, &blocks, global)
++		free_block(mi);
 +
-+	tiler->page   = TILER_PAGE;
-+	tiler->width  = TILER_WIDTH;
-+	tiler->height = TILER_HEIGHT;
++	/* all lists should have cleared */
++	BUG_ON(!list_empty(&blocks));
 +
-+	/* calculate geometry */
-+	for (g = geom; g < geom + TILER_FORMATS; g++) {
-+		g->bpp = 1 << (g->x_shft + g->y_shft);
-+		g->slot_w = 1 << (SLOT_WIDTH_BITS - g->x_shft);
-+		g->slot_h = 1 << (SLOT_HEIGHT_BITS - g->y_shft);
++	mutex_unlock(&mtx);
++
++	dma_free_coherent(NULL, tiler.width * tiler.height * sizeof(*dmac_va),
++							dmac_va, dmac_pa);
++
++	/* close containers only once */
++	for (i = TILFMT_MIN; i <= TILFMT_MAX; i++) {
++		/*
++		 * Remove identical containers.  TILER Memory Manager (TMM)
++		 * is unique per TILER Container Manager (TCM)
++		 */
++		for (j = i + 1; j <= TILFMT_MAX; j++)
++			if (tcm[i] == tcm[j]) {
++				tcm[j] = NULL;
++				tmm[j] = NULL;
++			}
++
++		tcm_deinit(tcm[i]);
++		tmm_deinit(tmm[i]);
 +	}
++
++	mutex_destroy(&mtx);
 +}
++
++/*
++ *  Block Kernel APIs
++ */
++
++s32 tiler_alloc(struct tiler_block_t *blk, enum tiler_fmt fmt,
++		u32 align, u32 offs)
++{
++	struct mem_info *mi;
++	s32 res;
++
++	/* blk must be valid, and blk->phys must be 0 */
++	BUG_ON(!blk || blk->phys);
++
++	res = alloc_block(fmt, blk->width, blk->height, align, offs, &mi);
++	if (mi)
++		blk->phys = mi->blk.phys;
++	return res;
++}
++EXPORT_SYMBOL(tiler_alloc);
++
++void tiler_free(struct tiler_block_t *blk)
++{
++	struct mem_info *mi;
++
++	mutex_lock(&mtx);
++
++	/* find block */
++	list_for_each_entry(mi, &blocks, global) {
++		if (mi->blk.phys == blk->phys) {
++			free_block(mi);
++			break;
++		}
++	}
++
++	blk->phys = 0;
++
++	mutex_unlock(&mtx);
++}
++EXPORT_SYMBOL(tiler_free);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Lajos Molnar <molnar@ti.com>");
++MODULE_AUTHOR("David Sin <davidsin@ti.com>");
++module_init(tiler_init);
++module_exit(tiler_exit);
 -- 
 1.7.0.4
 
