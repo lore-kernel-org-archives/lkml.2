@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab0K3A7C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 19:59:02 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:41180 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab0K3A7A (ORCPT
+	id S1756008Ab0K3BBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 20:01:40 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57700 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab0K3BBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 19:59:00 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject:references:
-	content-disposition:x-system-of-record;
-	b=Om1KNiBACg/YHAGZ2WOE+rFDfS2WrsifefsEJU+N7CxR7vfp3s5+D+tkvyLygTaLE
-	E43lnQ5Vy0VO6PNA1D5QQ==
-Message-Id: <20101130005740.080828123@google.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 29 Nov 2010 16:55:40 -0800
-From: Paul Turner <pjt@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [patch] sched: fix unregister_fair_sched_group
-References: <20101130005539.617388324@google.com>
-Content-Disposition: inline; filename=sched-fix_unregister.patch
-X-System-Of-Record: true
+	Mon, 29 Nov 2010 20:01:39 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH v3 1/3] deactivate invalidated pages
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <6e01d81a4b575dcaaacc6b3782c505103e024085.1291043274.git.minchan.kim@gmail.com>
+References: <cover.1291043273.git.minchan.kim@gmail.com> <6e01d81a4b575dcaaacc6b3782c505103e024085.1291043274.git.minchan.kim@gmail.com>
+Message-Id: <20101130100134.82E3.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 30 Nov 2010 10:01:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the flipping and flopping between calling unregister_fair_sched_group on a
-per-cpu versus per-group basis we ended up in a bad state.
+> Recently, there are reported problem about thrashing.
+> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+> It happens by backup workloads(ex, nightly rsync).
+> That's because the workload makes just use-once pages
+> and touches pages twice. It promotes the page into
+> active list so that it results in working set page eviction.
+> 
+> Some app developer want to support POSIX_FADV_NOREUSE.
+> But other OSes don't support it, either.
+> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
+> 
+> By other approach, app developers use POSIX_FADV_DONTNEED.
+> But it has a problem. If kernel meets page is writing
+> during invalidate_mapping_pages, it can't work.
+> It is very hard for application programmer to use it.
+> Because they always have to sync data before calling
+> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+> be discardable. At last, they can't use deferred write of kernel
+> so that they could see performance loss.
+> (http://insights.oetiker.ch/linux/fadvise.html)
+> 
+> In fact, invalidation is very big hint to reclaimer.
+> It means we don't use the page any more. So let's move
+> the writing page into inactive list's head.
+> 
+> Why I need the page to head, Dirty/Writeback page would be flushed
+> sooner or later. It can prevent writeout of pageout which is less
+> effective than flusher's writeout.
+> 
+> Originally, I reused lru_demote of Peter with some change so added
+> his Signed-off-by.
+> 
+> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Mel Gorman <mel@csn.ul.ie>
 
-Remove from the list for the passed cpu as opposed to some arbitrary index.
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-(This fixes explosions w/ autogroup as well as a group creation/destruction 
-stress test)
-
-Signed-off-by: Paul Turner <pjt@google.com>
----
- kernel/sched.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -8097,7 +8097,6 @@ static inline void unregister_fair_sched
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long flags;
--	int i;
- 
- 	/*
- 	* Only empty task groups can be destroyed; so we can speculatively
-@@ -8107,7 +8106,7 @@ static inline void unregister_fair_sched
- 		return;
- 
- 	raw_spin_lock_irqsave(&rq->lock, flags);
--	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
-+	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
- #else /* !CONFG_FAIR_GROUP_SCHED */
 
 
