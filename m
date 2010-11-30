@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0K3Dlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 22:41:46 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40138 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752710Ab0K3Dlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 22:41:45 -0500
-Date: Mon, 29 Nov 2010 19:40:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1753333Ab0K3DtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 22:49:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24933 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753200Ab0K3DtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 22:49:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
+   d="scan'208";a="631466369"
+Subject: [PATCH -tip] sched: fix uninitialized variable usage
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print
- support
-Message-Id: <20101129194033.393e1f70.akpm@linux-foundation.org>
-In-Reply-To: <1291087752.12648.95.camel@yhuang-dev>
-References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
-	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
-	<20101129190343.7d7cea12.akpm@linux-foundation.org>
-	<1291087752.12648.95.camel@yhuang-dev>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 11:51:37 +0800
+Message-ID: <1291089097.2405.152.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010 11:29:12 +0800 Huang Ying <ying.huang@intel.com> wrote:
+linux-2.6/kernel/sched.c: In function ‘sched_destroy_group’:
+linux-2.6/kernel/sched.c:8101: warning: ‘i’ is used uninitialized in this function
 
-> On Tue, 2010-11-30 at 11:03 +0800, Andrew Morton wrote:
-> > On Tue, 30 Nov 2010 10:51:40 +0800 Huang Ying <ying.huang@intel.com> wrote:
-> > 
-> > > printk is one of the methods to report hardware errors to user space.
-> > > Hardware error information reported by firmware to Linux kernel is in
-> > > the format of APEI generic error status (struct
-> > > acpi_hes_generic_status).  This patch adds print support for the
-> > > format, so that the corresponding hardware error information can be
-> > > reported to user space via printk.
-> > > 
-> > > PCIe AER information print is not implemented yet.  Will refactor the
-> > > original PCIe AER information printing code to avoid code duplicating.
-> > > 
-> > > ...
-> > >  
-> > > +#define pr_pfx(pfx, fmt, ...)			\
-> > > +	printk("%s" fmt, pfx, ##__VA_ARGS__)
-> > 
-> > hm, why does so much code create little printk helper macros.  Isn't
-> > there something generic somewhere?
-> 
-> Sorry, I do not find the generic code for this helper. But I think this
-> macro may be helpful for others too, who need to determine the log level
-> only at runtime. Here corrected errors should have log level:
-> KERN_WARNING, while uncorrected errors should have log level: KERN_ERR.
+This is caused by commit 3d4b47b(Implement on-demand (active) cfs_rq list)
 
-Oh, is that what it does.  Replacing "pfx" everywhere with "loglevel"
-(or similar) would have been much clearer?
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ kernel/sched.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> Do you think it is a good idea to make this macro generic?
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 717bf7d..c3af198 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8088,7 +8088,6 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	unsigned long flags;
+-	int i;
+ 
+ 	/*
+ 	* Only empty task groups can be destroyed; so we can speculatively
+@@ -8098,7 +8097,7 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
+ 		return;
+ 
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+-	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
++	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ }
+ #else /* !CONFG_FAIR_GROUP_SCHED */
 
-hm, maybe.  It's the sort of thing which gives rise to much
-chin-scratching, which is why people usually avoid doing it ;) If the
-macro is well-named and its intended use is quite clear then yes, it's
-probably worth pursuing.
-
-> > This patchset appears to implement a new kernel->userspace interface. 
-> > But that interface isn't actually described anywhere, so reviewers must
-> > reverse-engineer the interface from the implementation to be able to
-> > review the interface.  Nobody bothers doing that so we end up with an
-> > unreviewed interface, which we must maintain for eternity.
-> > 
-> > Please fully document all proposed interfaces?
-> 
-> Sorry. I don't realize that printk-ing something means implementing a
-> new kernel->userspace interface. I think the messages resulted are
-> self-explaining for human. Is it sufficient just to add example messages
-> in patch description?
-
-Well normally a printk() isn't really considered a "userspace
-interface".  This allows us to change them even though there surely
-_are_ existing tools which treat particular messages as a userspace
-interface.  But I don't recall hearing of much breakage from changed
-kernel printks.
-
-However in this case you are avowedly treating the printks as a
-userspace interface, with the intention that software be written to
-parse them, yes?  So once they're in place, we cannot change them?  That
-makes it more important.
 
