@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab0K3RsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:48:14 -0500
-Received: from kroah.org ([198.145.64.141]:45734 "EHLO coco.kroah.org"
+	id S1755506Ab0K3RsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:48:22 -0500
+Received: from kroah.org ([198.145.64.141]:45744 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753941Ab0K3RsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:48:12 -0500
-Date: Tue, 30 Nov 2010 09:40:52 -0800
+	id S1755201Ab0K3RsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 12:48:13 -0500
+Date: Tue, 30 Nov 2010 09:46:05 -0800
 From: Greg KH <greg@kroah.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: erazor_de@users.sourceforge.net, Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <jkosina@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 3/5] HID: roccat: declaring meaning of pack pragma
- usage in driver headers
-Message-ID: <20101130174052.GA19977@kroah.com>
-References: <1290801456.18750.164.camel@neuromancer>
- <1290804616.3051.52.camel@localhost>
+To: Robert Lukassen <Robert.Lukassen@tomtom.com>
+Cc: Jef Driesen <jefdriesen@telenet.be>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: g_serial: Allow to override the default VID/PID
+Message-ID: <20101130174605.GC19977@kroah.com>
+References: <4CE6F807.1090607@telenet.be>
+ <1290209554-7026-1-git-send-email-jefdriesen@telenet.be>
+ <20101120001247.GB17421@kroah.com>
+ <4CE853BF.80504@telenet.be>
+ <D6DB9C7EDECDA944B870F62B587008622C8A42@NL-EXC-06.intra.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290804616.3051.52.camel@localhost>
+In-Reply-To: <D6DB9C7EDECDA944B870F62B587008622C8A42@NL-EXC-06.intra.local>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 08:50:16PM +0000, Ben Hutchings wrote:
-> On Fri, 2010-11-26 at 20:57 +0100, Stefan Achatz wrote:
-> > Using pack pragma to prevent padding bytes in binary data structures
-> > used for hardware communication. Explanation of these pragmas was requested.
-> [...]
+On Mon, Nov 22, 2010 at 11:20:55AM +0100, Robert Lukassen wrote:
+> Hi,
 > 
-> It would be clearer to use the '__packed' macro after each structure
-> definition instead of using this awful Microsoft extension.
+> I just revisited the patch I submitted and I can see that it needs 
+> fixing. The intention of the patch was to provide the idVendor & 
+> idProduct kernel module parameter overrides to the individual 
+> functions at 'bind()' time. Prior to the patch, the overrides were 
+> done after the bind, making it hard for individual functions to 
+> determine the correct value for idVendor (some functions may need 
+> to use that value, e.g. USB audio when it registers itself
+> as an ALSA device; it would want to use the same Vendor id).
+> 
+> The patch makes sure that that happens, however, right after the bind()
+> the patched values are lost due to the copying of the gadget specific
+> device descriptor. Here's the snippet from 2.6.34:
+> 
+>  999        usb_gadget_set_selfpowered(gadget);
+> 1000
+> 
+> 1001        /* interface and string IDs start at zero via kzalloc.
+> 1002         * we force endpoints to start unassigned; few controller
+> 1003         * drivers will zero ep->driver_data.
+> 1004         */
+> 1005        usb_ep_autoconfig_reset(cdev->gadget);
+> 1006
+> 1007        /* composite gadget needs to assign strings for whole device (like
+> 1008         * serial number), register function drivers, potentially update
+> 1009         * power state and consumption, etc
+> 1010         */
+> 1011        status = composite->bind(cdev);
+> 1012        if (status < 0)
+> 1013                goto fail;
+> 1014
+> 1015        cdev->desc = *composite->dev;
+> 1016        cdev->desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
+> 1017
+> 1018        /* standardized runtime overrides for device ID data */
+> 1019        if (idVendor)
+> 1020                cdev->desc.idVendor = cpu_to_le16(idVendor);
+> 1021        if (idProduct)
+> 1022                cdev->desc.idProduct = cpu_to_le16(idProduct);
+> 1023        if (bcdDevice)
+> 1024                cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
+> 1025
+> 
+> In line 1015, the composite device descriptor is copied to the cdev->desc
+> field. Then the values get patched.
+> 
+> My patch just moved lines 1018-1024, so that the functions could access
+> the patched values. The ill side effect is that these patched values
+> are lost when the *composite->dev (== device descriptor) is copied 
+> in line 1015.
+> 
+> It would seem that the patch should also have moved lines 1015-1016 in front 
+> of the composite->bind(cdev) call.
+> 
+> It would require all composite gadgets (such as serial.c) and all functions
+> (such as f_acm.c) to do any modifications to the device descriptor as passed 
+> to them in the 'bind' call. For functions that is natural, as they should be
+> unaware of the gadget that uses them. 
+> 
+> The composite gadgets such as 'serial' seem to deal with it differently.
+> The serial.c gadget refers to the device descriptor as 'device_desc', and it
+> is a static struct. It references it in its 'init' function (which is ok, it is
+> prior to the registration point) and in the gs_bind() call. At that point it should
+> probably not be using 'device_desc', but cdev->desc.
+> 
+> I think we can go one of two ways. I'd be happy to go over the composite gadgets and 
+> change their use of their device descriptors, such that they use cdev->desc at
+> bind() time. Combining that with the moving the copying of the *composite->dev
+> to before calling 'composite->bind()' would make things consistent.
+> 
+> The other way is reverting my original patch. For those functions that need access
+> to the overridden idVendor/idProduct code, we'll need to work out another
+> (generic) solution.
 
-I agree, that's the "normal" Linux way of doing things.
+So, do you want me to revert your original patch and wait for you to
+come up with a "better" solution?
 
-Other than that, this patch set looks good to me.  Jiri, if the packed
-change is made, do you want me to take these through my tree, or do you
-want to take them through yours?  Whatever is easier for you is fine
-with me.
+That seems like the correct thing to do at the moment.
 
 thanks,
 
