@@ -1,163 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab0K3TKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:10:04 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:36779 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755250Ab0K3TIw (ORCPT
+	id S1756181Ab0K3TIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:08:51 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:34479 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755250Ab0K3TIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:08:52 -0500
+	Tue, 30 Nov 2010 14:08:48 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: .cCPnBQVM1lNP3_U5q1aJ.Vfs1tWZy_DyS6eNlDp83cRj4t
- pz.m5nCgmDMQIaWz96XsaxCELCJQdVXB4k92eh6ntho29wifp4sE.na569DH
- QLnJFikoOsRaD8_ds9x6Ig5Pv.4ZKgvmw7EXZlzhXJD52GzTT96WUpaa8fm9
- D1elFJiJyIc6RBwqh2rDXH2s51GUp2rOpkmqSiWU5kB1AxxwGTktNnjBsVhG
- MuhiT6.auT_flRFBetZ.j0CritLwklS3hpfMu26vmcHg22m9x4yCLnGZmkvw
- zJAt84ym5d9Tw6HkgmBCQ
+X-YMail-OSG: kpTlGokVM1kmeUmxDhv3TB_Q55qgZz3kKws5t1trRb78zsf
+ cB3BbAuS2.8Py3W0plVqgpoR9SqmvoiFxXc25eJCxtNJO6C.JjregfVIDJji
+ 52k0XX1HcKM1pLeCz3MgF9SjPoc14ejK8wK3.FHCo.nR1T4p5xH3wW1.nDVm
+ mc.O1ySXRgIHPUi6K3AthUCuKzP8XxGn9nK6mJN8i29rlIq7ndQ7bN14ukJr
+ 3bAI7r8fvwPs3wBdKWSCZNIBb6AvQkqg3r187rzJaZ7hFvuSz9JomTCHhyjT
+ .qK_Z__VZXC30vEI6uG23
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101130190850.575279761@linux.com>
+Message-Id: <20101130190846.390522413@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Nov 2010 13:07:23 -0600
+Date: Tue, 30 Nov 2010 13:07:16 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Jason Baron <jbaron@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Wu Fengguang <fengguang.wu@intel.com>, Christoph Hellwig <hch@lst.de>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: linux-mm@kvack.org
-Subject: [thisops uV3 16/18] kprobes: Use this_cpu_ops
+Subject: [thisops uV3 09/18] fs: Use this_cpu_xx operations in buffer.c
 References: <20101130190707.457099608@linux.com>
-Content-Disposition: inline; filename=this_ops_kprobes
+Content-Disposition: inline; filename=this_cpu_buffer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use this_cpu ops in various places to optimize per cpu data access.
+Optimize various per cpu area operations through the new this cpu
+operations. These operations avoid address calculations through the use
+of segment prefixes avoid multiple memory references through RMW
+instructions etc.
 
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Reduces code size:
+
+Before:
+
+christoph@linux-2.6$ size fs/buffer.o
+   text	   data	    bss	    dec	    hex	filename
+  19169	     80	     28	  19277	   4b4d	fs/buffer.o
+
+After:
+
+christoph@linux-2.6$ size fs/buffer.o
+   text	   data	    bss	    dec	    hex	filename
+  19138	     80	     28	  19246	   4b2e	fs/buffer.o
+
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/kernel/kprobes.c |   14 +++++++-------
- include/linux/kprobes.h   |    4 ++--
- kernel/kprobes.c          |    8 ++++----
- 3 files changed, 13 insertions(+), 13 deletions(-)
+ fs/buffer.c |   37 ++++++++++++++++++-------------------
+ 1 file changed, 18 insertions(+), 19 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/kprobes.c
+Index: linux-2.6/fs/buffer.c
 ===================================================================
---- linux-2.6.orig/arch/x86/kernel/kprobes.c	2010-11-30 12:31:51.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/kprobes.c	2010-11-30 12:32:15.000000000 -0600
-@@ -403,7 +403,7 @@ static void __kprobes save_previous_kpro
- 
- static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+--- linux-2.6.orig/fs/buffer.c	2010-11-30 09:41:30.000000000 -0600
++++ linux-2.6/fs/buffer.c	2010-11-30 09:55:55.000000000 -0600
+@@ -1270,12 +1270,10 @@ static inline void check_irqs_on(void)
+ static void bh_lru_install(struct buffer_head *bh)
  {
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
- 	kcb->kprobe_old_flags = kcb->prev_kprobe.old_flags;
- 	kcb->kprobe_saved_flags = kcb->prev_kprobe.saved_flags;
-@@ -412,7 +412,7 @@ static void __kprobes restore_previous_k
- static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
- 				struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = p;
-+	__this_cpu_write(current_kprobe, p);
- 	kcb->kprobe_saved_flags = kcb->kprobe_old_flags
- 		= (regs->flags & (X86_EFLAGS_TF | X86_EFLAGS_IF));
- 	if (is_IF_modifier(p->ainsn.insn))
-@@ -586,7 +586,7 @@ static int __kprobes kprobe_handler(stru
- 		preempt_enable_no_resched();
- 		return 1;
- 	} else if (kprobe_running()) {
--		p = __get_cpu_var(current_kprobe);
-+		p = __this_cpu_read(current_kprobe);
- 		if (p->break_handler && p->break_handler(p, regs)) {
- 			setup_singlestep(p, regs, kcb, 0);
- 			return 1;
-@@ -759,11 +759,11 @@ static __used __kprobes void *trampoline
+ 	struct buffer_head *evictee = NULL;
+-	struct bh_lru *lru;
  
- 		orig_ret_address = (unsigned long)ri->ret_addr;
- 		if (ri->rp && ri->rp->handler) {
--			__get_cpu_var(current_kprobe) = &ri->rp->kp;
-+			__this_cpu_write(current_kprobe, &ri->rp->kp);
- 			get_kprobe_ctlblk()->kprobe_status = KPROBE_HIT_ACTIVE;
- 			ri->ret_addr = correct_ret_addr;
- 			ri->rp->handler(ri, regs);
--			__get_cpu_var(current_kprobe) = NULL;
-+			__this_cpu_write(current_kprobe, NULL);
+ 	check_irqs_on();
+ 	bh_lru_lock();
+-	lru = &__get_cpu_var(bh_lrus);
+-	if (lru->bhs[0] != bh) {
++	if (__this_cpu_read(bh_lrus.bhs[0]) != bh) {
+ 		struct buffer_head *bhs[BH_LRU_SIZE];
+ 		int in;
+ 		int out = 0;
+@@ -1283,7 +1281,8 @@ static void bh_lru_install(struct buffer
+ 		get_bh(bh);
+ 		bhs[out++] = bh;
+ 		for (in = 0; in < BH_LRU_SIZE; in++) {
+-			struct buffer_head *bh2 = lru->bhs[in];
++			struct buffer_head *bh2 =
++				__this_cpu_read(bh_lrus.bhs[in]);
+ 
+ 			if (bh2 == bh) {
+ 				__brelse(bh2);
+@@ -1298,7 +1297,7 @@ static void bh_lru_install(struct buffer
  		}
- 
- 		recycle_rp_inst(ri, &empty_rp);
-@@ -1198,10 +1198,10 @@ static void __kprobes optimized_callback
- 		regs->ip = (unsigned long)op->kp.addr + INT3_SIZE;
- 		regs->orig_ax = ~0UL;
- 
--		__get_cpu_var(current_kprobe) = &op->kp;
-+		__this_cpu_write(current_kprobe, &op->kp);
- 		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
- 		opt_pre_handler(&op->kp, regs);
--		__get_cpu_var(current_kprobe) = NULL;
-+		__this_cpu_write(current_kprobe, NULL);
+ 		while (out < BH_LRU_SIZE)
+ 			bhs[out++] = NULL;
+-		memcpy(lru->bhs, bhs, sizeof(bhs));
++		memcpy(__this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
  	}
- 	preempt_enable_no_resched();
+ 	bh_lru_unlock();
+ 
+@@ -1313,23 +1312,22 @@ static struct buffer_head *
+ lookup_bh_lru(struct block_device *bdev, sector_t block, unsigned size)
+ {
+ 	struct buffer_head *ret = NULL;
+-	struct bh_lru *lru;
+ 	unsigned int i;
+ 
+ 	check_irqs_on();
+ 	bh_lru_lock();
+-	lru = &__get_cpu_var(bh_lrus);
+ 	for (i = 0; i < BH_LRU_SIZE; i++) {
+-		struct buffer_head *bh = lru->bhs[i];
++		struct buffer_head *bh = __this_cpu_read(bh_lrus.bhs[i]);
+ 
+ 		if (bh && bh->b_bdev == bdev &&
+ 				bh->b_blocknr == block && bh->b_size == size) {
+ 			if (i) {
+ 				while (i) {
+-					lru->bhs[i] = lru->bhs[i - 1];
++					__this_cpu_write(bh_lrus.bhs[i],
++						__this_cpu_read(bh_lrus.bhs[i - 1]));
+ 					i--;
+ 				}
+-				lru->bhs[0] = bh;
++				__this_cpu_write(bh_lrus.bhs[0], bh);
+ 			}
+ 			get_bh(bh);
+ 			ret = bh;
+@@ -3203,22 +3201,23 @@ static void recalc_bh_state(void)
+ 	int i;
+ 	int tot = 0;
+ 
+-	if (__get_cpu_var(bh_accounting).ratelimit++ < 4096)
++	if (__this_cpu_inc_return(bh_accounting.ratelimit) < 4096)
+ 		return;
+-	__get_cpu_var(bh_accounting).ratelimit = 0;
++	__this_cpu_write(bh_accounting.ratelimit, 0);
+ 	for_each_online_cpu(i)
+ 		tot += per_cpu(bh_accounting, i).nr;
+ 	buffer_heads_over_limit = (tot > max_buffer_heads);
  }
-Index: linux-2.6/include/linux/kprobes.h
-===================================================================
---- linux-2.6.orig/include/linux/kprobes.h	2010-11-30 12:31:51.000000000 -0600
-+++ linux-2.6/include/linux/kprobes.h	2010-11-30 12:32:15.000000000 -0600
-@@ -303,12 +303,12 @@ struct hlist_head * kretprobe_inst_table
- /* kprobe_running() will just return the current_kprobe on this CPU */
- static inline struct kprobe *kprobe_running(void)
+-	
++
+ struct buffer_head *alloc_buffer_head(gfp_t gfp_flags)
  {
--	return (__get_cpu_var(current_kprobe));
-+	return (__this_cpu_read(current_kprobe));
+ 	struct buffer_head *ret = kmem_cache_zalloc(bh_cachep, gfp_flags);
+ 	if (ret) {
+ 		INIT_LIST_HEAD(&ret->b_assoc_buffers);
+-		get_cpu_var(bh_accounting).nr++;
++		preempt_disable();
++		__this_cpu_inc(bh_accounting.nr);
+ 		recalc_bh_state();
+-		put_cpu_var(bh_accounting);
++		preempt_enable();
+ 	}
+ 	return ret;
+ }
+@@ -3228,9 +3227,10 @@ void free_buffer_head(struct buffer_head
+ {
+ 	BUG_ON(!list_empty(&bh->b_assoc_buffers));
+ 	kmem_cache_free(bh_cachep, bh);
+-	get_cpu_var(bh_accounting).nr--;
++	preempt_disable();
++	__this_cpu_dec(bh_accounting.nr);
+ 	recalc_bh_state();
+-	put_cpu_var(bh_accounting);
++	preempt_enable();
+ }
+ EXPORT_SYMBOL(free_buffer_head);
+ 
+@@ -3243,9 +3243,8 @@ static void buffer_exit_cpu(int cpu)
+ 		brelse(b->bhs[i]);
+ 		b->bhs[i] = NULL;
+ 	}
+-	get_cpu_var(bh_accounting).nr += per_cpu(bh_accounting, cpu).nr;
++	this_cpu_add(bh_accounting.nr, per_cpu(bh_accounting, cpu).nr);
+ 	per_cpu(bh_accounting, cpu).nr = 0;
+-	put_cpu_var(bh_accounting);
  }
  
- static inline void reset_current_kprobe(void)
- {
--	__get_cpu_var(current_kprobe) = NULL;
-+	__this_cpu_write(current_kprobe, NULL);
- }
- 
- static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
-Index: linux-2.6/kernel/kprobes.c
-===================================================================
---- linux-2.6.orig/kernel/kprobes.c	2010-11-30 12:31:51.000000000 -0600
-+++ linux-2.6/kernel/kprobes.c	2010-11-30 12:32:15.000000000 -0600
-@@ -317,12 +317,12 @@ void __kprobes free_optinsn_slot(kprobe_
- /* We have preemption disabled.. so it is safe to use __ versions */
- static inline void set_kprobe_instance(struct kprobe *kp)
- {
--	__get_cpu_var(kprobe_instance) = kp;
-+	__this_cpu_write(kprobe_instance, kp);
- }
- 
- static inline void reset_kprobe_instance(void)
- {
--	__get_cpu_var(kprobe_instance) = NULL;
-+	__this_cpu_write(kprobe_instance, NULL);
- }
- 
- /*
-@@ -775,7 +775,7 @@ static void __kprobes aggr_post_handler(
- static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
- 					int trapnr)
- {
--	struct kprobe *cur = __get_cpu_var(kprobe_instance);
-+	struct kprobe *cur = __this_cpu_read(kprobe_instance);
- 
- 	/*
- 	 * if we faulted "during" the execution of a user specified
-@@ -790,7 +790,7 @@ static int __kprobes aggr_fault_handler(
- 
- static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
- {
--	struct kprobe *cur = __get_cpu_var(kprobe_instance);
-+	struct kprobe *cur = __this_cpu_read(kprobe_instance);
- 	int ret = 0;
- 
- 	if (cur && cur->break_handler) {
+ static int buffer_cpu_notify(struct notifier_block *self,
 
