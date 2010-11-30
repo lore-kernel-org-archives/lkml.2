@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab0K3TL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:11:59 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:34459 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753337Ab0K3TIq (ORCPT
+	id S1752880Ab0K3TIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:08:44 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:37316 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751260Ab0K3TIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:08:46 -0500
+	Tue, 30 Nov 2010 14:08:43 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: au2q5xgVM1kBMsVTPq.23A5odm3HXFnQzs3fj8s4Viki.wh
- wO00fkbNGM7th0uERQLT6.y15O8w6ggzawP0fIKCk267qiGlBua5E07Mut2l
- WNry7GREJtF32hn6Xy91MnaAwYha3K30idjEgHsFV1Zq5DoLmC8S_pspCcuc
- EcQlhJFI_9IMkOWmeBALYyogOv37RRoTbLU2zPMwX2x7Nwfx7v8Vuh6r0ia6
- 9u1v_0h_rvlVIGYVQe3NC4fcWQdLPOsNwCnG6Xu8SXPjb3Z2ucl7jUuJ6sfv
- Juh31fvNQJS_qM3j_NZpF
+X-YMail-OSG: U_skQY8VM1mizt9ksLt0vlCvtzrmKYVa9bK9vRI78yra5Ie
+ zu5bayTZJEkolvQXIsLnvbupUWojDfHskCoOBSuBPAUA9000FOt4gRx3P2qs
+ BNlc_ACp7LQlHz4AEY5M_kGYMs6HVZsnJ.buhJduK9XTljJb6Np5BzeJnsmk
+ CIPoKjotDGI8XsHsBxvj9UZ2V4zeeJJ4bszhHW5epIGZmbQsYIdUW._STycf
+ OS_tiQVDwtrqtoUyGaC5o0TL3PH3yaz68wlb5R.eme518nJ3OYg--
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101130190844.025319634@linux.com>
+Message-Id: <20101130190707.457099608@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Nov 2010 13:07:12 -0600
+Date: Tue, 30 Nov 2010 13:07:07 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
@@ -26,36 +25,28 @@ Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: linux-mm@kvack.org
-Subject: [thisops uV3 05/18] x86: Use this_cpu_inc_return for nmi counter
-References: <20101130190707.457099608@linux.com>
-Content-Disposition: inline; filename=this_cpu_add_nmi
+Subject: [thisops uV3 00/18] Upgrade of this_cpu_ops V3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this_cpu_inc_return() saves us a memory access there.
+A patchset that adds more this_cpu operations and in particular RMV operations
+that can be used in various places to avoid address calculations and
+memory accesses by the user of fast cpu local operations with segment
+prefixes.
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+V2 has several enhancements and bugfixes that were suggested after V1
 
----
- arch/x86/kernel/apic/nmi.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+V3 removes the cmpxchg patches and focuses on the first extensions
+of cpu ops that were generally an improvement.
 
-Index: linux-2.6/arch/x86/kernel/apic/nmi.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/nmi.c	2010-11-23 16:35:19.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/apic/nmi.c	2010-11-23 16:38:29.000000000 -0600
-@@ -432,8 +432,7 @@ nmi_watchdog_tick(struct pt_regs *regs,
- 		 * Ayiee, looks like this CPU is stuck ...
- 		 * wait a few IRQs (5 seconds) before doing the oops ...
- 		 */
--		__this_cpu_inc(alert_counter);
--		if (__this_cpu_read(alert_counter) == 5 * nmi_hz)
-+		if (__this_cpu_inc_return(alert_counter) == 5 * nmi_hz)
- 			/*
- 			 * die_nmi will return ONLY if NOTIFY_STOP happens..
- 			 */
+For V3 I scanned through the kernel code for obvious cases in which a
+__get_cpu_var or get_cpu_var can be converted to this_cpu_ops. That is
+often not possible because addresses of per cpu variables are needed.
+However, the accesses that could become converted became very cheap
+because this_cpu_ops typically only generate a single instruction using
+a segment prefix to perform the relocation to the correct per cpu area.
+
+Cpu ops perform implied address calculations. It is therefore not possible
+to take the address of the result of a this_cpu_xx operation.
 
