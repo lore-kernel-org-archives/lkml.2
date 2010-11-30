@@ -1,129 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab0K3SKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:10:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab0K3SKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:10:03 -0500
-Message-ID: <4CF53DF2.2040803@redhat.com>
-Date: Tue, 30 Nov 2010 08:09:54 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>, Avi Kivity <avi@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, kvm@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 22 (kvm)
-References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>	 <20101122132627.bd4e88ef.randy.dunlap@oracle.com>	 <20101129083324.6870d7da.randy.dunlap@oracle.com>	 <4CF3D637.6060204@redhat.com> <4CF3E733.8090809@redhat.com>	 <4CF3E870.4040308@oracle.com>  <4CF3EC1E.7050707@redhat.com> <1291119448.17261.4.camel@mothafucka.localdomain>
-In-Reply-To: <1291119448.17261.4.camel@mothafucka.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755868Ab0K3SK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:10:28 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58201 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755844Ab0K3SK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:10:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qbYyFdIRosZ5ACnNH6WrmLj/3JPcEmfUzlgUcV9mpjURymPlUn9M5bQuFtSSLZAmNb
+         nmiu23e/9CWh+EtB/Khys/n3NlLdBnba2ZRzjpAKE1N5aYm//l9yJUdw4JWCHqdqK5lZ
+         id29v1REGzHdw83JN055WhWW1OuoH2N7f1lGU=
+Subject: Re: When was ASLR introduced in the Linux kernel?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Victor van der Veen <vvdveen@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1291139457.2701.14.camel@GX620>
+References: <1291117660.3206.11.camel@D430>
+	 <1291119324.2904.51.camel@edumazet-laptop> <1291139457.2701.14.camel@GX620>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 19:10:19 +0100
+Message-ID: <1291140619.2904.144.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2010 02:17 AM, Glauber Costa wrote:
-> On Mon, 2010-11-29 at 08:08 -1000, Zachary Amsden wrote:
->    
->> On 11/29/2010 07:52 AM, Randy Dunlap wrote:
->>      
->>> On 11/29/10 09:47, Zachary Amsden wrote:
->>>
->>>        
->>>> On 11/29/2010 06:35 AM, Avi Kivity wrote:
->>>>
->>>>          
->>>>> On 11/29/2010 06:33 PM, Randy Dunlap wrote:
->>>>>
->>>>>            
->>>>>> On Mon, 22 Nov 2010 13:26:27 -0800 Randy Dunlap wrote:
->>>>>>
->>>>>>
->>>>>>              
->>>>>>>    On Mon, 22 Nov 2010 13:49:11 +1100 Stephen Rothwell wrote:
->>>>>>>
->>>>>>>
->>>>>>>                
->>>>>>>>    Hi all,
->>>>>>>>
->>>>>>>>    Changes since 20101119:
->>>>>>>>
->>>>>>>>                  
->>>>>>>    kvm.c:(.init.text+0x11f49): undefined reference to
->>>>>>>
->>>>>>>                
->>>>>> `kvm_register_clock'
->>>>>>
->>>>>>              
->>>>>>>    when CONFIG_KVM_CLOCK is not enabled.
->>>>>>>
->>>>>>>                
->>>>>> BUild error still present in linux-next-2010-NOV-29.
->>>>>>
->>>>>>
->>>>>>              
->>>>> Glauber, Zach?
->>>>>
->>>>>
->>>>>            
->>>> I can only speculate this reference is being called from smpboot without
->>>> CONFIG guarding?
->>>>
->>>>          
->>> Sorry, looks like I dropped the first line of the error messages:
->>>
->>> arch/x86/built-in.o: In function `kvm_smp_prepare_boot_cpu':
->>> kvm.c:(.init.text+0xad38): undefined reference to `kvm_register_clock'
->>>
->>> from arch/x86/kernel/kvm.c:
->>>
->>> #ifdef CONFIG_SMP
->>> static void __init kvm_smp_prepare_boot_cpu(void)
->>> {
->>> 	WARN_ON(kvm_register_clock("primary cpu clock"));
->>> 	kvm_guest_cpu_init();
->>> 	native_smp_prepare_boot_cpu();
->>> }
->>>
->>> so it looks like you are correct...
->>>
->>>        
->> Looks like this is the appropriate fix:
->>
->> #ifdef CONFIG_SMP
->> static void __init kvm_smp_prepare_boot_cpu(void)
->> {
->> #ifdef CONFIG_KVM_CLOCK
->> 	WARN_ON(kvm_register_clock("primary cpu clock"));
->> #endif
->> 	kvm_guest_cpu_init();
->> 	native_smp_prepare_boot_cpu();
->> }
->>
->>
->> The SMP code is still buggy as well, wrt printk timing, in that it
->> doesn't get called early enough, correct?  Has anyone thought of a good
->> solution to that problem?
->>
->> Basically the problem is CPU-1 will get CPU-0's per-cpu areas copied
->> over, and these are not valid for CPU-1.  If the clocksource is used on
->> CPU-1 before kvm clock gets setup, it can go backwards, wreaking havoc,
->> causing panic, etc.
->>
->> What is the best test to guard against this?  Perhaps we should keep the
->> CPU number in the per-cpu data and test against it?
->>      
-> Can we identify precisely when it happens? If we can, we can try to
-> force a hypervisor exit or re-register right after the data is copied
-> over. This will force the per-cpu structure to get updated with good
-> values.
->    
+Le mardi 30 novembre 2010 à 18:50 +0100, Victor van der Veen a écrit :
 
-It's as if we need a new type of per-cpu data, per_cpu_zeroed, which is 
-always cleared prior to starting on the AP.
+> Thanks, but this was not what I was really looking for. However,
+> searching for 'randomize_va_space' led me to a thread on lkml started by
+> Arjan van de Ven on January 27th, 2005:
+> http://lkml.org/lkml/2005/1/27/56
+> 
+> It would be great if someone can provide more details on this subject:
+>   1) when was randomize_va_space introduced? (probably somewhere in
+> 2.6.11.x)
 
-I imagine other code paths may need this as well.
+	who cares ?
 
-Zach
+>   2) when was it enabled by default (2.6.12.? but no announcement in
+> changelog?)
+
+commit 42a172a814759a29020e5d1ee580bf4eb86afed2
+Author: arjan <arjan>
+Date:   Sat Mar 5 17:25:41 2005 +0000
+
+    [PATCH] Randomisation: enable by default
+    
+    Signed-off-by: Arjan van de Ven <arjan@infradead.org>
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Andrew Morton <akpm@osdl.org>
+    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+    
+    BKrev: 4229eb95j12voWjpsZzY2Wlm6P7Mvg
+
+# git describe --contains 42a172a8
+v2.6.11.3~887
+
+>   3) which additions were added in later releases? (and when?)
+
+
+commit 32a932332c8bad842804842eaf9651ad6268e637
+Author: Ingo Molnar <mingo@elte.hu>
+Date:   Wed Feb 6 22:39:44 2008 +0100
+
+    brk randomization: introduce CONFIG_COMPAT_BRK
+    
+    based on similar patch from: Pavel Machek <pavel@ucw.cz>
+    
+    Introduce CONFIG_COMPAT_BRK. If disabled then the kernel is free
+    (but not obliged to) randomize the brk area.
+    
+    Heap randomization breaks ancient binaries, so we keep COMPAT_BRK
+    enabled by default.
+    
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+git describe --contains 32a932332c8bad842804842eaf9651ad6268e637
+v2.6.25-rc1~513^2~15
+
+
+
