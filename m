@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab0K3ATP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 19:19:15 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:33821 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab0K3ATO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 19:19:14 -0500
-Message-ID: <4CF442FA.4070701@candelatech.com>
-Date: Mon, 29 Nov 2010 16:19:06 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1755955Ab0K3ATr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 19:19:47 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:36722 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752274Ab0K3ATp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 19:19:45 -0500
+Date: Mon, 29 Nov 2010 16:19:42 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
+        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent
+	by fsync
+Message-ID: <20101130001942.GF18195@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com> <4CF43BC9.8040603@redhat.com>
 MIME-Version: 1.0
-To: Michael Leun <lkml20101129@newton.leun.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: 2.6.35 -> 2.6.36 panic when vlan and promisc with tg3
-References: <20101129201716.1d0257c4@xenia.leun.net>
-In-Reply-To: <20101129201716.1d0257c4@xenia.leun.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF43BC9.8040603@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2010 11:17 AM, Michael Leun wrote:
-> Hi,
+On Mon, Nov 29, 2010 at 06:48:25PM -0500, Ric Wheeler wrote:
+> On 11/29/2010 05:05 PM, Darrick J. Wong wrote:
+>> On certain types of hardware, issuing a write cache flush takes a considerable
+>> amount of time.  Typically, these are simple storage systems with write cache
+<snip>
+>> lowered performance considerably, especially in the case where directio was in
+>> use.  Therefore, this patch adds the coordination code directly to ext4.
 >
-> only kernel message I was able to capture on serial were:
+> Hi Darrick,
 >
-> UG: unable to handle kernel paging request at 01cc921c
-> IP: [<c034bfce>] vlan_hwaccel_do_receive+0x59/0xd0
-> *pdpt = 0000000036a2a001 *pde = 0000000000000000
-> Oops: 0002 [#1] SMP
-> last sysfs
->
-> Then machine dead.
->
-> In 2.6.35.x this did not happen (but vlans broken - cannot see vlan
-> tags with tcpdump),
+> Just curious why we would need to have batching in both places? Doesn't 
+> your patch set make the jbd2 transaction batching redundant?
 
-Try this patch:
+The code path that I'm changing is only executed when ext4_sync_file determines
+that the flush can't go through the journal, i.e. whenever the previous
+sequence of data writes hasn't resulted in any metadata updates, or if the
+transaction that went with the previous writes has already been committed.
 
-http://permalink.gmane.org/gmane.linux.network/176566
+> I noticed that the patches have a default delay and a mount option to 
+> override that default. The jbd2 code today tries to measure the average 
+> time needed in a transaction and automatically tune itself. Can't we do 
+> something similar with your patch set? (I hate to see yet another mount 
+> option added!)
 
-It looks like this hasn't made it into stable yet?
+The mount option is no longer the delay time, as it was in previous patches.
+In the (unreleased) v5 patch, the code automatically tuned the delay based on
+the average flush time.  However, we then observed very low flush times (< 2ms)
+and about a 6% regression on our arrays with battery-backed write cache, so the
+auto-tune code was then adapted in v6 to skip the coordination if the average
+flush time falls below that threshold, as it does on our arrays.
 
-Thanks,
-Ben
+Therefore, the new mount option exists to override the default threshold.
 
->
-> To reproduce:
->
-> ip link set eth0 up
-> vconfig add eth0 2
-> ip link set eth0 promisc on
->
-> Machines with these ethernet cards I've seen to be affected:
->
-> Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit
-> Ethernet (rev a3)
->
-> Ethernet controller: Broadcom Corporation NetXtreme BCM5752M Gigabit
-> Ethernet PCI Express (rev 02)
->
-> Machine with this card is NOT affected (no vlan hw accel?):
->
-> Ethernet controller: Broadcom Corporation NetLink BCM5906M Fast
-> Ethernet PCI Express (rev 02)
->
->
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+--D
