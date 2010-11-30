@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab0K3P0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:26:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:60099 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab0K3P0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:26:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-Subject: Re: [PATCH] a new UniCore32 arch-dependent patch for linux-2.6.37-rc1
-Date: Tue, 30 Nov 2010 16:26:42 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Greg KH'" <greg@kroah.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <00a701cb8883$649d39f0$2dd7add0$@mprc.pku.edu.cn> <201011291735.19556.arnd@arndb.de> <009b01cb9079$6605cd90$321168b0$@mprc.pku.edu.cn>
-In-Reply-To: <009b01cb9079$6605cd90$321168b0$@mprc.pku.edu.cn>
+	id S1753932Ab0K3PfS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:35:18 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:2045 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753758Ab0K3PfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 10:35:16 -0500
+Message-ID: <4CF51979.1070208@atmel.com>
+Date: Tue, 30 Nov 2010 16:34:17 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Eric Benard <eric@eukrea.com>
+Subject: [GIT PULL] AT91: 2.6.37-rc4 at91rm9200 updates
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011301626.42547.arnd@arndb.de>
-X-Provags-ID: V02:K0:1gv2IPqKo78vmvzNxb173Glc18mtIHc2/wrr9XoCL7D
- 4IuusCcFRamkoGmyREVxegb5bCAgeF88a11bpr216IICQOGa9O
- tUFIZRSJJceg3ay+coc+23eVXwFjrLznDsFESoaLvByjQyTkSc
- Qn2Vd3cdrocoWMCfnNz8vh6pih5CTKp38GLPFgZf91sYsYp4Ln
- QFNqO0XRCnW49ymKcHTDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 November 2010, Guan Xuetao wrote:
-> > On Saturday 27 November 2010, Guan Xuetao wrote:
-> > > >
-> > > > In what way does the architecture enforce this? What are the
-> > > > contents of this page? Can you make it an actual VDSO rather than a
-> > > > magic page that sits in the user address space?
-> > > Page table is created for vector page and exceptions entry stub.
-> > > However, vector page is not in the user address space.
-> > 
-> > Interesting. So if it's not mapped into user space, why do you even need to
-> > have the vectors at a specific page? I think ARM only maps it to the high page
-> > because that page is shared to user space, while most architectures just have
-> > their interrupt vectors in the linar mapping, since the hardware typically uses
-> > the physical address to find it.
-> 
-> In UniCore-32, when MMU enabled, vector page address is virtual address.
+Hi Linus,
 
-Ok. I see.
+Could you please pull the following:
 
-The arch_exit_mmap() and arch_setup_additional_pages() functions seems to refer to
-how ARM maps this page into user space as well, you should probably change that.
+  git://github.com/at91linux/linux-2.6-at91.git for_linus
 
-I've finished the second half of the code review now, I'll follow up with an
-email but drop the personal Cc to everyone besides us, in case people are getting
-bored from the discussion by now ;-)
+This contains a set of AT91 updates since 2.6.37-rc4 based on your tree:
+commit e8a7e48bb248a1196484d3f8afa53bded2b24e71
 
-	Arnd
+It removes several at91rm9200 defconfig and fixes issues and warnings
+dicovered while testing it. This series has been reviewed on 
+ARM mailing list.
+
+Eric Benard (1):
+      at91: merge all at91rm9200 defconfig in one single file
+
+Jean-Christophe PLAGNIOL-VILLARD (7):
+      at91: Convert remaining boards to new-style UART initialization
+      at91rm9200dk: fix warning: 'dk_mmc_data' defined but not used
+      at91rm9200ek: fix warning: 'ek_mmc_data' defined but not used
+      at91: rename rm9200ek and rm9200dk board file name
+      at91/picotux200: remove commenting usb device and dataflash support
+      atmel_spi: fix warning In function 'atmel_spi_dma_map_xfer'
+      at91/board-yl-9200: fix typo in video support
+
+ arch/arm/configs/at91rm9200_defconfig              |  341 ++++++++++++++++++++
+ arch/arm/configs/at91rm9200dk_defconfig            |   72 ----
+ arch/arm/configs/at91rm9200ek_defconfig            |   73 -----
+ arch/arm/configs/ateb9200_defconfig                |  131 --------
+ arch/arm/configs/carmeva_defconfig                 |   47 ---
+ arch/arm/configs/cpuat91_defconfig                 |  112 -------
+ arch/arm/configs/csb337_defconfig                  |  104 ------
+ arch/arm/configs/csb637_defconfig                  |   98 ------
+ arch/arm/configs/ecbat91_defconfig                 |   99 ------
+ arch/arm/configs/kafa_defconfig                    |   61 ----
+ arch/arm/configs/kb9202_defconfig                  |  127 --------
+ arch/arm/configs/onearm_defconfig                  |   80 -----
+ arch/arm/configs/picotux200_defconfig              |  242 --------------
+ arch/arm/configs/yl9200_defconfig                  |  137 --------
+ arch/arm/mach-at91/Makefile                        |    4 +-
+ arch/arm/mach-at91/at91rm9200_devices.c            |   45 ---
+ arch/arm/mach-at91/board-1arm.c                    |   26 +-
+ arch/arm/mach-at91/board-kafa.c                    |   21 +-
+ arch/arm/mach-at91/board-picotux200.c              |   53 +---
+ .../arm/mach-at91/{board-dk.c => board-rm9200dk.c} |    4 +-
+ .../arm/mach-at91/{board-ek.c => board-rm9200ek.c} |    4 +-
+ arch/arm/mach-at91/board-yl-9200.c                 |    2 +-
+ arch/arm/mach-at91/include/mach/board.h            |    6 -
+ drivers/spi/atmel_spi.c                            |    6 +-
+ 24 files changed, 386 insertions(+), 1509 deletions(-)
+ create mode 100644 arch/arm/configs/at91rm9200_defconfig
+ delete mode 100644 arch/arm/configs/at91rm9200dk_defconfig
+ delete mode 100644 arch/arm/configs/at91rm9200ek_defconfig
+ delete mode 100644 arch/arm/configs/ateb9200_defconfig
+ delete mode 100644 arch/arm/configs/carmeva_defconfig
+ delete mode 100644 arch/arm/configs/cpuat91_defconfig
+ delete mode 100644 arch/arm/configs/csb337_defconfig
+ delete mode 100644 arch/arm/configs/csb637_defconfig
+ delete mode 100644 arch/arm/configs/ecbat91_defconfig
+ delete mode 100644 arch/arm/configs/kafa_defconfig
+ delete mode 100644 arch/arm/configs/kb9202_defconfig
+ delete mode 100644 arch/arm/configs/onearm_defconfig
+ delete mode 100644 arch/arm/configs/picotux200_defconfig
+ delete mode 100644 arch/arm/configs/yl9200_defconfig
+ rename arch/arm/mach-at91/{board-dk.c => board-rm9200dk.c} (98%)
+ rename arch/arm/mach-at91/{board-ek.c => board-rm9200ek.c} (98%)
+
+Thanks, best regards,
+-- 
+Nicolas Ferre
+
