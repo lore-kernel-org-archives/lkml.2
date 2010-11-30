@@ -1,111 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab0K3TDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:03:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28438 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752617Ab0K3TDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:03:23 -0500
-Date: Tue, 30 Nov 2010 20:01:59 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 53 of 66] add numa awareness to hugepage allocations
-Message-ID: <20101130190159.GJ30389@random.random>
-References: <patchbomb.1288798055@v2.random>
- <223ee926614158fc1353.1288798108@v2.random>
- <20101129143801.abef5228.nishimura@mxp.nes.nec.co.jp>
- <20101129161103.GE24474@random.random>
- <20101130093804.23f8c355.nishimura@mxp.nes.nec.co.jp>
+	id S1756158Ab0K3TE5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:04:57 -0500
+Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:24115 "HELO
+	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751655Ab0K3TE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:04:56 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=ZtlBfPbBNKz05P2kGRvXqvJmm4pa5CF7zYFgDsYLj894ehaBw/1V8l+6l/dQkvSpsSPDnhRuGiNWzmnf97PYh3tq1L3ddogKB+llIJiabwwghflZ4dA4yS6cbY7/sTdBuoxx9zHdjb3vSXdKJ2XfN7pUelWENgS72h+95dV/2bE=;
+Message-ID: <933984.54111.qm@web31812.mail.mud.yahoo.com>
+X-YMail-OSG: YCKOoEYVM1kx1d_xk2U4.3SVGxiv2biq5UDWT8NCXG0t45m
+ Vwdu3vUNCLZeOG_BucEptkPH2fCKrpTiJjAJ_mr.Mj6I2jOi_bK84w.npyrG
+ PjO0YdVt9Xai_h2wr4hhZ3Wb39eeCfdV0bBO5nmtVIQEVZTj5_HD7.CK7MAy
+ PMMBagqKwCik_cJszrh1ke6fuGWPzL63FWnwjwJ0iRSeoxVmCHmGySSSBLQc
+ DSCx5MowcDv.4SQrd22iex_gm2dcJYddPKRaF4.p2chbA4oxWVtlPfg7.NZa
+ 4RVH6VPmhn6QhsoZ3V0fCKLFErLtq2erqIAPIl6bL8nlrG65XNPox2MKO_IQ
+ kQAM3JyvJEXBUhAVn.fN.hz2Rl3yF8geuawbR_txX9KbmlA--
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
+Date: Tue, 30 Nov 2010 11:04:54 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: [PATCH repost 4] [SCSI] Retrieve the Caching mode page
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130093804.23f8c355.nishimura@mxp.nes.nec.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 09:38:04AM +0900, Daisuke Nishimura wrote:
-> I'm sorry if I miss something, "new_page" will be reused in !CONFIG_NUMA case
-> as you say, but, in CONFIG_NUMA case, it is allocated in this function
-> (collapse_huge_page()) by alloc_hugepage_vma(), and is not freed when memcg's
-> charge failed.
-> Actually, we do in collapse_huge_page():
-> 	if (unlikely(!isolated)) {
-> 		...
-> #ifdef CONFIG_NUMA
-> 		put_page(new_page);
-> #endif
-> 		goto out;
-> 	}
-> later. I think we need a similar logic in memcg's failure path too.
+Some kernel transport drivers unconditionally disable
+retrieval of the Caching mode page. One such for example is
+the BBB/CBI transport over USB.  Such a restraint is too
+harsh as some devices do support the Caching mode
+page. Unconditionally enabling the retrieval of this mode
+page over those transports at their transport code level may
+result in some devices failing and becoming unusable.
 
-Apologies, you really found a minor memleak in case of memcg
-accounting failure.
+This patch implements a method of retrieving the Caching
+mode page without unconditionally enabling it in the
+transports which unconditionally disable it. The idea is to
+ask for all supported pages, page code 0x3F, and then search
+for the Caching mode page in the mode parameter data
+returned. The sd driver already asks for all the mode pages
+supported by the attached device by setting the page code to
+0x3F in order to find out if the media is write protected by
+reading the WP bit in the Device Specific Parameter
+field. It then attempts to retrieve only the Caching mode
+page by setting the page code to 8 and actually attempting
+to retrieve it if and only if the transport allows it.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1726,7 +1726,7 @@ static void collapse_huge_page(struct mm
- 	}
- #endif
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL)))
--		goto out;
-+		goto out_put_page;
+The method implemented here is that if the transport doesn't
+allow retrieval of the Caching mode page and the device is
+not RBC, then we ask for all pages supported by setting the
+page code to 0x3F (similarly to how the WP bit is retrieved
+above), and then we search for the Caching mode page in the
+mode parameter data returned.
+
+With this patch, devices over SATA, report this (no change):
+
+Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] 976773168 512-byte logical blocks: (500 GB/465 GiB)
+Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: Attached scsi generic sg0 type 0
+Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Write Protect is off
+Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+
+Smart devices report their Caching mode page. This is a
+change where we'd previously see the kernel making
+assumption about the device's cache being write-through:
+
+Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: Attached scsi generic sg2 type 0
+Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] 610472646 4096-byte logical blocks: (2.50 TB/2.27 TiB)
+Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Write Protect is off
+Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Mode Sense: 47 00 10 08
+Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Write cache: enabled, read cache: enabled, supports DPO and FUA
+
+And "dumb" devices over BBB, are correctly shown not to
+support reporting the Caching mode page:
+
+Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] 15663104 512-byte logical blocks: (8.01 GB/7.46 GiB)
+Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Write Protect is off
+Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Mode Sense: 23 00 00 00
+Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] No Caching mode page present
+Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Assuming drive cache: write through
+
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+---
+ drivers/scsi/sd.c |   63 +++++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 47 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index ffa0689..81e83d7 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1867,10 +1867,14 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+        int old_rcd = sdkp->RCD;
+        int old_dpofua = sdkp->DPOFUA;
  
- 	anon_vma_lock(vma->anon_vma);
+-       if (sdp->skip_ms_page_8)
+-               goto defaults;
+-
+-       if (sdp->type == TYPE_RBC) {
++       if (sdp->skip_ms_page_8) {
++               if (sdp->type == TYPE_RBC)
++                       goto defaults;
++               else {
++                       modepage = 0x3F;
++                       dbd = 0;
++               }
++       } else if (sdp->type == TYPE_RBC) {
+                modepage = 6;
+                dbd = 8;
+        } else {
+@@ -1898,13 +1902,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+         */
+        if (len < 3)
+                goto bad_sense;
+-       if (len > 20)
+-               len = 20;
+-
+-       /* Take headers and block descriptors into account */
+-       len += data.header_length + data.block_descriptor_length;
+-       if (len > SD_BUF_SIZE)
+-               goto bad_sense;
++       else if (len > SD_BUF_SIZE) {
++               sd_printk(KERN_NOTICE, sdkp, "Truncating mode parameter "
++                         "data from %d to %d bytes\n", len, SD_BUF_SIZE);
++               len = SD_BUF_SIZE;
++       }
  
-@@ -1755,10 +1755,7 @@ static void collapse_huge_page(struct mm
- 		spin_unlock(&mm->page_table_lock);
- 		anon_vma_unlock(vma->anon_vma);
- 		mem_cgroup_uncharge_page(new_page);
--#ifdef CONFIG_NUMA
--		put_page(new_page);
--#endif
--		goto out;
-+		goto out_put_page;
- 	}
+        /* Get the data */
+        res = sd_do_mode_sense(sdp, dbd, modepage, buffer, len, &data, &sshdr);
+@@ -1912,16 +1914,45 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+        if (scsi_status_is_good(res)) {
+                int offset = data.header_length + data.block_descriptor_length;
  
- 	/*
-@@ -1799,6 +1796,13 @@ static void collapse_huge_page(struct mm
- 	khugepaged_pages_collapsed++;
- out:
- 	up_write(&mm->mmap_sem);
-+	return;
+-               if (offset >= SD_BUF_SIZE - 2) {
+-                       sd_printk(KERN_ERR, sdkp, "Malformed MODE SENSE response\n");
+-                       goto defaults;
++               while (offset < len) {
++                       u8 page_code = buffer[offset] & 0x3F;
++                       u8 spf       = buffer[offset] & 0x40;
 +
-+out_put_page:
-+#ifdef CONFIG_NUMA
-+	put_page(new_page);
-+#endif
-+	goto out;
- }
++                       if (page_code == 8 || page_code == 6) {
++                               /* We're interested only in the first 3 bytes.
++                                */
++                               if (len - offset <= 2) {
++                                       sd_printk(KERN_ERR, sdkp, "Incomplete "
++                                                 "mode parameter data\n");
++                                       goto defaults;
++                               } else {
++                                       modepage = page_code;
++                                       goto Page_found;
++                               }
++                       } else {
++                               /* Go to the next page */
++                               if (spf && len - offset > 3)
++                                       offset += 4 + (buffer[offset+2] << 8) +
++                                               buffer[offset+3];
++                               else if (!spf && len - offset > 1)
++                                       offset += 2 + buffer[offset+1];
++                               else {
++                                       sd_printk(KERN_ERR, sdkp, "Incomplete "
++                                                 "mode parameter data\n");
++                                       goto defaults;
++                               }
++                       }
+                }
  
- static int khugepaged_scan_pmd(struct mm_struct *mm,
+-               if ((buffer[offset] & 0x3f) != modepage) {
++               if (modepage == 0x3F) {
++                       sd_printk(KERN_ERR, sdkp, "No Caching mode page "
++                                 "present\n");
++                       goto defaults;
++               } else if ((buffer[offset] & 0x3f) != modepage) {
+                        sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+                        goto defaults;
+                }
+-
++       Page_found:
+                if (modepage == 8) {
+                        sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
+                        sdkp->RCD = ((buffer[offset + 2] & 0x01) != 0);
+-- 
+1.7.2.2.165.gbc382
 
-
-
-I was too optimistic that there wasn't really a bug, I thought it was
-some confusion about the hpage usage that differs with numa and not
-numa.
-
-On a side note, the CONFIG_NUMA case will later change further to move
-the allocation out of the mmap_sem write mode to make the fs
-submitting I/O from userland and doing memory allocations in the I/O
-paths happier.
