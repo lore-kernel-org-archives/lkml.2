@@ -1,78 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0K3Ilw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 03:41:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59159 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab0K3Ilw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 03:41:52 -0500
-Message-ID: <4CF4B8BB.7050106@cn.fujitsu.com>
-Date: Tue, 30 Nov 2010 16:41:31 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cfq-iosched: Get rid of on_st flag
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-30 16:42:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-30 16:42:03,
-	Serialize complete at 2010-11-30 16:42:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754726Ab0K3IpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 03:45:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:46601 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752186Ab0K3IpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 03:45:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,279,1288594800"; 
+   d="scan'208";a="862626806"
+X-Mailbox-Line: From shaohui.zheng@intel.com Tue Nov 30 15:14:37 2010
+Message-Id: <20101130071436.943336418@intel.com>
+References: <20101130071324.908098411@intel.com>
+User-Agent: quilt/0.46-1
+Date: Tue, 30 Nov 2010 15:13:27 +0800
+From: shaohui.zheng@intel.com
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: [3/8, v6] NUMA Hotplug Emulator: Add node hotplug emulation
+Content-Disposition: inline; filename=003-node-hotpluge-emulation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's able to check whether a CFQ group on a service tree by
-checking "cfqg->rb_node". There's no need to maintain an
-extra flag here.
+From: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Add an interface to allow new nodes to be added when performing memory
+hot-add.  This provides a convenient interface to test memory hotplug
+notifier callbacks and surrounding hotplug code when new nodes are
+onlined without actually having a machine with such hotpluggable SRAT
+entries.
+
+This adds a new debugfs interface at /sys/kernel/debug/mem_hotplug/add_node
+that behaves in a similar way to the memory hot-add "probe" interface.
+Its format is size@start, where "size" is the size of the new node to be
+added and "start" is the physical address of the new memory.
+
+The new node id is a currently offline, but possible, node.  The bit must
+be set in node_possible_map so that nr_node_ids is sized appropriately.
+
+For emulation on x86, for example, it would be possible to set aside
+memory for hotplugged nodes (say, anything above 2G) and to add an
+additional four nodes as being possible on boot with
+
+	mem=2G numa=possible=4
+
+and then creating a new 128M node at runtime:
+
+	# echo 128M@0x80000000 > /sys/kernel/debug/mem_hotplug/add_node
+	On node 1 totalpages: 0
+	init_memory_mapping: 0000000080000000-0000000088000000
+	 0080000000 - 0088000000 page 2M
+Once the new node has been added, its memory can be onlined.  If this
+memory represents memory section 16, for example:
+
+	# echo online > /sys/devices/system/memory/memory16/state
+	Built 2 zonelists in Node order, mobility grouping on.  Total pages: 514846
+	Policy zone: Normal
+ [ The memory section(s) mapped to a particular node are visible via
+   /sys/devices/system/node/node1, in this example. ]
+
+The new node is now hotplugged and ready for testing.
+
+CC: Shaohui Zheng <shaohui.zheng@intel.com>
+CC: Haicheng Li <haicheng.li@intel.com>
+CC: Greg KH <gregkh@suse.de>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- block/cfq-iosched.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index e18d316..5d0349d 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -179,7 +179,6 @@ struct cfq_group {
- 	/* group service_tree key */
- 	u64 vdisktime;
- 	unsigned int weight;
--	bool on_st;
+ Documentation/memory-hotplug.txt |   24 +++++++++++++++
+ mm/memory_hotplug.c              |   59 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 83 insertions(+), 0 deletions(-)
+Index: linux-hpe4/Documentation/memory-hotplug.txt
+===================================================================
+--- linux-hpe4.orig/Documentation/memory-hotplug.txt	2010-11-30 12:40:43.527622001 +0800
++++ linux-hpe4/Documentation/memory-hotplug.txt	2010-11-30 14:11:11.827622000 +0800
+@@ -18,6 +18,7 @@
+ 4. Physical memory hot-add phase
+   4.1 Hardware(Firmware) Support
+   4.2 Notify memory hot-add event by hand
++  4.3 Node hotplug emulation
+ 5. Logical Memory hot-add phase
+   5.1. State of memory
+   5.2. How to online memory
+@@ -215,6 +216,29 @@
+ Please see "How to online memory" in this text.
  
- 	/* number of cfqq currently on this group */
- 	int nr_cfqq;
-@@ -863,7 +862,7 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	struct rb_node *n;
  
- 	cfqg->nr_cfqq++;
--	if (cfqg->on_st)
-+	if (!RB_EMPTY_NODE(&cfqg->rb_node))
- 		return;
++4.3 Node hotplug emulation
++------------
++With debugfs, it is possible to test node hotplug by assigning the newly
++added memory to a new node id when using a different interface with a similar
++behavior to "probe" described in section 4.2.  If a node id is possible
++(there are bits in /sys/devices/system/memory/possible that are not online),
++then it may be used to emulate a newly added node as the result of memory
++hotplug by using the debugfs "add_node" interface.
++
++The add_node interface is located at "mem_hotplug/add_node" at the debugfs
++mount point.
++
++You can create a new node of a specified size starting at the physical
++address of new memory by
++
++% echo size@start_address_of_new_memory > /sys/kernel/debug/mem_hotplug/add_node
++
++Where "size" can be represented in megabytes or gigabytes (for example,
++"128M" or "1G").  The minumum size is that of a memory section.
++
++Once the new node has been added, it is possible to online the memory by
++toggling the "state" of its memory section(s) as described in section 5.1.
++
  
- 	/*
-@@ -879,7 +878,6 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 		cfqg->vdisktime = st->min_vdisktime;
- 
- 	__cfq_group_service_tree_add(st, cfqg);
--	cfqg->on_st = true;
- 	st->total_weight += cfqg->weight;
+ ------------------------------
+ 5. Logical Memory hot-add phase
+Index: linux-hpe4/mm/memory_hotplug.c
+===================================================================
+--- linux-hpe4.orig/mm/memory_hotplug.c	2010-11-30 12:40:43.757622001 +0800
++++ linux-hpe4/mm/memory_hotplug.c	2010-11-30 14:02:33.877622002 +0800
+@@ -924,3 +924,63 @@
  }
- 
-@@ -896,7 +894,6 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 		return;
- 
- 	cfq_log_cfqg(cfqd, cfqg, "del_from_rr group");
--	cfqg->on_st = false;
- 	st->total_weight -= cfqg->weight;
- 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
- 		cfq_rb_erase(&cfqg->rb_node, st);
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ EXPORT_SYMBOL_GPL(remove_memory);
++
++#ifdef CONFIG_DEBUG_FS
++#include <linux/debugfs.h>
++
++static struct dentry *memhp_debug_root;
++
++static ssize_t add_node_store(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	nodemask_t mask;
++	u64 start, size;
++	char buffer[64];
++	char *p;
++	int nid;
++	int ret;
++
++	memset(buffer, 0, sizeof(buffer));
++	if (count > sizeof(buffer) - 1)
++		count = sizeof(buffer) - 1;
++	if (copy_from_user(buffer, buf, count))
++		return -EFAULT;
++
++	size = memparse(buffer, &p);
++	if (size < (PAGES_PER_SECTION << PAGE_SHIFT))
++		return -EINVAL;
++	if (*p != '@')
++		return -EINVAL;
++
++	start = simple_strtoull(p + 1, NULL, 0);
++
++	nodes_andnot(mask, node_possible_map, node_online_map);
++	nid = first_node(mask);
++	if (nid == MAX_NUMNODES)
++		return -ENOMEM;
++
++	ret = add_memory(nid, start, size);
++	return ret ? ret : count;
++}
++
++static const struct file_operations add_node_file_ops = {
++	.write		= add_node_store,
++	.llseek		= generic_file_llseek,
++};
++
++static int __init node_debug_init(void)
++{
++	if (!memhp_debug_root)
++		memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
++	if (!memhp_debug_root)
++		return -ENOMEM;
++
++	if (!debugfs_create_file("add_node", S_IWUSR, memhp_debug_root,
++			NULL, &add_node_file_ops))
++		return -ENOMEM;
++
++	return 0;
++}
++
++module_init(node_debug_init);
++#endif /* CONFIG_DEBUG_FS */
+
 -- 
-1.6.5.2
+Thanks & Regards,
+Shaohui
 
 
