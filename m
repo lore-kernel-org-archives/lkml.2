@@ -1,226 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab0K3T0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:26:09 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41586 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab0K3T0H (ORCPT
+	id S1756330Ab0K3T0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:26:44 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:42853 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752580Ab0K3T0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:26:07 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6183"; a="64904509"
-From: Daniel Walker <dwalker@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@fluxnic.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] drivers: char: hvc: add arm JTAG DCC console support
-Date: Tue, 30 Nov 2010 11:25:39 -0800
-Message-Id: <1291145141-18301-1-git-send-email-dwalker@codeaurora.org>
-X-Mailer: git-send-email 1.7.1
+	Tue, 30 Nov 2010 14:26:43 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Ykyy.9UVM1mY8TD7pystaxenu74CiPEBh0wKQx9OFP3sCCK
+ 6k0czmo1eX3Fo2c4bIOZbRjzwMDqc5JbqReL5tflOmiB51TRSFuZomD4zrZ1
+ z0nS6Y2PIK4RslXmLex07pAZ19r5G0_b3WEwnJJPdoQj1TYmxxJroPEtD4qQ
+ fDVZ1yauEW31ddpTIODngaC3Vgv.kRDTqQFG75l.h.YKZ3mqJnbU2m0c2YJM
+ 8pDC1gOm5u_CrbASXrWRTHfTrpoVjUKBWu9qbbTTBDkNM.Nc3h4Q_
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 30 Nov 2010 13:26:39 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
+Subject: Re: [thisops uV3 07/18] highmem: Use this_cpu_xx_return()
+ operations
+In-Reply-To: <1291144408.2904.232.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1011301325180.3134@router.home>
+References: <20101130190707.457099608@linux.com>  <20101130190845.216537525@linux.com> <1291144408.2904.232.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds a basic console that uses the arm JTAG
-DCC to transfer data back and forth. It has support for
-ARMv6 and ARMv7.
+On Tue, 30 Nov 2010, Eric Dumazet wrote:
 
-This console is created under the HVC driver, and should be named
-/dev/hvcX (or /dev/hvc0 for example).
+> >  {
+> > -	int idx = --__get_cpu_var(__kmap_atomic_idx);
+> > +	int idx = __this_cpu_dec_return(__kmap_atomic_idx);
+>
+> __this_cpu_dec_return() is only needed if CONFIG_DEBUG_HIGHMEM
+>
+> >  #ifdef CONFIG_DEBUG_HIGHMEM
+> >  	BUG_ON(idx < 0);
+> >  #endif
+> >
+>
+> You could change kmap_atomic_idx_pop() to return void, and use
+> __this_cpu_dec(__kmap_atomic_idx)
 
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+The following would do?
+
+
+Subject: highmem: Use this_cpu_dec instead of __this_cpu_dec_return if !DEBUG_HIGHMEM
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
 ---
- drivers/char/Kconfig   |    9 +++
- drivers/char/Makefile  |    1 +
- drivers/char/hvc_dcc.c |  133 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 143 insertions(+), 0 deletions(-)
- create mode 100644 drivers/char/hvc_dcc.c
+ include/linux/highmem.h |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 43d3395..d4a7776 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -682,6 +682,15 @@ config HVC_UDBG
-        select HVC_DRIVER
-        default n
- 
-+config HVC_DCC
-+       bool "ARM JTAG DCC console"
-+       depends on ARM
-+       select HVC_DRIVER
-+       help
-+         This console uses the JTAG DCC on ARM to create a console under the HVC
-+	 driver. This console is used through a JTAG only on ARM. If you don't have
-+	 a JTAG then you probably don't want this option.
-+
- config VIRTIO_CONSOLE
- 	tristate "Virtio console"
- 	depends on VIRTIO
-diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-index ba53ec9..fa0b824 100644
---- a/drivers/char/Makefile
-+++ b/drivers/char/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_HVC_CONSOLE)	+= hvc_vio.o hvsi.o
- obj-$(CONFIG_HVC_ISERIES)	+= hvc_iseries.o
- obj-$(CONFIG_HVC_RTAS)		+= hvc_rtas.o
- obj-$(CONFIG_HVC_TILE)		+= hvc_tile.o
-+obj-$(CONFIG_HVC_DCC)		+= hvc_dcc.o
- obj-$(CONFIG_HVC_BEAT)		+= hvc_beat.o
- obj-$(CONFIG_HVC_DRIVER)	+= hvc_console.o
- obj-$(CONFIG_HVC_IRQ)		+= hvc_irq.o
-diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
-new file mode 100644
-index 0000000..6470f63
---- /dev/null
-+++ b/drivers/char/hvc_dcc.c
-@@ -0,0 +1,133 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/console.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/moduleparam.h>
-+#include <linux/types.h>
-+
-+#include <asm/processor.h>
-+
-+#include "hvc_console.h"
-+
-+/* DCC Status Bits */
-+#define DCC_STATUS_RX		(1 << 30)
-+#define DCC_STATUS_TX		(1 << 29)
-+
-+static inline u32 __dcc_getstatus(void)
-+{
-+	u32 __ret;
-+
-+	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
-+		: "=r" (__ret) : : "cc");
-+
-+	return __ret;
-+}
-+
-+
-+#if defined(CONFIG_CPU_V7)
-+static inline char __dcc_getchar(void)
-+{
-+	char __c;
-+
-+	asm("get_wait:	mrc p14, 0, pc, c0, c1, 0                          \n\
-+			bne get_wait                                       \n\
-+			mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-+		: "=r" (__c) : : "cc");
-+
-+	return __c;
-+}
+Index: linux-2.6/include/linux/highmem.h
+===================================================================
+--- linux-2.6.orig/include/linux/highmem.h	2010-11-30 13:23:44.000000000 -0600
++++ linux-2.6/include/linux/highmem.h	2010-11-30 13:24:54.000000000 -0600
+@@ -95,14 +95,19 @@ static inline int kmap_atomic_idx(void)
+ 	return __this_cpu_read(__kmap_atomic_idx) - 1;
+ }
+
++#ifdef CONFIG_DEBUG_HIGHMEM
+ static inline int kmap_atomic_idx_pop(void)
+ {
+ 	int idx = __this_cpu_dec_return(__kmap_atomic_idx);
+-#ifdef CONFIG_DEBUG_HIGHMEM
+ 	BUG_ON(idx < 0);
+-#endif
+ 	return idx;
+ }
 +#else
-+static inline char __dcc_getchar(void)
++static inline void kmap_atomic_idx_pop(void)
 +{
-+	char __c;
-+
-+	asm("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-+		: "=r" (__c));
-+
-+	return __c;
++	__this_cpu_dec(__kmap_atomic_idx);
 +}
 +#endif
-+
-+#if defined(CONFIG_CPU_V7)
-+static inline void __dcc_putchar(char c)
-+{
-+	asm("put_wait:	mrc p14, 0, pc, c0, c1, 0                 \n\
-+			bcs put_wait                              \n\
-+			mcr p14, 0, %0, c0, c5, 0                   "
-+	: : "r" (c) : "cc");
-+}
-+#else
-+static inline void __dcc_putchar(char c)
-+{
-+	asm("mcr p14, 0, %0, c0, c5, 0	@ write a char"
-+		: /* no output register */
-+		: "r" (c));
-+}
-+#endif
-+
-+static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
-+{
-+	int i;
-+
-+	for (i = 0; i < count; i++) {
-+		while (__dcc_getstatus() & DCC_STATUS_TX)
-+			cpu_relax();
-+
-+		__dcc_putchar((char)(buf[i] & 0xFF));
-+	}
-+
-+	return count;
-+}
-+
-+static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
-+{
-+	int i;
-+
-+	for (i = 0; i < count; ++i) {
-+		int c = -1;
-+
-+		if (__dcc_getstatus() & DCC_STATUS_RX)
-+			c = __dcc_getchar();
-+		if (c < 0)
-+			break;
-+		buf[i] = c;
-+	}
-+
-+	return i;
-+}
-+
-+static const struct hv_ops hvc_dcc_get_put_ops = {
-+	.get_chars = hvc_dcc_get_chars,
-+	.put_chars = hvc_dcc_put_chars,
-+};
-+
-+static int __init hvc_dcc_console_init(void)
-+{
-+	hvc_instantiate(0, 0, &hvc_dcc_get_put_ops);
-+	return 0;
-+}
-+console_initcall(hvc_dcc_console_init);
-+
-+static int __init hvc_dcc_init(void)
-+{
-+	hvc_alloc(0, 0, &hvc_dcc_get_put_ops, 128);
-+	return 0;
-+}
-+device_initcall(hvc_dcc_init);
--- 
-1.7.1
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+ #endif
+
