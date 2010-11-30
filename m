@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab0K3RhC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:37:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42038 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166Ab0K3RhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:37:01 -0500
-Date: Tue, 30 Nov 2010 09:36:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: Michael Richardson <mcr@sandelman.ca>
-Cc: linux-kernel@vger.kernel.org, bart@jukie.net
-Subject: Re: odd behavior from /sys/block (sysfs)
-Message-ID: <20101130173650.GA19785@suse.de>
-References: <5108.1290796566@marajade.sandelman.ca>
- <20101127185829.GA19708@suse.de>
- <4605.1290892451@marajade.sandelman.ca>
+	id S1754677Ab0K3RhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:37:22 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36270 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab0K3RhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 12:37:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hBVYkEn/GwHekodDxhszXNJi7pU4EcNL6eTmA8b0uiN3aXYJEyDMuy4uToFoBJtbMA
+         xzYp932UaZsr1PdMFn/CCkH/4/WHszoYhHWB1MvqWVQpzEEktTLtNBSfeuqOhg1H3T8L
+         LkvUk0QQwzcmqaGfeL/XYrOOKPoL++5dHQFm4=
+Date: Tue, 30 Nov 2010 20:37:16 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, fweisbec@gmail.com, yinghai@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, NMI: add back unknown_nmi_panic and
+	nmi_watchdog sysctls
+Message-ID: <20101130173716.GB20818@lenovo>
+References: <1291068437-5331-1-git-send-email-dzickus@redhat.com> <1291068437-5331-3-git-send-email-dzickus@redhat.com> <20101130131517.GA16372@lenovo> <20101130162044.GB18100@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4605.1290892451@marajade.sandelman.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101130162044.GB18100@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 27, 2010 at 04:14:11PM -0500, Michael Richardson wrote:
+On Tue, Nov 30, 2010 at 11:20:44AM -0500, Don Zickus wrote:
+...
+> > > +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
+> > 
+> > This kinda wonders me -- do we have CONFIG_X86_LOCAL_APIC set _without_
+> > CONFIG_X86? I mean CONFIG_X86_LOCAL_APIC is per x86, no?
 > 
-> >>>>> "Greg" == Greg KH <gregkh@suse.de> writes:
->     >> {please CC me}
->     >> 
->     >> I was capturing data from my laptop's /sys file system as test input
->     >> for some code that needs to grovel through /sys a bit.  I found it weird
->     >> that tar got different answers than ls!  See below (at end) for original
->     >> observation.
->     >> 
->     >> It seems that this is because lstat64() on sysfs returns st_size=0 for
->     >> the link, and tar does not know how to deal with this, while ls does.
->     >> I don't know if it is tar that is wrong, or sysfs.
->     >> lstat64(3) suggests that it is sysfs that is at fault, that it should
->     >> set st_size.  The behaviour of ls, suggests that perhaps other systems
->     >> have worked around st_size=0 for symlinks.  (I'm on 2.6.32-bpo.5
->     >> from debian) 
+> Probably, I was just copying-n-pasting what was there previously.  I can
+> chop it off.
 > 
->     Greg> So, what do you think should be changed here?
+> Cheers,
+> Don
 > 
-> Iif st_size=0 is not a valid return from readlink(2), then I think sysfs
-> should be fixed.    I will cook a patch.
-> 
-> While tar might not useful (I was successful at using cp -r, btw),
-> having working file operations makes sense. 
 
-I agree, a patch would be most welcome.
+ok, lets leave it as is, at least for better bisectability and tune up
+after.
 
->     Greg> I wouldn't ever recommend using tar on sysfs as it doesn't make any
->     Greg> sense (sysfs is a virtual file system, like /proc/ and I think
->     Greg> that tar doesn't like /proc either, right?)
-> 
-> Are there things on /sys for which a read is not idempotent?
-
-There might be some binary files in /sys where this does not happen.
-
-Also note that other filesystems are mounted under /sys, like debugfs
-which is in /sys/kernel/debug/ and all bets are off as to what are in
-those files and if they ever terminate :)
-
-thanks,
-
-greg k-h
+  Cyrill
