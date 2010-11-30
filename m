@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab0K3PO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:14:56 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:39017 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751225Ab0K3POz (ORCPT
+	id S1753657Ab0K3PPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:15:09 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64057 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab0K3PPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:14:55 -0500
-Date: Tue, 30 Nov 2010 10:14:39 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.37-rc4
-Message-ID: <20101130151439.GA2770@elliptictech.com>
-References: <AANLkTikbjZXMio0CZ_AYGpi_8784EyWStK9sD23jSZzD@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikbjZXMio0CZ_AYGpi_8784EyWStK9sD23jSZzD@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 30 Nov 2010 10:15:08 -0500
+Subject: Re: [PATCH] regulator: Copy constraints from regulators when
+ initialising them
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+In-Reply-To: <1291046117-9090-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1291046117-9090-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 15:15:03 +0000
+Message-ID: <1291130103.3293.16.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-29 21:36 -0800, Linus Torvalds wrote:
-> The most _noticeable_ change is that hopefully the NFS readdir
-> regression really got fixed now.
+On Mon, 2010-11-29 at 15:55 +0000, Mark Brown wrote:
+> Currently the regulator API uses the constraints structure passed in to
+> the core throughout the lifetime of the object. This means that it is not
+> possible to mark the constraints as __initdata so if the kernel supports
+> many boards the constraints for all of them are kept around throughout the
+> lifetime of the system, consuming memory needlessly. By copying constraints
+> that are actually used we allow the use of __initdata, saving memory when
+> multiple boards are supported.
+> 
+> This also means the constraints can be const.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-I'm still having readdir troubles with -rc4 where directories suddenly
-show up completely empty.  For details and the test case (that still
-reproduces it), see
+Applied.
 
-  http://permalink.gmane.org/gmane.linux.nfs/36540
+Thanks
 
+Liam
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
