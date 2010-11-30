@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab0K3EkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:40:00 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34657 "EHLO
+	id S1753653Ab0K3Ekv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:40:51 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34719 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751418Ab0K3Ej7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751418Ab0K3Eku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:39:59 -0500
-Message-ID: <4CF47FFE.2060003@dsn.okisemi.com>
-Date: Tue, 30 Nov 2010 13:39:26 +0900
+	Mon, 29 Nov 2010 23:40:50 -0500
+Message-ID: <4CF48032.8070708@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 13:40:18 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
@@ -20,79 +20,34 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v6 18/20] can: EG20T PCH: Optimize "if" condition
+Subject: [PATCH net-next-2.6 v6 19/20] can: EG20T PCH: Add setting TEC/REC
+ statistics processing
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For reduce "if" condition, easy to read/understand the code,
-optimize "if" condition in rx/tx processing.
+Add setting TEC/REC statistics processing.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   26 ++++++++++----------------
- 1 files changed, 10 insertions(+), 16 deletions(-)
+ drivers/net/can/pch_can.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 743385b..e11ec36 100644
+index e11ec36..596dc1e 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -752,19 +752,16 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
- 
- 	if (int_stat == PCH_STATUS_INT) {
- 		reg_stat = ioread32(&priv->regs->stat);
--		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
--			if (reg_stat & PCH_BUS_OFF ||
--			   (reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL) {
--				pch_can_error(ndev, reg_stat);
--				quota--;
--			}
--		}
- 
--		if (reg_stat & PCH_TX_OK)
--			pch_can_bit_clear(&priv->regs->stat, PCH_TX_OK);
-+		if ((reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) &&
-+		   ((reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL)) {
-+			pch_can_error(ndev, reg_stat);
-+			quota--;
-+		}
- 
--		if (reg_stat & PCH_RX_OK)
--			pch_can_bit_clear(&priv->regs->stat, PCH_RX_OK);
-+		if (reg_stat & (PCH_TX_OK | PCH_RX_OK))
-+			pch_can_bit_clear(&priv->regs->stat,
-+					  reg_stat & (PCH_TX_OK | PCH_RX_OK));
- 
- 		int_stat = pch_can_int_pending(priv);
- 	}
-@@ -906,14 +903,13 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	if (can_dropped_invalid_skb(ndev, skb))
- 		return NETDEV_TX_OK;
- 
-+	tx_obj_no = priv->tx_obj;
- 	if (priv->tx_obj == PCH_TX_OBJ_END) {
- 		if (ioread32(&priv->regs->treq2) & PCH_TREQ2_TX_MASK)
- 			netif_stop_queue(ndev);
- 
--		tx_obj_no = priv->tx_obj;
- 		priv->tx_obj = PCH_TX_OBJ_START;
- 	} else {
--		tx_obj_no = priv->tx_obj;
- 		priv->tx_obj++;
+@@ -574,6 +574,9 @@ static void pch_can_error(struct net_device *ndev, u32 status)
+ 		break;
  	}
  
-@@ -932,9 +928,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	id2 |= PCH_ID_MSGVAL;
++	cf->data[6] = errc & PCH_TEC;
++	cf->data[7] = (errc & PCH_REC) >> 8;
++
+ 	priv->can.state = state;
+ 	netif_rx(skb);
  
- 	/* If remote frame has to be transmitted.. */
--	if (cf->can_id & CAN_RTR_FLAG)
--		id2 &= ~PCH_ID2_DIR;
--	else
-+	if (!(cf->can_id & CAN_RTR_FLAG))
- 		id2 |= PCH_ID2_DIR;
- 
- 	iowrite32(id2, &priv->regs->ifregs[1].id2);
 -- 
 1.6.0.6
