@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab0K3LVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 06:21:07 -0500
-Received: from www.tglx.de ([62.245.132.106]:56434 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755754Ab0K3LVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 06:21:04 -0500
-Message-ID: <4CF4DE00.4030105@linutronix.de>
-Date: Tue, 30 Nov 2010 12:20:32 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mitch Bradley <wmb@firmworks.com>,
-        Scott Wood <scottwood@freescale.com>, sodaville@linutronix.de,
-        x86@kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>	 <1290706801-7323-4-git-send-email-bigeasy@linutronix.de>	 <1290808645.32570.158.camel@pasglop> <20101128160449.GC30784@www.tglx.de>	 <1290984809.32570.208.camel@pasglop>	 <20101129130720.7d060e1c@udp111988uds.am.freescale.net>	 <1291061128.32570.298.camel@pasglop> <4CF40DF4.9060204@firmworks.com>	 <1291063470.32570.312.camel@pasglop>	 <20101129234735.4ce3a933@lxorguk.ukuu.org.uk> <1291085411.32570.320.camel@pasglop>
-In-Reply-To: <1291085411.32570.320.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755817Ab0K3LWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 06:22:53 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63136 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755672Ab0K3LWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 06:22:52 -0500
+Subject: Re: [PATCH] ASoC: Fix compile error for s6000-i2s.c by adding a
+ missing ';' character
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, dg@emlix.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+In-Reply-To: <1291081553.18485.3.camel@mola>
+References: <1291081553.18485.3.camel@mola>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 11:22:48 +0000
+Message-ID: <1291116168.3293.5.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt wrote:
-> On Mon, 2010-11-29 at 23:47 +0000, Alan Cox wrote:
->> That may not be wise. Your real bus heirarchy may not be architecturally
->> defined on some systems so you can't incorporate it into code, nor is it
->> necessarily a heirarchy - eg some of the Geodes. 
+On Tue, 2010-11-30 at 09:45 +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> I don't have toolchain to compile s6000, I'm not able to put the error message in the commit log.
+> But I know this patch indeed fixes a compile error.
 > 
-> Ok, so I'd suggest doing something like:
+>  sound/soc/s6000/s6000-i2s.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
->  - pci is below the corresponding atom node
->  - isa is a child of pci
-> 
-> The later is a useful representation even if it doesn't correspond to
-> reality. From an address representation perspective, ISA can be
-> considered somewhat as a substractive decoding child of PCI (again even
-> if that's not 100% true), which simplifies the representation in the
-> device-tree a bit, and allows to still have things like VGA devices on
-> the PCI segment that decode IO ports in the ISA range.
+> diff --git a/sound/soc/s6000/s6000-i2s.c b/sound/soc/s6000/s6000-i2s.c
+> index 8778faa..3052f64 100644
+> --- a/sound/soc/s6000/s6000-i2s.c
+> +++ b/sound/soc/s6000/s6000-i2s.c
+> @@ -434,7 +434,7 @@ static struct snd_soc_dai_driver s6000_i2s_dai = {
+>  		.rate_max = 1562500,
+>  	},
+>  	.ops = &s6000_i2s_dai_ops,
+> -}
+> +};
+>  
+>  static int __devinit s6000_i2s_probe(struct platform_device *pdev)
+>  {
 
-okay.
+I think Daniel was first so I've acked his patch for this.
 
-> Cheers,
-> Ben.
+Thanks
 
+Liam 
 
-Sebastian
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
