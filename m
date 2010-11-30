@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab0K3JSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:18:40 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:58333 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab0K3JSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:18:38 -0500
-Date: Tue, 30 Nov 2010 09:18:22 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
-Message-ID: <20101130091822.GJ13268@csn.ul.ie>
-References: <cover.1291043273.git.minchan.kim@gmail.com> <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com> <20101130100933.82E9.A69D9226@jp.fujitsu.com>
+	id S1754668Ab0K3JUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:20:11 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40625 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab0K3JUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 04:20:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vb/yFD/kvo0WzYoGjr5i9nv1wVDm5EJxhtHM1SqpycGjR8oxLkp/V4EBCPG74KTxUg
+         NEKh3x0XWPNCECuCksaghqHbVuqAI+mQNlX165q8K3DjIOiLdwTipxrh3H61oR3gfxMm
+         CuZHb1/Umh6xAVCb62HLGbcTdrz+xN0O8Ref0=
+Date: Tue, 30 Nov 2010 17:24:58 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Pavel Vasilyev <pavel@pavlinux.ru>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Repalce strncmp by memcmp
+Message-ID: <20101130092458.GC5203@cr0.nay.redhat.com>
+References: <4CF30B46.4000203@pavlinux.ru>
+ <1291042737.30543.730.camel@gandalf.stny.rr.com>
+ <4CF401DD.4000908@pavlinux.ru>
+ <1291069113.30543.876.camel@gandalf.stny.rr.com>
+ <1291069616.30543.879.camel@gandalf.stny.rr.com>
+ <4CF42E07.40207@pavlinux.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101130100933.82E9.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4CF42E07.40207@pavlinux.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 10:10:20AM +0900, KOSAKI Motohiro wrote:
-> > invalidate_mapping_pages is very big hint to reclaimer.
-> > It means user doesn't want to use the page any more.
-> > So in order to prevent working set page eviction, this patch
-> > move the page into tail of inactive list by PG_reclaim.
-> > 
-> > Please, remember that pages in inactive list are working set
-> > as well as active list. If we don't move pages into inactive list's
-> > tail, pages near by tail of inactive list can be evicted although
-> > we have a big clue about useless pages. It's totally bad.
-> > 
-> > Now PG_readahead/PG_reclaim is shared.
-> > fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
-> > preventing fast reclaiming readahead marker page.
-> > 
-> > In this series, PG_reclaim is used by invalidated page, too.
-> > If VM find the page is invalidated and it's dirty, it sets PG_reclaim
-> > to reclaim asap. Then, when the dirty page will be writeback,
-> > clear_page_dirty_for_io will clear PG_reclaim unconditionally.
-> > It disturbs this serie's goal.
-> > 
-> > I think it's okay to clear PG_readahead when the page is dirty, not
-> > writeback time. So this patch moves ClearPageReadahead.
-> > 
-> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Cc: Wu Fengguang <fengguang.wu@intel.com>
-> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Nick Piggin <npiggin@kernel.dk>
-> > Cc: Mel Gorman <mel@csn.ul.ie>
-> 
-> I still dislike this one. I doubt this trick makes much benefit in real
-> world workload.
-> 
+On Tue, Nov 30, 2010 at 01:49:43AM +0300, Pavel Vasilyev wrote:
+>On 30.11.2010 01:26, Steven Rostedt wrote:
+>> On Mon, 2010-11-29 at 17:18 -0500, Steven Rostedt wrote:
+>>
+>>> Um, do you realize that the kernel does not always use the same memcmp
+>>> as gcc.
+>>>
+>> Note, I'm not against the change, because in 99% of the cases, memcmp()
+>> can and will be faster, and we don't need to worry about these strange
+>> cases.
+>>
+>> What I'm against is a blind s/strncmp/memcmp/ of the kernel, because it
+>> may have side effects that you may not have thought of.
+>>
+>Then we have to hang a large banner that is visible to all developers.
+>"Change wherever possible strncmp to memcmp," :)
+>
 
-I would agree except as said elsewhere, it's a chicken and egg problem.
-We don't have a real world test because fadvise is not useful in its
-current iteration. I'm hoping that there will be a test comparing
-
-rsync		on vanilla kernel
-rsync		on patched kernel
-rsync+patch	on vanilla kernel
-rsync+patch	on patched kernel
-
-Are the results of such a test likely to happen?
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Why? Strings are strings, they are ended by '\0', well-deserved to use str*()
+functions rather than mem*().
