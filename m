@@ -1,137 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab0K3L7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 06:59:42 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33816 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab0K3L7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 06:59:41 -0500
-Date: Tue, 30 Nov 2010 12:58:51 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, w@1wt.eu
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101130115851.GB9639@elte.hu>
-References: <20101116104600.GA24015@suse.de>
- <20101119191906.GA31760@xanatos>
- <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com>
- <20101126074809.GD19589@elte.hu>
- <20101129163308.GA2383@xanatos>
- <20101129233150.60a3c3af@lxorguk.ukuu.org.uk>
+	id S1752230Ab0K3MF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 07:05:58 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56089 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab0K3MF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 07:05:57 -0500
+Message-ID: <4CF4E897.7090702@pengutronix.de>
+Date: Tue, 30 Nov 2010 13:05:43 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129233150.60a3c3af@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        andrew.chih.howe.khor@intel.com, qi.wang@intel.com,
+        margie.foster@intel.com, yong.y.wang@intel.com, kok.howg.ewe@intel.com,
+        joel.clark@intel.com
+Subject: Re: [PATCH net-next-2.6 v6 06/20] can: EG20T PCH: Fix endianness
+ issue
+References: <4CF47BAA.2090209@dsn.okisemi.com>
+In-Reply-To: <4CF47BAA.2090209@dsn.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1C480ADFCCD89B261449D7B0"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1C480ADFCCD89B261449D7B0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On 11/30/2010 05:20 AM, Tomoya MORINAGA wrote:
+> there is endianness issue both Tx and Rx.
+> Currently, data is set like below.
+> Register:
+> MSB--LSB
+> x x D0 D1
+> x x D2 D3
+> x x D4 D5
+> x x D6 D7
+>=20
+> But Data to be sent must be set like below.
+> Register:
+> MSB--LSB
+> x x D1 D0
+> x x D3 D2
+> x x D5 D4
+> x x D7 D6  (x means reserved area.)
 
-> > >  	/* Some debugging symbols have no name.  Ignore them. */
-> > > -	if (!iter->name[0])
-> > > +	if (!iter->name[0] || !capable(CAP_SYS_ADMIN))
-> > >  		return 0;
-> 
-> This is hardcoding file permission policy into the kernel in a way the
-> user cannot change - its bogus in the extreme. Use file permissions that
-> way saner people can chmod them as they like. Indeed quite a few people
-> *already* chmod chunks of /proc.
+The patch does more than fixing the endianess issue. Please split non
+endianess related changes into seperate patch.
 
-Peter already pointed that out and i agree.
+regards, Marc
+>=20
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> ---
+>  drivers/net/can/pch_can.c |  118 +++++++++++++++++++++----------------=
+--------
+>  1 files changed, 55 insertions(+), 63 deletions(-)
+>=20
+> diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+> index 6437e60..98e7e9f 100644
+> --- a/drivers/net/can/pch_can.c
+> +++ b/drivers/net/can/pch_can.c
+> @@ -134,10 +134,7 @@ struct pch_can_if_regs {
+>  	u32 id1;
+>  	u32 id2;
+>  	u32 mcont;
+> -	u32 dataa1;
+> -	u32 dataa2;
+> -	u32 datab1;
+> -	u32 datab2;
+> +	u32 data[4];./internal/TsiStandard/appl/gendata/desc.c
+>  	u32 rsv[13];
+>  };
+> =20
+> @@ -420,10 +417,10 @@ static void pch_can_clear_buffers(struct pch_can_=
+priv *priv)
+>  		iowrite32(0x0, &priv->regs->ifregs[0].id1);
+>  		iowrite32(0x0, &priv->regs->ifregs[0].id2);
+>  		iowrite32(0x0, &priv->regs->ifregs[0].mcont);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].dataa1);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].dataa2);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].datab1);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].datab2);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[0]);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[1]);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[2]);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[3]);
+>  		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+>  			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+>  			  &priv->regs->ifregs[0].cmask);
+> @@ -437,10 +434,10 @@ static void pch_can_clear_buffers(struct pch_can_=
+priv *priv)
+>  		iowrite32(0x0, &priv->regs->ifregs[1].id1);
+>  		iowrite32(0x0, &priv->regs->ifregs[1].id2);
+>  		iowrite32(0x0, &priv->regs->ifregs[1].mcont);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].dataa1);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].dataa2);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].datab1);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].datab2);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[0]);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[1]);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[2]);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[3]);
+>  		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+>  			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+>  			  &priv->regs->ifregs[1].cmask);
+> @@ -703,12 +700,13 @@ static int pch_can_rx_normal(struct net_device *n=
+dev, u32 int_stat)
+>  	canid_t id;
+>  	u32 ide;
+>  	u32 rtr;
+> -	int i, j, k;
+> +	int i, k;
+>  	int rcv_pkts =3D 0;
+>  	struct sk_buff *skb;
+>  	struct can_frame *cf;
+>  	struct pch_can_priv *priv =3D netdev_priv(ndev);
+>  	struct net_device_stats *stats =3D &(priv->ndev->stats);
+> +	u16 data_reg;
+> =20
+>  	/* Reading the messsage object from the Message RAM */
+>  	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
+> @@ -774,12 +772,10 @@ static int pch_can_rx_normal(struct net_device *n=
+dev, u32 int_stat)
+>  			      ((ioread32(&priv->regs->ifregs[0].mcont)) & 0x0f);
+>  		}
+> =20
+> -		for (i =3D 0, j =3D 0; i < cf->can_dlc; j++) {
+> -			reg =3D ioread32(&priv->regs->ifregs[0].dataa1 + j*4);
+> -			cf->data[i++] =3D cpu_to_le32(reg & 0xff);
+> -			if (i =3D=3D cf->can_dlc)
+> -				break;
+> -			cf->data[i++] =3D cpu_to_le32((reg >> 8) & 0xff);
+> +		for (i =3D 0; i < cf->can_dlc; i +=3D 2) {
+> +			data_reg =3D ioread16(&priv->regs->ifregs[0].data[i / 2]);
+> +			cf->data[i] =3D data_reg & 0xff;
+> +			cf->data[i + 1] =3D data_reg >> 8;
 
-The main goal here was to establish that a regression-free patch can be implemented 
-by giving user-space a *empty /proc/kallsyms file* - that we older systems do not 
-crash on bootup.
+this is endianess related....good
 
-> It also means that things like SELinux and Tomoyo can be used to manage security 
-> on it in clever ways - something that using a capability completely buggers up.
+>  		}
+> =20
+>  		netif_receive_skb(skb);
+> @@ -815,72 +811,71 @@ RX_NEXT:
+> =20
+>  	return rcv_pkts;
+>  }
+> -static int pch_can_rx_poll(struct napi_struct *napi, int quota)
+> +
+> +static void pch_can_tx_complete(struct net_device *ndev, u32 int_stat)=
 
-Frankly, our security interfaces are a mess - i did not even try to figure out the 
-'right' way to do it. Modularization of security subsystem made it all distinctly 
-worse.
+>  {
+> -	struct net_device *ndev =3D napi->dev;
+>  	struct pch_can_priv *priv =3D netdev_priv(ndev);
+>  	struct net_device_stats *stats =3D &(priv->ndev->stats);
+>  	u32 dlc;
+> +
+> +	can_get_echo_skb(ndev, int_stat - PCH_RX_OBJ_END - 1);
+> +	iowrite32(PCH_CMASK_RX_TX_GET | PCH_CMASK_CLRINTPND,
+> +		  &priv->regs->ifregs[1].cmask);
+> +	pch_can_check_if_busy(&priv->regs->ifregs[1].creq, int_stat);
+> +	dlc =3D get_can_dlc(ioread32(&priv->regs->ifregs[1].mcont) &
+> +			  PCH_IF_MCONT_DLC);
+> +	stats->tx_bytes +=3D dlc;
+> +	stats->tx_packets++;
+> +	if (int_stat =3D=3D PCH_TX_OBJ_END)
+> +		netif_wake_queue(ndev);
+> +}
 
-Why dont we have coherent, easy to use (and hard to mess up) security interfaces to 
-begin with? The moment a kernel developer has to think of:
+but this is something else...please split into a seperate patch.
 
-        retval = -EPERM;
-        if (capable(CAP_SETUID)) {
-                new->suid = new->uid = uid;
-                if (uid != old->uid) {
-                        retval = set_user(new);
-                        if (retval < 0)
-                                goto error;
-                }
-        } else if (uid != old->uid && uid != new->suid) {
-                goto error;
-        }
+> +
+> +static int pch_can_rx_poll(struct napi_struct *napi, int quota)
+> +{
+> +	struct net_device *ndev =3D napi->dev;
+> +	struct pch_can_priv *priv =3D netdev_priv(ndev);
+>  	u32 int_stat;
+>  	int rcv_pkts =3D 0;
+>  	u32 reg_stat;
+> =20
+>  	int_stat =3D pch_can_int_pending(priv);
+>  	if (!int_stat)
+> -		return 0;
+> +		goto end;
+> =20
+> -INT_STAT:
+> -	if (int_stat =3D=3D PCH_STATUS_INT) {
+> +	if ((int_stat =3D=3D PCH_STATUS_INT) && (quota > 0)) {
+>  		reg_stat =3D ioread32(&priv->regs->stat);
+>  		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
+> -			if ((reg_stat & PCH_LEC_ALL) !=3D PCH_LEC_ALL)
+> +			if (reg_stat & PCH_BUS_OFF ||
+> +			   (reg_stat & PCH_LEC_ALL) !=3D PCH_LEC_ALL) {
+>  				pch_can_error(ndev, reg_stat);
+> +				quota--;
+> +			}
 
-        new->fsuid = new->euid = uid;
+dito
 
-        retval = security_task_fix_setuid(new, old, LSM_SETID_ID);
-        if (retval < 0)
-                goto error;
+>  		}
+> =20
+> -		if (reg_stat & PCH_TX_OK) {
+> -			iowrite32(PCH_CMASK_RX_TX_GET,
+> -				  &priv->regs->ifregs[1].cmask);
+> -			pch_can_check_if_busy(&priv->regs->ifregs[1].creq,
+> -					       ioread32(&priv->regs->intr));
+> +		if (reg_stat & PCH_TX_OK)
+>  			pch_can_bit_clear(&priv->regs->stat, PCH_TX_OK);
+> -		}
+
+dito
+> =20
+>  		if (reg_stat & PCH_RX_OK)
+>  			pch_can_bit_clear(&priv->regs->stat, PCH_RX_OK);
+> =20
+>  		int_stat =3D pch_can_int_pending(priv);
+> -		if (int_stat =3D=3D PCH_STATUS_INT)
+> -			goto INT_STAT;
+>  	}
+> =20
+> -MSG_OBJ:
+> +	if (quota =3D=3D 0)
+> +		goto end;
+> +
+>  	if ((int_stat >=3D PCH_RX_OBJ_START) && (int_stat <=3D PCH_RX_OBJ_END=
+)) {
+> -		rcv_pkts =3D pch_can_rx_normal(ndev, int_stat);
+> -		if (rcv_pkts < 0)
+> -			return 0;
+> +		rcv_pkts +=3D pch_can_rx_normal(ndev, int_stat);
+> +		quota -=3D rcv_pkts;
+> +		if (quota < 0)
+> +			goto end;
+
+same here
+
+>  	} else if ((int_stat >=3D PCH_TX_OBJ_START) &&
+>  		   (int_stat <=3D PCH_TX_OBJ_END)) {
+>  		/* Handle transmission interrupt */
+> -		can_get_echo_skb(ndev, int_stat - PCH_RX_OBJ_END - 1);
+> -		iowrite32(PCH_CMASK_RX_TX_GET | PCH_CMASK_CLRINTPND,
+> -			  &priv->regs->ifregs[1].cmask);
+> -		dlc =3D ioread32(&priv->regs->ifregs[1].mcont) &
+> -			       PCH_IF_MCONT_DLC;
+> -		pch_can_check_if_busy(&priv->regs->ifregs[1].creq, int_stat);
+> -		if (dlc > 8)
+> -			dlc =3D 8;
+> -		stats->tx_bytes +=3D dlc;
+> -		stats->tx_packets++;
+> -		if (int_stat =3D=3D PCH_TX_OBJ_END)
+> -			netif_wake_queue(ndev);
+> +		pch_can_tx_complete(ndev, int_stat);
+
+same here
+
+>  	}
+> =20
+> -	int_stat =3D pch_can_int_pending(priv);
+> -	if (int_stat =3D=3D PCH_STATUS_INT)
+> -		goto INT_STAT;
+> -	else if (int_stat >=3D 1 && int_stat <=3D 32)
+> -		goto MSG_OBJ;
+> -
+> +end:
+>  	napi_complete(napi);
+>  	pch_can_set_int_enables(priv, PCH_CAN_ALL);
+> =20
+> @@ -1013,10 +1008,10 @@ static int pch_close(struct net_device *ndev)
+> =20
+>  static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *nd=
+ev)
+>  {
+> -	int i, j;
+>  	struct pch_can_priv *priv =3D netdev_priv(ndev);
+>  	struct can_frame *cf =3D (struct can_frame *)skb->data;
+>  	int tx_buffer_avail =3D 0;
+> +	int i;
+> =20
+>  	if (can_dropped_invalid_skb(ndev, skb))
+>  		return NETDEV_TX_OK;
+> @@ -1057,13 +1052,10 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb=
+, struct net_device *ndev)
+>  	if (cf->can_id & CAN_RTR_FLAG)
+>  		pch_can_bit_clear(&priv->regs->ifregs[1].id2, PCH_ID2_DIR);
+> =20
+> -	for (i =3D 0, j =3D 0; i < cf->can_dlc; j++) {
+> -		iowrite32(le32_to_cpu(cf->data[i++]),
+> -			 (&priv->regs->ifregs[1].dataa1) + j*4);
+> -		if (i =3D=3D cf->can_dlc)
+> -			break;
+> -		iowrite32(le32_to_cpu(cf->data[i++] << 8),
+> -			 (&priv->regs->ifregs[1].dataa1) + j*4);
+> +	/* Copy data to register */
+> +	for (i =3D 0; i < cf->can_dlc; i +=3D 2) {
+> +		iowrite16(cf->data[i] | (cf->data[i + 1] << 8),
+> +			  &priv->regs->ifregs[1].data[i / 2]);
+
+good.
+
+>  	}
+> =20
+>  	can_put_echo_skb(skb, ndev, tx_buffer_avail - PCH_RX_OBJ_END - 1);
 
 
-As the 'secure' implementation of a piece of kernel logic we have lost the 
-'security' battle ...
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-The current security callbacks are absolutely nonsensical random crap slapped all 
-around the kernel. It increases our security complexity and has thus the opposite 
-effect - it makes us _less_ secure.
 
-Did no-one think of merging the capabilities checks and the security subsystem 
-callbacks in some easy-to-use manner, which makes the default security policy 
-apparent at first sight?
+--------------enig1C480ADFCCD89B261449D7B0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-This code should be written in a simpler form, something like:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-        retval = -EPERM;
-	if (!security_allow_task_fix_setuid(new, old)) {
-                new->suid = new->uid = uid;
-                if (uid != old->uid) {
-                        retval = set_user(new);
-                        if (retval < 0)
-                                goto error;
-                }
-        } else if (uid != old->uid && uid != new->suid) {
-                goto error;
-        }
+iEYEARECAAYFAkz06JoACgkQjTAFq1RaXHNSYwCeNQMrFOgx7uaRd3jw17m0owdc
+JVUAn3+dQ23QliI7NBOdYMQMVLVnbyTm
+=QQqd
+-----END PGP SIGNATURE-----
 
-        new->fsuid = new->euid = uid;
-
-Where the default security_allow_task_fix_setuid() is basically a CAP_SETUID check - 
-and we know this from the 'security_allow_task_fix_setuid' name already.
-
-This way all those stupid, passive security callbacks become _active participants of 
-the code_, and the code becomes more compact and easier to understand - and it 
-becomes harder to mess up both compatibility details and permission details.
-
-[ And yes, i realize that this isnt a 100% replacement of the existing callback,
-  because some of the default logic cannot be turned off - but heck, that's a 
-  feature not a bug! We dont want to allow security modules to make things _less_ 
-  secure, or break legacies, right? So they should be shaped as _additional_
-  restrictions on the coarse default semantics.
-
-  And dont get me started about the idiocy of LSM_SETID_ID. Why isnt that detail put 
-  into the callback name? What's wrong with security_task_fix_setuid_id(new, old)? ]
-
-Whoever allowed security modules to be added in their current form needs some 
-talking to.
-
-Thanks,
-
-	Ingo
+--------------enig1C480ADFCCD89B261449D7B0--
