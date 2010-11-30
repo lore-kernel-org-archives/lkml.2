@@ -1,115 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab0K3RPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:15:14 -0500
-Received: from kroah.org ([198.145.64.141]:37492 "EHLO coco.kroah.org"
+	id S1755218Ab0K3RPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:15:47 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:46857 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab0K3RPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:15:12 -0500
-Date: Tue, 30 Nov 2010 09:15:09 -0800
-From: Greg KH <greg@kroah.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-Message-ID: <20101130171509.GA18794@kroah.com>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <20101129131737.3dd6eb03@bike.lwn.net>
- <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
- <20101129214128.GA9691@kroah.com>
- <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
- <20101129223209.GB14663@kroah.com>
- <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
- <20101130165614.GA18564@kroah.com>
- <Pine.LNX.4.64.1011301803540.18790@axis700.grange>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1011301803540.18790@axis700.grange>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755022Ab0K3RPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 12:15:40 -0500
+From: Mel Gorman <mel@csn.ul.ie>
+To: Simon Kirby <sim@hostway.ca>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 3/3] mm: kswapd: Keep kswapd awake for high-order allocations until a percentage of the node is balanced
+Date: Tue, 30 Nov 2010 17:15:39 +0000
+Message-Id: <1291137339-6323-4-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291137339-6323-1-git-send-email-mel@csn.ul.ie>
+References: <1291137339-6323-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 06:09:46PM +0100, Guennadi Liakhovetski wrote:
-> On Tue, 30 Nov 2010, Greg KH wrote:
-> 
-> > On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
-> > > On Mon, 29 Nov 2010, Greg KH wrote:
-> > > 
-> > > > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski wrote:
-> > > > > On Mon, 29 Nov 2010, Greg KH wrote:
-> > > > > 
-> > > > > > On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
-> > > > > > > Hi Jon
-> > > > > > > 
-> > > > > > > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
-> > > > > > > 
-> > > > > > > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
-> > > > > > > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> > > > > > > > 
-> > > > > > > > > When two drivers interoperate without an explicit dependency, it is often
-> > > > > > > > > required to prevent one of them from being unloaded safely by dereferencing
-> > > > > > > > > dev->driver->owner. This patch provides a generic function to do this in a
-> > > > > > > > > race-free way.
-> > > > > > > > 
-> > > > > > > > I must ask: why not, instead, make the dependency explicit?  In
-> > > > > > > > particular, this looks like an application for the proposed media
-> > > > > > > > controller code, which is meant to model the connections between otherwise
-> > > > > > > > independent devices.  The fact that your example comes from V4L2 (which is
-> > > > > > > > the current domain of the media controller) also argues that way.
-> > > > > > > 
-> > > > > > > Sorry, don't see a good way to do this. This function is for a general 
-> > > > > > > dependency, where you don't have that driver, we are checking for register 
-> > > > > > > with us, so, the only way to get to it is via dev->driver->owner.
-> > > > > > 
-> > > > > > Wait, what?  The device is already bound to a driver, right, so why
-> > > > > > would you care about "locking" the module into memory?  What could this
-> > > > > > possibly be used for?
-> > > > > 
-> > > > > To protect against rmmod -> driver_unregister -> dev->driver = NULL?
-> > > > 
-> > > > But again, why would some other driver ever care about what some random
-> > > > dev->driver would be?
-> > > 
-> > > It's not a random one, call it a "companion device."
-> > 
-> > Ok, but again go back to Jon's original proposal to just call the
-> > functions in that driver from yours, causing the implicit module
-> > ordering issue to be automatically resolved.
-> 
-> Greg, in this specific case - yes, I could do this. But (1) there is no 
-> need for that - both drivers implement and use the v4l2-subdev API and 
-> thus stay generic. In the host driver this adds the convenience, that it 
-> doesn't have to call to the CSI2 driver explicitly at all - it just calls 
-> the v4l2-subdev function like "call .s_mbus_fmt for all subdev drivers" 
-> and the function is called for the sensor and the CSI2 driver. (2) what 
-> about the other location I pointed out earlier in the v4l2 core? There 
-> drivers are absolutely generic. I also suspect these are not the only 
-> cases, where this helper would come in handy. I added the media list to CC 
-> for any more opinions on this matter.
+When reclaiming for high-orders, kswapd is responsible for balancing a
+node but it should not reclaim excessively. It avoids excessive reclaim
+by considering if any zone in a node is balanced then the node is
+balanced. In the cases where there are imbalanced zone sizes (e.g.
+ZONE_DMA with both ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep
+prematurely as just one small zone was balanced.
 
-I agree, it probably would not solve all of the different issues that
-people might have for this type of thing, and this isn't the first time
-I've heard it be requested either.
+This alters the sleep logic of kswapd slightly. It counts the number of pages
+that make up the balanced zones. If the total number of balanced pages is
+more than a quarter of the zone, kswapd will go back to sleep.  This should
+keep a node balanced without reclaiming an excessive number of pages.
 
-But, this patch is just trying to increment a module owner of a device
-that is bound to a driver, which is the wrong level to be thinking of
-it.
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/vmscan.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-If you request a module to be loaded, what would possibly cause it to be
-unbound that you need to have this "safely" in place?  Why would the
-module be unloaded?  And if it was unloaded, doesn't that imply that
-someone else wanted it unloaded so keeping that from happening would be
-a bit rude, right?
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9891efd..77c511f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2117,12 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ }
+ #endif
+ 
++/*
++ * pgdat_balanced is used when checking if a node is balanced for high-order
++ * allocations. Only zones that meet watermarks make up "balanced".
++ * The total of balanced pages must be at least 25% of the node for the
++ * node to be considered balanced. Forcing all zones to be balanced for high
++ * orders can cause excessive reclaim when there are imbalanced zones.
++ * Similarly, we do not want kswapd to go to sleep because ZONE_DMA happens
++ * to be balanced when ZONE_DMA32 is huge in comparison and unbalanced
++ */
++static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
++{
++	return balanced > pgdat->node_present_pages / 4;
++}
++
+ /* is kswapd sleeping prematurely? */
+ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ {
+ 	int i;
++	unsigned long balanced = 0;
+ 	bool all_zones_ok = true;
+-	bool any_zone_ok = false;
+ 
+ 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
+ 	if (remaining)
+@@ -2142,7 +2156,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ 								0, 0))
+ 			all_zones_ok = false;
+ 		else
+-			any_zone_ok = true;
++			balanced += zone->present_pages;
+ 	}
+ 
+ 	/*
+@@ -2151,7 +2165,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ 	 * For order-0, all zones must be balanced
+ 	 */
+ 	if (order)
+-		return !any_zone_ok;
++		return pgdat_balanced(pgdat, balanced);
+ 	else
+ 		return !all_zones_ok;
+ }
+@@ -2181,7 +2195,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 							int high_zoneidx)
+ {
+ 	int all_zones_ok;
+-	int any_zone_ok;
++	unsigned long balanced;
+ 	int priority;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+@@ -2215,7 +2229,7 @@ loop_again:
+ 			disable_swap_token();
+ 
+ 		all_zones_ok = 1;
+-		any_zone_ok = 0;
++		balanced = 0;
+ 
+ 		/*
+ 		 * Scan in the highmem->dma direction for the highest
+@@ -2326,11 +2340,11 @@ loop_again:
+ 				 */
+ 				zone_clear_flag(zone, ZONE_CONGESTED);
+ 				if (i <= high_zoneidx)
+-					any_zone_ok = 1;
++					balanced += zone->present_pages;
+ 			}
+ 
+ 		}
+-		if (all_zones_ok || (order && any_zone_ok))
++		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))
+ 			break;		/* kswapd: all done */
+ 		/*
+ 		 * OK, kswapd is getting into trouble.  Take a nap, then take
+@@ -2353,7 +2367,7 @@ loop_again:
+ 			break;
+ 	}
+ out:
+-	if (!(all_zones_ok || (order && any_zone_ok))) {
++	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))) {
+ 		cond_resched();
+ 
+ 		try_to_freeze();
+-- 
+1.7.1
 
-Look at network modules, we always allow them to be unloaded, even if
-the device is "in use" and that doesn't cause problems.  So why would
-you need to do this when we are trying (over the past 10 years or so) to
-move away from the "lock the module in place because we know better than
-the user" model?
-
-thanks,
-
-greg k-h
