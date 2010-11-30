@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab0K3AIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 19:08:37 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:32514 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751359Ab0K3AIg (ORCPT
+	id S1755838Ab0K3AKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 19:10:52 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35797 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab0K3AKu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 19:08:36 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAP7O80x5LcIv/2dsb2JhbACjCnLCT4VHBA
-Date: Tue, 30 Nov 2010 11:08:33 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: npiggin@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/7] fs: preserve inode dirty bits on failed metadata
-  writeback
-Message-ID: <20101130000833.GD3255@amd>
-References: <20101123140610.292941494@kernel.dk>
- <20101123140707.922192750@kernel.dk>
- <20101129145936.GC26076@infradead.org>
+	Mon, 29 Nov 2010 19:10:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=I7wDd2CHzwK/5EhMWSYOQBM5e0XCXvxBIm/apTU8VnB6bqBC2qbqL2HxQkqYfSa0CS
+         k9YuWMvBVRXF7aFm8iawO/oJmG41hBKoREQxsAF/q0NNKNK3PbOEFd2gdKRjSpuRvdyE
+         y3tMrn6awwpQyXes24mAg38sBs4qSuKVESK8o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129145936.GC26076@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1291071265-4238-1-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1291071265-4238-1-git-send-email-Dinh.Nguyen@freescale.com>
+Date: Mon, 29 Nov 2010 22:10:49 -0200
+Message-ID: <AANLkTikbroTO6A=1_nBrO=y-O-MiGgtZAN5tg32+4-c=@mail.gmail.com>
+Subject: Re: [PATCH] ARM: imx: Add mx53 changes to crm_regs
+From: Fabio Estevam <festevam@gmail.com>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de, eric@eukrea.com,
+        u.kleine-koenig@pengutronix.de, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 09:59:37AM -0500, Christoph Hellwig wrote:
-> On Wed, Nov 24, 2010 at 01:06:14AM +1100, npiggin@kernel.dk wrote:
-> > Otherwise we think the inode is clean even if syncing failed.
-> 
-> The patch itself looks fine, but I'm not sure it's enough.  If we do
-> an synchronous writeout it could fail long after ->write_inode
-> has returned.
+Hi Dinh,
 
-Oh there are lots of holes in this buggy POS. Still more that I
-haven't fixed, even before you think about error cases.
+On Mon, Nov 29, 2010 at 8:54 PM,  <Dinh.Nguyen@freescale.com> wrote:
+...
+>
+>  /* eSDHC */
+> -CLK_GET_RATE(esdhc1, 1, ESDHC1_MSHC1)
+> -CLK_SET_PARENT(esdhc1, 1, ESDHC1_MSHC1)
+> -CLK_SET_RATE(esdhc1, 1, ESDHC1_MSHC1)
+> +CLK_GET_RATE(esdhc1, 1, ESDHC1_MSHC2)
+> +CLK_SET_PARENT(esdhc1, 1, ESDHC1_MSHC2)
+> +CLK_SET_RATE(esdhc1, 1, ESDHC1_MSHC2)
+>
+> -CLK_GET_RATE(esdhc2, 1, ESDHC2_MSHC2)
+> -CLK_SET_PARENT(esdhc2, 1, ESDHC2_MSHC2)
+> -CLK_SET_RATE(esdhc2, 1, ESDHC2_MSHC2)
+> +CLK_GET_RATE(esdhc2, 1, ESDHC2_3_MSHC2)
+> +CLK_SET_PARENT(esdhc2, 1, ESDHC2_3_MSHC2)
+> +CLK_SET_RATE(esdhc2, 1, ESDHC2_3_MSHC2)
 
-But, after a *successful* ->write_inode (whether sync or async),
-then the filesystem is not going to get any more, unless they
-mark the inode dirty again.
+Shouldn´t this be part of another patch?
 
-I think that's fine, so long as the dirty buffers or whatever are
-properly synced at sync(2) / fsync(2) time.
+Regards,
 
+Fabio Estevam
