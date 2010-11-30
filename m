@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab0K3LVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 06:21:00 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50226 "EHLO zene.cmpxchg.org"
+	id S1755851Ab0K3LVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 06:21:07 -0500
+Received: from www.tglx.de ([62.245.132.106]:56434 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755588Ab0K3LU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 06:20:59 -0500
-Date: Tue, 30 Nov 2010 12:20:41 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
-Message-ID: <20101130112041.GC15564@cmpxchg.org>
-References: <cover.1291043273.git.minchan.kim@gmail.com>
- <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
- <20101129165706.GH13268@csn.ul.ie>
- <20101129224130.GA1989@barrios-desktop>
+	id S1755754Ab0K3LVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 06:21:04 -0500
+Message-ID: <4CF4DE00.4030105@linutronix.de>
+Date: Tue, 30 Nov 2010 12:20:32 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129224130.GA1989@barrios-desktop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mitch Bradley <wmb@firmworks.com>,
+        Scott Wood <scottwood@freescale.com>, sodaville@linutronix.de,
+        x86@kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>	 <1290706801-7323-4-git-send-email-bigeasy@linutronix.de>	 <1290808645.32570.158.camel@pasglop> <20101128160449.GC30784@www.tglx.de>	 <1290984809.32570.208.camel@pasglop>	 <20101129130720.7d060e1c@udp111988uds.am.freescale.net>	 <1291061128.32570.298.camel@pasglop> <4CF40DF4.9060204@firmworks.com>	 <1291063470.32570.312.camel@pasglop>	 <20101129234735.4ce3a933@lxorguk.ukuu.org.uk> <1291085411.32570.320.camel@pasglop>
+In-Reply-To: <1291085411.32570.320.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 07:41:30AM +0900, Minchan Kim wrote:
+Benjamin Herrenschmidt wrote:
+> On Mon, 2010-11-29 at 23:47 +0000, Alan Cox wrote:
+>> That may not be wise. Your real bus heirarchy may not be architecturally
+>> defined on some systems so you can't incorporate it into code, nor is it
+>> necessarily a heirarchy - eg some of the Geodes. 
+> 
+> Ok, so I'd suggest doing something like:
+> 
+>  - pci is below the corresponding atom node
+>  - isa is a child of pci
+> 
+> The later is a useful representation even if it doesn't correspond to
+> reality. From an address representation perspective, ISA can be
+> considered somewhat as a substractive decoding child of PCI (again even
+> if that's not 100% true), which simplifies the representation in the
+> device-tree a bit, and allows to still have things like VGA devices on
+> the PCI segment that decode IO ports in the ISA range.
 
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 19e0812..1f1f435 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -275,28 +275,51 @@ void add_page_to_unevictable_list(struct page *page)
->   * into inative list's head. Because the VM expects the page would
->   * be writeout by flusher. The flusher's writeout is much effective
->   * than reclaimer's random writeout.
-> + *
-> + * If the page isn't page_mapped and dirty/writeback, the page
-> + * could reclaim asap using PG_reclaim.
-> + *
-> + * 1. active, mapped page -> none
-> + * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-> + * 3. inactive, mapped page -> none
-> + * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-> + * 5. Others -> none
-> + *
-> + * In 4, why it moves inactive's head, the VM expects the page would
-> + * be writeout by flusher. The flusher's writeout is much effective than
-> + * reclaimer's random writeout.
->   */
->  static void __lru_deactivate(struct page *page, struct zone *zone)
->  {
->  	int lru, file;
-> -	unsigned long vm_flags;
-> +	int active = 0;
+okay.
 
-vm_flags is never used in this series.
+> Cheers,
+> Ben.
 
-> -	if (!PageLRU(page) || !PageActive(page))
-> +	if (!PageLRU(page))
->  		return;
-> -
->  	/* Some processes are using the page */
->  	if (page_mapped(page))
->  		return;
-> -
-> -	file = page_is_file_cache(page);
-> -	lru = page_lru_base_type(page);
-> -	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
-> -	ClearPageActive(page);
-> -	ClearPageReferenced(page);
-> -	add_page_to_lru_list(zone, page, lru);
-> -	__count_vm_event(PGDEACTIVATE);
-> -
-> -	update_page_reclaim_stat(zone, page, file, 0);
-> +	if (PageActive(page))
-> +		active = 1;
 
-	active = PageActive(page)
-
-> +	if (PageWriteback(page) || PageDirty(page)) {
-> +		/*
-> +		 * PG_reclaim could be raced with end_page_writeback
-> +		 * It can make readahead confusing.  But race window
-> +		 * is _really_ small and  it's non-critical problem.
-> +		 */
-> +		SetPageReclaim(page);
-> +
-> +		file = page_is_file_cache(page);
-> +		lru = page_lru_base_type(page);
-> +		del_page_from_lru_list(zone, page, lru + active);
-> +		ClearPageActive(page);
-> +		ClearPageReferenced(page);
-> +		add_page_to_lru_list(zone, page, lru);
-> +		if (active)
-> +			__count_vm_event(PGDEACTIVATE);
-> +		update_page_reclaim_stat(zone, page, file, 0);
-> +	}
-
-If we lose the race with writeback, the completion handler won't see
-PG_reclaim, won't move the page, and we have an unwanted clean cache
-page on the active list.  Given the pagevec caching of those pages it
-could be rather likely that IO completes before the above executes.
-
-Shouldn't this be
-
-	if (PageWriteback() || PageDirty()) {
-		SetPageReclaim()
-		move_to_inactive_head()
-	} else {
-		move_to_inactive_tail()
-	}
-
-instead?
-
-	Hannes
+Sebastian
