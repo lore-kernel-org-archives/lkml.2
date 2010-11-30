@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab0K3Vyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:54:43 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:44572 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab0K3Vym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:54:42 -0500
-Date: Tue, 30 Nov 2010 13:54:39 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cs5535-mfd: fix warning on x86-64 (v2)
-Message-ID: <20101130135439.2e293d65@queued.net>
-In-Reply-To: <20101130102257.008fb652.randy.dunlap@oracle.com>
-References: <20101129115257.9a78ad14.sfr@canb.auug.org.au>
-	<20101129204410.339805ef@queued.net>
-	<20101130102257.008fb652.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752450Ab0K3V5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:57:47 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:33923 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab0K3V5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 16:57:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LCzx399sPiVD7CFXkfFY+7TPoImkEN1mXKulz483K66gEPSblATVV8JcYPdR13lpb4
+         V3va4jd3CMh+dK2E1bNInl7WIO0ppUzEHYsCerrKMZZPY8GStRBTTDUv9hOsvUSAP28B
+         gZ2rMCFIO3LVYFCWLctYuFdDOMTGLZ7YLdjDs=
+From: Charles Manning <cdhmanning@gmail.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Charles Manning <cdhmanning@gmail.com>
+Subject: [PATCH 0/8] Add yaffs2 file system:  Third patchset
+Date: Wed,  1 Dec 2010 10:57:26 +1300
+Message-Id: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the third submission of a yaffs2 patchset.
 
-ARRAY_SIZE() returns size_t; use %zu instead of %d so that we don't
-get warnings on x86-64.
+I would like to thank everyone that has given comments so far. They
+have been most helpful.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/mfd/cs5535-mfd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I would like to thank CELF and Google for sponsoring the effort to get
+yaffs2 mainlined.
 
-diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
-index b141ca7..59ca6f1 100644
---- a/drivers/mfd/cs5535-mfd.c
-+++ b/drivers/mfd/cs5535-mfd.c
-@@ -103,7 +103,7 @@ static int __devinit cs5535_mfd_probe(struct pci_dev *pdev,
- 		goto err_disable;
- 	}
- 
--	dev_info(&pdev->dev, "%d devices registered.\n",
-+	dev_info(&pdev->dev, "%zu devices registered.\n",
- 			ARRAY_SIZE(cs5535_mfd_cells));
- 
- 	return 0;
--- 
-1.7.2.3
+This code is patched from 3788df745cd72e035c0c991157cb727a8ecb1f17
+at git://www.aleph1.co.uk/yaffs2.
 
+This patch set takes onboard almost all the comments provided since the
+last set of patches. Most noteably :
+* Removal of kernel locking
+* Removal of some debugging  /proc entries
+* Use of kernel hweight8/32() functions.
+
+This code ran various tests for the whole night with no problems seen.
+
+Comments/feedback welcome, but I'm hopefully getting pretty close to
+acceptance :-).
+
+
+-- Charles
