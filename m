@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab0K3Q4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:56:44 -0500
-Received: from kroah.org ([198.145.64.141]:35200 "EHLO coco.kroah.org"
+	id S1754490Ab0K3Q6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:58:36 -0500
+Received: from cantor.suse.de ([195.135.220.2]:34555 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754194Ab0K3Q4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:56:42 -0500
-Date: Tue, 30 Nov 2010 08:56:14 -0800
-From: Greg KH <greg@kroah.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-Message-ID: <20101130165614.GA18564@kroah.com>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <20101129131737.3dd6eb03@bike.lwn.net>
- <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
- <20101129214128.GA9691@kroah.com>
- <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
- <20101129223209.GB14663@kroah.com>
- <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
+	id S1751806Ab0K3Q6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:58:35 -0500
+Date: Tue, 30 Nov 2010 17:58:33 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] hid: egalax: Rework to include Joojoo and Wetab
+ support
+In-Reply-To: <4CF3AD99.9050400@euromail.se>
+Message-ID: <alpine.LNX.2.00.1011301758130.23409@pobox.suse.cz>
+References: <1291016612-25102-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1011291248290.981@pobox.suse.cz> <4CF3AD99.9050400@euromail.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
-> On Mon, 29 Nov 2010, Greg KH wrote:
+On Mon, 29 Nov 2010, Henrik Rydberg wrote:
+
+> Something like this, perhaps?
 > 
-> > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski wrote:
-> > > On Mon, 29 Nov 2010, Greg KH wrote:
-> > > 
-> > > > On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
-> > > > > Hi Jon
-> > > > > 
-> > > > > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
-> > > > > 
-> > > > > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
-> > > > > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> > > > > > 
-> > > > > > > When two drivers interoperate without an explicit dependency, it is often
-> > > > > > > required to prevent one of them from being unloaded safely by dereferencing
-> > > > > > > dev->driver->owner. This patch provides a generic function to do this in a
-> > > > > > > race-free way.
-> > > > > > 
-> > > > > > I must ask: why not, instead, make the dependency explicit?  In
-> > > > > > particular, this looks like an application for the proposed media
-> > > > > > controller code, which is meant to model the connections between otherwise
-> > > > > > independent devices.  The fact that your example comes from V4L2 (which is
-> > > > > > the current domain of the media controller) also argues that way.
-> > > > > 
-> > > > > Sorry, don't see a good way to do this. This function is for a general 
-> > > > > dependency, where you don't have that driver, we are checking for register 
-> > > > > with us, so, the only way to get to it is via dev->driver->owner.
-> > > > 
-> > > > Wait, what?  The device is already bound to a driver, right, so why
-> > > > would you care about "locking" the module into memory?  What could this
-> > > > possibly be used for?
-> > > 
-> > > To protect against rmmod -> driver_unregister -> dev->driver = NULL?
-> > 
-> > But again, why would some other driver ever care about what some random
-> > dev->driver would be?
+> >From c6675000b59412b22f4f798de4268318e39b628c Mon Sep 17 00:00:00 2001
+> From: Henrik Rydberg <rydberg@euromail.se>
+> Date: Mon, 29 Nov 2010 14:40:11 +0100
+> Subject: [PATCH] hid: egalax: Document the newly supported models in Kconfig
 > 
-> It's not a random one, call it a "companion device."
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hid/Kconfig |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index 3052e29..401acec 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -154,7 +154,8 @@ config HID_EGALAX
+>  	tristate "eGalax multi-touch panel"
+>  	depends on USB_HID
+>  	---help---
+> -	Support for the eGalax dual-touch panel.
+> +	Support for the eGalax dual-touch panels, including the
+> +	Joojoo and Wetab tablets.
 
-Ok, but again go back to Jon's original proposal to just call the
-functions in that driver from yours, causing the implicit module
-ordering issue to be automatically resolved.
+Yes, that would be sufficient. Thanks,
 
-thanks,
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
