@@ -1,192 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab0K3TE5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:04:57 -0500
-Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:24115 "HELO
-	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751655Ab0K3TE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:04:56 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=ZtlBfPbBNKz05P2kGRvXqvJmm4pa5CF7zYFgDsYLj894ehaBw/1V8l+6l/dQkvSpsSPDnhRuGiNWzmnf97PYh3tq1L3ddogKB+llIJiabwwghflZ4dA4yS6cbY7/sTdBuoxx9zHdjb3vSXdKJ2XfN7pUelWENgS72h+95dV/2bE=;
-Message-ID: <933984.54111.qm@web31812.mail.mud.yahoo.com>
-X-YMail-OSG: YCKOoEYVM1kx1d_xk2U4.3SVGxiv2biq5UDWT8NCXG0t45m
- Vwdu3vUNCLZeOG_BucEptkPH2fCKrpTiJjAJ_mr.Mj6I2jOi_bK84w.npyrG
- PjO0YdVt9Xai_h2wr4hhZ3Wb39eeCfdV0bBO5nmtVIQEVZTj5_HD7.CK7MAy
- PMMBagqKwCik_cJszrh1ke6fuGWPzL63FWnwjwJ0iRSeoxVmCHmGySSSBLQc
- DSCx5MowcDv.4SQrd22iex_gm2dcJYddPKRaF4.p2chbA4oxWVtlPfg7.NZa
- 4RVH6VPmhn6QhsoZ3V0fCKLFErLtq2erqIAPIl6bL8nlrG65XNPox2MKO_IQ
- kQAM3JyvJEXBUhAVn.fN.hz2Rl3yF8geuawbR_txX9KbmlA--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
-Date: Tue, 30 Nov 2010 11:04:54 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH repost 4] [SCSI] Retrieve the Caching mode page
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+	id S1756176Ab0K3TGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:06:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:58289 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab0K3TGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:06:43 -0500
+Message-ID: <4CF54C4F.80901@cn.fujitsu.com>
+Date: Wed, 01 Dec 2010 03:11:11 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 2/3] KVM: MMU: fix accessed bit set on prefault path
+References: <4CF4C535.8080405@cn.fujitsu.com> <4CF4C587.7080000@cn.fujitsu.com> <20101130132915.GG2187@redhat.com> <4CF52BC6.9020401@cn.fujitsu.com> <20101130175005.GA2924@redhat.com> <4CF53F41.1040503@cn.fujitsu.com> <20101130183833.GB2924@redhat.com>
+In-Reply-To: <20101130183833.GB2924@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-01 03:06:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-01 03:06:53,
+	Serialize complete at 2010-12-01 03:06:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some kernel transport drivers unconditionally disable
-retrieval of the Caching mode page. One such for example is
-the BBB/CBI transport over USB.  Such a restraint is too
-harsh as some devices do support the Caching mode
-page. Unconditionally enabling the retrieval of this mode
-page over those transports at their transport code level may
-result in some devices failing and becoming unusable.
+On 12/01/2010 02:38 AM, Gleb Natapov wrote:
 
-This patch implements a method of retrieving the Caching
-mode page without unconditionally enabling it in the
-transports which unconditionally disable it. The idea is to
-ask for all supported pages, page code 0x3F, and then search
-for the Caching mode page in the mode parameter data
-returned. The sd driver already asks for all the mode pages
-supported by the attached device by setting the page code to
-0x3F in order to find out if the media is write protected by
-reading the WP bit in the Device Specific Parameter
-field. It then attempts to retrieve only the Caching mode
-page by setting the page code to 8 and actually attempting
-to retrieve it if and only if the transport allows it.
+>> It can't avoid the page to be evicted again since the page is marked accessed only
+>> when spte is droped or updated.
+> I still do not understand why are you disabling prefault for ept. Why
+> do you want to distinguish between actually accessed translations and
+> prefauls? What problem are you trying to fix?
+> 
 
-The method implemented here is that if the transport doesn't
-allow retrieval of the Caching mode page and the device is
-not RBC, then we ask for all pages supported by setting the
-page code to 0x3F (similarly to how the WP bit is retrieved
-above), and then we search for the Caching mode page in the
-mode parameter data returned.
+Look at set_spte_track_bits() function:
 
-With this patch, devices over SATA, report this (no change):
+	if (!shadow_accessed_mask || old_spte & shadow_accessed_mask)
+		kvm_set_pfn_accessed(pfn);
 
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] 976773168 512-byte logical blocks: (500 GB/465 GiB)
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: Attached scsi generic sg0 type 0
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Write Protect is off
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+It's always mark the page accessed.
 
-Smart devices report their Caching mode page. This is a
-change where we'd previously see the kernel making
-assumption about the device's cache being write-through:
-
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: Attached scsi generic sg2 type 0
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] 610472646 4096-byte logical blocks: (2.50 TB/2.27 TiB)
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Write Protect is off
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Mode Sense: 47 00 10 08
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Write cache: enabled, read cache: enabled, supports DPO and FUA
-
-And "dumb" devices over BBB, are correctly shown not to
-support reporting the Caching mode page:
-
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] 15663104 512-byte logical blocks: (8.01 GB/7.46 GiB)
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Write Protect is off
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Mode Sense: 23 00 00 00
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] No Caching mode page present
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Assuming drive cache: write through
-
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
----
- drivers/scsi/sd.c |   63 +++++++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 47 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index ffa0689..81e83d7 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1867,10 +1867,14 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
-        int old_rcd = sdkp->RCD;
-        int old_dpofua = sdkp->DPOFUA;
- 
--       if (sdp->skip_ms_page_8)
--               goto defaults;
--
--       if (sdp->type == TYPE_RBC) {
-+       if (sdp->skip_ms_page_8) {
-+               if (sdp->type == TYPE_RBC)
-+                       goto defaults;
-+               else {
-+                       modepage = 0x3F;
-+                       dbd = 0;
-+               }
-+       } else if (sdp->type == TYPE_RBC) {
-                modepage = 6;
-                dbd = 8;
-        } else {
-@@ -1898,13 +1902,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
-         */
-        if (len < 3)
-                goto bad_sense;
--       if (len > 20)
--               len = 20;
--
--       /* Take headers and block descriptors into account */
--       len += data.header_length + data.block_descriptor_length;
--       if (len > SD_BUF_SIZE)
--               goto bad_sense;
-+       else if (len > SD_BUF_SIZE) {
-+               sd_printk(KERN_NOTICE, sdkp, "Truncating mode parameter "
-+                         "data from %d to %d bytes\n", len, SD_BUF_SIZE);
-+               len = SD_BUF_SIZE;
-+       }
- 
-        /* Get the data */
-        res = sd_do_mode_sense(sdp, dbd, modepage, buffer, len, &data, &sshdr);
-@@ -1912,16 +1914,45 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
-        if (scsi_status_is_good(res)) {
-                int offset = data.header_length + data.block_descriptor_length;
- 
--               if (offset >= SD_BUF_SIZE - 2) {
--                       sd_printk(KERN_ERR, sdkp, "Malformed MODE SENSE response\n");
--                       goto defaults;
-+               while (offset < len) {
-+                       u8 page_code = buffer[offset] & 0x3F;
-+                       u8 spf       = buffer[offset] & 0x40;
-+
-+                       if (page_code == 8 || page_code == 6) {
-+                               /* We're interested only in the first 3 bytes.
-+                                */
-+                               if (len - offset <= 2) {
-+                                       sd_printk(KERN_ERR, sdkp, "Incomplete "
-+                                                 "mode parameter data\n");
-+                                       goto defaults;
-+                               } else {
-+                                       modepage = page_code;
-+                                       goto Page_found;
-+                               }
-+                       } else {
-+                               /* Go to the next page */
-+                               if (spf && len - offset > 3)
-+                                       offset += 4 + (buffer[offset+2] << 8) +
-+                                               buffer[offset+3];
-+                               else if (!spf && len - offset > 1)
-+                                       offset += 2 + buffer[offset+1];
-+                               else {
-+                                       sd_printk(KERN_ERR, sdkp, "Incomplete "
-+                                                 "mode parameter data\n");
-+                                       goto defaults;
-+                               }
-+                       }
-                }
- 
--               if ((buffer[offset] & 0x3f) != modepage) {
-+               if (modepage == 0x3F) {
-+                       sd_printk(KERN_ERR, sdkp, "No Caching mode page "
-+                                 "present\n");
-+                       goto defaults;
-+               } else if ((buffer[offset] & 0x3f) != modepage) {
-                        sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
-                        goto defaults;
-                }
--
-+       Page_found:
-                if (modepage == 8) {
-                        sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
-                        sdkp->RCD = ((buffer[offset + 2] & 0x01) != 0);
--- 
-1.7.2.2.165.gbc382
-
+But prefault is the speculative path, the prefault address may not be
+accessed later(the apf process is killed). under this case, the page is
+not really accessed.
