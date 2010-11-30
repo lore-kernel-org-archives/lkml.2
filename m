@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0K3QmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:42:06 -0500
-Received: from verein.lst.de ([213.95.11.210]:47286 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab0K3QmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:42:03 -0500
-Date: Tue, 30 Nov 2010 17:41:24 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
-        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
-        Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent by fsync
-Message-ID: <20101130164124.GA30858@lst.de>
-References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
-Mime-Version: 1.0
+	id S1754208Ab0K3Qm3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:42:29 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:47975 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab0K3Qm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:42:28 -0500
+Date: Tue, 30 Nov 2010 18:42:25 +0200
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, WANG Cong <amwang@redhat.com>
+Subject: Re: [PATCH] headers_check: better search for functions in headers
+Message-ID: <20101130164225.GH26184@shisha.kicks-ass.net>
+References: <1291134119-12903-1-git-send-email-virtuoso@slind.org>
+ <20101130083607.3e1e6ec5.randy.dunlap@oracle.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <20101130083607.3e1e6ec5.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI, here's an updated version of my patch to not run pure flushes
-that also works on SCSI/ATA and not just virtio.  I suspect the patch
-alone might not be enough, but together with a variant of Neil's
-suggestion might do the trick, with my patch taking care of the
-highend-devices and Neil's scheme of taking care of stupid SATA disks.
+On Tue, Nov 30, 2010 at 08:36:07AM -0800, Randy Dunlap wrote:
+> On Tue, 30 Nov 2010 18:21:59 +0200 Alexander Shishkin wrote:
+> 
+> > Some headers don't bother with "extern" in function prototypes,
+> > which results in said prototypes being unnoticed and exported
+> > to userland.
+> > 
+> > This patch slightly improves detection of such cases by checking
+> > for C type names as well in the beginning of a line.
+> > 
+> > Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+> > CC: Stephen Hemminger <shemminger@vyatta.com>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> > CC: Michal Marek <mmarek@suse.cz>
+> > CC: WANG Cong <amwang@redhat.com>
+> > CC: linux-kernel@vger.kernel.org
+> > ---
+> >  scripts/headers_check.pl |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/scripts/headers_check.pl b/scripts/headers_check.pl
+> > index 50d6cfd..e0e25a1 100644
+> > --- a/scripts/headers_check.pl
+> > +++ b/scripts/headers_check.pl
+> > @@ -64,7 +64,7 @@ sub check_include
+> >  
+> >  sub check_declarations
+> >  {
+> > -	if ($line =~m/^\s*extern\b/) {
+> > +	if ($line =~m/^(\s*extern|unsigned|char|short|int|long|void)\b/) {
+> >  		printf STDERR "$filename:$lineno: " .
+> >  		              "userspace cannot call function or variable " .
+> 
+> s/call/reference/ ?
 
+Yes, there's a mistake there, but it's unrelated to this patch.
+Maybe goes in another patch?
 
-Index: linux-2.6/block/blk-flush.c
-===================================================================
---- linux-2.6.orig/block/blk-flush.c	2010-11-30 17:27:33.108254088 +0100
-+++ linux-2.6/block/blk-flush.c	2010-11-30 17:27:38.790004333 +0100
-@@ -143,6 +143,17 @@ struct request *blk_do_flush(struct requ
- 	unsigned skip = 0;
- 
- 	/*
-+	 * Just issue pure flushes directly.
-+	 */
-+	if (!blk_rq_sectors(rq)) {
-+		if (!do_preflush) {
-+			__blk_end_request_all(rq, 0);
-+			return NULL;
-+		}
-+		return rq;
-+	}
-+
-+	/*
- 	 * Special case.  If there's data but flush is not necessary,
- 	 * the request can be issued directly.
- 	 *
-Index: linux-2.6/drivers/scsi/scsi_lib.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/scsi_lib.c	2010-11-30 17:27:33.120254298 +0100
-+++ linux-2.6/drivers/scsi/scsi_lib.c	2010-11-30 17:27:38.791003634 +0100
-@@ -1060,7 +1060,7 @@ int scsi_setup_blk_pc_cmnd(struct scsi_d
- 	 * that does not transfer data, in which case they may optionally
- 	 * submit a request without an attached bio.
- 	 */
--	if (req->bio) {
-+	if (req->bio && !(req->cmd_flags & REQ_FLUSH)) {
- 		int ret;
- 
- 		BUG_ON(!req->nr_phys_segments);
+Regards,
+--
+Alex
