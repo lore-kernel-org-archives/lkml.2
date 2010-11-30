@@ -1,98 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab0K3XBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:01:14 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:58249 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab0K3XBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:01:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=MnQATH28Nb5aIRTa1viXLHIKr6u4K17X/9ZqbfRv2b3sM++JQZxf9kwz3tJAB0sjer
-         db0bP+HiGs86FD2PqQUw==
-Date: Tue, 30 Nov 2010 15:00:59 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Michael Leun <lkml20101129@newton.leun.net>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: kernel BUG at mm/truncate.c:475!
-In-Reply-To: <20101130194945.58962c44@xenia.leun.net>
-Message-ID: <alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com>
-References: <20101130194945.58962c44@xenia.leun.net>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1753834Ab0K3XJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:09:26 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:43197 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752028Ab0K3XJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 18:09:24 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: 2.6.35.5: hibernation broken... AGAIN
+Date: Wed, 1 Dec 2010 00:07:44 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Ondrej Zary <linux@rainbow-software.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>
+References: <201011171139.33398.linux@rainbow-software.org> <201011272147.01828.rjw@sisk.pl> <alpine.LSU.2.00.1011301333380.11072@tigran.mtv.corp.google.com>
+In-Reply-To: <alpine.LSU.2.00.1011301333380.11072@tigran.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012010007.44553.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, Michael Leun wrote:
-
-> happenes sporadically, cannot reproduce at will.
+On Tuesday, November 30, 2010, Hugh Dickins wrote:
+> On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
+> > On Saturday, November 27, 2010, Ondrej Zary wrote:
+> > > > > >
+> > > > > > Not signing it off yet,
+> > > > > > Hugh
+> > > > >
+> > > > > Could you please do that? The patch fixes the problem.
 > 
+> Sorry for going quiet for so long.
 > 
-> Nov 30 15:24:55 elektra kernel: [ 6604.258610] ------------[ cut here ]------------
-> Nov 30 15:24:55 elektra kernel: [ 6604.258628] kernel BUG at mm/truncate.c:475!
-> Nov 30 15:24:55 elektra kernel: [ 6604.258633] invalid opcode: 0000 [#1] PREEMPT SMP
-> Nov 30 15:24:55 elektra kernel: [ 6604.258640] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-> Nov 30 15:24:55 elektra kernel: [ 6604.258646] CPU 3
-> Nov 30 15:24:55 elektra kernel: [ 6604.258649] Modules linked in: veth fuse af_packet bridge 8021q garp stp llc vboxnetadp vboxnetflt vboxdrv nouveau ttm drm_kms_helper drm i2c_algo_bit snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ip6t_REJECT ipt_REJECT ip6t_LOG ipt_LOG xt_limit xt_recent nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_mangle iptable_mangle iptable_nat ip6table_filter ip6_tables iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables nls_utf8 loop arc4 ecb snd_hda_codec_nvhdmi iwlagn iwlcore snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep mac80211 snd_pcm ohci1394 ieee1394 cfg80211 snd_timer sdhci_pci snd sdhci pcmcia firewire_ohci e1000e mmc_core yenta_socket soundcore firewire_core pcmcia_rsrc crc_itu_t pcmcia_core ppdev mcs7830 dm9601 dell_laptop usbnet rfkill snd_page_alloc dell_wmi shpchp sr_mod parport_p!
- c !
->  sg cdrom wmi dcdbas intel_ips parport i
-> Nov 30 15:24:55 elektra kernel: ntel_agp i2c_i801 pci_hotplug iTCO_wdt pcspkr iTCO_vendor_support button video battery ac ext4 jbd2 crc16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt usbhid linear ehci_hcd usbcore sd_mod dm_snapshot dm_mod fan processor ahci libahci libata scsi_mod thermal thermal_sys
-> Nov 30 15:24:55 elektra kernel: [ 6604.258914]
-> Nov 30 15:24:55 elektra kernel: [ 6604.258918] Pid: 31399, comm: cut Not tainted 2.6.36.1 #2 0N5KHN/Latitude E6510
-> Nov 30 15:24:55 elektra kernel: [ 6604.258924] RIP: 0010:[<ffffffff810ee5e1>]  [<ffffffff810ee5e1>] invalidate_inode_pages2_range+0x271/0x350
-> Nov 30 15:24:55 elektra kernel: [ 6604.258939] RSP: 0018:ffff8800774d5b58  EFLAGS: 00010246
-> Nov 30 15:24:55 elektra kernel: [ 6604.258944] RAX: 0000000000000000 RBX: ffffea0001ea2f40 RCX: ffff8800c05a5bd0
-> Nov 30 15:24:55 elektra kernel: [ 6604.258950] RDX: 0000000000000000 RSI: ffff8800774d5a28 RDI: ffff8800c0521a18
-> Nov 30 15:24:55 elektra kernel: [ 6604.258956] RBP: ffff8800774d5c38 R08: ffff8800c05a5bd0 R09: ffff8800774d5ae8
-> Nov 30 15:24:55 elektra kernel: [ 6604.258962] R10: 0000000000000008 R11: 0000000000000001 R12: ffff8800774d5b98
-> Nov 30 15:24:55 elektra kernel: [ 6604.258969] R13: 0000000000000000 R14: ffff8800c05219d8 R15: 0000000000000000
-> Nov 30 15:24:55 elektra kernel: [ 6604.258980] FS:  0000000000000000(0000) GS:ffff880001cc0000(0000) knlGS:0000000000000000
-> Nov 30 15:24:55 elektra kernel: [ 6604.258992] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> Nov 30 15:24:55 elektra kernel: [ 6604.258999] CR2: 00007f3ad2337290 CR3: 00000000850b3000 CR4: 00000000000006e0
-> Nov 30 15:24:55 elektra kernel: [ 6604.259010] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> Nov 30 15:24:55 elektra kernel: [ 6604.259019] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Nov 30 15:24:55 elektra kernel: [ 6604.259028] Process cut (pid: 31399, threadinfo ffff8800774d4000, task ffff8800a2bbae40)
-> Nov 30 15:24:55 elektra kernel: [ 6604.259038] Stack:
-> Nov 30 15:24:55 elektra kernel: [ 6604.259042]  ffffffff81074300 ffff8800c05219f0 00000001774d5b60 0000000000000001
-> Nov 30 15:24:55 elektra kernel: [ 6604.259054] <0> ffffffffffffffff 00000000c41fec70 000000000000000e 0000000000000000
-> Nov 30 15:24:55 elektra kernel: [ 6604.259069] <0> ffffea0001ea2f40 ffffea0001a246c8 ffffea0001a24690 ffffea0001a47348
-> Nov 30 15:24:55 elektra kernel: [ 6604.259087] Call Trace:
-> Nov 30 15:24:55 elektra kernel: [ 6604.259094]  [<ffffffff81074300>] ? autoremove_wake_function+0x0/0x40
-> Nov 30 15:24:55 elektra kernel: [ 6604.259101]  [<ffffffff810ee6d2>] invalidate_inode_pages2+0x12/0x20
-> Nov 30 15:24:55 elektra kernel: [ 6604.259111]  [<ffffffffa0848ce0>] fuse_finish_open+0x60/0x70 [fuse]
-> Nov 30 15:24:55 elektra kernel: [ 6604.259118]  [<ffffffffa0848d71>] fuse_open_common+0x81/0x90 [fuse]
-> Nov 30 15:24:55 elektra kernel: [ 6604.259125]  [<ffffffffa0848d80>] ? fuse_open+0x0/0x10 [fuse]
-> Nov 30 15:24:55 elektra kernel: [ 6604.259132]  [<ffffffffa0848d8b>] fuse_open+0xb/0x10 [fuse]
-> Nov 30 15:24:55 elektra kernel: [ 6604.259139]  [<ffffffff81137a1a>] __dentry_open+0x11a/0x3c0
-> Nov 30 15:24:55 elektra kernel: [ 6604.259147]  [<ffffffff811efbda>] ? security_inode_permission+0x1a/0x20
-> Nov 30 15:24:55 elektra kernel: [ 6604.259154]  [<ffffffff81138cc4>] nameidata_to_filp+0x54/0x70
-> Nov 30 15:24:55 elektra kernel: [ 6604.259160]  [<ffffffff81147168>] do_last+0x488/0x760
-> Nov 30 15:24:55 elektra kernel: [ 6604.259166]  [<ffffffff81147868>] do_filp_open+0x428/0x670
-> Nov 30 15:24:55 elektra kernel: [ 6604.259173]  [<ffffffffa0842983>] ? fuse_request_free+0x13/0x20 [fuse]
-> Nov 30 15:24:55 elektra kernel: [ 6604.259181]  [<ffffffffa0842a48>] ? fuse_put_request+0xb8/0xc0 [fuse]
-> Nov 30 15:24:55 elektra kernel: [ 6604.259193]  [<ffffffff81138d40>] do_sys_open+0x60/0x120
-> Nov 30 15:24:55 elektra kernel: [ 6604.259205]  [<ffffffff81138e1b>] sys_open+0x1b/0x20
-> Nov 30 15:24:55 elektra kernel: [ 6604.259217]  [<ffffffff81002f02>] system_call_fastpath+0x16/0x1b
-> Nov 30 15:24:55 elektra kernel: [ 6604.259228] Code: fe ff ff 0f 1f 80 00 00 00 00 48 89 c6 31 c9 48 c1 e6 0c ba 00 10 00 00 4c 89 f7 e8 ba 37 01 00 8b 43 0c 85 c0 0f 88 2e ff ff ff <0f> 0b 0f 1f 44 00 00 48 89 df e8 30 39 ff ff 8b 85 50 ff ff ff
-> Nov 30 15:24:55 elektra kernel: [ 6604.259394] RIP  [<ffffffff810ee5e1>] invalidate_inode_pages2_range+0x271/0x350
-> Nov 30 15:24:55 elektra kernel: [ 6604.259412]  RSP <ffff8800774d5b58>
-> Nov 30 15:24:55 elektra kernel: [ 6604.265642] ---[ end trace 019ef068b5f8e921 ]---
+> Thanks for testing, Ondrej.  I completely agree with Rafael that my
+> patch was inadequate: it turned out to be good enough for your useful
+> feedback on the main path through hibernation, but missed a number
+> of details.  We do need something like Rafael's patch - thanks.
+> 
+> (And I realize that it's tiresome and frustrating for you to be
+> trying first that and then this etc; but we had bugs here precisely
+> because this is a confusing area, so I think it is worth some effort
+> to get right now.)
+> 
+> > > >
+> > > > Can you check if the problem is also fixed by the patch below, please?
+> > > 
+> > > The patch does not apply to 2.6.35.4, 2.6.35.5 and also 2.6.36. What version 
+> > > should I test?
+> > 
+> > The patch was against the current mainline.
+> > 
+> > The one below was rebased on top of 2.6.36, so please test it with this kernel.
+> 
+> I'll comment on this version, since it has one more line than your original.
+> 
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> >  kernel/power/hibernate.c |   36 ++++++++++++++++++++++++++----------
+> >  kernel/power/power.h     |    1 +
+> >  kernel/power/user.c      |    2 ++
+> >  3 files changed, 29 insertions(+), 10 deletions(-)
+> > 
+> > Index: suspend-2.6/kernel/power/hibernate.c
+> > ===================================================================
+> > --- suspend-2.6.orig/kernel/power/hibernate.c
+> > +++ suspend-2.6/kernel/power/hibernate.c
+> > @@ -29,6 +29,21 @@
+> >  #include "power.h"
+> >  
+> >  
+> > +static gfp_t saved_gfp_mask;
+> > +
+> > +static void hibernate_restrict_gfp_mask(void)
+> > +{
+> > +	saved_gfp_mask = clear_gfp_allowed_mask(GFP_IOFS);
+> > +}
+> > +
+> > +void hibernate_restore_gfp_mask(void)
+> > +{
+> > +	if (saved_gfp_mask) {
+> > +		set_gfp_allowed_mask(saved_gfp_mask);
+> > +		saved_gfp_mask = 0;
+> > +	}
+> > +}
+> > +
+> 
+> Trivial point, I suppose, but it bothers me that PM is accumulating
+> wrappers around wrappers around gfp_allowed_mask.  Looks like
+> clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
+> were not really what we need.  How about scrapping them, and putting
+> pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
 
-BUG_ON(page_mapped(page)) in invalidate_inode_pages2_range():
-that's interesting, it may relate to another BUG_ON(page_mapped(page))
-that's been reported recently.
+Sure, that sounds like a good idea indeed.
 
-This is a 2.6.36.1 kernel you're running: any idea what was the first
-kernel on which you started seeing such errors?  and what was the last
-good kernel on which you ran the same kind of load but saw no problems?
+> >  static int noresume = 0;
+> >  static char resume_file[256] = CONFIG_PM_STD_PARTITION;
+> >  dev_t swsusp_resume_device;
+> > @@ -326,7 +341,6 @@ static int create_image(int platform_mod
+> >  int hibernation_snapshot(int platform_mode)
+> >  {
+> >  	int error;
+> > -	gfp_t saved_mask;
+> >  
+> >  	error = platform_begin(platform_mode);
+> >  	if (error)
+> > @@ -338,7 +352,7 @@ int hibernation_snapshot(int platform_mo
+> >  		goto Close;
+> >  
+> >  	suspend_console();
+> > -	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
+> > +	hibernate_restrict_gfp_mask();
+> 
+> Yes.
+> 
+> >  	error = dpm_suspend_start(PMSG_FREEZE);
+> >  	if (error)
+> >  		goto Recover_platform;
+> > @@ -347,7 +361,10 @@ int hibernation_snapshot(int platform_mo
+> >  		goto Recover_platform;
+> >  
+> >  	error = create_image(platform_mode);
+> > -	/* Control returns here after successful restore */
+> > +	/*
+> > +	 * Control returns here (1) after the image has been created or the
+> > +	 * image creation has failed and (2) after a successful restore.
+> > +	 */
+> >  
+> >   Resume_devices:
+> >  	/* We may need to release the preallocated image pages here. */
+> > @@ -356,7 +373,10 @@ int hibernation_snapshot(int platform_mo
+> >  
+> >  	dpm_resume_end(in_suspend ?
+> >  		(error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE);
+> > -	set_gfp_allowed_mask(saved_mask);
+> > +
+> > +	if (error || !in_suspend)
+> > +		hibernate_restore_gfp_mask();
+> > +
+> 
+> I'm worried that it's hard to find and maintain the places that need
+> this restoration - and if we miss one, we won't find out about it for
+> ages.  It would help a lot if the gfp restoration always accompanies
+> some other essential stage - thaw_processes() looks to be right,
+> so could we skip conditionally restoring here if we do it then?
+> 
+> I suggest that in part because I cannot find where you restore in
+> the case that hibernate()'s swsusp_write() fails - that was the
+> case that made me realize my little patch was too simplistic.
+
+Good point.  I'm not totally sure if coupling this with thaw_processes() is
+the right thing yet, but I guess it is, except for the s2disk-specific things
+below.
+
+> >  	resume_console();
+> >   Close:
+> >  	platform_end(platform_mode);
+> > @@ -451,17 +471,16 @@ static int resume_target_kernel(bool pla
+> >  int hibernation_restore(int platform_mode)
+> >  {
+> >  	int error;
+> > -	gfp_t saved_mask;
+> >  
+> >  	pm_prepare_console();
+> >  	suspend_console();
+> > -	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
+> > +	hibernate_restrict_gfp_mask();
+> 
+> Yes.
+> 
+> >  	error = dpm_suspend_start(PMSG_QUIESCE);
+> >  	if (!error) {
+> >  		error = resume_target_kernel(platform_mode);
+> >  		dpm_resume_end(PMSG_RECOVER);
+> >  	}
+> > -	set_gfp_allowed_mask(saved_mask);
+> > +	hibernate_restore_gfp_mask();
+> 
+> But this could be left until software_resume()'s thaw_processes()?
+> Ah, that won't cover the SNAPSHOT_ATOMIC_RESTORE case, hmmm.
+
+That's correct.
+
+> >  	resume_console();
+> >  	pm_restore_console();
+> >  	return error;
+> > @@ -475,7 +494,6 @@ int hibernation_restore(int platform_mod
+> >  int hibernation_platform_enter(void)
+> >  {
+> >  	int error;
+> > -	gfp_t saved_mask;
+> >  
+> >  	if (!hibernation_ops)
+> >  		return -ENOSYS;
+> > @@ -491,7 +509,6 @@ int hibernation_platform_enter(void)
+> >  
+> >  	entering_platform_hibernation = true;
+> >  	suspend_console();
+> > -	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
+> 
+> Right.
+> 
+> >  	error = dpm_suspend_start(PMSG_HIBERNATE);
+> >  	if (error) {
+> >  		if (hibernation_ops->recover)
+> > @@ -535,7 +552,6 @@ int hibernation_platform_enter(void)
+> >   Resume_devices:
+> >  	entering_platform_hibernation = false;
+> >  	dpm_resume_end(PMSG_RESTORE);
+> > -	set_gfp_allowed_mask(saved_mask);
+> 
+> Right.
+> 
+> >  	resume_console();
+> >  
+> >   Close:
+> > Index: suspend-2.6/kernel/power/power.h
+> > ===================================================================
+> > --- suspend-2.6.orig/kernel/power/power.h
+> > +++ suspend-2.6/kernel/power/power.h
+> > @@ -49,6 +49,7 @@ static inline char *check_image_kernel(s
+> >  extern int hibernation_snapshot(int platform_mode);
+> >  extern int hibernation_restore(int platform_mode);
+> >  extern int hibernation_platform_enter(void);
+> > +extern void hibernate_restore_gfp_mask(void);
+> >  #endif
+> >  
+> >  extern int pfn_is_nosave(unsigned long);
+> > Index: suspend-2.6/kernel/power/user.c
+> > ===================================================================
+> > --- suspend-2.6.orig/kernel/power/user.c
+> > +++ suspend-2.6/kernel/power/user.c
+> > @@ -263,6 +263,7 @@ static long snapshot_ioctl(struct file *
+> >  	case SNAPSHOT_UNFREEZE:
+> >  		if (!data->frozen || data->ready)
+> >  			break;
+> > +		hibernate_restore_gfp_mask();
+> 
+> Right, here you have one next to thaw_processes().
+> But the SNAPSHOT ioctls are a nightmarish maze to me,
+> I cannot comment much on what's right here.
+
+Well, sorry about that.  A few of them should just be dropped, but they are
+lingering so that oldish user space works with the new kernels.
+
+Perhaps it's time to just drop them ...
+
+> >  		thaw_processes();
+> >  		usermodehelper_enable();
+> >  		data->frozen = 0;
+> > @@ -275,6 +276,7 @@ static long snapshot_ioctl(struct file *
+> >  			error = -EPERM;
+> >  			break;
+> >  		}
+> > +		hibernate_restore_gfp_mask();
+> >  		error = hibernation_snapshot(data->platform_support);
+> 
+> That might be good safety, but it does strongly suggest that you
+> needed to put it somewhere else, and couldn't work out where?
+
+This is because of how s2disk works.  If it fails to allocate enough swap,
+it tries again with minimum image size without thawing the other tasks.
+Now, because hibernation_snapshot() saves the "original" GFP mask, it has
+to be restored before calling that function.
+
+> >  		if (!error)
+> >  			error = put_user(in_suspend, (int __user *)arg);
+> > 
 
 Thanks,
-Hugh
+Rafael
