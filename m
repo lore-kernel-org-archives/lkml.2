@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0K3ALJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 19:11:09 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26996 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755804Ab0K3ALI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 19:11:08 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAP7O80x5LcIv/2dsb2JhbACjCnLCT4VHBA
-Date: Tue, 30 Nov 2010 11:11:03 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: npiggin@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/7] fs: fsync optimisations
-Message-ID: <20101130001103.GE3255@amd>
-References: <20101123140610.292941494@kernel.dk>
- <20101123140708.058372884@kernel.dk>
- <20101129150325.GD26076@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129150325.GD26076@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755895Ab0K3ANs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 19:13:48 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:45148 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab0K3ANr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 19:13:47 -0500
+Date: Mon, 29 Nov 2010 16:13:44 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: hayeswang <hayeswang@realtek.com>, "'Ben Hutchings'" <benh@debian.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'David Miller'" <davem@davemloft.net>, 564628@bugs.debian.org
+Subject: Re: [PATCH] net/r8169: Correct the ram code for RTL8111D(L)
+Message-ID: <20101129161344.059239d6@nehalam>
+In-Reply-To: <20101129233334.GA2888@electric-eye.fr.zoreil.com>
+References: <1290772470-23713-1-git-send-email-hayeswang@realtek.com>
+	<1290779458.3051.45.camel@localhost>
+	<20101126224914.GA12266@electric-eye.fr.zoreil.com>
+	<1290813146.3051.58.camel@localhost>
+	<CE0F8B12F31D4E82860F4CE06907E98B@realtek.com.tw>
+	<20101129233334.GA2888@electric-eye.fr.zoreil.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 10:03:25AM -0500, Christoph Hellwig wrote:
-> On Wed, Nov 24, 2010 at 01:06:16AM +1100, npiggin@kernel.dk wrote:
-> > Optimise fsync by adding a datasync parameter to sync_inode_metadata to
-> > DTRT with writing back the inode (->write_inode in theory should have a
-> > datasync parameter too perhaps, but that's for another time).
+On Tue, 30 Nov 2010 00:33:34 +0100
+Francois Romieu <romieu@fr.zoreil.com> wrote:
+
+> hayeswang <hayeswang@realtek.com> :
+> > Excuse me, I have some questions about the firmware patch.
 > > 
-> > Also, implement the metadata sync optimally rather than reusing the
-> > normal data writeback path. This means less useless moving the inode around the
-> > writeback lists, and less dropping and retaking of inode_lock, and avoiding
-> > the data writeback call with nr_pages == 0.
+> > 1. I should convert the data into the binary files (.bin). Is it right?
 > 
-> This patch looks good to me, but a few minor comments below:
-
-(BTW. it actually had a bug with writeback_end not being called in some
-cases, in case you test it)
-
-> > @@ -1315,13 +1315,49 @@ EXPORT_SYMBOL(sync_inode);
-> >   *
-> >   * Note: only writes the actual inode, no associated data or other metadata.
-> >   */
-> > -int sync_inode_metadata(struct inode *inode, int wait)
-> > +int sync_inode_metadata(struct inode *inode, int datasync, int wait)
-> >  {
-> > +	struct address_space *mapping = inode->i_mapping;
-> >  	struct writeback_control wbc = {
-> >  		.sync_mode = wait ? WB_SYNC_ALL : WB_SYNC_NONE,
-> >  		.nr_to_write = 0, /* metadata-only */
-> >  	};
-> > +	unsigned dirty, mask;
-> > +	int ret = 0;
-> >  
-> > -	return sync_inode(inode, &wbc);
-> > +	/*
-> > +	 * This is a similar implementation to writeback_single_inode.
-> > +	 * Keep them in sync.
-> > +	 */
+> You may do it.
 > 
-> I'd move this comment to above the function.
-
-OK
-
+> Fwiw I have cooked something for it in the attached patch #9 this WE. Feel
+> free to take bits from it. I will not do more changes while you work on it.
 > 
-> > +	/*
-> > +	 * Generic write_inode doesn't distinguish between sync and datasync,
-> > +	 * so even a datasync can clear the sync state. Filesystems which
-> > +	 * distiguish these cases must only clear 'mask' in their metadata
-> > +	 * sync code.
-> > +	 */
+> > 2. Where should I update the firmware files? Is the path the
+> > linux-2.6/firmware?
 > 
-> I don't understand this comment.  Currenly filesystems never clear
-> i_state bits by themselves.
+> ! This directory is only here to contain firmware images extracted from old
+> ! device drivers which predate the common use of request_firmware().
+> 
+> It is fine for the existing code.
+> 
+> > However, according to linux-2.6/firmeware/README.AddingFirmware, I
+> > should update they to another repository:
+> > 	
+> > git://git.kernel.org/pub/scm/linux/kernel/git/dwmw2/linux-firmware.git
+> 
+> /me scratches head.
+> 
+> Assuming Realtek does not intend to stand this code / data as GPLable, yes.
+> It will help people staying clear from non-free code, it will help packaging
+> something useful and it will remove some cruft from the code.
+> 
+> So everybody will end happy. Especially after an aspirin.
 
-No, but with the new inode writeback routines they could. Basically
-they might be expected to copy this function, and put their own
-improvements in.
-
+The plan is to do away with linux-2.6/firmware entirely.
+Distributions are shipping the firmware from linux-firmware, not the
+kernel files.
