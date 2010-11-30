@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab0K3SMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:12:19 -0500
-Received: from hera.kernel.org ([140.211.167.34]:57183 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166Ab0K3SMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:12:18 -0500
-Message-ID: <4CF53E61.1030307@kernel.org>
-Date: Tue, 30 Nov 2010 19:11:45 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755804Ab0K3SPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:15:36 -0500
+Received: from sous-sol.org ([216.99.217.87]:55632 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755592Ab0K3SPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:15:35 -0500
+Date: Tue, 30 Nov 2010 10:13:14 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>
+Subject: Re: [PATCH 0/2] Fix dmar fault interrupt problems
+Message-ID: <20101130181314.GH10050@sequoia.sous-sol.org>
+References: <4CF4B597.4030708@jp.fujitsu.com>
+ <1291140553.2623.10.camel@sbsiddha-MOBL3>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
-        penberg@kernel.org
-Subject: [PATCH UPDATED#2 04/16] x86: Use local variable to cache smp_processor_id()
- in setup_local_APIC()
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org>
-In-Reply-To: <1290871325-3055-5-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 18:11:48 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291140553.2623.10.camel@sbsiddha-MOBL3>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a trivial clean up.
+* Suresh Siddha (suresh.b.siddha@intel.com) wrote:
+> On Tue, 2010-11-30 at 00:28 -0800, Kenji Kaneshige wrote:
+> > Hi,
+> > 
+> > Here are patches to fix the following problems regarding dmar fault interrupt.
+> > 
+> > - No dmar fault event is notified in x2apic cluster mode
+> > - Changing IRQ affinity of dmar fault interrupt causes "No irq handler
+> >   for vector (irq XX)" message and dmar fault interrupts are never
+> >   notified after that.
+> 
+> Kenji, In addition to these two, there are couple of more patches that
+> are needed to fix the kexec/kdump issue that we are debugging on RH
+> bugzilla.
+> 
+> I will post all these 4 patches shortly. I already noticed and queued
+> the second patch (dmar irq migration)  you mentioned.
 
-* Move initialization of @cpu inside preemption disabled region as
-  suggested by Cyrill Gorcunov.
+And one of them (the additional call to flushing existing dmar faults)
+is not needed.  So the quirk plus ensuring ir faults show up as msi
+interrupts should be sufficient.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
----
-Alright, updated yet again, but I frankly don't see the point in these
-changes.  If setup_local_APIC() is being run from a different CPU, we
-have a much larger problem.  We're already accessing cpu local
-resources (tsc, lapic) outside of preemption disabled area.  But,
-anyways, I don't think it matters one way or the other.
-
-Thanks.
-
- arch/x86/kernel/apic/apic.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
-
-Index: work/arch/x86/kernel/apic/apic.c
-===================================================================
---- work.orig/arch/x86/kernel/apic/apic.c
-+++ work/arch/x86/kernel/apic/apic.c
-@@ -1202,7 +1202,7 @@ static void __cpuinit lapic_setup_esr(vo
- void __cpuinit setup_local_APIC(void)
- {
- 	unsigned int value, queued;
--	int i, j, acked = 0;
-+	int cpu, i, j, acked = 0;
- 	unsigned long long tsc = 0, ntsc;
- 	long long max_loops = cpu_khz;
-
-@@ -1226,6 +1226,7 @@ void __cpuinit setup_local_APIC(void)
- 	perf_events_lapic_init();
-
- 	preempt_disable();
-+	cpu = smp_processor_id();
-
- 	/*
- 	 * Double-check whether this APIC is really registered.
-@@ -1342,21 +1343,19 @@ void __cpuinit setup_local_APIC(void)
- 	 * TODO: set up through-local-APIC from through-I/O-APIC? --macro
- 	 */
- 	value = apic_read(APIC_LVT0) & APIC_LVT_MASKED;
--	if (!smp_processor_id() && (pic_mode || !value)) {
-+	if (!cpu && (pic_mode || !value)) {
- 		value = APIC_DM_EXTINT;
--		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n",
--				smp_processor_id());
-+		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n", cpu);
- 	} else {
- 		value = APIC_DM_EXTINT | APIC_LVT_MASKED;
--		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n",
--				smp_processor_id());
-+		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n", cpu);
- 	}
- 	apic_write(APIC_LVT0, value);
-
- 	/*
- 	 * only the BP should see the LINT1 NMI signal, obviously.
- 	 */
--	if (!smp_processor_id())
-+	if (!cpu)
- 		value = APIC_DM_NMI;
- 	else
- 		value = APIC_DM_NMI | APIC_LVT_MASKED;
+thanks,
+-chris
