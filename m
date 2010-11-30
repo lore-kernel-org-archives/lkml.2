@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab0K3CpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 21:45:20 -0500
-Received: from mga14.intel.com ([143.182.124.37]:61780 "EHLO mga14.intel.com"
+	id S1752005Ab0K3Cuu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 21:50:50 -0500
+Received: from gate.crashing.org ([63.228.1.57]:44481 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab0K3CpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 21:45:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
-   d="scan'208";a="354763109"
-Date: Tue, 30 Nov 2010 09:22:05 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [2/8, v5] NUMA Hotplug Emulator: Add node hotplug emulation
-Message-ID: <20101130012205.GB3021@shaohui>
-References: <20101129091750.950277284@intel.com>
- <20101129091935.703824659@intel.com>
- <alpine.DEB.2.00.1011291600020.21653@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011291600020.21653@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751464Ab0K3Cut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 21:50:49 -0500
+Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mitch Bradley <wmb@firmworks.com>, Scott Wood <scottwood@freescale.com>,
+        sodaville@linutronix.de,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101129234735.4ce3a933@lxorguk.ukuu.org.uk>
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
+	 <1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
+	 <1290808645.32570.158.camel@pasglop> <20101128160449.GC30784@www.tglx.de>
+	 <1290984809.32570.208.camel@pasglop>
+	 <20101129130720.7d060e1c@udp111988uds.am.freescale.net>
+	 <1291061128.32570.298.camel@pasglop> <4CF40DF4.9060204@firmworks.com>
+	 <1291063470.32570.312.camel@pasglop>
+	 <20101129234735.4ce3a933@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 13:50:11 +1100
+Message-ID: <1291085411.32570.320.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:01:18PM -0800, David Rientjes wrote:
-> On Mon, 29 Nov 2010, shaohui.zheng@intel.com wrote:
+On Mon, 2010-11-29 at 23:47 +0000, Alan Cox wrote:
 > 
-> > From: David Rientjes <rientjes@google.com>
-> > 
-> > Add an interface to allow new nodes to be added when performing memory
-> > hot-add.  This provides a convenient interface to test memory hotplug
-> > notifier callbacks and surrounding hotplug code when new nodes are
-> > onlined without actually having a machine with such hotpluggable SRAT
-> > entries.
-> > 
-> > This adds a new debugfs interface at /sys/kernel/debug/hotplug/add_node
-> > that behaves in a similar way to the memory hot-add "probe" interface.
-> > Its format is size@start, where "size" is the size of the new node to be
-> > added and "start" is the physical address of the new memory.
-> > 
-> 
-> Looks like you've changed some of the references in my changlog to 
-> node/add_node, but not others, such as the above.  I'd actually much 
-> rather prefer to take Greg's latest suggestion of doing 
-> s/hotplug/mem_hotplug instead.
-> 
-> Would it be possible to repost the patch with that change?
-> 
-> Thanks!
+> That may not be wise. Your real bus heirarchy may not be architecturally
+> defined on some systems so you can't incorporate it into code, nor is it
+> necessarily a heirarchy - eg some of the Geodes. 
 
-We have two memory hotplug interfaces here:
-add_node: add a new NUMA node
-probe: add memory section
+Ok, so I'd suggest doing something like:
 
-so puting add_node to node/add_node and puting probe to memory/probe should make sense. 
-it is similar with sysfs hierarchy.
+ - pci is below the corresponding atom node
+ - isa is a child of pci
 
-if we want to move the add_node to mem_hotplug/add_node, I'd prefer to put the probe
-interface to mem_hotplug/probe since they are also related to memory hotplug.
+The later is a useful representation even if it doesn't correspond to
+reality. From an address representation perspective, ISA can be
+considered somewhat as a substractive decoding child of PCI (again even
+if that's not 100% true), which simplifies the representation in the
+device-tree a bit, and allows to still have things like VGA devices on
+the PCI segment that decode IO ports in the ISA range.
 
-I will include this change in next patchset.
+Cheers,
+Ben.
 
--- 
-Thanks & Regards,
-Shaohui
 
