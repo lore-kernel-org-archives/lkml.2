@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab0K3AET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 19:04:19 -0500
-Received: from ozlabs.org ([203.10.76.45]:42446 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752274Ab0K3AER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 19:04:17 -0500
-Date: Tue, 30 Nov 2010 10:58:52 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, sodaville@linutronix.de,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
-Message-ID: <20101129235852.GC3604@yookeroo>
-Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
-	Scott Wood <scottwood@freescale.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	sodaville@linutronix.de,
-	Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-	devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
- <1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
- <1290808645.32570.158.camel@pasglop>
- <20101128160449.GC30784@www.tglx.de>
- <1290984809.32570.208.camel@pasglop>
- <20101129130720.7d060e1c@udp111988uds.am.freescale.net>
+	id S1755813Ab0K3AEx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 19:04:53 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:5685 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab0K3AEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 19:04:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Z8wzGOZdBmMlw3b5HbsCI9HXPyn2xj9rUJLw7Vu1R3W2UCP1FA9Z58HujHJEbo1RIq
+         J0o1m+bv11rH+ZqhjG5A==
+Date: Mon, 29 Nov 2010 16:04:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Greg KH <gregkh@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>, Andi Kleen <ak@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org
+Subject: Re: [patch 2/2 v2] mm: add node hotplug emulation
+In-Reply-To: <20101128051749.GA11474@suse.de>
+Message-ID: <alpine.DEB.2.00.1011291602560.21653@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com> <20101119003225.GB3327@shaohui> <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com> <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1011201827540.12889@chino.kir.corp.google.com> <20101121173438.GA3922@suse.de> <alpine.DEB.2.00.1011211346160.26304@chino.kir.corp.google.com> <alpine.DEB.2.00.1011211505440.30377@chino.kir.corp.google.com> <20101122005658.GA6710@suse.de>
+ <alpine.DEB.2.00.1011271750140.3764@chino.kir.corp.google.com> <20101128051749.GA11474@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129130720.7d060e1c@udp111988uds.am.freescale.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 01:07:20PM -0600, Scott Wood wrote:
-> On Mon, 29 Nov 2010 09:53:29 +1100
-> Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> > On Sun, 2010-11-28 at 17:04 +0100, Sebastian Andrzej Siewior wrote:
-> > > >> +	isa@legacy {
-> 
-> What is "@legacy"?  I don't think I've seen that in a unit address
-> before, googling only turns up this device tree, and a quick grep
-> through the ISA and base OF specs turns up nothing.
-> 
-> > > >> +		device_type = "isa";
-> > > >> +		compatible = "simple-bus";
-> > > >
-> > > >What does "simple-bus" means ?
-> > > I added simple bus in order to get probed. But I now I rember that this
-> > > is also supported per device_type. I get rid of it.
-> > 
-> > device_type is a nasty bugger, we are trying to get rid of Linux
-> > reliance on it.
-> > 
-> > Things like "simple-bus" don't rock my boat either, it's adding to the
-> > device-tree "informations" that are specific to the way Linux will
-> > interpret it, which is not how it should be.
-> 
-> The motivation for simple-bus comes from Linux, but its definition is
-> OS-neutral.  It indicates that no special bus knowledge is required to
-> access the devices under it.
+On Sat, 27 Nov 2010, Greg KH wrote:
 
-Well, sort of.  More specifically, that plus it indicates that the bus
-does not support any method of dynamic probing, so the device tree is
-the *only* way to figure out what's on it.
+> Then name it as such, not the generic "hotplug" like you just did.
+> "mem_hotplug" would make sense, right?
+> 
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Ok, Shaohui has taken my patches to post as part of the larger series and 
+I requested that the interface be changed from s/hotplug/mem_hotplug as 
+you suggested (and you should be cc'd).  I agree it's a better name to 
+isolate memory hotplug debugging triggers from others.
+
+Thanks Greg!
