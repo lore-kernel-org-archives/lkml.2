@@ -1,204 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab0K3Ipd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 03:45:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58737 "EHLO mga09.intel.com"
+	id S1754854Ab0K3IqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 03:46:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50859 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754746Ab0K3Ip0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 03:45:26 -0500
+	id S1754696Ab0K3IpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 03:45:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,279,1288594800"; 
-   d="scan'208";a="682279813"
+   d="scan'208";a="578933022"
 X-Mailbox-Line: From shaohui.zheng@intel.com Tue Nov 30 15:14:37 2010
-Message-Id: <20101130071437.358387592@intel.com>
+Message-Id: <20101130071437.046902915@intel.com>
 References: <20101130071324.908098411@intel.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 30 Nov 2010 15:13:31 +0800
+Date: Tue, 30 Nov 2010 15:13:28 +0800
 From: shaohui.zheng@intel.com
 To: akpm@linux-foundation.org, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
         lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
         rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Shaohui Zheng <shaohui.zheng@intel.com>,
-        Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [7/8, v6] NUMA Hotplug Emulator: extend memory probe interface to support NUMA
-Content-Disposition: inline; filename=007-hotplug-emulator-extend-memory-probe-interface-to-support-numa.patch
+        Shaohui Zheng <shaohui.zheng@intel.com>
+Subject: [4/8, v6] NUMA Hotplug Emulation: Abstract cpu register functions
+Content-Disposition: inline; filename=004-hotplug-emulator-x86-abstract-cpu-register-functions.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Shaohui Zheng <shaohui.zheng@intel.com>
 
-Extend memory probe interface to support an extra paramter nid,
-the reserved memory can be added into this node if node exists.
+Abstract cpu register functions, provide a more flexible interface
+register_cpu_node, the new interface provides convenience to add cpu
+to a specified node, we can use it to add a cpu to a fake node.
 
-Add a memory section(128M) to node 3(boots with mem=1024m)
-
-	echo 0x40000000,3 > memory/probe
-
-And more we make it friendly, it is possible to add memory to do
-
-	echo 3g > memory/probe
-	echo 1024m,3 > memory/probe
-
-It maintains backwards compatibility.
-
-Another format suggested by Dave Hansen:
-
-	echo physical_address=0x40000000 numa_node=3 > memory/probe
-
-it is more explicit to show meaning of the parameters.
-
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
-Index: linux-hpe4/arch/x86/Kconfig
+Index: linux-hpe4/arch/x86/include/asm/cpu.h
 ===================================================================
---- linux-hpe4.orig/arch/x86/Kconfig	2010-11-30 12:03:49.747622002 +0800
-+++ linux-hpe4/arch/x86/Kconfig	2010-11-30 12:40:52.317621999 +0800
-@@ -1276,10 +1276,6 @@
- 	def_bool y
- 	depends on ARCH_SPARSEMEM_ENABLE
+--- linux-hpe4.orig/arch/x86/include/asm/cpu.h	2010-11-17 09:00:59.742608402 +0800
++++ linux-hpe4/arch/x86/include/asm/cpu.h	2010-11-17 09:01:10.192838977 +0800
+@@ -27,6 +27,7 @@
  
--config ARCH_MEMORY_PROBE
--	def_bool X86_64
--	depends on MEMORY_HOTPLUG
--
- config ILLEGAL_POINTER_VALUE
-        hex
-        default 0 if X86_32
-Index: linux-hpe4/drivers/base/memory.c
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern int arch_register_cpu(int num);
++extern int arch_register_cpu_node(int num, int nid);
+ extern void arch_unregister_cpu(int);
+ #endif
+ 
+Index: linux-hpe4/arch/x86/kernel/topology.c
 ===================================================================
---- linux-hpe4.orig/drivers/base/memory.c	2010-11-30 12:40:43.737622001 +0800
-+++ linux-hpe4/drivers/base/memory.c	2010-11-30 12:42:15.467621626 +0800
-@@ -329,26 +329,76 @@
-  * will not need to do it from userspace.  The fake hot-add code
-  * as well as ppc64 will do all of their discovery in userspace
-  * and will require this interface.
-+ *
-+ * Parameter format 1: physical_address,numa_node
-+ * Parameter format 2: physical_address=0x40000000 numa_node=3
-  */
- #ifdef CONFIG_ARCH_MEMORY_PROBE
--static ssize_t
--memory_probe_store(struct class *class, struct class_attribute *attr,
--		   const char *buf, size_t count)
-+ssize_t parse_memory_probe_store(const char *buf, size_t count)
- {
--	u64 phys_addr;
--	int nid;
-+	u64 phys_addr = 0;
-+	int nid = 0;
- 	int ret;
-+	char *p = NULL, *q = NULL;
-+	/* format: physical_address=0x40000000 numa_node=3 */
-+	p = strchr(buf, '=');
-+	if (p != NULL) {
-+		*p = '\0';
-+		q = strchr(buf, ' ');
-+		if (q == NULL) {
-+			if (strcmp(buf, "physical_address") != 0)
-+				ret = -EPERM;
-+			else
-+				phys_addr = memparse(p+1, NULL);
-+		} else {
-+			*q++ = '\0';
-+			p = strchr(q, '=');
-+			if (strcmp(buf, "physical_address") == 0)
-+				phys_addr = memparse(p+1, NULL);
-+			if (strcmp(buf, "numa_node") == 0)
-+				nid = simple_strtoul(p+1, NULL, 0);
-+			if (strcmp(q, "physical_address") == 0)
-+				phys_addr = memparse(p+1, NULL);
-+			if (strcmp(q, "numa_node") == 0)
-+				nid = simple_strtoul(p+1, NULL, 0);
-+		}
-+	} else { /* physical_address,numa_node */
-+		p = strchr(buf, ',');
-+		if (p != NULL && strlen(p+1) > 0) {
-+			/* nid specified */
-+			*p++ = '\0';
-+			nid = simple_strtoul(p, NULL, 0);
-+			phys_addr = memparse(buf, NULL);
-+		} else {
-+			phys_addr = memparse(buf, NULL);
-+			nid = memory_add_physaddr_to_nid(phys_addr);
-+		}
-+	}
- 
--	phys_addr = simple_strtoull(buf, NULL, 0);
--
--	nid = memory_add_physaddr_to_nid(phys_addr);
--	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+	if (nid < 0 || nid > nr_node_ids - 1) {
-+		printk(KERN_ERR "Invalid node id %d(0<=nid<%d).\n", nid, nr_node_ids);
-+		ret = -EPERM;
-+	} else {
-+		printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-+		ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+		if (ret)
-+			count = ret;
-+	}
- 
- 	if (ret)
- 		count = ret;
- 
- 	return count;
+--- linux-hpe4.orig/arch/x86/kernel/topology.c	2010-11-17 09:01:01.053461766 +0800
++++ linux-hpe4/arch/x86/kernel/topology.c	2010-11-17 10:05:32.934085248 +0800
+@@ -52,6 +52,15 @@
  }
-+EXPORT_SYMBOL(parse_memory_probe_store);
-+
-+static ssize_t
-+memory_probe_store(struct class *class, struct class_attribute *attr,
-+		   const char *buf, size_t count)
+ EXPORT_SYMBOL(arch_register_cpu);
+ 
++int __ref arch_register_cpu_node(int num, int nid)
 +{
-+	return parse_memory_probe_store(buf, count);
++	if (num)
++		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
++
++	return register_cpu_node(&per_cpu(cpu_devices, num).cpu, num, nid);
++}
++EXPORT_SYMBOL(arch_register_cpu_node);
++
+ void arch_unregister_cpu(int num)
+ {
+ 	unregister_cpu(&per_cpu(cpu_devices, num).cpu);
+Index: linux-hpe4/drivers/base/cpu.c
+===================================================================
+--- linux-hpe4.orig/drivers/base/cpu.c	2010-11-17 09:01:01.053461766 +0800
++++ linux-hpe4/drivers/base/cpu.c	2010-11-17 10:05:32.943465010 +0800
+@@ -208,17 +208,18 @@
+ static SYSDEV_CLASS_ATTR(offline, 0444, print_cpus_offline, NULL);
+ 
+ /*
+- * register_cpu - Setup a sysfs device for a CPU.
++ * register_cpu_node - Setup a sysfs device for a CPU.
+  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
+  *	  sysfs for this CPU.
+  * @num - CPU number to use when creating the device.
++ * @nid - Node ID to use, if any.
+  *
+  * Initialize and register the CPU device.
+  */
+-int __cpuinit register_cpu(struct cpu *cpu, int num)
++int __cpuinit register_cpu_node(struct cpu *cpu, int num, int nid)
+ {
+ 	int error;
+-	cpu->node_id = cpu_to_node(num);
++	cpu->node_id = nid;
+ 	cpu->sysdev.id = num;
+ 	cpu->sysdev.cls = &cpu_sysdev_class;
+ 
+@@ -229,7 +230,7 @@
+ 	if (!error)
+ 		per_cpu(cpu_sys_devices, num) = &cpu->sysdev;
+ 	if (!error)
+-		register_cpu_under_node(num, cpu_to_node(num));
++		register_cpu_under_node(num, nid);
+ 
+ #ifdef CONFIG_KEXEC
+ 	if (!error)
+Index: linux-hpe4/include/linux/cpu.h
+===================================================================
+--- linux-hpe4.orig/include/linux/cpu.h	2010-11-17 09:00:59.772898926 +0800
++++ linux-hpe4/include/linux/cpu.h	2010-11-17 10:05:32.954085309 +0800
+@@ -30,7 +30,13 @@
+ 	struct sys_device sysdev;
+ };
+ 
+-extern int register_cpu(struct cpu *cpu, int num);
++extern int register_cpu_node(struct cpu *cpu, int num, int nid);
++
++static inline int register_cpu(struct cpu *cpu, int num)
++{
++	return register_cpu_node(cpu, num, cpu_to_node(num));
 +}
 +
- static CLASS_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+ extern struct sys_device *get_cpu_sysdev(unsigned cpu);
  
- static int memory_probe_init(void)
-Index: linux-hpe4/mm/Kconfig
-===================================================================
---- linux-hpe4.orig/mm/Kconfig	2010-11-30 12:03:49.747622002 +0800
-+++ linux-hpe4/mm/Kconfig	2010-11-30 12:40:52.327621999 +0800
-@@ -174,6 +174,17 @@
- 	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
- 	default "4"
- 
-+config ARCH_MEMORY_PROBE
-+	def_bool y
-+	bool "Memory hotplug emulation"
-+	depends on MEMORY_HOTPLUG
-+	---help---
-+	  Enable memory hotplug emulation. Reserve memory with grub parameter
-+	  "mem=N"(such as mem=1024M), where N is the initial memory size, the
-+	  rest physical memory will be removed from e820 table; the memory probe
-+	  interface is for memory hot-add to specified node in software method.
-+	  This is for debuging and testing purpose
-+
- #
- # support for memory compaction
- config COMPACTION
-Index: linux-hpe4/include/linux/memory_hotplug.h
-===================================================================
---- linux-hpe4.orig/include/linux/memory_hotplug.h	2010-11-30 12:40:43.737622001 +0800
-+++ linux-hpe4/include/linux/memory_hotplug.h	2010-11-30 12:40:52.337622000 +0800
-@@ -211,5 +211,13 @@
- extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
- extern struct page *sparse_decode_mem_map(unsigned long coded_mem_map,
- 					  unsigned long pnum);
-+#ifdef CONFIG_ARCH_MEMORY_PROBE
-+extern ssize_t parse_memory_probe_store(const char *buf, size_t count);
-+#else
-+static inline ssize_t parse_memory_probe_store(const char *buf, size_t count)
-+{
-+	return 0;
-+}
-+#endif  /* CONFIG_ARCH_MEMORY_PROBE */
- 
- #endif /* __LINUX_MEMORY_HOTPLUG_H */
+ extern int cpu_add_sysdev_attr(struct sysdev_attribute *attr);
 
 -- 
 Thanks & Regards,
