@@ -1,49 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab0K3XWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:22:11 -0500
-Received: from SMTP02.SRV.CS.CMU.EDU ([128.2.217.197]:62410 "EHLO
-	smtp02.srv.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0K3XWJ (ORCPT
+	id S1751642Ab0K3XYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:24:13 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:59212 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab0K3XYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:22:09 -0500
-Date: Tue, 30 Nov 2010 18:22:04 -0500
-From: Eric Cooper <ecc@cmu.edu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] add netdev led trigger
-Message-ID: <20101130232204.GF21496@localhost>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-	linux-doc@vger.kernel.org
-References: <1289768305-1224-1-git-send-email-ecc@cmu.edu>
- <20101117105925.GC1574@ucw.cz>
- <20101117160919.GC10992@kroah.com>
- <20101117195843.GA31357@elf.ucw.cz>
- <20101117200614.GK15096@localhost>
- <20101130192053.GB5295@ucw.cz>
-MIME-Version: 1.0
+	Tue, 30 Nov 2010 18:24:12 -0500
+Date: Wed, 1 Dec 2010 00:24:11 +0100
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: Ash Hughes <ashley.hughes@blueyonder.co.uk>
+Cc: "'Simon Guinot'" <simon@sequanux.org>, nico@fluxnic.net,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM Orion: added Buffalo LS-CHL support
+Message-ID: <20101130232411.GE15575@mail.wantstofly.org>
+References: <000401cb89d0$8d1927b0$a74b7710$@blueyonder.co.uk> <20101124010442.GA1377@kw.sim.vm.gnt> <007301cb90d8$fb633670$f229a350$@blueyonder.co.uk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101130192053.GB5295@ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <007301cb90d8$fb633670$f229a350$@blueyonder.co.uk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please be consistent with rest of kernel...
+On Tue, Nov 30, 2010 at 09:53:09PM -0000, Ash Hughes wrote:
 
-There seem to be several ways this is done in existing sysfs drivers,
-and most aren't documented yet in Documentation/ABI.
+> Adds support for Buffalo Linkstation Live v3 (LS-CHL) NAS drives. Indentation fixed and fan speeds added
+> Signed-off-by: Ash Hughes <ashley.hughes@blueyonder.co.uk>
 
-1. "0" and "1"
-2. "enable" and "disable"
-3. "enabled" and "disabled"
-4. "enable" and "disable" when writing, but "enabled" and "disabled"
-    when read back
-
-Some require trailing "\n", others make it optional.
-
-Which is the One True Way?
-
--- 
-Eric Cooper             e c c @ c m u . e d u
+Acked-by: Lennert Buytenhek <buytenh@wantstofly.org>
