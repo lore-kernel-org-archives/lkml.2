@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab0K3Cvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 21:51:50 -0500
+	id S1752586Ab0K3CwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 21:52:00 -0500
 Received: from mga14.intel.com ([143.182.124.37]:23185 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab0K3Cvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 21:51:48 -0500
+	id S1752345Ab0K3Cvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 21:51:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
-   d="scan'208";a="354765008"
+   d="scan'208";a="354765030"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -v2 1/3] Add CPER PCIe error section structure and constants definition
-Date: Tue, 30 Nov 2010 10:51:39 +0800
-Message-Id: <1291085501-31494-2-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v2 3/3] ACPI, APEI, report GHES error information via printk
+Date: Tue, 30 Nov 2010 10:51:41 +0800
+Message-Id: <1291085501-31494-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
 References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
@@ -27,107 +27,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some machine, PCIe error is reported via APEI (ACPI Platform Error
-Interface).  The error data is passed from firmware to Linux via CPER
-PCIe error section structure.
-
-This patch adds CPER PCIe error section structure and constants
-definition.
+printk is one of the methods to report hardware errors to user space.
+This patch implements hardware error reporting for GHES via printk.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- include/linux/cper.h |   76 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 76 insertions(+)
+ drivers/acpi/apei/ghes.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
---- a/include/linux/cper.h
-+++ b/include/linux/cper.h
-@@ -201,6 +201,47 @@
- 	UUID_LE(0x036F84E1, 0x7F37, 0x428c, 0xA7, 0x9E, 0x57, 0x5F,	\
- 		0xDF, 0xAA, 0x84, 0xEC)
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -255,11 +255,23 @@ static void ghes_do_proc(struct ghes *gh
+ 		}
+ #endif
+ 	}
++}
  
-+#define CPER_PROC_VALID_TYPE			0x0001
-+#define CPER_PROC_VALID_ISA			0x0002
-+#define CPER_PROC_VALID_ERROR_TYPE		0x0004
-+#define CPER_PROC_VALID_OPERATION		0x0008
-+#define CPER_PROC_VALID_FLAGS			0x0010
-+#define CPER_PROC_VALID_LEVEL			0x0020
-+#define CPER_PROC_VALID_VERSION			0x0040
-+#define CPER_PROC_VALID_BRAND_INFO		0x0080
-+#define CPER_PROC_VALID_ID			0x0100
-+#define CPER_PROC_VALID_TARGET_ADDRESS		0x0200
-+#define CPER_PROC_VALID_REQUESTOR_ID		0x0400
-+#define CPER_PROC_VALID_RESPONDER_ID		0x0800
-+#define CPER_PROC_VALID_IP			0x1000
-+
-+#define CPER_MEM_VALID_ERROR_STATUS		0x0001
-+#define CPER_MEM_VALID_PHYSICAL_ADDRESS		0x0002
-+#define CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK	0x0004
-+#define CPER_MEM_VALID_NODE			0x0008
-+#define CPER_MEM_VALID_CARD			0x0010
-+#define CPER_MEM_VALID_MODULE			0x0020
-+#define CPER_MEM_VALID_BANK			0x0040
-+#define CPER_MEM_VALID_DEVICE			0x0080
-+#define CPER_MEM_VALID_ROW			0x0100
-+#define CPER_MEM_VALID_COLUMN			0x0200
-+#define CPER_MEM_VALID_BIT_POSITION		0x0400
-+#define CPER_MEM_VALID_REQUESTOR_ID		0x0800
-+#define CPER_MEM_VALID_RESPONDER_ID		0x1000
-+#define CPER_MEM_VALID_TARGET_ID		0x2000
-+#define CPER_MEM_VALID_ERROR_TYPE		0x4000
-+
-+#define CPER_PCIE_VALID_PORT_TYPE		0x0001
-+#define CPER_PCIE_VALID_VERSION			0x0002
-+#define CPER_PCIE_VALID_COMMAND_STATUS		0x0004
-+#define CPER_PCIE_VALID_DEVICE_ID		0x0008
-+#define CPER_PCIE_VALID_SERIAL_NUMBER		0x0010
-+#define CPER_PCIE_VALID_BRIDGE_CONTROL_STATUS	0x0020
-+#define CPER_PCIE_VALID_CAPABILITY		0x0040
-+#define CPER_PCIE_VALID_AER_INFO		0x0080
-+
-+#define CPER_PCIE_SLOT_SHIFT			3
-+
- /*
-  * All tables and structs must be byte-packed to match CPER
-  * specification, since the tables are provided by the system BIOS
-@@ -306,6 +347,41 @@ struct cper_sec_mem_err {
- 	__u8	error_type;
- };
+-	if (!processed && printk_ratelimit())
+-		pr_warning(GHES_PFX
+-		"Unknown error record from generic hardware error source: %d\n",
+-			   ghes->generic->header.source_id);
++static void ghes_print_estatus(const char *pfx, struct ghes *ghes)
++{
++	if (pfx == NULL) {
++		if (ghes_severity(ghes->estatus->error_severity) <=
++		    GHES_SEV_CORRECTED)
++			pfx = KERN_WARNING HW_ERR;
++		else
++			pfx = KERN_ERR HW_ERR;
++	}
++	if (printk_ratelimit()) {
++		printk(
++	"%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
++	pfx, ghes->generic->header.source_id);
++		apei_estatus_print(pfx, ghes->estatus);
++	}
+ }
  
-+struct cper_sec_pcie {
-+	__u64		validation_bits;
-+	__u32		port_type;
-+	struct {
-+		__u8	minor;
-+		__u8	major;
-+		__u8	reserved[2];
-+	}		version;
-+	__u16		command;
-+	__u16		status;
-+	__u32		reserved;
-+	struct {
-+		__u16	vendor_id;
-+		__u16	device_id;
-+		__u8	class_code[3];
-+		__u8	function;
-+		__u8	device;
-+		__u16	segment;
-+		__u8	bus;
-+		__u8	secondary_bus;
-+		__u16	slot;
-+		__u8	reserved;
-+	}		device_id;
-+	struct {
-+		__u32	lower;
-+		__u32	upper;
-+	}		serial_number;
-+	struct {
-+		__u16	secondary_status;
-+		__u16	control;
-+	}		bridge;
-+	__u8	capability[60];
-+	__u8	aer_info[96];
-+};
-+
- /* Reset to default packing */
- #pragma pack()
+ static int ghes_proc(struct ghes *ghes)
+@@ -269,6 +281,7 @@ static int ghes_proc(struct ghes *ghes)
+ 	rc = ghes_read_estatus(ghes, 0);
+ 	if (rc)
+ 		goto out;
++	ghes_print_estatus(NULL, ghes);
+ 	ghes_do_proc(ghes);
  
+ out:
