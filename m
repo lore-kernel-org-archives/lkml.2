@@ -1,109 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab0K3E2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:28:16 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:21257 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750877Ab0K3E2P (ORCPT
+	id S1753685Ab0K3E2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:28:53 -0500
+Received: from smtp21.services.sfr.fr ([93.17.128.4]:15434 "EHLO
+	smtp21.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0K3E2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:28:15 -0500
-Message-ID: <4CF47D3E.4010304@dsn.okisemi.com>
-Date: Tue, 30 Nov 2010 13:27:42 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 29 Nov 2010 23:28:52 -0500
+X-SFR-UUID: 20101130042754449.6DC83700008B@msfrf2114.sfr.fr
+Reply-To: <fifs@kkwl.ac.th>
+From: "F.I.F.S" <info@info.net>
+To: johannvideira@neuf.fr
+Subject: End of year loan!!!
+Date: Tue, 30 Nov 2010 12:28:22 -0800
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v6 10/20] can: EG20T PCH: Replace netdev_dbg
- instead of dev_dbg partly
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-Id: <20101130042754.6DC83700008B@msfrf2114.sfr.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For easy to readable, use netdev_dbg instead of dev_dbg partly
+This is to inform you that First Inland Financial Services is Granting End of the Year loan facilities
+to it's old and new customers at 2% interest rate.  Provide the following if  interested.
+Name...Amount..Duration..Phone number
+ 
+Dr. Greg Barry
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 01d4126..09d0844 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -222,7 +222,7 @@ static void pch_can_set_run_mode(struct pch_can_priv *priv,
- 		break;
- 
- 	default:
--		dev_err(&priv->ndev->dev, "%s -> Invalid Mode.\n", __func__);
-+		netdev_err(priv->ndev, "%s -> Invalid Mode.\n", __func__);
- 		break;
- 	}
- }
-@@ -275,7 +275,7 @@ static void pch_can_set_int_enables(struct pch_can_priv *priv,
- 		break;
- 
- 	default:
--		dev_err(&priv->ndev->dev, "Invalid interrupt number.\n");
-+		netdev_err(priv->ndev, "Invalid interrupt number.\n");
- 		break;
- 	}
- }
-@@ -534,7 +534,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
- 			cf->data[1] |= CAN_ERR_CRTL_RX_WARNING;
- 		if ((errc & PCH_TEC) > 96)
- 			cf->data[1] |= CAN_ERR_CRTL_TX_WARNING;
--		dev_warn(&ndev->dev,
-+		netdev_dbg(ndev,
- 			"%s -> Error Counter is more than 96.\n", __func__);
- 	}
- 	/* Error passive interrupt. */
-@@ -546,7 +546,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
- 			cf->data[1] |= CAN_ERR_CRTL_RX_PASSIVE;
- 		if ((errc & PCH_TEC) > 127)
- 			cf->data[1] |= CAN_ERR_CRTL_TX_PASSIVE;
--		dev_err(&ndev->dev,
-+		netdev_dbg(ndev,
- 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
- 	}
- 
-@@ -865,10 +865,10 @@ static int pch_can_open(struct net_device *ndev)
- 
- 	retval = pci_enable_msi(priv->dev);
- 	if (retval) {
--		dev_info(&ndev->dev, "PCH CAN opened without MSI\n");
-+		netdev_err(ndev, "PCH CAN opened without MSI\n");
- 		priv->use_msi = 0;
- 	} else {
--		dev_info(&ndev->dev, "PCH CAN opened with MSI\n");
-+		netdev_err(ndev, "PCH CAN opened with MSI\n");
- 		priv->use_msi = 1;
- 	}
- 
-@@ -876,14 +876,14 @@ static int pch_can_open(struct net_device *ndev)
- 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
- 			     ndev->name, ndev);
- 	if (retval) {
--		dev_err(&ndev->dev, "request_irq failed.\n");
-+		netdev_err(ndev, "request_irq failed.\n");
- 		goto req_irq_err;
- 	}
- 
- 	/* Open common can device */
- 	retval = open_candev(ndev);
- 	if (retval) {
--		dev_err(ndev->dev.parent, "open_candev() failed %d\n", retval);
-+		netdev_err(ndev, "open_candev() failed %d\n", retval);
- 		goto err_open_candev;
- 	}
- 
--- 
-1.6.0.6
