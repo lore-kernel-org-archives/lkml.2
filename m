@@ -1,62 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0K3UCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 15:02:47 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:5305 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab0K3UCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 15:02:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=kiiQH0N9IlwaoEidCG2f/nVjintrDzE0MhAjao4NsvcvFY/RsoV/0K4cCEY3bYQXmj
-         mCg9gq5bt+Q2TOzyfk8g==
-Date: Tue, 30 Nov 2010 12:02:39 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
-        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH] Revert oom rewrite series
-In-Reply-To: <20101130220510.832E.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1011301201060.12979@chino.kir.corp.google.com>
-References: <20101123151731.7B7B.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011271743180.3764@chino.kir.corp.google.com> <20101130220510.832E.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756566Ab0K3UD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 15:03:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62507 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411Ab0K3UDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 15:03:25 -0500
+Date: Tue, 30 Nov 2010 20:55:34 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, stable@kernel.org
+Subject: [PATCH 1/2] exec: make argv/envp memory visible to oom-killer
+Message-ID: <20101130195534.GB11905@redhat.com>
+References: <20101125140253.GA29371@redhat.com> <20101125193659.GA14510@redhat.com> <20101129093803.829F.A69D9226@jp.fujitsu.com> <20101129113357.GA30657@redhat.com> <20101129182332.GA21470@redhat.com> <20101130195456.GA11905@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130195456.GA11905@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, KOSAKI Motohiro wrote:
+Brad Spengler published a local memory-allocation DoS that
+evades the OOM-killer (though not the virtual memory RLIMIT):
+http://www.grsecurity.net/~spender/64bit_dos.c
 
-> > > > You may remember that the initial version of my rewrite replaced oom_adj 
-> > > > entirely with the new oom_score_adj semantics.  Others suggested that it 
-> > > > be seperated into a new tunable and the old tunable deprecated for a 
-> > > > lengthy period of time.  I accepted that criticism and understood the 
-> > > > drawbacks of replacing the tunable immediately and followed those 
-> > > > suggestions.  I disagree with you that the deprecation of oom_adj for a 
-> > > > period of two years is as dramatic as you imply and I disagree that users 
-> > > > are experiencing problems with the linear scale that it now operates on 
-> > > > versus the old exponential scale.
-> > > 
-> > > Yes and No. People wanted to separate AND don't break old one.
-> > > 
-> > 
-> > You're arguing on the behalf of applications that don't exist.
-> 
-> Why?
-> You actually got the bug report.
-> 
+execve()->copy_strings() can allocate a lot of memory, but
+this is not visible to oom-killer, nobody can see the nascent
+bprm->mm and take it into account.
 
-There have never been any bug reports related to applications using 
-oom_score_adj and being impacted with its linear mapping onto oom_adj's 
-exponential scale.  That's because no users prior to the rewrite were 
-using oom_adj scores that were based on either the expected memory usage 
-of the application nor the capacity of the machine.
+With this patch get_arg_page() increments current's MM_ANONPAGES
+counter every time we allocate the new page for argv/envp. When
+do_execve() succeds or fails, we change this counter back.
+
+Technically this is not 100% correct, we can't know if the new
+page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
+I don't think this really matters and everything becomes correct
+once exec changes ->mm or fails.
+
+Reported-by: Brad Spengler <spender@grsecurity.net>
+By-discussion-with: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ include/linux/binfmts.h |    1 +
+ fs/exec.c               |   32 ++++++++++++++++++++++++++++++--
+ 2 files changed, 31 insertions(+), 2 deletions(-)
+
+--- K/include/linux/binfmts.h~acct_exec_mem	2010-11-30 18:27:15.000000000 +0100
++++ K/include/linux/binfmts.h	2010-11-30 18:28:54.000000000 +0100
+@@ -29,6 +29,7 @@ struct linux_binprm{
+ 	char buf[BINPRM_BUF_SIZE];
+ #ifdef CONFIG_MMU
+ 	struct vm_area_struct *vma;
++	unsigned long vma_pages;
+ #else
+ # define MAX_ARG_PAGES	32
+ 	struct page *page[MAX_ARG_PAGES];
+--- K/fs/exec.c~acct_exec_mem	2010-11-30 18:27:15.000000000 +0100
++++ K/fs/exec.c	2010-11-30 18:28:54.000000000 +0100
+@@ -164,6 +164,25 @@ out:
+ 
+ #ifdef CONFIG_MMU
+ 
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++	struct mm_struct *mm = current->mm;
++	long diff = (long)(pages - bprm->vma_pages);
++
++	if (!mm || !diff)
++		return;
++
++	bprm->vma_pages = pages;
++
++#ifdef SPLIT_RSS_COUNTING
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++#else
++	spin_lock(&mm->page_table_lock);
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++	spin_unlock(&mm->page_table_lock);
++#endif
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -186,6 +205,8 @@ static struct page *get_arg_page(struct 
+ 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
+ 		struct rlimit *rlim;
+ 
++		acct_arg_size(bprm, size / PAGE_SIZE);
++
+ 		/*
+ 		 * We've historically supported up to 32 pages (ARG_MAX)
+ 		 * of argument strings even with small stacks
+@@ -276,6 +297,10 @@ static bool valid_arg_len(struct linux_b
+ 
+ #else
+ 
++static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -1003,6 +1028,7 @@ int flush_old_exec(struct linux_binprm *
+ 	/*
+ 	 * Release all of the old mmap stuff
+ 	 */
++	acct_arg_size(bprm, 0);
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
+@@ -1426,8 +1452,10 @@ int do_execve(const char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput (bprm->mm);
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
++		mmput(bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+
