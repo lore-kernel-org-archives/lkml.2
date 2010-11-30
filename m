@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab0K3SWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:22:05 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:44512 "EHLO
+	id S1756096Ab0K3SWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:22:09 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:6925 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756035Ab0K3SWD (ORCPT
+	with ESMTP id S1756035Ab0K3SWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:22:03 -0500
+	Tue, 30 Nov 2010 13:22:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=message-id:from:date:to:reply-to:cc:subject;
-        b=MmrBXy/oEpWQqKkB/DuvEI467v2+r3rRasYL5QGxD778n4UpvVfyWf43s2U4upRLT/
-         XbHlfauPXF4YwiKz27YA==
-Message-ID: <4cf540c6.122ae30a.719f.4d06@mx.google.com>
+        b=RqiWpkOUToG0qe9izVpU2ByAEPrWk8lahvTfn2Y23vYgvPxYMm8jZ75P6uovwrcU14
+         LDimu+EiT1yU/j+dZnjw==
+Message-ID: <4cf540cb.8491d80a.5a1e.1db2@mx.google.com>
 From: Stephane Eranian <eranian@google.com>
 Date: Tue, 30 Nov 2010 19:20:01 +0200
 To: linux-kernel@vger.kernel.org
@@ -21,96 +21,133 @@ Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
         fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
         eranian@google.com, robert.richter@amd.com, acme@redhat.com,
         lizf@cn.fujitsu.com
-Subject: [PATCH 2/5] perf_events: generalize use of event_filter_match() (v6)
+Subject: [PATCH 3/5] perf_events: add perf_event_time() (v6)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace all occurrences of:
-	event->cpu != -1 && event->cpu == smp_processor_id()
-by a call to:
-	event_filter_match(event)
-
-This makes the code more consistent and will make the cgroup
-patch smaller.
+Adds perf_event_time() to try and centralize access to event
+timing and in particular ctx->time. Prepares for cgroup support.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
 
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 84dc7f6..9ed3723 100644
+index 9ed3723..f17fa83 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -838,7 +838,7 @@ static void __perf_install_in_context(void *info)
+@@ -243,6 +243,12 @@ static void update_context_time(struct perf_event_context *ctx)
+ 	ctx->timestamp = now;
+ }
  
- 	add_event_to_ctx(event, ctx);
++static u64 perf_event_time(struct perf_event *event)
++{
++	struct perf_event_context *ctx = event->ctx;
++	return ctx ? ctx->time : 0;
++}
++
+ /*
+  * Update the total_time_enabled and total_time_running fields for a event.
+  */
+@@ -256,7 +262,7 @@ static void update_event_times(struct perf_event *event)
+ 		return;
  
--	if (event->cpu != -1 && event->cpu != smp_processor_id())
-+	if (!event_filter_match(event))
- 		goto unlock;
+ 	if (ctx->is_active)
+-		run_end = ctx->time;
++		run_end = perf_event_time(event);
+ 	else
+ 		run_end = event->tstamp_stopped;
  
+@@ -265,7 +271,7 @@ static void update_event_times(struct perf_event *event)
+ 	if (event->state == PERF_EVENT_STATE_INACTIVE)
+ 		run_end = event->tstamp_stopped;
+ 	else
+-		run_end = ctx->time;
++		run_end = perf_event_time(event);
+ 
+ 	event->total_time_running = run_end - event->tstamp_running;
+ }
+@@ -435,6 +441,7 @@ event_sched_out(struct perf_event *event,
+ 		  struct perf_cpu_context *cpuctx,
+ 		  struct perf_event_context *ctx)
+ {
++	u64 tstamp = perf_event_time(event);
+ 	u64 delta;
  	/*
-@@ -983,7 +983,7 @@ static void __perf_event_enable(void *info)
- 		goto unlock;
- 	__perf_event_mark_enabled(event, ctx);
+ 	 * An event which could not be activated because of
+@@ -446,7 +453,7 @@ event_sched_out(struct perf_event *event,
+ 	    && !event_filter_match(event)) {
+ 		delta = ctx->time - event->tstamp_stopped;
+ 		event->tstamp_running += delta;
+-		event->tstamp_stopped = ctx->time;
++		event->tstamp_stopped = tstamp;
+ 	}
  
--	if (event->cpu != -1 && event->cpu != smp_processor_id())
-+	if (!event_filter_match(event))
- 		goto unlock;
+ 	if (event->state != PERF_EVENT_STATE_ACTIVE)
+@@ -457,7 +464,7 @@ event_sched_out(struct perf_event *event,
+ 		event->pending_disable = 0;
+ 		event->state = PERF_EVENT_STATE_OFF;
+ 	}
+-	event->tstamp_stopped = ctx->time;
++	event->tstamp_stopped = tstamp;
+ 	event->pmu->del(event, 0);
+ 	event->oncpu = -1;
  
- 	/*
-@@ -1330,7 +1330,7 @@ ctx_pinned_sched_in(struct perf_event_context *ctx,
- 	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
- 		if (event->state <= PERF_EVENT_STATE_OFF)
- 			continue;
--		if (event->cpu != -1 && event->cpu != smp_processor_id())
-+		if (!event_filter_match(event))
- 			continue;
- 
- 		if (group_can_go_on(event, cpuctx, 1))
-@@ -1362,7 +1362,7 @@ ctx_flexible_sched_in(struct perf_event_context *ctx,
- 		 * Listen to the 'cpu' scheduling filter constraint
- 		 * of events:
- 		 */
--		if (event->cpu != -1 && event->cpu != smp_processor_id())
-+		if (!event_filter_match(event))
- 			continue;
- 
- 		if (group_can_go_on(event, cpuctx, can_add_hw)) {
-@@ -1589,7 +1589,7 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
- 		if (event->state != PERF_EVENT_STATE_ACTIVE)
- 			continue;
- 
--		if (event->cpu != -1 && event->cpu != smp_processor_id())
-+		if (!event_filter_match(event))
- 			continue;
- 
- 		hwc = &event->hw;
-@@ -3799,7 +3799,7 @@ static int perf_event_task_match(struct perf_event *event)
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
+@@ -669,6 +676,8 @@ event_sched_in(struct perf_event *event,
+ 		 struct perf_cpu_context *cpuctx,
+ 		 struct perf_event_context *ctx)
+ {
++	u64 tstamp = perf_event_time(event);
++
+ 	if (event->state <= PERF_EVENT_STATE_OFF)
  		return 0;
  
--	if (event->cpu != -1 && event->cpu != smp_processor_id())
-+	if (!event_filter_match(event))
- 		return 0;
+@@ -685,9 +694,9 @@ event_sched_in(struct perf_event *event,
+ 		return -EAGAIN;
+ 	}
  
- 	if (event->attr.comm || event->attr.mmap ||
-@@ -3924,7 +3924,7 @@ static int perf_event_comm_match(struct perf_event *event)
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
+-	event->tstamp_running += ctx->time - event->tstamp_stopped;
++	event->tstamp_running += tstamp - event->tstamp_stopped;
  
--	if (event->cpu != -1 && event->cpu != smp_processor_id())
-+	if (!event_filter_match(event))
- 		return 0;
+-	event->shadow_ctx_time = ctx->time - ctx->timestamp;
++	event->shadow_ctx_time = tstamp - ctx->timestamp;
  
- 	if (event->attr.comm)
-@@ -4062,7 +4062,7 @@ static int perf_event_mmap_match(struct perf_event *event,
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
+ 	if (!is_software_event(event))
+ 		cpuctx->active_oncpu++;
+@@ -799,11 +808,13 @@ static int group_can_go_on(struct perf_event *event,
+ static void add_event_to_ctx(struct perf_event *event,
+ 			       struct perf_event_context *ctx)
+ {
++	u64 tstamp = perf_event_time(event);
++
+ 	list_add_event(event, ctx);
+ 	perf_group_attach(event);
+-	event->tstamp_enabled = ctx->time;
+-	event->tstamp_running = ctx->time;
+-	event->tstamp_stopped = ctx->time;
++	event->tstamp_enabled = tstamp;
++	event->tstamp_running = tstamp;
++	event->tstamp_stopped = tstamp;
+ }
  
--	if (event->cpu != -1 && event->cpu != smp_processor_id())
-+	if (!event_filter_match(event))
- 		return 0;
+ /*
+@@ -943,14 +954,13 @@ static void __perf_event_mark_enabled(struct perf_event *event,
+ 					struct perf_event_context *ctx)
+ {
+ 	struct perf_event *sub;
++	u64 tstamp = perf_event_time(event);
  
- 	if ((!executable && event->attr.mmap_data) ||
+ 	event->state = PERF_EVENT_STATE_INACTIVE;
+-	event->tstamp_enabled = ctx->time - event->total_time_enabled;
++	event->tstamp_enabled = tstamp - event->total_time_enabled;
+ 	list_for_each_entry(sub, &event->sibling_list, group_entry) {
+-		if (sub->state >= PERF_EVENT_STATE_INACTIVE) {
+-			sub->tstamp_enabled =
+-				ctx->time - sub->total_time_enabled;
+-		}
++		if (sub->state >= PERF_EVENT_STATE_INACTIVE)
++			sub->tstamp_enabled = tstamp - sub->total_time_enabled;
+ 	}
+ }
+ 
