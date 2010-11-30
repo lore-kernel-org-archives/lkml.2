@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab0K3V6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:58:20 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52281 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab0K3V6N (ORCPT
+	id S1753246Ab0K3V61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:58:27 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34410 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab0K3V6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:58:13 -0500
+	Tue, 30 Nov 2010 16:58:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ovyYx6Vj7TKgzpNHwiN6BIu/oipwPWZVXTdboKHu+WEfvnyWIXMSLkyuGhaD8aQFOK
-         A5ftq5eSONlQmkeMJlU/GEewmEqX6i7e5oRLqiP2QE7dI6MUBuSDDZGyH88ewF0LY/+B
-         G1S7R6mKA9OJadislkt6KTGxEn8HfXRke3AB0=
+        b=Jw8iZ0hS7oq//CDJCSau2290UXYRnO2bhB6RD7tFhqolgbnI4Ocjk9K3+OKSBO0PZE
+         hL15/9uT3M9k2+CtP3y3O43dXipn2Uo+FSz1AokddI7ZwZoppGNTE2MD6vmf6MrzXdDt
+         KvI56gHRTVIxh92i9EJptMG8iloVgEkLA+TZ8=
 From: Charles Manning <cdhmanning@gmail.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Charles Manning <cdhmanning@gmail.com>
-Subject: [PATCH 5/8] Add yaffs2 file system: mtd and flash handling code
-Date: Wed,  1 Dec 2010 10:57:31 +1300
-Message-Id: <1291154254-22533-6-git-send-email-cdhmanning@gmail.com>
+Subject: [PATCH 7/8] Add yaffs2 file system: verification code and other headers
+Date: Wed,  1 Dec 2010 10:57:33 +1300
+Message-Id: <1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
 References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
@@ -28,30 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Charles Manning <cdhmanning@gmail.com>
 ---
- fs/yaffs2/yaffs_mtdif.c  |   54 ++++++++
- fs/yaffs2/yaffs_mtdif.h  |   23 ++++
- fs/yaffs2/yaffs_mtdif1.c |  331 ++++++++++++++++++++++++++++++++++++++++++++++
- fs/yaffs2/yaffs_mtdif1.h |   29 ++++
- fs/yaffs2/yaffs_mtdif2.c |  226 +++++++++++++++++++++++++++++++
- fs/yaffs2/yaffs_mtdif2.h |   29 ++++
- fs/yaffs2/yaffs_nand.c   |  128 ++++++++++++++++++
- fs/yaffs2/yaffs_nand.h   |   38 ++++++
- 8 files changed, 858 insertions(+), 0 deletions(-)
- create mode 100644 fs/yaffs2/yaffs_mtdif.c
- create mode 100644 fs/yaffs2/yaffs_mtdif.h
- create mode 100644 fs/yaffs2/yaffs_mtdif1.c
- create mode 100644 fs/yaffs2/yaffs_mtdif1.h
- create mode 100644 fs/yaffs2/yaffs_mtdif2.c
- create mode 100644 fs/yaffs2/yaffs_mtdif2.h
- create mode 100644 fs/yaffs2/yaffs_nand.c
- create mode 100644 fs/yaffs2/yaffs_nand.h
+ fs/yaffs2/yaffs_getblockinfo.h |   36 +++
+ fs/yaffs2/yaffs_linux.h        |   41 +++
+ fs/yaffs2/yaffs_tagsvalidity.c |   27 ++
+ fs/yaffs2/yaffs_tagsvalidity.h |   23 ++
+ fs/yaffs2/yaffs_trace.h        |   59 +++++
+ fs/yaffs2/yaffs_verify.c       |  546 ++++++++++++++++++++++++++++++++++++++++
+ fs/yaffs2/yaffs_verify.h       |   43 ++++
+ fs/yaffs2/yportenv.h           |   91 +++++++
+ 8 files changed, 866 insertions(+), 0 deletions(-)
+ create mode 100644 fs/yaffs2/yaffs_getblockinfo.h
+ create mode 100644 fs/yaffs2/yaffs_linux.h
+ create mode 100644 fs/yaffs2/yaffs_tagsvalidity.c
+ create mode 100644 fs/yaffs2/yaffs_tagsvalidity.h
+ create mode 100644 fs/yaffs2/yaffs_trace.h
+ create mode 100644 fs/yaffs2/yaffs_verify.c
+ create mode 100644 fs/yaffs2/yaffs_verify.h
+ create mode 100644 fs/yaffs2/yportenv.h
 
-diff --git a/fs/yaffs2/yaffs_mtdif.c b/fs/yaffs2/yaffs_mtdif.c
+diff --git a/fs/yaffs2/yaffs_getblockinfo.h b/fs/yaffs2/yaffs_getblockinfo.h
 new file mode 100644
-index 0000000..7cf53b3
+index 0000000..108c361
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_mtdif.c
-@@ -0,0 +1,54 @@
++++ b/fs/yaffs2/yaffs_getblockinfo.h
+@@ -0,0 +1,36 @@
++/*
++ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
++ *
++ * Copyright (C) 2002-2010 Aleph One Ltd.
++ *   for Toby Churchill Ltd and Brightstar Engineering
++ *
++ * Created by Charles Manning <charles@aleph1.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU Lesser General Public License version 2.1 as
++ * published by the Free Software Foundation.
++ *
++ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
++ */
++
++#ifndef __YAFFS_GETBLOCKINFO_H__
++#define __YAFFS_GETBLOCKINFO_H__
++
++#include "yaffs_guts.h"
++#include "yaffs_trace.h"
++
++/* Function to manipulate block info */
++static Y_INLINE struct yaffs_block_info *yaffs_get_block_info(struct yaffs_dev
++							      *dev, int blk)
++{
++	if (blk < dev->internal_start_block || blk > dev->internal_end_block) {
++		T(YAFFS_TRACE_ERROR,
++		  (TSTR
++		   ("**>> yaffs: get_block_info block %d is not valid" TENDSTR),
++		   blk));
++		YBUG();
++	}
++	return &dev->block_info[blk - dev->internal_start_block];
++}
++
++#endif
+diff --git a/fs/yaffs2/yaffs_linux.h b/fs/yaffs2/yaffs_linux.h
+new file mode 100644
+index 0000000..3b508cb
+--- /dev/null
++++ b/fs/yaffs2/yaffs_linux.h
+@@ -0,0 +1,41 @@
++/*
++ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
++ *
++ * Copyright (C) 2002-2010 Aleph One Ltd.
++ *   for Toby Churchill Ltd and Brightstar Engineering
++ *
++ * Created by Charles Manning <charles@aleph1.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU Lesser General Public License version 2.1 as
++ * published by the Free Software Foundation.
++ *
++ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
++ */
++
++#ifndef __YAFFS_LINUX_H__
++#define __YAFFS_LINUX_H__
++
++#include "yportenv.h"
++
++struct yaffs_linux_context {
++	struct list_head context_list;	/* List of these we have mounted */
++	struct yaffs_dev *dev;
++	struct super_block *super;
++	struct task_struct *bg_thread;	/* Background thread for this device */
++	int bg_running;
++	struct mutex gross_lock;	/* Gross locking mutex*/
++	u8 *spare_buffer;	/* For mtdif2 use. Don't know the size of the buffer
++				 * at compile time so we have to allocate it.
++				 */
++	struct list_head search_contexts;
++	void (*put_super_fn) (struct super_block * sb);
++
++	struct task_struct *readdir_process;
++	unsigned mount_id;
++};
++
++#define yaffs_dev_to_lc(dev) ((struct yaffs_linux_context *)((dev)->os_context))
++#define yaffs_dev_to_mtd(dev) ((struct mtd_info *)((dev)->driver_context))
++
++#endif
+diff --git a/fs/yaffs2/yaffs_tagsvalidity.c b/fs/yaffs2/yaffs_tagsvalidity.c
+new file mode 100644
+index 0000000..4358d79
+--- /dev/null
++++ b/fs/yaffs2/yaffs_tagsvalidity.c
+@@ -0,0 +1,27 @@
 +/*
 + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
 + *
@@ -65,52 +154,25 @@ index 0000000..7cf53b3
 + * published by the Free Software Foundation.
 + */
 +
-+#include "yportenv.h"
++#include "yaffs_tagsvalidity.h"
 +
-+#include "yaffs_mtdif.h"
-+
-+#include "linux/mtd/mtd.h"
-+#include "linux/types.h"
-+#include "linux/time.h"
-+#include "linux/mtd/nand.h"
-+
-+#include "yaffs_linux.h"
-+
-+int nandmtd_erase_block(struct yaffs_dev *dev, int block_no)
++void yaffs_init_tags(struct yaffs_ext_tags *tags)
 +{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	u32 addr =
-+	    ((loff_t) block_no) * dev->param.total_bytes_per_chunk
-+	    * dev->param.chunks_per_block;
-+	struct erase_info ei;
-+
-+	int retval = 0;
-+
-+	ei.mtd = mtd;
-+	ei.addr = addr;
-+	ei.len = dev->param.total_bytes_per_chunk * dev->param.chunks_per_block;
-+	ei.time = 1000;
-+	ei.retries = 2;
-+	ei.callback = NULL;
-+	ei.priv = (u_long) dev;
-+
-+	retval = mtd->erase(mtd, &ei);
-+
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
++	memset(tags, 0, sizeof(struct yaffs_ext_tags));
++	tags->validity0 = 0xAAAAAAAA;
++	tags->validity1 = 0x55555555;
 +}
 +
-+int nandmtd_initialise(struct yaffs_dev *dev)
++int yaffs_validate_tags(struct yaffs_ext_tags *tags)
 +{
-+	return YAFFS_OK;
++	return (tags->validity0 == 0xAAAAAAAA && tags->validity1 == 0x55555555);
++
 +}
-diff --git a/fs/yaffs2/yaffs_mtdif.h b/fs/yaffs2/yaffs_mtdif.h
+diff --git a/fs/yaffs2/yaffs_tagsvalidity.h b/fs/yaffs2/yaffs_tagsvalidity.h
 new file mode 100644
-index 0000000..6665074
+index 0000000..36a021f
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_mtdif.h
++++ b/fs/yaffs2/yaffs_tagsvalidity.h
 @@ -0,0 +1,23 @@
 +/*
 + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
@@ -127,624 +189,20 @@ index 0000000..6665074
 + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
 + */
 +
-+#ifndef __YAFFS_MTDIF_H__
-+#define __YAFFS_MTDIF_H__
++#ifndef __YAFFS_TAGS_VALIDITY_H__
++#define __YAFFS_TAGS_VALIDITY_H__
 +
 +#include "yaffs_guts.h"
 +
-+int nandmtd_erase_block(struct yaffs_dev *dev, int block_no);
-+int nandmtd_initialise(struct yaffs_dev *dev);
++void yaffs_init_tags(struct yaffs_ext_tags *tags);
++int yaffs_validate_tags(struct yaffs_ext_tags *tags);
 +#endif
-diff --git a/fs/yaffs2/yaffs_mtdif1.c b/fs/yaffs2/yaffs_mtdif1.c
+diff --git a/fs/yaffs2/yaffs_trace.h b/fs/yaffs2/yaffs_trace.h
 new file mode 100644
-index 0000000..a0bc04f
+index 0000000..8f632ff
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_mtdif1.c
-@@ -0,0 +1,331 @@
-+/*
-+ * YAFFS: Yet another FFS. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/*
-+ * This module provides the interface between yaffs_nand.c and the
-+ * MTD API.  This version is used when the MTD interface supports the
-+ * 'mtd_oob_ops' style calls to read_oob and write_oob, circa 2.6.17,
-+ * and we have small-page NAND device.
-+ *
-+ * These functions are invoked via function pointers in yaffs_nand.c.
-+ * This replaces functionality provided by functions in yaffs_mtdif.c
-+ * and the yaffs_tags compatability functions in yaffs_tagscompat.c that are
-+ * called in yaffs_mtdif.c when the function pointers are NULL.
-+ * We assume the MTD layer is performing ECC (use_nand_ecc is true).
-+ */
-+
-+#include "yportenv.h"
-+#include "yaffs_trace.h"
-+#include "yaffs_guts.h"
-+#include "yaffs_packedtags1.h"
-+#include "yaffs_tagscompat.h"	/* for yaffs_calc_tags_ecc */
-+#include "yaffs_linux.h"
-+
-+#include "linux/kernel.h"
-+#include "linux/version.h"
-+#include "linux/types.h"
-+#include "linux/mtd/mtd.h"
-+
-+#ifndef CONFIG_YAFFS_9BYTE_TAGS
-+# define YTAG1_SIZE 8
-+#else
-+# define YTAG1_SIZE 9
-+#endif
-+
-+/* Write a chunk (page) of data to NAND.
-+ *
-+ * Caller always provides ExtendedTags data which are converted to a more
-+ * compact (packed) form for storage in NAND.  A mini-ECC runs over the
-+ * contents of the tags meta-data; used to valid the tags when read.
-+ *
-+ *  - Pack ExtendedTags to packed_tags1 form
-+ *  - Compute mini-ECC for packed_tags1
-+ *  - Write data and packed tags to NAND.
-+ *
-+ * Note: Due to the use of the packed_tags1 meta-data which does not include
-+ * a full sequence number (as found in the larger packed_tags2 form) it is
-+ * necessary for Yaffs to re-write a chunk/page (just once) to mark it as
-+ * discarded and dirty.  This is not ideal: newer NAND parts are supposed
-+ * to be written just once.  When Yaffs performs this operation, this
-+ * function is called with a NULL data pointer -- calling MTD write_oob
-+ * without data is valid usage (2.6.17).
-+ *
-+ * Any underlying MTD error results in YAFFS_FAIL.
-+ * Returns YAFFS_OK or YAFFS_FAIL.
-+ */
-+int nandmtd1_write_chunk_tags(struct yaffs_dev *dev,
-+			      int nand_chunk, const u8 * data,
-+			      const struct yaffs_ext_tags *etags)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int chunk_bytes = dev->data_bytes_per_chunk;
-+	loff_t addr = ((loff_t) nand_chunk) * chunk_bytes;
-+	struct mtd_oob_ops ops;
-+	struct yaffs_packed_tags1 pt1;
-+	int retval;
-+
-+	/* we assume that packed_tags1 and struct yaffs_tags are compatible */
-+	compile_time_assertion(sizeof(struct yaffs_packed_tags1) == 12);
-+	compile_time_assertion(sizeof(struct yaffs_tags) == 8);
-+
-+	yaffs_pack_tags1(&pt1, etags);
-+	yaffs_calc_tags_ecc((struct yaffs_tags *)&pt1);
-+
-+	/* When deleting a chunk, the upper layer provides only skeletal
-+	 * etags, one with is_deleted set.  However, we need to update the
-+	 * tags, not erase them completely.  So we use the NAND write property
-+	 * that only zeroed-bits stick and set tag bytes to all-ones and
-+	 * zero just the (not) deleted bit.
-+	 */
-+#ifndef CONFIG_YAFFS_9BYTE_TAGS
-+	if (etags->is_deleted) {
-+		memset(&pt1, 0xff, 8);
-+		/* clear delete status bit to indicate deleted */
-+		pt1.deleted = 0;
-+	}
-+#else
-+	((u8 *) & pt1)[8] = 0xff;
-+	if (etags->is_deleted) {
-+		memset(&pt1, 0xff, 8);
-+		/* zero page_status byte to indicate deleted */
-+		((u8 *) & pt1)[8] = 0;
-+	}
-+#endif
-+
-+	memset(&ops, 0, sizeof(ops));
-+	ops.mode = MTD_OOB_AUTO;
-+	ops.len = (data) ? chunk_bytes : 0;
-+	ops.ooblen = YTAG1_SIZE;
-+	ops.datbuf = (u8 *) data;
-+	ops.oobbuf = (u8 *) & pt1;
-+
-+	retval = mtd->write_oob(mtd, addr, &ops);
-+	if (retval) {
-+		T(YAFFS_TRACE_MTD,
-+		  (TSTR("write_oob failed, chunk %d, mtd error %d" TENDSTR),
-+		   nand_chunk, retval));
-+	}
-+	return retval ? YAFFS_FAIL : YAFFS_OK;
-+}
-+
-+/* Return with empty ExtendedTags but add ecc_result.
-+ */
-+static int rettags(struct yaffs_ext_tags *etags, int ecc_result, int retval)
-+{
-+	if (etags) {
-+		memset(etags, 0, sizeof(*etags));
-+		etags->ecc_result = ecc_result;
-+	}
-+	return retval;
-+}
-+
-+/* Read a chunk (page) from NAND.
-+ *
-+ * Caller expects ExtendedTags data to be usable even on error; that is,
-+ * all members except ecc_result and block_bad are zeroed.
-+ *
-+ *  - Check ECC results for data (if applicable)
-+ *  - Check for blank/erased block (return empty ExtendedTags if blank)
-+ *  - Check the packed_tags1 mini-ECC (correct if necessary/possible)
-+ *  - Convert packed_tags1 to ExtendedTags
-+ *  - Update ecc_result and block_bad members to refect state.
-+ *
-+ * Returns YAFFS_OK or YAFFS_FAIL.
-+ */
-+int nandmtd1_read_chunk_tags(struct yaffs_dev *dev,
-+			     int nand_chunk, u8 * data,
-+			     struct yaffs_ext_tags *etags)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int chunk_bytes = dev->data_bytes_per_chunk;
-+	loff_t addr = ((loff_t) nand_chunk) * chunk_bytes;
-+	int eccres = YAFFS_ECC_RESULT_NO_ERROR;
-+	struct mtd_oob_ops ops;
-+	struct yaffs_packed_tags1 pt1;
-+	int retval;
-+	int deleted;
-+
-+	memset(&ops, 0, sizeof(ops));
-+	ops.mode = MTD_OOB_AUTO;
-+	ops.len = (data) ? chunk_bytes : 0;
-+	ops.ooblen = YTAG1_SIZE;
-+	ops.datbuf = data;
-+	ops.oobbuf = (u8 *) & pt1;
-+
-+	/* Read page and oob using MTD.
-+	 * Check status and determine ECC result.
-+	 */
-+	retval = mtd->read_oob(mtd, addr, &ops);
-+	if (retval) {
-+		T(YAFFS_TRACE_MTD,
-+		  (TSTR("read_oob failed, chunk %d, mtd error %d" TENDSTR),
-+		   nand_chunk, retval));
-+	}
-+
-+	switch (retval) {
-+	case 0:
-+		/* no error */
-+		break;
-+
-+	case -EUCLEAN:
-+		/* MTD's ECC fixed the data */
-+		eccres = YAFFS_ECC_RESULT_FIXED;
-+		dev->n_ecc_fixed++;
-+		break;
-+
-+	case -EBADMSG:
-+		/* MTD's ECC could not fix the data */
-+		dev->n_ecc_unfixed++;
-+		/* fall into... */
-+	default:
-+		rettags(etags, YAFFS_ECC_RESULT_UNFIXED, 0);
-+		etags->block_bad = (mtd->block_isbad) (mtd, addr);
-+		return YAFFS_FAIL;
-+	}
-+
-+	/* Check for a blank/erased chunk.
-+	 */
-+	if (yaffs_check_ff((u8 *) & pt1, 8)) {
-+		/* when blank, upper layers want ecc_result to be <= NO_ERROR */
-+		return rettags(etags, YAFFS_ECC_RESULT_NO_ERROR, YAFFS_OK);
-+	}
-+#ifndef CONFIG_YAFFS_9BYTE_TAGS
-+	/* Read deleted status (bit) then return it to it's non-deleted
-+	 * state before performing tags mini-ECC check. pt1.deleted is
-+	 * inverted.
-+	 */
-+	deleted = !pt1.deleted;
-+	pt1.deleted = 1;
-+#else
-+	deleted = (yaffs_count_bits(((u8 *) & pt1)[8]) < 7);
-+#endif
-+
-+	/* Check the packed tags mini-ECC and correct if necessary/possible.
-+	 */
-+	retval = yaffs_check_tags_ecc((struct yaffs_tags *)&pt1);
-+	switch (retval) {
-+	case 0:
-+		/* no tags error, use MTD result */
-+		break;
-+	case 1:
-+		/* recovered tags-ECC error */
-+		dev->n_tags_ecc_fixed++;
-+		if (eccres == YAFFS_ECC_RESULT_NO_ERROR)
-+			eccres = YAFFS_ECC_RESULT_FIXED;
-+		break;
-+	default:
-+		/* unrecovered tags-ECC error */
-+		dev->n_tags_ecc_unfixed++;
-+		return rettags(etags, YAFFS_ECC_RESULT_UNFIXED, YAFFS_FAIL);
-+	}
-+
-+	/* Unpack the tags to extended form and set ECC result.
-+	 * [set should_be_ff just to keep yaffs_unpack_tags1 happy]
-+	 */
-+	pt1.should_be_ff = 0xFFFFFFFF;
-+	yaffs_unpack_tags1(etags, &pt1);
-+	etags->ecc_result = eccres;
-+
-+	/* Set deleted state */
-+	etags->is_deleted = deleted;
-+	return YAFFS_OK;
-+}
-+
-+/* Mark a block bad.
-+ *
-+ * This is a persistant state.
-+ * Use of this function should be rare.
-+ *
-+ * Returns YAFFS_OK or YAFFS_FAIL.
-+ */
-+int nandmtd1_mark_block_bad(struct yaffs_dev *dev, int block_no)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int blocksize = dev->param.chunks_per_block * dev->data_bytes_per_chunk;
-+	int retval;
-+
-+	T(YAFFS_TRACE_BAD_BLOCKS,
-+	  (TSTR("marking block %d bad" TENDSTR), block_no));
-+
-+	retval = mtd->block_markbad(mtd, (loff_t) blocksize * block_no);
-+	return (retval) ? YAFFS_FAIL : YAFFS_OK;
-+}
-+
-+/* Check any MTD prerequists.
-+ *
-+ * Returns YAFFS_OK or YAFFS_FAIL.
-+ */
-+static int nandmtd1_test_prerequists(struct mtd_info *mtd)
-+{
-+	/* 2.6.18 has mtd->ecclayout->oobavail */
-+	/* 2.6.21 has mtd->ecclayout->oobavail and mtd->oobavail */
-+	int oobavail = mtd->ecclayout->oobavail;
-+
-+	if (oobavail < YTAG1_SIZE) {
-+		T(YAFFS_TRACE_ERROR,
-+		  (TSTR
-+		   ("mtd device has only %d bytes for tags, need %d" TENDSTR),
-+		   oobavail, YTAG1_SIZE));
-+		return YAFFS_FAIL;
-+	}
-+	return YAFFS_OK;
-+}
-+
-+/* Query for the current state of a specific block.
-+ *
-+ * Examine the tags of the first chunk of the block and return the state:
-+ *  - YAFFS_BLOCK_STATE_DEAD, the block is marked bad
-+ *  - YAFFS_BLOCK_STATE_NEEDS_SCANNING, the block is in use
-+ *  - YAFFS_BLOCK_STATE_EMPTY, the block is clean
-+ *
-+ * Always returns YAFFS_OK.
-+ */
-+int nandmtd1_query_block(struct yaffs_dev *dev, int block_no,
-+			 enum yaffs_block_state *state_ptr, u32 * seq_ptr)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int chunk_num = block_no * dev->param.chunks_per_block;
-+	loff_t addr = (loff_t) chunk_num * dev->data_bytes_per_chunk;
-+	struct yaffs_ext_tags etags;
-+	int state = YAFFS_BLOCK_STATE_DEAD;
-+	int seqnum = 0;
-+	int retval;
-+
-+	/* We don't yet have a good place to test for MTD config prerequists.
-+	 * Do it here as we are called during the initial scan.
-+	 */
-+	if (nandmtd1_test_prerequists(mtd) != YAFFS_OK)
-+		return YAFFS_FAIL;
-+
-+	retval = nandmtd1_read_chunk_tags(dev, chunk_num, NULL, &etags);
-+	etags.block_bad = (mtd->block_isbad) (mtd, addr);
-+	if (etags.block_bad) {
-+		T(YAFFS_TRACE_BAD_BLOCKS,
-+		  (TSTR("block %d is marked bad" TENDSTR), block_no));
-+		state = YAFFS_BLOCK_STATE_DEAD;
-+	} else if (etags.ecc_result != YAFFS_ECC_RESULT_NO_ERROR) {
-+		/* bad tags, need to look more closely */
-+		state = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
-+	} else if (etags.chunk_used) {
-+		state = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
-+		seqnum = etags.seq_number;
-+	} else {
-+		state = YAFFS_BLOCK_STATE_EMPTY;
-+	}
-+
-+	*state_ptr = state;
-+	*seq_ptr = seqnum;
-+
-+	/* query always succeeds */
-+	return YAFFS_OK;
-+}
-diff --git a/fs/yaffs2/yaffs_mtdif1.h b/fs/yaffs2/yaffs_mtdif1.h
-new file mode 100644
-index 0000000..07ce452
---- /dev/null
-+++ b/fs/yaffs2/yaffs_mtdif1.h
-@@ -0,0 +1,29 @@
-+/*
-+ * YAFFS: Yet another Flash File System. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License version 2.1 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-+ */
-+
-+#ifndef __YAFFS_MTDIF1_H__
-+#define __YAFFS_MTDIF1_H__
-+
-+int nandmtd1_write_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
-+			      const u8 * data,
-+			      const struct yaffs_ext_tags *tags);
-+
-+int nandmtd1_read_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
-+			     u8 * data, struct yaffs_ext_tags *tags);
-+
-+int nandmtd1_mark_block_bad(struct yaffs_dev *dev, int block_no);
-+
-+int nandmtd1_query_block(struct yaffs_dev *dev, int block_no,
-+			 enum yaffs_block_state *state, u32 * seq_number);
-+
-+#endif
-diff --git a/fs/yaffs2/yaffs_mtdif2.c b/fs/yaffs2/yaffs_mtdif2.c
-new file mode 100644
-index 0000000..0835078
---- /dev/null
-+++ b/fs/yaffs2/yaffs_mtdif2.c
-@@ -0,0 +1,226 @@
-+/*
-+ * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/* mtd interface for YAFFS2 */
-+
-+#include "yportenv.h"
-+#include "yaffs_trace.h"
-+
-+#include "yaffs_mtdif2.h"
-+
-+#include "linux/mtd/mtd.h"
-+#include "linux/types.h"
-+#include "linux/time.h"
-+
-+#include "yaffs_packedtags2.h"
-+
-+#include "yaffs_linux.h"
-+
-+/* NB For use with inband tags....
-+ * We assume that the data buffer is of size total_bytes_per_chunk so that we can also
-+ * use it to load the tags.
-+ */
-+int nandmtd2_write_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
-+			      const u8 * data,
-+			      const struct yaffs_ext_tags *tags)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	struct mtd_oob_ops ops;
-+	int retval = 0;
-+
-+	loff_t addr;
-+
-+	struct yaffs_packed_tags2 pt;
-+
-+	int packed_tags_size =
-+	    dev->param.no_tags_ecc ? sizeof(pt.t) : sizeof(pt);
-+	void *packed_tags_ptr =
-+	    dev->param.no_tags_ecc ? (void *)&pt.t : (void *)&pt;
-+
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR
-+	   ("nandmtd2_write_chunk_tags chunk %d data %p tags %p"
-+	    TENDSTR), nand_chunk, data, tags));
-+
-+	addr = ((loff_t) nand_chunk) * dev->param.total_bytes_per_chunk;
-+
-+	/* For yaffs2 writing there must be both data and tags.
-+	 * If we're using inband tags, then the tags are stuffed into
-+	 * the end of the data buffer.
-+	 */
-+	if (!data || !tags)
-+		BUG();
-+	else if (dev->param.inband_tags) {
-+		struct yaffs_packed_tags2_tags_only *pt2tp;
-+		pt2tp =
-+		    (struct yaffs_packed_tags2_tags_only *)(data +
-+							    dev->
-+							    data_bytes_per_chunk);
-+		yaffs_pack_tags2_tags_only(pt2tp, tags);
-+	} else {
-+		yaffs_pack_tags2(&pt, tags, !dev->param.no_tags_ecc);
-+        }
-+
-+	ops.mode = MTD_OOB_AUTO;
-+	ops.ooblen = (dev->param.inband_tags) ? 0 : packed_tags_size;
-+	ops.len = dev->param.total_bytes_per_chunk;
-+	ops.ooboffs = 0;
-+	ops.datbuf = (u8 *) data;
-+	ops.oobbuf = (dev->param.inband_tags) ? NULL : packed_tags_ptr;
-+	retval = mtd->write_oob(mtd, addr, &ops);
-+
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
-+}
-+
-+int nandmtd2_read_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
-+			     u8 * data, struct yaffs_ext_tags *tags)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	struct mtd_oob_ops ops;
-+
-+	size_t dummy;
-+	int retval = 0;
-+	int local_data = 0;
-+
-+	loff_t addr = ((loff_t) nand_chunk) * dev->param.total_bytes_per_chunk;
-+
-+	struct yaffs_packed_tags2 pt;
-+
-+	int packed_tags_size =
-+	    dev->param.no_tags_ecc ? sizeof(pt.t) : sizeof(pt);
-+	void *packed_tags_ptr =
-+	    dev->param.no_tags_ecc ? (void *)&pt.t : (void *)&pt;
-+
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR
-+	   ("nandmtd2_read_chunk_tags chunk %d data %p tags %p"
-+	    TENDSTR), nand_chunk, data, tags));
-+
-+	if (dev->param.inband_tags) {
-+
-+		if (!data) {
-+			local_data = 1;
-+			data = yaffs_get_temp_buffer(dev, __LINE__);
-+		}
-+
-+	}
-+
-+	if (dev->param.inband_tags || (data && !tags))
-+		retval = mtd->read(mtd, addr, dev->param.total_bytes_per_chunk,
-+				   &dummy, data);
-+	else if (tags) {
-+		ops.mode = MTD_OOB_AUTO;
-+		ops.ooblen = packed_tags_size;
-+		ops.len = data ? dev->data_bytes_per_chunk : packed_tags_size;
-+		ops.ooboffs = 0;
-+		ops.datbuf = data;
-+		ops.oobbuf = yaffs_dev_to_lc(dev)->spare_buffer;
-+		retval = mtd->read_oob(mtd, addr, &ops);
-+	}
-+
-+	if (dev->param.inband_tags) {
-+		if (tags) {
-+			struct yaffs_packed_tags2_tags_only *pt2tp;
-+			pt2tp =
-+			    (struct yaffs_packed_tags2_tags_only *)&data[dev->
-+									 data_bytes_per_chunk];
-+			yaffs_unpack_tags2_tags_only(tags, pt2tp);
-+		}
-+	} else {
-+		if (tags) {
-+			memcpy(packed_tags_ptr,
-+			       yaffs_dev_to_lc(dev)->spare_buffer,
-+			       packed_tags_size);
-+			yaffs_unpack_tags2(tags, &pt, !dev->param.no_tags_ecc);
-+		}
-+	}
-+
-+	if (local_data)
-+		yaffs_release_temp_buffer(dev, data, __LINE__);
-+
-+	if (tags && retval == -EBADMSG
-+	    && tags->ecc_result == YAFFS_ECC_RESULT_NO_ERROR) {
-+		tags->ecc_result = YAFFS_ECC_RESULT_UNFIXED;
-+		dev->n_ecc_unfixed++;
-+	}
-+	if (tags && retval == -EUCLEAN
-+	    && tags->ecc_result == YAFFS_ECC_RESULT_NO_ERROR) {
-+		tags->ecc_result = YAFFS_ECC_RESULT_FIXED;
-+		dev->n_ecc_fixed++;
-+	}
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
-+}
-+
-+int nandmtd2_mark_block_bad(struct yaffs_dev *dev, int block_no)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int retval;
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR("nandmtd2_mark_block_bad %d" TENDSTR), block_no));
-+
-+	retval =
-+	    mtd->block_markbad(mtd,
-+			       block_no * dev->param.chunks_per_block *
-+			       dev->param.total_bytes_per_chunk);
-+
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
-+
-+}
-+
-+int nandmtd2_query_block(struct yaffs_dev *dev, int block_no,
-+			 enum yaffs_block_state *state, u32 * seq_number)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int retval;
-+
-+	T(YAFFS_TRACE_MTD, (TSTR("nandmtd2_query_block %d" TENDSTR), block_no));
-+	retval =
-+	    mtd->block_isbad(mtd,
-+			     block_no * dev->param.chunks_per_block *
-+			     dev->param.total_bytes_per_chunk);
-+
-+	if (retval) {
-+		T(YAFFS_TRACE_MTD, (TSTR("block is bad" TENDSTR)));
-+
-+		*state = YAFFS_BLOCK_STATE_DEAD;
-+		*seq_number = 0;
-+	} else {
-+		struct yaffs_ext_tags t;
-+		nandmtd2_read_chunk_tags(dev, block_no *
-+					 dev->param.chunks_per_block, NULL, &t);
-+
-+		if (t.chunk_used) {
-+			*seq_number = t.seq_number;
-+			*state = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
-+		} else {
-+			*seq_number = 0;
-+			*state = YAFFS_BLOCK_STATE_EMPTY;
-+		}
-+	}
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR("block is bad seq %d state %d" TENDSTR), *seq_number, *state));
-+
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
-+}
-diff --git a/fs/yaffs2/yaffs_mtdif2.h b/fs/yaffs2/yaffs_mtdif2.h
-new file mode 100644
-index 0000000..d821126
---- /dev/null
-+++ b/fs/yaffs2/yaffs_mtdif2.h
-@@ -0,0 +1,29 @@
++++ b/fs/yaffs2/yaffs_trace.h
+@@ -0,0 +1,59 @@
 +/*
 + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
 + *
@@ -760,26 +218,56 @@ index 0000000..d821126
 + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
 + */
 +
-+#ifndef __YAFFS_MTDIF2_H__
-+#define __YAFFS_MTDIF2_H__
++#ifndef __YTRACE_H__
++#define __YTRACE_H__
 +
-+#include "yaffs_guts.h"
-+int nandmtd2_write_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
-+			      const u8 * data,
-+			      const struct yaffs_ext_tags *tags);
-+int nandmtd2_read_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
-+			     u8 * data, struct yaffs_ext_tags *tags);
-+int nandmtd2_mark_block_bad(struct yaffs_dev *dev, int block_no);
-+int nandmtd2_query_block(struct yaffs_dev *dev, int block_no,
-+			 enum yaffs_block_state *state, u32 * seq_number);
++extern unsigned int yaffs_trace_mask;
++extern unsigned int yaffs_wr_attempts;
++
++/*
++ * Tracing flags.
++ * The flags masked in YAFFS_TRACE_ALWAYS are always traced.
++ */
++
++#define YAFFS_TRACE_OS			0x00000002
++#define YAFFS_TRACE_ALLOCATE		0x00000004
++#define YAFFS_TRACE_SCAN		0x00000008
++#define YAFFS_TRACE_BAD_BLOCKS		0x00000010
++#define YAFFS_TRACE_ERASE		0x00000020
++#define YAFFS_TRACE_GC			0x00000040
++#define YAFFS_TRACE_WRITE		0x00000080
++#define YAFFS_TRACE_TRACING		0x00000100
++#define YAFFS_TRACE_DELETION		0x00000200
++#define YAFFS_TRACE_BUFFERS		0x00000400
++#define YAFFS_TRACE_NANDACCESS		0x00000800
++#define YAFFS_TRACE_GC_DETAIL		0x00001000
++#define YAFFS_TRACE_SCAN_DEBUG		0x00002000
++#define YAFFS_TRACE_MTD			0x00004000
++#define YAFFS_TRACE_CHECKPOINT		0x00008000
++
++#define YAFFS_TRACE_VERIFY		0x00010000
++#define YAFFS_TRACE_VERIFY_NAND		0x00020000
++#define YAFFS_TRACE_VERIFY_FULL		0x00040000
++#define YAFFS_TRACE_VERIFY_ALL		0x000F0000
++
++#define YAFFS_TRACE_SYNC		0x00100000
++#define YAFFS_TRACE_BACKGROUND		0x00200000
++#define YAFFS_TRACE_LOCK		0x00400000
++#define YAFFS_TRACE_MOUNT		0x00800000
++
++#define YAFFS_TRACE_ERROR		0x40000000
++#define YAFFS_TRACE_BUG			0x80000000
++#define YAFFS_TRACE_ALWAYS		0xF0000000
++
++#define T(mask, p) do { if ((mask) & (yaffs_trace_mask | YAFFS_TRACE_ALWAYS)) TOUT(p); } while (0)
 +
 +#endif
-diff --git a/fs/yaffs2/yaffs_nand.c b/fs/yaffs2/yaffs_nand.c
+diff --git a/fs/yaffs2/yaffs_verify.c b/fs/yaffs2/yaffs_verify.c
 new file mode 100644
-index 0000000..84ab0f0
+index 0000000..fee3a1e
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_nand.c
-@@ -0,0 +1,128 @@
++++ b/fs/yaffs2/yaffs_verify.c
+@@ -0,0 +1,546 @@
 +/*
 + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
 + *
@@ -793,127 +281,545 @@ index 0000000..84ab0f0
 + * published by the Free Software Foundation.
 + */
 +
-+#include "yaffs_nand.h"
-+#include "yaffs_tagscompat.h"
-+#include "yaffs_tagsvalidity.h"
-+
++#include "yaffs_verify.h"
++#include "yaffs_trace.h"
++#include "yaffs_bitmap.h"
 +#include "yaffs_getblockinfo.h"
++#include "yaffs_nand.h"
 +
-+int yaffs_rd_chunk_tags_nand(struct yaffs_dev *dev, int nand_chunk,
-+			     u8 * buffer, struct yaffs_ext_tags *tags)
++int yaffs_skip_verification(struct yaffs_dev *dev)
 +{
-+	int result;
-+	struct yaffs_ext_tags local_tags;
-+
-+	int realigned_chunk = nand_chunk - dev->chunk_offset;
-+
-+	dev->n_page_reads++;
-+
-+	/* If there are no tags provided, use local tags to get prioritised gc working */
-+	if (!tags)
-+		tags = &local_tags;
-+
-+	if (dev->param.read_chunk_tags_fn)
-+		result =
-+		    dev->param.read_chunk_tags_fn(dev, realigned_chunk, buffer,
-+						  tags);
-+	else
-+		result = yaffs_tags_compat_rd(dev,
-+					      realigned_chunk, buffer, tags);
-+	if (tags && tags->ecc_result > YAFFS_ECC_RESULT_NO_ERROR) {
-+
-+		struct yaffs_block_info *bi;
-+		bi = yaffs_get_block_info(dev,
-+					  nand_chunk /
-+					  dev->param.chunks_per_block);
-+		yaffs_handle_chunk_error(dev, bi);
-+	}
-+
-+	return result;
++	dev = dev;
++	return !(yaffs_trace_mask &
++		 (YAFFS_TRACE_VERIFY | YAFFS_TRACE_VERIFY_FULL));
 +}
 +
-+int yaffs_wr_chunk_tags_nand(struct yaffs_dev *dev,
-+			     int nand_chunk,
-+			     const u8 * buffer, struct yaffs_ext_tags *tags)
++static int yaffs_skip_full_verification(struct yaffs_dev *dev)
 +{
++	dev = dev;
++	return !(yaffs_trace_mask & (YAFFS_TRACE_VERIFY_FULL));
++}
 +
-+	dev->n_page_writes++;
++static int yaffs_skip_nand_verification(struct yaffs_dev *dev)
++{
++	dev = dev;
++	return !(yaffs_trace_mask & (YAFFS_TRACE_VERIFY_NAND));
++}
 +
-+	nand_chunk -= dev->chunk_offset;
++static const char *block_state_name[] = {
++	"Unknown",
++	"Needs scanning",
++	"Scanning",
++	"Empty",
++	"Allocating",
++	"Full",
++	"Dirty",
++	"Checkpoint",
++	"Collecting",
++	"Dead"
++};
 +
-+	if (tags) {
-+		tags->seq_number = dev->seq_number;
-+		tags->chunk_used = 1;
-+		if (!yaffs_validate_tags(tags)) {
-+			T(YAFFS_TRACE_ERROR,
-+			  (TSTR("Writing uninitialised tags" TENDSTR)));
-+			YBUG();
++void yaffs_verify_blk(struct yaffs_dev *dev, struct yaffs_block_info *bi, int n)
++{
++	int actually_used;
++	int in_use;
++
++	if (yaffs_skip_verification(dev))
++		return;
++
++	/* Report illegal runtime states */
++	if (bi->block_state >= YAFFS_NUMBER_OF_BLOCK_STATES)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Block %d has undefined state %d" TENDSTR), n,
++		   bi->block_state));
++
++	switch (bi->block_state) {
++	case YAFFS_BLOCK_STATE_UNKNOWN:
++	case YAFFS_BLOCK_STATE_SCANNING:
++	case YAFFS_BLOCK_STATE_NEEDS_SCANNING:
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Block %d has bad run-state %s" TENDSTR), n,
++		   block_state_name[bi->block_state]));
++	}
++
++	/* Check pages in use and soft deletions are legal */
++
++	actually_used = bi->pages_in_use - bi->soft_del_pages;
++
++	if (bi->pages_in_use < 0
++	    || bi->pages_in_use > dev->param.chunks_per_block
++	    || bi->soft_del_pages < 0
++	    || bi->soft_del_pages > dev->param.chunks_per_block
++	    || actually_used < 0 || actually_used > dev->param.chunks_per_block)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR
++		   ("Block %d has illegal values pages_in_used %d soft_del_pages %d"
++		    TENDSTR), n, bi->pages_in_use, bi->soft_del_pages));
++
++	/* Check chunk bitmap legal */
++	in_use = yaffs_count_chunk_bits(dev, n);
++	if (in_use != bi->pages_in_use)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR
++		   ("Block %d has inconsistent values pages_in_use %d counted chunk bits %d"
++		    TENDSTR), n, bi->pages_in_use, in_use));
++
++}
++
++void yaffs_verify_collected_blk(struct yaffs_dev *dev,
++				struct yaffs_block_info *bi, int n)
++{
++	yaffs_verify_blk(dev, bi, n);
++
++	/* After collection the block should be in the erased state */
++
++	if (bi->block_state != YAFFS_BLOCK_STATE_COLLECTING &&
++	    bi->block_state != YAFFS_BLOCK_STATE_EMPTY) {
++		T(YAFFS_TRACE_ERROR,
++		  (TSTR
++		   ("Block %d is in state %d after gc, should be erased"
++		    TENDSTR), n, bi->block_state));
++	}
++}
++
++void yaffs_verify_blocks(struct yaffs_dev *dev)
++{
++	int i;
++	int state_count[YAFFS_NUMBER_OF_BLOCK_STATES];
++	int illegal_states = 0;
++
++	if (yaffs_skip_verification(dev))
++		return;
++
++	memset(state_count, 0, sizeof(state_count));
++
++	for (i = dev->internal_start_block; i <= dev->internal_end_block; i++) {
++		struct yaffs_block_info *bi = yaffs_get_block_info(dev, i);
++		yaffs_verify_blk(dev, bi, i);
++
++		if (bi->block_state < YAFFS_NUMBER_OF_BLOCK_STATES)
++			state_count[bi->block_state]++;
++		else
++			illegal_states++;
++	}
++
++	T(YAFFS_TRACE_VERIFY, (TSTR("" TENDSTR)));
++	T(YAFFS_TRACE_VERIFY, (TSTR("Block summary" TENDSTR)));
++
++	T(YAFFS_TRACE_VERIFY,
++	  (TSTR("%d blocks have illegal states" TENDSTR), illegal_states));
++	if (state_count[YAFFS_BLOCK_STATE_ALLOCATING] > 1)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Too many allocating blocks" TENDSTR)));
++
++	for (i = 0; i < YAFFS_NUMBER_OF_BLOCK_STATES; i++)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("%s %d blocks" TENDSTR),
++		   block_state_name[i], state_count[i]));
++
++	if (dev->blocks_in_checkpt != state_count[YAFFS_BLOCK_STATE_CHECKPOINT])
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Checkpoint block count wrong dev %d count %d" TENDSTR),
++		   dev->blocks_in_checkpt,
++		   state_count[YAFFS_BLOCK_STATE_CHECKPOINT]));
++
++	if (dev->n_erased_blocks != state_count[YAFFS_BLOCK_STATE_EMPTY])
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Erased block count wrong dev %d count %d" TENDSTR),
++		   dev->n_erased_blocks, state_count[YAFFS_BLOCK_STATE_EMPTY]));
++
++	if (state_count[YAFFS_BLOCK_STATE_COLLECTING] > 1)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Too many collecting blocks %d (max is 1)" TENDSTR),
++		   state_count[YAFFS_BLOCK_STATE_COLLECTING]));
++
++	T(YAFFS_TRACE_VERIFY, (TSTR("" TENDSTR)));
++
++}
++
++/*
++ * Verify the object header. oh must be valid, but obj and tags may be NULL in which
++ * case those tests will not be performed.
++ */
++void yaffs_verify_oh(struct yaffs_obj *obj, struct yaffs_obj_hdr *oh,
++		     struct yaffs_ext_tags *tags, int parent_check)
++{
++	if (obj && yaffs_skip_verification(obj->my_dev))
++		return;
++
++	if (!(tags && obj && oh)) {
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Verifying object header tags %p obj %p oh %p" TENDSTR),
++		   tags, obj, oh));
++		return;
++	}
++
++	if (oh->type <= YAFFS_OBJECT_TYPE_UNKNOWN ||
++	    oh->type > YAFFS_OBJECT_TYPE_MAX)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d header type is illegal value 0x%x" TENDSTR),
++		   tags->obj_id, oh->type));
++
++	if (tags->obj_id != obj->obj_id)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d header mismatch obj_id %d" TENDSTR),
++		   tags->obj_id, obj->obj_id));
++
++	/*
++	 * Check that the object's parent ids match if parent_check requested.
++	 *
++	 * Tests do not apply to the root object.
++	 */
++
++	if (parent_check && tags->obj_id > 1 && !obj->parent)
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR
++		   ("Obj %d header mismatch parent_id %d obj->parent is NULL"
++		    TENDSTR), tags->obj_id, oh->parent_obj_id));
++
++	if (parent_check && obj->parent &&
++	    oh->parent_obj_id != obj->parent->obj_id &&
++	    (oh->parent_obj_id != YAFFS_OBJECTID_UNLINKED ||
++	     obj->parent->obj_id != YAFFS_OBJECTID_DELETED))
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR
++		   ("Obj %d header mismatch parent_id %d parent_obj_id %d"
++		    TENDSTR), tags->obj_id, oh->parent_obj_id,
++		   obj->parent->obj_id));
++
++	if (tags->obj_id > 1 && oh->name[0] == 0)	/* Null name */
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d header name is NULL" TENDSTR), obj->obj_id));
++
++	if (tags->obj_id > 1 && ((u8) (oh->name[0])) == 0xff)	/* Trashed name */
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d header name is 0xFF" TENDSTR), obj->obj_id));
++}
++
++void yaffs_verify_file(struct yaffs_obj *obj)
++{
++	int required_depth;
++	int actual_depth;
++	u32 last_chunk;
++	u32 x;
++	u32 i;
++	struct yaffs_dev *dev;
++	struct yaffs_ext_tags tags;
++	struct yaffs_tnode *tn;
++	u32 obj_id;
++
++	if (!obj)
++		return;
++
++	if (yaffs_skip_verification(obj->my_dev))
++		return;
++
++	dev = obj->my_dev;
++	obj_id = obj->obj_id;
++
++	/* Check file size is consistent with tnode depth */
++	last_chunk =
++	    obj->variant.file_variant.file_size / dev->data_bytes_per_chunk + 1;
++	x = last_chunk >> YAFFS_TNODES_LEVEL0_BITS;
++	required_depth = 0;
++	while (x > 0) {
++		x >>= YAFFS_TNODES_INTERNAL_BITS;
++		required_depth++;
++	}
++
++	actual_depth = obj->variant.file_variant.top_level;
++
++	/* Check that the chunks in the tnode tree are all correct.
++	 * We do this by scanning through the tnode tree and
++	 * checking the tags for every chunk match.
++	 */
++
++	if (yaffs_skip_nand_verification(dev))
++		return;
++
++	for (i = 1; i <= last_chunk; i++) {
++		tn = yaffs_find_tnode_0(dev, &obj->variant.file_variant, i);
++
++		if (tn) {
++			u32 the_chunk = yaffs_get_group_base(dev, tn, i);
++			if (the_chunk > 0) {
++				/* T(~0,(TSTR("verifying (%d:%d) %d"TENDSTR),obj_id,i,the_chunk)); */
++				yaffs_rd_chunk_tags_nand(dev, the_chunk, NULL,
++							 &tags);
++				if (tags.obj_id != obj_id || tags.chunk_id != i) {
++					T(~0,
++					  (TSTR
++					   ("Object %d chunk_id %d NAND mismatch chunk %d tags (%d:%d)"
++					    TENDSTR), obj_id, i, the_chunk,
++					   tags.obj_id, tags.chunk_id));
++				}
++			}
 +		}
-+		T(YAFFS_TRACE_WRITE,
-+		  (TSTR("Writing chunk %d tags %d %d" TENDSTR), nand_chunk,
-+		   tags->obj_id, tags->chunk_id));
-+	} else {
-+		T(YAFFS_TRACE_ERROR, (TSTR("Writing with no tags" TENDSTR)));
++	}
++}
++
++void yaffs_verify_link(struct yaffs_obj *obj)
++{
++	if (obj && yaffs_skip_verification(obj->my_dev))
++		return;
++
++	/* Verify sane equivalent object */
++}
++
++void yaffs_verify_symlink(struct yaffs_obj *obj)
++{
++	if (obj && yaffs_skip_verification(obj->my_dev))
++		return;
++
++	/* Verify symlink string */
++}
++
++void yaffs_verify_special(struct yaffs_obj *obj)
++{
++	if (obj && yaffs_skip_verification(obj->my_dev))
++		return;
++}
++
++void yaffs_verify_obj(struct yaffs_obj *obj)
++{
++	struct yaffs_dev *dev;
++
++	u32 chunk_min;
++	u32 chunk_max;
++
++	u32 chunk_id_ok;
++	u32 chunk_in_range;
++	u32 chunk_wrongly_deleted;
++	u32 chunk_valid;
++
++	if (!obj)
++		return;
++
++	if (obj->being_created)
++		return;
++
++	dev = obj->my_dev;
++
++	if (yaffs_skip_verification(dev))
++		return;
++
++	/* Check sane object header chunk */
++
++	chunk_min = dev->internal_start_block * dev->param.chunks_per_block;
++	chunk_max =
++	    (dev->internal_end_block + 1) * dev->param.chunks_per_block - 1;
++
++	chunk_in_range = (((unsigned)(obj->hdr_chunk)) >= chunk_min &&
++			  ((unsigned)(obj->hdr_chunk)) <= chunk_max);
++	chunk_id_ok = chunk_in_range || (obj->hdr_chunk == 0);
++	chunk_valid = chunk_in_range &&
++	    yaffs_check_chunk_bit(dev,
++				  obj->hdr_chunk / dev->param.chunks_per_block,
++				  obj->hdr_chunk % dev->param.chunks_per_block);
++	chunk_wrongly_deleted = chunk_in_range && !chunk_valid;
++
++	if (!obj->fake && (!chunk_id_ok || chunk_wrongly_deleted)) {
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d has chunk_id %d %s %s" TENDSTR),
++		   obj->obj_id, obj->hdr_chunk,
++		   chunk_id_ok ? "" : ",out of range",
++		   chunk_wrongly_deleted ? ",marked as deleted" : ""));
++	}
++
++	if (chunk_valid && !yaffs_skip_nand_verification(dev)) {
++		struct yaffs_ext_tags tags;
++		struct yaffs_obj_hdr *oh;
++		u8 *buffer = yaffs_get_temp_buffer(dev, __LINE__);
++
++		oh = (struct yaffs_obj_hdr *)buffer;
++
++		yaffs_rd_chunk_tags_nand(dev, obj->hdr_chunk, buffer, &tags);
++
++		yaffs_verify_oh(obj, oh, &tags, 1);
++
++		yaffs_release_temp_buffer(dev, buffer, __LINE__);
++	}
++
++	/* Verify it has a parent */
++	if (obj && !obj->fake && (!obj->parent || obj->parent->my_dev != dev)) {
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR
++		   ("Obj %d has parent pointer %p which does not look like an object"
++		    TENDSTR), obj->obj_id, obj->parent));
++	}
++
++	/* Verify parent is a directory */
++	if (obj->parent
++	    && obj->parent->variant_type != YAFFS_OBJECT_TYPE_DIRECTORY) {
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d's parent is not a directory (type %d)" TENDSTR),
++		   obj->obj_id, obj->parent->variant_type));
++	}
++
++	switch (obj->variant_type) {
++	case YAFFS_OBJECT_TYPE_FILE:
++		yaffs_verify_file(obj);
++		break;
++	case YAFFS_OBJECT_TYPE_SYMLINK:
++		yaffs_verify_symlink(obj);
++		break;
++	case YAFFS_OBJECT_TYPE_DIRECTORY:
++		yaffs_verify_dir(obj);
++		break;
++	case YAFFS_OBJECT_TYPE_HARDLINK:
++		yaffs_verify_link(obj);
++		break;
++	case YAFFS_OBJECT_TYPE_SPECIAL:
++		yaffs_verify_special(obj);
++		break;
++	case YAFFS_OBJECT_TYPE_UNKNOWN:
++	default:
++		T(YAFFS_TRACE_VERIFY,
++		  (TSTR("Obj %d has illegaltype %d" TENDSTR),
++		   obj->obj_id, obj->variant_type));
++		break;
++	}
++}
++
++void yaffs_verify_objects(struct yaffs_dev *dev)
++{
++	struct yaffs_obj *obj;
++	int i;
++	struct list_head *lh;
++
++	if (yaffs_skip_verification(dev))
++		return;
++
++	/* Iterate through the objects in each hash entry */
++
++	for (i = 0; i < YAFFS_NOBJECT_BUCKETS; i++) {
++		list_for_each(lh, &dev->obj_bucket[i].list) {
++			if (lh) {
++				obj =
++				    list_entry(lh, struct yaffs_obj, hash_link);
++				yaffs_verify_obj(obj);
++			}
++		}
++	}
++}
++
++void yaffs_verify_obj_in_dir(struct yaffs_obj *obj)
++{
++	struct list_head *lh;
++	struct yaffs_obj *list_obj;
++
++	int count = 0;
++
++	if (!obj) {
++		T(YAFFS_TRACE_ALWAYS, (TSTR("No object to verify" TENDSTR)));
++		YBUG();
++		return;
++	}
++
++	if (yaffs_skip_verification(obj->my_dev))
++		return;
++
++	if (!obj->parent) {
++		T(YAFFS_TRACE_ALWAYS,
++		  (TSTR("Object does not have parent" TENDSTR)));
++		YBUG();
++		return;
++	}
++
++	if (obj->parent->variant_type != YAFFS_OBJECT_TYPE_DIRECTORY) {
++		T(YAFFS_TRACE_ALWAYS,
++		  (TSTR("Parent is not directory" TENDSTR)));
 +		YBUG();
 +	}
 +
-+	if (dev->param.write_chunk_tags_fn)
-+		return dev->param.write_chunk_tags_fn(dev, nand_chunk, buffer,
-+						      tags);
-+	else
-+		return yaffs_tags_compat_wr(dev, nand_chunk, buffer, tags);
++	/* Iterate through the objects in each hash entry */
++
++	list_for_each(lh, &obj->parent->variant.dir_variant.children) {
++		if (lh) {
++			list_obj = list_entry(lh, struct yaffs_obj, siblings);
++			yaffs_verify_obj(list_obj);
++			if (obj == list_obj)
++				count++;
++		}
++	}
++
++	if (count != 1) {
++		T(YAFFS_TRACE_ALWAYS,
++		  (TSTR("Object in directory %d times" TENDSTR), count));
++		YBUG();
++	}
 +}
 +
-+int yaffs_mark_bad(struct yaffs_dev *dev, int block_no)
++void yaffs_verify_dir(struct yaffs_obj *directory)
 +{
-+	block_no -= dev->block_offset;
++	struct list_head *lh;
++	struct yaffs_obj *list_obj;
 +
-+	if (dev->param.bad_block_fn)
-+		return dev->param.bad_block_fn(dev, block_no);
-+	else
-+		return yaffs_tags_compat_mark_bad(dev, block_no);
++	if (!directory) {
++		YBUG();
++		return;
++	}
++
++	if (yaffs_skip_full_verification(directory->my_dev))
++		return;
++
++	if (directory->variant_type != YAFFS_OBJECT_TYPE_DIRECTORY) {
++		T(YAFFS_TRACE_ALWAYS,
++		  (TSTR("Directory has wrong type: %d" TENDSTR),
++		   directory->variant_type));
++		YBUG();
++	}
++
++	/* Iterate through the objects in each hash entry */
++
++	list_for_each(lh, &directory->variant.dir_variant.children) {
++		if (lh) {
++			list_obj = list_entry(lh, struct yaffs_obj, siblings);
++			if (list_obj->parent != directory) {
++				T(YAFFS_TRACE_ALWAYS,
++				  (TSTR
++				   ("Object in directory list has wrong parent %p"
++				    TENDSTR), list_obj->parent));
++				YBUG();
++			}
++			yaffs_verify_obj_in_dir(list_obj);
++		}
++	}
 +}
 +
-+int yaffs_query_init_block_state(struct yaffs_dev *dev,
-+				 int block_no,
-+				 enum yaffs_block_state *state,
-+				 u32 * seq_number)
-+{
-+	block_no -= dev->block_offset;
++static int yaffs_free_verification_failures;
 +
-+	if (dev->param.query_block_fn)
-+		return dev->param.query_block_fn(dev, block_no, state,
-+						 seq_number);
-+	else
-+		return yaffs_tags_compat_query_block(dev, block_no,
-+						     state, seq_number);
++void yaffs_verify_free_chunks(struct yaffs_dev *dev)
++{
++	int counted;
++	int difference;
++
++	if (yaffs_skip_verification(dev))
++		return;
++
++	counted = yaffs_count_free_chunks(dev);
++
++	difference = dev->n_free_chunks - counted;
++
++	if (difference) {
++		T(YAFFS_TRACE_ALWAYS,
++		  (TSTR("Freechunks verification failure %d %d %d" TENDSTR),
++		   dev->n_free_chunks, counted, difference));
++		yaffs_free_verification_failures++;
++	}
 +}
 +
-+int yaffs_erase_block(struct yaffs_dev *dev, int flash_block)
++int yaffs_verify_file_sane(struct yaffs_obj *in)
 +{
-+	int result;
-+
-+	flash_block -= dev->block_offset;
-+
-+	dev->n_erasures++;
-+
-+	result = dev->param.erase_fn(dev, flash_block);
-+
-+	return result;
-+}
-+
-+int yaffs_init_nand(struct yaffs_dev *dev)
-+{
-+	if (dev->param.initialise_flash_fn)
-+		return dev->param.initialise_flash_fn(dev);
++	in = in;
 +	return YAFFS_OK;
 +}
-diff --git a/fs/yaffs2/yaffs_nand.h b/fs/yaffs2/yaffs_nand.h
+diff --git a/fs/yaffs2/yaffs_verify.h b/fs/yaffs2/yaffs_verify.h
 new file mode 100644
-index 0000000..543f198
+index 0000000..cc6f889
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_nand.h
-@@ -0,0 +1,38 @@
++++ b/fs/yaffs2/yaffs_verify.h
+@@ -0,0 +1,43 @@
 +/*
 + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
 + *
@@ -929,27 +835,129 @@ index 0000000..543f198
 + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
 + */
 +
-+#ifndef __YAFFS_NAND_H__
-+#define __YAFFS_NAND_H__
++#ifndef __YAFFS_VERIFY_H__
++#define __YAFFS_VERIFY_H__
++
 +#include "yaffs_guts.h"
 +
-+int yaffs_rd_chunk_tags_nand(struct yaffs_dev *dev, int nand_chunk,
-+			     u8 * buffer, struct yaffs_ext_tags *tags);
++void yaffs_verify_blk(struct yaffs_dev *dev, struct yaffs_block_info *bi,
++		      int n);
++void yaffs_verify_collected_blk(struct yaffs_dev *dev,
++				struct yaffs_block_info *bi, int n);
++void yaffs_verify_blocks(struct yaffs_dev *dev);
 +
-+int yaffs_wr_chunk_tags_nand(struct yaffs_dev *dev,
-+			     int nand_chunk,
-+			     const u8 * buffer, struct yaffs_ext_tags *tags);
++void yaffs_verify_oh(struct yaffs_obj *obj, struct yaffs_obj_hdr *oh,
++		     struct yaffs_ext_tags *tags, int parent_check);
++void yaffs_verify_file(struct yaffs_obj *obj);
++void yaffs_verify_link(struct yaffs_obj *obj);
++void yaffs_verify_symlink(struct yaffs_obj *obj);
++void yaffs_verify_special(struct yaffs_obj *obj);
++void yaffs_verify_obj(struct yaffs_obj *obj);
++void yaffs_verify_objects(struct yaffs_dev *dev);
++void yaffs_verify_obj_in_dir(struct yaffs_obj *obj);
++void yaffs_verify_dir(struct yaffs_obj *directory);
++void yaffs_verify_free_chunks(struct yaffs_dev *dev);
 +
-+int yaffs_mark_bad(struct yaffs_dev *dev, int block_no);
++int yaffs_verify_file_sane(struct yaffs_obj *obj);
 +
-+int yaffs_query_init_block_state(struct yaffs_dev *dev,
-+				 int block_no,
-+				 enum yaffs_block_state *state,
-+				 unsigned *seq_number);
++int yaffs_skip_verification(struct yaffs_dev *dev);
 +
-+int yaffs_erase_block(struct yaffs_dev *dev, int flash_block);
++#endif
+diff --git a/fs/yaffs2/yportenv.h b/fs/yaffs2/yportenv.h
+new file mode 100644
+index 0000000..8fd0da5
+--- /dev/null
++++ b/fs/yaffs2/yportenv.h
+@@ -0,0 +1,91 @@
++/*
++ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
++ *
++ * Copyright (C) 2002-2010 Aleph One Ltd.
++ *   for Toby Churchill Ltd and Brightstar Engineering
++ *
++ * Created by Charles Manning <charles@aleph1.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU Lesser General Public License version 2.1 as
++ * published by the Free Software Foundation.
++ *
++ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
++ */
 +
-+int yaffs_init_nand(struct yaffs_dev *dev);
++#ifndef __YPORTENV_LINUX_H__
++#define __YPORTENV_LINUX_H__
++
++#include <linux/version.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/sched.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/vmalloc.h>
++#include <linux/xattr.h>
++#include <linux/list.h>
++#include <linux/types.h>
++#include <linux/fs.h>
++#include <linux/stat.h>
++#include <linux/sort.h>
++#include <linux/bitops.h>
++
++#define YCHAR char
++#define YUCHAR unsigned char
++#define _Y(x)     x
++#define yaffs_strcat(a, b)     strcat(a, b)
++#define yaffs_strcpy(a, b)     strcpy(a, b)
++#define yaffs_strncpy(a, b, c) strncpy(a, b, c)
++#define yaffs_strncmp(a, b, c) strncmp(a, b, c)
++#define yaffs_strnlen(s,m)	strnlen(s,m)
++#define yaffs_sprintf	       sprintf
++#define yaffs_toupper(a)       toupper(a)
++
++#define yaffs_sort(base, n, sz, cmp_fn)	sort(base, n, sz, cmp_fn, NULL)
++
++#define Y_INLINE __inline__
++
++#define YAFFS_LOSTNFOUND_NAME		"lost+found"
++#define YAFFS_LOSTNFOUND_PREFIX		"obj"
++
++#define YMALLOC(x) kmalloc(x, GFP_NOFS)
++#define YFREE(x)   kfree(x)
++#define YMALLOC_ALT(x) vmalloc(x)
++#define YFREE_ALT(x)   vfree(x)
++#define YMALLOC_DMA(x) YMALLOC(x)
++
++#define YYIELD() schedule()
++#define Y_DUMP_STACK() dump_stack()
++
++#define YAFFS_ROOT_MODE			0755
++#define YAFFS_LOSTNFOUND_MODE		0700
++
++#define Y_CURRENT_TIME CURRENT_TIME.tv_sec
++#define Y_TIME_CONVERT(x) (x).tv_sec
++
++#define yaffs_sum_cmp(x, y) ((x) == (y))
++#define yaffs_strcmp(a, b) strcmp(a, b)
++
++#define TENDSTR "\n"
++#define TSTR(x) KERN_DEBUG x
++#define TCONT(x) x
++#define TOUT(p) printk p
++
++#define compile_time_assertion(assertion) \
++	({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
++
++#ifndef Y_DUMP_STACK
++#define Y_DUMP_STACK() do { } while (0)
++#endif
++
++#ifndef YBUG
++#define YBUG() do {\
++	T(YAFFS_TRACE_BUG,\
++		(TSTR("==>> yaffs bug: " __FILE__ " %d" TENDSTR),\
++		__LINE__));\
++	Y_DUMP_STACK();\
++} while (0)
++#endif
 +
 +#endif
 -- 
