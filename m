@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab0K3AZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 19:25:29 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56556 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab0K3AZ1 convert rfc822-to-8bit (ORCPT
+	id S1755948Ab0K3AhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 19:37:03 -0500
+Received: from eastrmmtai108.cox.net ([68.230.240.27]:56845 "EHLO
+	eastrmmtai108.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337Ab0K3AhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 19:25:27 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux.com>
-Subject: Re: Free memory never fully used, swapping
-Cc: kosaki.motohiro@jp.fujitsu.com, Simon Kirby <sim@hostway.ca>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1011260943220.12265@router.home>
-References: <20101125101803.F450.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011260943220.12265@router.home>
-Message-Id: <20101130092534.82D5.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Nov 2010 09:25:23 +0900 (JST)
+	Mon, 29 Nov 2010 19:37:01 -0500
+X-Greylist: delayed 1194 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Nov 2010 19:37:01 EST
+X-VR-Score: -10.00
+X-Authority-Analysis: v=1.1 cv=PkQKpMSOrKoV9KYRrKr2f7XLnN0m7+zjYAinWDuNKA4=
+ c=1 sm=1 a=kj9zAlcOel0A:10 a=PNuEMszh5xg2EB3JV8u8OQ==:17 a=iE-e0aDHAAAA:8
+ a=98XX_LaI_pQ-Supxp_wA:9 a=zqx-uMMKJFWY9zPCyG8A:7
+ a=-jRPxNlQp7BRu4c35Rk0kyvPRPYA:4 a=CjuIK1q_8ugA:10
+ a=PNuEMszh5xg2EB3JV8u8OQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Date: Mon, 29 Nov 2010 19:17:05 -0500
+From: Mike Blumenkrantz <mike@zentific.com>
+To: linux-kernel@vger.kernel.org
+Subject: 2 epoll questions
+Message-ID: <20101129191705.094f5c4d@darc.ath.cx>
+Organization: Zentific
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 25 Nov 2010, KOSAKI Motohiro wrote:
-> > Please try SLAB instead SLUB (it can be switched by kernel build option).
-> > SLUB try to use high order allocation implicitly.
-> 
-> SLAB uses orders 0-1. Order is fixed per slab cache and determined based
-> on object size at slab creation.
-> 
-> SLUB uses orders 0-3. Falls back to smallest order if alloc order cannot
-> be met by the page allocator.
-> 
-> One can reduce SLUB to SLAB orders by specifying the following kernel
-> commandline parameter:
-> 
-> slub_max_order=1
+Hi,
 
-This?
+I am not subscribed to the list yet, and I would appreciate it if all replies
+could be CCed to me :).
 
+I have two questions regarding epoll.  The epoll code that I am using can all
+be found in the file here for those interested:
+https://svn.enlightenment.org/svn/e/trunk/ecore/src/lib/ecore/ecore_main.c
 
->From 3edd305fc58ac89364806cd60140793d37422acc Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 24 Dec 2010 18:04:10 +0900
-Subject: [PATCH] slub: reduce slub_max_order by default
+1) Is there any known reason why adding fds to an epoll fd would begin to slow
+down dramatically after ~6000 fds are added?  It is entirely possible that the
+problem is not epoll at all, but I wanted to ask and see if there was some O(n)
+code somewhere that was known.
 
-slab is already using order-1.
+2) If a select on an epoll fd (not one inside the epoll, the actual epoll fd
+itself) returns EBADF, is there a way to determine which fd is causing the
+error and then remove it?  I am occasionally running into this issue, and it
+seems to be caused by code which I do not necessarily control closing a fd that
+is part of my epoll fd without my knowledge (meaning that the closed fd is
+still in epoll).
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/slub.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Thanks!
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 8c66aef..babf359 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1964,7 +1964,8 @@ static struct page *get_object_page(const void *x)
-  * take the list_lock.
-  */
- static int slub_min_order;
--static int slub_max_order = PAGE_ALLOC_COSTLY_ORDER;
-+/* order-1 is maximum size which we can assume to exist always. */
-+static int slub_max_order = 1;
- static int slub_min_objects;
- 
- /*
 -- 
-1.6.5.2
-
-
-
+Mike Blumenkrantz
+Zentific: Our boolean values are huge.
