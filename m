@@ -1,67 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab0K3J0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:26:23 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38614 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab0K3J0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:26:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=VQHrsqb4lxNklSC2kITsquVVuw0FVEFInNStM1Lq6Be5dx1E6d2ZYIxrfjZFGKbN7B
-         dlNo7x6s++20BTxdsARkKKQjVXC009OIps5dfrUfTWbUmRpjMzr3k1JotiNhbloxpeQG
-         UeAHywFcbBNUiDH7Xyh2pBuENFZUnnyCJswIM=
-Date: Tue, 30 Nov 2010 17:31:06 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Mark Wielaard <mjw@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Hui Zhu <teawater@gmail.com>,
-        linux-kernel@vger.kernel.org, gdb@sourceware.org,
-        hellogcc@freelists.org
-Subject: Re: [PATCH] Built kernel without -O2 option
-Message-ID: <20101130093106.GD5203@cr0.nay.redhat.com>
-References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
- <87r5e4lab7.fsf@basil.nowhere.org>
- <1291025536.2904.6.camel@springer.wildebeest.org>
+	id S1755023Ab0K3JaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:30:22 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56118 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751822Ab0K3JaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 04:30:20 -0500
+Message-ID: <4CF4C535.8080405@cn.fujitsu.com>
+Date: Tue, 30 Nov 2010 17:34:45 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291025536.2904.6.camel@springer.wildebeest.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 1/3] KVM: MMU: rename 'no_apf' to 'prefault'
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-30 17:30:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-30 17:30:31,
+	Serialize complete at 2010-11-30 17:30:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 11:12:16AM +0100, Mark Wielaard wrote:
->On Mon, 2010-11-29 at 10:59 +0100, Andi Kleen wrote:
->> Hui Zhu <teawater@gmail.com> writes:
->> 
->> > Now, there are a lot of ways to debug the Linux kernel with GDB, like
->> > qemu, kgtp or kgdb and so on.
->> > But the developer more like add a printk. It have a lot of reason, a big one is:
->> > (gdb) p ret
->> > $3 = <value optimized out>
->> > And the code execution order is not right.
->> 
->> Really the right place to fix a lot of this would be gcc (and perhaps
->> gdb). I suspect with some careful work the debugging experience
->> for -O2 could be improved a lot.
->> I also believe the latest gccs already have improvements in this area.
->
->The VTA branch was merged for GCC 4.5
->http://gcc.gnu.org/wiki/Var_Tracking_Assignments
->Which helps a lot with generating dwarf for previously "optimized out"
->values. There were also a couple of papers on generating even better
->debuginfo at the recent GCC Summit: http://gcc.gnu.org/wiki/summit2010
->
->Jakub Jelínek, Improving debug info for optimized away parameters
->http://gcc.gnu.org/wiki/summit2010?action=AttachFile&do=get&target=jelinek.pdf
->Alexandre Oliva, Consistent Views at Recommended Breakpoints
->http://gcc.gnu.org/wiki/summit2010?action=AttachFile&do=get&target=oliva.pdf
->
+It's the speculative path if 'no_apf = 1' and we will specially handle this
+speculative path in the later patch, so 'prefault' is better to fit the sense
 
-Cool! It would be much more convenient if this is solved by gcc.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    3 ++-
+ arch/x86/kvm/mmu.c              |   18 +++++++++---------
+ arch/x86/kvm/paging_tmpl.h      |    4 ++--
+ 3 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 0e64a39..a4c5352 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -241,7 +241,8 @@ struct kvm_mmu {
+ 	void (*new_cr3)(struct kvm_vcpu *vcpu);
+ 	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
+ 	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
+-	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err, bool no_apf);
++	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err,
++			  bool prefault);
+ 	void (*inject_page_fault)(struct kvm_vcpu *vcpu);
+ 	void (*free)(struct kvm_vcpu *vcpu);
+ 	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva, u32 access,
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index e3d2ee0..5b71415 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2284,11 +2284,11 @@ static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
+ 	return 1;
+ }
+ 
+-static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
++static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
+ 			 gva_t gva, pfn_t *pfn, bool write, bool *writable);
+ 
+ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+-			 bool no_apf)
++			 bool prefault)
+ {
+ 	int r;
+ 	int level;
+@@ -2310,7 +2310,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+ 
+-	if (try_async_pf(vcpu, no_apf, gfn, v, &pfn, write, &map_writable))
++	if (try_async_pf(vcpu, prefault, gfn, v, &pfn, write, &map_writable))
+ 		return 0;
+ 
+ 	/* mmio */
+@@ -2582,7 +2582,7 @@ static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
+ }
+ 
+ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+-				u32 error_code, bool no_apf)
++				u32 error_code, bool prefault)
+ {
+ 	gfn_t gfn;
+ 	int r;
+@@ -2598,7 +2598,7 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 	gfn = gva >> PAGE_SHIFT;
+ 
+ 	return nonpaging_map(vcpu, gva & PAGE_MASK,
+-			     error_code & PFERR_WRITE_MASK, gfn, no_apf);
++			     error_code & PFERR_WRITE_MASK, gfn, prefault);
+ }
+ 
+ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+@@ -2620,7 +2620,7 @@ static bool can_do_async_pf(struct kvm_vcpu *vcpu)
+ 	return kvm_x86_ops->interrupt_allowed(vcpu);
+ }
+ 
+-static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
++static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
+ 			 gva_t gva, pfn_t *pfn, bool write, bool *writable)
+ {
+ 	bool async;
+@@ -2632,7 +2632,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
+ 
+ 	put_page(pfn_to_page(*pfn));
+ 
+-	if (!no_apf && can_do_async_pf(vcpu)) {
++	if (!prefault && can_do_async_pf(vcpu)) {
+ 		trace_kvm_try_async_get_page(gva, gfn);
+ 		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
+ 			trace_kvm_async_pf_doublefault(gva, gfn);
+@@ -2648,7 +2648,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
+ }
+ 
+ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+-			  bool no_apf)
++			  bool prefault)
+ {
+ 	pfn_t pfn;
+ 	int r;
+@@ -2672,7 +2672,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+ 
+-	if (try_async_pf(vcpu, no_apf, gfn, gpa, &pfn, write, &map_writable))
++	if (try_async_pf(vcpu, prefault, gfn, gpa, &pfn, write, &map_writable))
+ 		return 0;
+ 
+ 	/* mmio */
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 2b3d66c..f04162d 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -537,7 +537,7 @@ out_gpte_changed:
+  *           a negative value on error.
+  */
+ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+-			     bool no_apf)
++			     bool prefault)
+ {
+ 	int write_fault = error_code & PFERR_WRITE_MASK;
+ 	int user_fault = error_code & PFERR_USER_MASK;
+@@ -579,7 +579,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+ 
+-	if (try_async_pf(vcpu, no_apf, walker.gfn, addr, &pfn, write_fault,
++	if (try_async_pf(vcpu, prefault, walker.gfn, addr, &pfn, write_fault,
+ 			 &map_writable))
+ 		return 0;
+ 
+-- 
+1.7.0.4
