@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0K3EoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:44:21 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:58219 "EHLO lunge.queued.net"
+	id S1753172Ab0K3E6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:58:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28515 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab0K3EoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:44:20 -0500
-Date: Mon, 29 Nov 2010 20:44:10 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cs5535-mfd: fix warning on x86-64
-Message-ID: <20101129204410.339805ef@queued.net>
-In-Reply-To: <20101129115257.9a78ad14.sfr@canb.auug.org.au>
-References: <20101129115257.9a78ad14.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1751677Ab0K3E6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 23:58:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
+   d="scan'208";a="862576011"
+Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX
+ protection for kernel data)
+From: Lin Ming <ming.m.lin@intel.com>
+To: mat <castet.matthieu@free.fr>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
+In-Reply-To: <20101126183144.300a71a4@mat-laptop>
+References: <1290410581.2405.24.camel@minggr.sh.intel.com>
+	 <1290431008.2072.119.camel@laptop>	<1290443379.4cea9a73cd9ce@imp.free.fr>
+	 <1290443758.2072.318.camel@laptop>	<20101122164247.GC21836@basil.fritz.box>
+	 <20101123235527.54293b59@mat-laptop>  <20101126183144.300a71a4@mat-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 13:00:30 +0800
+Message-ID: <1291093230.2405.191.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/XhctqklKEiYj3xdxRT7Ax7h"; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XhctqklKEiYj3xdxRT7Ax7h
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2010-11-27 at 01:31 +0800, mat wrote:
+> Le Tue, 23 Nov 2010 23:55:27 +0100,
+> mat <castet.matthieu@free.fr> a écrit :
+> 
+> > Le Mon, 22 Nov 2010 17:42:47 +0100,
+> > Andi Kleen <andi@firstfloor.org> a écrit :
+> > 
+> > > > That seems to be a S3 specific code path, that won't fix anything.
+> > > > Simply do:
+> > > > 
+> > > > echo 0 > /sys/devices/system/cpu/cpu1/online;
+> > > > echo 1 > /sys/devices/system/cpu/cpu1/online;
+> > > > 
+> > > > and your machine will explode..
+> > > 
+> > > The SMP startup trampoline is copied I believe
+> > > and only executed in real mode without page tables.
+> > > 
+> > > So it's perhaps not the trampoline, but the early startup 
+> > > code that ends up being broken.
+> > yes :
+> > acpi wakeup code and smp trampoline are copied in low memory (first
+> > 1MB).
+> > 
+> > So they can't end up int the kernel data mapping ?
+> > 
+> > So it should something else.
+> > 
+> > I will try to investigate on this.
+> > 
+> Unfortunately on my laptop supporting NX, suspend to ram seems broken
+> (even without this patch) and I got only one core, so I am unable to
+> test it.
+> 
+> Does cpu suspend/resume is broken ? Or it is only S3 ?
+> 
+> If yes, are there any interesting trace if we suspend only one core with
+> sysfs.
 
-On Mon, 29 Nov 2010 11:52:57 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+echo 0 > /sys/devices/system/cpu/cpu1/online;
+echo 1 > /sys/devices/system/cpu/cpu1/online;
 
-> Hi Samuel,
->=20
-> After merging the mfd tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
->=20
-> drivers/mfd/cs5535-mfd.c: In function 'cs5535_mfd_probe':
-> drivers/mfd/cs5535-mfd.c:106: warning: format '%d' expects type
-> 'int', but argument 3 has type 'long unsigned int'
->=20
+then machine just reboots...
 
-Ick, ARRAY_SIZE is unsigned int on x86, unsigned long on x86-64.  The
-patch below fixes this.
-
-
-
-
-From: Andres Salomon <dilinger@queued.net>
-
-ARRAY_SIZE() returns unsigned long on x86-64 (rather than unsigned int);
-cast it to the desired type to shut gcc up.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/mfd/cs5535-mfd.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
-index b141ca7..e6f7ebc 100644
---- a/drivers/mfd/cs5535-mfd.c
-+++ b/drivers/mfd/cs5535-mfd.c
-@@ -103,8 +103,8 @@ static int __devinit cs5535_mfd_probe(struct pci_dev *p=
-dev,
- 		goto err_disable;
- 	}
-=20
--	dev_info(&pdev->dev, "%d devices registered.\n",
--			ARRAY_SIZE(cs5535_mfd_cells));
-+	dev_info(&pdev->dev, "%u devices registered.\n",
-+			(unsigned int) ARRAY_SIZE(cs5535_mfd_cells));
-=20
- 	return 0;
-=20
---=20
-1.7.2.3
+> 
+> Thanks,
+> 
+> Matthieu
 
 
---Sig_/XhctqklKEiYj3xdxRT7Ax7h
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkz0gRoACgkQOmXwGc/ULyaUQACdFncDZWX8zzX4140fCPGrA+rI
-lOQAnjh/9gDfWwIzZccKqYbbQoUoVGBU
-=Z7an
------END PGP SIGNATURE-----
-
---Sig_/XhctqklKEiYj3xdxRT7Ax7h--
