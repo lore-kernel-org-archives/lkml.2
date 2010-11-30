@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab0K3Q4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:56:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27370 "EHLO mx1.redhat.com"
+	id S1754702Ab0K3Q4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:56:44 -0500
+Received: from kroah.org ([198.145.64.141]:35200 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab0K3Qz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:55:59 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Cc: vgoyal@redhat.com, jmoyer@redhat.com, oleg@redhat.com, jmarchan@redhat.com
-Subject: [PATCH 1/2] blk-throttle: Trim/adjust slice_end once a bio has been dispatched
-Date: Tue, 30 Nov 2010 11:55:56 -0500
-Message-Id: <1291136157-2732-2-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1291136157-2732-1-git-send-email-vgoyal@redhat.com>
-References: <1291136157-2732-1-git-send-email-vgoyal@redhat.com>
+	id S1754194Ab0K3Q4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:56:42 -0500
+Date: Tue, 30 Nov 2010 08:56:14 -0800
+From: Greg KH <greg@kroah.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
+ driver owner
+Message-ID: <20101130165614.GA18564@kroah.com>
+References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
+ <20101129131737.3dd6eb03@bike.lwn.net>
+ <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
+ <20101129214128.GA9691@kroah.com>
+ <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
+ <20101129223209.GB14663@kroah.com>
+ <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o During some testing I did following and noticed throttling stops working.
+On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
+> On Mon, 29 Nov 2010, Greg KH wrote:
+> 
+> > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski wrote:
+> > > On Mon, 29 Nov 2010, Greg KH wrote:
+> > > 
+> > > > On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
+> > > > > Hi Jon
+> > > > > 
+> > > > > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
+> > > > > 
+> > > > > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
+> > > > > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> > > > > > 
+> > > > > > > When two drivers interoperate without an explicit dependency, it is often
+> > > > > > > required to prevent one of them from being unloaded safely by dereferencing
+> > > > > > > dev->driver->owner. This patch provides a generic function to do this in a
+> > > > > > > race-free way.
+> > > > > > 
+> > > > > > I must ask: why not, instead, make the dependency explicit?  In
+> > > > > > particular, this looks like an application for the proposed media
+> > > > > > controller code, which is meant to model the connections between otherwise
+> > > > > > independent devices.  The fact that your example comes from V4L2 (which is
+> > > > > > the current domain of the media controller) also argues that way.
+> > > > > 
+> > > > > Sorry, don't see a good way to do this. This function is for a general 
+> > > > > dependency, where you don't have that driver, we are checking for register 
+> > > > > with us, so, the only way to get to it is via dev->driver->owner.
+> > > > 
+> > > > Wait, what?  The device is already bound to a driver, right, so why
+> > > > would you care about "locking" the module into memory?  What could this
+> > > > possibly be used for?
+> > > 
+> > > To protect against rmmod -> driver_unregister -> dev->driver = NULL?
+> > 
+> > But again, why would some other driver ever care about what some random
+> > dev->driver would be?
+> 
+> It's not a random one, call it a "companion device."
 
-        - Put a very low limit on a cgroup, say 1 byte per second.
-        - Start some reads, this will set slice_end to a very high value.
-        - Change the limit to higher value say 1MB/s
-        - Now IO unthrottles and finishes as expected.
-        - Try to do the read again but IO is not limited to 1MB/s as expected.
+Ok, but again go back to Jon's original proposal to just call the
+functions in that driver from yours, causing the implicit module
+ordering issue to be automatically resolved.
 
-o What is happening.
-        - Initially low value of limit sets slice_end to a very high value.
-        - During updation of limit, slice_end is not being truncated.
-        - Very high value of slice_end leads to keeping the existing slice
-          valid for a very long time and new slice does not start.
-        - tg_may_dispatch() is called in blk_throtle_bio(), and trim_slice()
-          is not called in this path. So slice_start is some old value and
-          practically we are able to do huge amount of IO.
+thanks,
 
-o There are many ways it can be fixed. I have fixed it by trying to
-  adjust/cleanup slice_end in trim_slice(). Generally we extend slices if bio
-  is big and can't be dispatched in one slice. After dispatch of bio, readjust
-  the slice_end to make sure we don't end up with huge values.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-throttle.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 004be80..2d134b7 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -355,6 +355,12 @@ throtl_start_new_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
- 			tg->slice_end[rw], jiffies);
- }
- 
-+static inline void throtl_set_slice_end(struct throtl_data *td,
-+		struct throtl_grp *tg, bool rw, unsigned long jiffy_end)
-+{
-+	tg->slice_end[rw] = roundup(jiffy_end, throtl_slice);
-+}
-+
- static inline void throtl_extend_slice(struct throtl_data *td,
- 		struct throtl_grp *tg, bool rw, unsigned long jiffy_end)
- {
-@@ -391,6 +397,16 @@ throtl_trim_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
- 	if (throtl_slice_used(td, tg, rw))
- 		return;
- 
-+	/*
-+	 * A bio has been dispatched. Also adjust slice_end. It might happen
-+	 * that initially cgroup limit was very low resulting in high
-+	 * slice_end, but later limit was bumped up and bio was dispached
-+	 * sooner, then we need to reduce slice_end. A high bogus slice_end
-+	 * is bad because it does not allow new slice to start.
-+	 */
-+
-+	throtl_set_slice_end(td, tg, rw, jiffies + throtl_slice);
-+
- 	time_elapsed = jiffies - tg->slice_start[rw];
- 
- 	nr_slices = time_elapsed / throtl_slice;
--- 
-1.7.2.3
-
+greg k-h
