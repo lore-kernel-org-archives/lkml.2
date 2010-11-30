@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab0K3MvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 07:51:00 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39510 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab0K3Mu6 (ORCPT
+	id S1751640Ab0K3NAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 08:00:52 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38987 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab0K3NAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 07:50:58 -0500
-Message-ID: <5B8D58FB9E1C487FA94F2498E0B9E9AB@wipblrx0099946>
-From: "Hemanth V" <hemanthv@ti.com>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <saaguirre@ti.com>,
-        <Shubhrajyoti@ti.com>, "Jonathan Cameron" <jic23@cam.ac.uk>
-References: <37129.10.24.255.17.1291028260.squirrel@dbdmail.itg.ti.com> <4CF38E4D.3070309@cam.ac.uk> <20101130075911.GC15731@core.coreip.homeip.net>
-Subject: Re: PATCH V4 1/2] input: CMA3000 Accelerometer Driver
-Date: Tue, 30 Nov 2010 18:20:43 +0530
+	Tue, 30 Nov 2010 08:00:51 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2]mm/oom-kill: direct hardware access processes should get bonus
+Cc: kosaki.motohiro@jp.fujitsu.com, "Figo.zhang" <figo1802@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1011271733460.3764@chino.kir.corp.google.com>
+References: <20101123154843.7B8D.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011271733460.3764@chino.kir.corp.google.com>
+Message-Id: <20101130220107.8328.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5843
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 30 Nov 2010 22:00:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----- 
-From: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
->
-> Yep, almost there.
->
-> Hemanth, does the driver still work if you apply the patch below?
+> On Tue, 23 Nov 2010, KOSAKI Motohiro wrote:
+> 
+> > > > > I think in cases of heuristics like this where we obviously want to give 
+> > > > > some bonus to CAP_SYS_ADMIN that there is consistency with other bonuses 
+> > > > > given elsewhere in the kernel.
+> > > > 
+> > > > Keep comparision apple to apple. vm_enough_memory() account _virtual_ memory.
+> > > > oom-killer try to free _physical_ memory. It's unrelated.
+> > > > 
+> > > 
+> > > It's not unrelated, the LSM function gives an arbitrary 3% bonus to 
+> > > CAP_SYS_ADMIN.  
+> > 
+> > Unrelated. LSM _is_ security module. and It only account virtual memory.
+> > 
+> 
+> I needed a small bias for CAP_SYS_ADMIN tasks so I chose 3% since it's the 
+> same proportion used elsewhere in the kernel and works nicely since the 
+> badness score is now a proportion.  
 
-Yes works pretty well, Thanks for your efforts
+Why? Is this important than X?
 
-Some minor changes as below required.
+> If you'd like to propose a different 
+> percentage or suggest removing the bias for root tasks altogether, feel 
+> free to propose a patch.  Thanks!
 
-<snip>
+I only need to revert bad change.
 
-> +struct cma3000_accl_data {
-> + const struct cma3000_bus_ops *bus_ops;
-> + const struct cma3000_platform_data *pdata;
-> +
-> + struct device *dev;
-> + struct input_dev *input_dev;
-> +
-> + int bit_to_mg;
-> + int irq;
-> +
-> + int g_range;
-> + u8 mode;
-> +
-> + struct mutex mutex;
 
-Need a comment to overcome checkpatch warning.
-
->
-> - pr_info("CMA3000 Accelerometer : Revision %x\n", ret);
-> + data->dev = dev;
-> + data->input_dev = input_dev;
-> + data->bus_ops = bops;
-> + data->pdata = pdata;
-
-Need to add data->irq = irq, else exit routine will dump stack
-
->
-> - data->input_dev->name = "cma3000-accelerometer";
-> + data->g_range = pdata->g_range;
-> + if (data->g_range != CMARANGE_2G && data->g_range != CMA3000_RANGE8G) {
-
-Need to change this to "data->g_range != CMARANGE_2G   && data->g_range != 
-CMARANGE_8G "
-
-> - input_set_abs_params(data->input_dev, ABS_Z, -g_range,
-> - g_range, fuzz_z, 0);
-> - input_set_abs_params(data->input_dev, ABS_MISC, 0,
-> - 1, 0, 0);
-
-We use this ABS_MISC event to report free fall.
+Thanks.
 
 
 
