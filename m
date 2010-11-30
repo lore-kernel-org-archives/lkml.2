@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab0K3W2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 17:28:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47427 "EHLO mx1.redhat.com"
+	id S1755130Ab0K3W2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 17:28:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58135 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999Ab0K3W2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 17:28:04 -0500
+	id S1753968Ab0K3W2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 17:28:20 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
         Andi Kleen <andi@firstfloor.org>, gorcunov@gmail.com,
         LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 3/9] x86, NMI: Rewrite NMI handler
-Date: Tue, 30 Nov 2010 17:27:24 -0500
-Message-Id: <1291156050-4482-4-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 1/9] x86, NMI: Add NMI symbol constants and rename memory parity to PCI SERR
+Date: Tue, 30 Nov 2010 17:27:22 -0500
+Message-Id: <1291156050-4482-2-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
 References: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,203 +23,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Huang Ying <ying.huang@intel.com>
 
-The original NMI handler is quite outdated in many aspects. This patch
-try to fix it.
+Replace the NMI related magic numbers with symbol constants.
 
-The order to process the NMI sources are changed as follow:
+memory parity error is only valid for IBM PC-AT, newer machine use
+bit 7 (0x80) of 0x61 port for PCI SERR. While memory error is usually
+reported via MCE. So corresponding function name and kernel log string
+is changed.
 
-notify_die(DIE_NMI_IPI);
-notify_die(DIE_NMI);
-/* process io port 0x61 */
-nmi_watchdog_touch();
-unknown_nmi();
-
-DIE_NMI_IPI is used to process CPU specific NMI sources, such as perf
-event, oprofile, crash IPI, etc. While DIE_NMI is used to process
-non-CPU-specific NMI sources, such as APEI (ACPI Platform Error
-Interface) GHES (Generic Hardware Error Source), etc. Non-CPU-specific
-NMI sources can be processed on any CPU,
-
-DIE_NMI_IPI must be processed before DIE_NMI. For example, perf event
-trigger a NMI on CPU 1, at the same time, APEI GHES trigger another
-NMI on CPU 0. If DIE_NMI is processed before DIE_NMI_IPI, it is
-possible that APEI GHES is processed on CPU 1, while unknown NMI is
-gotten on CPU 0.
-
-In this new order of processing, performance sensitive NMI sources
-such as oprofile or perf event will have better performance because
-the time consuming IO port reading is done after them.
-
-Only one NMI is eaten for each NMI handler call, even for PCI SERR and
-IOCHK NMIs. Because one NMI should be raised for each of them, eating
-too many NMI will cause unnecessary unknown NMI.
-
-The die value used in NMI sources are fixed accordingly.
-
-The NMI handler in the patch is designed by Andi Kleen.
+But on some machines, PCI SERR line is still used to report memory
+errors. This is used by EDAC, so corresponding EDAC call is reserved.
 
 v3:
 
-- Make DIE_NMI and DIE_NMI_UNKNOWN work in more traditional way.
+- Merge adding symbol constants and renaming patches
 
 v2:
 
-- Split process NMI reason (0x61) on non-BSP into another patch
+- EDAC call in pci_serr_error is reserved.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event.c  |    1 -
- arch/x86/kernel/traps.c           |   63 ++++++++++++++++++++-----------------
- arch/x86/oprofile/nmi_int.c       |    1 -
- arch/x86/oprofile/nmi_timer_int.c |    2 +-
- drivers/char/ipmi/ipmi_watchdog.c |    2 +-
- drivers/watchdog/hpwdt.c          |    2 +-
- 6 files changed, 37 insertions(+), 34 deletions(-)
+ arch/x86/include/asm/mach_traps.h |   12 ++++++++-
+ arch/x86/kernel/traps.c           |   51 +++++++++++++++++++------------------
+ 2 files changed, 37 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 817d2b1..48aa91f 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1229,7 +1229,6 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		return NOTIFY_DONE;
+diff --git a/arch/x86/include/asm/mach_traps.h b/arch/x86/include/asm/mach_traps.h
+index f792060..72a8b52 100644
+--- a/arch/x86/include/asm/mach_traps.h
++++ b/arch/x86/include/asm/mach_traps.h
+@@ -7,9 +7,19 @@
  
- 	switch (cmd) {
--	case DIE_NMI:
- 	case DIE_NMI_IPI:
- 		break;
- 	case DIE_NMIUNKNOWN:
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index c7fd1ce..5184b21 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -394,41 +394,46 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	unsigned char reason = 0;
- 	int cpu;
+ #include <asm/mc146818rtc.h>
  
--	cpu = smp_processor_id();
-+	/*
-+	 * CPU-specific NMI must be processed before non-CPU-specific
-+	 * NMI, otherwise we may lose it, because the CPU-specific
-+	 * NMI can not be detected/processed on other CPUs.
-+	 */
++#define NMI_REASON_PORT		0x61
 +
-+	/*
-+	 * CPU-specific NMI: send to specific CPU or NMI sources must
-+	 * be processed on specific CPU
-+	 */
-+	if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, 0, 2, SIGINT)
-+	    == NOTIFY_STOP)
-+		return;
- 
-+	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
-+	cpu = smp_processor_id();
- 	/* Only the BSP gets external NMIs from the system. */
--	if (!cpu)
-+	if (!cpu) {
- 		reason = get_nmi_reason();
--
--	if (!(reason & NMI_REASON_MASK)) {
--		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
--								== NOTIFY_STOP)
--			return;
--
--#ifdef CONFIG_X86_LOCAL_APIC
--		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
--							== NOTIFY_STOP)
--			return;
-+		if (reason & NMI_REASON_MASK) {
-+			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
-+			    == NOTIFY_STOP)
-+				return;
-+			if (reason & NMI_REASON_SERR)
-+				pci_serr_error(reason, regs);
-+			else if (reason & NMI_REASON_IOCHK)
-+				io_check_error(reason, regs);
-+#ifdef CONFIG_X86_32
-+			/*
-+			 * Reassert NMI in case it became active
-+			 * meanwhile as it's edge-triggered:
-+			 */
-+			reassert_nmi();
- #endif
--		unknown_nmi_error(reason, regs);
--
--		return;
-+			return;
-+		}
- 	}
--	if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
-+	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
- 		return;
--
--	/* AK: following checks seem to be broken on modern chipsets. FIXME */
--	if (reason & NMI_REASON_SERR)
--		pci_serr_error(reason, regs);
--	if (reason & NMI_REASON_IOCHK)
--		io_check_error(reason, regs);
--#ifdef CONFIG_X86_32
--	/*
--	 * Reassert NMI in case it became active meanwhile
--	 * as it's edge-triggered:
--	 */
--	reassert_nmi();
--#endif
-+	unknown_nmi_error(reason, regs);
++#define NMI_REASON_SERR		0x80
++#define NMI_REASON_IOCHK	0x40
++#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
++
++#define NMI_REASON_CLEAR_SERR	0x04
++#define NMI_REASON_CLEAR_IOCHK	0x08
++#define NMI_REASON_CLEAR_MASK	0x0f
++
+ static inline unsigned char get_nmi_reason(void)
+ {
+-	return inb(0x61);
++	return inb(NMI_REASON_PORT);
  }
  
- dotraplinkage notrace __kprobes void
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 4e8baad..ee7ff0e 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -64,7 +64,6 @@ static int profile_exceptions_notify(struct notifier_block *self,
- 	int ret = NOTIFY_DONE;
+ static inline void reassert_nmi(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index bb6f041..10a43f5 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -310,15 +310,15 @@ static int __init setup_unknown_nmi_panic(char *str)
+ __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
  
- 	switch (val) {
--	case DIE_NMI:
- 	case DIE_NMI_IPI:
- 		if (ctr_running)
- 			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
-diff --git a/arch/x86/oprofile/nmi_timer_int.c b/arch/x86/oprofile/nmi_timer_int.c
-index 0636dd9..fb40645 100644
---- a/arch/x86/oprofile/nmi_timer_int.c
-+++ b/arch/x86/oprofile/nmi_timer_int.c
-@@ -25,7 +25,7 @@ static int profile_timer_exceptions_notify(struct notifier_block *self,
- 	int ret = NOTIFY_DONE;
- 
- 	switch (val) {
--	case DIE_NMI:
-+	case DIE_NMI_IPI:
- 		oprofile_add_sample(args->regs, 0);
- 		ret = NOTIFY_STOP;
- 		break;
-diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
-index f4d334f..320668f 100644
---- a/drivers/char/ipmi/ipmi_watchdog.c
-+++ b/drivers/char/ipmi/ipmi_watchdog.c
-@@ -1081,7 +1081,7 @@ ipmi_nmi(struct notifier_block *self, unsigned long val, void *data)
+ static notrace __kprobes void
+-mem_parity_error(unsigned char reason, struct pt_regs *regs)
++pci_serr_error(unsigned char reason, struct pt_regs *regs)
  {
- 	struct die_args *args = data;
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
+-
+-	printk(KERN_EMERG
+-		"You have some hardware problem, likely on the PCI bus.\n");
++	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
  
--	if (val != DIE_NMI)
-+	if (val != DIE_NMIUNKNOWN)
- 		return NOTIFY_OK;
++	/*
++	 * On some machines, PCI SERR line is used to report memory
++	 * errors. EDAC makes use of it.
++	 */
+ #if defined(CONFIG_EDAC)
+ 	if (edac_handler_set()) {
+ 		edac_atomic_assert_error();
+@@ -329,11 +329,11 @@ mem_parity_error(unsigned char reason, struct pt_regs *regs)
+ 	if (panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
  
- 	/* Hack, if it's a memory or I/O error, ignore it. */
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index c19f4a2..717c67b 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -469,7 +469,7 @@ static int hpwdt_pretimeout(struct notifier_block *nb, unsigned long ulReason,
- 	unsigned long rom_pl;
- 	static int die_nmi_called;
+-	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
++	pr_emerg("Dazed and confused, but trying to continue\n");
  
--	if (ulReason != DIE_NMI && ulReason != DIE_NMI_IPI)
-+	if (ulReason != DIE_NMIUNKNOWN)
- 		goto out;
+-	/* Clear and disable the memory parity error line. */
+-	reason = (reason & 0xf) | 4;
+-	outb(reason, 0x61);
++	/* Clear and disable the PCI SERR error line. */
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
++	outb(reason, NMI_REASON_PORT);
+ }
  
- 	if (!hpwdt_nmi_decoding)
+ static notrace __kprobes void
+@@ -341,22 +341,24 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	unsigned long i;
+ 
+-	printk(KERN_EMERG "NMI: IOCK error (debug interrupt?)\n");
++	pr_emerg(
++	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 	show_registers(regs);
+ 
+ 	if (panic_on_io_nmi)
+ 		panic("NMI IOCK error: Not continuing");
+ 
+ 	/* Re-enable the IOCK line, wait for a few seconds */
+-	reason = (reason & 0xf) | 8;
+-	outb(reason, 0x61);
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
+ 
+ 	i = 2000;
+ 	while (--i)
+ 		udelay(1000);
+ 
+-	reason &= ~8;
+-	outb(reason, 0x61);
++	reason &= ~NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
+ }
+ 
+ static notrace __kprobes void
+@@ -375,15 +377,14 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 		return;
+ 	}
+ #endif
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
++	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 
+-	printk(KERN_EMERG "Do you have a strange power saving mode enabled?\n");
++	pr_emerg("Do you have a strange power saving mode enabled?\n");
+ 	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
+ 
+-	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
++	pr_emerg("Dazed and confused, but trying to continue\n");
+ }
+ 
+ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+@@ -397,7 +398,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	if (!cpu)
+ 		reason = get_nmi_reason();
+ 
+-	if (!(reason & 0xc0)) {
++	if (!(reason & NMI_REASON_MASK)) {
+ 		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+ 								== NOTIFY_STOP)
+ 			return;
+@@ -415,9 +416,9 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 		return;
+ 
+ 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+-	if (reason & 0x80)
+-		mem_parity_error(reason, regs);
+-	if (reason & 0x40)
++	if (reason & NMI_REASON_SERR)
++		pci_serr_error(reason, regs);
++	if (reason & NMI_REASON_IOCHK)
+ 		io_check_error(reason, regs);
+ #ifdef CONFIG_X86_32
+ 	/*
 -- 
 1.7.3.2
 
