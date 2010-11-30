@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab0K3Rm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:42:58 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:19651 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab0K3Rm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:42:57 -0500
-X-IronPort-AV: E=Sophos;i="4.59,281,1288594800"; 
-   d="scan'208";a="489042104"
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH] NFS: Fix a readdirplus bug
-Date: Tue, 30 Nov 2010 12:42:34 -0500
-Message-Id: <1291138954-10310-1-git-send-email-Trond.Myklebust@netapp.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754800Ab0K3Roj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:44:39 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65066 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab0K3Roi (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 30 Nov 2010 12:44:38 -0500
+Date: Tue, 30 Nov 2010 12:43:25 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Idea: Make drivers/char/agp/*.c use the PCI API.
+Message-ID: <20101130174325.GA10507@dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When comparing filehandles in the helper nfs_same_file(), we should not be
-using 'strncmp()': filehandles are not null terminated strings.
+Hey guys,
 
-Instead, we should just use the existing helper nfs_compare_fh().
+I am working on getting Linux Xen PV guests to be able to use graphics card.
+The crux of the problem I am running into is that any of the 'page_to_phys'
+or 'virt_to_phys' macros under Xen return a PFN which is actually not the 
+_real_ PFN (called Machine Frame Number, MFN in Xen terminology). So when
+we program the GATT bus address, the PFN of the GATT != MFN. Hence the bridge
+ends up looking for the GATT somewhere completely different than what we expected.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- fs/nfs/dir.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+In the past I've inserted some nasty skanky lookup code to in drivers/char/agp/*.c
+so that the GATT bus address, and the bus addresses of the pages that are to be
+mapped to the GATT get the MFN - but that was a band-aid solution.
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 8ea4a41..f0a384e 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -395,13 +395,9 @@ int xdr_decode(nfs_readdir_descriptor_t *desc, struct nfs_entry *entry, struct x
- static
- int nfs_same_file(struct dentry *dentry, struct nfs_entry *entry)
- {
--	struct nfs_inode *node;
- 	if (dentry->d_inode == NULL)
- 		goto different;
--	node = NFS_I(dentry->d_inode);
--	if (node->fh.size != entry->fh->size)
--		goto different;
--	if (strncmp(node->fh.data, entry->fh->data, node->fh.size) != 0)
-+	if (nfs_compare_fh(entry->fh, NFS_FH(dentry->d_inode)) != 0)
- 		goto different;
- 	return 1;
- different:
--- 
-1.7.3.2
+I was wondering what you guys thought if I reworked the drivers/char/agp to use
+the PCI API, similarly to what drivers/char/agp/intel-gtt.c is doing right now.
+Perhaps even go further and squash the intel-gtt.c scatter-list usage into the
+generic.c. Other ideas?
+
+I've some of the old hardware laying around so I can definitly test some subset
+of the hardware. Are there some particular ones I should look for that had
+trouble?
 
