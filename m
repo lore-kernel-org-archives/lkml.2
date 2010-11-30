@@ -1,170 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab0K3JL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 04:11:57 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:48050 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0K3JLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 04:11:54 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: [v4] ppc44x:PHY fixup for USB on canyonlands board
-Message-Id: <mdm-canyonlands-reply2@mdm.bga.com>
-In-Reply-To: <201011291313.oATDD1AF028975@amcc.com>
-References: <201011291313.oATDD1AF028975@amcc.com>
-To: Rupjyoti Sarmah <rsarmah@amcc.com>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, rsarmah@apm.com,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>
-Date: Tue, 30 Nov 2010 03:11:27 -0600
-X-Originating-IP: 71.22.127.106
+	id S1754969Ab0K3JNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 04:13:30 -0500
+Received: from netnation.com ([204.174.223.2]:43346 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559Ab0K3JN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 04:13:29 -0500
+Date: Tue, 30 Nov 2010 01:13:25 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Christoph Lameter <cl@linux.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Free memory never fully used, swapping
+Message-ID: <20101130091325.GA17340@hostway.ca>
+References: <20101124092753.GS19571@csn.ul.ie> <20101124191749.GA29511@hostway.ca> <20101125101803.F450.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011260943220.12265@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011260943220.12265@router.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I prepared these comments for v1, but aparently forgot to send them,
-so I'll do so now.
+On Fri, Nov 26, 2010 at 09:48:14AM -0600, Christoph Lameter wrote:
 
-
-On Mon, 29 Nov 2010 about 03:13:01 -0000, Rupjyoti Sarmah wrote:
-> This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
+> On Thu, 25 Nov 2010, KOSAKI Motohiro wrote:
+> > Please try SLAB instead SLUB (it can be switched by kernel build option).
+> > SLUB try to use high order allocation implicitly.
 > 
-> Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+> SLAB uses orders 0-1. Order is fixed per slab cache and determined based
+> on object size at slab creation.
 > 
-> ---
-> index a303703..3c5d63c 100644
-> --- a/arch/powerpc/boot/dts/canyonlands.dts
-> +++ b/arch/powerpc/boot/dts/canyonlands.dts
-> @@ -224,6 +224,13 @@
->  					};
->  				};
->  
-> +				cpld@2,0 {
-> +					#address-cells = <1>;
-> +					#size-cells = <1>;
+> SLUB uses orders 0-3. Falls back to smallest order if alloc order cannot
+> be met by the page allocator.
+> 
+> One can reduce SLUB to SLAB orders by specifying the following kernel
+> commandline parameter:
+> 
+> slub_max_order=1
 
-why does this node have #address-cells and #size-cells but no children? 
+Can we also mess with these /sys files on the fly?
 
-> +					compatible = "amcc,ppc460ex-bcsr";
-> +					reg = <2 0x0 0x9>;
-> +				};
-> +
->  				ndfc@3,0 {
->  					compatible = "ibm,ndfc";
->  					reg = <0x00000003 0x00000000 0x00002000>;
-..
-> diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
-> new file mode 100644
-> index 0000000..4917c31
-> --- /dev/null
-> +++ b/arch/powerpc/platforms/44x/canyonlands.c
-> @@ -0,0 +1,120 @@
-> +
+[/sys/kernel/slab]# grep . kmalloc-*/order | sort -n -k2 -t-
+kmalloc-8/order:0
+kmalloc-16/order:0
+kmalloc-32/order:0
+kmalloc-64/order:0
+kmalloc-96/order:0
+kmalloc-128/order:0
+kmalloc-192/order:0
+kmalloc-256/order:1
+kmalloc-512/order:2
+kmalloc-1024/order:3
+kmalloc-2048/order:3
+kmalloc-4096/order:3
+kmalloc-8192/order:3
 
-> +static __initdata struct of_device_id ppc44x_of_bus[] = {
-..
-> +static int __init ppc44x_device_probe(void)
-> +{
-> +	of_platform_bus_probe(NULL, ppc44x_of_bus, NULL);
-> +
-> +	return 0;
-> +}
-> +machine_device_initcall(canyonlands, ppc44x_device_probe);
-> +
-> +/* Using this code only for the Canyonlands board.  */
-> +
-> +static int __init ppc44x_probe(void)
-> +{
-> +	unsigned long root = of_get_flat_dt_root();
-> +	if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
-> +		ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
-> +		return 1;
-> +		}
-> +	return 0;
-> +}
-> +
-> +/* USB PHY fixup code on Canyonlands kit. */
+I'm not familiar with how slub works, but I assume there's some overhead
+or some reason not to just use order 0 for <= kmalloc-4096?  Or is it
+purely just trying to reduce cpu by calling alloc_pages less often?
 
-All of the above have ppc44x prefix, but have been copied to this
-canyonlands file.   While there is no build error because they
-are all static it will be less confusing if they had a canyonlands
-prefix instead.
-
-> +
-> +static int __init ppc460ex_canyonlands_fixup(void)
-> +{
-> +	u8 __iomem *bcsr ;
-> +	void __iomem *vaddr;
-> +	struct device_node *np;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
-> +	if (!np) {
-> +		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	bcsr = of_iomap(np, 0);
-> +	of_node_put(np);
-> +
-> +	if (!bcsr) {
-> +		printk(KERN_CRIT "Could not remap bcsr\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
-> +	vaddr = of_iomap(np, 0);
-> +	if (!vaddr) {
-> +		printk(KERN_CRIT "Could not get gpio node address\n");
-> +		return -ENODEV;
-> +	}
-> +	/* Disable USB, through the BCSR7 bits */
-> +	setbits8(&bcsr[7], BCSR_USB_EN);
-> +
-> +	/* Wait for a while after reset */
-> +	msleep(100);
-> +
-> +	/* Enable USB here */
-> +	clrbits8(&bcsr[7], BCSR_USB_EN);
-> +
-> +	/*
-> +	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
-> +	 * source after USB reset.This configuration is done through GPIO0_TSRH
-> +	 * and GPIO0_OSRH bits 0:1 and 6:7.
-
-Missing spaces before the second sentence.
-
-Rather then telling us which bits are being set, which is fairly
-obvoius from the code, it would be more helpful to say what
-alternate1 output source means.
-
-I'm curious why you set these after the reset when they were not
-set before.  Should they be set to something else temporarly during
-the reset?
-
-> +	 */
-> +	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
-> +	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
-> +	of_node_put(np);
-> +	return 0;
-
-The error paths in this function leave incorrect refcounts on the
-nodes, and no path does of_unmap of the regions even though the
-variables with the address goes out of scope.
-
-> +}
-> +machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
-> +define_machine(canyonlands) {
-> +	.name = "Canyonlands",
-> +	.probe = ppc44x_probe,
-> +	.progress = udbg_progress,
-> +	.init_IRQ = uic_init_tree,
-> +	.get_irq = uic_get_irq,
-> +	.restart = ppc4xx_reset_system,
-> +	.calibrate_decr = generic_calibrate_decr,
-> +};
-
-
-Also, you shouldn't need the select PPC44x_SIMPLE in the CANYONLANDS
-stanza in arch/powerpc/platforms/44x/Kconfig.
-
-milton
+Simon-
