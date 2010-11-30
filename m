@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab0K3BK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 20:10:26 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58968 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812Ab0K3BKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 20:10:25 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
-References: <cover.1291043273.git.minchan.kim@gmail.com> <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
-Message-Id: <20101130100933.82E9.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Nov 2010 10:10:20 +0900 (JST)
+	id S932070Ab0K3BM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 20:12:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:1992 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755812Ab0K3BM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 20:12:58 -0500
+From: Joe Perches <joe@perches.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: Rename rdev_debug to rdev_dbg
+Date: Mon, 29 Nov 2010 17:12:56 -0800
+Message-Id: <3c50480be4c6fe95a01d79e3c95fba0d9175a81b.1291079473.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
+In-Reply-To: <20101129220046.GB8335@opensource.wolfsonmicro.com>
+References: <20101129220046.GB8335@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> invalidate_mapping_pages is very big hint to reclaimer.
-> It means user doesn't want to use the page any more.
-> So in order to prevent working set page eviction, this patch
-> move the page into tail of inactive list by PG_reclaim.
-> 
-> Please, remember that pages in inactive list are working set
-> as well as active list. If we don't move pages into inactive list's
-> tail, pages near by tail of inactive list can be evicted although
-> we have a big clue about useless pages. It's totally bad.
-> 
-> Now PG_readahead/PG_reclaim is shared.
-> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
-> preventing fast reclaiming readahead marker page.
-> 
-> In this series, PG_reclaim is used by invalidated page, too.
-> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
-> to reclaim asap. Then, when the dirty page will be writeback,
-> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
-> It disturbs this serie's goal.
-> 
-> I think it's okay to clear PG_readahead when the page is dirty, not
-> writeback time. So this patch moves ClearPageReadahead.
-> 
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Cc: Mel Gorman <mel@csn.ul.ie>
+Just to please broonie...
 
-I still dislike this one. I doubt this trick makes much benefit in real
-world workload.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/regulator/core.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index ad1999b..bc841b8 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -38,7 +38,7 @@
+ 	pr_warn("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
+ #define rdev_info(rdev, fmt, ...)					\
+ 	pr_info("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
+-#define rdev_debug(rdev, fmt, ...)					\
++#define rdev_dbg(rdev, fmt, ...)					\
+ 	pr_debug("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
+ 
+ static DEFINE_MUTEX(regulator_list_mutex);
+@@ -792,13 +792,13 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* use regulator's subset of machine constraints */
+ 		if (constraints->min_uV < min_uV) {
+-			rdev_debug(rdev, "override min_uV, %d -> %d\n",
+-				   constraints->min_uV, min_uV);
++			rdev_dbg(rdev, "override min_uV, %d -> %d\n",
++				 constraints->min_uV, min_uV);
+ 			constraints->min_uV = min_uV;
+ 		}
+ 		if (constraints->max_uV > max_uV) {
+-			rdev_debug(rdev, "override max_uV, %d -> %d\n",
+-				   constraints->max_uV, max_uV);
++			rdev_dbg(rdev, "override max_uV, %d -> %d\n",
++				 constraints->max_uV, max_uV);
+ 			constraints->max_uV = max_uV;
+ 		}
+ 	}
+-- 
+1.7.3.2.245.g03276.dirty
 
