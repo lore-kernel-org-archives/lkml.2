@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab0K3TPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:15:40 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57318 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752388Ab0K3TPj (ORCPT
+	id S1756085Ab0K3TPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:15:51 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54954 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab0K3TPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:15:39 -0500
-Date: Tue, 30 Nov 2010 20:15:30 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Lionel Debroux <lionel_debroux@yahoo.fr>
-Cc: kernel-janitors@vger.kernel.org, Kees Cook <kees.cook@canonical.com>,
-        Emese Revfy <re.emese@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3 v2] hibernation: constify platform_hibernation_ops
-Message-ID: <20101130191530.GA4156@ucw.cz>
-References: <285897.77932.qm@smtp128.mail.ukl.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <285897.77932.qm@smtp128.mail.ukl.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 30 Nov 2010 14:15:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:cc:subject:x-mailer:references:in-reply-to
+         :content-type:content-id:date:message-id:mime-version
+         :content-transfer-encoding;
+        b=EcrlC7CVZQWjlbThsNWCexZdkMoEn1qlHMfv+UP1WLwfS0MJFq+4Ry9Cgv809jNJJP
+         PongZ+wOOz3WcUws45SADYRpqEbHOPZkqUKwPkudzEWarueEyFex641YPd35Dm1ZN6uc
+         HokGBEZdw9WZXZUaZXc63IqgPRYFCI29J4XJ0=
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+Reply-To: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Nobody cared about IRQs at shutdown
+X-Mailer: Modest 3.2
+References: <4CF53D94.4090003@gmail.com>
+	 <Pine.LNX.4.44L0.1011301355430.1686-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011301355430.1686-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=utf-8
+Content-ID: <1291144540.5573.3.camel@Nokia-N900-51-1>
+Date: Wed, 01 Dec 2010 00:15:40 +0500
+Message-Id: <1291144540.5573.4.camel@Nokia-N900-51-1>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-11-09 21:48:49, Lionel Debroux wrote:
-> Patch against mainline.
+Alan Stern wrote:
+> On Tue, 30 Nov 2010, Alexander E. Patrakov wrote:
 > 
-> Changes since v1: added one hunk; no longer adding "const" qualifier to
-> pointers in platform_hibernation_ops after seeing
-> b4144e4f6e3b448d322095ca08af393682a69e33.
-> ---
+> > In fact, I think that there is something bad, not specific to USB, 
+> > FireWire or SATA. Without systemd, all those subsystems function 
+> > properly at shutdown. With systemd, it looks like there are many 
+> > mishandled interrupts (all of USB, FireWire and SATA) at shutdown.
+> > What    could be this common thing? ACPI?
 > 
-> Subject: [PATCH 3/3] hibernation: constify platform_hibernation_ops
-> 
-> Derived from the grsecurity patch.
-> 
-> Signed-off-by: Lionel Debroux <lionel_debroux@yahoo.fr>
+> I don't know -- what is systemd?
 
-ack.
+Systemd is a new init developed by Lennart Poettering. You can learn more at http://freedesktop.org/wiki/Software/systemd
+
+It employs high concurrency in starting and stopping services, starts many things on demand and thus boots faster than the traditional SysV init. And also exposes this bug :(
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Alexander E. Patrakov (from mobile phone)
