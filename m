@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab0K3VF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:05:56 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31150 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756255Ab0K3VFy (ORCPT
+	id S1754065Ab0K3VJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:09:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39748 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab0K3VJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:05:54 -0500
-Date: Tue, 30 Nov 2010 12:33:09 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Miao Xie <miaox@cn.fujitsu.com>, Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] btrfs: Correct printing of sector_t
-Message-Id: <20101130123309.d84cc69c.randy.dunlap@oracle.com>
-In-Reply-To: <alpine.DEB.2.00.1011302128450.6502@ayla.of.borg>
-References: <alpine.DEB.2.00.1011302128450.6502@ayla.of.borg>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Nov 2010 16:09:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ixUfzemwYcnVR4T2n7KCxJxuqa1Yqof7rAmlHxr9e4McAkYiSGFeIFP+gKTv3lj3HK
+         VgQMNDPD6iP3ShhZcMsCfat+hJ+jTd30K8uIwj/f3mW7rgGZrFc8h5sMPQ5ulHHIJWck
+         BCM1X13R8TRMSZm7qcHJCRjsgL79+4EXxqxL0=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeff Mahoney <jeffm@suse.com>, "2.6.32.x" <stable@kernel.org>
+Subject: [PATCH] reiserfs: Don't acquire lock recursively in reiserfs_acl_chmod
+Date: Tue, 30 Nov 2010 22:09:09 +0100
+Message-Id: <1291151349-12760-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010 21:30:01 +0100 (CET) Geert Uytterhoeven wrote:
+reiserfs_acl_chmod() can be called by reiserfs_set_attr() and then
+take the reiserfs lock a second time. Thereafter it may call
+journal_begin() that definetly requires the lock not to be nested
+in order to release it before taking the journal mutex because
+the reiserfs lock depends on the journal mutex already.
 
-> If CONFIG_LBDAF=y, `sector_t' becomes `u64' instead of `unsigned long':
-> 
-> fs/btrfs/inode.c: In function ‘btrfs_end_dio_bio’:
-> fs/btrfs/inode.c:5717: warning: format ‘%lu’ expects type ‘long unsigned int’, but argument 4 has type ‘sector_t’
-> 
-> Hence always cast it to `unsigned long long' for printing.
-> 
-> Introduced by commit e65e1535542931e51189832264cd282e5899e4b9 ("btrfs: fix
-> panic caused by direct IO")
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+So, prevent from nesting the lock in reiserfs_acl_chmod().
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-
-> ---
->  fs/btrfs/inode.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-> index 8039390..fbffe5f 100644
-> --- a/fs/btrfs/inode.c
-> +++ b/fs/btrfs/inode.c
-> @@ -5712,9 +5712,9 @@ static void btrfs_end_dio_bio(struct bio *bio, int err)
->  
->  	if (err) {
->  		printk(KERN_ERR "btrfs direct IO failed ino %lu rw %lu "
-> -		      "disk_bytenr %lu len %u err no %d\n",
-> -		      dip->inode->i_ino, bio->bi_rw, bio->bi_sector,
-> -		      bio->bi_size, err);
-> +		      "disk_bytenr %llu len %u err no %d\n",
-> +		      dip->inode->i_ino, bio->bi_rw,
-> +		      (unsigned long long)bio->bi_sector, bio->bi_size, err);
->  		dip->errors = 1;
->  
->  		/*
-> -- 
-> 1.7.0.4
-> 
-> Gr{oetje,eeting}s,
-> 
-> 						Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Reported-by: Pawel Zawora <pzawora@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Tested-by: Pawel Zawora <pzawora@gmail.com>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: 2.6.32.x <stable@kernel.org>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ fs/reiserfs/xattr_acl.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/fs/reiserfs/xattr_acl.c b/fs/reiserfs/xattr_acl.c
+index 536d697..90d2fcb 100644
+--- a/fs/reiserfs/xattr_acl.c
++++ b/fs/reiserfs/xattr_acl.c
+@@ -472,7 +472,9 @@ int reiserfs_acl_chmod(struct inode *inode)
+ 		struct reiserfs_transaction_handle th;
+ 		size_t size = reiserfs_xattr_nblocks(inode,
+ 					     reiserfs_acl_size(clone->a_count));
+-		reiserfs_write_lock(inode->i_sb);
++		int depth;
++
++		depth = reiserfs_write_lock_once(inode->i_sb);
+ 		error = journal_begin(&th, inode->i_sb, size * 2);
+ 		if (!error) {
+ 			int error2;
+@@ -482,7 +484,7 @@ int reiserfs_acl_chmod(struct inode *inode)
+ 			if (error2)
+ 				error = error2;
+ 		}
+-		reiserfs_write_unlock(inode->i_sb);
++		reiserfs_write_unlock_once(inode->i_sb, depth);
+ 	}
+ 	posix_acl_release(clone);
+ 	return error;
+-- 
+1.7.3.2
+
