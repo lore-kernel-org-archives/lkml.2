@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab0K3OAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:00:13 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54040 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751991Ab0K3OAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:00:10 -0500
-Date: Tue, 30 Nov 2010 14:59:59 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101130135959.GA20703@elte.hu>
-References: <1291031593.32004.19.camel@laptop>
- <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
- <1291052268.32004.171.camel@laptop>
- <1291057565.20709.2.camel@marge.simson.net>
- <20101129192033.GA18372@elte.hu>
- <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
- <1291090455.7550.7.camel@marge.simson.net>
- <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
- <1291123083.28239.18.camel@marge.simson.net>
- <1291124887.32004.791.camel@laptop>
+	id S1752763Ab0K3OCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:02:08 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35244 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0K3OCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 09:02:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EaF/gttqBxpzqcZdDuI6woo2siBUQ8WsWkRs7VvK5JkvuQnWIjYXuH+sF/6BrErxza
+         3gAdlw8RZrb0pQTvUoqUf3hQezdEMZWJS8MUGx634/8FiQZ8YUxlTHxu3z3tcJfCBB4R
+         1ozxoY5ewts11TpHD5qN1JaNetanSRgDD+F1g=
+Date: Tue, 30 Nov 2010 23:01:52 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
+Message-ID: <20101130140152.GA1528@barrios-desktop>
+References: <cover.1291043273.git.minchan.kim@gmail.com>
+ <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
+ <20101130100933.82E9.A69D9226@jp.fujitsu.com>
+ <20101130091822.GJ13268@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291124887.32004.791.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.3
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.3 required=5.9 tests=BAYES_00,FUZZY_VPILL autolearn=no SpamAssassin version=3.2.5
-	0.7 FUZZY_VPILL            BODY: Attempt to obfuscate words in spam
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101130091822.GJ13268@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Tue, 2010-11-30 at 14:18 +0100, Mike Galbraith wrote:
+On Tue, Nov 30, 2010 at 09:18:22AM +0000, Mel Gorman wrote:
+> On Tue, Nov 30, 2010 at 10:10:20AM +0900, KOSAKI Motohiro wrote:
+> > > invalidate_mapping_pages is very big hint to reclaimer.
+> > > It means user doesn't want to use the page any more.
+> > > So in order to prevent working set page eviction, this patch
+> > > move the page into tail of inactive list by PG_reclaim.
+> > > 
+> > > Please, remember that pages in inactive list are working set
+> > > as well as active list. If we don't move pages into inactive list's
+> > > tail, pages near by tail of inactive list can be evicted although
+> > > we have a big clue about useless pages. It's totally bad.
+> > > 
+> > > Now PG_readahead/PG_reclaim is shared.
+> > > fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+> > > preventing fast reclaiming readahead marker page.
+> > > 
+> > > In this series, PG_reclaim is used by invalidated page, too.
+> > > If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+> > > to reclaim asap. Then, when the dirty page will be writeback,
+> > > clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+> > > It disturbs this serie's goal.
+> > > 
+> > > I think it's okay to clear PG_readahead when the page is dirty, not
+> > > writeback time. So this patch moves ClearPageReadahead.
+> > > 
+> > > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > > Acked-by: Rik van Riel <riel@redhat.com>
+> > > Cc: Wu Fengguang <fengguang.wu@intel.com>
+> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > > Cc: Nick Piggin <npiggin@kernel.dk>
+> > > Cc: Mel Gorman <mel@csn.ul.ie>
 > > 
-> > From: Mike Galbraith <efault@gmx.de>
-> > Date: Tue Nov 30 14:07:12 CET 2010
-> > Subject: [PATCH] sched: Improve desktop interactivity: Implement automated per session task groups
+> > I still dislike this one. I doubt this trick makes much benefit in real
+> > world workload.
 > > 
-> > A recurring complaint from CFS users is that parallel kbuild has a negative
-> > impact on desktop interactivity.  This patch implements an idea from Linus,
-> > to automatically create task groups.  Currently, only per session autogroups
-> > are implemented, but the patch leaves the way open for enhancement.
-> > 
-> > Implementation: each task's signal struct contains an inherited pointer to
-> > a refcounted autogroup struct containing a task group pointer, the default
-> > for all tasks pointing to the init_task_group.  When a task calls setsid(),
-> > a new task group is created, the process is moved into the new task group,
-> > and a reference to the preveious task group is dropped.  Child processes
-> > inherit this task group thereafter, and increase it's refcount.  When the
-> > last thread of a process exits, the process's reference is dropped, such
-> > that when the last process referencing an autogroup exits, the autogroup
-> > is destroyed.
-> > 
-> > At runqueue selection time, IFF a task has no cgroup assignment, its current
-> > autogroup is used.
-> > 
-> > Autogroup bandwidth is controllable via setting it's nice level through the
-> > proc filesystem.  cat /proc/<pid>/autogroup displays the task's group and the
-> > group's nice level.  echo <nice level> > /proc/<pid>/autogroup Sets the task
-> > group's shares to the weight of nice <level> task.  Setting nice level is rate
-> > limited for !admin users due to the abuse risk of task group locking.
-> > 
-> > The feature is enabled from boot by default if CONFIG_SCHED_AUTOGROUP=y is
-> > selected, but can be disabled via the boot option noautogroup, and can also
-> > be turned on/off on the fly via..
-> >         echo [01] > /proc/sys/kernel/sched_autogroup_enabled.
-> > ..which will automatically move tasks to/from the root task group.
-> > 
-> > Signed-off-by: Mike Galbraith <efault@gmx.de>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > LKML-Reference: <1290281700.28711.9.camel@maggy.simson.net>
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu> 
 > 
-> Looks good to me, Thanks Mike!
+> I would agree except as said elsewhere, it's a chicken and egg problem.
+> We don't have a real world test because fadvise is not useful in its
+> current iteration. I'm hoping that there will be a test comparing
 > 
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> rsync		on vanilla kernel
+> rsync		on patched kernel
+> rsync+patch	on vanilla kernel
+> rsync+patch	on patched kernel
+> 
+> Are the results of such a test likely to happen?
 
-Ok, great!
+Ben, Could you get the rsync execution time(user/sys) and 
+'cat /proc/vmstat' result before/after?
+If Ben is busy, I will try to get a data. but I need enough time.
 
-I've queued it up in tip:sched/core and started testing it - will push it out if it 
-passes basic tests. Added Linus's Acked-by - i presume that's still valid for v4 as 
-well, right?
+I expect rsync+patch on patched kernel should have a less allocstall, less pgscan 
+so fast execution time.
 
-Thanks,
+> 
+> -- 
+> Mel Gorman
+> Part-time Phd Student                          Linux Technology Center
+> University of Limerick                         IBM Dublin Software Lab
 
-	Ingo
+-- 
+Kind regards,
+Minchan Kim
