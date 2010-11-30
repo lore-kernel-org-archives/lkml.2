@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab0K3NXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 08:23:32 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:45236 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab0K3NXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 08:23:31 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
-Subject: [stable] Linux 2.6.32.26+drm33.12
-Date: Tue, 30 Nov 2010 14:23:29 +0100
-Message-Id: <1291123409-17337-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: linux-kernel@vger.kernel.org
-To: kernel-team@lists.ubuntu.com
+	id S1752211Ab0K3N3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 08:29:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab0K3N3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 08:29:20 -0500
+Date: Tue, 30 Nov 2010 15:29:15 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 2/3] KVM: MMU: fix accessed bit set on prefault path
+Message-ID: <20101130132915.GG2187@redhat.com>
+References: <4CF4C535.8080405@cn.fujitsu.com>
+ <4CF4C587.7080000@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF4C587.7080000@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.26+drm33.12 stable tree.
+On Tue, Nov 30, 2010 at 05:36:07PM +0800, Xiao Guangrong wrote:
+> Retry #PF is the speculative path, so don't set the accessed bit,
+> especially, stop prefault if shadow_accessed_mask = 0
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    1 +
+>  arch/x86/kvm/mmu.c              |   12 +++++++-----
+>  arch/x86/kvm/x86.c              |    3 +++
+>  3 files changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index a4c5352..209da89 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -632,6 +632,7 @@ int kvm_pv_mmu_op(struct kvm_vcpu *vcpu, unsigned long bytes,
+>  u8 kvm_get_guest_memory_type(struct kvm_vcpu *vcpu, gfn_t gfn);
+>  
+>  extern bool tdp_enabled;
+> +extern u64 __read_mostly shadow_accessed_mask;
+>  
+>  enum emulation_result {
+>  	EMULATE_DONE,       /* no further processing */
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 5b71415..f34987d 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -199,8 +199,8 @@ static u64 __read_mostly shadow_notrap_nonpresent_pte;
+>  static u64 __read_mostly shadow_nx_mask;
+>  static u64 __read_mostly shadow_x_mask;	/* mutual exclusive with nx_mask */
+>  static u64 __read_mostly shadow_user_mask;
+> -static u64 __read_mostly shadow_accessed_mask;
+>  static u64 __read_mostly shadow_dirty_mask;
+> +u64 __read_mostly shadow_accessed_mask;
+>  
+>  static inline u64 rsvd_bits(int s, int e)
+>  {
+> @@ -2214,7 +2214,8 @@ static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
+>  }
+>  
+>  static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+> -			int map_writable, int level, gfn_t gfn, pfn_t pfn)
+> +			int map_writable, int level, gfn_t gfn, pfn_t pfn,
+> +			bool prefault)
+>  {
+>  	struct kvm_shadow_walk_iterator iterator;
+>  	struct kvm_mmu_page *sp;
+> @@ -2229,7 +2230,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+>  				pte_access &= ~ACC_WRITE_MASK;
+>  			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
+>  				     0, write, 1, &pt_write,
+> -				     level, gfn, pfn, false, map_writable);
+> +				     level, gfn, pfn, prefault, map_writable);
+>  			direct_pte_prefetch(vcpu, iterator.sptep);
+>  			++vcpu->stat.pf_fixed;
+>  			break;
+> @@ -2321,7 +2322,8 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+>  	if (mmu_notifier_retry(vcpu, mmu_seq))
+>  		goto out_unlock;
+>  	kvm_mmu_free_some_pages(vcpu);
+> -	r = __direct_map(vcpu, v, write, map_writable, level, gfn, pfn);
+> +	r = __direct_map(vcpu, v, write, map_writable, level, gfn, pfn,
+> +			 prefault);
+>  	spin_unlock(&vcpu->kvm->mmu_lock);
+>  
+>  
+> @@ -2683,7 +2685,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+>  		goto out_unlock;
+>  	kvm_mmu_free_some_pages(vcpu);
+>  	r = __direct_map(vcpu, gpa, write, map_writable,
+> -			 level, gfn, pfn);
+> +			 level, gfn, pfn, prefault);
+>  	spin_unlock(&vcpu->kvm->mmu_lock);
+>  
+>  	return r;
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 410d2d1..83ed55f 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6178,6 +6178,9 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+>  {
+>  	int r;
+>  
+> +	if (!shadow_accessed_mask)
+> +		return;
+> +
+I don't get this. As far as I can see VMX inits shadow_accessed_mask to
+be zero if ept is enabled. This line here means that we never prefault with ept
+enabled. It is opposite from what it should be.
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+>  	if (!vcpu->arch.mmu.direct_map || !work->arch.direct_map ||
+>  	      is_error_page(work->page))
+>  		return;
+> -- 
+> 1.7.0.4
 
-This release updates the DRM subsystem only.
-
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-
--Stefan
-
-------
-
-* drm/radeon: fix PCI ID 5657 to be an RV410
-* Linux 2.6.32.26+drm33.12
-
- Makefile                 |    2 +-
- include/drm/drm_pciids.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 906d43e..5c0d69c 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .26+drm33.11
-+EXTRAVERSION = .26+drm33.12
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index 0cbdccc..3d016e9 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -85,7 +85,6 @@
- 	{0x1002, 0x5460, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x5462, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x5464, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
--	{0x1002, 0x5657, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5548, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R423|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5549, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R423|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x554A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R423|RADEON_NEW_MEMMAP}, \
-@@ -103,6 +102,7 @@
- 	{0x1002, 0x564F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5652, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5653, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x5657, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5834, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS300|RADEON_IS_IGP}, \
- 	{0x1002, 0x5835, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS300|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x5954, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS480|RADEON_IS_IGP|RADEON_IS_MOBILITY|RADEON_IS_IGPGART}, \
+--
+			Gleb.
