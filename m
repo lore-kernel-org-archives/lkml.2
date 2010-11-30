@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0K3Sii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:38:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab0K3Sih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:38:37 -0500
-Date: Tue, 30 Nov 2010 20:38:33 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 2/3] KVM: MMU: fix accessed bit set on prefault path
-Message-ID: <20101130183833.GB2924@redhat.com>
-References: <4CF4C535.8080405@cn.fujitsu.com>
- <4CF4C587.7080000@cn.fujitsu.com>
- <20101130132915.GG2187@redhat.com>
- <4CF52BC6.9020401@cn.fujitsu.com>
- <20101130175005.GA2924@redhat.com>
- <4CF53F41.1040503@cn.fujitsu.com>
+	id S1754915Ab0K3Skl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:40:41 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:37737 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752052Ab0K3Skk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 13:40:40 -0500
+Message-ID: <4CF54527.2070609@vmware.com>
+Date: Tue, 30 Nov 2010 10:40:39 -0800
+From: Michael Snyder <msnyder@vmware.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101103)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF53F41.1040503@cn.fujitsu.com>
+To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
+CC: Mark Wielaard <mjw@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Hui Zhu <teawater@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>,
+        "hellogcc@freelists.org" <hellogcc@freelists.org>
+Subject: Re: [PATCH] Built kernel without -O2 option
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com> <87r5e4lab7.fsf@basil.nowhere.org> <1291025536.2904.6.camel@springer.wildebeest.org> <20101130093106.GD5203@cr0.nay.redhat.com>
+In-Reply-To: <20101130093106.GD5203@cr0.nay.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 02:15:29AM +0800, Xiao Guangrong wrote:
-> On 12/01/2010 01:50 AM, Gleb Natapov wrote:
-> > On Wed, Dec 01, 2010 at 12:52:22AM +0800, Xiao Guangrong wrote:
-> >> On 11/30/2010 09:29 PM, Gleb Natapov wrote:
-> >>
-> >>>> +	if (!shadow_accessed_mask)
-> >>>> +		return;
-> >>>> +
-> >>> I don't get this. As far as I can see VMX inits shadow_accessed_mask to
-> >>> be zero if ept is enabled. This line here means that we never prefault with ept
-> >>> enabled. It is opposite from what it should be.
-> >>>
-> >>
-> >> Since it's no accessed bit on EPT, it's no way to distinguish between actually
-> >> accessed translations and prefault.
-> > Why is this a problem? We do what this page to not be evicted again
-> > since we expect it to be accessed.
-> > 
+Américo Wang wrote:
+> On Mon, Nov 29, 2010 at 11:12:16AM +0100, Mark Wielaard wrote:
+>> On Mon, 2010-11-29 at 10:59 +0100, Andi Kleen wrote:
+>>> Hui Zhu <teawater@gmail.com> writes:
+>>>
+>>>> Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>>>> qemu, kgtp or kgdb and so on.
+>>>> But the developer more like add a printk. It have a lot of reason, a big one is:
+>>>> (gdb) p ret
+>>>> $3 = <value optimized out>
+>>>> And the code execution order is not right.
+>>> Really the right place to fix a lot of this would be gcc (and perhaps
+>>> gdb). I suspect with some careful work the debugging experience
+>>> for -O2 could be improved a lot.
+>>> I also believe the latest gccs already have improvements in this area.
+>> The VTA branch was merged for GCC 4.5
+>> http://gcc.gnu.org/wiki/Var_Tracking_Assignments
+>> Which helps a lot with generating dwarf for previously "optimized out"
+>> values. There were also a couple of papers on generating even better
+>> debuginfo at the recent GCC Summit: http://gcc.gnu.org/wiki/summit2010
+>>
+>> Jakub Jelínek, Improving debug info for optimized away parameters
+>> http://gcc.gnu.org/wiki/summit2010?action=AttachFile&do=get&target=jelinek.pdf
+>> Alexandre Oliva, Consistent Views at Recommended Breakpoints
+>> http://gcc.gnu.org/wiki/summit2010?action=AttachFile&do=get&target=oliva.pdf
+>>
 > 
-> It can't avoid the page to be evicted again since the page is marked accessed only
-> when spte is droped or updated.
-I still do not understand why are you disabling prefault for ept. Why
-do you want to distinguish between actually accessed translations and
-prefauls? What problem are you trying to fix?
+> Cool! It would be much more convenient if this is solved by gcc.
 
---
-			Gleb.
+Those features mentioned at the GCC summit are not real close to 
+completion.  I wouldn't put off the discussion just because they're
+(possibly) in the pipeline.
+
