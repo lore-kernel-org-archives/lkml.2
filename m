@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab0K3XuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:50:06 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33774 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751956Ab0K3XuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752442Ab0K3XuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:50:04 -0500
+Received: from kroah.org ([198.145.64.141]:42976 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab0K3XuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Nov 2010 18:50:03 -0500
-Date: Tue, 30 Nov 2010 15:49:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print
- support
-Message-Id: <20101130154905.b5c8ab31.akpm@linux-foundation.org>
-In-Reply-To: <1291100431.12648.165.camel@yhuang-dev>
-References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
-	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
-	<20101129190343.7d7cea12.akpm@linux-foundation.org>
-	<1291087752.12648.95.camel@yhuang-dev>
-	<20101129194033.393e1f70.akpm@linux-foundation.org>
-	<1291100431.12648.165.camel@yhuang-dev>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Nov 2010 15:49:37 -0800
+From: Greg KH <greg@kroah.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
+        Dan JOHANSSON <dan.johansson@stericsson.com>,
+        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
+Message-ID: <20101130234937.GA7156@kroah.com>
+References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local>
+ <201011261224.59490.arnd@arndb.de>
+ <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com>
+ <201011301621.48140.arnd@arndb.de>
+ <20101130184049.GC8521@n2100.arm.linux.org.uk>
+ <20101130184834.GA16055@kroah.com>
+ <20101130220550.GD8521@n2100.arm.linux.org.uk>
+ <20101130230533.GA11342@kroah.com>
+ <20101130234215.GE8521@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130234215.GE8521@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010 15:00:31 +0800
-Huang Ying <ying.huang@intel.com> wrote:
-
-> > However in this case you are avowedly treating the printks as a
-> > userspace interface, with the intention that software be written to
-> > parse them, yes?  So once they're in place, we cannot change them?  That
-> > makes it more important.
+On Tue, Nov 30, 2010 at 11:42:15PM +0000, Russell King - ARM Linux wrote:
+> > It's a work in progress, but wherever possible, I encourage people to
+> > not make 'struct device' static.
 > 
-> If my understanding is correct, Linus still don't like the idea of user
-> space hardware error tool.
+> Right, so saying to ARM developers that they can't submit code which
+> adds new static device structures is rather problematical then, and
+> effectively brings a section of kernel development to a complete
+> standstill - it means no support for additional ARM platforms until
+> this issue is resolved.  (This "condition" was mentioned by Arnd
+> earlier in this thread, and was put in such a way that it was now
+> a hard and fast rule.)
 
-I'm sure he has no problem with a userspace tool ;) Surely what he doesn't
-like is the proposed kernel interface.
+Sorry, I didn't mean for that to be mentioned that way at all, as I know
+the issues that are keeping this from happening.
 
->  On the other hand, if we need this tool, I
-> think printk is not a good tool-oriented hardware error reporting
-> interface for it, because:
-> 
-> - There is no overall format or record boundaries for printk, because
-> printk is traditionally for 1-2 lines.  This makes that printk is hard
-> to parse in general.
+> I feel it would be better to allow the current situation to continue.
+> If we start telling people that they can't use statically declared
+> devices without first having an alternative, we'll end up with people
+> inventing their own individual - and different - solutions to this
+> problem, which could actually make the problem harder to resolve in
+> the longer term.
 
-Well.  These things can be addressed by careful choice of output
-format.
+Ok, but again, I do encourage, wherever possible, that people do not
+statically create a 'struct device'.
 
-> - Messages from different CPUs may be interleaved.
+thanks,
 
-A single printk() should be atomic.
+greg k-h
 
-> - Good error reporting is too verbose for kernel log
-> 
-> - printk has no internal priority support, so that high severity errors
-> has no more priority than low severity ones.
-> 
-> 
-> So my opinion is:
-> 
-> - Use printk as human oriented hardware error reporting.
-> - Use another tool oriented interface for user space hardware error tool
-> if necessary.
-> 
-> Do you agree?  Do you think printk can be used as a good tool-oriented
-> hardware error reporting interface too?
-
-I agree that using printk() is pretty sucky.
-
-However your proposals are waaaaaaaaay too narrow and specific IMO. 
-There are several reasons why people want more regular and structured
-kerenl->userspace messaging features.  One such requirement is for
-internationalisation: people want messages to come out in some
-non-language-specific manner so that userspace tools can perform
-catalogue lookups and display the messages in the appropriate language.
- Others (eg google) want to feed the messages into large-scale
-capturing systems for offline analysis.  And there are other
-requirements which I forget.  Such a messaging/logging system would
-also incorporate the requirement to log to a persistent store.
-
-So I think that quite a lot of people would be interested in proposals
-for a new and improved kernel->userspace messaging/logging facility. 
-But talking about "hardware error reporting" (especially when it covers
-only a teeny subset of possible hardware errors!) is very myopic.
-
-And implementing the broad facility would be a pretty big project.  Simply
-chasing down all the stakeholders and understanding their needs would
-turn one's hair grey.
-
-So we're a bit stuck, really.  We would benefit from a quite broad and
-expensive-to-implement messaging/logging system, but we don't even know
-what that will look like yet.  You have a small and highly-specific
-subset of that.  If we merge the subset then it probably will live
-forever even if the broader feature gets written one day, because the
-subset is userspace-visible and adds interfaces which the larger system
-probably won't even implement.
-
-So...  for your pretty narrow and specific problem, perhaps using
-printk as a stopgap until somethine better to come along is the correct
-choice.
