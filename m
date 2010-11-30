@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab0K3OGN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:06:13 -0500
-Received: from fire-ce0.netis.ru ([193.233.48.99]:53956 "EHLO fire.netis.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab0K3OGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:06:12 -0500
-X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2010 09:06:11 EST
-Date: Tue, 30 Nov 2010 16:52:20 +0300
-From: "Alexander V. Lukyanov" <lav@netis.ru>
-To: linux-ext4@vger.kernel.org
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@sun.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] allow inode_readahead_blks=0
-Message-ID: <20101130135219.GA22357@proxy>
+	id S1752751Ab0K3OLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:11:07 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:60865 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab0K3OLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 09:11:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=m35XfC7ZKP0EUTVkf5V/9oxXRzVb05pn31rO0qA0VTyAfkBIDDkjZa96tP3fai6+gd
+         WK4jvcoPu2n3dX7sRYB1AimTn+4ZU/SA39WXHv4Y8r6JJvCQUaf/wRfMeQK8EakjKsbx
+         6hbrkSAXSiM3nAB0ig34bUInKVWI8EsosPX2o=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
+In-Reply-To: <20101130091822.GJ13268@csn.ul.ie>
+References: <cover.1291043273.git.minchan.kim@gmail.com> <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com> <20101130100933.82E9.A69D9226@jp.fujitsu.com> <20101130091822.GJ13268@csn.ul.ie>
+User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Tue, 30 Nov 2010 09:11:01 -0500
+Message-ID: <87zksqeway.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-NETIS-MailScanner-Information: Please contact NETIS Telecom for more information <info@netis.ru> (+7 4852 797797)
-X-NETIS-MailScanner-ID: oAUDqMDq022395
-X-NETIS-MailScanner: Found to be clean
-X-NETIS-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=0.001, required 6, autolearn=disabled, FSL_RU_URL 0.00)
-X-NETIS-MailScanner-From: root@proxy.yar.ru
-X-NETIS-MailScanner-To: adilger@sun.com, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org, tytso@mit.edu
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 30 Nov 2010 09:18:22 +0000, Mel Gorman <mel@csn.ul.ie> wrote:
+> I would agree except as said elsewhere, it's a chicken and egg problem.
+> We don't have a real world test because fadvise is not useful in its
+> current iteration. I'm hoping that there will be a test comparing
+> 
+> rsync		on vanilla kernel
+> rsync		on patched kernel
+> rsync+patch	on vanilla kernel
+> rsync+patch	on patched kernel
+> 
+> Are the results of such a test likely to happen?
+> 
+Yes, absolutely, although I'm sorry it has taken so long. Between
+thanksgiving and the impending end of the semester things have been a
+bit hectic. Nevertheless, I just finished putting together a script to
+record some metics from /proc/vmstat and /proc/[pid]/statm, so at this
+point I'm ready to finally take some data. Any suggestions for
+particular patterns to look for in the numbers or other metrics to
+record are welcome. Cheers,
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hello!
-
-Currently the value 0 is disallowed, as it is not a power of 2.
-
-This obvious patch fixes the problem.
-
-Signed-off-by: Alexander V. Lukyanov <lav@netis.ru>
-
--- 
-   Alexander.
-
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=diff
-
---- fs/ext4/super.c.0	2010-11-16 10:48:33.418629215 +0300
-+++ fs/ext4/super.c	2010-11-16 10:46:07.739753246 +0300
-@@ -1657,7 +1657,7 @@ set_qf_format:
- 				return 0;
- 			if (option < 0 || option > (1 << 30))
- 				return 0;
--			if (!is_power_of_2(option)) {
-+			if (option && !is_power_of_2(option)) {
- 				ext4_msg(sb, KERN_ERR,
- 					 "EXT4-fs: inode_readahead_blks"
- 					 " must be a power of 2");
-@@ -2274,7 +2274,7 @@ static ssize_t inode_readahead_blks_stor
- 	if (parse_strtoul(buf, 0x40000000, &t))
- 		return -EINVAL;
- 
--	if (!is_power_of_2(t))
-+	if (t && !is_power_of_2(t))
- 		return -EINVAL;
- 
- 	sbi->s_inode_readahead_blks = t;
-
---LQksG6bCIzRHxTLp--
+- Ben
