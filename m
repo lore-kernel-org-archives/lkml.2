@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab0K3OOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 09:14:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:44314 "EHLO hera.kernel.org"
+	id S1753134Ab0K3OSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 09:18:22 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52059 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682Ab0K3OOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 09:14:14 -0500
-Message-ID: <4CF506A6.4020200@kernel.org>
-Date: Tue, 30 Nov 2010 15:13:58 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
+	id S1753007Ab0K3OSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 09:18:21 -0500
+Date: Tue, 30 Nov 2010 15:18:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-References: <20101022012302.GA7487@havoc.gtf.org> <20101129180755.GK15818@bombadil.infradead.org>
-In-Reply-To: <20101129180755.GK15818@bombadil.infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 14:14:00 +0000 (UTC)
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Message-ID: <20101130141804.GB22588@elte.hu>
+References: <1290700829.4759.16.camel@maggy.simson.net>
+ <1290954299.30515.15.camel@marge.simson.net>
+ <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
+ <20101128201851.GA20555@elte.hu>
+ <1291031593.32004.19.camel@laptop>
+ <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+ <1291052268.32004.171.camel@laptop>
+ <1291057565.20709.2.camel@marge.simson.net>
+ <20101129192033.GA18372@elte.hu>
+ <1291103647.24405.5.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291103647.24405.5.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 11/29/2010 07:07 PM, Kyle McMartin wrote:
-> On Thu, Oct 21, 2010 at 09:23:02PM -0400, Jeff Garzik wrote:
->> 1) Link Power Management (LPM) rewrite
->>
+* Mike Galbraith <efault@gmx.de> wrote:
+
+> On Mon, 2010-11-29 at 20:20 +0100, Ingo Molnar wrote:
+> > * Mike Galbraith <efault@gmx.de> wrote:
+> > 
+> > > > I know, from the testing so far we _thought_ it was fairly sane. Apparently 
+> > > > there's still some work to do.
+> > > 
+> > > Damn thing bisected to:
+> > > 
+> > > commit 92fd4d4d67b945c0766416284d4ab236b31542c4
+> > > Merge: fe7de49 e53beac
+> > > Author: Ingo Molnar <mingo@elte.hu>
+> > > Date:   Thu Nov 18 13:22:14 2010 +0100
+> > > 
+> > >     Merge commit 'v2.6.37-rc2' into sched/core
+> > > 
+> > >     Merge reason: Move to a .37-rc base.
+> > > 
+> > >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > > 
+> > > 92fd4d4d67b945c0766416284d4ab236b31542c4 is the first bad commit
+> > 
+> > Hm, i'd suggest to double check the two originator points:
+> > 
+> >   e53beac - is it really 'bad' ?
+> >   fe7de49 - is it really 'good'?
 > 
-> Hrm, this is causing issues for me... When I resume from suspend on my
-> thinkpad X201s I get:
+> Nope.   I did a bisection this morning in text mode with a pipe-test
+> based measurement proggy, and it bisected cleanly.
 > 
-> [ 2454.478673] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [ 2454.487736] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
-> succeeded
-> [ 2454.487742] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
-> filtered out
-> [repeated a few times]
-> [ 2454.492688] ata1.00: configured for UDMA/100
-> [ 2454.506690] ata1.00: configured for UDMA/100
-> [ 2454.506696] ata1: EH complete
-> [...]
-> [ 2455.097874] ata1.00: configured for UDMA/100
-> [ 2455.097882] ata1: EH complete
-> [...]
-> [ 2455.386756] ata1.00: failed to enable DIPM, Emask 0x100
-> [ 2455.386768] ata1: hard resetting link
-> [...]
-> [ 2455.847925] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [ 2455.849372] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
-> succeeded
-> [ 2455.849380] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
-> LOCK) filtered out
-> [ditto]
-> [ 2455.854171] ata1.00: configured for UDMA/100
-> [ 2455.854480] ata1.00: failed to enable DIPM, Emask 0x100
-> [ 2455.854484] ata1: disabling LPM on the link
-> [ 2455.854489] ata1: limiting SATA link speed to 1.5 Gbps
-> [ 2455.854494] ata1.00: limiting speed to UDMA/100:PIO3
+> 2069dd75c7d0f49355939e5586daf5a9ab216db7 is the first bad commit
 > 
-> Tejun, any ideas how I can debug this?
+> commit 2069dd75c7d0f49355939e5586daf5a9ab216db7
+> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date:   Mon Nov 15 15:47:00 2010 -0800
+> 
+>     sched: Rewrite tg_shares_up)
 
-Hmm... DIPM commands are failing with AC_ERR_OTHER.  Other than DIPM
-not being configured and speed capped at 1.5Gbps, the machine works
-fine afterwards, right?  Are you up for applying debug patches?
+Ok. And has this fixed it:
 
-Thanks.
+  822bc180a7f7: sched: Fix unregister_fair_sched_group()
 
--- 
-tejun
+... or are there two bugs?
+
+Thanks,
+
+	Ingo
