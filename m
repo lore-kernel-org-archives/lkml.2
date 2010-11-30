@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab0K3Rjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:39:41 -0500
-Received: from imap.ru.mvista.com ([213.79.90.228]:12525 "EHLO
+	id S1755519Ab0K3Rj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:39:56 -0500
+Received: from imap.ru.mvista.com ([213.79.90.228]:12523 "EHLO
 	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754560Ab0K3Ria (ORCPT
+	by vger.kernel.org with ESMTP id S1753864Ab0K3Ria (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Nov 2010 12:38:30 -0500
-Date: Tue, 30 Nov 2010 20:17:00 +0300
+Date: Tue, 30 Nov 2010 20:17:09 +0300
 From: Anton Vorontsov <avorontsov@mvista.com>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Tony Lindgren <tony@atomide.com>, Kukjin Kim <kgene.kim@samsung.com>,
@@ -20,8 +20,8 @@ Cc: Tony Lindgren <tony@atomide.com>, Kukjin Kim <kgene.kim@samsung.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-tegra@vger.kernel.org
-Subject: [PATCH 2/8] ARM: cns3xxx: Add support for SMP
-Message-ID: <20101130171700.GB24034@oksana.dev.rtsoft.ru>
+Subject: [PATCH 6/8] ARM: ux500: Switch to generic SCU routines
+Message-ID: <20101130171709.GF24034@oksana.dev.rtsoft.ru>
 References: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -32,162 +32,280 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing fancy needs to be done, just use generic SCU routines.
+This shrinks platform-specific code quite a bit.
 
 Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
 ---
- arch/arm/Kconfig                         |    2 +-
- arch/arm/mach-cns3xxx/Kconfig            |    1 +
- arch/arm/mach-cns3xxx/Makefile           |    1 +
- arch/arm/mach-cns3xxx/include/mach/smp.h |   28 ++++++++++++
- arch/arm/mach-cns3xxx/platsmp.c          |   69 ++++++++++++++++++++++++++++++
- 5 files changed, 100 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-cns3xxx/include/mach/smp.h
- create mode 100644 arch/arm/mach-cns3xxx/platsmp.c
+ arch/arm/mach-ux500/Makefile           |    2 +-
+ arch/arm/mach-ux500/headsmp.S          |   38 -----------
+ arch/arm/mach-ux500/hotplug.c          |    5 +-
+ arch/arm/mach-ux500/include/mach/smp.h |    3 -
+ arch/arm/mach-ux500/platsmp.c          |  115 ++------------------------------
+ 5 files changed, 10 insertions(+), 153 deletions(-)
+ delete mode 100644 arch/arm/mach-ux500/headsmp.S
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 9aff0e8..38c1697 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1208,7 +1208,7 @@ config SMP
- 	depends on REALVIEW_EB_ARM11MP || REALVIEW_EB_A9MP || \
- 		 MACH_REALVIEW_PB11MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
- 		 ARCH_S5PV310 || ARCH_TEGRA || ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || \
--		 ARCH_MSM_SCORPIONMP
-+		 ARCH_MSM_SCORPIONMP || ARCH_CNS3XXX
- 	select USE_GENERIC_SMP_HELPERS
- 	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
- 	help
-diff --git a/arch/arm/mach-cns3xxx/Kconfig b/arch/arm/mach-cns3xxx/Kconfig
-index 9ebfcc4..0ba82aa 100644
---- a/arch/arm/mach-cns3xxx/Kconfig
-+++ b/arch/arm/mach-cns3xxx/Kconfig
-@@ -3,6 +3,7 @@ menu "CNS3XXX platform type"
+diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+index 9e27a84..90fa03c 100644
+--- a/arch/arm/mach-ux500/Makefile
++++ b/arch/arm/mach-ux500/Makefile
+@@ -7,7 +7,7 @@ obj-$(CONFIG_UX500_SOC_DB5500)	+= cpu-db5500.o devices-db5500.o
+ obj-$(CONFIG_UX500_SOC_DB8500)	+= cpu-db8500.o devices-db8500.o prcmu.o
+ obj-$(CONFIG_MACH_U8500_MOP)	+= board-mop500.o board-mop500-sdi.o
+ obj-$(CONFIG_MACH_U5500)	+= board-u5500.o
+-obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
++obj-$(CONFIG_SMP)		+= platsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+ obj-$(CONFIG_LOCAL_TIMERS)	+= localtimer.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= board-mop500-regulators.o
+diff --git a/arch/arm/mach-ux500/headsmp.S b/arch/arm/mach-ux500/headsmp.S
+deleted file mode 100644
+index a6be2cd..0000000
+--- a/arch/arm/mach-ux500/headsmp.S
++++ /dev/null
+@@ -1,38 +0,0 @@
+-/*
+- *  Copyright (c) 2009 ST-Ericsson
+- *	This file is based  ARM Realview platform
+- *  Copyright (c) 2003 ARM Limited
+- *  All Rights Reserved
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/linkage.h>
+-#include <linux/init.h>
+-
+-	__INIT
+-
+-/*
+- * U8500 specific entry point for secondary CPUs.
+- */
+-ENTRY(u8500_secondary_startup)
+-	mrc	p15, 0, r0, c0, c0, 5
+-	and	r0, r0, #15
+-	adr	r4, 1f
+-	ldmia	r4, {r5, r6}
+-	sub	r4, r4, r5
+-	add	r6, r6, r4
+-	dsb
+-pen:	ldr	r7, [r6]
+-	cmp	r7, r0
+-	bne	pen
+-
+-	/*
+-	 * we've been released from the holding pen: secondary_stack
+-	 * should now contain the SVC stack for this core
+-	 */
+-	b	secondary_startup
+-
+-1:	.long	.
+-	.long	pen_release
+diff --git a/arch/arm/mach-ux500/hotplug.c b/arch/arm/mach-ux500/hotplug.c
+index dd8037e..38f4e1b 100644
+--- a/arch/arm/mach-ux500/hotplug.c
++++ b/arch/arm/mach-ux500/hotplug.c
+@@ -12,10 +12,9 @@
+ #include <linux/errno.h>
+ #include <linux/smp.h>
  
- config MACH_CNS3420VB
- 	bool "Support for CNS3420 Validation Board"
-+	select HAVE_ARM_SCU if SMP
- 	help
- 	  Include support for the Cavium Networks CNS3420 MPCore Platform
- 	  Baseboard.
-diff --git a/arch/arm/mach-cns3xxx/Makefile b/arch/arm/mach-cns3xxx/Makefile
-index 11033f1..ba4ee7b 100644
---- a/arch/arm/mach-cns3xxx/Makefile
-+++ b/arch/arm/mach-cns3xxx/Makefile
-@@ -1,3 +1,4 @@
- obj-$(CONFIG_ARCH_CNS3XXX)		+= core.o pm.o devices.o
-+obj-$(CONFIG_SMP)			+= platsmp.o
- obj-$(CONFIG_PCI)			+= pcie.o
- obj-$(CONFIG_MACH_CNS3420VB)		+= cns3420vb.o
-diff --git a/arch/arm/mach-cns3xxx/include/mach/smp.h b/arch/arm/mach-cns3xxx/include/mach/smp.h
-new file mode 100644
-index 0000000..44aa7ea
---- /dev/null
-+++ b/arch/arm/mach-cns3xxx/include/mach/smp.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright 2002 ARM Ltd.
-+ * Copyright 2008 Cavium Networks
-+ *
-+ * This file is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, Version 2, as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __MACH_SMP_H
-+#define __MACH_SMP_H
-+
-+#include <asm/hardware/gic.h>
-+
-+#define hard_smp_processor_id()				\
-+	({						\
-+		unsigned int cpunum;			\
-+		__asm__("mrc p15, 0, %0, c0, c0, 5"	\
-+			: "=r" (cpunum));		\
-+		cpunum &= 0x0F;				\
-+	})
-+
-+static inline void smp_cross_call(const struct cpumask *mask, int ipi)
-+{
-+	gic_raise_softirq(mask, ipi);
-+}
-+
-+#endif /* __MACH_SMP_H */
-diff --git a/arch/arm/mach-cns3xxx/platsmp.c b/arch/arm/mach-cns3xxx/platsmp.c
-new file mode 100644
-index 0000000..fc1595c
---- /dev/null
-+++ b/arch/arm/mach-cns3xxx/platsmp.c
-@@ -0,0 +1,69 @@
-+/*
-+ * Copyright 2002 ARM Ltd
-+ * Copyright 2008 Cavium Networks
-+ * Copyright 2010 MontaVista Software, LLC.
-+ *
-+ * This file is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, Version 2, as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/compiler.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/smp.h>
-+#include <linux/io.h>
-+#include <asm/unified.h>
 +#include <asm/smp_scu.h>
-+#include <mach/cns3xxx.h>
-+#include "core.h"
-+
-+static void __iomem *scu_base_addr(void)
-+{
-+	return (void __iomem *)CNS3XXX_TC11MP_SCU_BASE_VIRT;
-+}
-+
-+void __cpuinit platform_secondary_init(unsigned int cpu)
-+{
-+	trace_hardirqs_off();
-+
-+	/*
-+	 * if any interrupts are already enabled for the primary
-+	 * core (e.g. timer irq), then they will not have been enabled
-+	 * for us: do so
-+	 */
-+	gic_cpu_init(0, gic_cpu_base_addr);
-+
+ #include <asm/cacheflush.h>
+ 
+-extern volatile int pen_release;
+-
+ static inline void platform_do_lowpower(unsigned int cpu)
+ {
+ 	flush_cache_all();
+@@ -24,7 +23,7 @@ static inline void platform_do_lowpower(unsigned int cpu)
+ 	for (;;) {
+ 		__asm__ __volatile__("dsb\n\t" "wfi\n\t"
+ 				: : : "memory");
+-		if (pen_release == cpu) {
++		if (scu_pen_release == cpu) {
+ 			/*
+ 			 * OK, proper wakeup, we're done
+ 			 */
+diff --git a/arch/arm/mach-ux500/include/mach/smp.h b/arch/arm/mach-ux500/include/mach/smp.h
+index bd57c50..646cea7 100644
+--- a/arch/arm/mach-ux500/include/mach/smp.h
++++ b/arch/arm/mach-ux500/include/mach/smp.h
+@@ -12,9 +12,6 @@
+ #include <asm/hardware/gic.h>
+ #include <asm/smp_mpidr.h>
+ 
+-/* This is required to wakeup the secondary core */
+-extern void u8500_secondary_startup(void);
+-
+ /*
+  * We use IRQ1 as the IPI
+  */
+diff --git a/arch/arm/mach-ux500/platsmp.c b/arch/arm/mach-ux500/platsmp.c
+index b8987bd..0e195a2 100644
+--- a/arch/arm/mach-ux500/platsmp.c
++++ b/arch/arm/mach-ux500/platsmp.c
+@@ -11,30 +11,12 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/init.h>
+-#include <linux/errno.h>
+-#include <linux/delay.h>
+-#include <linux/device.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
+ 
+-#include <asm/cacheflush.h>
+-#include <asm/localtimer.h>
+ #include <asm/smp_scu.h>
+ #include <mach/hardware.h>
+ 
+-/*
+- * control for which core is the next to come out of the secondary
+- * boot "holding pen"
+- */
+-volatile int __cpuinitdata pen_release = -1;
+-
+-static unsigned int __init get_core_count(void)
+-{
+-	return scu_get_core_count(__io_address(UX500_SCU_BASE));
+-}
+-
+-static DEFINE_SPINLOCK(boot_lock);
+-
+ void __cpuinit platform_secondary_init(unsigned int cpu)
+ {
+ 	trace_hardirqs_off();
+@@ -46,59 +28,18 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
+ 	 */
+ 	gic_cpu_init(0, __io_address(UX500_GIC_CPU_BASE));
+ 
+-	/*
+-	 * let the primary processor know we're out of the
+-	 * pen, then head off into the C entry point
+-	 */
+-	pen_release = -1;
+-
+-	/*
+-	 * Synchronise with the boot thread.
+-	 */
+-	spin_lock(&boot_lock);
+-	spin_unlock(&boot_lock);
 +	scu_secondary_init(cpu);
-+}
-+
-+int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
+ }
+ 
+ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+ {
+-	unsigned long timeout;
+-
+-	/*
+-	 * set synchronisation state between this boot processor
+-	 * and the secondary one
+-	 */
+-	spin_lock(&boot_lock);
+-
+-	/*
+-	 * The secondary processor is waiting to be released from
+-	 * the holding pen - release it, then wait for it to flag
+-	 * that it has been released by resetting pen_release.
+-	 */
+-	pen_release = cpu;
+-	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
+-	outer_clean_range(__pa(&pen_release), __pa(&pen_release) + 1);
+-
+-	smp_cross_call(cpumask_of(cpu), 1);
+-
+-	timeout = jiffies + (1 * HZ);
+-	while (time_before(jiffies, timeout)) {
+-		if (pen_release == -1)
+-			break;
+-	}
+-
+-	/*
+-	 * now the secondary core is starting up let it run its
+-	 * calibrations, then wait for it to finish
+-	 */
+-	spin_unlock(&boot_lock);
+-
+-	return pen_release != -1 ? -ENOSYS : 0;
 +	return scu_boot_secondary(cpu, idle);
-+}
-+
-+void __init smp_init_cpus(void)
-+{
-+	scu_init_cpus(scu_base_addr());
-+}
-+
-+static void __init poke_milo(void)
-+{
-+	if (num_present_cpus() <= 1)
-+		return;
-+	/*
-+	 * Write the address of secondary startup into the system-wide flags
-+	 * register. The BootMonitor waits for this register to become
-+	 * non-zero.
-+	 */
-+	__raw_writel(BSYM(virt_to_phys(scu_secondary_startup)),
-+		     (void __iomem *)(0xFFF07000 + 0x0600));
-+
-+	mb();
-+}
-+
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	scu_prepare_cpus(scu_base_addr(), max_cpus);
-+	poke_milo();
-+}
+ }
+ 
+ static void __init wakeup_secondary(void)
+ {
+ 	/* nobody is to be released from the pen yet */
+-	pen_release = -1;
++	scu_pen_release = -1;
+ 
+ 	/*
+ 	 * write the address of secondary startup into the backup ram register
+@@ -107,7 +48,7 @@ static void __init wakeup_secondary(void)
+ 	 * is waiting for. This would wake up the secondary core from WFE
+ 	 */
+ #define U8500_CPU1_JUMPADDR_OFFSET 0x1FF4
+-	__raw_writel(virt_to_phys(u8500_secondary_startup),
++	__raw_writel(virt_to_phys(scu_secondary_startup),
+ 		__io_address(UX500_BACKUPRAM0_BASE) +
+ 		U8500_CPU1_JUMPADDR_OFFSET);
+ 
+@@ -126,55 +67,13 @@ static void __init wakeup_secondary(void)
+  */
+ void __init smp_init_cpus(void)
+ {
+-	unsigned int i, ncores = get_core_count();
+-
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
++	scu_init_cpus(__io_address(UX500_SCU_BASE));
+ }
+ 
+ void __init smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = get_core_count();
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	/* sanity check */
+-	if (ncores == 0) {
+-		printk(KERN_ERR
+-		       "U8500: strange CM count of 0? Default to 1\n");
+-		ncores = 1;
+-	}
+-
+-	if (ncores > num_possible_cpus())	{
+-		printk(KERN_WARNING
+-		       "U8500: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, num_possible_cpus());
+-		ncores = num_possible_cpus();
+-	}
+-
+-	smp_store_cpu_info(cpu);
+-
+-	/*
+-	 * are we trying to boot more cores than exist?
+-	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
++	scu_prepare_cpus(__io_address(UX500_SCU_BASE), max_cpus);
+ 
+-	if (max_cpus > 1) {
+-		/*
+-		 * Enable the local timer or broadcast device for the
+-		 * boot CPU, but only if we have more than one CPU.
+-		 */
+-		percpu_timer_setup();
+-		scu_enable(__io_address(UX500_SCU_BASE));
++	if (max_cpus > 1)
+ 		wakeup_secondary();
+-	}
+ }
 -- 
 1.7.0.5
 
