@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab0K3D1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 22:27:52 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33771 "EHLO mx1.suse.de"
+	id S1752967Ab0K3D3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 22:29:18 -0500
+Received: from mga03.intel.com ([143.182.124.21]:19396 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab0K3D1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 22:27:51 -0500
-Date: Mon, 29 Nov 2010 19:26:25 -0800
-From: Greg KH <gregkh@suse.de>
-To: Benjamin Poirier <benjamin.poirier@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Johan Hovold <jhovold@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andreas Mohr <andi@lisas.de>,
-        Daniel Sangorrin <daniel.sangorrin@gmail.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: BUG, regression. usb-serial adapter broken by PM?
-Message-ID: <20101130032625.GB12851@suse.de>
-References: <4CF458CE.2050603@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF458CE.2050603@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752424Ab0K3D3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 22:29:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
+   d="scan'208";a="354774447"
+Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status
+ print support
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20101129190343.7d7cea12.akpm@linux-foundation.org>
+References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
+	 <1291085501-31494-3-git-send-email-ying.huang@intel.com>
+	 <20101129190343.7d7cea12.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 11:29:12 +0800
+Message-ID: <1291087752.12648.95.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 08:52:14PM -0500, Benjamin Poirier wrote:
-> Hello,
+On Tue, 2010-11-30 at 11:03 +0800, Andrew Morton wrote:
+> On Tue, 30 Nov 2010 10:51:40 +0800 Huang Ying <ying.huang@intel.com> wrote:
 > 
-> Recently, my usb-serial converter has become unusable. Attempts to open
-> the device always fail with:
-> open("/dev/ttyUSB0", O_RDONLY)          = -1 EAGAIN (Resource temporarily unavailable)
+> > printk is one of the methods to report hardware errors to user space.
+> > Hardware error information reported by firmware to Linux kernel is in
+> > the format of APEI generic error status (struct
+> > acpi_hes_generic_status).  This patch adds print support for the
+> > format, so that the corresponding hardware error information can be
+> > reported to user space via printk.
+> > 
+> > PCIe AER information print is not implemented yet.  Will refactor the
+> > original PCIe AER information printing code to avoid code duplicating.
+> > 
+> > ...
+> >  
+> > +#define pr_pfx(pfx, fmt, ...)			\
+> > +	printk("%s" fmt, pfx, ##__VA_ARGS__)
 > 
-> The device is a:
-> ID 0c52:2101 Sealevel Systems, Inc. Serial Converter
-> and uses the ftdi_sio driver.
-> 
-> I've bisected this problem to
-> commit 1bfee5bc86fdaecc912e06080583eddab7263df2
-> Author: Alan Stern <stern@rowland.harvard.edu>
-> Date:   Sat Sep 25 23:35:00 2010 +0200
-> 
->     PM / Runtime: Merge synchronous and async runtime routines
-> 
-> I have other usb-serial converters that use other drivers and that are
-> unaffected. I have noticed the problem on a x86_64 machine (.config
-> here: http://pastebin.ca/2006414) and can reproduce it in kvm (with usb
-> passthrough, .config here: http://pastebin.ca/2006416).
-> 
-> I'll be glad to provide more info or try patches.
+> hm, why does so much code create little printk helper macros.  Isn't
+> there something generic somewhere?
 
-A patch to resolve this was sent to linux-usb@vger.kernel.org yesterday,
-can you try that one out (sorry, can't dig it out at the moment...)
+Sorry, I do not find the generic code for this helper. But I think this
+macro may be helpful for others too, who need to determine the log level
+only at runtime. Here corrected errors should have log level:
+KERN_WARNING, while uncorrected errors should have log level: KERN_ERR.
 
-thanks,
+Do you think it is a good idea to make this macro generic?
 
-greg k-h
+> >  /*
+> >   * CPER record ID need to be unique even after reboot, because record
+> >   * ID is used as index for ERST storage, while CPER records from
+> > @@ -46,6 +49,302 @@ u64 cper_next_record_id(void)
+> >  }
+> >  EXPORT_SYMBOL_GPL(cper_next_record_id);
+> >  
+> > +static const char *cper_severity_strs[] = {
+> > +	[CPER_SEV_RECOVERABLE]		= "recoverable",
+> > +	[CPER_SEV_FATAL]		=  "fatal",
+> > +	[CPER_SEV_CORRECTED]		= "corrected",
+> > +	[CPER_SEV_INFORMATIONAL]	= "info",
+> > +};
+> > +
+> > +static const char *cper_severity_str(unsigned int severity)
+> > +{
+> > +	return severity < ARRAY_SIZE(cper_severity_strs) ?
+> > +		cper_severity_strs[severity] : "unknown";
+> > +}
+> 
+> This code will explode nastily if CPER_SEV_RECOVERABLE .. 
+> CPER_SEV_INFORMATIONAL do not exactly have the values 0, 1, 2 and 3. 
+> They do have those values, but it would be a bit safer if they were
+> enumerated types and not #defines..
+
+OK. I will change this.
+
+> > +static void cper_print_bits(const char *pfx, unsigned int bits,
+> > +			    const char *strs[], unsigned int strs_size)
+> > +{
+> > +	int i, len = 0;
+> > +	const char *str;
+> > +
+> > +	for (i = 0; i < strs_size; i++) {
+> > +		if (!(bits & (1U << i)))
+> > +			continue;
+> > +		str = strs[i];
+> > +		if (len && len + strlen(str) + 2 > 80) {
+> > +			printk("\n");
+> > +			len = 0;
+> > +		}
+> > +		if (!len)
+> > +			len = pr_pfx(pfx, "%s", str);
+> > +		else
+> > +			len += printk(", %s", str);
+> > +	}
+> > +	if (len)
+> > +		printk("\n");
+> > +}
+> 
+> geeze, that's the sort of code you have to execute to find out what it
+> does.  Or ask the author to document it.
+
+OK. I will add comments for all necessary functions in the patch.
+
+> This patchset appears to implement a new kernel->userspace interface. 
+> But that interface isn't actually described anywhere, so reviewers must
+> reverse-engineer the interface from the implementation to be able to
+> review the interface.  Nobody bothers doing that so we end up with an
+> unreviewed interface, which we must maintain for eternity.
+> 
+> Please fully document all proposed interfaces?
+
+Sorry. I don't realize that printk-ing something means implementing a
+new kernel->userspace interface. I think the messages resulted are
+self-explaining for human. Is it sufficient just to add example messages
+in patch description?
+
+Best Regards,
+Huang Ying
+
+
