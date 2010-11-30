@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab0K3Pix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:38:53 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:39742 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab0K3Piv (ORCPT
+	id S1753972Ab0K3PjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:39:07 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47398 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908Ab0K3PjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:38:51 -0500
-Date: Tue, 30 Nov 2010 10:38:39 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-Message-ID: <20101130153839.GM15818@bombadil.infradead.org>
-References: <20101022012302.GA7487@havoc.gtf.org>
- <20101129180755.GK15818@bombadil.infradead.org>
- <4CF506A6.4020200@kernel.org>
+	Tue, 30 Nov 2010 10:39:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=w8Fy+Ea7raN00WA+ez4H8iAdFdVTwZNZKFv9GT3xWbio9dSjNs82QzMjzwGLaCparB
+         CGUSJpTCa/mBWRa6w3qoocw3ZHOt5/UvDWYVMuXGKXokBdNcpLF1iKKrwZKiC0GDuV9+
+         CHXx5CtXZcCSRr6FbXJJefYyBaJRwfyJzp1fc=
+Date: Tue, 30 Nov 2010 16:38:54 +0100 (CET)
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+X-X-Sender: elektroman@localhost.localdomain
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
+In-Reply-To: <201011291657.53316.arnd@arndb.de>
+Message-ID: <alpine.LNX.2.00.1011301633040.9052@localhost.localdomain>
+References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <20101129142200.GA14941@n2100.arm.linux.org.uk> <alpine.LNX.2.00.1011291546550.12293@localhost.localdomain> <201011291657.53316.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF506A6.4020200@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 03:13:58PM +0100, Tejun Heo wrote:
-> > Tejun, any ideas how I can debug this?
+
+
+On Mon, 29 Nov 2010, Arnd Bergmann wrote:
+
+> On Monday 29 November 2010, Hans Ulli Kroll wrote:
+> > @@ -1164,7 +1169,7 @@ config ISA_DMA_API
+> >         bool
+> >  
+> >  config PCI
+> > -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB || 
+> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
+> > +       bool "PCI support" if MIGHT_HAVE_PCI
+> >         help
+> >           Find out whether you have a PCI motherboard. PCI is the name of 
+> > a
+> >           bus system, i.e. the way the CPU talks to the other stuff inside
 > 
-> Hmm... DIPM commands are failing with AC_ERR_OTHER.  Other than DIPM
-> not being configured and speed capped at 1.5Gbps, the machine works
-> fine afterwards, right?  Are you up for applying debug patches?
+> This does not solve the problem that Russell mentioned: existing platforms
+> select PCI unconditionally, e.g. Iop13XX, some IXP, Orion, Shark
+> and more. At the very least, these would need to also select MIGHT_HAVE_PCI
+> to avoid the warning.
 > 
 
-Yup, it's chugging along happily, though I notice kernel builds are
-taking a minute or two longer (but I don't bother to time them so it's
-purely subjective.)
+so 
+select MIGHT_HAVE_PCI 
+in conjunction of
+select PCI
+on other almost platforms 
 
-Be happy to apply any debug patches, but I plan on replacing the drive
-with a faster one at some point in the next few weeks.
+> > index fe0c82e..f5c39a8 100644
+> > --- a/arch/arm/mach-ks8695/Kconfig
+> > +++ b/arch/arm/mach-ks8695/Kconfig
+> > @@ -4,6 +4,7 @@ menu "Kendin/Micrel KS8695 Implementations"
+> >  
+> >  config MACH_KS8695
+> >         +++ b/arch/arm/mach-versatile/Kconfig
+> > @@ -4,6 +4,7 @@ menu "Versatile platform type"
+> >  config ARCH_VERSATILE_PB
+> >         bool "Support Versatile/PB platform"
+> >         select CPU_ARM926T
+> > +       select HAVE_PCI
+> >         default y
+> >         help
+> >           Include support for the ARM(R) Versatile/PB platform.bool 
+> 
+> Typo: you certainly meant MIGHT_HAVE_PCI here.
+> 
 
---Kyle
+Damn, I missed this.
+HAVE_PCI was my first approach to do this.
+
+> We still need to agree on what it should be doing, but otherwise this
+> is what I had in mind.
+> 
+> 	Arnd
+> 
+
+
