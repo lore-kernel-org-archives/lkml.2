@@ -1,98 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab0K3RJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 12:09:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56042 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab0K3RJu (ORCPT
+	id S1754746Ab0K3RNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 12:13:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37637 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab0K3RNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 12:09:50 -0500
-Date: Tue, 30 Nov 2010 18:09:46 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Greg KH <greg@kroah.com>
-cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: [PATCH/RFC] core: add a function to safely try to get device
- driver owner
-In-Reply-To: <20101130165614.GA18564@kroah.com>
-Message-ID: <Pine.LNX.4.64.1011301803540.18790@axis700.grange>
-References: <Pine.LNX.4.64.1011292043000.27962@axis700.grange>
- <20101129131737.3dd6eb03@bike.lwn.net> <Pine.LNX.4.64.1011292147540.27962@axis700.grange>
- <20101129214128.GA9691@kroah.com> <Pine.LNX.4.64.1011292300300.27962@axis700.grange>
- <20101129223209.GB14663@kroah.com> <Pine.LNX.4.64.1011300009500.27962@axis700.grange>
- <20101130165614.GA18564@kroah.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:+8kkP9q7Wdd7R5nsLP3Im3BgvvlgERCJv7OZkjqDzS4
- rzWJyqt3dPjXQZ1RFHD+JKEn7NP1CDjkIRMXC5wKUUGmyDogLX
- 4IZimrznBANAMQ88LVX/B3jjNGbre6nd4eDs1ACcEsal/ZVMjw
- 0NfhZEnDMqaINEtNickb7xqnSbp7W3ivJgbl14Im5THofR7hTC
- VtxiMqTNPF4BkVLCigg/+G9B10KbcehabLJunwXDuw=
+	Tue, 30 Nov 2010 12:13:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=sOToXy78cZhDFAawu631GLc5O4M3VUY9XKtP675uKuJuTH1uQnCs0+BprOr0JSMsW2
+         YDihQSAabMETzSZ00lFVYQRJEOH2mH2kyLhlq9ueFyXK+yOuYtPvgZ1XqGP7EfmWgEyR
+         Z0zss7BTWueiSEmczZUITwo4rc9AGVzOpf+Ng=
+Subject: [PATCH v2] soc_camera: Add the ability to bind regulators to
+ soc_camedra devices
+From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-media@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 18:12:56 +0100
+Message-ID: <1291137176.6537.20.camel@realization>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, Greg KH wrote:
+In certain machines, camera devices are supplied directly
+by a number of regulators. This patch add the ability to drive
+these regulators directly by the soc_camera driver.
 
-> On Tue, Nov 30, 2010 at 12:11:42AM +0100, Guennadi Liakhovetski wrote:
-> > On Mon, 29 Nov 2010, Greg KH wrote:
-> > 
-> > > On Mon, Nov 29, 2010 at 11:10:50PM +0100, Guennadi Liakhovetski wrote:
-> > > > On Mon, 29 Nov 2010, Greg KH wrote:
-> > > > 
-> > > > > On Mon, Nov 29, 2010 at 09:54:10PM +0100, Guennadi Liakhovetski wrote:
-> > > > > > Hi Jon
-> > > > > > 
-> > > > > > On Mon, 29 Nov 2010, Jonathan Corbet wrote:
-> > > > > > 
-> > > > > > > On Mon, 29 Nov 2010 20:43:28 +0100 (CET)
-> > > > > > > Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> > > > > > > 
-> > > > > > > > When two drivers interoperate without an explicit dependency, it is often
-> > > > > > > > required to prevent one of them from being unloaded safely by dereferencing
-> > > > > > > > dev->driver->owner. This patch provides a generic function to do this in a
-> > > > > > > > race-free way.
-> > > > > > > 
-> > > > > > > I must ask: why not, instead, make the dependency explicit?  In
-> > > > > > > particular, this looks like an application for the proposed media
-> > > > > > > controller code, which is meant to model the connections between otherwise
-> > > > > > > independent devices.  The fact that your example comes from V4L2 (which is
-> > > > > > > the current domain of the media controller) also argues that way.
-> > > > > > 
-> > > > > > Sorry, don't see a good way to do this. This function is for a general 
-> > > > > > dependency, where you don't have that driver, we are checking for register 
-> > > > > > with us, so, the only way to get to it is via dev->driver->owner.
-> > > > > 
-> > > > > Wait, what?  The device is already bound to a driver, right, so why
-> > > > > would you care about "locking" the module into memory?  What could this
-> > > > > possibly be used for?
-> > > > 
-> > > > To protect against rmmod -> driver_unregister -> dev->driver = NULL?
-> > > 
-> > > But again, why would some other driver ever care about what some random
-> > > dev->driver would be?
-> > 
-> > It's not a random one, call it a "companion device."
-> 
-> Ok, but again go back to Jon's original proposal to just call the
-> functions in that driver from yours, causing the implicit module
-> ordering issue to be automatically resolved.
-
-Greg, in this specific case - yes, I could do this. But (1) there is no 
-need for that - both drivers implement and use the v4l2-subdev API and 
-thus stay generic. In the host driver this adds the convenience, that it 
-doesn't have to call to the CSI2 driver explicitly at all - it just calls 
-the v4l2-subdev function like "call .s_mbus_fmt for all subdev drivers" 
-and the function is called for the sensor and the CSI2 driver. (2) what 
-about the other location I pointed out earlier in the v4l2 core? There 
-drivers are absolutely generic. I also suspect these are not the only 
-cases, where this helper would come in handy. I added the media list to CC 
-for any more opinions on this matter.
-
-Thanks
-Guennadi
+Signed-off-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+
+v2 changes:
+It is used the more standard regulator_bulk API, thanks to
+Mark Brown for pointing this.
+
+ drivers/media/video/soc_camera.c |   73 +++++++++++++++++++++++++++-----------
+ include/media/soc_camera.h       |    5 +++
+ 2 files changed, 57 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/media/video/soc_camera.c b/drivers/media/video/soc_camera.c
+index 43848a7..f1c2094 100644
+--- a/drivers/media/video/soc_camera.c
++++ b/drivers/media/video/soc_camera.c
+@@ -43,6 +43,41 @@ static LIST_HEAD(hosts);
+ static LIST_HEAD(devices);
+ static DEFINE_MUTEX(list_lock);		/* Protects the list of hosts */
+ 
++static int soc_camera_power_set(struct soc_camera_device *icd,
++				struct soc_camera_link *icl,
++				int power_on)
++{
++	int ret = 0;
++
++	if (power_on) {
++		ret = regulator_bulk_enable(icl->num_regulators,
++					    icl->regulators);
++	} else {
++		ret = regulator_bulk_disable(icl->num_regulators,
++					     icl->regulators);
++	}
++	if (ret < 0) {
++		dev_err(icd->pdev, "Cannot %s regulators",
++			power_on ? "ENABLE" : "DISABLE");
++		goto err;
++	}
++
++	if (icl->power) {
++		ret = icl->power(icd->pdev, power_on);
++		if (ret < 0) {
++			dev_err(icd->pdev,
++				"Platform failed to power %s the camera.\n",
++				power_on ? "ON" : "OFF");
++			goto err;
++		}
++	}
++
++	return 0;
++
++err:
++	return ret;
++}
++
+ const struct soc_camera_format_xlate *soc_camera_xlate_by_fourcc(
+ 	struct soc_camera_device *icd, unsigned int fourcc)
+ {
+@@ -375,11 +410,9 @@ static int soc_camera_open(struct file *file)
+ 			},
+ 		};
+ 
+-		if (icl->power) {
+-			ret = icl->power(icd->pdev, 1);
+-			if (ret < 0)
+-				goto epower;
+-		}
++		ret = soc_camera_power_set(icd, icl, 1);
++		if (ret < 0)
++			goto epower;
+ 
+ 		/* The camera could have been already on, try to reset */
+ 		if (icl->reset)
+@@ -425,8 +458,7 @@ esfmt:
+ eresume:
+ 	ici->ops->remove(icd);
+ eiciadd:
+-	if (icl->power)
+-		icl->power(icd->pdev, 0);
++	soc_camera_power_set(icd, icl, 0);
+ epower:
+ 	icd->use_count--;
+ 	mutex_unlock(&icd->video_lock);
+@@ -450,8 +482,7 @@ static int soc_camera_close(struct file *file)
+ 
+ 		ici->ops->remove(icd);
+ 
+-		if (icl->power)
+-			icl->power(icd->pdev, 0);
++		soc_camera_power_set(icd, icl, 0);
+ 	}
+ 
+ 	if (icd->streamer == file)
+@@ -941,14 +972,14 @@ static int soc_camera_probe(struct device *dev)
+ 
+ 	dev_info(dev, "Probing %s\n", dev_name(dev));
+ 
+-	if (icl->power) {
+-		ret = icl->power(icd->pdev, 1);
+-		if (ret < 0) {
+-			dev_err(dev,
+-				"Platform failed to power-on the camera.\n");
+-			goto epower;
+-		}
+-	}
++	ret = regulator_bulk_get(icd->pdev, icl->num_regulators,
++				 icl->regulators);
++	if (ret)
++		goto epower;
++
++	ret = soc_camera_power_set(icd, icl, 1);
++	if (ret < 0)
++		goto epower;
+ 
+ 	/* The camera could have been already on, try to reset */
+ 	if (icl->reset)
+@@ -1021,8 +1052,7 @@ static int soc_camera_probe(struct device *dev)
+ 
+ 	ici->ops->remove(icd);
+ 
+-	if (icl->power)
+-		icl->power(icd->pdev, 0);
++	soc_camera_power_set(icd, icl, 0);
+ 
+ 	mutex_unlock(&icd->video_lock);
+ 
+@@ -1044,8 +1074,7 @@ eadddev:
+ evdc:
+ 	ici->ops->remove(icd);
+ eadd:
+-	if (icl->power)
+-		icl->power(icd->pdev, 0);
++	soc_camera_power_set(icd, icl, 0);
+ epower:
+ 	return ret;
+ }
+@@ -1081,6 +1110,8 @@ static int soc_camera_remove(struct device *dev)
+ 	}
+ 	soc_camera_free_user_formats(icd);
+ 
++	regulator_bulk_free(icl->num_regulators, icl->regulators);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/media/soc_camera.h b/include/media/soc_camera.h
+index 86e3631..3e6b903 100644
+--- a/include/media/soc_camera.h
++++ b/include/media/soc_camera.h
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/mutex.h>
+ #include <linux/pm.h>
++#include <linux/regulator/consumer.h>
+ #include <linux/videodev2.h>
+ #include <media/videobuf-core.h>
+ #include <media/v4l2-device.h>
+@@ -108,6 +109,10 @@ struct soc_camera_link {
+ 	const char *module_name;
+ 	void *priv;
+ 
++	/* Optional regulators that have to be managed on power on/off events */
++	struct regulator_bulk_data *regulators;
++	int num_regulators;
++
+ 	/*
+ 	 * For non-I2C devices platform platform has to provide methods to
+ 	 * add a device to the system and to remove
+-- 
+1.6.3.3
+
+
+
