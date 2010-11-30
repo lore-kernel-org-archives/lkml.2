@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab0K3VJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 16:09:51 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:55504 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab0K3VJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 16:09:50 -0500
-Date: Tue, 30 Nov 2010 16:09:38 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Tejun Heo <tj@kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-Message-ID: <20101130210938.GF25668@bombadil.infradead.org>
-References: <20101022012302.GA7487@havoc.gtf.org>
- <20101129180755.GK15818@bombadil.infradead.org>
- <4CF506A6.4020200@kernel.org>
- <20101130153839.GM15818@bombadil.infradead.org>
- <4CF52652.4030802@kernel.org>
- <20101130163150.GA25668@bombadil.infradead.org>
- <20101130175317.GB25668@bombadil.infradead.org>
+	id S1751610Ab0K3VPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 16:15:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48927 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962Ab0K3VPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 16:15:21 -0500
+Date: Tue, 30 Nov 2010 13:13:54 -0800
+From: Greg KH <gregkh@suse.de>
+To: Andreas Mohr <andi@lisas.de>
+Cc: "David S. Miller" <davem@davemloft.net>, stable@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, dhollis@davehollis.com,
+        Phil Chang <pchang23@sbcglobal.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -stable] Add USB PID for new MOSCHIP USB ethernet
+ controller MCS7832 variant
+Message-ID: <20101130211354.GA7635@suse.de>
+References: <20101130200737.GA5185@rhlx01.hs-esslingen.de>
+ <20101130202712.GB16171@suse.de>
+ <20101130210510.GA6057@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101130175317.GB25668@bombadil.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101130210510.GA6057@rhlx01.hs-esslingen.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 12:53:17PM -0500, Kyle McMartin wrote:
-> On Tue, Nov 30, 2010 at 11:31:50AM -0500, Kyle McMartin wrote:
-> > On Tue, Nov 30, 2010 at 05:29:06PM +0100, Tejun Heo wrote:
-> > > > Be happy to apply any debug patches, but I plan on replacing the drive
-> > > > with a faster one at some point in the next few weeks.
-> > > 
-> > > Can you please apply the following patch and report the resulting
-> > > kernel log?  You're on ahci, right?
-> > > 
+On Tue, Nov 30, 2010 at 10:05:10PM +0100, Andreas Mohr wrote:
+> On Tue, Nov 30, 2010 at 12:27:12PM -0800, Greg KH wrote:
+> > On Tue, Nov 30, 2010 at 09:07:37PM +0100, Andreas Mohr wrote:
+> > > Due to active notification of the new MCS7832 version by the manufacturer
+> > > today (Mr. Milton; thanks!) -- quote: "functionality same as MCS7830",
+> > > I'm now submitting this patch, intended for networking.git and -stable.
 > > 
-> > Yup, building now.
-> > 
+> > This is not how you get stuff into the stable kernel trees, sorry.
+> > Please read Documentation/stable_kernel_rules.txt for how to do that.
 > 
-> Ok, running it, I haven't seen the issue across three suspends... Will
-> update when it inevitably happens.
+> From having read that perhaps 2 or 3 times (randomly)
+> and following a couple dozen -stable mails I had the impression that
+> remembering the constraints would be quite easy; obviously not - sorry!
+> Did have some doubts about the number of hunks, though.
+> And obviously violated the "must be upstream" rule.
 > 
+> So what to do?
 
-[10272.544858] ata1.00: ahci: internal command failure,
-irq_stat=0x400001
-[10272.544943] ata1.00: internal command failure: stat=0xef
-ehi_desc="irq_stat 0x00400001, PHY RDY changed"
-[10272.544951] ata1.00: failed to enable DIPM, Emask 0x100
-[10272.544960] ata1: hard resetting link
-[10273.004718] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[10273.006108] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
-succeeded
-[10273.006116] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
-LOCK) filtered out
-[10273.006410] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
-succeeded
-[10273.006417] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
-filtered out
-[10273.009337] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
-succeeded
-[10273.009344] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
-LOCK) filtered out
-[10273.009611] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
-succeeded
-[10273.009631] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
-filtered out
-[10273.010945] ata1.00: configured for UDMA/100
-[10273.011206] ata1.00: ahci: internal command failure,
-irq_stat=0x400001
-[10273.011241] ata1.00: internal command failure: stat=0xef
-ehi_desc="irq_stat 0x00400001, PHY RDY changed"
-[10273.011247] ata1.00: failed to enable DIPM, Emask 0x100
-[10273.011250] ata1: disabling LPM on the link
-[10273.011255] ata1: limiting SATA link speed to 1.5 Gbps
-[10273.011259] ata1.00: limiting speed to UDMA/100:PIO3
+Read the line in that file that says:
+	 - To have the patch automatically included in the stable tree,
+	   add the tag
+	        Cc: stable@kernel.org
+	   in the sign-off area. Once the patch is merged it will be
+	   applied to the stable tree without anything else needing to
+	   be done by the author or subsystem maintainer.
 
-regards, Kyle
+> Shovel patch as-is to networking only (optionally specifying the
+> somewhat unclearly formulated Cc: stable mechanism)?
+> Or rather minimalist-reduce the patch, then dito?
+
+See above.
+
+> > Sometimes I wonder why we even write documentation if no one ever reads
+> > it...
+> 
+> I could also mention some (strangely familiar) cases where people _didn't_
+> write kernel docs which many people likely would have liked to read
+> to avoid wasting half-millions of dollars... *smirk*
+
+Examples?  And are those people likely to put up the money to write
+those docs?  That's the big problem, people like to complain, but not
+pay anyone to do the work...
+
+thanks,
+
+greg k-h
