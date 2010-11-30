@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab0K3BIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 20:08:17 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64173 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756024Ab0K3BIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 20:08:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,277,1288594800"; 
-   d="scan'208";a="354734243"
-Subject: Re: [PATCH -v6 2/3] lib, Make gen_pool memory allocator lockless
-From: Huang Ying <ying.huang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1291032697.32004.28.camel@laptop>
-References: <1291014201-15513-1-git-send-email-ying.huang@intel.com>
-	 <1291014201-15513-3-git-send-email-ying.huang@intel.com>
-	 <1291032697.32004.28.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Nov 2010 09:08:09 +0800
-Message-ID: <1291079289.12648.30.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756028Ab0K3BK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 20:10:26 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58968 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab0K3BKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 20:10:25 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/3] Reclaim invalidated page ASAP
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
+References: <cover.1291043273.git.minchan.kim@gmail.com> <053e6a3308160a8992af5a47fb4163796d033b08.1291043274.git.minchan.kim@gmail.com>
+Message-Id: <20101130100933.82E9.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 30 Nov 2010 10:10:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Peter,
-
-On Mon, 2010-11-29 at 20:11 +0800, Peter Zijlstra wrote:
-> On Mon, 2010-11-29 at 15:03 +0800, Huang Ying wrote:
-> > This version of the gen_pool memory allocator supports lockless
-> > operation.
-> > 
-> > This makes it safe to use in NMI handlers and other special
-> > unblockable contexts that could otherwise deadlock on locks.  This is
-> > implemented by using atomic operations and retries on any conflicts.
-> > The disadvantage is that there may be livelocks in extreme cases.  For
-> > better scalability, one gen_pool allocator can be used for each CPU.
-> > 
-> > The lockless operation only works if there is enough memory available.
-> > If new memory is added to the pool a lock has to be still taken.  So
-> > any user relying on locklessness has to ensure that sufficient memory
-> > is preallocated.
-> > 
-> > The basic atomic operation of this allocator is cmpxchg on long.  On
-> > architectures that don't have NMI-safe cmpxchg implementation, a
-> > spin_trylock_irqsave based fallback is used for gen_pool_alloc, so it
-> > can be used in NMI handler safely.  But gen_pool_free can not be used
-> > in NMI handler in these architectures, because memory free can not
-> > fail. 
+> invalidate_mapping_pages is very big hint to reclaimer.
+> It means user doesn't want to use the page any more.
+> So in order to prevent working set page eviction, this patch
+> move the page into tail of inactive list by PG_reclaim.
 > 
-> I still don't see a reason to merge this.
+> Please, remember that pages in inactive list are working set
+> as well as active list. If we don't move pages into inactive list's
+> tail, pages near by tail of inactive list can be evicted although
+> we have a big clue about useless pages. It's totally bad.
 > 
-> It makes the genalloc thing slower for every other user (more LOCK'ed
-> ops) and there is no new user presented in this series.
+> Now PG_readahead/PG_reclaim is shared.
+> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+> preventing fast reclaiming readahead marker page.
+> 
+> In this series, PG_reclaim is used by invalidated page, too.
+> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+> to reclaim asap. Then, when the dirty page will be writeback,
+> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+> It disturbs this serie's goal.
+> 
+> I think it's okay to clear PG_readahead when the page is dirty, not
+> writeback time. So this patch moves ClearPageReadahead.
+> 
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Mel Gorman <mel@csn.ul.ie>
 
-As far as I know, all genalloc users are not performance sensitive.
-After all, it is mainly used to manage some device memory before. As for
-users, I think this is a "chicken and egg" problem. And I have plan to
-use it in APEI code.
-
-Best Regards,
-Huang Ying
+I still dislike this one. I doubt this trick makes much benefit in real
+world workload.
 
 
 
