@@ -1,503 +1,553 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab0K3TK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:10:29 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:47696 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755542Ab0K3TIu (ORCPT
+	id S1756292Ab0K3TKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:10:55 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:22311 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752155Ab0K3TIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:08:50 -0500
+	Tue, 30 Nov 2010 14:08:49 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 5LUaiu4VM1ncs4YGbrKyG_AJfljpZPF.5dFMy8TDUd_6mVj
- 8Y3eM_bnOWNwpKAaIsxQDDC2tTaAoltSGN13ILNDt5CCafGN3WPJBOXe5M1d
- NDJNk9QIaTsHcMUvND5l8lP7q7ckmWHLEuCGxqw90sSQBGoSnFj0.QWzGfzj
- HHAwSntvjX.feC8LGkDoSQFxKEp2w9E4ltD2ESoCIyDjleVm9x_jCRqNw.F3
- M0P6GVPcRVfHWYcjNqhJuQBIvNHK6K4Pq7KUQV.0D0SdvzhZlUzJwqQ--
+X-YMail-OSG: SZE0dHUVM1ndQxdjDLw4kl_manoW9KKEBJqhYr0KPjsLoFI
+ Pb5dGNqOLTS.N2xAfngGwPbK3j681q3L1W415CsYLsgmO7PSN3H6N8.mApry
+ fc8YAr2lUbPc_WB5UnMZXrOQkbG950wcAdWPVh.XT0O.GHinj6ZqvEz0R1QV
+ eahDJYJ8icCBVMDRIo21rB7A9UL7cHlobdcISsfem763qKLatc02OoA2SuNN
+ W9UrwHQo60.QOo2UH0xNISgGdVrelRidLKcONGHAxUaqlh5mWhw--
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101130190848.114108527@linux.com>
+Message-Id: <20101130190846.962665020@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Nov 2010 13:07:19 -0600
+Date: Tue, 30 Nov 2010 13:07:17 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: linux-mm@kvack.org
-Subject: [thisops uV3 12/18] Core: Replace __get_cpu_var with __this_cpu_read if not used for an address.
+Subject: [thisops uV3 10/18] x86: Use this_cpu_ops to optimize code
 References: <20101130190707.457099608@linux.com>
-Content-Disposition: inline; filename=this_cpu_core
+Content-Disposition: inline; filename=this_cpu_x86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() can be replaced with this_cpu_read and will then use a single
-read instruction with implied address calculation to access the correct per cpu
-instance.
+Go through x86 code and replace __get_cpu_var  and get_cpu_var instances
+that refer to a scalar and are not used for address determinations.
 
-However, the address of a per cpu variable passed to __this_cpu_read() cannot be
-determed (since its an implied address conversion through segment prefixes).
-Therefore apply this only to uses of __get_cpu_var where the addres of the
-variable is not used.
-
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- include/asm-generic/irq_regs.h |    8 +++----
- include/linux/elevator.h       |   12 ++---------
- include/linux/kernel_stat.h    |    2 -
- kernel/exit.c                  |    2 -
- kernel/fork.c                  |    2 -
- kernel/hrtimer.c               |    2 -
- kernel/printk.c                |    4 +--
- kernel/rcutree.c               |    4 +--
- kernel/softirq.c               |   44 ++++++++++++++++++++---------------------
- kernel/time/tick-common.c      |    2 -
- kernel/time/tick-oneshot.c     |    4 +--
- kernel/watchdog.c              |   36 ++++++++++++++++-----------------
- mm/slab.c                      |    6 ++---
- 13 files changed, 61 insertions(+), 67 deletions(-)
+ arch/x86/include/asm/debugreg.h           |    2 -
+ arch/x86/kernel/apic/io_apic.c            |    4 +--
+ arch/x86/kernel/apic/nmi.c                |   24 +++++++++++-----------
+ arch/x86/kernel/apic/x2apic_uv_x.c        |    8 +++----
+ arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    2 -
+ arch/x86/kernel/cpu/mcheck/mce.c          |    6 ++---
+ arch/x86/kernel/cpu/perf_event.c          |   32 ++++++++++++------------------
+ arch/x86/kernel/cpu/perf_event_intel.c    |    4 +--
+ arch/x86/kernel/ftrace.c                  |    6 ++---
+ arch/x86/kernel/hw_breakpoint.c           |   12 +++++------
+ arch/x86/kernel/irq.c                     |    6 ++---
+ arch/x86/kernel/irq_32.c                  |    4 +--
+ arch/x86/kernel/tsc.c                     |    2 -
+ arch/x86/kvm/x86.c                        |    8 +++----
+ arch/x86/oprofile/nmi_int.c               |    2 -
+ 15 files changed, 58 insertions(+), 64 deletions(-)
 
-Index: linux-2.6/mm/slab.c
+Index: linux-2.6/arch/x86/include/asm/debugreg.h
 ===================================================================
---- linux-2.6.orig/mm/slab.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/mm/slab.c	2010-11-30 12:41:14.000000000 -0600
-@@ -829,12 +829,12 @@ static void init_reap_node(int cpu)
+--- linux-2.6.orig/arch/x86/include/asm/debugreg.h	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/debugreg.h	2010-11-30 12:37:10.000000000 -0600
+@@ -94,7 +94,7 @@ static inline void hw_breakpoint_disable
  
- static void next_reap_node(void)
+ static inline int hw_breakpoint_active(void)
  {
--	int node = __get_cpu_var(slab_reap_node);
-+	int node = __this_cpu_read(slab_reap_node);
- 
- 	node = next_node(node, node_online_map);
- 	if (unlikely(node >= MAX_NUMNODES))
- 		node = first_node(node_online_map);
--	__get_cpu_var(slab_reap_node) = node;
-+	__this_cpu_write(slab_reap_node, node);
+-	return __get_cpu_var(cpu_dr7) & DR_GLOBAL_ENABLE_MASK;
++	return __this_cpu_read(cpu_dr7) & DR_GLOBAL_ENABLE_MASK;
  }
  
- #else
-@@ -1012,7 +1012,7 @@ static void __drain_alien_cache(struct k
+ extern void aout_dump_debugregs(struct user *dump);
+Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/apic/io_apic.c	2010-11-30 12:37:10.000000000 -0600
+@@ -2302,7 +2302,7 @@ asmlinkage void smp_irq_move_cleanup_int
+ 		unsigned int irr;
+ 		struct irq_desc *desc;
+ 		struct irq_cfg *cfg;
+-		irq = __get_cpu_var(vector_irq)[vector];
++		irq = __this_cpu_read(vector_irq[vector]);
+ 
+ 		if (irq == -1)
+ 			continue;
+@@ -2336,7 +2336,7 @@ asmlinkage void smp_irq_move_cleanup_int
+ 			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
+ 			goto unlock;
+ 		}
+-		__get_cpu_var(vector_irq)[vector] = -1;
++		__this_cpu_write(vector_irq[vector], -1);
+ unlock:
+ 		raw_spin_unlock(&desc->lock);
+ 	}
+Index: linux-2.6/arch/x86/kernel/apic/nmi.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/nmi.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/apic/nmi.c	2010-11-30 12:37:10.000000000 -0600
+@@ -306,12 +306,12 @@ void acpi_nmi_disable(void)
   */
- static void reap_alien(struct kmem_cache *cachep, struct kmem_list3 *l3)
+ void cpu_nmi_set_wd_enabled(void)
  {
--	int node = __get_cpu_var(slab_reap_node);
-+	int node = __this_cpu_read(slab_reap_node);
- 
- 	if (l3->alien) {
- 		struct array_cache *ac = l3->alien[node];
-Index: linux-2.6/kernel/rcutree.c
-===================================================================
---- linux-2.6.orig/kernel/rcutree.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/rcutree.c	2010-11-30 12:41:14.000000000 -0600
-@@ -367,8 +367,8 @@ void rcu_irq_exit(void)
- 	WARN_ON_ONCE(rdtp->dynticks & 0x1);
- 
- 	/* If the interrupt queued a callback, get out of dyntick mode. */
--	if (__get_cpu_var(rcu_sched_data).nxtlist ||
--	    __get_cpu_var(rcu_bh_data).nxtlist)
-+	if (__this_cpu_read(rcu_sched_data.nxtlist) ||
-+	    __this_cpu_read(rcu_bh_data.nxtlist))
- 		set_need_resched();
+-	__get_cpu_var(wd_enabled) = 1;
++	__this_cpu_write(wd_enabled, 1);
  }
  
-Index: linux-2.6/kernel/softirq.c
-===================================================================
---- linux-2.6.orig/kernel/softirq.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/softirq.c	2010-11-30 12:41:14.000000000 -0600
-@@ -70,7 +70,7 @@ char *softirq_to_name[NR_SOFTIRQS] = {
- static void wakeup_softirqd(void)
+ void setup_apic_nmi_watchdog(void *unused)
  {
- 	/* Interrupts are disabled: no need to stop preemption */
--	struct task_struct *tsk = __get_cpu_var(ksoftirqd);
-+	struct task_struct *tsk = __this_cpu_read(ksoftirqd);
- 
- 	if (tsk && tsk->state != TASK_RUNNING)
- 		wake_up_process(tsk);
-@@ -388,8 +388,8 @@ void __tasklet_schedule(struct tasklet_s
- 
- 	local_irq_save(flags);
- 	t->next = NULL;
--	*__get_cpu_var(tasklet_vec).tail = t;
--	__get_cpu_var(tasklet_vec).tail = &(t->next);
-+	*__this_cpu_read(tasklet_vec.tail) = t;
-+	__this_cpu_write(tasklet_vec.tail, &(t->next));
- 	raise_softirq_irqoff(TASKLET_SOFTIRQ);
- 	local_irq_restore(flags);
- }
-@@ -402,8 +402,8 @@ void __tasklet_hi_schedule(struct taskle
- 
- 	local_irq_save(flags);
- 	t->next = NULL;
--	*__get_cpu_var(tasklet_hi_vec).tail = t;
--	__get_cpu_var(tasklet_hi_vec).tail = &(t->next);
-+	*__this_cpu_read(tasklet_hi_vec.tail) = t;
-+	__this_cpu_write(tasklet_hi_vec.tail,  &(t->next));
- 	raise_softirq_irqoff(HI_SOFTIRQ);
- 	local_irq_restore(flags);
- }
-@@ -414,8 +414,8 @@ void __tasklet_hi_schedule_first(struct
- {
- 	BUG_ON(!irqs_disabled());
- 
--	t->next = __get_cpu_var(tasklet_hi_vec).head;
--	__get_cpu_var(tasklet_hi_vec).head = t;
-+	t->next = __this_cpu_read(tasklet_hi_vec.head);
-+	__this_cpu_write(tasklet_hi_vec.head, t);
- 	__raise_softirq_irqoff(HI_SOFTIRQ);
- }
- 
-@@ -426,9 +426,9 @@ static void tasklet_action(struct softir
- 	struct tasklet_struct *list;
- 
- 	local_irq_disable();
--	list = __get_cpu_var(tasklet_vec).head;
--	__get_cpu_var(tasklet_vec).head = NULL;
--	__get_cpu_var(tasklet_vec).tail = &__get_cpu_var(tasklet_vec).head;
-+	list = __this_cpu_read(tasklet_vec.head);
-+	__this_cpu_write(tasklet_vec.head, NULL);
-+	__this_cpu_write(tasklet_vec.tail, &__get_cpu_var(tasklet_vec).head);
- 	local_irq_enable();
- 
- 	while (list) {
-@@ -449,8 +449,8 @@ static void tasklet_action(struct softir
- 
- 		local_irq_disable();
- 		t->next = NULL;
--		*__get_cpu_var(tasklet_vec).tail = t;
--		__get_cpu_var(tasklet_vec).tail = &(t->next);
-+		*__this_cpu_read(tasklet_vec.tail) = t;
-+		__this_cpu_write(tasklet_vec.tail, &(t->next));
- 		__raise_softirq_irqoff(TASKLET_SOFTIRQ);
- 		local_irq_enable();
- 	}
-@@ -461,9 +461,9 @@ static void tasklet_hi_action(struct sof
- 	struct tasklet_struct *list;
- 
- 	local_irq_disable();
--	list = __get_cpu_var(tasklet_hi_vec).head;
--	__get_cpu_var(tasklet_hi_vec).head = NULL;
--	__get_cpu_var(tasklet_hi_vec).tail = &__get_cpu_var(tasklet_hi_vec).head;
-+	list = __this_cpu_read(tasklet_hi_vec.head);
-+	__this_cpu_write(tasklet_hi_vec.head, NULL);
-+	__this_cpu_write(tasklet_hi_vec.tail, &__get_cpu_var(tasklet_hi_vec).head);
- 	local_irq_enable();
- 
- 	while (list) {
-@@ -484,8 +484,8 @@ static void tasklet_hi_action(struct sof
- 
- 		local_irq_disable();
- 		t->next = NULL;
--		*__get_cpu_var(tasklet_hi_vec).tail = t;
--		__get_cpu_var(tasklet_hi_vec).tail = &(t->next);
-+		*__this_cpu_read(tasklet_hi_vec.tail) = t;
-+		__this_cpu_write(tasklet_hi_vec.tail, &(t->next));
- 		__raise_softirq_irqoff(HI_SOFTIRQ);
- 		local_irq_enable();
- 	}
-@@ -802,18 +802,18 @@ static void takeover_tasklets(unsigned i
- 
- 	/* Find end, append list for that CPU. */
- 	if (&per_cpu(tasklet_vec, cpu).head != per_cpu(tasklet_vec, cpu).tail) {
--		*(__get_cpu_var(tasklet_vec).tail) = per_cpu(tasklet_vec, cpu).head;
--		__get_cpu_var(tasklet_vec).tail = per_cpu(tasklet_vec, cpu).tail;
-+		*__this_cpu_read(tasklet_vec.tail) = per_cpu(tasklet_vec, cpu).head;
-+		this_cpu_write(tasklet_vec.tail, per_cpu(tasklet_vec, cpu).tail);
- 		per_cpu(tasklet_vec, cpu).head = NULL;
- 		per_cpu(tasklet_vec, cpu).tail = &per_cpu(tasklet_vec, cpu).head;
- 	}
- 	raise_softirq_irqoff(TASKLET_SOFTIRQ);
- 
- 	if (&per_cpu(tasklet_hi_vec, cpu).head != per_cpu(tasklet_hi_vec, cpu).tail) {
--		*__get_cpu_var(tasklet_hi_vec).tail = per_cpu(tasklet_hi_vec, cpu).head;
--		__get_cpu_var(tasklet_hi_vec).tail = per_cpu(tasklet_hi_vec, cpu).tail;
-+		*__this_cpuo_read(tasklet_hi_vec.tail) = per_cpu(tasklet_hi_vec, cpu).head;
-+		__this_cpu_write(tasklet_hi_vec.tail, per_cpu(tasklet_hi_vec, cpu).tail;
- 		per_cpu(tasklet_hi_vec, cpu).head = NULL;
--		per_cpu(tasklet_hi_vec, cpu).tail = &per_cpu(tasklet_hi_vec, cpu).head;
-+		per_cpu(tasklet_hi_vec, cpu).tail = &per_cpu(tasklet_hi_vec, cpu).head);
- 	}
- 	raise_softirq_irqoff(HI_SOFTIRQ);
- 
-Index: linux-2.6/kernel/time/tick-common.c
-===================================================================
---- linux-2.6.orig/kernel/time/tick-common.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/time/tick-common.c	2010-11-30 12:41:14.000000000 -0600
-@@ -49,7 +49,7 @@ struct tick_device *tick_get_device(int
-  */
- int tick_is_oneshot_available(void)
- {
--	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
-+	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
- 
- 	return dev && (dev->features & CLOCK_EVT_FEAT_ONESHOT);
- }
-Index: linux-2.6/kernel/time/tick-oneshot.c
-===================================================================
---- linux-2.6.orig/kernel/time/tick-oneshot.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/time/tick-oneshot.c	2010-11-30 12:41:14.000000000 -0600
-@@ -95,7 +95,7 @@ int tick_dev_program_event(struct clock_
-  */
- int tick_program_event(ktime_t expires, int force)
- {
--	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
-+	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
- 
- 	return tick_dev_program_event(dev, expires, force);
- }
-@@ -167,7 +167,7 @@ int tick_oneshot_mode_active(void)
- 	int ret;
- 
- 	local_irq_save(flags);
--	ret = __get_cpu_var(tick_cpu_device).mode == TICKDEV_MODE_ONESHOT;
-+	ret = __this_cpu_read(tick_cpu_device.mode) == TICKDEV_MODE_ONESHOT;
- 	local_irq_restore(flags);
- 
- 	return ret;
-Index: linux-2.6/kernel/watchdog.c
-===================================================================
---- linux-2.6.orig/kernel/watchdog.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/watchdog.c	2010-11-30 12:41:14.000000000 -0600
-@@ -116,12 +116,12 @@ static void __touch_watchdog(void)
- {
- 	int this_cpu = smp_processor_id();
- 
--	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
-+	__this_cpu_write(watchdog_touch_ts, get_timestamp(this_cpu));
- }
- 
- void touch_softlockup_watchdog(void)
- {
--	__raw_get_cpu_var(watchdog_touch_ts) = 0;
-+	__this_cpu_write(watchdog_touch_ts, 0);
- }
- EXPORT_SYMBOL(touch_softlockup_watchdog);
- 
-@@ -165,12 +165,12 @@ void touch_softlockup_watchdog_sync(void
- /* watchdog detector functions */
- static int is_hardlockup(void)
- {
--	unsigned long hrint = __get_cpu_var(hrtimer_interrupts);
-+	unsigned long hrint = __this_cpu_read(hrtimer_interrupts);
- 
--	if (__get_cpu_var(hrtimer_interrupts_saved) == hrint)
-+	if (__this_cpu_read(hrtimer_interrupts_saved) == hrint)
- 		return 1;
- 
--	__get_cpu_var(hrtimer_interrupts_saved) = hrint;
-+	__this_cpu_write(hrtimer_interrupts_saved, hrint);
- 	return 0;
- }
- #endif
-@@ -203,8 +203,8 @@ static void watchdog_overflow_callback(s
- 	/* Ensure the watchdog never gets throttled */
- 	event->hw.interrupts = 0;
- 
--	if (__get_cpu_var(watchdog_nmi_touch) == true) {
--		__get_cpu_var(watchdog_nmi_touch) = false;
-+	if (__this_cpu_read(watchdog_nmi_touch) == true) {
-+		__this_cpu_write(watchdog_nmi_touch, false);
+-	if (__get_cpu_var(wd_enabled))
++	if (__this_cpu_read(wd_enabled))
  		return;
+ 
+ 	/* cheap hack to support suspend/resume */
+@@ -322,12 +322,12 @@ void setup_apic_nmi_watchdog(void *unuse
+ 	switch (nmi_watchdog) {
+ 	case NMI_LOCAL_APIC:
+ 		if (lapic_watchdog_init(nmi_hz) < 0) {
+-			__get_cpu_var(wd_enabled) = 0;
++			__this_cpu_write(wd_enabled, 0);
+ 			return;
+ 		}
+ 		/* FALL THROUGH */
+ 	case NMI_IO_APIC:
+-		__get_cpu_var(wd_enabled) = 1;
++		__this_cpu_write(wd_enabled, 1);
+ 		atomic_inc(&nmi_active);
+ 	}
+ }
+@@ -337,13 +337,13 @@ void stop_apic_nmi_watchdog(void *unused
+ 	/* only support LOCAL and IO APICs for now */
+ 	if (!nmi_watchdog_active())
+ 		return;
+-	if (__get_cpu_var(wd_enabled) == 0)
++	if (__this_cpu_read(wd_enabled) == 0)
+ 		return;
+ 	if (nmi_watchdog == NMI_LOCAL_APIC)
+ 		lapic_watchdog_stop();
+ 	else
+ 		__acpi_nmi_disable(NULL);
+-	__get_cpu_var(wd_enabled) = 0;
++	__this_cpu_write(wd_enabled, 0);
+ 	atomic_dec(&nmi_active);
+ }
+ 
+@@ -403,8 +403,8 @@ nmi_watchdog_tick(struct pt_regs *regs,
+ 
+ 	sum = get_timer_irqs(cpu);
+ 
+-	if (__get_cpu_var(nmi_touch)) {
+-		__get_cpu_var(nmi_touch) = 0;
++	if (__this_cpu_read(nmi_touch)) {
++		__this_cpu_write(nmi_touch, 0);
+ 		touched = 1;
  	}
  
-@@ -218,7 +218,7 @@ static void watchdog_overflow_callback(s
- 		int this_cpu = smp_processor_id();
+@@ -427,7 +427,7 @@ nmi_watchdog_tick(struct pt_regs *regs,
+ 		touched = 1;
  
- 		/* only print hardlockups once */
--		if (__get_cpu_var(hard_watchdog_warn) == true)
-+		if (__this_cpu_read(hard_watchdog_warn) == true)
+ 	/* if the none of the timers isn't firing, this cpu isn't doing much */
+-	if (!touched && __get_cpu_var(last_irq_sum) == sum) {
++	if (!touched && __this_cpu_read(last_irq_sum) == sum) {
+ 		/*
+ 		 * Ayiee, looks like this CPU is stuck ...
+ 		 * wait a few IRQs (5 seconds) before doing the oops ...
+@@ -439,12 +439,12 @@ nmi_watchdog_tick(struct pt_regs *regs,
+ 			die_nmi("BUG: NMI Watchdog detected LOCKUP",
+ 				regs, panic_on_timeout);
+ 	} else {
+-		__get_cpu_var(last_irq_sum) = sum;
++		__this_cpu_write(last_irq_sum, sum);
+ 		__this_cpu_write(alert_counter, 0);
+ 	}
+ 
+ 	/* see if the nmi watchdog went off */
+-	if (!__get_cpu_var(wd_enabled))
++	if (!__this_cpu_read(wd_enabled))
+ 		return rc;
+ 	switch (nmi_watchdog) {
+ 	case NMI_LOCAL_APIC:
+@@ -466,7 +466,7 @@ nmi_watchdog_tick(struct pt_regs *regs,
+ 
+ static void enable_ioapic_nmi_watchdog_single(void *unused)
+ {
+-	__get_cpu_var(wd_enabled) = 1;
++	__this_cpu_write(wd_enabled, 1);
+ 	atomic_inc(&nmi_active);
+ 	__acpi_nmi_enable(NULL);
+ }
+Index: linux-2.6/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/apic/x2apic_uv_x.c	2010-11-30 12:37:10.000000000 -0600
+@@ -118,8 +118,8 @@ static int __init uv_acpi_madt_oem_check
+ 		else if (!strcmp(oem_table_id, "UVX"))
+ 			uv_system_type = UV_X2APIC;
+ 		else if (!strcmp(oem_table_id, "UVH")) {
+-			__get_cpu_var(x2apic_extra_bits) =
+-				nodeid << (uvh_apicid.s.pnode_shift - 1);
++			__this_cpu_write(x2apic_extra_bits,
++				nodeid << (uvh_apicid.s.pnode_shift - 1));
+ 			uv_system_type = UV_NON_UNIQUE_APIC;
+ 			uv_set_apicid_hibit();
+ 			return 1;
+@@ -284,7 +284,7 @@ static unsigned int x2apic_get_apic_id(u
+ 	unsigned int id;
+ 
+ 	WARN_ON(preemptible() && num_online_cpus() > 1);
+-	id = x | __get_cpu_var(x2apic_extra_bits);
++	id = x | __this_cpu_read(x2apic_extra_bits);
+ 
+ 	return id;
+ }
+@@ -376,7 +376,7 @@ struct apic __refdata apic_x2apic_uv_x =
+ 
+ static __cpuinit void set_x2apic_extra_bits(int pnode)
+ {
+-	__get_cpu_var(x2apic_extra_bits) = (pnode << 6);
++	__this_cpu_write(x2apic_extra_bits, (pnode << 6));
+ }
+ 
+ /*
+Index: linux-2.6/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/cpufreq/powernow-k8.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/cpu/cpufreq/powernow-k8.c	2010-11-30 12:37:10.000000000 -0600
+@@ -1377,7 +1377,7 @@ static int __devexit powernowk8_cpu_exit
+ static void query_values_on_cpu(void *_err)
+ {
+ 	int *err = _err;
+-	struct powernow_k8_data *data = __get_cpu_var(powernow_data);
++	struct powernow_k8_data *data = __this_cpu_read(powernow_data);
+ 
+ 	*err = query_current_values_with_pending_wait(data);
+ }
+Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c	2010-11-30 12:37:10.000000000 -0600
+@@ -326,7 +326,7 @@ static void mce_panic(char *msg, struct
+ 
+ static int msr_to_offset(u32 msr)
+ {
+-	unsigned bank = __get_cpu_var(injectm.bank);
++	unsigned bank = __this_cpu_read(injectm.bank);
+ 
+ 	if (msr == rip_msr)
+ 		return offsetof(struct mce, ip);
+@@ -346,7 +346,7 @@ static u64 mce_rdmsrl(u32 msr)
+ {
+ 	u64 v;
+ 
+-	if (__get_cpu_var(injectm).finished) {
++	if (__this_cpu_read(injectm.finished)) {
+ 		int offset = msr_to_offset(msr);
+ 
+ 		if (offset < 0)
+@@ -369,7 +369,7 @@ static u64 mce_rdmsrl(u32 msr)
+ 
+ static void mce_wrmsrl(u32 msr, u64 v)
+ {
+-	if (__get_cpu_var(injectm).finished) {
++	if (__this_cpu_read(injectm.finished)) {
+ 		int offset = msr_to_offset(msr);
+ 
+ 		if (offset >= 0)
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/cpu/perf_event.c	2010-11-30 12:37:10.000000000 -0600
+@@ -968,8 +968,7 @@ x86_perf_event_set_period(struct perf_ev
+ 
+ static void x86_pmu_enable_event(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	if (cpuc->enabled)
++	if (__this_cpu_read(cpu_hw_events.enabled))
+ 		__x86_pmu_enable_event(&event->hw,
+ 				       ARCH_PERFMON_EVENTSEL_ENABLE);
+ }
+@@ -1108,12 +1107,11 @@ void perf_event_print_debug(void)
+ 
+ static void x86_pmu_stop(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
++	if (__test_and_clear_bit(hwc->idx, __get_cpu_var(cpu_hw_events).active_mask)) {
+ 		x86_pmu.disable(event);
+-		cpuc->events[hwc->idx] = NULL;
++		__this_cpu_write(cpu_hw_events.events[hwc->idx], NULL);
+ 		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
+ 		hwc->state |= PERF_HES_STOPPED;
+ 	}
+@@ -1243,7 +1241,7 @@ perf_event_nmi_handler(struct notifier_b
+ 		break;
+ 	case DIE_NMIUNKNOWN:
+ 		this_nmi = percpu_read(irq_stat.__nmi_count);
+-		if (this_nmi != __get_cpu_var(pmu_nmi).marked)
++		if (this_nmi != __this_cpu_read(pmu_nmi.marked))
+ 			/* let the kernel handle the unknown nmi */
+ 			return NOTIFY_DONE;
+ 		/*
+@@ -1267,8 +1265,8 @@ perf_event_nmi_handler(struct notifier_b
+ 	this_nmi = percpu_read(irq_stat.__nmi_count);
+ 	if ((handled > 1) ||
+ 		/* the next nmi could be a back-to-back nmi */
+-	    ((__get_cpu_var(pmu_nmi).marked == this_nmi) &&
+-	     (__get_cpu_var(pmu_nmi).handled > 1))) {
++	    ((__this_cpu_read(pmu_nmi.marked) == this_nmi) &&
++	     (__this_cpu_read(pmu_nmi.handled) > 1))) {
+ 		/*
+ 		 * We could have two subsequent back-to-back nmis: The
+ 		 * first handles more than one counter, the 2nd
+@@ -1279,8 +1277,8 @@ perf_event_nmi_handler(struct notifier_b
+ 		 * handling more than one counter. We will mark the
+ 		 * next (3rd) and then drop it if unhandled.
+ 		 */
+-		__get_cpu_var(pmu_nmi).marked	= this_nmi + 1;
+-		__get_cpu_var(pmu_nmi).handled	= handled;
++		__this_cpu_write(pmu_nmi.marked, this_nmi + 1);
++		__this_cpu_write(pmu_nmi.handled, handled);
+ 	}
+ 
+ 	return NOTIFY_STOP;
+@@ -1454,11 +1452,9 @@ static inline void x86_pmu_read(struct p
+  */
+ static void x86_pmu_start_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-
+ 	perf_pmu_disable(pmu);
+-	cpuc->group_flag |= PERF_EVENT_TXN;
+-	cpuc->n_txn = 0;
++	__this_cpu_or(cpu_hw_events.group_flag, PERF_EVENT_TXN);
++	__this_cpu_write(cpu_hw_events.n_txn, 0);
+ }
+ 
+ /*
+@@ -1468,14 +1464,12 @@ static void x86_pmu_start_txn(struct pmu
+  */
+ static void x86_pmu_cancel_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-
+-	cpuc->group_flag &= ~PERF_EVENT_TXN;
++	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
+ 	/*
+ 	 * Truncate the collected events.
+ 	 */
+-	cpuc->n_added -= cpuc->n_txn;
+-	cpuc->n_events -= cpuc->n_txn;
++	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
++	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
+ 	perf_pmu_enable(pmu);
+ }
+ 
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c	2010-11-30 12:37:10.000000000 -0600
+@@ -649,7 +649,7 @@ static void intel_pmu_enable_event(struc
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+ 	if (unlikely(hwc->idx == X86_PMC_IDX_FIXED_BTS)) {
+-		if (!__get_cpu_var(cpu_hw_events).enabled)
++		if (!__this_cpu_read(cpu_hw_events.enabled))
  			return;
  
- 		if (hardlockup_panic)
-@@ -226,16 +226,16 @@ static void watchdog_overflow_callback(s
- 		else
- 			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+ 		intel_pmu_enable_bts(hwc->config);
+@@ -679,7 +679,7 @@ static int intel_pmu_save_and_restart(st
  
--		__get_cpu_var(hard_watchdog_warn) = true;
-+		__this_cpu_write(hard_watchdog_warn, true);
+ static void intel_pmu_reset(void)
+ {
+-	struct debug_store *ds = __get_cpu_var(cpu_hw_events).ds;
++	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
+ 	unsigned long flags;
+ 	int idx;
+ 
+Index: linux-2.6/arch/x86/kernel/ftrace.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/ftrace.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/ftrace.c	2010-11-30 12:37:10.000000000 -0600
+@@ -167,9 +167,9 @@ static void ftrace_mod_code(void)
+ 
+ void ftrace_nmi_enter(void)
+ {
+-	__get_cpu_var(save_modifying_code) = modifying_code;
++	__this_cpu_write(save_modifying_code, modifying_code);
+ 
+-	if (!__get_cpu_var(save_modifying_code))
++	if (!__this_cpu_read(save_modifying_code))
  		return;
- 	}
  
--	__get_cpu_var(hard_watchdog_warn) = false;
-+	__this_cpu_write(hard_watchdog_warn, false);
- 	return;
- }
- static void watchdog_interrupt_count(void)
+ 	if (atomic_inc_return(&nmi_running) & MOD_CODE_WRITE_FLAG) {
+@@ -183,7 +183,7 @@ void ftrace_nmi_enter(void)
+ 
+ void ftrace_nmi_exit(void)
  {
--	__get_cpu_var(hrtimer_interrupts)++;
-+	__this_cpu_inc(hrtimer_interrupts);
- }
- #else
- static inline void watchdog_interrupt_count(void) { return; }
-@@ -244,7 +244,7 @@ static inline void watchdog_interrupt_co
- /* watchdog kicker functions */
- static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+-	if (!__get_cpu_var(save_modifying_code))
++	if (!__this_cpu_read(save_modifying_code))
+ 		return;
+ 
+ 	/* Finish all executions before clearing nmi_running */
+Index: linux-2.6/arch/x86/kernel/hw_breakpoint.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/hw_breakpoint.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/hw_breakpoint.c	2010-11-30 12:37:10.000000000 -0600
+@@ -122,7 +122,7 @@ int arch_install_hw_breakpoint(struct pe
+ 		return -EBUSY;
+ 
+ 	set_debugreg(info->address, i);
+-	__get_cpu_var(cpu_debugreg[i]) = info->address;
++	__this_cpu_write(cpu_debugreg[i], info->address);
+ 
+ 	dr7 = &__get_cpu_var(cpu_dr7);
+ 	*dr7 |= encode_dr7(i, info->len, info->type);
+@@ -397,12 +397,12 @@ void flush_ptrace_hw_breakpoint(struct t
+ 
+ void hw_breakpoint_restore(void)
  {
--	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
-+	unsigned long touch_ts = __this_cpu_read(watchdog_touch_ts);
- 	struct pt_regs *regs = get_irq_regs();
- 	int duration;
- 
-@@ -252,18 +252,18 @@ static enum hrtimer_restart watchdog_tim
- 	watchdog_interrupt_count();
- 
- 	/* kick the softlockup detector */
--	wake_up_process(__get_cpu_var(softlockup_watchdog));
-+	wake_up_process(__this_cpu_read(softlockup_watchdog));
- 
- 	/* .. and repeat */
- 	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
- 
- 	if (touch_ts == 0) {
--		if (unlikely(__get_cpu_var(softlockup_touch_sync))) {
-+		if (unlikely(__this_cpu_read(softlockup_touch_sync))) {
- 			/*
- 			 * If the time stamp was touched atomically
- 			 * make sure the scheduler tick is up to date.
- 			 */
--			__get_cpu_var(softlockup_touch_sync) = false;
-+			__this_cpu_write(softlockup_touch_sync, false);
- 			sched_clock_tick();
- 		}
- 		__touch_watchdog();
-@@ -279,7 +279,7 @@ static enum hrtimer_restart watchdog_tim
- 	duration = is_softlockup(touch_ts);
- 	if (unlikely(duration)) {
- 		/* only warn once */
--		if (__get_cpu_var(soft_watchdog_warn) == true)
-+		if (__this_cpu_read(soft_watchdog_warn) == true)
- 			return HRTIMER_RESTART;
- 
- 		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
-@@ -294,9 +294,9 @@ static enum hrtimer_restart watchdog_tim
- 
- 		if (softlockup_panic)
- 			panic("softlockup: hung tasks");
--		__get_cpu_var(soft_watchdog_warn) = true;
-+		__this_cpu_write(soft_watchdog_warn, true);
- 	} else
--		__get_cpu_var(soft_watchdog_warn) = false;
-+		__this_cpu_write(soft_watchdog_warn, false);
- 
- 	return HRTIMER_RESTART;
+-	set_debugreg(__get_cpu_var(cpu_debugreg[0]), 0);
+-	set_debugreg(__get_cpu_var(cpu_debugreg[1]), 1);
+-	set_debugreg(__get_cpu_var(cpu_debugreg[2]), 2);
+-	set_debugreg(__get_cpu_var(cpu_debugreg[3]), 3);
++	set_debugreg(__this_cpu_read(cpu_debugreg[0]), 0);
++	set_debugreg(__this_cpu_read(cpu_debugreg[1]), 1);
++	set_debugreg(__this_cpu_read(cpu_debugreg[2]), 2);
++	set_debugreg(__this_cpu_read(cpu_debugreg[3]), 3);
+ 	set_debugreg(current->thread.debugreg6, 6);
+-	set_debugreg(__get_cpu_var(cpu_dr7), 7);
++	set_debugreg(__this_cpu_read(cpu_dr7), 7);
  }
-Index: linux-2.6/kernel/printk.c
-===================================================================
---- linux-2.6.orig/kernel/printk.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/printk.c	2010-11-30 12:41:14.000000000 -0600
-@@ -1074,8 +1074,8 @@ static DEFINE_PER_CPU(int, printk_pendin
+ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
  
- void printk_tick(void)
+Index: linux-2.6/arch/x86/kernel/irq.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/irq.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/irq.c	2010-11-30 12:37:10.000000000 -0600
+@@ -234,7 +234,7 @@ unsigned int __irq_entry do_IRQ(struct p
+ 	exit_idle();
+ 	irq_enter();
+ 
+-	irq = __get_cpu_var(vector_irq)[vector];
++	irq = __this_cpu_read(vector_irq[vector]);
+ 
+ 	if (!handle_irq(irq, regs)) {
+ 		ack_APIC_irq();
+@@ -350,12 +350,12 @@ void fixup_irqs(void)
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+ 		unsigned int irr;
+ 
+-		if (__get_cpu_var(vector_irq)[vector] < 0)
++		if (__this_cpu_read(vector_irq[vector]) < 0)
+ 			continue;
+ 
+ 		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
+ 		if (irr  & (1 << (vector % 32))) {
+-			irq = __get_cpu_var(vector_irq)[vector];
++			irq = __this_cpu_read(vector_irq[vector]);
+ 
+ 			data = irq_get_irq_data(irq);
+ 			raw_spin_lock(&desc->lock);
+Index: linux-2.6/arch/x86/kernel/irq_32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/irq_32.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/irq_32.c	2010-11-30 12:37:10.000000000 -0600
+@@ -79,7 +79,7 @@ execute_on_irq_stack(int overflow, struc
+ 	u32 *isp, arg1, arg2;
+ 
+ 	curctx = (union irq_ctx *) current_thread_info();
+-	irqctx = __get_cpu_var(hardirq_ctx);
++	irqctx = __this_cpu_read(hardirq_ctx);
+ 
+ 	/*
+ 	 * this is where we switch to the IRQ stack. However, if we are
+@@ -166,7 +166,7 @@ asmlinkage void do_softirq(void)
+ 
+ 	if (local_softirq_pending()) {
+ 		curctx = current_thread_info();
+-		irqctx = __get_cpu_var(softirq_ctx);
++		irqctx = __this_cpu_read(softirq_ctx);
+ 		irqctx->tinfo.task = curctx->task;
+ 		irqctx->tinfo.previous_esp = current_stack_pointer;
+ 
+Index: linux-2.6/arch/x86/kernel/tsc.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/tsc.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kernel/tsc.c	2010-11-30 12:37:10.000000000 -0600
+@@ -659,7 +659,7 @@ void restore_sched_clock_state(void)
+ 
+ 	local_irq_save(flags);
+ 
+-	__get_cpu_var(cyc2ns_offset) = 0;
++	__this_cpu_write(cyc2ns_offset, 0);
+ 	offset = cyc2ns_suspend - sched_clock();
+ 
+ 	for_each_possible_cpu(cpu)
+Index: linux-2.6/arch/x86/kvm/x86.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kvm/x86.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/kvm/x86.c	2010-11-30 12:37:10.000000000 -0600
+@@ -981,7 +981,7 @@ static inline u64 nsec_to_cycles(u64 nse
+ 	if (kvm_tsc_changes_freq())
+ 		printk_once(KERN_WARNING
+ 		 "kvm: unreliable cycle conversion on adjustable rate TSC\n");
+-	ret = nsec * __get_cpu_var(cpu_tsc_khz);
++	ret = nsec * __this_cpu_read(cpu_tsc_khz);
+ 	do_div(ret, USEC_PER_SEC);
+ 	return ret;
+ }
+@@ -1066,7 +1066,7 @@ static int kvm_guest_time_update(struct
+ 	local_irq_save(flags);
+ 	kvm_get_msr(v, MSR_IA32_TSC, &tsc_timestamp);
+ 	kernel_ns = get_kernel_ns();
+-	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
++	this_tsc_khz = __this_cpu_read(cpu_tsc_khz);
+ 
+ 	if (unlikely(this_tsc_khz == 0)) {
+ 		local_irq_restore(flags);
+@@ -4432,7 +4432,7 @@ EXPORT_SYMBOL_GPL(kvm_fast_pio_out);
+ 
+ static void tsc_bad(void *info)
  {
--	if (__get_cpu_var(printk_pending)) {
--		__get_cpu_var(printk_pending) = 0;
-+	if (__this_cpu_read(printk_pending)) {
-+		__this_cpu_write(printk_pending, 0);
- 		wake_up_interruptible(&log_wait);
- 	}
+-	__get_cpu_var(cpu_tsc_khz) = 0;
++	__this_cpu_write(cpu_tsc_khz, 0);
  }
-Index: linux-2.6/include/asm-generic/irq_regs.h
-===================================================================
---- linux-2.6.orig/include/asm-generic/irq_regs.h	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/include/asm-generic/irq_regs.h	2010-11-30 12:41:14.000000000 -0600
-@@ -22,15 +22,15 @@ DECLARE_PER_CPU(struct pt_regs *, __irq_
  
- static inline struct pt_regs *get_irq_regs(void)
+ static void tsc_khz_changed(void *data)
+@@ -4446,7 +4446,7 @@ static void tsc_khz_changed(void *data)
+ 		khz = cpufreq_quick_get(raw_smp_processor_id());
+ 	if (!khz)
+ 		khz = tsc_khz;
+-	__get_cpu_var(cpu_tsc_khz) = khz;
++	__this_cpu_write(cpu_tsc_khz, khz);
+ }
+ 
+ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+Index: linux-2.6/arch/x86/oprofile/nmi_int.c
+===================================================================
+--- linux-2.6.orig/arch/x86/oprofile/nmi_int.c	2010-11-30 12:35:38.000000000 -0600
++++ linux-2.6/arch/x86/oprofile/nmi_int.c	2010-11-30 12:37:10.000000000 -0600
+@@ -143,7 +143,7 @@ static inline int has_mux(void)
+ 
+ inline int op_x86_phys_to_virt(int phys)
  {
--	return __get_cpu_var(__irq_regs);
-+	return __this_cpu_read(__irq_regs);
+-	return __get_cpu_var(switch_index) + phys;
++	return __this_cpu_read(switch_index) + phys;
  }
  
- static inline struct pt_regs *set_irq_regs(struct pt_regs *new_regs)
- {
--	struct pt_regs *old_regs, **pp_regs = &__get_cpu_var(__irq_regs);
-+	struct pt_regs *old_regs;
- 
--	old_regs = *pp_regs;
--	*pp_regs = new_regs;
-+	old_regs = __this_cpu_read(__irq_regs);
-+	__this_cpu_write(__irq_regs, new_regs);
- 	return old_regs;
- }
- 
-Index: linux-2.6/include/linux/elevator.h
-===================================================================
---- linux-2.6.orig/include/linux/elevator.h	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/include/linux/elevator.h	2010-11-30 12:41:14.000000000 -0600
-@@ -195,15 +195,9 @@ enum {
- /*
-  * io context count accounting
-  */
--#define elv_ioc_count_mod(name, __val)				\
--	do {							\
--		preempt_disable();				\
--		__get_cpu_var(name) += (__val);			\
--		preempt_enable();				\
--	} while (0)
--
--#define elv_ioc_count_inc(name)	elv_ioc_count_mod(name, 1)
--#define elv_ioc_count_dec(name)	elv_ioc_count_mod(name, -1)
-+#define elv_ioc_count_mod(name, __val) this_cpu_add(name, __val)
-+#define elv_ioc_count_inc(name)	this_cpu_inc(name)
-+#define elv_ioc_count_dec(name)	this_cpu_dec(name)
- 
- #define elv_ioc_count_read(name)				\
- ({								\
-Index: linux-2.6/include/linux/kernel_stat.h
-===================================================================
---- linux-2.6.orig/include/linux/kernel_stat.h	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/include/linux/kernel_stat.h	2010-11-30 12:41:14.000000000 -0600
-@@ -47,7 +47,7 @@ extern unsigned long long nr_context_swi
- 
- #ifndef CONFIG_GENERIC_HARDIRQS
- #define kstat_irqs_this_cpu(irq) \
--	(kstat_this_cpu.irqs[irq])
-+	(this_cpu_read(kstat.irqs[irq])
- 
- struct irq_desc;
- 
-Index: linux-2.6/kernel/exit.c
-===================================================================
---- linux-2.6.orig/kernel/exit.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/exit.c	2010-11-30 12:41:14.000000000 -0600
-@@ -69,7 +69,7 @@ static void __unhash_process(struct task
- 
- 		list_del_rcu(&p->tasks);
- 		list_del_init(&p->sibling);
--		__get_cpu_var(process_counts)--;
-+		__this_cpu_dec(process_counts);
- 	}
- 	list_del_rcu(&p->thread_group);
- }
-Index: linux-2.6/kernel/fork.c
-===================================================================
---- linux-2.6.orig/kernel/fork.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/fork.c	2010-11-30 12:41:14.000000000 -0600
-@@ -1282,7 +1282,7 @@ static struct task_struct *copy_process(
- 			attach_pid(p, PIDTYPE_SID, task_session(current));
- 			list_add_tail(&p->sibling, &p->real_parent->children);
- 			list_add_tail_rcu(&p->tasks, &init_task.tasks);
--			__get_cpu_var(process_counts)++;
-+			__this_cpu_inc(process_counts);
- 		}
- 		attach_pid(p, PIDTYPE_PID, pid);
- 		nr_threads++;
-Index: linux-2.6/kernel/hrtimer.c
-===================================================================
---- linux-2.6.orig/kernel/hrtimer.c	2010-11-30 12:40:22.000000000 -0600
-+++ linux-2.6/kernel/hrtimer.c	2010-11-30 12:41:14.000000000 -0600
-@@ -497,7 +497,7 @@ static inline int hrtimer_is_hres_enable
-  */
- static inline int hrtimer_hres_active(void)
- {
--	return __get_cpu_var(hrtimer_bases).hres_active;
-+	return __this_cpu_read(hrtimer_bases.hres_active);
- }
- 
- /*
+ inline int op_x86_virt_to_phys(int virt)
 
