@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0K3Q27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 11:28:59 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:58671 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751164Ab0K3Q26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 11:28:58 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+h6OZiXZ+hyH1FU34Nxkh++9U+WAjFlM9sO7L6gO
-	tnqRqZrDV8UIE6
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S1754533Ab0K3Q3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 11:29:42 -0500
+Received: from hera.kernel.org ([140.211.167.34]:54488 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754173Ab0K3Q3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 11:29:41 -0500
+Message-ID: <4CF52652.4030802@kernel.org>
+Date: Tue, 30 Nov 2010 17:29:06 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-In-Reply-To: <20101130141804.GB22588@elte.hu>
-References: <1290700829.4759.16.camel@maggy.simson.net>
-	 <1290954299.30515.15.camel@marge.simson.net>
-	 <AANLkTin5Z_WdAPDfcS3V3DCcN40HLDfpzK-o0XeSMiQh@mail.gmail.com>
-	 <20101128201851.GA20555@elte.hu> <1291031593.32004.19.camel@laptop>
-	 <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
-	 <1291052268.32004.171.camel@laptop>
-	 <1291057565.20709.2.camel@marge.simson.net>
-	 <20101129192033.GA18372@elte.hu>
-	 <1291103647.24405.5.camel@marge.simson.net>
-	 <20101130141804.GB22588@elte.hu>
-Content-Type: text/plain
-Date: Tue, 30 Nov 2010 17:28:51 +0100
-Message-Id: <1291134531.28239.27.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates for 2.6.37
+References: <20101022012302.GA7487@havoc.gtf.org> <20101129180755.GK15818@bombadil.infradead.org> <4CF506A6.4020200@kernel.org> <20101130153839.GM15818@bombadil.infradead.org>
+In-Reply-To: <20101130153839.GM15818@bombadil.infradead.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Nov 2010 16:29:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 15:18 +0100, Ingo Molnar wrote:
-> * Mike Galbraith <efault@gmx.de> wrote:
+On 11/30/2010 04:38 PM, Kyle McMartin wrote:
+> On Tue, Nov 30, 2010 at 03:13:58PM +0100, Tejun Heo wrote:
+>>> Tejun, any ideas how I can debug this?
+>>
+>> Hmm... DIPM commands are failing with AC_ERR_OTHER.  Other than DIPM
+>> not being configured and speed capped at 1.5Gbps, the machine works
+>> fine afterwards, right?  Are you up for applying debug patches?
+>>
 > 
-> > On Mon, 2010-11-29 at 20:20 +0100, Ingo Molnar wrote:
-> > > * Mike Galbraith <efault@gmx.de> wrote:
-> > > 
-> > > > > I know, from the testing so far we _thought_ it was fairly sane. Apparently 
-> > > > > there's still some work to do.
-> > > > 
-> > > > Damn thing bisected to:
-> > > > 
-> > > > commit 92fd4d4d67b945c0766416284d4ab236b31542c4
-> > > > Merge: fe7de49 e53beac
-> > > > Author: Ingo Molnar <mingo@elte.hu>
-> > > > Date:   Thu Nov 18 13:22:14 2010 +0100
-> > > > 
-> > > >     Merge commit 'v2.6.37-rc2' into sched/core
-> > > > 
-> > > >     Merge reason: Move to a .37-rc base.
-> > > > 
-> > > >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > > > 
-> > > > 92fd4d4d67b945c0766416284d4ab236b31542c4 is the first bad commit
-> > > 
-> > > Hm, i'd suggest to double check the two originator points:
-> > > 
-> > >   e53beac - is it really 'bad' ?
-> > >   fe7de49 - is it really 'good'?
-> > 
-> > Nope.   I did a bisection this morning in text mode with a pipe-test
-> > based measurement proggy, and it bisected cleanly.
-> > 
-> > 2069dd75c7d0f49355939e5586daf5a9ab216db7 is the first bad commit
-> > 
-> > commit 2069dd75c7d0f49355939e5586daf5a9ab216db7
-> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date:   Mon Nov 15 15:47:00 2010 -0800
-> > 
-> >     sched: Rewrite tg_shares_up)
+> Yup, it's chugging along happily, though I notice kernel builds are
+> taking a minute or two longer (but I don't bother to time them so it's
+> purely subjective.)
 > 
-> Ok. And has this fixed it:
-> 
->   822bc180a7f7: sched: Fix unregister_fair_sched_group()
-> 
-> ... or are there two bugs?
+> Be happy to apply any debug patches, but I plan on replacing the drive
+> with a faster one at some point in the next few weeks.
 
-Two bugs.  822bc180a7f7 fixes the explosions that were happening in tip.
-The interactivity issue is some problem in the update_shares() stuff.
+Can you please apply the following patch and report the resulting
+kernel log?  You're on ahci, right?
 
-	-Mike
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index ebc08d6..b1c39db 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1560,6 +1560,10 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
+ 	}
+
+ 	/* okay, let's hand over to EH */
++	if (active_qc && ata_tag_internal(active_qc->tag))
++		ata_dev_printk(active_qc->dev, KERN_WARNING,
++			       "ahci: internal command failure, irq_stat=0x%x\n",
++			       irq_stat);
+
+ 	if (irq_stat & PORT_IRQ_FREEZE)
+ 		ata_port_freeze(ap);
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 7f77c67..7cf236b 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -1668,6 +1668,10 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
+
+ 	/* perform minimal error analysis */
+ 	if (qc->flags & ATA_QCFLAG_FAILED) {
++		ata_dev_printk(dev, KERN_WARNING,
++			       "internal command failure: stat=0x%x ehi_desc=\"%s\"\n",
++			       qc->tf.command, dev->link->eh_info.desc);
++
+ 		if (qc->result_tf.command & (ATA_ERR | ATA_DF))
+ 			qc->err_mask |= AC_ERR_DEV;
 
