@@ -1,76 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0K3PWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:22:07 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57919 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab0K3PWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:22:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-Date: Tue, 30 Nov 2010 16:21:47 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local> <201011261224.59490.arnd@arndb.de> <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com>
-In-Reply-To: <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com>
+	id S1753895Ab0K3PWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:22:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717Ab0K3PWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 10:22:06 -0500
+Message-ID: <4CF51696.4070102@redhat.com>
+Date: Tue, 30 Nov 2010 16:21:58 +0100
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+CC: "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Subject: Re: [PATCH 1/9] scsi: megaraid_sas - Change the time format during
+ the driver online controller reset
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011301621.48140.arnd@arndb.de>
-X-Provags-ID: V02:K0:RhJGaBtlJsiSiHNy0EMMxLdPx39fg2ppRxZKxsKXgt+
- tL3wF/obuv5GD8bQJ0H5L1qw0agb1U80ZWZrQp19mFTIYKIbFt
- sVJhxLjpDii31E9rFg1/4UckSba5a97DnIYhci1md3Fkf6BsSY
- QEMKA2e5YV4xCI/FfosjWhDxWx4prkxrQRsRGT7RLG5aMrpu/M
- IHjOv8gtVyuEeCMegUDlQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 November 2010, Linus Walleij wrote:
-> 2010/11/26 Arnd Bergmann <arnd@arndb.de>:
-> 
-> > * When you say that the devices are static, I hope you do not mean
-> >  static in the C language sense. We used to allow devices to be
-> >  declared as "static struct" and registered using
-> >  platform_device_register (or other bus specific functions). This
-> >  is no longer valid and we are removing the existing users, do not
-> >  add new ones. When creating a platform device, use
-> >  platform_device_register_simple or platform_device_register_resndata.
-> 
-> Is this part of the generic ARM runtime multi-platform kernel
-> and device trees shebang?
-> 
-> The Ux500 still isn't in that sector, it needs extensive rewriting
-> of arch/arm/mach-ux500 to be done first, so as to support e.g.
-> U8500 and U5500 with a single kernel image.
-> 
-> Trying to skin that cat that as part of this review is a bit too
-> much to ask IMO, I'd rather have the author of this driver
-> adapt to whatever platform data registration mechanism is
-> in place for the merge window. Else it needs fixing as part
-> of a bigger endavour to root out compile-time platform
-> configuration.
+On 11/19/2010 05:33 PM, Yang, Bo wrote:
+> Change the 30 seconds wait in OCR routine to ssleep and give more time to FW come out from failed status
+>
+> Signed-off-by Bo Yang<bo.yang@lsi.com>
+>
+> ---
+> drivers/scsi/megaraid/megaraid_sas.c |   11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
+>   
+> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
+> new/drivers/scsi/megaraid/megaraid_sas.c ---
+> old/drivers/scsi/megaraid/megaraid_sas.c 2010-11-10 04:39:48.000000000
+> -0500 +++ new/drivers/scsi/megaraid/megaraid_sas.c 2010-11-14
+> 15:32:31.000000000 -0500 @@ -2294,7 +2294,6 @@
+> process_fw_state_change_wq(struct work_s { struct megasas_instance
+> *instance = container_of(work, struct megasas_instance, work_init); -
+> u32 wait; unsigned long flags; if (instance->adprecovery !=
+> MEGASAS_ADPRESET_SM_INFAULT) { @@ -2320,10 +2319,8 @@
+> process_fw_state_change_wq(struct work_s printk(KERN_NOTICE
+> "megaraid_sas: HBA recovery state machine," "state 2 starting...\n");
+> - /*waitting for about 20 second before start the second init*/ - for
+> (wait = 0; wait < 30; wait++) { - msleep(1000); - } + /*waitting for
+> about 30 second before start the second init*/ + ssleep(30); if
+> (megasas_transition_to_ready(instance)) { printk(KERN_NOTICE
+> "megaraid_sas:adapter not ready\n"); 
+> @@ -2487,7 +2484,9 @@ megasas_transition_to_ready(struct megas case
+> MFI_STATE_FAULT: printk(KERN_DEBUG "megasas: FW in FAULT state!!\n");
+> - return -ENODEV; + max_wait = MEGASAS_RESET_WAIT_TIME; + cur_state =
+> MFI_STATE_FAULT; + break; case MFI_STATE_WAIT_HANDSHAKE: /* 
+the line 'max_wait = MEGASAS_RESET_WAIT_TIME;' is in every 'case' statement
+the same, I'd suggest to remove it to save some lines, I hope also
+this improves readability.
+The change to ssleep is OK, I'd suggest to do the same in other cases too.
+See an untested patch below (no functional change I hope).
 
-The 'no static devices' rule is something that Greg brought up
-at the embedded developer session during PlumbersConf this year,
-I wasn't aware of the problem before that either.
+Tomas
 
-It is not related to the multi-platform kernel work and it's
-not ARM specific.
+Signed-off-by Tomas Henzl<thenzl@redhat.com>
 
-Maybe Greg can give a short explanation of the impact of this.
-AFAIR, static device definitions still work, but there are
-plans to remove that capability in the future.
+diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
+index eb29d50..9dc5ff0 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -264,12 +264,10 @@ static int
+ megasas_adp_reset_xscale(struct megasas_instance *instance,
+ 	struct megasas_register_set __iomem *regs)
+ {
+-	u32 i;
+ 	u32 pcidata;
+-	writel(MFI_ADP_RESET, &regs->inbound_doorbell);
+ 
+-	for (i = 0; i < 3; i++)
+-		msleep(1000); /* sleep for 3 secs */
++	writel(MFI_ADP_RESET, &regs->inbound_doorbell);
++	ssleep(3); /* sleep for 3 secs */
+ 	pcidata  = 0;
+ 	pci_read_config_dword(instance->pdev, MFI_1068_PCSR_OFFSET, &pcidata);
+ 	printk(KERN_NOTICE "pcidata = %x\n", pcidata);
+@@ -279,9 +277,7 @@ megasas_adp_reset_xscale(struct megasas_instance *instance,
+ 		pci_write_config_dword(instance->pdev,
+ 				MFI_1068_PCSR_OFFSET, pcidata);
+ 
+-		for (i = 0; i < 2; i++)
+-			msleep(1000); /* need to wait 2 secs again */
+-
++		ssleep(2); /* need to wait 2 secs again */
+ 		pcidata  = 0;
+ 		pci_read_config_dword(instance->pdev,
+ 				MFI_1068_FW_HANDSHAKE_OFFSET, &pcidata);
+@@ -2294,7 +2290,6 @@ process_fw_state_change_wq(struct work_struct *work)
+ {
+ 	struct megasas_instance *instance =
+ 		container_of(work, struct megasas_instance, work_init);
+-	u32 wait;
+ 	unsigned long flags;
+ 
+ 	if (instance->adprecovery != MEGASAS_ADPRESET_SM_INFAULT) {
+@@ -2320,10 +2315,8 @@ process_fw_state_change_wq(struct work_struct *work)
+ 		printk(KERN_NOTICE "megaraid_sas: HBA recovery state machine,"
+ 					"state 2 starting...\n");
+ 
+-		/*waitting for about 20 second before start the second init*/
+-		for (wait = 0; wait < 30; wait++) {
+-			msleep(1000);
+-		}
++		/* wait for about 30 second before the second init start */
++		ssleep(30);
+ 
+ 		if (megasas_transition_to_ready(instance)) {
+ 			printk(KERN_NOTICE "megaraid_sas:adapter not ready\n");
+@@ -2466,7 +2459,6 @@ static int
+ megasas_transition_to_ready(struct megasas_instance* instance)
+ {
+ 	int i;
+-	u8 max_wait;
+ 	u32 fw_state;
+ 	u32 cur_state;
+ 	u32 abs_state, curr_abs_state;
+@@ -2487,7 +2479,8 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 		case MFI_STATE_FAULT:
+ 
+ 			printk(KERN_DEBUG "megasas: FW in FAULT state!!\n");
+-			return -ENODEV;
++			cur_state = MFI_STATE_FAULT;
++			break;
+ 
+ 		case MFI_STATE_WAIT_HANDSHAKE:
+ 			/*
+@@ -2507,7 +2500,6 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 					&instance->reg_set->inbound_doorbell);
+ 			}
+ 
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_WAIT_HANDSHAKE;
+ 			break;
+ 
+@@ -2522,7 +2514,6 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 				writel(MFI_INIT_HOTPLUG,
+ 					&instance->reg_set->inbound_doorbell);
+ 
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_BOOT_MESSAGE_PENDING;
+ 			break;
+ 
+@@ -2541,7 +2532,6 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 				writel(MFI_RESET_FLAGS,
+ 					&instance->reg_set->inbound_doorbell);
+ 
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_OPERATIONAL;
+ 			break;
+ 
+@@ -2549,32 +2539,26 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 			/*
+ 			 * This state should not last for more than 2 seconds
+ 			 */
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_UNDEFINED;
+ 			break;
+ 
+ 		case MFI_STATE_BB_INIT:
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_BB_INIT;
+ 			break;
+ 
+ 		case MFI_STATE_FW_INIT:
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_FW_INIT;
+ 			break;
+ 
+ 		case MFI_STATE_FW_INIT_2:
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_FW_INIT_2;
+ 			break;
+ 
+ 		case MFI_STATE_DEVICE_SCAN:
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_DEVICE_SCAN;
+ 			break;
+ 
+ 		case MFI_STATE_FLUSH_CACHE:
+-			max_wait = MEGASAS_RESET_WAIT_TIME;
+ 			cur_state = MFI_STATE_FLUSH_CACHE;
+ 			break;
+ 
+@@ -2585,9 +2569,10 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 		}
+ 
+ 		/*
+-		 * The cur_state should not last for more than max_wait secs
++		 * The cur_state should not last for more than
++		 * MEGASAS_RESET_WAIT_TIME secs
+ 		 */
+-		for (i = 0; i < (max_wait * 1000); i++) {
++		for (i = 0; i < (MEGASAS_RESET_WAIT_TIME*1000); i++) {
+ 			fw_state = instance->instancet->read_fw_status_reg(instance->reg_set) &  
+ 					MFI_STATE_MASK ;
+ 		curr_abs_state =
+@@ -2600,11 +2585,13 @@ megasas_transition_to_ready(struct megasas_instance* instance)
+ 		}
+ 
+ 		/*
+-		 * Return error if fw_state hasn't changed after max_wait
++		 * Return error if fw_state hasn't changed
++		 * after MEGASAS_RESET_WAIT_TIME
+ 		 */
+ 		if (curr_abs_state == abs_state) {
+ 			printk(KERN_DEBUG "FW state [%d] hasn't changed "
+-			       "in %d secs\n", fw_state, max_wait);
++			       "in %d secs\n", fw_state,
++			       MEGASAS_RESET_WAIT_TIME);
+ 			return -ENODEV;
+ 		}
+ 	}
 
-	Arnd
+
+
+
+
