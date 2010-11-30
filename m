@@ -1,94 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab0K3PjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 10:39:07 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47398 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab0K3PjF (ORCPT
+	id S1753985Ab0K3Pjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 10:39:49 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:39750 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab0K3Pjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 10:39:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=w8Fy+Ea7raN00WA+ez4H8iAdFdVTwZNZKFv9GT3xWbio9dSjNs82QzMjzwGLaCparB
-         CGUSJpTCa/mBWRa6w3qoocw3ZHOt5/UvDWYVMuXGKXokBdNcpLF1iKKrwZKiC0GDuV9+
-         CHXx5CtXZcCSRr6FbXJJefYyBaJRwfyJzp1fc=
-Date: Tue, 30 Nov 2010 16:38:54 +0100 (CET)
-From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-X-X-Sender: elektroman@localhost.localdomain
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI Bus
-In-Reply-To: <201011291657.53316.arnd@arndb.de>
-Message-ID: <alpine.LNX.2.00.1011301633040.9052@localhost.localdomain>
-References: <1290263224-16965-1-git-send-email-ulli.kroll@googlemail.com> <20101129142200.GA14941@n2100.arm.linux.org.uk> <alpine.LNX.2.00.1011291546550.12293@localhost.localdomain> <201011291657.53316.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 30 Nov 2010 10:39:48 -0500
+Date: Tue, 30 Nov 2010 10:39:31 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tmhikaru@gmail.com, Damien Wyart <damien.wyart@free.fr>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+Message-ID: <20101130153931.GN15818@bombadil.infradead.org>
+References: <1289390424.2191.98.camel@laptop>
+ <20101114051406.GA2050@roll>
+ <20101125133106.GA12914@brouette>
+ <1290693807.2145.36.camel@laptop>
+ <1290888920.32004.1.camel@laptop>
+ <20101128114027.GA2745@brouette>
+ <1291030726.32004.4.camel@laptop>
+ <20101129194041.GA8280@roll>
+ <1291071677.32004.527.camel@laptop>
+ <1291129145.32004.874.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291129145.32004.874.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 29 Nov 2010, Arnd Bergmann wrote:
-
-> On Monday 29 November 2010, Hans Ulli Kroll wrote:
-> > @@ -1164,7 +1169,7 @@ config ISA_DMA_API
-> >         bool
-> >  
-> >  config PCI
-> > -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB || 
-> > ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
-> > +       bool "PCI support" if MIGHT_HAVE_PCI
-> >         help
-> >           Find out whether you have a PCI motherboard. PCI is the name of 
-> > a
-> >           bus system, i.e. the way the CPU talks to the other stuff inside
+On Tue, Nov 30, 2010 at 03:59:05PM +0100, Peter Zijlstra wrote:
+> OK, so here's a less crufty patch that gets the same result on my
+> machine, load drops down to 0.00 after a while.
 > 
-> This does not solve the problem that Russell mentioned: existing platforms
-> select PCI unconditionally, e.g. Iop13XX, some IXP, Orion, Shark
-> and more. At the very least, these would need to also select MIGHT_HAVE_PCI
-> to avoid the warning.
+> It seems a bit slower to reach 0.00, but that could be because I
+> actually changed the load computation for NO_HZ=n as well, I added a
+> rounding factor in calc_load(), we no longer truncate the division.
+> 
+> If people want to compare, simply remove the third line from
+> calc_load(): load += 1UL << (FSHIFT - 1), to restore the old behaviour.
 > 
 
-so 
-select MIGHT_HAVE_PCI 
-in conjunction of
-select PCI
-on other almost platforms 
+Thanks Peter, I'll build a couple kernels for the bugzilla reporters and
+see what they turn up.
 
-> > index fe0c82e..f5c39a8 100644
-> > --- a/arch/arm/mach-ks8695/Kconfig
-> > +++ b/arch/arm/mach-ks8695/Kconfig
-> > @@ -4,6 +4,7 @@ menu "Kendin/Micrel KS8695 Implementations"
-> >  
-> >  config MACH_KS8695
-> >         +++ b/arch/arm/mach-versatile/Kconfig
-> > @@ -4,6 +4,7 @@ menu "Versatile platform type"
-> >  config ARCH_VERSATILE_PB
-> >         bool "Support Versatile/PB platform"
-> >         select CPU_ARM926T
-> > +       select HAVE_PCI
-> >         default y
-> >         help
-> >           Include support for the ARM(R) Versatile/PB platform.bool 
+--Kyle
+
+> ---
+>  include/linux/sched.h |    2 +-
+>  kernel/sched.c        |  127 ++++++++++++++++++++++++++++++++++++++++++++----
+>  kernel/timer.c        |    2 +-
+>  3 files changed, 118 insertions(+), 13 deletions(-)
 > 
-> Typo: you certainly meant MIGHT_HAVE_PCI here.
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index de4d68f..a6e0c62 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -143,7 +143,7 @@ extern unsigned long nr_iowait_cpu(int cpu);
+>  extern unsigned long this_cpu_load(void);
+>  
+>  
+> -extern void calc_global_load(void);
+> +extern void calc_global_load(unsigned long ticks);
+>  
+>  extern unsigned long get_parent_ip(unsigned long addr);
+>  
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 864040c..7868a18 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2978,6 +2978,15 @@ static long calc_load_fold_active(struct rq *this_rq)
+>  	return delta;
+>  }
+>  
+> +static unsigned long
+> +calc_load(unsigned long load, unsigned long exp, unsigned long active)
+> +{
+> +	load *= exp;
+> +	load += active * (FIXED_1 - exp);
+> +	load += 1UL << (FSHIFT - 1);
+> +	return load >> FSHIFT;
+> +}
+> +
+>  #ifdef CONFIG_NO_HZ
+>  /*
+>   * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
+> @@ -3007,6 +3016,105 @@ static long calc_load_fold_idle(void)
+>  
+>  	return delta;
+>  }
+> +
+> +/**
+> + * fixed_power_int - compute: x^n, in O(log n) time
+> + *
+> + * @x:         base of the power
+> + * @frac_bits: fractional bits of @x
+> + * @n:         power to raise @x to.
+> + *
+> + * By exploiting the relation between the definition of the natural power
+> + * function: x^n := x*x*...*x (x multiplied by itself for n times), and
+> + * the binary encoding of numbers used by computers: n := \Sum n_i * 2^i, 
+> + * (where: n_i \elem {0, 1}, the binary vector representing n),
+> + * we find: x^n := x^(\Sum n_i * 2^i) := \Prod x^(n_i * 2^i), which is
+> + * of course trivially computable in O(log_2 n), the length of our binary
+> + * vector.
+> + */
+> +static unsigned long 
+> +fixed_power_int(unsigned long x, unsigned int frac_bits, unsigned int n)
+> +{
+> +	unsigned long result = 1UL << frac_bits;
+> +
+> +	if (n) for (;;) {
+> +		if (n & 1) {
+> +			result *= x;
+> +			result += 1UL << (frac_bits - 1);
+> +			result >>= frac_bits;
+> +		}
+> +		n >>= 1;
+> +		if (!n)
+> +			break;
+> +		x *= x;
+> +		x += 1UL << (frac_bits - 1);
+> +		x >>= frac_bits;
+> +	}
+> +
+> +	return result;
+> +}
+> +
+> +/*
+> + * a1 = a0 * e + a * (1 - e)
+> + *
+> + * a2 = a1 * e + a * (1 - e)
+> + *    = (a0 * e + a * (1 - e)) * e + a * (1 - e)
+> + *    = a0 * e^2 + a * (1 - e) * (1 + e)
+> + *
+> + * a3 = a2 * e + a * (1 - e)
+> + *    = (a0 * e^2 + a * (1 - e) * (1 + e)) * e + a * (1 - e)
+> + *    = a0 * e^3 + a * (1 - e) * (1 + e + e^2)
+> + *
+> + *  ...
+> + *
+> + * an = a0 * e^n + a * (1 - e) * (1 + e + ... + e^n-1) [1]
+> + *    = a0 * e^n + a * (1 - e) * (1 - e^n)/(1 - e)
+> + *    = a0 * e^n + a * (1 - e^n)
+> + *
+> + * [1] application of the geometric series:
+> + *
+> + *              n         1 - x^(n+1)
+> + *     S_n := \Sum x^i = -------------
+> + *             i=0          1 - x
+> + */
+> +static unsigned long
+> +calc_load_n(unsigned long load, unsigned long exp, 
+> +	    unsigned long active, unsigned int n)
+> +{
+> +
+> +	return calc_load(load, fixed_power_int(exp, FSHIFT, n), active);
+> +}
+> +
+> +static void calc_global_nohz(unsigned long ticks)
+> +{
+> +	long delta, active, n;
+> +
+> +	if (time_before(jiffies, calc_load_update))
+> +		return;
+> +
+> +	/*
+> +	 * If we crossed a calc_load_update boundary, make sure to fold
+> +	 * any pending idle changes, the respective CPUs might have
+> +	 * missed the tick driven calc_load_account_active() update
+> +	 * due to NO_HZ
+> +	 */
+> +	delta = calc_load_fold_idle();
+> +	if (delta)
+> +		atomic_long_add(delta, &calc_load_tasks);
+> +
+> +	if (ticks >= LOAD_FREQ) {
+> +		n = ticks / LOAD_FREQ;
+> +
+> +		active = atomic_long_read(&calc_load_tasks);
+> +		active = active > 0 ? active * FIXED_1 : 0;
+> +
+> +		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+> +		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+> +		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+> +
+> +		calc_load_update += n * LOAD_FREQ;
+> +	}
+> +}
+>  #else
+>  static void calc_load_account_idle(struct rq *this_rq)
+>  {
+> @@ -3016,6 +3124,10 @@ static inline long calc_load_fold_idle(void)
+>  {
+>  	return 0;
+>  }
+> +
+> +static void calc_global_nohz(unsigned long ticks)
+> +{
+> +}
+>  #endif
+>  
+>  /**
+> @@ -3033,24 +3145,17 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
+>  	loads[2] = (avenrun[2] + offset) << shift;
+>  }
+>  
+> -static unsigned long
+> -calc_load(unsigned long load, unsigned long exp, unsigned long active)
+> -{
+> -	load *= exp;
+> -	load += active * (FIXED_1 - exp);
+> -	return load >> FSHIFT;
+> -}
+> -
+>  /*
+>   * calc_load - update the avenrun load estimates 10 ticks after the
+>   * CPUs have updated calc_load_tasks.
+>   */
+> -void calc_global_load(void)
+> +void calc_global_load(unsigned long ticks)
+>  {
+> -	unsigned long upd = calc_load_update + 10;
+>  	long active;
+>  
+> -	if (time_before(jiffies, upd))
+> +	calc_global_nohz(ticks);
+> +
+> +	if (time_before(jiffies, calc_load_update + 10))
+>  		return;
+>  
+>  	active = atomic_long_read(&calc_load_tasks);
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index d6ccb90..9f82b2a 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -1297,7 +1297,7 @@ void do_timer(unsigned long ticks)
+>  {
+>  	jiffies_64 += ticks;
+>  	update_wall_time();
+> -	calc_global_load();
+> +	calc_global_load(ticks);
+>  }
+>  
+>  #ifdef __ARCH_WANT_SYS_ALARM
 > 
-
-Damn, I missed this.
-HAVE_PCI was my first approach to do this.
-
-> We still need to agree on what it should be doing, but otherwise this
-> is what I had in mind.
 > 
-> 	Arnd
-> 
-
-
