@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab0K3Cuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 21:50:50 -0500
-Received: from gate.crashing.org ([63.228.1.57]:44481 "EHLO gate.crashing.org"
+	id S1752274Ab0K3Cvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 21:51:50 -0500
+Received: from mga14.intel.com ([143.182.124.37]:23185 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab0K3Cut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 21:50:49 -0500
-Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Mitch Bradley <wmb@firmworks.com>, Scott Wood <scottwood@freescale.com>,
-        sodaville@linutronix.de,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101129234735.4ce3a933@lxorguk.ukuu.org.uk>
-References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
-	 <1290706801-7323-4-git-send-email-bigeasy@linutronix.de>
-	 <1290808645.32570.158.camel@pasglop> <20101128160449.GC30784@www.tglx.de>
-	 <1290984809.32570.208.camel@pasglop>
-	 <20101129130720.7d060e1c@udp111988uds.am.freescale.net>
-	 <1291061128.32570.298.camel@pasglop> <4CF40DF4.9060204@firmworks.com>
-	 <1291063470.32570.312.camel@pasglop>
-	 <20101129234735.4ce3a933@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Nov 2010 13:50:11 +1100
-Message-ID: <1291085411.32570.320.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751716Ab0K3Cvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 21:51:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,278,1288594800"; 
+   d="scan'208";a="354765008"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
+        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH -v2 1/3] Add CPER PCIe error section structure and constants definition
+Date: Tue, 30 Nov 2010 10:51:39 +0800
+Message-Id: <1291085501-31494-2-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
+References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-29 at 23:47 +0000, Alan Cox wrote:
-> 
-> That may not be wise. Your real bus heirarchy may not be architecturally
-> defined on some systems so you can't incorporate it into code, nor is it
-> necessarily a heirarchy - eg some of the Geodes. 
+On some machine, PCIe error is reported via APEI (ACPI Platform Error
+Interface).  The error data is passed from firmware to Linux via CPER
+PCIe error section structure.
 
-Ok, so I'd suggest doing something like:
+This patch adds CPER PCIe error section structure and constants
+definition.
 
- - pci is below the corresponding atom node
- - isa is a child of pci
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ include/linux/cper.h |   76 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 76 insertions(+)
 
-The later is a useful representation even if it doesn't correspond to
-reality. From an address representation perspective, ISA can be
-considered somewhat as a substractive decoding child of PCI (again even
-if that's not 100% true), which simplifies the representation in the
-device-tree a bit, and allows to still have things like VGA devices on
-the PCI segment that decode IO ports in the ISA range.
-
-Cheers,
-Ben.
-
-
+--- a/include/linux/cper.h
++++ b/include/linux/cper.h
+@@ -201,6 +201,47 @@
+ 	UUID_LE(0x036F84E1, 0x7F37, 0x428c, 0xA7, 0x9E, 0x57, 0x5F,	\
+ 		0xDF, 0xAA, 0x84, 0xEC)
+ 
++#define CPER_PROC_VALID_TYPE			0x0001
++#define CPER_PROC_VALID_ISA			0x0002
++#define CPER_PROC_VALID_ERROR_TYPE		0x0004
++#define CPER_PROC_VALID_OPERATION		0x0008
++#define CPER_PROC_VALID_FLAGS			0x0010
++#define CPER_PROC_VALID_LEVEL			0x0020
++#define CPER_PROC_VALID_VERSION			0x0040
++#define CPER_PROC_VALID_BRAND_INFO		0x0080
++#define CPER_PROC_VALID_ID			0x0100
++#define CPER_PROC_VALID_TARGET_ADDRESS		0x0200
++#define CPER_PROC_VALID_REQUESTOR_ID		0x0400
++#define CPER_PROC_VALID_RESPONDER_ID		0x0800
++#define CPER_PROC_VALID_IP			0x1000
++
++#define CPER_MEM_VALID_ERROR_STATUS		0x0001
++#define CPER_MEM_VALID_PHYSICAL_ADDRESS		0x0002
++#define CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK	0x0004
++#define CPER_MEM_VALID_NODE			0x0008
++#define CPER_MEM_VALID_CARD			0x0010
++#define CPER_MEM_VALID_MODULE			0x0020
++#define CPER_MEM_VALID_BANK			0x0040
++#define CPER_MEM_VALID_DEVICE			0x0080
++#define CPER_MEM_VALID_ROW			0x0100
++#define CPER_MEM_VALID_COLUMN			0x0200
++#define CPER_MEM_VALID_BIT_POSITION		0x0400
++#define CPER_MEM_VALID_REQUESTOR_ID		0x0800
++#define CPER_MEM_VALID_RESPONDER_ID		0x1000
++#define CPER_MEM_VALID_TARGET_ID		0x2000
++#define CPER_MEM_VALID_ERROR_TYPE		0x4000
++
++#define CPER_PCIE_VALID_PORT_TYPE		0x0001
++#define CPER_PCIE_VALID_VERSION			0x0002
++#define CPER_PCIE_VALID_COMMAND_STATUS		0x0004
++#define CPER_PCIE_VALID_DEVICE_ID		0x0008
++#define CPER_PCIE_VALID_SERIAL_NUMBER		0x0010
++#define CPER_PCIE_VALID_BRIDGE_CONTROL_STATUS	0x0020
++#define CPER_PCIE_VALID_CAPABILITY		0x0040
++#define CPER_PCIE_VALID_AER_INFO		0x0080
++
++#define CPER_PCIE_SLOT_SHIFT			3
++
+ /*
+  * All tables and structs must be byte-packed to match CPER
+  * specification, since the tables are provided by the system BIOS
+@@ -306,6 +347,41 @@ struct cper_sec_mem_err {
+ 	__u8	error_type;
+ };
+ 
++struct cper_sec_pcie {
++	__u64		validation_bits;
++	__u32		port_type;
++	struct {
++		__u8	minor;
++		__u8	major;
++		__u8	reserved[2];
++	}		version;
++	__u16		command;
++	__u16		status;
++	__u32		reserved;
++	struct {
++		__u16	vendor_id;
++		__u16	device_id;
++		__u8	class_code[3];
++		__u8	function;
++		__u8	device;
++		__u16	segment;
++		__u8	bus;
++		__u8	secondary_bus;
++		__u16	slot;
++		__u8	reserved;
++	}		device_id;
++	struct {
++		__u32	lower;
++		__u32	upper;
++	}		serial_number;
++	struct {
++		__u16	secondary_status;
++		__u16	control;
++	}		bridge;
++	__u8	capability[60];
++	__u8	aer_info[96];
++};
++
+ /* Reset to default packing */
+ #pragma pack()
+ 
