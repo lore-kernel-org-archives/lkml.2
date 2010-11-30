@@ -1,120 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab0K3UHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 15:07:40 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:45286 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab0K3UHi (ORCPT
+	id S1756645Ab0K3UHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 15:07:47 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:7823 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756524Ab0K3UHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 15:07:38 -0500
-Date: Tue, 30 Nov 2010 21:07:37 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: gregkh@suse.de, "David S. Miller" <davem@davemloft.net>
-Cc: stable@kernel.org, Arnd Bergmann <arnd@arndb.de>, dhollis@davehollis.com,
-        Phil Chang <pchang23@sbcglobal.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH -stable] Add USB PID for new MOSCHIP USB ethernet controller
- MCS7832 variant
-Message-ID: <20101130200737.GA5185@rhlx01.hs-esslingen.de>
+	Tue, 30 Nov 2010 15:07:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=tfCYKcILNJb7nPijU8Jao8gtuI9c2gz2LeDNyLMWP5UWaMwQS+mw8CysG+u4jISAwd
+         34WZGz4Fj2gffExtyWzg==
+Date: Tue, 30 Nov 2010 12:07:39 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+In-Reply-To: <20101130220221.832B.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011301205510.12979@chino.kir.corp.google.com>
+References: <20101123160259.7B9C.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011271737110.3764@chino.kir.corp.google.com> <20101130220221.832B.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Priority: none
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to active notification of the new MCS7832 version by the manufacturer
-today (Mr. Milton; thanks!) -- quote: "functionality same as MCS7830",
-I'm now submitting this patch, intended for networking.git and -stable.
+On Tue, 30 Nov 2010, KOSAKI Motohiro wrote:
 
-ChangeLog:
-- add MCS7832 USB PID to be able to support this new device variant, too
-- add HIF_REG_EEPROM_STATUS definitions, comments
+> > Because NOTHING breaks with the new mapping.  Eight months later since 
+> > this was initially proposed on linux-mm, you still cannot show a single 
+> > example that depended on the exponential mapping of oom_adj.  I'm not 
+> > going to continue responding to your criticism about this point since your 
+> > argument is completely and utterly baseless.
+> 
+> No regression mean no break. Not single nor multiple. see?
+> 
 
+Nothing breaks.  If something did, you could respond to my answer above 
+and provide a single example of a real-world example that broke as a 
+result of the new linear mapping.
 
-Patch created, "semi"-tested (via my existing MCS7830 only) on -rc3,
-checkpatch.pl'd.
-GIT history seems clean, should thus apply easily.
+> All situation can be calculated on userland. User process can be know
+> their bindings.
+> 
 
-Thanks!
-
-Signed-off-by: Andreas Mohr <andi@lisas.de>
-
-diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
-index a6281e3..3fbcb0d 100644
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -1,5 +1,5 @@
- /*
-- * MOSCHIP MCS7830 based USB 2.0 Ethernet Devices
-+ * MOSCHIP MCS7830 based (7730/7830/7832) USB 2.0 Ethernet Devices
-  *
-  * based on usbnet.c, asix.c and the vendor provided mcs7830 driver
-  *
-@@ -11,8 +11,12 @@
-  *
-  * Definitions gathered from MOSCHIP, Data Sheet_7830DA.pdf (thanks!).
-  *
-+ * 2010-11-30: add 7832 USB PID ("functionality same as MCS7830"),
-+ *             per active notification by manufacturer
-+ *
-  * TODO:
-  * - support HIF_REG_CONFIG_SLEEPMODE/HIF_REG_CONFIG_TXENABLE (via autopm?)
-+ * - support HIF_REG_FRAME_DROP_COUNTER, for interface statistics
-  * - implement ethtool_ops get_pauseparam/set_pauseparam
-  *   via HIF_REG_PAUSE_THRESHOLD (>= revision C only!)
-  * - implement get_eeprom/[set_eeprom]
-@@ -60,6 +64,7 @@
- #define MCS7830_MAX_MCAST	64
- 
- #define MCS7830_VENDOR_ID	0x9710
-+#define MCS7832_PRODUCT_ID	0x7832
- #define MCS7830_PRODUCT_ID	0x7830
- #define MCS7730_PRODUCT_ID	0x7730
- 
-@@ -97,6 +102,11 @@ enum {
- 	HIF_REG_FRAME_DROP_COUNTER		= 0x15, /* 0..ff; reset: 0 */
- 	HIF_REG_PAUSE_THRESHOLD			= 0x16,
- 	   HIF_REG_PAUSE_THRESHOLD_DEFAULT	= 0,
-+	HIF_REG_EEPROM_STATUS			= 0x17,
-+	   /* "read in progress": bits 0/1/2 == 0 */
-+	   HIF_REG_EEPROM_STATUS_SW_EEPROM_READ	= 0x04,
-+	   HIF_REG_EEPROM_STATUS_READ_FAILED	= 0x02, /* ro! */
-+	   HIF_REG_EEPROM_STATUS_READ_SUCCEEDED	= 0x01, /* ro! */
- };
- 
- /* Trailing status byte in Ethernet Rx frame */
-@@ -362,6 +372,11 @@ static int mcs7830_get_rev(struct usbnet *dev)
- {
- 	u8 dummy[2];
- 	int ret;
-+	/* TODO?: 7832 _might_  have more registers (untested: no hardware).
-+	   Might also be a better idea to gather revision from
-+	   SEEPROM field "Release Number" (if reliably supported
-+	   by all variants).
-+	 */
- 	ret = mcs7830_get_reg(dev, HIF_REG_FRAME_DROP_COUNTER, 2, dummy);
- 	if (ret > 0)
- 		return 2; /* Rev C or later */
-@@ -626,7 +641,7 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- }
- 
- static const struct driver_info moschip_info = {
--	.description	= "MOSCHIP 7830/7730 usb-NET adapter",
-+	.description	= "MOSCHIP 7830/7832/7730 usb-NET adapter",
- 	.bind		= mcs7830_bind,
- 	.rx_fixup	= mcs7830_rx_fixup,
- 	.flags		= FLAG_ETHER,
-@@ -645,6 +660,10 @@ static const struct driver_info sitecom_info = {
- 
- static const struct usb_device_id products[] = {
- 	{
-+		USB_DEVICE(MCS7830_VENDOR_ID, MCS7832_PRODUCT_ID),
-+		.driver_info = (unsigned long) &moschip_info,
-+	},
-+	{
- 		USB_DEVICE(MCS7830_VENDOR_ID, MCS7830_PRODUCT_ID),
- 		.driver_info = (unsigned long) &moschip_info,
- 	},
+Yes, but the proportional priority-based oom_score_adj values allow users 
+to avoid recalculating and writing that value anytime a mempolicy 
+attachment changes, its nodemask changes, it moves to another cpuset, its 
+set of mems changes, its memcg attachment changes, its limit is modiifed, 
+etc.
