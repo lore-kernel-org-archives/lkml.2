@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0K3Elo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:41:44 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34793 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751677Ab0K3Elm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:41:42 -0500
-Message-ID: <4CF48066.1040009@dsn.okisemi.com>
-Date: Tue, 30 Nov 2010 13:41:10 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v6 20/20] can: EG20T PCH: Replace netif_rx to
- netif_receive_skb
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1753605Ab0K3EoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:44:21 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:58219 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204Ab0K3EoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Nov 2010 23:44:20 -0500
+Date: Mon, 29 Nov 2010 20:44:10 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cs5535-mfd: fix warning on x86-64
+Message-ID: <20101129204410.339805ef@queued.net>
+In-Reply-To: <20101129115257.9a78ad14.sfr@canb.auug.org.au>
+References: <20101129115257.9a78ad14.sfr@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/XhctqklKEiYj3xdxRT7Ax7h"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this driver is implemented as NAPI,
-netif_receive_skb must be used not netif_rx.
+--Sig_/XhctqklKEiYj3xdxRT7Ax7h
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+On Mon, 29 Nov 2010 11:52:57 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi Samuel,
+>=20
+> After merging the mfd tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+>=20
+> drivers/mfd/cs5535-mfd.c: In function 'cs5535_mfd_probe':
+> drivers/mfd/cs5535-mfd.c:106: warning: format '%d' expects type
+> 'int', but argument 3 has type 'long unsigned int'
+>=20
+
+Ick, ARRAY_SIZE is unsigned int on x86, unsigned long on x86-64.  The
+patch below fixes this.
+
+
+
+
+From: Andres Salomon <dilinger@queued.net>
+
+ARRAY_SIZE() returns unsigned long on x86-64 (rather than unsigned int);
+cast it to the desired type to shut gcc up.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/net/can/pch_can.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/cs5535-mfd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 596dc1e..0ee3fc6 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -578,7 +578,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
- 	cf->data[7] = (errc & PCH_REC) >> 8;
- 
- 	priv->can.state = state;
--	netif_rx(skb);
-+	netif_receive_skb(skb);
- 
- 	stats->rx_packets++;
- 	stats->rx_bytes += cf->can_dlc;
--- 
-1.6.0.6
+diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
+index b141ca7..e6f7ebc 100644
+--- a/drivers/mfd/cs5535-mfd.c
++++ b/drivers/mfd/cs5535-mfd.c
+@@ -103,8 +103,8 @@ static int __devinit cs5535_mfd_probe(struct pci_dev *p=
+dev,
+ 		goto err_disable;
+ 	}
+=20
+-	dev_info(&pdev->dev, "%d devices registered.\n",
+-			ARRAY_SIZE(cs5535_mfd_cells));
++	dev_info(&pdev->dev, "%u devices registered.\n",
++			(unsigned int) ARRAY_SIZE(cs5535_mfd_cells));
+=20
+ 	return 0;
+=20
+--=20
+1.7.2.3
+
+
+--Sig_/XhctqklKEiYj3xdxRT7Ax7h
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkz0gRoACgkQOmXwGc/ULyaUQACdFncDZWX8zzX4140fCPGrA+rI
+lOQAnjh/9gDfWwIzZccKqYbbQoUoVGBU
+=Z7an
+-----END PGP SIGNATURE-----
+
+--Sig_/XhctqklKEiYj3xdxRT7Ax7h--
