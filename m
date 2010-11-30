@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0K3XaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 18:30:24 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39206 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0K3XaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 18:30:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:subject
-         :x-enigmail-version:content-type:content-transfer-encoding;
-        b=CL2GMPHicwMw1DYfTPV1WUe46ud83azGLIXt1o6IKv12bhefS4UzqcyYj7Y0G7k/1T
-         r+IKJ4Q12pz3MzfUwVtGaNJCgLGmbxcLKwfDOuWZeTi/1kc3LMbTaCR/AOwQWknJuaqI
-         fNA46ulCTi16l9uT/GYPZD2clGm/pjL5Cc1Dc=
-Message-ID: <4CF58906.4080604@doube.net>
-Date: Tue, 30 Nov 2010 23:30:14 +0000
-From: Michael Doube <michael@doube.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1752003Ab0K3Xbc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 18:31:32 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:56600 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686Ab0K3Xbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 18:31:31 -0500
+Date: Tue, 30 Nov 2010 15:31:30 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
+        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
+        Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent
+	by fsync
+Message-ID: <20101130233130.GG18195@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com> <20101130113906.176ffcad@notabene.brown>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Fwd: Re: [tpmdd-devel] [REGRESSION] Suspend fails because of TPM
- modules
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130113906.176ffcad@notabene.brown>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  Is this regressions from older kernels as well?
+On Tue, Nov 30, 2010 at 11:39:06AM +1100, Neil Brown wrote:
+> On Mon, 29 Nov 2010 14:05:36 -0800 "Darrick J. Wong" <djwong@us.ibm.com>
+> wrote:
+> 
+> > On certain types of hardware, issuing a write cache flush takes a considerable
+> > amount of time.  Typically, these are simple storage systems with write cache
+> > enabled and no battery to save that cache after a power failure.  When we
+> > encounter a system with many I/O threads that write data and then call fsync
+> > after more transactions accumulate, ext4_sync_file performs a data-only flush,
+> > the performance of which is suboptimal because each of those threads issues its
+> > own flush command to the drive instead of trying to coordinate the flush,
+> > thereby wasting execution time.
+> > 
+> > Instead of each fsync call initiating its own flush, there's now a flag to
+> > indicate if (0) no flushes are ongoing, (1) we're delaying a short time to
+> > collect other fsync threads, or (2) we're actually in-progress on a flush.
+> > 
+> > So, if someone calls ext4_sync_file and no flushes are in progress, the flag
+> > shifts from 0->1 and the thread delays for a short time to see if there are any
+> > other threads that are close behind in ext4_sync_file.  After that wait, the
+> > state transitions to 2 and the flush is issued.  Once that's done, the state
+> > goes back to 0 and a completion is signalled.
+> 
+> I haven't seen any of the preceding discussion do I might be missing
+> something important, but this seems needlessly complex and intrusive.
+> In particular, I don't like adding code to md to propagate these timings up
+> to the fs, and I don't the arbitrary '2ms' number.
+> 
+> Would it not be sufficient to simply gather flushes while a flush is pending.
+> i.e
+>   - if no flush is pending, set the 'flush pending' flag, submit a flush,
+>     then clear the flag.
+>   - if a flush is pending, then wait for it to complete, and then submit a
+>     single flush on behalf of all pending flushes.
+> 
+> That way when flush is fast, you do a flush every time, and when it is slow
+> you gather multiple flushes together.
+> I think it would issues a few more flushes than your scheme, but it would be
+> a much neater solution.  Have you tried that and found it to be insufficient?
 
-Only inasmuch as older Ubuntu kernels loaded tpm_infineon (where suspend
-was OK) and more recent ones load tpm_tis (where suspend is broken).
- I've never seen a tpm_tis that didn't break suspend on my hardware
-(Vaio SZ650).
+Some time ago I actually did test the patchset with the schedule_hrtimeout
+removed, which I think is fairly close to what you've suggested.  As I recall,
+it did help a bit, though not as much as also instituting the wait to limit the
+% of disk execution time spent on flushes.  That said, I think you might be
+right about the completion races, so I'll try to code up your suggestion to
+see what happens with a newer kernel.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=20132
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/602049
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/657386
-
-Michael
-
-
-
-
-
+--D
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
