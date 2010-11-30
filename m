@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab0K3TrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:47:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45358 "EHLO arroyo.ext.ti.com"
+	id S1756412Ab0K3TrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:47:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45363 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754664Ab0K3TrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:47:03 -0500
+	id S1756373Ab0K3TrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:47:05 -0500
 From: David Sin <davidsin@ti.com>
 To: Greg KH <greg@kroah.com>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: David Sin <davidsin@ti.com>, Lajos Molnar <molnar@ti.com>
-Subject: [RFC v2 1/8] TILER-DMM: DMM-PAT driver for TI TILER
-Date: Tue, 30 Nov 2010 13:58:52 -0600
-Message-Id: <1291147139-23472-2-git-send-email-davidsin@ti.com>
+Cc: Lajos Molnar <molnar@ti.com>, David Sin <davidsin@ti.com>,
+        Ravi Ramachandra <r.ramachandra@ti.com>
+Subject: [RFC v2 2/8] TILER-DMM: Container manager interface and utility definitons
+Date: Tue, 30 Nov 2010 13:58:53 -0600
+Message-Id: <1291147139-23472-3-git-send-email-davidsin@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1291147139-23472-1-git-send-email-davidsin@ti.com>
 References: <1291147139-23472-1-git-send-email-davidsin@ti.com>
@@ -20,27 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for DMM-PAT initialization and programming.
+From: Lajos Molnar <molnar@ti.com>
 
-Signed-off-by: David Sin <davidsin@ti.com>
+This patch defined the TILER Container Manager (TCM) interface and
+provides utility methods for implementing a TCM.
+
 Signed-off-by: Lajos Molnar <molnar@ti.com>
+Signed-off-by: David Sin <davidsin@ti.com>
+Signed-off-by: Ravi Ramachandra <r.ramachandra@ti.com>
 ---
- arch/arm/mach-omap2/dmm-omap44xx.c     |   81 ++++++++++++++
- arch/arm/mach-omap2/include/mach/dmm.h |   92 ++++++++++++++++
- drivers/misc/tiler/dmm-main.c          |  187 ++++++++++++++++++++++++++++++++
- 3 files changed, 360 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-omap2/dmm-omap44xx.c
- create mode 100644 arch/arm/mach-omap2/include/mach/dmm.h
- create mode 100644 drivers/misc/tiler/dmm-main.c
+ drivers/misc/tiler/tcm.h           |  171 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/tiler/tcm/tcm-utils.h |   51 +++++++++++
+ 2 files changed, 222 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/tiler/tcm.h
+ create mode 100644 drivers/misc/tiler/tcm/tcm-utils.h
 
-diff --git a/arch/arm/mach-omap2/dmm-omap44xx.c b/arch/arm/mach-omap2/dmm-omap44xx.c
+diff --git a/drivers/misc/tiler/tcm.h b/drivers/misc/tiler/tcm.h
 new file mode 100644
-index 0000000..2919d8e
+index 0000000..8968108
 --- /dev/null
-+++ b/arch/arm/mach-omap2/dmm-omap44xx.c
-@@ -0,0 +1,81 @@
++++ b/drivers/misc/tiler/tcm.h
+@@ -0,0 +1,171 @@
 +/*
-+ * DMM driver support functions for TI OMAP processors.
++ * TILER container manager specification and support functions for TI
++ * TILER driver.
 + *
 + * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
 + *
@@ -54,363 +58,218 @@ index 0000000..2919d8e
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <mach/dmm.h>
-+#include <plat/omap_device.h>
-+#include <plat/omap_hwmod.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
++#ifndef TCM_H
++#define TCM_H
 +
-+static struct dmm *plat_data;
-+static int pdata;
++struct tcm;
 +
-+#ifdef CONFIG_ARCH_OMAP4
-+static struct dmm omap4_plat_data[] = {
-+	{
-+		.oh_name = "dmm",
-+	},
-+};
-+#define NUM_PDATA ARRAY_SIZE(omap4_plat_data)
-+#else
-+#define omap4_plat_data NULL
-+#define NUM_PDATA 0
-+#endif
-+
-+static struct omap_device_pm_latency omap_dmm_latency[] = {
-+	[0] = {
-+		.deactivate_func = omap_device_idle_hwmods,
-+		.activate_func = omap_device_enable_hwmods,
-+		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
-+	},
++/* point */
++struct tcm_pt {
++	u16 x;
++	u16 y;
 +};
 +
-+static s32 __init dmm_omap_init(void)
-+{
-+	struct omap_hwmod *oh = NULL;
-+	struct omap_device *od = NULL;
-+	struct omap_device_pm_latency *ohl = NULL;
-+	int ohlc = 0, i = 0;
-+
-+	plat_data = omap4_plat_data;
-+	pdata = NUM_PDATA;
-+
-+	for (i = 0; i < pdata; i++) {
-+		struct dmm *data = &plat_data[i];
-+
-+		oh = omap_hwmod_lookup(data->oh_name);
-+		if (!oh)
-+			goto error;
-+
-+		data->base = oh->_mpu_rt_va;
-+		ohl = omap_dmm_latency;
-+		ohlc = ARRAY_SIZE(omap_dmm_latency);
-+
-+		od = omap_device_build(data->oh_name, i, oh, data,
-+					 sizeof(*data), ohl, ohlc, false);
-+		if (IS_ERR(od))
-+			goto error;
-+	}
-+	return 0;
-+error:
-+	return -ENODEV;
-+}
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("David Sin <davidsin@ti.com>");
-+MODULE_AUTHOR("Lajos Molnar <molnar@ti.com>");
-+device_initcall(dmm_omap_init);
-diff --git a/arch/arm/mach-omap2/include/mach/dmm.h b/arch/arm/mach-omap2/include/mach/dmm.h
-new file mode 100644
-index 0000000..33a1215
---- /dev/null
-+++ b/arch/arm/mach-omap2/include/mach/dmm.h
-@@ -0,0 +1,92 @@
-+/*
-+ * Dynamic Memory Manager (DMM) driver support functions for
-+ * TI DMM-TILER hardware block.
-+ *
-+ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef DMM_H
-+#define DMM_H
-+
-+#define DMM_TILER_OR__0       0x220
-+#define DMM_TILER_OR__1       0x224
-+#define DMM_PAT_VIEW__0       0x420
-+#define DMM_PAT_VIEW__1       0x424
-+#define DMM_PAT_VIEW_MAP__0   0x440
-+#define DMM_PAT_VIEW_MAP_BASE 0x460
-+#define DMM_PAT_IRQSTATUS_RAW 0x480
-+#define DMM_PAT_IRQSTATUS     0x490
-+#define DMM_PAT_STATUS__0     0x4C0
-+#define DMM_PAT_DESCR__0      0x500
-+#define DMM_PAT_AREA__0       0x504
-+#define DMM_PAT_CTRL__0       0x508
-+#define DMM_PAT_DATA__0       0x50C
-+
-+/*
-+ * Physical Address Translator (PAT) refill programming mode
-+ */
-+enum pat_mode {
-+	MANUAL,
-+	AUTO
++/* 2d area */
++struct tcm_area {
++	struct tcm    *tcm;	/* parent */
++	struct tcm_pt  p0;
++	struct tcm_pt  p1;
 +};
 +
-+/*
-+ * Area definition for DMM physical address translator
-+ */
-+struct pat_area {
-+	s8 x0:8;
-+	s8 y0:8;
-+	s8 x1:8;
-+	s8 y1:8;
-+};
-+
-+/*
-+ * DMM physical address translator control
-+ */
-+struct pat_ctrl {
-+	s32 start:4;
-+	s32 dir:4;
-+	s32 lut_id:8;
-+	s32 sync:12;
-+	s32 ini:4;
-+};
-+
-+/*
-+ * Physical Address Translator (PAT) descriptor
-+ */
-+struct pat {
-+	struct pat *next;
-+	struct pat_area area;
-+	struct pat_ctrl ctrl;
-+	u32 data;
-+};
-+
-+/*
-+ * DMM device data
-+ */
-+struct dmm {
-+	const char *oh_name;
-+	void __iomem *base;
-+	int irq;
-+};
-+
-+/*
-+ * Create and initialize the physical address translator
-+ */
-+struct dmm *dmm_pat_init(u32 id);
-+
-+/*
-+ * Program the physical address translator
-+ */
-+int dmm_pat_refill(struct dmm *dmm, struct pat *desc, enum pat_mode mode);
-+
-+#endif
-diff --git a/drivers/misc/tiler/dmm-main.c b/drivers/misc/tiler/dmm-main.c
-new file mode 100644
-index 0000000..412f592
---- /dev/null
-+++ b/drivers/misc/tiler/dmm-main.c
-@@ -0,0 +1,187 @@
-+/*
-+ * DMM driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/errno.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+
-+#include <mach/dmm.h>
-+
-+#define MASK(msb, lsb) (((1 << ((msb) + 1 - (lsb))) - 1) << (lsb))
-+#define SET_FLD(reg, msb, lsb, val) \
-+(((reg) & ~MASK((msb), (lsb))) | (((val) << (lsb)) & MASK((msb), (lsb))))
-+#define MAX_RETRY_MS	1000
-+
-+static struct dmm *dmm;
-+
-+static int dmm_probe(struct platform_device *dev)
-+{
-+	if (dev)
-+		dmm = dev->dev.platform_data;
-+
-+	if (dmm && dmm->base) {
-+		writel(0x88888888, dmm->base + DMM_TILER_OR__0);
-+		writel(0x88888888, dmm->base + DMM_TILER_OR__1);
-+		return 0;
-+	}
-+	return -EFAULT;
-+}
-+
-+static int dmm_remove(struct platform_device *dev)
-+{
-+	return 0;
-+}
-+
-+static struct platform_driver dmm_driver = {
-+	.probe = dmm_probe,
-+	.remove = dmm_remove,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "dmm",
-+	},
-+};
-+
-+int dmm_pat_refill(struct dmm *dmm, struct pat *pd, enum pat_mode mode)
-+{
-+	void __iomem *r;
-+	u32 v, i;
-+
-+	if (!dmm || !dmm->base || !pd)
-+		return -EFAULT;
-+
-+	/* Only manual refill supported */
-+	if (mode != MANUAL)
-+		return -EFAULT;
-+
-+	/* Check that the DMM_PAT_STATUS register has not reported an error */
-+	r = dmm->base + DMM_PAT_STATUS__0;
-+	v = readl(r);
-+	if (WARN(v & 0xFC00, KERN_ERR "dmm_pat_refill() error.\n"))
-+		return -EIO;
-+
-+	/* Set "next" register to NULL */
-+	r = dmm->base + DMM_PAT_DESCR__0;
-+	v = readl(r);
-+	v = SET_FLD(v, 31, 4, (u32) NULL);
-+	writel(v, r);
-+
-+	/* Set area to be refilled */
-+	r = dmm->base + DMM_PAT_AREA__0;
-+	v = readl(r);
-+	v = SET_FLD(v, 30, 24, pd->area.y1);
-+	v = SET_FLD(v, 23, 16, pd->area.x1);
-+	v = SET_FLD(v, 14, 8, pd->area.y0);
-+	v = SET_FLD(v, 7, 0, pd->area.x0);
-+	writel(v, r);
-+
-+	/* First, clear the DMM_PAT_IRQSTATUS register */
-+	writel(0xFFFFFFFF, dmm->base + DMM_PAT_IRQSTATUS);
-+
-+	i = 1000;
-+	while (readl(dmm->base + DMM_PAT_IRQSTATUS_RAW) != 0) {
-+		if (--i == 0)
-+			return -EFAULT;
-+		udelay(1);
-+	}
-+
-+	/* Fill data register */
-+	v = readl(dmm->base + DMM_PAT_DATA__0);
-+
-+	v = SET_FLD(v, 31, 4, pd->data >> 4);
-+	writel(v, r);
-+
-+	/* Read back PAT_DATA__0 to see if write was successful */
-+	i = 1000;
-+	while (readl(r) != pd->data) {
-+		if (--i == 0)
-+			return -EFAULT;
-+		udelay(1);
-+	}
-+
-+	v = readl(dmm->base + DMM_PAT_CTRL__0);
-+	v = SET_FLD(v, 31, 28, pd->ctrl.ini);
-+	v = SET_FLD(v, 16, 16, pd->ctrl.sync);
-+	v = SET_FLD(v, 9, 8, pd->ctrl.lut_id);
-+	v = SET_FLD(v, 6, 4, pd->ctrl.dir);
-+	v = SET_FLD(v, 0, 0, pd->ctrl.start);
-+	writel(v, r);
-+
-+	/* Check if PAT_IRQSTATUS_RAW is set after the PAT has been refilled */
-+	i = 1000;
-+	while ((readl(dmm->base + DMM_PAT_IRQSTATUS_RAW) & 0x3) != 0x3) {
-+		if (--i == 0)
-+			return -EFAULT;
-+		udelay(1);
-+	}
-+
-+	/* Again, clear the DMM_PAT_IRQSTATUS register */
-+	writel(0xFFFFFFFF, dmm->base + DMM_PAT_IRQSTATUS);
-+
-+	i = 1000;
-+	while (readl(dmm->base + DMM_PAT_IRQSTATUS_RAW) != 0) {
-+		if (--i == 0)
-+			return -EFAULT;
-+		udelay(1);
-+	}
-+
-+	/* Again, set "next" register to NULL to clear any PAT STATUS errors */
-+	v = readl(dmm->base + DMM_PAT_DESCR__0);
-+	v = SET_FLD(v, 31, 4, (u32) NULL);
-+	writel(v, r);
++struct tcm {
++	u16 width, height;	/* container dimensions */
 +
 +	/*
-+	 * Now, check that the DMM_PAT_STATUS register
-+	 * has not reported an error before exiting.
++	 * 'pvt' structure shall contain any tcm details (attr) along with
++	 * linked list of allocated areas and mutex for mutually exclusive
++	 * access to the list.  It may also contain copies of width and height
++	 * to notice any changes to the publicly available width and height
++	 * fields.
 +	 */
-+	v = readl(dmm->base + DMM_PAT_STATUS__0);
-+	if (WARN(v & 0xFC00, KERN_ERR "dmm_pat_refill() error.\n"))
-+		return -EIO;
++	void *pvt;
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL(dmm_pat_refill);
++	/* function table */
++	s32 (*reserve_2d)(struct tcm *tcm, u16 height, u16 width, u8 align,
++			  struct tcm_area *area);
++	s32 (*free)      (struct tcm *tcm, struct tcm_area *area);
++	void (*deinit)   (struct tcm *tcm);
++};
 +
-+struct dmm *dmm_pat_init(u32 id)
++/*
++ * Since some basic parameter checking is done outside the TCM algorithms,
++ * TCM implementation do NOT have to check the following:
++ *
++ *   area pointer is NULL
++ *   width and height fits within container
++ *   number of pages is more than the size of the container
++ */
++
++/*
++ * Template for <ALGO_NAME>_tcm_init method.  Define as:
++ * TCM_INIT(<ALGO_NAME>_tcm_init)
++ *
++ * Allocates and initializes a tiler container manager.
++ *
++ * Pointer to the allocated and initialized container manager.
++ * NULL on failure.  DO NOT leak any memory on failure!
++ */
++#define TCM_INIT(name, attr_t) \
++struct tcm *name(u16 width, u16 height, typeof(attr_t) *attr);
++
++/*
++ * Deinitialize tiler container manager.
++ *
++ * The call should free as much memory as possible and meaningful
++ * even on failure.  Some error codes: -ENODEV: invalid manager.
++ */
++static inline void tcm_deinit(struct tcm *tcm)
 +{
-+	if (dmm && dmm->base) {
-+		writel(0x88888888, dmm->base + DMM_PAT_VIEW__0);
-+		writel(0x88888888, dmm->base + DMM_PAT_VIEW__1);
-+		writel(0x80808080, dmm->base + DMM_PAT_VIEW_MAP__0);
-+		writel(0x80000000, dmm->base + DMM_PAT_VIEW_MAP_BASE);
++	if (tcm)
++		tcm->deinit(tcm);
++}
++
++/*
++ * Reserves a 2D area in the container.
++ *
++ * The tcm field of the area will be set to NULL on failure.
++ * Some error codes: -ENODEV: invalid manager, -EINVAL:
++ * invalid area, -ENOMEM: not enough space for allocation.
++ */
++static inline s32 tcm_reserve_2d(struct tcm *tcm, u16 width, u16 height,
++				 u16 align, struct tcm_area *area)
++{
++	/* perform rudimentary error checking */
++	s32 res = (tcm  == NULL ? -ENODEV :
++		(area == NULL || width == 0 || height == 0 ||
++		 /* align must be a 2 power */
++		 align & (align - 1)) ? -EINVAL :
++		(height > tcm->height || width > tcm->width) ? -ENOMEM :
++		tcm->reserve_2d(tcm, height, width, align, area));
++
++	if (area)
++		area->tcm = res ? NULL : tcm;
++
++	return res;
++}
++
++/*
++ * Free a previously reserved area from the container.
++ *
++ * The tcm field of the area is set to NULL on success
++ * to avoid subsequent freeing.  This call will succeed
++ * even if supplying the area from a failed reserved call.
++ */
++static inline s32 tcm_free(struct tcm_area *area)
++{
++	s32 res = 0; /* free succeeds by default */
++
++	if (area && area->tcm) {
++		res = area->tcm->free(area->tcm, area);
++		if (res == 0)
++			area->tcm = NULL;
 +	}
 +
-+	return dmm;
++	return res;
 +}
-+EXPORT_SYMBOL(dmm_pat_init);
 +
-+static s32 __init dmm_init(void)
++/* Verify if a tcm area is logically valid */
++static inline bool tcm_area_is_valid(struct tcm_area *area)
 +{
-+	return platform_driver_register(&dmm_driver);
++	return area && area->tcm &&
++		/* coordinate bounds */
++		area->p1.x < area->tcm->width &&
++		area->p1.y < area->tcm->height &&
++		area->p0.y <= area->p1.y &&
++		area->p0.x <= area->p1.x;
 +}
 +
-+static void __exit dmm_exit(void)
++/* see if a coordinate is within an area */
++static inline bool __tcm_is_in(struct tcm_pt *p, struct tcm_area *a)
 +{
-+	platform_driver_unregister(&dmm_driver);
++	return p->x >= a->p0.x && p->x <= a->p1.x &&
++		p->y >= a->p0.y && p->y <= a->p1.y;
 +}
 +
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("David Sin <davidsin@ti.com>");
-+MODULE_AUTHOR("Lajos Molnar <molnar@ti.com>");
-+module_init(dmm_init);
-+module_exit(dmm_exit);
++/* calculate area width */
++static inline u16 __tcm_area_width(struct tcm_area *area)
++{
++	return area->p1.x - area->p0.x + 1;
++}
++
++/* calculate area height */
++static inline u16 __tcm_area_height(struct tcm_area *area)
++{
++	return area->p1.y - area->p0.y + 1;
++}
++
++/* calculate number of slots in an area */
++static inline u16 __tcm_sizeof(struct tcm_area *area)
++{
++	return __tcm_area_width(area) * __tcm_area_height(area);
++}
++#define tcm_sizeof(area) __tcm_sizeof(&(area))
++#define tcm_awidth(area) __tcm_area_width(&(area))
++#define tcm_aheight(area) __tcm_area_height(&(area))
++#define tcm_is_in(pt, area) __tcm_is_in(&(pt), &(area))
++
++#endif
+diff --git a/drivers/misc/tiler/tcm/tcm-utils.h b/drivers/misc/tiler/tcm/tcm-utils.h
+new file mode 100644
+index 0000000..400c2fe
+--- /dev/null
++++ b/drivers/misc/tiler/tcm/tcm-utils.h
+@@ -0,0 +1,51 @@
++/*
++ * Utility functions for implementing TILER container managers.
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef TCM_UTILS_H
++#define TCM_UTILS_H
++
++#include "../tcm.h"
++
++/* TCM_ALG_NAME must be defined to use the debug methods */
++
++#ifdef DEBUG
++#define IFDEBUG(x) x
++#else
++/* compile-check debug statements even if not DEBUG */
++#define IFDEBUG(x) do { if (0) x; } while (0)
++#endif
++
++#define P(level, fmt, ...) \
++	IFDEBUG(printk(level TCM_ALG_NAME ":%d:%s()" fmt "\n", \
++			__LINE__, __func__, ##__VA_ARGS__))
++
++#define P1(fmt, ...) P(KERN_NOTICE, fmt, ##__VA_ARGS__)
++#define P2(fmt, ...) P(KERN_INFO, fmt, ##__VA_ARGS__)
++#define P3(fmt, ...) P(KERN_DEBUG, fmt, ##__VA_ARGS__)
++
++#define PA(level, msg, p_area) P##level(msg " (%03d %03d)-(%03d %03d)\n", \
++	(p_area)->p0.x, (p_area)->p0.y, (p_area)->p1.x, (p_area)->p1.y)
++
++/* assign coordinates to area */
++static inline
++void assign(struct tcm_area *a, u16 x0, u16 y0, u16 x1, u16 y1)
++{
++	a->p0.x = x0;
++	a->p0.y = y0;
++	a->p1.x = x1;
++	a->p1.y = y1;
++}
++
++#endif
 -- 
 1.7.0.4
 
