@@ -1,168 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab0K3Tgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 14:36:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18834 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250Ab0K3Tgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 14:36:48 -0500
-Date: Tue, 30 Nov 2010 14:36:22 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101130193622.GF26758@redhat.com>
-References: <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
- <1291052268.32004.171.camel@laptop>
- <1291057565.20709.2.camel@marge.simson.net>
- <20101129192033.GA18372@elte.hu>
- <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
- <1291090455.7550.7.camel@marge.simson.net>
- <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
- <1291123083.28239.18.camel@marge.simson.net>
- <20101130151749.GE26758@redhat.com>
- <1291137221.28239.70.camel@marge.simson.net>
+	id S1756398Ab0K3Tgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 14:36:54 -0500
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:49273 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab0K3Tgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 14:36:51 -0500
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKPh9ExAaMHG/2dsb2JhbACjF3GoaZtOhUcEhFyGBoMP
+X-IronPort-AV: E=Sophos;i="4.59,281,1288569600"; 
+   d="scan'208";a="628375139"
+Message-ID: <4CF5524C.5090900@cisco.com>
+Date: Tue, 30 Nov 2010 12:36:44 -0700
+From: "David S. Ahern" <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291137221.28239.70.camel@marge.simson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/2] perf tools: Add option to show time history of event
+ samples
+References: <1291072029-19178-1-git-send-email-daahern@cisco.com> <1291072029-19178-3-git-send-email-daahern@cisco.com> <20101130191905.GB9706@ghostprotocols.net>
+In-Reply-To: <20101130191905.GB9706@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 06:13:41PM +0100, Mike Galbraith wrote:
-> On Tue, 2010-11-30 at 10:17 -0500, Vivek Goyal wrote:
+
+
+On 11/30/10 12:19, Arnaldo Carvalho de Melo wrote:
 > 
-> > Hi Mike,
+> Suggestion: Please put some example output on the commit log message,
+> that way reviewers can have a glimpse of how it looks like.
 > 
-> Hi,
+
+Will do. I actually had a comparison between today's 'report -D' and
+'report --timehist'; I forgot to add it to the commit message.
+
+The line lengths will be a bit ugly in an email. In practice, the
+timehist is primarily a means of converting event data to sensible text
+for 1. processing by scripts and gnuplot, and 2. correlating with log
+entries from individual processes.
+
+In case folks are interested now before generating another patch set:
+
+./perf record --timehist -e cs -c 1 -p 983 -g
+
+./perf report -D
+
+0x1200 [0x88]: PERF_RECORD_SAMPLE(IP, 1): 983/983: 0xffffffff813e974f
+period: 1 cpu:1
+... chain: nr:11
+.....  0: ffffffffffffff80
+.....  1: ffffffff813e974f
+.....  2: ffffffff813ea46d
+.....  3: ffffffff813ea549
+.....  4: ffffffff8111cf61
+.....  5: ffffffff8111d7eb
+.....  6: ffffffff8111d9a3
+.....  7: ffffffff8111dad8
+.....  8: ffffffff81002cf2
+.....  9: fffffffffffffe00
+..... 10: 00007f2e0d15dec3
+ ... thread: sshd:983
+ ...... dso: /lib/modules/2.6.37-rc2/build/vmlinux
+
+
+./perf report --timehist -U
+
+12:26:41.890762  105188460714 1  sshd  983  ffffffff813e974f  schedule
+([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff813ea46d
+schedule_hrtimeout_range_clock ([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff813ea549
+schedule_hrtimeout_range ([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff8111cf61
+poll_schedule_timeout ([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff8111d7eb  do_select
+([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff8111d9a3
+core_sys_select ([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff8111dad8  sys_select
+([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983  ffffffff81002cf2
+system_call ([kernel.kallsyms])
+12:26:41.890762  105188460714 1  sshd  983      7f2e0d15dec3
+__GI_select (/lib64/libc-2.12.90.so)
+
+
+
+>> +static int perf_session__print_sample(struct perf_session *self,
 > 
-> > I was wonderig if these autogroups can be visible in regular cgroup
-> > hierarchy so that once somebody mounts cpu controller, these are visible?
+> Please replace self with 'session', Thomas suggested that and I agreed
+> that its better. We'll slowly rename all those self variables.
+
+Ok. I noted the mix and wasn't sure which name to use.
+
 > 
-> No, autogroup is not auto-cgroup.  You get zero whistles and zero bells
-> with autogroup.  Only dirt simple automated task groups.
+>> +					struct addr_location *al,
+>> +					struct sample_data *data)
+>> +{
+>> +	static int show_timehist_error = 1;
+>> +	u64 timestamp = 0;
+>> +	struct map_symbol *syms = NULL;
+>> +	struct symbol *parent = NULL;
+>> +	const char *tstr;
+>> +
+>> +	if (show_timehist_error &&
+>> +		((data->cpu == (u32) -1) || !(self->sample_type & PERF_SAMPLE_TIME))) {
+>> +		pr_err("Data for time history missing in perf event samples.\n"
+>> +		       "Did you record with -T option?\n");
 > 
-> > I was wondering why is a good idea to create a separate interface for
-> > autogroups through proc and not try to integrate it with cgroup interface.
+> --timehist
 > 
-> I only put an interface there at all because it was requested, and made
-> it a dirt simple 'nice level' interface because there's nothing simpler
-> than 'nice'.  The whole autogroup thing is intended for folks who don't
-> want to set up cgroups, shares yadayada, so tying it into the cgroups
-> interface seems kinda pointless.
+> As you used:
 > 
-> > Without it now any user space tool shall have to either disable the
-> > autogroup feature completely or now also worry about /proc interface
-> > and there also autogroups are searchable through pid and there is no
-> > direct way to access these.
+> +	OPT_BOOLEAN(0, "timehist", &time_history,
+> +		    "Dump time history of event samples"),
 > 
-> Maybe I should make it disable itself when you mount big brother.
-> 
-> > IIUC, these autogroups create flat setup and are at same level as
-> > init_task_group and are not children of it. Currently cpu cgroup 
-> > is hierarchical by default and any new cgroup is child of init_task_group
-> > and that could lead to representation issues.
-> 
-> Well, it's flat, but autogroup does..
-> 	tg = sched_create_group(&init_task_group);
-> 
-> > Well, will we not get same kind of latency boost if we make these autogroups
-> > children of root? If yes, then hierarchical representation issue of autogroup
-> > will be a moot point.
-> 
-> No problem then.
-> 
-> > We already have /proc/<pid>/cgroup interface which points to tasks's
-> > cgroup. We probably can avoid creating /proc/<pid>/autgroup if there
-> > is an associated cgroup which appears in cgroup hierachy and then user
-> > can change the weight of group through cgroup interface (instead of
-> > introducing another interface).
-> 
-> That's possible (for someone familiar with cgroups;), but I don't see
-> any reason for a wedding.
+> In a branch I'm working on I'm using 'T' to mean "--sample_time", i.e.
+> to ask for just PERF_SAMPLE_TIME
 
-Few things.
+Ok. I wanted consistency between record and report and moved from -T to
+--timehist. Forgot to update the help message above.
 
-- This /proc/<pid>/autogroup is good for doing this single thing but when
-  I start thinking of possible extensions of it down the line, it creates
-  issues. 
-
-- Once we have some kind of uppper limit support in cpu controller, these
-  autogroups are beyond control. If you want to impose some kind of 
-  limits on them then you shall have to extend parallel interface
-  /proc/<pid>/autogroup to also speicify upper limit (like nice levels).
-
-- Similiarly if this autgroup notion is extended to other cgroup
-  controllers, then you shall have to again extend /proc/<pid>/autogroup
-  to be able to specify these additional parameters.
-
-- If there is a monitoring tool which is monitoring the system for
-  resource usage by the groups, then I think these autogroups are beyond
-  reach and any stats exported by cgroup interface will not be available.
-  (though right now I can't see any stats being exported by cgroup files
-   in cpu controller but other controllers like block and memory do.).
-
-- I am doing some testing with the patch and w.r.t. cgroup interface some
-  things don't seem right.
-
-  I have applied your patch and enabled CONFIG_AUTO_GROUP. Now I boot
-  into the kernel and open a new ssh connection to the machine. 
-
-  # echo $$
-    3555
-  # cat /proc/3555/autogroup
-    /autogroup-63 nice 0
-
-  IIUC, task 3555 has been moved into an autogroup. Now I mount the cpu
-  controller and this task is visible in root cgroup.
-
-  # mount -t cgroup -o cpu none /cgroup/cpu
-  # cat /cgroup/cpu/tasks | grep 3555
-    3555
-
-  First of all this gives user a wrong impression that task 3555 is in
-  root cgroup.
-
-  Now I create a child group test1 and move the task there and also change
-  the weight/shares of the cgroup to 10240.
-
-  # mkdir test1
-  # echo 3555 > test1/tasks
-  # echo 10240 > test1/cpu.shares
-  # cat /proc/3555/cgroup
-    3:cpu:/test1
-  # cat /proc/3555/autogroup
-    /autogroup-63 nice 0
-
-So again, user will think that task is in cgroup test1 and is being
-controlled by the respective weight but that's not the case.
-
-Even if we prevent autogroup task from being visible in cpu controller
-root group, then comes the question what happens if cpu and some other
-controller is comounted. Say cpuset. Now in that case will task be 
-visible in root group task file and can one operate on that. Now showing
-up there does not make much sense as task should still be controllable
-by other controllers and its policies.
-
-So yes, creating a /proc/<pid>/autogroup is dirt cheap and makes the life
-easier in terms of implementation of this patch and it should work well.
-But it is also a new user interface which does not sound too extensible and
-does not seem to cooperate well with cgroup interface.
-
-It also introduces this new notion of niceness for task groups which is sort
-of equivalent to cpu.shares in cpu controller. First of all why should we
-not stick to shares notion even for autogroup. Even if we introduce the notion
-of niceness for groups, IMHO, it should be through cgroup interface instead of
-group niceness for autogroup and shares/weights for cgroup despite the
-fact that in the background they do similar things.
-
-I think above concerns can possibly be reason enough to think about about
-the wedding.
-
-Thanks
-Vivek
+David
