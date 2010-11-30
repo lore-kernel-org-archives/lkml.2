@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab0K3SQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 13:16:08 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50644 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854Ab0K3SQH (ORCPT
+	id S1755967Ab0K3SSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 13:18:53 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58367 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755854Ab0K3SSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 13:16:07 -0500
-Date: Tue, 30 Nov 2010 18:14:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Anton Vorontsov <avorontsov@mvista.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jamie Iles <jamie.iles@picochip.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/8] ARM: cns3xxx: Add support for SMP
-Message-ID: <20101130181442.GA9137@n2100.arm.linux.org.uk>
-References: <20101130171626.GA6165@oksana.dev.rtsoft.ru> <20101130171700.GB24034@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130171700.GB24034@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 30 Nov 2010 13:18:50 -0500
+Date: Tue, 30 Nov 2010 10:17:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "Huang, Ying" <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print
+ support
+Message-Id: <20101130101744.17efdea4.akpm@linux-foundation.org>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D530191E8BCF1@orsmsx505.amr.corp.intel.com>
+References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
+	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
+	<20101129190343.7d7cea12.akpm@linux-foundation.org>
+	<987664A83D2D224EAE907B061CE93D530191E8BCF1@orsmsx505.amr.corp.intel.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 08:17:00PM +0300, Anton Vorontsov wrote:
-> Nothing fancy needs to be done, just use generic SCU routines.
+On Tue, 30 Nov 2010 10:00:47 -0800 "Luck, Tony" <tony.luck@intel.com> wrote:
+
+> > +	for (i = 0; i < strs_size; i++) {
+> > +		if (!(bits & (1U << i)))
+> > +			continue;
+> > +		str = strs[i];
+> > +		if (len && len + strlen(str) + 2 > 80) {
+> > +			printk("\n");
+> > +			len = 0;
+> > +		}
+> > +		if (!len)
+> > +			len = pr_pfx(pfx, "%s", str);
+> > +		else
+> > +			len += printk(", %s", str);
+> > +	}
+> > +	if (len)
+> > +		printk("\n");
 > 
-> Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+> Does printk() offer any guarantees about getting all the characters
+> from a single printk() call out to the console without interleaving
+> with messages from printk() calls on other cpus?
 
-This I assume is an age old patch.
+Yes, it uses logbuf_lock to atomically append all the output from a
+printk into log_buf[].  Then it calls the console drivers against
+log_buf[].  It's hard to see how a console driver could then screw that
+up.
 
-> diff --git a/arch/arm/mach-cns3xxx/include/mach/smp.h b/arch/arm/mach-cns3xxx/include/mach/smp.h
-> new file mode 100644
-> index 0000000..44aa7ea
-> --- /dev/null
-> +++ b/arch/arm/mach-cns3xxx/include/mach/smp.h
-> @@ -0,0 +1,28 @@
-> +/*
-> + * Copyright 2002 ARM Ltd.
-> + * Copyright 2008 Cavium Networks
-> + *
-> + * This file is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, Version 2, as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __MACH_SMP_H
-> +#define __MACH_SMP_H
-> +
-> +#include <asm/hardware/gic.h>
-> +
-> +#define hard_smp_processor_id()				\
-> +	({						\
-> +		unsigned int cpunum;			\
-> +		__asm__("mrc p15, 0, %0, c0, c0, 5"	\
-> +			: "=r" (cpunum));		\
-> +		cpunum &= 0x0F;				\
-> +	})
+>  If it does, then
+> it would be a good idea to sprintf() the parts of this message to
+> a buffer and then use one printk() call.
 
-#include <asm/smp_mpidr.h>
+yup.
 
-replaces this, but it's not actually necessary - it's only used by some
-bug checking code in the CPU hotplug code.  I'm shortly going to be
-deleting all hard_smp_processor_id() implementations.
+>  I think I read that netconsole
+> ends up with one packet on the wire for each call to printk().
+> 
+> Trying to parse output jumbled together from multiple cpus
+> doesn't sound like fun.
+> 
+> -Tony
