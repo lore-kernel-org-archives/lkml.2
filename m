@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab0K3Eia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Nov 2010 23:38:30 -0500
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:39028 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753172Ab0K3Ei3 (ORCPT
+	id S1753988Ab0K3Eiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Nov 2010 23:38:52 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34510 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753133Ab0K3Eiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Nov 2010 23:38:29 -0500
-Date: Tue, 30 Nov 2010 15:38:17 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 3/3] xfs: demultiplex xfs_icsb_modify_counters()
-Message-ID: <20101130043817.GE3556@dastard>
-References: <1290991002-18680-1-git-send-email-david@fromorbit.com>
- <1290991002-18680-4-git-send-email-david@fromorbit.com>
- <20101129091920.GB13902@infradead.org>
+	Mon, 29 Nov 2010 23:38:50 -0500
+Message-ID: <4CF47FBA.6050902@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 13:38:18 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129091920.GB13902@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 v6 17/20] can: EG20T PCH: Fix incorrect return
+ processing
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 04:19:20AM -0500, Christoph Hellwig wrote:
-> On Mon, Nov 29, 2010 at 11:36:41AM +1100, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > With the conversion to percpu counters, xfs_icsb_modify_counters() really does
-> > not need to exist. Convert the inode counter modifications to use a common
-> > helper function for the one place that calls them, and add another function for
-> > the free block modification and convert all the callers to use that.
-> 
-> > +xfs_icsb_modify_inodes(
-> > +	xfs_mount_t	*mp,
-> 
-> struct xfs_mount, please.
-> 
-> > +	int		cntr,
-> > +	int64_t		delta,
-> > +	int		rsvd)
-> 
-> the rsvd argument isn't used at all.
-> 
-> > +{
-> > +	int		ret = 0;
-> > +
-> > +	ASSERT(cntr == XFS_ICSB_ICOUNT || cntr == XFS_ICSB_IFREE);
-> > +
-> > +	ret = xfs_icsb_add(mp, cntr, delta, 0);
-> > +	if (ret < 0) {
-> > +		ASSERT(0);
-> > +		return XFS_ERROR(EINVAL);
-> > +	}
-> > +	return 0;
-> 
-> You could get rdif of the ret argument as we don't care about the
-> value.  I also don't think we need the assert here - the caller already
-> does one for us.
-> 
-> > +xfs_icsb_modify_free_blocks(
-> > +	xfs_mount_t	*mp,
-> 
-> same here.
+Fix incorrect return processing
 
-Ok, makes sense. I'll clean it up.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/net/can/pch_can.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index f8b4a66..743385b 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -586,9 +586,11 @@ static irqreturn_t pch_can_interrupt(int irq, void *dev_id)
+ 	struct net_device *ndev = (struct net_device *)dev_id;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 
++	if (!pch_can_int_pending(priv))
++		return IRQ_NONE;
++
+ 	pch_can_set_int_enables(priv, PCH_CAN_NONE);
+ 	napi_schedule(&priv->napi);
+-
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -677,8 +679,10 @@ static int pch_can_rx_normal(struct net_device *ndev, u32 obj_num, int quota)
+ 		}
+ 
+ 		skb = alloc_can_skb(priv->ndev, &cf);
+-		if (!skb)
+-			return -ENOMEM;
++		if (!skb) {
++			netdev_err(ndev, "alloc_can_skb Failed\n");
++			return rcv_pkts;
++		}
+ 
+ 		/* Get Received data */
+ 		id2 = ioread32(&priv->regs->ifregs[0].id2);
+@@ -739,8 +743,8 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
+ 	struct net_device *ndev = napi->dev;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
+ 	u32 int_stat;
+-	int rcv_pkts = 0;
+ 	u32 reg_stat;
++	int quota_save = quota;
+ 
+ 	int_stat = pch_can_int_pending(priv);
+ 	if (!int_stat)
+@@ -769,10 +773,7 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
+ 		goto end;
+ 
+ 	if ((int_stat >= PCH_RX_OBJ_START) && (int_stat <= PCH_RX_OBJ_END)) {
+-		rcv_pkts += pch_can_rx_normal(ndev, int_stat, quota);
+-		quota -= rcv_pkts;
+-		if (quota < 0)
+-			goto end;
++		quota -= pch_can_rx_normal(ndev, int_stat, quota);
+ 	} else if ((int_stat >= PCH_TX_OBJ_START) &&
+ 		   (int_stat <= PCH_TX_OBJ_END)) {
+ 		/* Handle transmission interrupt */
+@@ -783,7 +784,7 @@ end:
+ 	napi_complete(napi);
+ 	pch_can_set_int_enables(priv, PCH_CAN_ALL);
+ 
+-	return rcv_pkts;
++	return quota_save - quota;
+ }
+ 
+ static int pch_set_bittiming(struct net_device *ndev)
 -- 
-Dave Chinner
-david@fromorbit.com
+1.6.0.6
