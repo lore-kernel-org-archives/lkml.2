@@ -1,59 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab0LAILt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 03:11:49 -0500
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:50201 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab0LAILs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 03:11:48 -0500
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 03:11:47 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMaP9UyERHMG/2dsb2JhbACjEXHEBwKFRQSKYw
-X-IronPort-AV: E=Sophos;i="4.59,282,1288562400"; 
-   d="scan'208";a="18573978"
-Date: Wed, 1 Dec 2010 10:01:49 +0200
-From: "Nadav Har'El" <nyh@math.technion.ac.il>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] KVM: Introduce VCPU-wide notion of guest-mode V2
-Message-ID: <20101201080149.GA29486@fermat.math.technion.ac.il>
-References: <4CF3D093.40604@redhat.com> <1291049509-3430-1-git-send-email-joerg.roedel@amd.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291049509-3430-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.4.2.2i
-Hebrew-Date: 24 Kislev 5771
+	id S1754109Ab0LAIQn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 03:16:43 -0500
+Received: from claw.goop.org ([74.207.240.146]:34614 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753090Ab0LAIQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 03:16:42 -0500
+Message-ID: <4CF60469.60806@goop.org>
+Date: Wed, 01 Dec 2010 00:16:41 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Nick Piggin <npiggin@kernel.dk>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC] vmalloc: eagerly clear ptes on vunmap
+References: <4CEF6B8B.8080206@goop.org>	<20101127103656.GA6884@amd>	<4CF40DCB.5010007@goop.org>	<20101130162938.8a6b0df4.akpm@linux-foundation.org>	<4CF5BC77.8090400@goop.org> <20101130192306.280a9437.akpm@linux-foundation.org>
+In-Reply-To: <20101130192306.280a9437.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010, Joerg Roedel wrote about "[PATCH 0/3] KVM: Introduce VCPU-wide notion of guest-mode V2":
-> Hi Avi, Hi Marcelo,
-> 
-> here is the re-spin I promised. The change to V1 are essentially the
-> renames:
-> 
-> 	kvm_vcpu_enter_gm -> enter_guest_mode
-> 	kvm_vcpu_leave_gm -> leave_guest_mode
-> 	kvm_vcpu_is_gm    -> is_guest_mode
+On 11/30/2010 07:23 PM, Andrew Morton wrote:
+> On Tue, 30 Nov 2010 19:09:43 -0800 Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>
+>> On 11/30/2010 04:29 PM, Andrew Morton wrote:
+>>> On Mon, 29 Nov 2010 12:32:11 -0800
+>>> Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>>
+>>>> When unmapping a region in the vmalloc space, clear the ptes immediately.
+>>>> There's no point in deferring this because there's no amortization
+>>>> benefit.
+>>>>
+>>>> The TLBs are left dirty, and they are flushed lazily to amortize the
+>>>> cost of the IPIs.
+>>>>
+>>>> This specific motivation for this patch is a regression since 2.6.36 when
+>>>> using NFS under Xen, triggered by the NFS client's use of vm_map_ram()
+>>>> introduced in 56e4ebf877b6043c289bda32a5a7385b80c17dee.  XFS also uses
+>>>> vm_map_ram() and could cause similar problems.
+>>>>
+>>> Do we have any quantitative info on that regression?
+>> It's pretty easy to reproduce - you get oopses very quickly while using
+>> NFS.
+> Bah.  I'd assumed that it was a performance regression and had vaguely
+> queued it for 2.6.37.
 
-I like this concept, and will be happy to change the nested VMX code to use
-it as well.
+I have a bunch of other cleanups for mm/vmalloc.c which I'll propose for
+.37.
 
-One small thing: After the name change, it might not be obvious on first
-sight that these functions refer to the state of the vcpu, not the state
-of the actual CPU (which, if you think about it, is never in guest mode while
-KVM code is running ;-)). I think that a short comment before the definition
-of these functions might be useful - perhaps saying that they pertain to a
-hypervisor running in the vcpu (i.e., nested virtualization).
+>> I haven't got any lying around right now, but I could easily
+>> generate one if you want to decorate the changelog a bit.
+> You owe me that much ;)
 
-Nadav.
+On stock 2.6.37-rc4, running:
 
--- 
-Nadav Har'El                        |   Wednesday, Dec  1 2010, 24 Kislev 5771
-nyh@math.technion.ac.il             |-----------------------------------------
-Phone +972-523-790466, ICQ 13349191 |How do you get holy water? Boil the hell
-http://nadav.harel.org.il           |out of it.
+# mount lilith:/export /mnt/lilith
+# find  /mnt/lilith/ -type f -print0 | xargs -0 file
+
+crashes the machine fairly quickly under Xen.  Often it results in oops
+messages, but the couple of times I tried just now, it just hung quietly
+and made Xen print some rude messages:
+
+    (XEN) mm.c:2389:d80 Bad type (saw 7400000000000001 != exp
+    3000000000000000) for mfn 1d7058 (pfn 18fa7)
+    (XEN) mm.c:964:d80 Attempt to create linear p.t. with write perms
+    (XEN) mm.c:2389:d80 Bad type (saw 7400000000000010 != exp
+    1000000000000000) for mfn 1d2e04 (pfn 1d1fb)
+    (XEN) mm.c:2965:d80 Error while pinning mfn 1d2e04
+
+Which means the domain tried to map a pagetable page RW, which would
+allow it to map arbitrary memory, so Xen stopped it.  This is because
+vm_unmap_ram() left some pages mapped in the vmalloc area after NFS had
+finished with them, and those pages got recycled as pagetable pages
+while still having these RW aliases.
+
+Removing those mappings immediately removes the Xen-visible aliases, and
+so it has no problem with those pages being reused as pagetable pages. 
+Deferring the TLB flush doesn't upset Xen because it can flush the TLB
+itself as needed to maintain its invariants.
+
+> Here's the current rollup of the three patches.  Please check.
+
+It looks like "vmalloc: avoid double-unmapping percpu blocks" wasn't
+complete.  Fix below.
+
+Thanks,
+    J
+
+
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Tue, 30 Nov 2010 23:53:28 -0800
+Subject: [PATCH] vmalloc: always unmap in vb_free()
+
+free_vmap_block() doesn't unmap anything, so just unconditionally unmap
+the region.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ffefe70..a582491 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -946,6 +946,8 @@ static void vb_free(const void *addr, unsigned long size)
+ 	rcu_read_unlock();
+ 	BUG_ON(!vb);
+ 
++	vunmap_page_range((unsigned long)addr, (unsigned long)addr + size);
++
+ 	spin_lock(&vb->lock);
+ 	BUG_ON(bitmap_allocate_region(vb->dirty_map, offset >> PAGE_SHIFT, order));
+ 
+@@ -954,10 +956,8 @@ static void vb_free(const void *addr, unsigned long size)
+ 		BUG_ON(vb->free);
+ 		spin_unlock(&vb->lock);
+ 		free_vmap_block(vb);
+-	} else {
++	} else
+ 		spin_unlock(&vb->lock);
+-		vunmap_page_range((unsigned long)addr, (unsigned long)addr + size);
+-	}
+ }
+ 
+ /**
+
+
