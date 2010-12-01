@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab0LAOjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:39:42 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:33585 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753113Ab0LAOjl (ORCPT
+	id S1755489Ab0LAOka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:40:30 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59671 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab0LAOk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:39:41 -0500
-Message-ID: <4CF65DF8.2010806@euromail.se>
-Date: Wed, 01 Dec 2010 15:38:48 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 1 Dec 2010 09:40:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=VDH8E+BxYnh0WVzZMKNx84t0cJ/Bj/IFKzCozW0aouX8jS1Yb5Vsm1F1jUqHz5lGZg
+         65d7ztvnjWz+tX0jB5wSZMBZu8NXo42JRo8GAdTfFy9PhpTbWJw9wr3ahs57Oox49I02
+         GjUgVn9CkBbKeW6k13TYhVQWSQJqCiAJxbd9Q=
 MIME-Version: 1.0
-To: Trilok Soni <tsoni@codeaurora.org>
-CC: Kevin McNeely <Kevin.McNeely@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Luotao Fu <l.fu@pengutronix.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-References: <Kevin McNeely <kev@cypress.com> <1289327120-2612-1-git-send-email-kev@cypress.com> <4CE163CC.1060202@euromail.se> <FB9C2CB29A07AB45B575A4E8D2AABC090119784D@labamba.mis.cypress.com> <4CF5F7BA.7070909@codeaurora.org>
-In-Reply-To: <4CF5F7BA.7070909@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PNnq2-0003We-AV.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PNnq2-0003We-AV 0c5170511ed7efae05e45a143d8ae5d6
+Date: Wed, 1 Dec 2010 22:40:27 +0800
+Message-ID: <AANLkTin_94J_eu5raDsPXTUJy7EbkUWuG_d8_xEn3Gzh@mail.gmail.com>
+Subject: [PATCH] add regulation of BLK_EH_RESET_TIMER for block request
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devel@open-fcoe.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>
+When timer run, if BLK_EH_RESET_TIMER returned by LLD, the retries of
+block request, though defined, is not checked in both scsi middle
+later and block layer.
 
->>> Thanks for your submission. Please find comments on MT inline. On a
->>> general
->>> note, it is strongly recommended that this driver be converted to the
->>> MT slots
->>> (type B) protocol.
->>
->> I will resubmit with Protocol A only at this time.  I will remove the
->> Tracking ID's.
->>
-> 
-> Any comments on this?
+Regulation of BLK_EH_RESET_TIMER could help LLD fiddle timer in
+reasonable manner.
 
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-It is not optimal, but it is not wrong. If the plan is to support kernels 2.6.38
-and later, I strongly recommend using the type B protocol, as already stated.
+--- a/drivers/scsi/scsi_error.c	2010-11-01 19:54:12.000000000 +0800
++++ b/drivers/scsi/scsi_error.c	2010-12-01 22:26:36.000000000 +0800
+@@ -138,8 +138,15 @@ enum blk_eh_timer_return scsi_times_out(
+ 	else if (scmd->device->host->hostt->eh_timed_out)
+ 		rtn = scmd->device->host->hostt->eh_timed_out(scmd);
 
-Henrik
++	if (rtn == BLK_EH_RESET_TIMER)
++		if (req->retries-- > 0)
++			return rtn;
++		else
++			goto handled;
++
+ 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
+ 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD))) {
++ handled:
+ 		scmd->result |= DID_TIME_OUT << 16;
+ 		rtn = BLK_EH_HANDLED;
+ 	}
