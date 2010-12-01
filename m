@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab0LASYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:24:17 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:25448 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735Ab0LASXz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:23:55 -0500
-X-IronPort-AV: E=Sophos;i="4.59,284,1288584000"; 
-   d="scan'208";a="124875292"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
-        Stefano.Stabellini@eu.citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 4/5] xen: fix save/restore for PV on HVM guests with pirq remapping
-Date: Wed,  1 Dec 2010 18:23:29 +0000
-Message-Id: <1291227810-15094-4-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1012011442280.14723@kaball-desktop>
-References: <alpine.DEB.2.00.1012011442280.14723@kaball-desktop>
-X-OriginalArrivalTime: 01 Dec 2010 18:23:54.0423 (UTC) FILETIME=[E9316470:01CB9184]
+	id S1756085Ab0LASYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:24:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755998Ab0LASYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:24:35 -0500
+Message-ID: <4CF692D1.1010906@redhat.com>
+Date: Wed, 01 Dec 2010 19:24:17 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101110 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Matt <jackdachef@gmail.com>
+CC: Mike Snitzer <snitzer@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
+        htejun@gmail.com
+Subject: Re: dm-crypt barrier support is effective
+References: <20101107194547.GA12521@basil.fritz.box>	<4CD71C8B.1050604@redhat.com>	<20101107230508.GB17592@basil.fritz.box>	<20101108145809.GD29714@redhat.com>	<1289238930-sup-9765@think>	<20101114205925.GA20451@redhat.com>	<AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>	<4CE05A9E.9090204@redhat.com>	<AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>	<AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>	<20101201165229.GC13415@redhat.com> <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+In-Reply-To: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On 12/01/2010 06:35 PM, Matt wrote:
+> Thanks for pointing to v6 ! I hadn't noticed that there was a new one :)
+> 
+> Well, so I'll restore my box to a working/productive state and will
+> try out v6 (I'm pretty confident that it'll work without problems).
 
-Re-map and re-bind all the pirqs at resume time.
+It's the same as previous, just with fixed header (to track it properly
+in patchwork) , second patch adds some read optimisation, nothing what
+should help here.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/events.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 38 insertions(+), 0 deletions(-)
+Anyway, I run several tests on 2.6.37-rc3+ and see no integrity
+problems (using xfs,ext3 and ext4 over dmcrypt).
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index f78945c..f34288a 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1293,6 +1293,42 @@ static int retrigger_dynirq(unsigned int irq)
- 	return ret;
- }
- 
-+static void restore_cpu_pirqs(void)
-+{
-+	int pirq, rc, irq, gsi;
-+	struct physdev_map_pirq map_irq;
-+
-+	for (pirq = 0; pirq < nr_irqs; pirq++) {
-+		irq = pirq_to_irq[pirq];
-+		if (irq == -1)
-+			continue;
-+
-+		/* save/restore of PT devices doesn't work, so at this point the
-+		 * only devices present are GSI based emulated devices */
-+		gsi = gsi_from_irq(irq);
-+		if (!gsi)
-+			continue;
-+
-+		map_irq.domid = DOMID_SELF;
-+		map_irq.type = MAP_PIRQ_TYPE_GSI;
-+		map_irq.index = gsi;
-+		map_irq.pirq = pirq;
-+
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
-+		if (rc) {
-+			printk(KERN_WARNING "xen map irq failed gsi=%d irq=%d pirq=%d rc=%d\n",
-+					gsi, irq, pirq, rc);
-+			irq_info[irq] = mk_unbound_info();
-+			pirq_to_irq[pirq] = -1;
-+			continue;
-+		}
-+
-+		printk(KERN_DEBUG "xen: --> irq=%d, pirq=%d\n", irq, map_irq.pirq);
-+
-+		startup_pirq(irq);
-+	}
-+}
-+
- static void restore_cpu_virqs(unsigned int cpu)
- {
- 	struct evtchn_bind_virq bind_virq;
-@@ -1436,6 +1472,8 @@ void xen_irq_resume(void)
- 
- 		unmask_evtchn(evtchn);
- 	}
-+
-+	restore_cpu_pirqs();
- }
- 
- static struct irq_chip xen_dynamic_chip __read_mostly = {
--- 
-1.5.6.5
+So please try to check which change causes these problems for you,
+it can be something completely unrelated to these patches.
 
+(If if anyone know how to trigger some corruption with btrfs/dmcrypt,
+let me know I am not able to reproduce it either.)
+
+Milan
