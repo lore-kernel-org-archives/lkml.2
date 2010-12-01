@@ -1,80 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab0LAP30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 10:29:26 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:36747 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751424Ab0LAP3Z (ORCPT
+	id S1753196Ab0LAPaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 10:30:39 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58154 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab0LAPah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 10:29:25 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Ovuv22sVM1mb5CWVOG2F1WgfLQqlJhJfBzOOIktKjVz6OpH
- 1jy09DoVmBFEiTpNMwR3AeFoZ1sYz7aJkppRh_BbpHPTVhFWQtTOZGKf4ZUr
- f0Qb0FXnOzk99r.KW3YaArIDuw1YGGbWLXXgtwGcXzM5_qi6MOyN5rCDbX8t
- Ubim.XfK78SsfPXkuIbF4NI69o0q4LYgl__4kMuQ1lquDq0HUeHtJeo0RQve
- v5hooue3Hwuo-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 1 Dec 2010 09:29:21 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Simon Kirby <sim@hostway.ca>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: Free memory never fully used, swapping
-In-Reply-To: <20101201114226.ABAB.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1012010910450.2989@router.home>
-References: <20101130092534.82D5.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011301309240.3134@router.home> <20101201114226.ABAB.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 1 Dec 2010 10:30:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DjqRsugRKxIe83+TQMDgAKcnceiF880VeC1qpg8pkLuiUl6+KGaJnEbJCqvwCwpDoS
+         nUuT98unlgMepnzsxmxrjSawBndQlTlBCmEHUezbEGcpq5plz59eekXO1KC2sgsJtED0
+         Gaiir1jvSH/Ae1PuV5U+t4OcUZo8aJQiN+ad0=
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>
+Subject: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
+Date: Wed,  1 Dec 2010 16:30:12 +0100
+Message-Id: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, KOSAKI Motohiro wrote:
+Today more boards with arm cpu have selectable pci bus.
+This patch makes this more scalable and remove line continuations in
+Kconfig
 
-> > Specifying a parameter to temporarily override to see if this has the
-> > effect is ok. But this has worked for years now. There must be something
-> > else going with with reclaim that causes these issues now.
->
-> I don't think this has worked. Simon have found the corner case recently,
-> but it is not new.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+---
+ arch/arm/Kconfig                 |    7 ++++++-
+ arch/arm/mach-cns3xxx/Kconfig    |    1 +
+ arch/arm/mach-integrator/Kconfig |    1 +
+ arch/arm/mach-ks8695/Kconfig     |    1 +
+ arch/arm/mach-pxa/Kconfig        |    1 +
+ arch/arm/mach-versatile/Kconfig  |    1 +
+ 6 files changed, 11 insertions(+), 1 deletions(-)
 
-What has worked? If the reduction of the maximum allocation order did not
-have the expected effect of fixing things here then the issue is not
-related to the higher allocations from slub.
-
-Higher order allocations are not only a slub issue but a general issue for
-various subsystem that require higher order pages. This ranges from jumbo
-frames, to particular needs for certain device drivers, to huge pages.
-
-> So I hope you realize that high order allocation is no free lunch. __GFP_NORETRY
-> makes no sense really. Even though we have compaction, high order reclaim is still
-> costly operation.
-
-Sure. There is a tradeoff between reclaim effort and the benefit of higher
-allocations. The costliness of reclaim may have increased with the recent
-changes to the reclaim logic. In fact reclaim gets more and more complex
-over time and there may be subtle bugs in there given the recent flurry of
-changes.
-
-> I don't think SLUB's high order allocation trying is bad idea. but now It
-> does more costly trying. that's bad. Also I'm worry about SLUB assume too
-> higher end machine. Now Both SLES and RHEL decided to don't use SLUB,
-> instead use SLAB. Now linux community is fragmented. If you are still
-> interesting SL*B unification, can you please consider to join corner
-> case smashing activity?
-
-The problems with higher order reclaim get more difficult with small
-memory sizes yes. We could reduce the maximum order automatically if memory
-is too tight. There is nothing hindering us from tuning the max order
-behavior of slub in a similar way that we now tune the thresholds of the
-vm statistics.
-
-But for that to be done we first need to have some feedback if the changes
-to max order have indeed the desired effect in this corner case.
-
-
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a19a526..614cf2f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -34,6 +34,9 @@ config ARM
+ config HAVE_PWM
+ 	bool
+ 
++config MIGHT_HAVE_PCI
++	bool
++
+ config SYS_SUPPORTS_APM_EMULATION
+ 	bool
+ 
+@@ -298,6 +301,7 @@ config ARCH_CNS3XXX
+ 	select CPU_V6
+ 	select GENERIC_CLOCKEVENTS
+ 	select ARM_GIC
++	select MIGHT_HAVE_PCI
+ 	select PCI_DOMAINS if PCI
+ 	help
+ 	  Support for Cavium Networks CNS3XXX platform.
+@@ -433,6 +437,7 @@ config ARCH_IXP4XX
+ 	select CPU_XSCALE
+ 	select GENERIC_GPIO
+ 	select GENERIC_CLOCKEVENTS
++	select MIGHT_HAVE_PCI
+ 	select DMABOUNCE if PCI
+ 	help
+ 	  Support for Intel's IXP4XX (XScale) family of processors.
+@@ -1164,7 +1169,7 @@ config ISA_DMA_API
+ 	bool
+ 
+ config PCI
+-	bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB || ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
++	bool "PCI support" if MIGHT_HAVE_PCI
+ 	help
+ 	  Find out whether you have a PCI motherboard. PCI is the name of a
+ 	  bus system, i.e. the way the CPU talks to the other stuff inside
+diff --git a/arch/arm/mach-cns3xxx/Kconfig b/arch/arm/mach-cns3xxx/Kconfig
+index 9ebfcc4..29b13f2 100644
+--- a/arch/arm/mach-cns3xxx/Kconfig
++++ b/arch/arm/mach-cns3xxx/Kconfig
+@@ -3,6 +3,7 @@ menu "CNS3XXX platform type"
+ 
+ config MACH_CNS3420VB
+ 	bool "Support for CNS3420 Validation Board"
++	select MIGHT_HAVE_PCI
+ 	help
+ 	  Include support for the Cavium Networks CNS3420 MPCore Platform
+ 	  Baseboard.
+diff --git a/arch/arm/mach-integrator/Kconfig b/arch/arm/mach-integrator/Kconfig
+index 27db275..769b0f1 100644
+--- a/arch/arm/mach-integrator/Kconfig
++++ b/arch/arm/mach-integrator/Kconfig
+@@ -4,6 +4,7 @@ menu "Integrator Options"
+ 
+ config ARCH_INTEGRATOR_AP
+ 	bool "Support Integrator/AP and Integrator/PP2 platforms"
++	select MIGHT_HAVE_PCI
+ 	help
+ 	  Include support for the ARM(R) Integrator/AP and
+ 	  Integrator/PP2 platforms.
+diff --git a/arch/arm/mach-ks8695/Kconfig b/arch/arm/mach-ks8695/Kconfig
+index fe0c82e..f5c39a8 100644
+--- a/arch/arm/mach-ks8695/Kconfig
++++ b/arch/arm/mach-ks8695/Kconfig
+@@ -4,6 +4,7 @@ menu "Kendin/Micrel KS8695 Implementations"
+ 
+ config MACH_KS8695
+ 	bool "KS8695 development board"
++	select MIGHT_HAVE_PCI
+ 	help
+ 	  Say 'Y' here if you want your kernel to run on the original
+ 	  Kendin-Micrel KS8695 development board.
+diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
+index dd235ec..716a2e1 100644
+--- a/arch/arm/mach-pxa/Kconfig
++++ b/arch/arm/mach-pxa/Kconfig
+@@ -94,6 +94,7 @@ config MACH_ARMCORE
+ 	select PXA27x
+ 	select IWMMXT
+ 	select PXA25x
++	select MIGHT_HAVE_PCI
+ 
+ config MACH_EM_X270
+ 	bool "CompuLab EM-x270 platform"
+diff --git a/arch/arm/mach-versatile/Kconfig b/arch/arm/mach-versatile/Kconfig
+index c781f30..3f7b5e9 100644
+--- a/arch/arm/mach-versatile/Kconfig
++++ b/arch/arm/mach-versatile/Kconfig
+@@ -4,6 +4,7 @@ menu "Versatile platform type"
+ config ARCH_VERSATILE_PB
+ 	bool "Support Versatile/PB platform"
+ 	select CPU_ARM926T
++	select MIGHT_HAVE_PCI
+ 	default y
+ 	help
+ 	  Include support for the ARM(R) Versatile/PB platform.
+-- 
+1.7.3.2
 
