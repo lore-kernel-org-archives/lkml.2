@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab0LAUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:34:09 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50877 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754784Ab0LAUeF (ORCPT
+	id S1757075Ab0LAUi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:38:27 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19557 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab0LAUiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:34:05 -0500
-Date: Wed, 1 Dec 2010 12:33:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-Message-Id: <20101201123341.d12ef362.akpm@linux-foundation.org>
-In-Reply-To: <1291234251.6609.39.camel@heimdal.trondhjem.org>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	<20101201150428.GA2879@elliptictech.com>
-	<1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	<AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	<1291229669.6609.24.camel@heimdal.trondhjem.org>
-	<AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
-	<1291234251.6609.39.camel@heimdal.trondhjem.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Dec 2010 15:38:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 01 Dec 2010 12:32:52 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <lrg@slimlogic.co.uk>, <broonie@opensource.wolfsonmicro.com>,
+        <dahuang@nvidia.com>, <olofj@chromium.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 4/4] regulator: tps6586x: correct register table
+Date: Wed, 1 Dec 2010 13:37:31 -0700
+Message-ID: <1291235851-29523-5-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1291235851-29523-1-git-send-email-swarren@nvidia.com>
+References: <1291235851-29523-1-git-send-email-swarren@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Dec 2010 15:10:50 -0500
-Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+From: Danny Huang <dahuang@nvidia.com>
 
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -602,6 +602,7 @@ struct address_space_operations {
->  	sector_t (*bmap)(struct address_space *, sector_t);
->  	void (*invalidatepage) (struct page *, unsigned long);
->  	int (*releasepage) (struct page *, gfp_t);
-> +	void (*freepage)(struct page *);
->  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
->  			loff_t offset, unsigned long nr_segs);
->  	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+Correct the register table for SM2, LDO8, RTC
 
-It would be good to think about and then clearly spell out exactly what
-state the page is in here.  It is locked, and I assume clean and not
-under writeback.  What about its refcount, freezedness status and
-eligibility for lookups?
+Change-Id: I45348cec5ffbb7da9bd7523764fb611b537236b8
+Signed-off-by: Danny Huang <dahuang@nvidia.com>
+Signed-off-by: Olof Johansson <olofj@chromium.org>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/regulator/tps6586x-regulator.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-And as Hugh pointed out, some callees might needs the address_space*
-although we can perhaps defer that until such a callee turns up. 
-If/when that happens we might have a problem though: if this locked
-page is no longer attached to the address_space then what now pins the
-address_space, protecting it from inode reclaim?
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index c668944..6d20b04 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -274,11 +274,11 @@ static struct tps6586x_regulator tps6586x_regulator[] = {
+ 	TPS6586X_LDO(LDO_5, ldo, SUPPLYV6, 0, 3, ENE, 6, ENE, 6),
+ 	TPS6586X_LDO(LDO_6, ldo, SUPPLYV3, 0, 3, ENC, 4, END, 4),
+ 	TPS6586X_LDO(LDO_7, ldo, SUPPLYV3, 3, 3, ENC, 5, END, 5),
+-	TPS6586X_LDO(LDO_8, ldo, SUPPLYV1, 5, 3, ENC, 6, END, 6),
++	TPS6586X_LDO(LDO_8, ldo, SUPPLYV2, 5, 3, ENC, 6, END, 6),
+ 	TPS6586X_LDO(LDO_9, ldo, SUPPLYV6, 3, 3, ENE, 7, ENE, 7),
+-	TPS6586X_LDO(LDO_RTC, ldo, SUPPLYV4, 3, 3, ENE, 7, ENE, 7),
++	TPS6586X_LDO(LDO_RTC, ldo, SUPPLYV4, 3, 3, V4, 7, V4, 7),
+ 	TPS6586X_LDO(LDO_1, dvm, SUPPLYV1, 0, 5, ENC, 1, END, 1),
+-	TPS6586X_LDO(SM_2, sm2, SUPPLYV2, 0, 5, ENC, 1, END, 1),
++	TPS6586X_LDO(SM_2, sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
+ 
+ 	TPS6586X_DVM(LDO_2, dvm, LDO2BV1, 0, 5, ENA, 3, ENB, 3, VCC2, 6),
+ 	TPS6586X_DVM(LDO_4, ldo4, LDO4V1, 0, 5, ENC, 3, END, 3, VCC1, 6),
+-- 
+1.7.0.4
+nvpublic
+
