@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab0LAHyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:54:11 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59832 "EHLO
+	id S1753335Ab0LAH45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:56:57 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34174 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab0LAHyJ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751971Ab0LAH44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:54:09 -0500
+	Wed, 1 Dec 2010 02:56:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fXZ+nEzW4Np4qdGxBfAgTMJFnaY8AjAZBL0nn/Z5PItrMsuL7ajwUbCG0cu602lp7M
-         DsMa4Hw7llKHdmZLw/heekekOZkLBH7jlIOBMjYJBEx9ReKz/6q7QQGTyk9kx1uiikKI
-         +X4BD5J5+AR5LHUdDhz4DcdlFNG0g+R4m1qVY=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=E+64+86Gvd97BJQ7Kogb6R3Zp87SKmP/rtDq8BWH0ifgHrPJAkXlpE2M/ukZBMvAnt
+         TGXBt7r7z46kpf1+q8/gzTjhimiNwBvXqSZ/dn7vS626hYM6T5XamKcSYZ4lD8S650Ch
+         4hBuxONpVQYyOh8R6EZl8eNVXTAIW1G6Fj0Eo=
 MIME-Version: 1.0
-In-Reply-To: <20101130101520.17475.79978.stgit@localhost6.localdomain6>
-References: <20101130101126.17475.18729.stgit@localhost6.localdomain6>
-	<20101130101520.17475.79978.stgit@localhost6.localdomain6>
-Date: Wed, 1 Dec 2010 16:54:08 +0900
-Message-ID: <AANLkTik59zL97EqpPSNiy122YFwXqWyRqAkMJDjRtfRE@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Refactor zone_reclaim
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1291148375.18026.342.camel@Joe-Laptop>
+References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>
+ <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
+ <20101129060732.5130.qmail@stuge.se> <4CF42C17.2070500@openwrt.org>
+ <1291081185.16349.133.camel@Joe-Laptop> <4CF464D6.2020507@openwrt.org> <1291148375.18026.342.camel@Joe-Laptop>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 30 Nov 2010 23:56:35 -0800
+Message-ID: <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com>
+Subject: Re: [ath9k-devel] [PATCH wireless-next] ath: Rename ath_print to ath_debug
+To: Joe Perches <joe@perches.com>
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath9k-devel@venema.h4ckr.net, peter@stuge.se,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbir,
-
-On Tue, Nov 30, 2010 at 7:15 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> Refactor zone_reclaim, move reusable functionality outside
-> of zone_reclaim. Make zone_reclaim_unmapped_pages modular
+On Tue, Nov 30, 2010 at 12:19 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2010-11-30 at 03:43 +0100, Felix Fietkau wrote:
+>> On 2010-11-30 2:39 AM, Joe Perches wrote:
+>> > I gauge my willingness to spend time on subsystems on
+>> > the maintainers willingness to merge things that improve
+>> > readability and correctness.
+>> I'm not trying to discourage you from spending time on improving this
+>> code, just doubting the usefulness of such simple function renames.
 >
-> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> ---
->  mm/vmscan.c |   35 +++++++++++++++++++++++------------
->  1 files changed, 23 insertions(+), 12 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 325443a..0ac444f 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2719,6 +2719,27 @@ static long zone_pagecache_reclaimable(struct zone *zone)
->  }
->
->  /*
-> + * Helper function to reclaim unmapped pages, we might add something
-> + * similar to this for slab cache as well. Currently this function
-> + * is shared with __zone_reclaim()
-> + */
-> +static inline void
-> +zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
-> +                               unsigned long nr_pages)
-> +{
-> +       int priority;
-> +       /*
-> +        * Free memory by calling shrink zone with increasing
-> +        * priorities until we have enough memory freed.
-> +        */
-> +       priority = ZONE_RECLAIM_PRIORITY;
-> +       do {
-> +               shrink_zone(priority, zone, sc);
-> +               priority--;
-> +       } while (priority >= 0 && sc->nr_reclaimed < nr_pages);
-> +}
-> +
+> Poor function naming is just that.
+> It reduces readability and the uses are counter expectation.
 
-I don't see any specific logic about naming
-"zone_reclaim_unmapped_pages" in your function.
-Maybe, caller of this function have to handle sc->may_unmap. So, this
-function's naming
-is not good.
-As I see your logic, the function name would be just "zone_reclaim_pages"
-If you want to name it with zone_reclaim_unmapped_pages, it could be
-better with setting sc->may_unmap in this function.
+The name is perfect, we use it to print anything, even non-debugging stuff.
 
-
--- 
-Kind regards,
-Minchan Kim
+  Luis
