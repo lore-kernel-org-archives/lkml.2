@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab0LARHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:07:30 -0500
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:47401 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab0LARH2 (ORCPT
+	id S1755343Ab0LARKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:10:19 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51074 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab0LARKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:07:28 -0500
-X-Greylist: delayed 829 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 12:07:28 EST
-Message-ID: <4CF68087.2090802@csr.com>
-Date: Wed, 01 Dec 2010 17:06:15 +0000
-From: David Vrabel <david.vrabel@csr.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Wed, 1 Dec 2010 12:10:18 -0500
+Message-ID: <4CF68174.10301@petalogix.com>
+Date: Wed, 01 Dec 2010 18:10:12 +0100
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
-References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>	 <20101201161039.GB29318@suse.de> <1291222151.1684.46.camel@leonhard>	 <4CF67D5F.3080609@csr.com> <1291222944.1684.48.camel@leonhard>
-In-Reply-To: <1291222944.1684.48.camel@leonhard>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 01 Dec 2010 17:06:15.0889 (UTC) FILETIME=[107D8410:01CB917A]
+To: Roland McGrath <roland@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        John Williams <john.williams@petalogix.com>,
+        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
+Subject: Re: Flushing whole page instead of work for ptrace
+References: <4CEFA8AE.2090804@petalogix.com> <20101130233250.35603401C8@magilla.sf.frob.com>
+In-Reply-To: <20101130233250.35603401C8@magilla.sf.frob.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim wrote:
-> 2010-12-01 (수), 16:52 +0000, David Vrabel:
->> Namhyung Kim wrote:
->>> I saw it during allyesconfig build but not on allmodconfig.
->>> Maybe we can wrap it up in #ifdef CONFIG_MODULES ?
->> That might be best.  Can you do the same with drivers/uwb/whc-rc.c?  It
->> will have the same problem.
->>
->> David
+Roland McGrath wrote:
+> This is a VM question more than a ptrace question.  
+> I can't give you any authoritative answers about the VM issues.
 > 
-> No problem. Will send them soon. :)
+> Documentation/cachetlb.txt says:
+> 
+> 	Any time the kernel writes to a page cache page, _OR_
+> 	the kernel is about to read from a page cache page and
+> 	user space shared/writable mappings of this page potentially
+> 	exist, this routine is called.
+> 
+> In your case, the kernel is only reading (write=0 passed to
+> access_process_vm and get_user_pages).  In normal situations,
+> the page in question will have only a private and read-only
+> mapping in user space.  So the call should not be required in
+> these cases--if the code can tell that's so.
+> 
+> Perhaps something like the following would be safe.
+> But you really need some VM folks to tell you for sure.
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 02e48aa..2864ee7 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1484,7 +1484,8 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  				pages[i] = page;
+>  
+>  				flush_anon_page(vma, page, start);
+> -				flush_dcache_page(page);
+> +				if ((vm_flags & VM_WRITE) || (vma->vm_flags & VM_SHARED)
+> +					flush_dcache_page(page);
+>  			}
+>  			if (vmas)
+>  				vmas[i] = vma;
+> 
+> 
+> Thanks,
+> Roland
 
-Actually CONFIG_MODULES is wrong. It needs to test if the driver has
-been built as a module or not.  I think there's a __MODULE__ or MODULE
-#define for this, not sure though.
+Andrew any comment?
 
-David
+Thanks,
+Michal
+
+
+
 -- 
-David Vrabel, Senior Software Engineer, Drivers
-CSR, Churchill House, Cambridge Business Park,  Tel: +44 (0)1223 692562
-Cowley Road, Cambridge, CB4 0WZ                 http://www.csr.com/
-
-
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
