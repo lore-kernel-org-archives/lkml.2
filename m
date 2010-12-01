@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0LAObQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:31:16 -0500
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:35699 "EHLO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754681Ab0LAObP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:31:15 -0500
-Subject: [PATCH] rtc: Add missing include to gef_wdt.
-To: Wim Van Sebroeck <wim@iguana.be>
-From: Martyn Welch <martyn.welch@ge.com>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 01 Dec 2010 14:31:11 +0000
-Message-ID: <20101201143111.9151.66175.stgit@ES-BJ21R4J>
-User-Agent: StGit/0.15
+	id S1755408Ab0LAOde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:33:34 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44629 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755328Ab0LAOdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 09:33:32 -0500
+Date: Wed, 1 Dec 2010 15:33:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tobias Karnat <tobias.karnat@googlemail.com>
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: edac_core: crashes on shutdown
+Message-ID: <20101201143329.GB18074@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tobias Karnat <tobias.karnat@googlemail.com>,
+	linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1291201307.3029.21.camel@Tobias-Karnat>
+ <20101201123921.GA15530@a1.tnic>
+ <1291209888.12511.11.camel@Tobias-Karnat>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1291209888.12511.11.camel@Tobias-Karnat>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing include "linux/fs.h"i. Fixes compile failure.
+On Wed, Dec 01, 2010 at 02:24:48PM +0100, Tobias Karnat wrote:
+> > What does that mean? Are you using an official kernel version or
+> > something you cooked up?
+> 
+> I'm using the official 2.6.36.1 kernel.
+> The problem happens with the modules from the kernel 2.6.36.1
+> 
+> But as a workaround for now,
+> I'm using the edac modules from 2.6.35 compiled for 2.6.36.1
+> I'm just saying that the problem only occurs on kernel >= 2.6.36
 
-Signed-off-by: Martyn Welch <martyn.welch@ge.com>
----
+Hmm, I can't reproduce it here.
 
- drivers/watchdog/gef_wdt.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> > Please try to catch the whole oops. I can see rIP but it'd be much more
+> > helpful to see the calltrace and the whole register dump which are cut
+> > off at the bottom of your pic.
+> 
+> Yes, here you go:
+> 
+> http://i55.tinypic.com/igyhpt.jpg
 
+Unfortunately, this is still incomplete because it is missing the Code: tag and
+the end trace tag which looks like this
 
-diff --git a/drivers/watchdog/gef_wdt.c b/drivers/watchdog/gef_wdt.c
-index 9c21d19..34f64ad 100644
---- a/drivers/watchdog/gef_wdt.c
-+++ b/drivers/watchdog/gef_wdt.c
-@@ -34,6 +34,7 @@
- #include <linux/of_platform.h>
- #include <linux/io.h>
- #include <linux/uaccess.h>
-+#include <linux/fs.h>
- 
- #include <sysdev/fsl_soc.h>
- 
+---[ end trace ... ]---
 
+and this is most probably so because we're halting and cannot print out
+all the oops. Two things you can do:
 
---
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square, Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+1. Connect the machine to another machine over serial- or netconsole.
+Google for instructions how.
+
+2. If you can't do 1. you can try enabling CONFIG_BOOT_PRINTK_DELAY and
+boot the kernel with 'boot_delay=10', for example, so that a 10ms delay
+is inserted after each printk line. This might let us see more on the
+console before halt and catch the whole oops.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
