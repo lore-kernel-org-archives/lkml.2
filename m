@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab0LAHqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:46:11 -0500
-Received: from hera.kernel.org ([140.211.167.34]:51681 "EHLO hera.kernel.org"
+	id S1753709Ab0LAHqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:46:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63322 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833Ab0LAHqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:46:09 -0500
-Date: Wed, 1 Dec 2010 07:45:51 GMT
-From: tip-bot for Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yong.zhang0@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, kaneshige.kenji@jp.fujitsu.com,
-        yong.zhang0@gmail.com
-In-Reply-To: <4CF4B778.90604@jp.fujitsu.com>
-References: <4CF4B778.90604@jp.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] genirq: Fix incorrect proc spurious output
-Message-ID: <tip-25c9170ed64a6551beefe9315882f754e14486f4@git.kernel.org>
-Git-Commit-ID: 25c9170ed64a6551beefe9315882f754e14486f4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Dec 2010 07:45:52 +0000 (UTC)
+	id S1753502Ab0LAHqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:46:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
+   d="scan'208";a="682672340"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [PATCH v16 06/17]move member destructor_arg before member dataref
+Date: Wed,  1 Dec 2010 16:08:17 +0800
+Message-Id: <3d6498d772aa4ec1585ff3736ccae63c359448e5.1291187695.git.xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  25c9170ed64a6551beefe9315882f754e14486f4
-Gitweb:     http://git.kernel.org/tip/25c9170ed64a6551beefe9315882f754e14486f4
-Author:     Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-AuthorDate: Tue, 30 Nov 2010 17:36:08 +0900
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 1 Dec 2010 08:44:26 +0100
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-genirq: Fix incorrect proc spurious output
+Then we can clear destructor_arg when __alloc_skb().
 
-Since commit a1afb637(switch /proc/irq/*/spurious to seq_file) all
-/proc/irq/XX/spurious files show the information of irq 0.
-
-Current irq_spurious_proc_open() passes on NULL as the 3rd argument,
-which is used as an IRQ number in irq_spurious_proc_show(), to the
-single_open(). Because of this, all the /proc/irq/XX/spurious file
-shows IRQ 0 information regardless of the IRQ number.
-
-To fix the problem, irq_spurious_proc_open() must pass on the
-appropreate data (IRQ number) to single_open().
-
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
-LKML-Reference: <4CF4B778.90604@jp.fujitsu.com>
-Cc: stable@kernel.org [2.6.33+]
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- kernel/irq/proc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/skbuff.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 01b1d3a..6c8a2a9 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -214,7 +214,7 @@ static int irq_spurious_proc_show(struct seq_file *m, void *v)
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 696e690..6e1e991 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -199,14 +199,15 @@ struct skb_shared_info {
+ 	struct sk_buff	*frag_list;
+ 	struct skb_shared_hwtstamps hwtstamps;
  
- static int irq_spurious_proc_open(struct inode *inode, struct file *file)
- {
--	return single_open(file, irq_spurious_proc_show, NULL);
-+	return single_open(file, irq_spurious_proc_show, PDE(inode)->data);
- }
++	/* Intermediate layers must ensure that destructor_arg
++	 * remains valid until skb destructor */
++	void *		destructor_arg;
++
+ 	/*
+ 	 * Warning : all fields before dataref are cleared in __alloc_skb()
+ 	 */
+ 	atomic_t	dataref;
  
- static const struct file_operations irq_spurious_proc_fops = {
+-	/* Intermediate layers must ensure that destructor_arg
+-	 * remains valid until skb destructor */
+-	void *		destructor_arg;
+ 	/* must be last field, see pskb_expand_head() */
+ 	skb_frag_t	frags[MAX_SKB_FRAGS];
+ };
+-- 
+1.7.3
+
