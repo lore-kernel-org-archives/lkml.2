@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab0LARzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:55:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46241 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab0LARzB convert rfc822-to-8bit (ORCPT
+	id S1755516Ab0LARzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:55:13 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63731 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab0LARzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:55:01 -0500
+	Wed, 1 Dec 2010 12:55:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=j7iagqKnDolyzH4QBrd4J6S3PmKJwFO5R3gctg52Qdz3YpQ5RuYxFDcdLOThUL5ud0
-         zwijnjBKo6ZHzPgQaku8mwEHMl6qYzyeEPamyOr7yLShtcY5LFcvY+xzS9i/U75VHmJE
-         1RAq3kGsVlYtvgflmJkZ+jdGg990zAQDeoeTE=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:x-url:user-agent;
+        b=QuMduIgVwtIU1mtw/HoxofH++2tlfJvKRGLazYE2zyB/D2kZle7o6WzBmw7sdz2TF2
+         cpg3u1QBVrXQDleOsX4gPiGy3On0DZqz+bWAC+Q6WWi9wO6WGQ/7eIi4wdTQo8UVY1yY
+         QCxJykLGNaUc3inZiKfg43MUnxNe1xu45diOE=
+Date: Wed, 1 Dec 2010 15:55:04 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: eranian@gmail.com
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        robert.richter@amd.com
+Subject: Re: [PATCH] perf: add csv-style output to perf stat
+Message-ID: <20101201175504.GA13584@ghostprotocols.net>
+References: <4cf67197.41e9d80a.7d37.08aa@mx.google.com>
+ <20101201170647.GC24641@ghostprotocols.net>
+ <AANLkTi=C0FX2f-SS65p9nXWB8ogNqtgJVa8e+N6C32+5@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101201165418.GU5063@radis.liafa.jussieu.fr>
-References: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
-	<1291216245-18574-2-git-send-email-virtuoso@slind.org>
-	<20101201165418.GU5063@radis.liafa.jussieu.fr>
-Date: Wed, 1 Dec 2010 12:54:59 -0500
-X-Google-Sender-Auth: -VZFfKKQpXMfYLpzNLhDKRWFec0
-Message-ID: <AANLkTikqDpAnw1zaRCJO-yjq5N2qNs6P_SNodHrv2gDg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] drm: fix headers to include linux/types.h
-From: =?UTF-8?Q?Kristian_H=C3=B8gsberg?= <krh@bitplanet.net>
-To: Julien Cristau <jcristau@debian.org>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=C0FX2f-SS65p9nXWB8ogNqtgJVa8e+N6C32+5@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 11:54 AM, Julien Cristau <jcristau@debian.org> wrote:
-> On Wed, Dec Â 1, 2010 at 17:10:42 +0200, Alexander Shishkin wrote:
->
->> For headers that get exported to userland and make use of u32 style
->> type names, it is advised to include linux/types.h.
->>
->> This fixes 5 headers_check warnings.
->>
-> How many times does this need to be NAKed? Â These headers are shared
-> with the BSDs, and they include drm.h which has the linux/types.h
-> include on linux already.
+Em Wed, Dec 01, 2010 at 06:24:46PM +0100, stephane eranian escreveu:
+> On Wed, Dec 1, 2010 at 6:06 PM, Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> > Spaces are being added, gack, will fix. Tried to use the same option letter and
+> > long option name as in 'sort':
+> >
+> >       -t, --field-separator=SEP
+> >              use SEP instead of non-blank to blank transition
+> >
+> > But then 'perf stat' already uses -t for --tid, so in 'stat' we would have to
+> > use '-x'/--field-separator.
+> >
+> Fine with me.
+> I can re-spin the patch to add the flexibility to name your SEP.
 
-I'll NAK it too, if that helps.
+please
+ 
+> > Argh, I think we should stop using short options, only assigning something when
+> > it gets from seldomly used to just before making it the default 8-)
+> 
+> I tend to use the short options....
 
-Kristian
+If you're ok with keeping --field-separator as the long option to match
+what is in 'perf report', deal :-)
+
+- Arnaldo
