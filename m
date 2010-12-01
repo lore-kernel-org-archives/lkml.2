@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab0LAUSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:18:53 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41407 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755840Ab0LAUSv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:18:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=NMcBeVmnGuK3yM3CU6RUlXYUK6flizMzTPjlJiAfaWYTaq44+h8qGlQJDDQrMzy7iS
-         qDRUqhN8aeYiiU6YK8uqCRcRlch7bkEHfgSpCyS3rzw4RUb3+xLXC6MRwEhidRBVQ0VD
-         wznFC6VxC6G6thImTZK1JknFUpttB/eK0yiEI=
+	id S1756909Ab0LAUTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:19:49 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32983 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755632Ab0LAUTs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 15:19:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <1291234615.1845.196.camel@Joe-Laptop>
-References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>
- <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
- <20101129060732.5130.qmail@stuge.se> <4CF42C17.2070500@openwrt.org>
- <1291081185.16349.133.camel@Joe-Laptop> <4CF464D6.2020507@openwrt.org>
- <1291148375.18026.342.camel@Joe-Laptop> <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com>
- <1291225075.1845.177.camel@Joe-Laptop> <AANLkTinU+jWBXUdW2v9WSL2SZWQn8FHai4+=dAPTASe6@mail.gmail.com>
- <1291234615.1845.196.camel@Joe-Laptop>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 1 Dec 2010 12:18:30 -0800
-Message-ID: <AANLkTim+ayPBhBiKtuhgxKt645YT_o=5w_ckrq71j-ES@mail.gmail.com>
-Subject: Re: [PATCH wireless-next] MAINTAINERS: Add ATH GENERIC UTILITIES
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath9k-devel@venema.h4ckr.net, peter@stuge.se,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1291234251.6609.39.camel@heimdal.trondhjem.org>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+ <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+ <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+ <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+ <1291234251.6609.39.camel@heimdal.trondhjem.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 12:18:58 -0800
+Message-ID: <AANLkTi=Spd1OvdijN7kEJBBdYdTRuVnwPUqZvAUUiaKF@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 12:16 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2010-12-01 at 11:46 -0800, Luis R. Rodriguez wrote:
->> On Wed, Dec 1, 2010 at 9:37 AM, Joe Perches <joe@perches.com> wrote:
->> > This file pattern is not currently shown as maintained
->> > by atheros. Â Perhaps it should be?
->> > Signed-off-by: Joe Perches <joe@perches.com>
->> Sure but its maintained by the community and Atheros hackers, not just me.
+On Wed, Dec 1, 2010 at 12:10 PM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
 >
-> No doubt.
->
-> $ git log next-20101130 -- drivers/net/wireless/ath/*.[ch] | \
-> Â  Â  Â  Â grep -P "(^Author)" | cut -f2- -d":" | sort | uniq -c | sort -rn | head
-> Â  Â  27 Â Luis R. Rodriguez <lrodriguez@atheros.com>
-> Â  Â  Â 6 Â Felix Fietkau <nbd@openwrt.org>
-> Â  Â  Â 4 Â Bruno Randolf <br1@einfach.org>
-> Â  Â  Â 3 Â Sujith <Sujith.Manoharan@atheros.com>
-> Â  Â  Â 3 Â John W. Linville <linville@tuxdriver.com>
-> Â  Â  Â 3 Â Joe Perches <joe@perches.com>
-> Â  Â  Â 3 Â Bob Copeland <me@bobcopeland.com>
-> Â  Â  Â 2 Â Pavel Roskin <proski@gnu.org>
-> Â  Â  Â 2 Â Johannes Berg <johannes@sipsolutions.net>
-> Â  Â  Â 2 Â David S. Miller <davem@davemloft.net>
->
-> Without any sort of MAINTAINERS entry, the results
-> for files in that directory are like this:
->
-> $ ./scripts/get_maintainer.pl -f --rolestats drivers/net/wireless/ath/main.c
-> "John W. Linville" <linville@tuxdriver.com> (maintainer:NETWORKING [WIREL...)
-> linux-wireless@vger.kernel.org (open list:NETWORKING [WIREL...)
-> netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
-> linux-kernel@vger.kernel.org (open list)
->
-> Perhaps you want to be cc'd?
-> Perhaps there are atheros lists that should be cc'd?
-> If cc'ing linux-wireless is good enough,
-> that's good enough for me too.
+> Something like the following then?
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index ba887bf..76ab2a8 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -108,6 +108,10 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+>        clear_page_mlock(page);
+>        remove_from_page_cache(page);
+>        ClearPageMappedToDisk(page);
+> +
+> +       if (mapping->a_ops->freepage)
+> +               mapping->a_ops->freepage(page);
+> +
+>        page_cache_release(page);       /* pagecache ref */
+>        return 0;
+>  }
 
-OK you're patch is fine then.
+I'd do this in "remove_from_page_cache()" instead of in
+"truncate_complete_page()". Otherwise it will miss any other callers
+that use "remove_from_page_cache()" (not that there are many, and I
+doubt NFS cares about the ones that do exists, but..)
 
-  Luis
+                 Linus
