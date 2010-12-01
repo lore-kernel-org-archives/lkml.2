@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0LADrs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:47:48 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:9822 "EHLO mx2.netapp.com"
+	id S1754681Ab0LADrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:47:49 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:25048 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754384Ab0LADrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754511Ab0LADrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Nov 2010 22:47:46 -0500
 X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="489279741"
+   d="scan'208";a="489279750"
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Nick Bowler <nbowler@elliptictech.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-nfs@vger.kernel.org
-Subject: [PATCH 2/3] NFS: lock the readdir page while it is in use
-Date: Tue, 30 Nov 2010 22:47:13 -0500
-Message-Id: <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>
+Subject: [PATCH 3/3] NFS: Fix a memory leak in nfs_readdir
+Date: Tue, 30 Nov 2010 22:47:14 -0500
+Message-Id: <1291175234-23824-4-git-send-email-Trond.Myklebust@netapp.com>
 X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
+In-Reply-To: <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>
 References: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
  <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
+ <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>
 In-Reply-To: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
 References: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, the VM may end up removing it while we're reading from it.
-
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- fs/nfs/dir.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+ fs/nfs/inode.c         |    1 +
+ include/linux/nfs_fs.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 4a78d2b..6edef12 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -639,6 +639,7 @@ int nfs_readdir_filler(nfs_readdir_descriptor_t *desc, struct page* page)
- static
- void cache_page_release(nfs_readdir_descriptor_t *desc)
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 314f571..0018e07 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -289,6 +289,7 @@ nfs_fhget(struct super_block *sb, struct nfs_fh *fh, struct nfs_fattr *fattr)
+ 		} else if (S_ISDIR(inode->i_mode)) {
+ 			inode->i_op = NFS_SB(sb)->nfs_client->rpc_ops->dir_inode_ops;
+ 			inode->i_fop = &nfs_dir_operations;
++			inode->i_data.a_ops = &nfs_dir_addr_space_ops;
+ 			if (nfs_server_capable(inode, NFS_CAP_READDIRPLUS))
+ 				set_bit(NFS_INO_ADVISE_RDPLUS, &NFS_I(inode)->flags);
+ 			/* Deal with crossing mountpoints */
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index c66fdb7..b5d3ab0 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -401,6 +401,7 @@ extern const struct inode_operations nfs3_file_inode_operations;
+ #endif /* CONFIG_NFS_V3 */
+ extern const struct file_operations nfs_file_operations;
+ extern const struct address_space_operations nfs_file_aops;
++extern const struct address_space_operations nfs_dir_addr_space_ops;
+ 
+ static inline struct nfs_open_context *nfs_file_open_context(struct file *filp)
  {
-+	unlock_page(desc->page);
- 	page_cache_release(desc->page);
- 	desc->page = NULL;
- }
-@@ -646,8 +647,20 @@ void cache_page_release(nfs_readdir_descriptor_t *desc)
- static
- struct page *get_cache_page(nfs_readdir_descriptor_t *desc)
- {
--	return read_cache_page(desc->file->f_path.dentry->d_inode->i_mapping,
-+	struct page *page;
-+
-+	for (;;) {
-+		page = read_cache_page(desc->file->f_path.dentry->d_inode->i_mapping,
- 			desc->page_index, (filler_t *)nfs_readdir_filler, desc);
-+		if (IS_ERR(page))
-+			break;
-+		lock_page(page);
-+		if (page->mapping != NULL && PageUptodate(page))
-+			break;
-+		unlock_page(page);
-+		page_cache_release(page);
-+	}
-+	return page;
- }
- 
- /*
-@@ -770,6 +783,7 @@ int uncached_readdir(nfs_readdir_descriptor_t *desc, void *dirent,
- 
- 	desc->page_index = 0;
- 	desc->page = page;
-+	lock_page(page);
- 
- 	status = nfs_readdir_xdr_to_array(desc, page, inode);
- 	if (status < 0)
 -- 
 1.7.3.2
 
