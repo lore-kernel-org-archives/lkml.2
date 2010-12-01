@@ -1,105 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0LAO42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:56:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab0LAO41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:56:27 -0500
-Date: Wed, 1 Dec 2010 09:55:56 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101201145556.GE4672@redhat.com>
-References: <1291057565.20709.2.camel@marge.simson.net>
- <20101129192033.GA18372@elte.hu>
- <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
- <1291090455.7550.7.camel@marge.simson.net>
- <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
- <1291123083.28239.18.camel@marge.simson.net>
- <20101130151749.GE26758@redhat.com>
- <1291137221.28239.70.camel@marge.simson.net>
- <20101130193622.GF26758@redhat.com>
- <1291183068.7466.140.camel@marge.simson.net>
+	id S1753389Ab0LAO5C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:57:02 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34200 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab0LAO5A convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 09:57:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WopSU4FlPscAimZkfnCPlZKL9ouoPL9mflWq4+059X9eOwq2QmNNdLGn5n/o2Y+JVq
+         G3hFZ8tdpNreyl1BAzfHMvWZuUu/xKwQfVTab7TvBZrL/6d9porFMGEuOu2kOYMv86Pz
+         HKHZNtMqBKjqZvOSmgtUDV50jDzusar3jhWu0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291183068.7466.140.camel@marge.simson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101201144128.GC4672@redhat.com>
+References: <AANLkTi=aqMR0uNCgz40pdUG1288CMxLRnZdVxzZuBzGw@mail.gmail.com>
+	<20101130145712.GD26758@redhat.com>
+	<AANLkTik_x-SSU1aazJ3ZqJdsbq11vh3+=ikwbpxNcRYh@mail.gmail.com>
+	<20101201144128.GC4672@redhat.com>
+Date: Wed, 1 Dec 2010 22:56:58 +0800
+Message-ID: <AANLkTik02TqL8d=y4tNfALUJaHMrsSDRQ-OhNUd12GSx@mail.gmail.com>
+Subject: Re: [PATCH] maximize dispatching in block throttle
+From: Hillf Danton <dhillf@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 06:57:48AM +0100, Mike Galbraith wrote:
+On Wed, Dec 1, 2010 at 10:41 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Dec 01, 2010 at 09:30:00PM +0800, Hillf Danton wrote:
+>> On Tue, Nov 30, 2010 at 10:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Fri, Nov 26, 2010 at 10:46:01PM +0800, Hillf Danton wrote:
+>> >> When dispatching bio, the quantum is divided into read/write budgets,
+>> >> and dispatching for write could not exceed the write budget even if
+>> >> the read budget is not exhausted, either dispatching for read.
+>> >>
+>> >> It is changed to exhaust the quantum, if possible, in this work for
+>> >> dispatching bio.
+>> >>
+>> >> Though it is hard to understand that 50/50 division is not selected,
+>> >> the difference between divisions could impact little on dispatching as
+>> >> much as quantum allows then.
+>> >>
+>> >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> >> ---
+>> >
+>> > Hi Hillf,
+>> >
+>> > Even if there are not enough READS/WRITES to consume the quantum, I don't
+>> > think that it changes anyting much. The next dispatch round will be
+>>
+>> Why not exhaust quantum this round directly if not throttled?
+>>
+>
+> Yes we can do that. I am wondering what do we gain by putting extra code
+> in?
+>
+>> > scheduled almost immediately (If there are bios which are ready to
+>> > be dispatched). Look at throtl_schedule_next_dispatch().
+>> >
+>> > Have you noticed some issues/improvements with this patch?
+>>
+>> Originally I wanted to get 75/25 division parameterized through sysfs or proc,
+>> but I changed mind since exhausting quantum is simpler and much applicable.
+>
+> But these are two different things isn't it?
 
-[..]
-> 
-> > - I am doing some testing with the patch and w.r.t. cgroup interface some
-> >   things don't seem right.
-> > 
-> >   I have applied your patch and enabled CONFIG_AUTO_GROUP. Now I boot
-> >   into the kernel and open a new ssh connection to the machine. 
-> > 
-> >   # echo $$
-> >     3555
-> >   # cat /proc/3555/autogroup
-> >     /autogroup-63 nice 0
-> > 
-> >   IIUC, task 3555 has been moved into an autogroup. Now I mount the cpu
-> >   controller and this task is visible in root cgroup.
-> > 
-> >   # mount -t cgroup -o cpu none /cgroup/cpu
-> >   # cat /cgroup/cpu/tasks | grep 3555
-> >     3555
-> > 
-> >   First of all this gives user a wrong impression that task 3555 is in
-> >   root cgroup.
-> 
-> It is in the root cgroup.  It is not in the root autogroup is not
-> auto-cgroups group.
-> 
-> >   Now I create a child group test1 and move the task there and also change
-> >   the weight/shares of the cgroup to 10240.
-> > 
-> >   # mkdir test1
-> >   # echo 3555 > test1/tasks
-> >   # echo 10240 > test1/cpu.shares
-> >   # cat /proc/3555/cgroup
-> >     3:cpu:/test1
-> >   # cat /proc/3555/autogroup
-> >     /autogroup-63 nice 0
-> > 
-> > So again, user will think that task is in cgroup test1 and is being
-> > controlled by the respective weight but that's not the case.
-> 
-> It is the case here.
-> 
->   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  P COMMAND
->  7573 root      20   0  7996  340  256 R   50  0.0   3:35.86 3 pert
->  7572 root      20   0  7996  340  256 R   50  0.0   9:21.68 3 pert
-> ...
-> marge:/cgroups/test # echo 7572 > tasks
-> marge:/cgroups/test # echo 4096 > cpu.shares
-> 
->   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  P COMMAND
->  7572 root      20   0  7996  340  256 R   80  0.0  10:06.92 3 pert
->  7573 root      20   0  7996  340  256 R   20  0.0   4:05.80 3 pert
-> 
-> When you move a task into a cgroup, it still has an autogroup
-> association, as all tasks (processes actually) do, but it's not used.
+Yes with no doubt.
 
-Ok, so I got confused with the fact that after moving a task into a
-cgroup it is still associated with an autogroup.
+>
+> We can introduce some sysfs tunables (if need be) so that a user can decide
+> the division of READS/WRITES.
+>
+>>
+>> As you see, the application environments change from one user to another,
+>> even though are more latency sensitive.
+>>
+>> It looks nicer, I think, to provide both the default division and the
+>> methods to
+>> change for users to play their games.
+>
+> Yep, tunables can help here and introducing tunables is easy. At the same
 
-So IIUC, if a task is in root cgroup, then it would not necessarily be driven
-by cpu.shares of root cgroup (as task could be in its own autogroup). But
-if I move the task into a non-root cgroup, then it will for sure be
-subjected to rules imposed by non-root cgroup cpu.shares. That's not too
-bad.
+Would you please, Vivek, add the tunable, since I could not work it
+out in simple way?
+Just show the patch, I really need it.
 
 Thanks
-Vivek
+Hillf
+
+> time I prefer to intoroduce tunables only on need basis otherwise it
+> runs the risk of too many tunables which are not being used.
+>
+> So, conceptually this patch looks fine to me. Jeff Moyer also raised the
+> same question of why not fill up the quantum if READ/WRITE are not using
+> their quota. So I think it does not hurt to take this patch in.
+>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+>
+> Thanks
+> Vivek
+>
+>>
+>> Thanks
+>> Hillf
+>>
+>> >
+>> > Generally READS are more latency sensitive as compared to WRITE hence
+>> > I thought of dispatching more READS per quantum.
+>> >
+>> > Thanks
+>> > Vivek
+>> >
+>> >>
+>> >> --- a/block/blk-throttle.c    2010-11-01 19:54:12.000000000 +0800
+>> >> +++ b/block/blk-throttle.c    2010-11-26 21:49:00.000000000 +0800
+>> >> @@ -647,11 +647,16 @@ static int throtl_dispatch_tg(struct thr
+>> >>       unsigned int max_nr_reads = throtl_grp_quantum*3/4;
+>> >>       unsigned int max_nr_writes = throtl_grp_quantum - nr_reads;
+>> >>       struct bio *bio;
+>> >> +     int read_throttled = 0, write_throttled = 0;
+>> >>
+>> >>       /* Try to dispatch 75% READS and 25% WRITES */
+>> >> -
+>> >> + try_read:
+>> >>       while ((bio = bio_list_peek(&tg->bio_lists[READ]))
+>> >> -             && tg_may_dispatch(td, tg, bio, NULL)) {
+>> >> +             && ! read_throttled) {
+>> >> +             if (! tg_may_dispatch(td, tg, bio, NULL)) {
+>> >> +                     read_throttled = 1;
+>> >> +                     break;
+>> >> +             }
+>> >>
+>> >>               tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+>> >>               nr_reads++;
+>> >> @@ -659,9 +664,15 @@ static int throtl_dispatch_tg(struct thr
+>> >>               if (nr_reads >= max_nr_reads)
+>> >>                       break;
+>> >>       }
+>> >> -
+>> >> +     if (! bio)
+>> >> +             read_throttled = 1;
+>> >> + try_write:
+>> >>       while ((bio = bio_list_peek(&tg->bio_lists[WRITE]))
+>> >> -             && tg_may_dispatch(td, tg, bio, NULL)) {
+>> >> +             && ! write_throttled) {
+>> >> +             if (! tg_may_dispatch(td, tg, bio, NULL)) {
+>> >> +                     write_throttled = 1;
+>> >> +                     break;
+>> >> +             }
+>> >>
+>> >>               tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+>> >>               nr_writes++;
+>> >> @@ -669,7 +680,23 @@ static int throtl_dispatch_tg(struct thr
+>> >>               if (nr_writes >= max_nr_writes)
+>> >>                       break;
+>> >>       }
+>> >> +     if (! bio)
+>> >> +             write_throttled = 1;
+>> >> +
+>> >> +     if (write_throttled && read_throttled)
+>> >> +             goto out;
+>> >>
+>> >> +     if (! (throtl_grp_quantum > nr_writes + nr_reads))
+>> >> +             goto out;
+>> >> +
+>> >> +     if (read_throttled) {
+>> >> +             max_nr_writes = throtl_grp_quantum - nr_reads;
+>> >> +             goto try_write;
+>> >> +     } else {
+>> >> +             max_nr_reads = throtl_grp_quantum - nr_writes;
+>> >> +             goto try_read;
+>> >> +     }
+>> >> + out:
+>> >>       return nr_reads + nr_writes;
+>> >>  }
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >> the body of a message to majordomo@vger.kernel.org
+>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >> Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>
