@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab0LARcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:32:52 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44687 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab0LARcu (ORCPT
+	id S1755489Ab0LARdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:33:50 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57169 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063Ab0LARdt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:32:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=oc+tdlhOTCyKkRoEJ9QU9rEcubaxwBJRfVkIJrKrUZmiwrHKxhfEF4GeUz81zVoXIh
-         eezuFKoFElFkWIDpbbD+wkj2z0U2NFlZprvn6+lI+ERNHIf4ahWowcBsX8ufQ1LgqMkh
-         jHXqLpz7V+7Uhk2SYxRdJvQi4OC1HB8rYUcUs=
-Message-ID: <4CF685EB.4020007@gmail.com>
-Date: Wed, 01 Dec 2010 22:29:15 +0500
-From: "Alexander E. Patrakov" <patrakov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101029 Lightning/1.0b3pre Thunderbird/3.1.6
+	Wed, 1 Dec 2010 12:33:49 -0500
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Nobody cared about IRQs at shutdown
-References: <Pine.LNX.4.44L0.1012010948270.1629-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1012010948270.1629-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101201161927.GC9337@hack>
+References: <AANLkTik_TQfQDERdRQaQek3S7280sQBmHGKOnhJwU5EE@mail.gmail.com>
+	<AANLkTim=srU8kv-DwL4jgwRS-yH8WN34PgCqsijZvYeV@mail.gmail.com>
+	<20101201161927.GC9337@hack>
+Date: Wed, 1 Dec 2010 17:33:48 +0000
+X-Google-Sender-Auth: 7A0evGTTA9WXWdcVfzpZJmJUgv4
+Message-ID: <AANLkTikFt=dyEdsKp+VtU76pKyoLzdug1ZDPPD-3h=K-@mail.gmail.com>
+Subject: Re: Problems using EXPORT_SYMBOL with lib/flex_array
+From: Alex Bennee <kernel-hacker@bennee.com>
+To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-01.12.2010 19:59, Alan Stern пишет:
-> On Wed, 1 Dec 2010, Alexander E. Patrakov wrote:
->
->> Alan Stern wrote:
->>> On Tue, 30 Nov 2010, Alexander E. Patrakov wrote:
->>>
->>>> In fact, I think that there is something bad, not specific to USB,
->>>> FireWire or SATA. Without systemd, all those subsystems function
->>>> properly at shutdown. With systemd, it looks like there are many
->>>> mishandled interrupts (all of USB, FireWire and SATA) at shutdown.
->>>> WhatÂ Â   could be this common thing? ACPI?
->>> I don't know -- what is systemd?
->> Systemd is a new init developed by Lennart Poettering. You can learn more at http://freedesktop.org/wiki/Software/systemd
+On 1 December 2010 16:19, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Wed, Dec 01, 2010 at 01:20:30PM +0000, Alex Bennee wrote:
+>>On 1 December 2010 12:05, Alex Bennee <kernel-hacker@bennee.com>
+wrote:
+<snip>
+>>Tweaking the lib/Makefile so obj-y included flex_array.o did
+>>the trick.
 >>
->> It employs high concurrency in starting and stopping services, starts many things on demand and thus boots faster than the traditional SysV init. And also exposes this bug :(
-> All right.
+>>I'm unsure if this behaviour is what is wanted?
 >
-> One last test.  What happens if you unbind the firewire driver and all
-> the UHCI controllers except the one attached to IRQ 16?
+> Yes, but not sure about flex_array.o.
+> Which functions in flex_array.c do you need in your module anyway?
 
-As I was not sure if you mean 16 or 19, I did two tests. In both cases, 
-the firewire driver and all UHCI controllers except one were unbound. In 
-both cases, the system printed the line I added to uhci_hc_died(), 
-reported a bad IRQ (16 and 19, respectively), waited, displayed SATA 
-errors, waited again, and powered itself off. I.e., the screenshot is 
-nearly identical to what I sent earlier.
+I want to use it to store a sparse array of ATM cell re-assembly
+buffers for my ATM over Ethernet driver. Using the per-vcc user_back
+structure causes problems when stacked with things like br2684.
 
+So I'm currently using flex_array_alloc/free/clear/put although I
+exported them all. I would have thought using library functions was
+preferable to rolling your own?
 
-> Possible explanations: IRQs are being misrouted, so the system thinks
-> it gets IRQ 16 when in fact a different interrupt line was activated
-> (this is related to ACPI, but I don't see any connection to systemd).
-> Or the interrupt layer is malfunctioning and it thinks IRQs are
-> arriving when they aren't.
-
-I forgot to mention that only shutdown is problematic, reboots are OK.
+I'm open to other suggestions though.
 
 -- 
-Alexander E. Patrakov
+Alex, homepage: http://www.bennee.com/~alex/
+http://www.half-llama.co.uk
