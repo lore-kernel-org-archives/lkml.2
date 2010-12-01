@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0LAK2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:28:35 -0500
-Received: from www.tglx.de ([62.245.132.106]:59878 "EHLO www.tglx.de"
+	id S1754558Ab0LAK2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 05:28:42 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35336 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab0LAK2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:28:33 -0500
-Date: Wed, 1 Dec 2010 11:28:28 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genirq: Provide reverse compat handling for irq_chip
- methods.
-In-Reply-To: <20101130120813.GR12037@mail.wantstofly.org>
-Message-ID: <alpine.LFD.2.00.1012011123150.2653@localhost6.localdomain6>
-References: <20101130120813.GR12037@mail.wantstofly.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754430Ab0LAK2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 05:28:40 -0500
+Date: Wed, 1 Dec 2010 11:28:28 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] mm: migration: Allow migration to operate
+ asynchronously and avoid synchronous compaction in the faster path
+Message-ID: <20101201102828.GM15564@cmpxchg.org>
+References: <1290440635-30071-1-git-send-email-mel@csn.ul.ie>
+ <1290440635-30071-5-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290440635-30071-5-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, Lennert Buytenhek wrote:
-
-> kernel/irq/chip.c provides compat wrappers for when users of the
-> new-style (->irq_foo()) irq_chip methods try to call into irq_chips
-> that provide only old-style (->foo()) methods, but doesn't currently
-> provide compatibility in the other direction.
+On Mon, Nov 22, 2010 at 03:43:52PM +0000, Mel Gorman wrote:
+> Migration synchronously waits for writeback if the initial passes fails.
+> Callers of memory compaction do not necessarily want this behaviour if the
+> caller is latency sensitive or expects that synchronous migration is not
+> going to have a significantly better success rate.
 > 
-> As there exist chained irq flow handlers outside kernel/irq/ that have
-> not been converted over to call the new methods yet, this means that
-> the irq_chips that they are chained off can't be converted to the new
-> methods yet.
+> This patch adds a sync parameter to migrate_pages() allowing the caller to
+> indicate if wait_on_page_writeback() is allowed within migration or not. For
+> reclaim/compaction, try_to_compact_pages() is first called asynchronously,
+> direct reclaim runs and then try_to_compact_pages() is called synchronously
+> as there is a greater expectation that it'll succeed.
 > 
-> This patch adds reverse compat wrappers, so that old-style flow
-> handlers can call into new-style irq_chips, too, and the flow handlers
-> and irq_chips can be converted to the new API independently.
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-Uuurg. That's backwards. Why not fixing the flow handlers first ?
- 
-Thanks,
-
-	tglx
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
