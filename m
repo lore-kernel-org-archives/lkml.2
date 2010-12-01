@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab0LAWxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 17:53:30 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44389 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756854Ab0LAWx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 17:53:27 -0500
-Date: Wed, 1 Dec 2010 14:47:48 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Miller <mike.miller@hp.com>
-Cc: "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, hplk@lists.hp.com
-Subject: Re: [PATCH 1/1] hpsa: fix redefinition of PCI_DEVICE_ID_CISSF
-Message-Id: <20101201144748.cd01d4d1.akpm@linux-foundation.org>
-In-Reply-To: <20101201171607.GA17943@beardog.cce.hp.com>
-References: <20101201171607.GA17943@beardog.cce.hp.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757143Ab0LAWym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 17:54:42 -0500
+Received: from minas.ics.muni.cz ([147.251.4.40]:39668 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034Ab0LAWyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 17:54:41 -0500
+Date: Wed, 1 Dec 2010 23:54:32 +0100
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: Calvin Walton <calvin.walton@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Regression] 2.6.37-rc1: Lenovo T61 mute button does not work
+Message-ID: <20101201225432.GZ10354@ics.muni.cz>
+References: <20101130185303.GI10354@ics.muni.cz>
+ <1291172324.14274.33.camel@nayuki>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291172324.14274.33.camel@nayuki>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Muni-Spam-TestIP: 94.112.253.31
+X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Wed, 01 Dec 2010 23:54:38 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010 11:16:07 -0600
-Mike Miller <mike.miller@hp.com> wrote:
+On Tue, Nov 30, 2010 at 09:58:44PM -0500, Calvin Walton wrote:
+> Search your dmesg for lines containing '_OSI(Linux)' - it should say
+> that a BIOS query was honoured. Make sure you do not have 'acpi_osi="!
+> Linux"' on your kernel command line.
 
-> hpsa: a pci device ID is defined twice
-> 
-> From: Mike Miller <mike.miller@hp.com>
-> 
-> PCI_DEVICE_ID_CISSF is defined as 323b in pci_ids.h but redefined as 3fff in
-> hpsa.c. The ID of 3fff will _never_ ship as a standalone controller. It is
-> intended only as part a complete storage solution. As such, this patch
-> removes the redefinition and the StorageWorks P1210m from the product table.
-> 
-> It also removes a duplicate line for the "unknown" controller support.
+the difference between working and non working seems to be in:
 
-It is missing a signed-off-by:, and please quote the warning message
-when fixing warnings.
+ACPI: BIOS _OSI(Linux) query honored via DMI
 
-Also, this patch fixes a bug, doesn't it?  323b controllers simply
-won't work?
+and 
 
-James, it's needed in .37 please.
+ACPI: BIOS _OSI(Linux) query honored via cmdline
 
 
-From: Mike Miller <mike.miller@hp.com>
+via DMI seems to be working as expected, via cmdline does not work. Any ideas?
 
-drivers/scsi/hpsa.c:93:1: warning: "PCI_DEVICE_ID_HP_CISSF" redefined
-In file included from include/linux/pci.h:58,
-                 from drivers/scsi/hpsa.c:25:
-include/linux/pci_ids.h:746:1: warning: this is the location of the previous definition
-
-PCI_DEVICE_ID_CISSF is defined as 323b in pci_ids.h but redefined as 3fff in
-hpsa.c. The ID of 3fff will _never_ ship as a standalone controller. It is
-intended only as part a complete storage solution. As such, this patch
-removes the redefinition and the StorageWorks P1210m from the product table.
-
-It also removes a duplicate line for the "unknown" controller support.
-
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/scsi/hpsa.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
-
-diff -puN drivers/scsi/hpsa.c~hpsa-fix-redefinition-of-pci_device_id_cissf drivers/scsi/hpsa.c
---- a/drivers/scsi/hpsa.c~hpsa-fix-redefinition-of-pci_device_id_cissf
-+++ a/drivers/scsi/hpsa.c
-@@ -90,11 +90,7 @@ static const struct pci_device_id hpsa_p
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
--#define PCI_DEVICE_ID_HP_CISSF 0x333f
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x333F},
--	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,             PCI_ANY_ID, PCI_ANY_ID,
--		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
--	{PCI_VENDOR_ID_COMPAQ,     PCI_ANY_ID,             PCI_ANY_ID, PCI_ANY_ID,
-+	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
- 	{0,}
- };
-@@ -113,8 +109,6 @@ static struct board_type products[] = {
- 	{0x3249103C, "Smart Array P812", &SA5_access},
- 	{0x324a103C, "Smart Array P712m", &SA5_access},
- 	{0x324b103C, "Smart Array P711m", &SA5_access},
--	{0x3233103C, "StorageWorks P1210m", &SA5_access},
--	{0x333F103C, "StorageWorks P1210m", &SA5_access},
- 	{0x3250103C, "Smart Array", &SA5_access},
- 	{0x3250113C, "Smart Array", &SA5_access},
- 	{0x3250123C, "Smart Array", &SA5_access},
-_
-
+-- 
+Luká¹ Hejtmánek
