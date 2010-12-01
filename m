@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab0LALYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:24:46 -0500
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:37162 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab0LALYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:24:45 -0500
-Date: Wed, 1 Dec 2010 11:24:10 +0000
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Anoop P <anoop.pa@gmail.com>
-Cc: linux-mips@linux-mips.org, dvomlehn@cisco.com,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Allow setup_irq call for VPE1 timer.
-Message-ID: <20101201112410.GL2916@linux-mips.org>
-References: <1290697632-6139-1-git-send-email-anoop.pa@gmail.com>
+	id S1753298Ab0LALZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:25:20 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52292 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751311Ab0LALZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:25:18 -0500
+Date: Wed, 1 Dec 2010 11:25:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yong Shen <yong.shen@linaro.org>
+Cc: Linaro Dev <linaro-dev@lists.linaro.org>,
+        List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] make mc13783 regulator code generic
+Message-ID: <20101201112515.GC24176@rakim.wolfsonmicro.main>
+References: <AANLkTi=E8etAOPTCBw8ccTZ9LMU-Yf=wELn+VQkg2eom@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290697632-6139-1-git-send-email-anoop.pa@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTi=E8etAOPTCBw8ccTZ9LMU-Yf=wELn+VQkg2eom@mail.gmail.com>
+X-Cookie: << WAIT >>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 08:37:12PM +0530, Anoop P wrote:
+On Wed, Dec 01, 2010 at 03:15:55PM +0800, Yong Shen wrote:
 
-> From: Anoop P A <anoop.pa@gmail.com>
-> 
-> VSMP configuration can have seperate timer interrupts for each VPE.Need to setup IRQ for VPE1 timer.
+>  move some common functions and micros of mc13783 regulaor driver to
+> a seperate file, which makes it possible for mc13892 to share code.
 
-> +#ifndef CONFIG_MIPS_MT_SMP
->  	if (cp0_timer_irq_installed)
->  		return 0;
-> -
-> +#endif
->  	cp0_timer_irq_installed = 1;
->  
->  	setup_irq(irq, &c0_compare_irqaction);
+You've done way more than this in the patch - you've also renamed a lot
+of things and done other restructurings.  I'd suggest splitting out the
+big mechanical changes for easier review.  For example, a patch moving
+code from one place to another, another patch renaming things and so on.
 
-On the stylistic side adding an #ifdef gives me wrinkles.
+> +config REGULATOR_MC13XXX_CORE
+> +	tristate "Support regulators on Freescale MC13xxx PMIC"
+> +
 
-With CONFIG_MIPS_MT_SMP this patch results in sharing c0_compare_irqaction
-between multiple interrupts which is broken.  Struct irqaction contains
-the interrupt number, all registered irqaction structs are part of a chained
-list via its ->next member and also there is a per interrupt proc directory.
+This doesn't need to be user visible - the user only cares about the
+individual regulator drivers.
 
-To fix this properly you'll have to introduce do a bit of bookkeeping - you
-want to register each interrupt only once - and allocate a struct irqaction
-per registered timer interrupt.
+>  	/* Power Gate enable value is 0 */
+> -	if (id == MC13783_REGU_PWGT1SPI ||
+> -	    id == MC13783_REGU_PWGT2SPI)
+> +	if (id == MC13783_REG_PWGT1SPI ||
+> +	    id == MC13783_REG_PWGT2SPI)
+>  		en_val = 0;
 
-The allocation is made a little trickier by kmalloc not being available
-yet by the time this code is getting invoked via time_init() so you'll
-have to move it to run via the late_time_init hook like x86:
+I can't tell what the actual change is here?
 
-static __init void x86_late_time_init(void)
-{
-	... do the real work ...
-}
+> +int mc13xxx_sw_regulator(struct regulator_dev *rdev)
+> +{
+> +	return 0;
+> +}
+> +
 
-/* ... */
+Eh?
 
-void __init time_init(void)
-{
-        late_time_init = x86_late_time_init;
-}
+> +MODULE_ALIAS("platform:mc13xxx-regulator-core");
 
-Which makes me wonder if there is a reason why we need to have both
-time_init() and late_time_init() - can't we just move the time_init()?
+Is there really going to be a platform device for this?
 
-  Ralf
+> +++ b/include/linux/regulator/mc13xxx.h
+
+Pretty much everything in this file is internal to the driver and
+shouldn't be in include/linux.
