@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab0LAPEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 10:04:09 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:46099 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752443Ab0LAPEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 10:04:07 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/oKA1bEzjoyJNkb1kxZRycTryel9a/Rmd4vM/tam
-	xiL6rwiLgBF4Y+
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101201145556.GE4672@redhat.com>
-References: <1291057565.20709.2.camel@marge.simson.net>
-	 <20101129192033.GA18372@elte.hu>
-	 <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
-	 <1291090455.7550.7.camel@marge.simson.net>
-	 <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
-	 <1291123083.28239.18.camel@marge.simson.net>
-	 <20101130151749.GE26758@redhat.com>
-	 <1291137221.28239.70.camel@marge.simson.net>
-	 <20101130193622.GF26758@redhat.com>
-	 <1291183068.7466.140.camel@marge.simson.net>
-	 <20101201145556.GE4672@redhat.com>
-Content-Type: text/plain
-Date: Wed, 01 Dec 2010 16:04:01 +0100
-Message-Id: <1291215841.3882.64.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1754378Ab0LAPEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 10:04:47 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51685 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab0LAPEp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 10:04:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vXfHDOIUvkS7a3Zzn9FAZ9RR5FrVLbRiZPDttfdYkM1zH+++mjHizHzf2kWOmmgalN
+         EY41hhFpeLt+9F7PTyp9Iq/LEx83YXW0TkQG9UzTLvgyWGKHXGdB8wtGLHRizG6SXitt
+         pFc9iJGXK8xfIKnLk7/gjK7Rf2MeODS/+GaPk=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Input: xpad - fix memory leak
+Date: Thu,  2 Dec 2010 00:04:33 +0900
+Message-Id: <1291215874-5625-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 09:55 -0500, Vivek Goyal wrote:
+xpad->bdata was dynamically allocated but never freed. Since it is
+used for xpad->bulk_out->transfer_buffer, set URB_FREE_BUFFER flag
+in order to get freed when usb_free_urb() called.
 
-> So IIUC, if a task is in root cgroup, then it would not necessarily be driven
-> by cpu.shares of root cgroup (as task could be in its own autogroup). But
-> if I move the task into a non-root cgroup, then it will for sure be
-> subjected to rules imposed by non-root cgroup cpu.shares. That's not too
-> bad.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ drivers/input/joystick/xpad.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I think the normal case would be either one or the other being in use at
-any given time, but yes, if both are active, that's how it'd work.
-
-	-Mike
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index f9fb7fa..f885902 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -955,6 +955,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 		usb_fill_bulk_urb(xpad->bulk_out, udev,
+ 				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
+ 				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
++		xpad->bulk_out->transfer_flags |= URB_FREE_BUFFER;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.0.4
 
