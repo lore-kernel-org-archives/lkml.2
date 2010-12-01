@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab0LAQKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:10:23 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40841 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab0LAQKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:10:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=Jsm9cyofeR2MQFTVDXA/+YksOQ0Ig6IlbwXquOeH+891i1juA6HmqK5oXFkFrvoHqG
-         gf2Tgb6Q9/Hp5NHiSlyPzGpYyFacIcZps/C9rkl6DdYbrr6JD08x7xGU+qh5RR43YcII
-         F3wm+yirwAj1cnVitOU4nDx8PR3nNE8ifz6GU=
-Subject: Subject: [RFC 0/3] VSMP support for msp71xx platforms
-From: Anoop P A <anoop.pa@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, mcdonald.shane@gmail.com,
-        "Kevin D. Kissell" <kevink@paralogos.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 21:43:11 +0530
-Message-ID: <1291219991.31413.8.camel@paanoop1-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754793Ab0LAQLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:11:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51106 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754102Ab0LAQLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 11:11:35 -0500
+Date: Wed, 1 Dec 2010 07:56:35 -0800
+From: Greg KH <gregkh@suse.de>
+To: Cong Wang <amwang@redhat.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [Patch] debugfs: remove module_exit()
+Message-ID: <20101201155635.GA29078@suse.de>
+References: <20101109092449.6284.90481.sendpatchset@localhost.localdomain>
+ <20101201013547.GA19390@kroah.com>
+ <4CF5EC28.6060402@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF5EC28.6060402@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5bfd3ba210e521df2b493862446b4535bcdb0cdf Mon Sep 17 00:00:00 2001
-Message-Id: <cover.1291219118.git.anoop.pa@gmail.com>
-From: Anoop P A <anoop.pa@gmail.com>
-Date: Wed, 1 Dec 2010 21:28:38 +0530
-Subject: [RFC 0/3] VSMP support for msp71xx platforms
-Cc: anoop.pa@gmail.com
+On Wed, Dec 01, 2010 at 02:33:12PM +0800, Cong Wang wrote:
+> On 12/01/10 09:35, Greg KH wrote:
+> >On Tue, Nov 09, 2010 at 04:19:58AM -0500, Amerigo Wang wrote:
+> >>debugfs can't be a module, so module_exit() is meaningless
+> >>for it.
+> >>
+> >>Signed-off-by: WANG Cong<amwang@redhat.com>
+> >>
+> >>---
+> >>diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+> >>index 37a8ca7..d38c88f 100644
+> >>--- a/fs/debugfs/inode.c
+> >>+++ b/fs/debugfs/inode.c
+> >>@@ -13,9 +13,6 @@
+> >>   *
+> >>   */
+> >>
+> >>-/* uncomment to get debug messages from the debug filesystem, ah the irony. */
+> >>-/* #define DEBUG */
+> >
+> >Why did you remove these lines?  They don't pertain to this patch.
+> 
+> These lines are obsolete.
 
-Following series patches add VSMP support for MSP71xx series of SoC's.
+Even if they were (and hint, I don't think they are), they have nothing
+to do with the patch you created so they don't belong here.  The rule is
+"one patch per logical change" and you didn't even describe that you
+were removing these lines in the changelog entry, so that's two strikes
+against removing these lines.
 
+> >>-
+> >>  #include<linux/module.h>
+> >>  #include<linux/fs.h>
+> >>  #include<linux/mount.h>
+> >>@@ -540,17 +537,5 @@ static int __init debugfs_init(void)
+> >>
+> >>  	return retval;
+> >>  }
+> >>-
+> >>-static void __exit debugfs_exit(void)
+> >>-{
+> >>-	debugfs_registered = false;
+> >>-
+> >>-	simple_release_fs(&debugfs_mount,&debugfs_mount_count);
+> >>-	unregister_filesystem(&debug_fs_type);
+> >>-	kobject_put(debug_kobj);
+> >>-}
+> >
+> >When the code is built into the kernel, the __exit function should go
+> >away, so this isn't costing us any extra memory, right?
+> 
+> 
+> Perhaps, but this can still reduce the vmlinux size, right?
 
-Anoop P A (3):
-  VSMP support for msp71xx family of platforms.
-  SMP support MSP CIC and PER cascaded interrupt subsystem.
-  VSMP support for MSP71xx family.
+Which really doesn't matter, right?  How much is it reduced?
 
- arch/mips/pmc-sierra/msp71xx/Makefile      |    3 +-
- arch/mips/pmc-sierra/msp71xx/msp_irq.c     |   49 +++++-
- arch/mips/pmc-sierra/msp71xx/msp_irq_cic.c |  245
-+++++++++++++++++++---------
- arch/mips/pmc-sierra/msp71xx/msp_irq_per.c |  175 ++++++++++++++++++++
- arch/mips/pmc-sierra/msp71xx/msp_setup.c   |    3 +
- arch/mips/pmc-sierra/msp71xx/msp_smp.c     |   75 +++++++++
- arch/mips/pmc-sierra/msp71xx/msp_time.c    |    2 +-
- 7 files changed, 463 insertions(+), 89 deletions(-)
- create mode 100644 arch/mips/pmc-sierra/msp71xx/msp_irq_per.c
- create mode 100644 arch/mips/pmc-sierra/msp71xx/msp_smp.c
+> >And debugfs used to be able to be built as a module, perhaps it will be
+> >in the future?  I don't think this patch is really needed.
+> >
+> 
+> Huh? Wasn't it a module before?
 
+Yes it was.
 
+> I think the problem is tracers use debugfs, it needs to depends on DEBUGFS=y.
 
+So if you disable tracing, then you could use debugfs as a module,
+right?  So the patch should not be applied.
+
+thanks,
+
+greg k-h
