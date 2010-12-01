@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab0LAS3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:29:51 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:56239 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459Ab0LAS3u (ORCPT
+	id S1756146Ab0LASat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:30:49 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63729 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab0LASas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:29:50 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Trond.Myklebust@netapp.com, nbowler@elliptictech.com,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        akpm@linux-foundation.org, hughd@google.com, riel@redhat.com,
-        hch@lst.de, viro@zeniv.linux.org.uk
-In-reply-to: <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	(message from Linus Torvalds on Wed, 1 Dec 2010 08:17:38 -0800)
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
- <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-Message-Id: <E1PNrQc-0005zr-7B@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 01 Dec 2010 19:29:18 +0100
+	Wed, 1 Dec 2010 13:30:48 -0500
+Date: Wed, 1 Dec 2010 10:30:35 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Milton Miller <miltonm@bga.com>, linux-next@vger.kernel.org
+Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>, Greg KH <gregkh@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: The longest build error ever, ever, ever seen :)
+ (Re:linux-next: Tree for November 26)
+Message-Id: <20101201103035.0e0b22cf.randy.dunlap@oracle.com>
+In-Reply-To: <1290927314_21183@mail4.comsite.net>
+References: <256560.1290881547@localhost>
+	<20101127164555.GA23508@suse.de>
+	<AANLkTinY3on+arwh-Rvqnbrx_FU4mKDmpwXR_EfkPJ0f@mail.gmail.com>
+	<1290927314_21183@mail4.comsite.net>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, Linus Torvalds wrote:
-> --00032557542a0c5e6004965ba615
-> Content-Type: text/plain; charset=ISO-8859-1
-> 
-> On Wed, Dec 1, 2010 at 7:36 AM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > We need to ensure that the entries in the nfs_cache_array get cleared
-> > when the page is removed from the page cache. To do so, we use the
-> > releasepage address_space operation (which also requires us to set
-> > the Pg_private flag).
-> 
-> So I really think that the whole "releasepage" use in NFS is simply
-> overly complicated and was obviously too subtle.
-> 
-> The whole need for odd return values, for the page lock, and for the
-> addition of clearing the up-to-date bit comes from the fact that this
-> wasn't really what releasepage was designed for.
-> 
-> 'releasepage' was really designed for the filesystem having its own
-> version of 'try_to_free_buffers()', which is just an optimistic "ok,
-> we may be releasing this page, so try to get rid of any IO structures
-> you have cached". It wasn't really a memory management thing.
-> 
-> And the thing is, it looks trivial to do the memory management
-> approach by adding a new callback that gets called after the page is
-> actually removed from the page cache. If we do that, then there are no
-> races with any other users, since we remove things from the page cache
-> atomically wrt page cache lookup. So the need for playing games with
-> page locking and 'uptodate' simply goes away. As does the PG_private
-> thing or the interaction with invalidatepage() etc.
-> 
-> So this is a TOTALLY UNTESTED trivial patch that just adds another
-> callback. Does this work? I dunno. But I get the feeling that instead
-> of having NFS work around the odd semantics that don't actually match
-> what NFS wants, introducing a new callback with much simpler semantics
-> would be simpler for everybody, and avoid the need for subtle code.
-> 
-> Hmm?
-> 
->                    Linus
-> 
-> --00032557542a0c5e6004965ba615
-> Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-> Content-Disposition: attachment; filename="patch.diff"
-> Content-Transfer-Encoding: base64
-> X-Attachment-Id: f_gh6f5ghm0
-> 
-> IGluY2x1ZGUvbGludXgvZnMuaCB8ICAgIDEgKwogbW0vdm1zY2FuLmMgICAgICAgIHwgICAgMyAr
-> KysKIDIgZmlsZXMgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlm
-> ZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvZnMuaCBiL2luY2x1ZGUvbGludXgvZnMuaAppbmRleCBj
-> OWUwNmNjLi4wOTBmMGVhIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2ZzLmgKKysrIGIvaW5j
-> bHVkZS9saW51eC9mcy5oCkBAIC02MDIsNiArNjAyLDcgQEAgc3RydWN0IGFkZHJlc3Nfc3BhY2Vf
-> b3BlcmF0aW9ucyB7CiAJc2VjdG9yX3QgKCpibWFwKShzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqLCBz
-> ZWN0b3JfdCk7CiAJdm9pZCAoKmludmFsaWRhdGVwYWdlKSAoc3RydWN0IHBhZ2UgKiwgdW5zaWdu
-> ZWQgbG9uZyk7CiAJaW50ICgqcmVsZWFzZXBhZ2UpIChzdHJ1Y3QgcGFnZSAqLCBnZnBfdCk7CisJ
-> dm9pZCAoKmZyZWVwYWdlKShzdHJ1Y3QgcGFnZSAqKTsKIAlzc2l6ZV90ICgqZGlyZWN0X0lPKShp
-> bnQsIHN0cnVjdCBraW9jYiAqLCBjb25zdCBzdHJ1Y3QgaW92ZWMgKmlvdiwKIAkJCWxvZmZfdCBv
-> ZmZzZXQsIHVuc2lnbmVkIGxvbmcgbnJfc2Vncyk7CiAJaW50ICgqZ2V0X3hpcF9tZW0pKHN0cnVj
-> dCBhZGRyZXNzX3NwYWNlICosIHBnb2ZmX3QsIGludCwKZGlmZiAtLWdpdCBhL21tL3Ztc2Nhbi5j
-> IGIvbW0vdm1zY2FuLmMKaW5kZXggZDMxZDdjZS4uMWFjY2IwMSAxMDA2NDQKLS0tIGEvbW0vdm1z
-> Y2FuLmMKKysrIGIvbW0vdm1zY2FuLmMKQEAgLTQ5OSw2ICs0OTksOSBAQCBzdGF0aWMgaW50IF9f
-> cmVtb3ZlX21hcHBpbmcoc3RydWN0IGFkZHJlc3Nfc3BhY2UgKm1hcHBpbmcsIHN0cnVjdCBwYWdl
-> ICpwYWdlKQogCQltZW1fY2dyb3VwX3VuY2hhcmdlX2NhY2hlX3BhZ2UocGFnZSk7CiAJfQogCisJ
-> aWYgKG1hcHBpbmctPmFfb3BzLT5mcmVlcGFnZSkKKwkJbWFwcGluZy0+YV9vcHMtPmZyZWVwYWdl
-> KHBhZ2UpOworCiAJcmV0dXJuIDE7CiAKIGNhbm5vdF9mcmVlOgo=
-> --00032557542a0c5e6004965ba615--
+On Sun, 28 Nov 2010 00:55:14 -0600 Milton Miller wrote:
 
-This violates the "Really. Don't send patches as attachments."
-lkml-faq set forth by yourself ;)
+[also adding linux-next back to cc: list]
 
-Am I the only one who still uses a mail reader that doesn't decode
-mime by default?  Maybe it's time to move on...
 
-Thanks,
-Miklos
+> On Sat Nov 27 2010 around 13:13:03 EST, Valdis Kletnieks wrote:
+> > On Sat, 27 Nov 2010 08:45:55 PST, Greg KH said:
+> > > On Sat, Nov 27, 2010 at 09:56:45AM +0100, Zimny Lech wrote:
+> > > > Ave!
+> > > >
+> > > > 2010/11/26 Stephen Rothwell <sfr@xxxxxxxxxxxxxxxx>:
+> > > > > Hi all,
+> > > > >
+> > > >
+> > > > OMG, LOL, this one is awesome :) The longest build error ever, ever,
+> > > > ever seen! Fscking awesome, someone gets Guiness World Record :)
+> > > >
+> > > > LD drivers/staging/built-in.o
+> > > > drivers/staging/rtl8192e/built-in.o: In function `rtl8192_setBBreg':
+> > > > (.text+0xae00): multiple definition of `rtl8192_setBBreg'
+> > > > drivers/staging/rtl8192u/built-in.o:(.text+0xa1a0): first defined here
+> > >
+> > > You built both of these drivers into the kernel, which causes the
+> > > problem. Try building them as modules, or just one as a module, and
+> > > that will solve the problem.
+> > 
+> > We probably should create some Kconfig magic to prevent this situation?
+> > 
+> > depends (othermodule != 'y') || (myself != 'y')
+> > 
+> > or am I on the wrong track here?
+> > 
+> 
+> A simple
+> 
+> depends on !OTHERMODULE
+> 
+> allows either to be built-in or both to be modular.
+> 
+> It also documents what conflicts.
+> 
+> (see Menu dependencies in Documentation/kbuild/kconfig-language.txt)
+
+When added for 2 drivers that should not both be built-in, that
+causes this error message:
+
+drivers/staging/rtl8192u/Kconfig:1:error: recursive dependency detected!
+drivers/staging/rtl8192u/Kconfig:1:     symbol RTL8192U depends on RTL8192E
+drivers/staging/rtl8192e/Kconfig:1:     symbol RTL8192E depends on RTL8192U
+
+but yes, only one driver is then built-in.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
