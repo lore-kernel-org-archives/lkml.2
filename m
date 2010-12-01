@@ -1,259 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab0LAAjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:39:54 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:43342 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab0LAAjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:39:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Hugh Dickins <hughd@google.com>
-Subject: Re: 2.6.35.5: hibernation broken... AGAIN
-Date: Wed, 1 Dec 2010 01:38:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@in.ibm.com>
-References: <201011171139.33398.linux@rainbow-software.org> <alpine.LSU.2.00.1011301333380.11072@tigran.mtv.corp.google.com> <201012010007.44553.rjw@sisk.pl>
-In-Reply-To: <201012010007.44553.rjw@sisk.pl>
+	id S1753311Ab0LAAt7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:49:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60501 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab0LAAt6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 19:49:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XJLpTxv+vPPOE94xbJcj0Pl44b0XCwK/uurrsWxj+f1P8OlPyMXA+QW4+OzBFaDFI4
+         p1neaq8zl3tkFQ/sPCoOR9UahrZCwGH7mjlwPRUSViTzFOQ/g7D6gwVNRfljNxsFs7Uy
+         JnVW6EaWg+ttXDjnnLvhraslvErLyn4tr2na8=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012010138.53575.rjw@sisk.pl>
+In-Reply-To: <alpine.LSU.2.00.1011301025010.7450@tigran.mtv.corp.google.com>
+References: <cover.1291043273.git.minchan.kim@gmail.com>
+	<a0f2905bb64ce33909d7dd74146bfea826fec21a.1291043274.git.minchan.kim@gmail.com>
+	<alpine.LSU.2.00.1011301025010.7450@tigran.mtv.corp.google.com>
+Date: Wed, 1 Dec 2010 09:49:17 +0900
+Message-ID: <AANLkTin-BoUQNw+NfQeku0=K8mK0trt5=J9tMXNvrs9i@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] Prevent activation of page in madvise_dontneed
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
-> On Tuesday, November 30, 2010, Hugh Dickins wrote:
-> > On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
-> > > On Saturday, November 27, 2010, Ondrej Zary wrote:
-...
-> > 
-> > Trivial point, I suppose, but it bothers me that PM is accumulating
-> > wrappers around wrappers around gfp_allowed_mask.  Looks like
-> > clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
-> > were not really what we need.  How about scrapping them, and putting
-> > pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
-> 
-> Sure, that sounds like a good idea indeed.
+Hi Hugh,
 
-Below is an updated patch in which I tried to address your comments.
+On Wed, Dec 1, 2010 at 3:34 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Tue, 30 Nov 2010, Minchan Kim wrote:
+>
+>> Now zap_pte_range alwayas activates pages which are pte_young &&
+>> !VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
+>> it's unnecessary since the page wouldn't use any more.
+>>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> Acked-by: Rik van Riel <riel@redhat.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>>
+>> Changelog since v2:
+>>  - remove unnecessary description
+>> Changelog since v1:
+>>  - change word from promote to activate
+>>  - add activate argument to zap_pte_range and family function
+>>
+>> ---
+>>  include/linux/mm.h |    4 ++--
+>>  mm/madvise.c       |    4 ++--
+>>  mm/memory.c        |   38 +++++++++++++++++++++++---------------
+>>  mm/mmap.c          |    4 ++--
+>>  4 files changed, 29 insertions(+), 21 deletions(-)
+>
+> Everyone else seems pretty happy with this, and I've not checked
+> at all whether it achieves your purpose; but personally I'd much
+> prefer a smaller patch which adds your "activate" or "ignore_references"
+> flag to struct zap_details, instead of passing this exceptional arg
+> down lots of levels.  That's precisely the purpose of zap_details,
+> to gather together a few things that aren't needed in the common case
+> (though I admit the NULL details defaulting may be ugly).
 
-I didn't find it very useful to couple pm_restore_gfp_mask() with the thawing
-of tasks, but nevertheless I think all of the spots where it's needed are
-covered now.
+Before I sent RFC, I tried it and suffered from NULL detail as you said.
+But it's valuable to look on it, again.
+Since other guys don't opposed this patch's goal, I will have a time
+for unifying it into zap_details.
 
-The patch has only been compile-tested for now, so caveat emptor.
+Thanks, Hugh.
 
-Thanks,
-Rafael
 
----
- include/linux/gfp.h      |    4 ++--
- kernel/power/hibernate.c |   22 ++++++++++++----------
- kernel/power/suspend.c   |    5 ++---
- kernel/power/user.c      |    2 ++
- mm/page_alloc.c          |   18 +++++++++++-------
- 5 files changed, 29 insertions(+), 22 deletions(-)
+> Hugh
+>
 
-Index: linux-2.6/kernel/power/hibernate.c
-===================================================================
---- linux-2.6.orig/kernel/power/hibernate.c
-+++ linux-2.6/kernel/power/hibernate.c
-@@ -327,7 +327,6 @@ static int create_image(int platform_mod
- int hibernation_snapshot(int platform_mode)
- {
- 	int error;
--	gfp_t saved_mask;
- 
- 	error = platform_begin(platform_mode);
- 	if (error)
-@@ -339,7 +338,7 @@ int hibernation_snapshot(int platform_mo
- 		goto Close;
- 
- 	suspend_console();
--	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
-+	pm_restrict_gfp_mask();
- 	error = dpm_suspend_start(PMSG_FREEZE);
- 	if (error)
- 		goto Recover_platform;
-@@ -348,7 +347,10 @@ int hibernation_snapshot(int platform_mo
- 		goto Recover_platform;
- 
- 	error = create_image(platform_mode);
--	/* Control returns here after successful restore */
-+	/*
-+	 * Control returns here (1) after the image has been created or the
-+	 * image creation has failed and (2) after a successful restore.
-+	 */
- 
-  Resume_devices:
- 	/* We may need to release the preallocated image pages here. */
-@@ -357,7 +359,10 @@ int hibernation_snapshot(int platform_mo
- 
- 	dpm_resume_end(in_suspend ?
- 		(error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE);
--	set_gfp_allowed_mask(saved_mask);
-+
-+	if (error || !in_suspend)
-+		pm_restore_gfp_mask();
-+
- 	resume_console();
-  Close:
- 	platform_end(platform_mode);
-@@ -452,17 +457,16 @@ static int resume_target_kernel(bool pla
- int hibernation_restore(int platform_mode)
- {
- 	int error;
--	gfp_t saved_mask;
- 
- 	pm_prepare_console();
- 	suspend_console();
--	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
-+	pm_restrict_gfp_mask();
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
- 		error = resume_target_kernel(platform_mode);
- 		dpm_resume_end(PMSG_RECOVER);
- 	}
--	set_gfp_allowed_mask(saved_mask);
-+	pm_restore_gfp_mask();
- 	resume_console();
- 	pm_restore_console();
- 	return error;
-@@ -476,7 +480,6 @@ int hibernation_restore(int platform_mod
- int hibernation_platform_enter(void)
- {
- 	int error;
--	gfp_t saved_mask;
- 
- 	if (!hibernation_ops)
- 		return -ENOSYS;
-@@ -492,7 +495,6 @@ int hibernation_platform_enter(void)
- 
- 	entering_platform_hibernation = true;
- 	suspend_console();
--	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
- 	error = dpm_suspend_start(PMSG_HIBERNATE);
- 	if (error) {
- 		if (hibernation_ops->recover)
-@@ -536,7 +538,6 @@ int hibernation_platform_enter(void)
-  Resume_devices:
- 	entering_platform_hibernation = false;
- 	dpm_resume_end(PMSG_RESTORE);
--	set_gfp_allowed_mask(saved_mask);
- 	resume_console();
- 
-  Close:
-@@ -647,6 +648,7 @@ int hibernate(void)
- 		if (!error)
- 			power_down();
- 		in_suspend = 0;
-+		pm_restore_gfp_mask();
- 	} else {
- 		pr_debug("PM: Image restored successfully.\n");
- 	}
-Index: linux-2.6/kernel/power/user.c
-===================================================================
---- linux-2.6.orig/kernel/power/user.c
-+++ linux-2.6/kernel/power/user.c
-@@ -263,6 +263,7 @@ static long snapshot_ioctl(struct file *
- 	case SNAPSHOT_UNFREEZE:
- 		if (!data->frozen || data->ready)
- 			break;
-+		pm_restore_gfp_mask();
- 		thaw_processes();
- 		usermodehelper_enable();
- 		data->frozen = 0;
-@@ -275,6 +276,7 @@ static long snapshot_ioctl(struct file *
- 			error = -EPERM;
- 			break;
- 		}
-+		pm_restore_gfp_mask();
- 		error = hibernation_snapshot(data->platform_support);
- 		if (!error)
- 			error = put_user(in_suspend, (int __user *)arg);
-Index: linux-2.6/mm/page_alloc.c
-===================================================================
---- linux-2.6.orig/mm/page_alloc.c
-+++ linux-2.6/mm/page_alloc.c
-@@ -104,19 +104,23 @@ gfp_t gfp_allowed_mask __read_mostly = G
-  * only be modified with pm_mutex held, unless the suspend/hibernate code is
-  * guaranteed not to run in parallel with that modification).
-  */
--void set_gfp_allowed_mask(gfp_t mask)
-+
-+static gfp_t saved_gfp_mask;
-+
-+void pm_restore_gfp_mask(void)
- {
- 	WARN_ON(!mutex_is_locked(&pm_mutex));
--	gfp_allowed_mask = mask;
-+	if (saved_gfp_mask) {
-+		gfp_allowed_mask = saved_gfp_mask;
-+		saved_gfp_mask = 0;
-+	}
- }
- 
--gfp_t clear_gfp_allowed_mask(gfp_t mask)
-+void pm_restrict_gfp_mask(void)
- {
--	gfp_t ret = gfp_allowed_mask;
--
- 	WARN_ON(!mutex_is_locked(&pm_mutex));
--	gfp_allowed_mask &= ~mask;
--	return ret;
-+	saved_gfp_mask = gfp_allowed_mask;
-+	gfp_allowed_mask &= ~GFP_IOFS;
- }
- #endif /* CONFIG_PM_SLEEP */
- 
-Index: linux-2.6/include/linux/gfp.h
-===================================================================
---- linux-2.6.orig/include/linux/gfp.h
-+++ linux-2.6/include/linux/gfp.h
-@@ -360,7 +360,7 @@ void drain_local_pages(void *dummy);
- 
- extern gfp_t gfp_allowed_mask;
- 
--extern void set_gfp_allowed_mask(gfp_t mask);
--extern gfp_t clear_gfp_allowed_mask(gfp_t mask);
-+extern void pm_restrict_gfp_mask(void);
-+extern void pm_restore_gfp_mask(void);
- 
- #endif /* __LINUX_GFP_H */
-Index: linux-2.6/kernel/power/suspend.c
-===================================================================
---- linux-2.6.orig/kernel/power/suspend.c
-+++ linux-2.6/kernel/power/suspend.c
-@@ -197,7 +197,6 @@ static int suspend_enter(suspend_state_t
- int suspend_devices_and_enter(suspend_state_t state)
- {
- 	int error;
--	gfp_t saved_mask;
- 
- 	if (!suspend_ops)
- 		return -ENOSYS;
-@@ -208,7 +207,7 @@ int suspend_devices_and_enter(suspend_st
- 			goto Close;
- 	}
- 	suspend_console();
--	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
-+	pm_restrict_gfp_mask();
- 	suspend_test_start();
- 	error = dpm_suspend_start(PMSG_SUSPEND);
- 	if (error) {
-@@ -225,7 +224,7 @@ int suspend_devices_and_enter(suspend_st
- 	suspend_test_start();
- 	dpm_resume_end(PMSG_RESUME);
- 	suspend_test_finish("resume devices");
--	set_gfp_allowed_mask(saved_mask);
-+	pm_restore_gfp_mask();
- 	resume_console();
-  Close:
- 	if (suspend_ops->end)
+
+
+-- 
+Kind regards,
+Minchan Kim
