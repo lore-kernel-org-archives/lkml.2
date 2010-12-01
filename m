@@ -1,333 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab0LAHq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:46:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46558 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754206Ab0LAHqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:46:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="682672469"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v16 16/17]An example how to modifiy NIC driver to use napi_gro_frags() interface
-Date: Wed,  1 Dec 2010 16:08:27 +0800
-Message-Id: <4caf4ea3c444ad5ef346e7c9fb36192c72db8c3a.1291187695.git.xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+	id S1754645Ab0LAHrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:47:43 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52460 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab0LAHq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:46:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bg1f3CuAixqNOL7i20WzDBsdbnVLbTbFrcNEmHTKpPnNYpa6i6FEkhXkrQoTJq+4aO
+         EURjgXna/6YSIZlh0kbKpXow5BGW5IdHXHsxeYHzJApe4nTaBIiMsvC/MlSYwQd9NzIY
+         1g+n+SCEIrXOliaJKZm0wVUFjJ9639CX4j84I=
+Date: Tue, 30 Nov 2010 23:46:49 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Li, Yan I" <yan.i.li@intel.com>
+Cc: Tobyn Bertram <tobynbertram@hotmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "'Takashi Iwai'" <tiwai@suse.de>,
+        "Ding, Jian-feng" <jian-feng.ding@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "meego-kernel@lists.meego.com" <meego-kernel@lists.meego.com>
+Subject: Re: [PATCH v2] Input: Bug 18122 - Support Lenovo S10-3t's 2-button
+ ClickPad
+Message-ID: <20101201074649.GC26958@core.coreip.homeip.net>
+References: <aefc1833eeede37ae6ea4a9ddeaa602eb7d31101.1290823698.git.yan.i.li@intel.com>
+ <ddb890ce98e91c7422da64168b1624c1e62a02ee.1291101955.git.yan.i.li@intel.com>
+ <20101130075026.GA15731@core.coreip.homeip.net>
+ <20101130080759.GA17830@thyme.bj.intel.com>
+ <BAY130-DS5A81442DAC5CC69983A4ADE250@phx.gbl>
+ <20101201041102.GC3411@thyme.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201041102.GC3411@thyme.bj.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Wed, Dec 01, 2010 at 12:11:04PM +0800, Li, Yan I wrote:
+> On Tue, Nov 30, 2010 at 11:48:12PM +0800, Tobyn Bertram wrote:
+> > I do not have a S10-3t.  I have a HP DV7t with a standard 1 button Clickpad.
+> > I am sorry for any confusion.
+> 
+> Thank you. This clarify the S10-3t touchpad mystery. So I think my v2
+> patch is valid.
+> 
 
-This example is made on ixgbe driver.
-It provides API is_rx_buffer_mapped_as_page() to indicate
-if the driver use napi_gro_frags() interface or not.
-The example allocates 2 pages for DMA for one ring descriptor
-using netdev_alloc_page(). When packets is coming, using
-napi_gro_frags() to allocate skb and to receive the packets.
+Yep, I'll queue it gfor .37.
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
----
- drivers/net/ixgbe/ixgbe.h      |    3 +
- drivers/net/ixgbe/ixgbe_main.c |  169 +++++++++++++++++++++++++++++++--------
- 2 files changed, 137 insertions(+), 35 deletions(-)
+Thanks,
 
-diff --git a/drivers/net/ixgbe/ixgbe.h b/drivers/net/ixgbe/ixgbe.h
-index 9e15eb9..89367ca 100644
---- a/drivers/net/ixgbe/ixgbe.h
-+++ b/drivers/net/ixgbe/ixgbe.h
-@@ -131,6 +131,9 @@ struct ixgbe_rx_buffer {
- 	struct page *page;
- 	dma_addr_t page_dma;
- 	unsigned int page_offset;
-+	u16 mapped_as_page;
-+	struct page *page_skb;
-+	unsigned int page_skb_offset;
- };
- 
- struct ixgbe_queue_stats {
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index e32af43..cd69080 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -1029,6 +1029,12 @@ static inline void ixgbe_release_rx_desc(struct ixgbe_hw *hw,
- 	IXGBE_WRITE_REG(hw, IXGBE_RDT(rx_ring->reg_idx), val);
- }
- 
-+static bool is_rx_buffer_mapped_as_page(struct ixgbe_rx_buffer *bi,
-+					struct net_device *dev)
-+{
-+	return true;
-+}
-+
- /**
-  * ixgbe_alloc_rx_buffers - Replace used receive buffers; packet split
-  * @adapter: address of board private structure
-@@ -1045,13 +1051,17 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 	i = rx_ring->next_to_use;
- 	bi = &rx_ring->rx_buffer_info[i];
- 
-+
- 	while (cleaned_count--) {
- 		rx_desc = IXGBE_RX_DESC_ADV(*rx_ring, i);
- 
-+		bi->mapped_as_page =
-+			is_rx_buffer_mapped_as_page(bi, adapter->netdev);
-+
- 		if (!bi->page_dma &&
- 		    (rx_ring->flags & IXGBE_RING_RX_PS_ENABLED)) {
- 			if (!bi->page) {
--				bi->page = alloc_page(GFP_ATOMIC);
-+				bi->page = netdev_alloc_page(adapter->netdev);
- 				if (!bi->page) {
- 					adapter->alloc_rx_page_failed++;
- 					goto no_buffers;
-@@ -1068,7 +1078,7 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 						    DMA_FROM_DEVICE);
- 		}
- 
--		if (!bi->skb) {
-+		if (!bi->mapped_as_page && !bi->skb) {
- 			struct sk_buff *skb;
- 			/* netdev_alloc_skb reserves 32 bytes up front!! */
- 			uint bufsz = rx_ring->rx_buf_len + SMP_CACHE_BYTES;
-@@ -1088,6 +1098,19 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 			                         rx_ring->rx_buf_len,
- 						 DMA_FROM_DEVICE);
- 		}
-+
-+		if (bi->mapped_as_page && !bi->page_skb) {
-+			bi->page_skb = netdev_alloc_page(adapter->netdev);
-+			if (!bi->page_skb) {
-+				adapter->alloc_rx_page_failed++;
-+				goto no_buffers;
-+			}
-+			bi->page_skb_offset = 0;
-+			bi->dma = dma_map_page(&pdev->dev, bi->page_skb,
-+					bi->page_skb_offset,
-+					(PAGE_SIZE / 2),
-+					PCI_DMA_FROMDEVICE);
-+		}
- 		/* Refresh the desc even if buffer_addrs didn't change because
- 		 * each write-back erases this info. */
- 		if (rx_ring->flags & IXGBE_RING_RX_PS_ENABLED) {
-@@ -1165,6 +1188,13 @@ struct ixgbe_rsc_cb {
- 	bool delay_unmap;
- };
- 
-+static bool is_no_buffer(struct ixgbe_rx_buffer *rx_buffer_info)
-+{
-+	return (!rx_buffer_info->skb ||
-+		!rx_buffer_info->page_skb) &&
-+		!rx_buffer_info->page;
-+}
-+
- #define IXGBE_RSC_CB(skb) ((struct ixgbe_rsc_cb *)(skb)->cb)
- 
- static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
-@@ -1174,6 +1204,7 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 	struct ixgbe_adapter *adapter = q_vector->adapter;
- 	struct net_device *netdev = adapter->netdev;
- 	struct pci_dev *pdev = adapter->pdev;
-+	struct napi_struct *napi = &q_vector->napi;
- 	union ixgbe_adv_rx_desc *rx_desc, *next_rxd;
- 	struct ixgbe_rx_buffer *rx_buffer_info, *next_buffer;
- 	struct sk_buff *skb;
-@@ -1211,32 +1242,74 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 			len = le16_to_cpu(rx_desc->wb.upper.length);
- 		}
- 
-+		if (is_no_buffer(rx_buffer_info))
-+			break;
- 		cleaned = true;
--		skb = rx_buffer_info->skb;
--		prefetch(skb->data);
--		rx_buffer_info->skb = NULL;
- 
--		if (rx_buffer_info->dma) {
--			if ((adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) &&
--			    (!(staterr & IXGBE_RXD_STAT_EOP)) &&
--				 (!(skb->prev))) {
--				/*
--				 * When HWRSC is enabled, delay unmapping
--				 * of the first packet. It carries the
--				 * header information, HW may still
--				 * access the header after the writeback.
--				 * Only unmap it when EOP is reached
--				 */
--				IXGBE_RSC_CB(skb)->delay_unmap = true;
--				IXGBE_RSC_CB(skb)->dma = rx_buffer_info->dma;
--			} else {
--				dma_unmap_single(&pdev->dev,
--				                 rx_buffer_info->dma,
--				                 rx_ring->rx_buf_len,
--				                 DMA_FROM_DEVICE);
-+		if (!rx_buffer_info->mapped_as_page) {
-+			skb = rx_buffer_info->skb;
-+			prefetch(skb->data);
-+			rx_buffer_info->skb = NULL;
-+
-+			if (rx_buffer_info->dma) {
-+				if ((adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) &&
-+						(!(staterr & IXGBE_RXD_STAT_EOP)) &&
-+						(!(skb->prev))) {
-+					/*
-+					 * When HWRSC is enabled, delay unmapping
-+					 * of the first packet. It carries the
-+					 * header information, HW may still
-+					 * access the header after the writeback.
-+					 * Only unmap it when EOP is reached
-+					 */
-+					IXGBE_RSC_CB(skb)->delay_unmap = true;
-+					IXGBE_RSC_CB(skb)->dma = rx_buffer_info->dma;
-+				} else
-+					dma_unmap_single(&pdev->dev,
-+							rx_buffer_info->dma,
-+							rx_ring->rx_buf_len,
-+							DMA_FROM_DEVICE);
-+				rx_buffer_info->dma = 0;
-+				skb_put(skb, len);
-+			}
-+		} else {
-+                        if (!rx_buffer_info->skb && rx_buffer_info->page_skb) {
-+                                napi->skb = NULL;
-+                                skb = napi_get_frags(napi);
-+                        } else {
-+                                skb = rx_buffer_info->skb;
-+                                napi->skb = skb;
-+                        }
-+			prefetch(rx_buffer_info->page_skb_offset);
-+			rx_buffer_info->skb = NULL;
-+			if (rx_buffer_info->dma) {
-+				if ((adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) &&
-+						(!(staterr & IXGBE_RXD_STAT_EOP)) &&
-+						(!(skb->prev))) {
-+					/*
-+					 * When HWRSC is enabled, delay unmapping
-+					 * of the first packet. It carries the
-+					 * header information, HW may still
-+					 * access the header after the writeback.
-+					 * Only unmap it when EOP is reached
-+					 */
-+					IXGBE_RSC_CB(skb)->delay_unmap = true;
-+					IXGBE_RSC_CB(skb)->dma = rx_buffer_info->dma;
-+				} else
-+					dma_unmap_page(&pdev->dev, rx_buffer_info->dma,
-+							PAGE_SIZE / 2,
-+							PCI_DMA_FROMDEVICE);
-+				rx_buffer_info->dma = 0;
-+				skb_fill_page_desc(skb,
-+						skb_shinfo(skb)->nr_frags,
-+						rx_buffer_info->page_skb,
-+						rx_buffer_info->page_skb_offset,
-+						len);
-+				rx_buffer_info->page_skb = NULL;
-+				skb->len += len;
-+				skb->data_len += len;
-+				skb->truesize += len;
- 			}
--			rx_buffer_info->dma = 0;
--			skb_put(skb, len);
- 		}
- 
- 		if (upper_len) {
-@@ -1283,10 +1356,16 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 				skb = ixgbe_transform_rsc_queue(skb, &(rx_ring->rsc_count));
- 			if (adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) {
- 				if (IXGBE_RSC_CB(skb)->delay_unmap) {
--					dma_unmap_single(&pdev->dev,
--							 IXGBE_RSC_CB(skb)->dma,
--					                 rx_ring->rx_buf_len,
--							 DMA_FROM_DEVICE);
-+					if (!rx_buffer_info->mapped_as_page)
-+						dma_unmap_single(&pdev->dev,
-+								IXGBE_RSC_CB(skb)->dma,
-+								rx_ring->rx_buf_len,
-+								DMA_FROM_DEVICE);
-+					else
-+						dma_unmap_page(&pdev->dev,
-+								IXGBE_RSC_CB(skb)->dma,
-+								PAGE_SIZE / 2,
-+								DMA_FROM_DEVICE);
- 					IXGBE_RSC_CB(skb)->dma = 0;
- 					IXGBE_RSC_CB(skb)->delay_unmap = false;
- 				}
-@@ -1304,6 +1383,11 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 				rx_buffer_info->dma = next_buffer->dma;
- 				next_buffer->skb = skb;
- 				next_buffer->dma = 0;
-+				if (rx_buffer_info->mapped_as_page) {
-+					rx_buffer_info->page_skb =
-+							next_buffer->page_skb;
-+					next_buffer->page_skb = NULL;
-+				}
- 			} else {
- 				skb->next = next_buffer->skb;
- 				skb->next->prev = skb;
-@@ -1323,7 +1407,8 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 		total_rx_bytes += skb->len;
- 		total_rx_packets++;
- 
--		skb->protocol = eth_type_trans(skb, adapter->netdev);
-+		if (!rx_buffer_info->mapped_as_page)
-+			skb->protocol = eth_type_trans(skb, adapter->netdev);
- #ifdef IXGBE_FCOE
- 		/* if ddp, not passing to ULD unless for FCP_RSP or error */
- 		if (adapter->flags & IXGBE_FLAG_FCOE_ENABLED) {
-@@ -1332,7 +1417,14 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 				goto next_desc;
- 		}
- #endif /* IXGBE_FCOE */
--		ixgbe_receive_skb(q_vector, skb, staterr, rx_ring, rx_desc);
-+
-+		if (!rx_buffer_info->mapped_as_page)
-+			ixgbe_receive_skb(q_vector, skb, staterr,
-+						rx_ring, rx_desc);
-+		else {
-+			skb_record_rx_queue(skb, rx_ring->queue_index);
-+			napi_gro_frags(napi);
-+		}
- 
- next_desc:
- 		rx_desc->wb.upper.status_error = 0;
-@@ -3622,9 +3714,16 @@ static void ixgbe_clean_rx_ring(struct ixgbe_adapter *adapter,
- 
- 		rx_buffer_info = &rx_ring->rx_buffer_info[i];
- 		if (rx_buffer_info->dma) {
--			dma_unmap_single(&pdev->dev, rx_buffer_info->dma,
--			                 rx_ring->rx_buf_len,
--					 DMA_FROM_DEVICE);
-+			if (!rx_buffer_info->mapped_as_page)
-+				dma_unmap_single(&pdev->dev, rx_buffer_info->dma,
-+						rx_ring->rx_buf_len,
-+						PCI_DMA_FROMDEVICE);
-+			else {
-+				dma_unmap_page(&pdev->dev, rx_buffer_info->dma,
-+						PAGE_SIZE / 2,
-+						PCI_DMA_FROMDEVICE);
-+				rx_buffer_info->page_skb = NULL;
-+			}
- 			rx_buffer_info->dma = 0;
- 		}
- 		if (rx_buffer_info->skb) {
-@@ -3651,7 +3750,7 @@ static void ixgbe_clean_rx_ring(struct ixgbe_adapter *adapter,
- 				       PAGE_SIZE / 2, DMA_FROM_DEVICE);
- 			rx_buffer_info->page_dma = 0;
- 		}
--		put_page(rx_buffer_info->page);
-+		netdev_free_page(adapter->netdev, rx_buffer_info->page);
- 		rx_buffer_info->page = NULL;
- 		rx_buffer_info->page_offset = 0;
- 	}
 -- 
-1.7.3
-
+Dmitry
