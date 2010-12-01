@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0LARCe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:02:34 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41141 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab0LARCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755408Ab0LARCb (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 1 Dec 2010 12:02:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=IXd6xaBocf4T+rUVwIhRYRxaoQxmZBVtZC1sDNJSygjbO5myEZo4Eu3SPNvvH1cFRw
-         J+M6BANjFtxZ9PTlIHheRQkunwyXSFk42Jn/PyqC+QReao3+RVjY+bO8PuxKzLKgVKbO
-         1RQhwjtc2oSdiIs0Up3MvyqD+IWfTPCtM50FY=
-Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
-From: Namhyung Kim <namhyung@gmail.com>
-To: David Vrabel <david.vrabel@csr.com>
-Cc: Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4CF67D5F.3080609@csr.com>
-References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
-	 <20101201161039.GB29318@suse.de> <1291222151.1684.46.camel@leonhard>
-	 <4CF67D5F.3080609@csr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Dec 2010 02:02:24 +0900
-Message-ID: <1291222944.1684.48.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Received: from smtp.chc.ca ([209.17.174.197]:60813 "EHLO chc.ca"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755378Ab0LARC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 12:02:27 -0500
+X-Greylist: delayed 2248 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 12:02:27 EST
+From: Webmail_Upgarde_Team@chc.ca
+MIME-Version: 1.0
+Importance: 
+X-Priority: 
+Subject: Upgrade Your Email Account
+Sensitivity: 
+Date: Wed, 1 Dec 2010 04:24:31 -0800
+Message-ID: <OFE877F02B.0BEE9F42-ON882577EC.004429E5-882577EC.004429ED@chc.ca>
+X-Mailer: Lotus Domino Web Server Release 6.5.5FP2 October 23, 2006           
+X-MIMETrack: Serialize by Router on carmdld5/Server/CHC(Release 6.5.5FP2|October 23, 2006) at
+ 12/01/2010 08:20:56 AM
+Content-Type: text/plain;
+    charset="US-ASCII"
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-12-01 (수), 16:52 +0000, David Vrabel:
-> Namhyung Kim wrote:
-> > I saw it during allyesconfig build but not on allmodconfig.
-> > Maybe we can wrap it up in #ifdef CONFIG_MODULES ?
-> 
-> That might be best.  Can you do the same with drivers/uwb/whc-rc.c?  It
-> will have the same problem.
-> 
-> David
 
-No problem. Will send them soon. :)
-Thanks.
+You have reached the limit of your email quota.
+You will not be able to send or receive new mail until you boost your
+mailbox size.
+Click the below link and fill the form to upgrade your account.
+http://www.westmun.org/forms/use/accountupgrading/form1.html
 
--- 
-Regards,
-Namhyung Kim
+Technical Support
+192.168.0.1
 
 
+>>>>>IMPORTANT: The information contained in this message may be
+CONFIDENTIAL or PRIVILEGED and is intended for the addressee only.
+Any unauthorized use, dissemination of the information or copying
+of this message is prohibited. If you are not the addressee, please
+notify the sender immediately by telephone or return e-mail and
+delete this message from your computer.  Unintended transmission
+shall not constitute waiver of any privilege. - Thank you.<<<< 
