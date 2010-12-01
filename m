@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab0LAD2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:28:54 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53846 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab0LAD2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:28:53 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Simon Kirby <sim@hostway.ca>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291173628.12777.65.camel@sli10-conroe>
-References: <20101201115401.ABB1.A69D9226@jp.fujitsu.com> <1291173628.12777.65.camel@sli10-conroe>
-Message-Id: <20101201122638.ABBF.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Dec 2010 12:28:50 +0900 (JST)
+	id S1754456Ab0LADjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:39:32 -0500
+Received: from lo.gmane.org ([80.91.229.12]:38647 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab0LADjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:39:31 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Date: Tue, 30 Nov 2010 19:39:09 -0800
+Message-ID: <4CF5C35D.1060003@google.com>
+References: <20101121133744.GA10765@elte.hu>	 <1290700829.4759.16.camel@maggy.simson.net> <1290954299.30515.15.camel@marge.simson.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+X-Gmane-NNTP-Posting-Host: 216-239-45-4.google.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+In-Reply-To: <1290954299.30515.15.camel@marge.simson.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2010-12-01 at 10:59 +0800, KOSAKI Motohiro wrote:
-> > > On Wed, 2010-12-01 at 10:23 +0800, KOSAKI Motohiro wrote:
-> > > > > On Wed, 2010-12-01 at 01:15 +0800, Mel Gorman wrote:
-> > > > > > When the allocator enters its slow path, kswapd is woken up to balance the
-> > > > > > node. It continues working until all zones within the node are balanced. For
-> > > > > > order-0 allocations, this makes perfect sense but for higher orders it can
-> > > > > > have unintended side-effects. If the zone sizes are imbalanced, kswapd
-> > > > > > may reclaim heavily on a smaller zone discarding an excessive number of
-> > > > > > pages. The user-visible behaviour is that kswapd is awake and reclaiming
-> > > > > > even though plenty of pages are free from a suitable zone.
-> > > > > > 
-> > > > > > This patch alters the "balance" logic to stop kswapd if any suitable zone
-> > > > > > becomes balanced to reduce the number of pages it reclaims from other zones.
-> > > > > from my understanding, the patch will break reclaim high zone if a low
-> > > > > zone meets the high order allocation, even the high zone doesn't meet
-> > > > > the high order allocation. This, for example, will make a high order
-> > > > > allocation from a high zone fallback to low zone and quickly exhaust low
-> > > > > zone, for example DMA. This will break some drivers.
-> > > > 
-> > > > Have you seen patch [3/3]? I think it migigate your pointed issue.
-> > > yes, it improves a lot, but still possible for small systems.
-> > 
-> > Ok, I got you. so please define your "small systems" word? 
-> an embedded system with less memory memory, obviously
+On 11/28/10 06:24, Mike Galbraith wrote:
+> On Thu, 2010-11-25 at 09:00 -0700, Mike Galbraith wrote:
+>
+>> My vacation is (sniff) over, so I won't get a fully tested patch out the
+>> door for review until I get back home.
+>
+> Either I forgot to pack my eyeballs, or laptop is just too dinky and
+> annoying.  Now back home on beloved box, this little bugger poked me
+> dead in the eye.
+>
+> Something else is seriously wrong though.  36.1 with attached (plus
+> sched, cgroup: Fixup broken cgroup movement) works a treat, whereas
+> 37.git and tip with fixlet below both suck rocks.  With a make -j40
+> running, wakeup-latency is showing latencies of>100ms, amarok skips,
+> mouse lurches badly.. generally horrid.  Something went south.
+>
 
-Typical embedded system don't have multiple zone. It's not obvious.
+I'm looking at this.
 
+The share:share ratios looked good in static testing, but perhaps we 
+need a little more wake-up boost to improve interactivity.
 
-> > we can't make
-> > perfect VM heuristics obviously, then we need to compare pros/cons.
-> if you don't care about small system, let's consider a NORMAL i386
-> system with 896m normal zone, and 896M*3 high zone. normal zone will
-> quickly exhaust by high order high zone allocation, leave a latter
-> allocation which does need normal zone fail.
+Should have something tomorrow.
 
-Not happen. slab don't allocate from highmem and page cache allocation
-is always using order-0. When happen high order high zone allocation?
+- Paul
 
-
-
+> sched: fix 3d4b47b4 typo.
+>
+> Signed-off-by: Mike Galbraith<efault@gmx.de>
+> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar<mingo@elte.hu>
+> LKML-Reference: new submission
+> ---
+>   kernel/sched.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> Index: linux-2.6/kernel/sched.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -8087,7 +8087,6 @@ static inline void unregister_fair_sched
+>   {
+>   	struct rq *rq = cpu_rq(cpu);
+>   	unsigned long flags;
+> -	int i;
+>
+>   	/*
+>   	* Only empty task groups can be destroyed; so we can speculatively
+> @@ -8097,7 +8096,7 @@ static inline void unregister_fair_sched
+>   		return;
+>
+>   	raw_spin_lock_irqsave(&rq->lock, flags);
+> -	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
+> +	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
+>   	raw_spin_unlock_irqrestore(&rq->lock, flags);
+>   }
+>   #else /* !CONFG_FAIR_GROUP_SCHED */
+>
 
 
