@@ -1,62 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab0LAIB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 03:01:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:19414 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753043Ab0LAIB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 03:01:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="631902440"
-Date: Wed, 1 Dec 2010 16:01:23 +0800
-From: "Li, Yan I" <yan.i.li@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Tobyn Bertram <tobynbertram@hotmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "'Takashi Iwai'" <tiwai@suse.de>,
-        "Ding, Jian-feng" <jian-feng.ding@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "meego-kernel@lists.meego.com" <meego-kernel@lists.meego.com>
-Subject: Re: [PATCH v2] Input: Bug 18122 - Support Lenovo S10-3t's 2-button
- ClickPad
-Message-ID: <20101201080121.GE3874@thyme.bj.intel.com>
-References: <aefc1833eeede37ae6ea4a9ddeaa602eb7d31101.1290823698.git.yan.i.li@intel.com>
- <ddb890ce98e91c7422da64168b1624c1e62a02ee.1291101955.git.yan.i.li@intel.com>
- <20101130075026.GA15731@core.coreip.homeip.net>
- <20101130080759.GA17830@thyme.bj.intel.com>
- <BAY130-DS5A81442DAC5CC69983A4ADE250@phx.gbl>
- <20101201041102.GC3411@thyme.bj.intel.com>
- <20101201074649.GC26958@core.coreip.homeip.net>
+	id S1753339Ab0LAICZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 03:02:25 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29654 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab0LAICY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 03:02:24 -0500
+Message-ID: <4CF60095.1020900@kernel.org>
+Date: Wed, 01 Dec 2010 00:00:21 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101201074649.GC26958@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: perf hw  in kexeced kernel broken in tip
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 03:46:49PM +0800, Dmitry Torokhov wrote:
-> On Wed, Dec 01, 2010 at 12:11:04PM +0800, Li, Yan I wrote:
-> > On Tue, Nov 30, 2010 at 11:48:12PM +0800, Tobyn Bertram wrote:
-> > > I do not have a S10-3t.  I have a HP DV7t with a standard 1 button Clickpad.
-> > > I am sorry for any confusion.
-> > 
-> > Thank you. This clarify the S10-3t touchpad mystery. So I think my v2
-> > patch is valid.
-> > 
-> 
-> Yep, I'll queue it gfor .37.
+First kernel:
+[    1.139418] calling  init_hw_perf_events+0x0/0xb77 @ 1
+[    1.159111] Performance Events: PEBS fmt1+, Nehalem events, Intel PMU
+driver.
+[    1.159567] ... version:                3
+[    1.179121] ... bit width:              48
+[    1.179353] ... generic registers:      4
+[    1.179593] ... value mask:             0000ffffffffffff
+[    1.199211] ... max period:             000000007fffffff
+[    1.199554] ... fixed-purpose events:   3
+[    1.219108] ... event mask:             000000070000000f
+[    1.219454] initcall init_hw_perf_events+0x0/0xb77 returned 0 after
+11719 usecs
 
-Thank you. Here we're testing it extensively. Will report if I seen
-any new issues.
+.....
+[   20.220997] checking TSC synchronization [CPU#0 -> CPU#11]: passed.
+[   20.260818] NMI watchdog enabled, takes one hw-pmu counter.
 
--- 
-Best regards,
-Li, Yan
+kexeced kernel.
 
-MeeGo Team, Opensource Technology Center, SSG, Intel
-Office tel.: +86-10-82171695 (inet: 8-758-1695)
-OpenPGP key: 5C6C31EF
-IRC: yanli on network irc.freenode.net
+
+[    1.169470] calling  init_hw_perf_events+0x0/0xb77 @ 1
+[    1.189265] Performance Events: PEBS fmt1+, Nehalem events, Broken
+PMU hardware detected, software events only.
+...
+[   21.010407] NMI watchdog failed to create perf event on cpu14:
+fffffffffffffffe
+
+caused by:
+
+commit 33c6d6a7ad0ffab9b1b15f8e4107a2af072a05a0
+Author: Don Zickus <dzickus@redhat.com>
+Date:   Mon Nov 22 16:55:23 2010 -0500
+
+    x86, perf, nmi: Disable perf if counters are not accessible
+   
+    In a kvm virt guests, the perf counters are not emulated.  Instead they
+    return zero on a rdmsrl. The perf nmi handler uses the fact that
+crossing
+    a zero means the counter overflowed (for those counters that do not have
+    specific interrupt bits). Therefore on kvm guests, perf will swallow all
+    NMIs thinking the counters overflowed.
+   
+    This causes problems for subsystems like kgdb which needs NMIs to do its
+    magic. This problem was discovered by running kgdb tests.
+   
+    The solution is to write garbage into a perf counter during the
+    initialization and hopefully reading back the same number.  On kvm
+    guests, the value will be read back as zero and we disable perf as
+    a result.
+   
+    Reported-by: Jason Wessel <jason.wessel@windriver.com>
+    Patch-inspired-by: Peter Zijlstra <peterz@infradead.org>
+    Signed-off-by: Don Zickus <dzickus@redhat.com>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: Stephane Eranian <eranian@google.com>
+    LKML-Reference: <1290462923-30734-1-git-send-email-dzickus@redhat.com>
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c
+b/arch/x86/kernel/cpu/perf_event.c
+index ed63101..6d75b91 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -381,6 +381,20 @@ static void release_pmc_hardware(void) {}
+ 
+ #endif
+ 
++static bool check_hw_exists(void)
++{
++       u64 val, val_new = 0;
++       int ret = 0;
++
++       val = 0xabcdUL;
++       ret |= checking_wrmsrl(x86_pmu.perfctr, val);
++       ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
++       if (ret || val != val_new)
++               return false;
++
++       return true;
++}
++
+ static void reserve_ds_buffers(void);
+ static void release_ds_buffers(void);
+ 
+@@ -1372,6 +1386,12 @@ void __init init_hw_perf_events(void)
+ 
+        pmu_check_apic();
+ 
++       /* sanity check that the hardware exists or is emulated */
++       if (!check_hw_exists()) {
++               pr_cont("Broken PMU hardware detected, software events
+only.\n");
++               return;
++       }
++
+        pr_cont("%s PMU driver.\n", x86_pmu.name);
+ 
+        if (x86_pmu.quirks)
+
+
