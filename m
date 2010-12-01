@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab0LASat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:30:49 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:63729 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab0LASas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:30:48 -0500
-Date: Wed, 1 Dec 2010 10:30:35 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Milton Miller <miltonm@bga.com>, linux-next@vger.kernel.org
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>, Greg KH <gregkh@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: The longest build error ever, ever, ever seen :)
- (Re:linux-next: Tree for November 26)
-Message-Id: <20101201103035.0e0b22cf.randy.dunlap@oracle.com>
-In-Reply-To: <1290927314_21183@mail4.comsite.net>
-References: <256560.1290881547@localhost>
-	<20101127164555.GA23508@suse.de>
-	<AANLkTinY3on+arwh-Rvqnbrx_FU4mKDmpwXR_EfkPJ0f@mail.gmail.com>
-	<1290927314_21183@mail4.comsite.net>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756114Ab0LASez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:34:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51323 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618Ab0LASey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:34:54 -0500
+Date: Wed, 1 Dec 2010 19:27:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>
+Subject: Re: (No subject header)
+Message-ID: <20101201182747.GB6143@redhat.com>
+References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <compat-not-unlikely@mdm.bga.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Nov 2010 00:55:14 -0600 Milton Miller wrote:
+On 12/01, Milton Miller wrote:
+>
+> On Tue, 30 Nov 2010 about 20:01:29 -0000, Oleg Nesterov wrote:
+> > Teach get_arg_ptr() to handle compat = T case correctly.
+>
+> >  #include <asm/uaccess.h>
+> >  #include <asm/mmu_context.h>
+> > @@ -395,6 +396,18 @@ get_arg_ptr(const char __user * const __
+> >  {
+> >  	const char __user *ptr;
+> >
+> > +#ifdef CONFIG_COMPAT
+> > +	if (unlikely(compat)) {
+>
+> This should not be marked unlikely.  Unlikely tells gcc the path
+> with over 99% confidence and disables branch predictors on some
+> architectures.  If called from a compat processes this will result
+> in a mispredicted branch every iteration.  Just use if (compat)
+> and let the hardware branch predictors do their job.
 
-[also adding linux-next back to cc: list]
+This applies to almost every likely/unlikely, and I think that compat
+processes should fall into "unlikely category". But I don't really mind,
+I can remove this hint, I added it mostly as documentation.
 
+> > +#ifdef CONFIG_COMPAT
+> > +int compat_do_execve(char * filename,
+> > +	compat_uptr_t __user *argv,
+> > +	compat_uptr_t __user *envp,
+> > +	struct pt_regs * regs)
+> > +{
+> > +	return do_execve_common(filename,
+> > +				(void __user*)argv, (void __user*)envp,
+>
+> Shouldn't these be compat_ptr(argv)?  (makes a difference on s390)
 
-> On Sat Nov 27 2010 around 13:13:03 EST, Valdis Kletnieks wrote:
-> > On Sat, 27 Nov 2010 08:45:55 PST, Greg KH said:
-> > > On Sat, Nov 27, 2010 at 09:56:45AM +0100, Zimny Lech wrote:
-> > > > Ave!
-> > > >
-> > > > 2010/11/26 Stephen Rothwell <sfr@xxxxxxxxxxxxxxxx>:
-> > > > > Hi all,
-> > > > >
-> > > >
-> > > > OMG, LOL, this one is awesome :) The longest build error ever, ever,
-> > > > ever seen! Fscking awesome, someone gets Guiness World Record :)
-> > > >
-> > > > LD drivers/staging/built-in.o
-> > > > drivers/staging/rtl8192e/built-in.o: In function `rtl8192_setBBreg':
-> > > > (.text+0xae00): multiple definition of `rtl8192_setBBreg'
-> > > > drivers/staging/rtl8192u/built-in.o:(.text+0xa1a0): first defined here
-> > >
-> > > You built both of these drivers into the kernel, which causes the
-> > > problem. Try building them as modules, or just one as a module, and
-> > > that will solve the problem.
-> > 
-> > We probably should create some Kconfig magic to prevent this situation?
-> > 
-> > depends (othermodule != 'y') || (myself != 'y')
-> > 
-> > or am I on the wrong track here?
-> > 
-> 
-> A simple
-> 
-> depends on !OTHERMODULE
-> 
-> allows either to be built-in or both to be modular.
-> 
-> It also documents what conflicts.
-> 
-> (see Menu dependencies in Documentation/kbuild/kconfig-language.txt)
+I'll recheck, but I don't think so. Please note that compat_ptr()
+accepts "compat_uptr_t", not "compat_uptr_t *".
 
-When added for 2 drivers that should not both be built-in, that
-causes this error message:
+argv should be correct as a pointer to user-space, otherwise the
+current code is buggy. For example, compat_do_execve() passes
+argv to compat_count() which does get_user(argv) without any
+conversion.
 
-drivers/staging/rtl8192u/Kconfig:1:error: recursive dependency detected!
-drivers/staging/rtl8192u/Kconfig:1:     symbol RTL8192U depends on RTL8192E
-drivers/staging/rtl8192e/Kconfig:1:     symbol RTL8192E depends on RTL8192U
+IOW, even if this should be fixed, I think this have nothing to
+do with this patch. But I'll recheck, thanks.
 
-but yes, only one driver is then built-in.
+Oleg.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
