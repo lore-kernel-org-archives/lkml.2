@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab0LARSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:18:10 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:41086 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab0LARSJ (ORCPT
+	id S1755083Ab0LARVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:21:23 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41677 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab0LARVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:18:09 -0500
-Date: Wed, 1 Dec 2010 12:18:01 -0500
-From: Thomas Graf <tgraf@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [Patch] net: kill an RCU warning in inet_fill_link_af()
-Message-ID: <20101201171801.GA22009@canuck.infradead.org>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-	"David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	"Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-References: <1291202063-6239-1-git-send-email-amwang@redhat.com>
- <1291219386.2856.924.camel@edumazet-laptop>
+	Wed, 1 Dec 2010 12:21:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CliHxtCU51Lj/fbqPb/Y+zvblgLH6xudVWOZZvXMFsPF4r6hSmnuDT+9zHbSA1CYFN
+         5T9JgCtXgfMNecwRD5YT5APPb0nS+nvXAcihexvevyL9cJDbdqgHzBkSHfSjnvp83k0e
+         GhE4uFTOcRkJDCuC2WFFdzK2z2BM1RrRJaFyU=
+Date: Wed, 1 Dec 2010 09:20:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: turbografx - fix reference counting
+Message-ID: <20101201172059.GC11196@core.coreip.homeip.net>
+References: <1291208701-3016-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291219386.2856.924.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgr@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1291208701-3016-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 05:03:06PM +0100, Eric Dumazet wrote:
-> [PATCH net-next-2.6] net: kill an RCU warning in inet_fill_link_af()
+On Wed, Dec 01, 2010 at 10:05:01PM +0900, Namhyung Kim wrote:
+> The ref-count of parport gained from parport_find_number()
+> was not released in normal path.
 > 
-> commits 9f0f7272 (ipv4: AF_INET link address family) and cf7afbfeb8c
-> (rtnl: make link af-specific updates atomic) used incorrect
-> __in_dev_get_rcu() in RTNL protected contexts, triggering PROVE_RCU
-> warnings.
-> 
-> Switch to __in_dev_get_rtnl(), wich is more appropriate, since we hold
-> RTNL.
-> 
-> Based on a report and initial patch from Amerigo Wang.
 
-RTNL is not held while dumping, it is only held for get and set, but we
-still hold rcu readlocks while dumping so there should be no asserts
-triggered. Thanks for fixing this.
+Applied, thanks.
+
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  drivers/input/joystick/turbografx.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/joystick/turbografx.c b/drivers/input/joystick/turbografx.c
+> index d53b9e9..27b6a3c 100644
+> --- a/drivers/input/joystick/turbografx.c
+> +++ b/drivers/input/joystick/turbografx.c
+> @@ -245,6 +245,7 @@ static struct tgfx __init *tgfx_probe(int parport, int *n_buttons, int n_devs)
+>  		goto err_free_tgfx;
+>          }
+>  
+> +	parport_put_port(pp);
+>  	return tgfx;
+>  
+>   err_free_dev:
+> -- 
+> 1.7.0.4
+> 
+
+-- 
+Dmitry
