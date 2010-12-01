@@ -1,270 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab0LATXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:23:45 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58593 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076Ab0LATXm (ORCPT
+	id S932074Ab0LATXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:23:41 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:42810 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756538Ab0LATXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:23:42 -0500
+	Wed, 1 Dec 2010 14:23:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=rBc99ivSc84YgJC4OshBDxMTYW1T19UTe4b8Rwf92oTiX5P4VTthKbMW4R2xGLCl9l
-         9L2A5c/MaKclc7Rv3PoG5DvQyx6DkV0PLp068IpaQfXlj18x68no+K8DCDo6/PmcBPdT
-         hvzhAyWrsIxjdHE18jcn853eVPwcaKswykBfU=
-Subject: Re: [PATCH v2] soc_camera: Add the ability to bind regulators to
- soc_camedra devices
-From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <Pine.LNX.4.64.1012011803140.28110@axis700.grange>
-References: <1291137176.6537.20.camel@realization>
-	 <Pine.LNX.4.64.1012011803140.28110@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 20:23:32 +0100
-Message-ID: <1291231412.3066.11.camel@realization>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=A/GhoC/lkniscv9QEx94P1tA2aS99gzzoQe1A4eTu953roJWScbuoOfSILpuS+/jM4
+         GpMWhPQWtcP/CwB6JnxA==
+Date: Wed, 1 Dec 2010 11:23:26 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+In-Reply-To: <1291229669.6609.24.camel@heimdal.trondhjem.org>
+Message-ID: <alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <1291229669.6609.24.camel@heimdal.trondhjem.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On mer, 2010-12-01 at 18:26 +0100, Guennadi Liakhovetski wrote:
-> On Tue, 30 Nov 2010, Alberto Panizzo wrote:
-> 
-> > In certain machines, camera devices are supplied directly
-> > by a number of regulators. This patch add the ability to drive
-> > these regulators directly by the soc_camera driver.
+On Wed, 1 Dec 2010, Trond Myklebust wrote:
+> On Wed, 2010-12-01 at 08:17 -0800, Linus Torvalds wrote:
+> > On Wed, Dec 1, 2010 at 7:36 AM, Trond Myklebust
+> > <Trond.Myklebust@netapp.com> wrote:
+> > >
+> > > We need to ensure that the entries in the nfs_cache_array get cleared
+> > > when the page is removed from the page cache. To do so, we use the
+> > > releasepage address_space operation (which also requires us to set
+> > > the Pg_private flag).
 > > 
-> > Signed-off-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-> > ---
+> > So I really think that the whole "releasepage" use in NFS is simply
+> > overly complicated and was obviously too subtle.
 > > 
-> > v2 changes:
-> > It is used the more standard regulator_bulk API, thanks to
-> > Mark Brown for pointing this.
+> > The whole need for odd return values, for the page lock, and for the
+> > addition of clearing the up-to-date bit comes from the fact that this
+> > wasn't really what releasepage was designed for.
 > > 
-> >  drivers/media/video/soc_camera.c |   73 +++++++++++++++++++++++++++-----------
-> >  include/media/soc_camera.h       |    5 +++
-> >  2 files changed, 57 insertions(+), 21 deletions(-)
+> > 'releasepage' was really designed for the filesystem having its own
+> > version of 'try_to_free_buffers()', which is just an optimistic "ok,
+> > we may be releasing this page, so try to get rid of any IO structures
+> > you have cached". It wasn't really a memory management thing.
 > > 
-> > diff --git a/drivers/media/video/soc_camera.c b/drivers/media/video/soc_camera.c
-> > index 43848a7..f1c2094 100644
-> > --- a/drivers/media/video/soc_camera.c
-> > +++ b/drivers/media/video/soc_camera.c
+> > And the thing is, it looks trivial to do the memory management
+> > approach by adding a new callback that gets called after the page is
+> > actually removed from the page cache. If we do that, then there are no
+> > races with any other users, since we remove things from the page cache
+> > atomically wrt page cache lookup. So the need for playing games with
+> > page locking and 'uptodate' simply goes away. As does the PG_private
+> > thing or the interaction with invalidatepage() etc.
+> > 
+> > So this is a TOTALLY UNTESTED trivial patch that just adds another
+> > callback. Does this work? I dunno. But I get the feeling that instead
+> > of having NFS work around the odd semantics that don't actually match
+> > what NFS wants, introducing a new callback with much simpler semantics
+> > would be simpler for everybody, and avoid the need for subtle code.
+> > 
+> > Hmm?
+> > 
+> >                    Linus
 > 
-> Have to
 > 
-> #include <linux/regulator/consumer.h>
-> 
-> here
-> 
-> > @@ -43,6 +43,41 @@ static LIST_HEAD(hosts);
-> >  static LIST_HEAD(devices);
-> >  static DEFINE_MUTEX(list_lock);		/* Protects the list of hosts */
+> > include/linux/fs.h |    1 +
+> >  mm/vmscan.c        |    3 +++
+> >  2 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index c9e06cc..090f0ea 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -602,6 +602,7 @@ struct address_space_operations {
+> >         sector_t (*bmap)(struct address_space *, sector_t);
+> >         void (*invalidatepage) (struct page *, unsigned long);
+> >         int (*releasepage) (struct page *, gfp_t);
+> > +       void (*freepage)(struct page *);
+> >         ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec
+> > *iov,
+> >                         loff_t offset, unsigned long nr_segs);
+> >         int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index d31d7ce..1accb01 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -499,6 +499,9 @@ static int __remove_mapping(struct address_space
+> > *mapping, struct page *page)
+> >                 mem_cgroup_uncharge_cache_page(page);
+> >         }
 > >  
-> > +static int soc_camera_power_set(struct soc_camera_device *icd,
-> > +				struct soc_camera_link *icl,
-> > +				int power_on)
-> > +{
-> > +	int ret = 0;
+> > +       if (mapping->a_ops->freepage)
+> > +               mapping->a_ops->freepage(page);
 > 
-> "= 0" unneeded.
+> Hmm... Looking again at the problem, it appears that the same callback
+> needs to be added to truncate_complete_page() and
+> invalidate_complete_page2(). Otherwise we end up in a situation where
+> the page can sometimes be removed from the page cache without calling
+> freepage().
 > 
 > > +
-> > +	if (power_on) {
-> > +		ret = regulator_bulk_enable(icl->num_regulators,
-> > +					    icl->regulators);
-> > +	} else {
-> > +		ret = regulator_bulk_disable(icl->num_regulators,
-> > +					     icl->regulators);
-> > +	}
-> 
-> superfluous braces
-> 
-> > +	if (ret < 0) {
-> > +		dev_err(icd->pdev, "Cannot %s regulators",
-> > +			power_on ? "ENABLE" : "DISABLE");
-> 
-> why capitals?
-
-To distinguish between hardcoded words and produced ones.
-Otherwise I prefer to separate the two messages and put them in the
-two branches of the if.
-
-What do you think about?
-
-
-> 
-> > +		goto err;
-> 
-> just return ret
-> 
-> > +	}
-> > +
-> > +	if (icl->power) {
-> > +		ret = icl->power(icd->pdev, power_on);
-> > +		if (ret < 0) {
-> > +			dev_err(icd->pdev,
-> > +				"Platform failed to power %s the camera.\n",
-> > +				power_on ? "ON" : "OFF");
-> 
-> why capitals?
-> 
-> > +			goto err;
-> 
-> just return ret, although, if switching on failed, and the platform us 
-> also using regulators, don't you want to turn them off? Still I would do 
-> this here inline without a goto, but that's already a matter of taste, so, 
-> if you prefer, in this case a goto would be justified.
-
-regulator_bulk is an all or none API, so if an error happen enabling
-some regulators, it automatically disable the previous enabled ones.
-
-> 
-> > +		}
-> > +	}
-> > +
-> > +	return 0;
-> > +
-> > +err:
-> > +	return ret;
-> 
-> with the above, this might go.
-> 
-> > +}
-> > +
-> >  const struct soc_camera_format_xlate *soc_camera_xlate_by_fourcc(
-> >  	struct soc_camera_device *icd, unsigned int fourcc)
-> >  {
-> > @@ -375,11 +410,9 @@ static int soc_camera_open(struct file *file)
-> >  			},
-> >  		};
+> >         return 1;
 > >  
-> > -		if (icl->power) {
-> > -			ret = icl->power(icd->pdev, 1);
-> > -			if (ret < 0)
-> > -				goto epower;
-> > -		}
-> > +		ret = soc_camera_power_set(icd, icl, 1);
-> > +		if (ret < 0)
-> > +			goto epower;
-> >  
-> >  		/* The camera could have been already on, try to reset */
-> >  		if (icl->reset)
-> > @@ -425,8 +458,7 @@ esfmt:
-> >  eresume:
-> >  	ici->ops->remove(icd);
-> >  eiciadd:
-> > -	if (icl->power)
-> > -		icl->power(icd->pdev, 0);
-> > +	soc_camera_power_set(icd, icl, 0);
-> >  epower:
-> >  	icd->use_count--;
-> >  	mutex_unlock(&icd->video_lock);
-> > @@ -450,8 +482,7 @@ static int soc_camera_close(struct file *file)
-> >  
-> >  		ici->ops->remove(icd);
-> >  
-> > -		if (icl->power)
-> > -			icl->power(icd->pdev, 0);
-> > +		soc_camera_power_set(icd, icl, 0);
-> >  	}
-> >  
-> >  	if (icd->streamer == file)
-> > @@ -941,14 +972,14 @@ static int soc_camera_probe(struct device *dev)
-> >  
-> >  	dev_info(dev, "Probing %s\n", dev_name(dev));
-> >  
-> > -	if (icl->power) {
-> > -		ret = icl->power(icd->pdev, 1);
-> > -		if (ret < 0) {
-> > -			dev_err(dev,
-> > -				"Platform failed to power-on the camera.\n");
-> > -			goto epower;
-> > -		}
-> > -	}
-> > +	ret = regulator_bulk_get(icd->pdev, icl->num_regulators,
-> > +				 icl->regulators);
-> > +	if (ret)
-> 
-> "if (ret < 0)" for consistency, please
+> >  cannot_free:
 
-regulator_bulk_get return 0 on success..
+Yes, I was wondering quite how we would define this ->freepage thing,
+if it gets called from one place that removes from page cache and not
+from others.
 
-> 
-> > +		goto epower;
-> > +
-> > +	ret = soc_camera_power_set(icd, icl, 1);
-> > +	if (ret < 0)
-> > +		goto epower;
-> 
-> You need a new label for this error - you also have to free regulators, if 
-> this fails.
+Another minor problem with it: it would probably need to take the
+struct address_space *mapping as arg as well as struct page *page:
+because by this time page->mapping has been reset to NULL.
 
-The same as before regulator_bulk_get is an all or none call that free
-regulators itself on error.
+But I'm not at all keen on adding a calllback in this very special
+frozen-to-0-references place: please let's not do it without an okay
+from Nick Piggin (now Cc'ed).
 
-Maybe return ret instead of goto epower?
+I agree completely with what Linus said originally about how the
+page cannot be freed while there's a reference to it, and it should
+be possible to work this without your additional page locks.
 
-> 
-> >  
-> >  	/* The camera could have been already on, try to reset */
-> >  	if (icl->reset)
-> > @@ -1021,8 +1052,7 @@ static int soc_camera_probe(struct device *dev)
-> >  
-> >  	ici->ops->remove(icd);
-> >  
-> > -	if (icl->power)
-> > -		icl->power(icd->pdev, 0);
-> > +	soc_camera_power_set(icd, icl, 0);
-> >  
-> >  	mutex_unlock(&icd->video_lock);
-> >  
-> > @@ -1044,8 +1074,7 @@ eadddev:
-> >  evdc:
-> >  	ici->ops->remove(icd);
-> >  eadd:
-> > -	if (icl->power)
-> > -		icl->power(icd->pdev, 0);
-> > +	soc_camera_power_set(icd, icl, 0);
-> >  epower:
-> >  	return ret;
-> >  }
-> > @@ -1081,6 +1110,8 @@ static int soc_camera_remove(struct device *dev)
-> >  	}
-> >  	soc_camera_free_user_formats(icd);
-> >  
-> > +	regulator_bulk_free(icl->num_regulators, icl->regulators);
-> > +
-> >  	return 0;
-> >  }
-> >  
-> > diff --git a/include/media/soc_camera.h b/include/media/soc_camera.h
-> > index 86e3631..3e6b903 100644
-> > --- a/include/media/soc_camera.h
-> > +++ b/include/media/soc_camera.h
-> > @@ -15,6 +15,7 @@
-> >  #include <linux/device.h>
-> >  #include <linux/mutex.h>
-> >  #include <linux/pm.h>
-> > +#include <linux/regulator/consumer.h>
-> 
-> No need to include the header here, just declare
-> 
-> struct regulator_bulk_data;
+Your ->releasepage should be able to judge whether the page is likely
+(not certain) to be freed - page_count 3? 1 for the page cache, 1 for
+the page_private reference, 1 for vmscan's reference, I think.  Then
+it can mark !PageUptodate and proceed with freeing the stuff you had
+allocated, undo page_has_private and its reference, and return 1 (or
+return 0 if it decides to hold on to the page).
 
-Ok, this is a coding style tip that I didn't know.
+If something races in and grabs another reference to prevent removal
+from page cache and freeing, then won't read_cache_page(), seeing
+!Uptodate, do the right thing and set up the required info again?
 
-Thanks to you Guennadi!
+Or perhaps I haven't looked far enough, and you do have races which
+actually need your page locks, I can see they make it easier to think
+about.
 
--- 
-Alberto!
+But I'd prefer us not to throw in another callback if it's well
+workable with the ->releasepage we already have.  (If it helps,
+perhaps we could adjust shrink_page_list() to allow for the page
+being removed from page cache inside try_to_release_page() - but
+I don't think that should be necessary.)
 
-        Be Persistent!
-                - Greg Kroah-Hartman (FOSDEM 2010)
-
+Hugh
