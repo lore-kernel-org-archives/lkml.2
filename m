@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab0LASez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:34:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755618Ab0LASey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:34:54 -0500
-Date: Wed, 1 Dec 2010 19:27:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>
-Subject: Re: (No subject header)
-Message-ID: <20101201182747.GB6143@redhat.com>
-References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <compat-not-unlikely@mdm.bga.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756162Ab0LAShk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:37:40 -0500
+Received: from casper.infradead.org ([85.118.1.10]:48994 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab0LAShk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:37:40 -0500
+Subject: Re: [BUG(?)] perf_events: combining multiple tracepoint events
+ into a group produces no counts on member events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20101201182910.GC3438@nowhere>
+References: <4CF59E20.1040301@linux.vnet.ibm.com>
+	 <1291203990.4023.16.camel@twins> <1291205078.32004.1381.camel@laptop>
+	 <20101201182910.GC3438@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Dec 2010 19:37:04 +0100
+Message-ID: <1291228624.32004.1852.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01, Milton Miller wrote:
->
-> On Tue, 30 Nov 2010 about 20:01:29 -0000, Oleg Nesterov wrote:
-> > Teach get_arg_ptr() to handle compat = T case correctly.
->
-> >  #include <asm/uaccess.h>
-> >  #include <asm/mmu_context.h>
-> > @@ -395,6 +396,18 @@ get_arg_ptr(const char __user * const __
-> >  {
-> >  	const char __user *ptr;
-> >
-> > +#ifdef CONFIG_COMPAT
-> > +	if (unlikely(compat)) {
->
-> This should not be marked unlikely.  Unlikely tells gcc the path
-> with over 99% confidence and disables branch predictors on some
-> architectures.  If called from a compat processes this will result
-> in a mispredicted branch every iteration.  Just use if (compat)
-> and let the hardware branch predictors do their job.
-
-This applies to almost every likely/unlikely, and I think that compat
-processes should fall into "unlikely category". But I don't really mind,
-I can remove this hint, I added it mostly as documentation.
-
-> > +#ifdef CONFIG_COMPAT
-> > +int compat_do_execve(char * filename,
-> > +	compat_uptr_t __user *argv,
-> > +	compat_uptr_t __user *envp,
-> > +	struct pt_regs * regs)
+On Wed, 2010-12-01 at 19:29 +0100, Frederic Weisbecker wrote:
+> > +static int perf_event_add_tp(struct perf_event *event, int tp_id)
 > > +{
-> > +	return do_execve_common(filename,
-> > +				(void __user*)argv, (void __user*)envp,
->
-> Shouldn't these be compat_ptr(argv)?  (makes a difference on s390)
+> > +     if (event->attr.type != PERF_TYPE_TRACEPOINT &&
+> 
+> Should it be || instead?
+> 
+> > +         event->attr.config != ~0ULL)
+> > +             return -EINVAL;
+> > +
+> > +     return __perf_event_add_tp(event, tp_id);
+> > +} 
 
-I'll recheck, but I don't think so. Please note that compat_ptr()
-accepts "compat_uptr_t", not "compat_uptr_t *".
-
-argv should be correct as a pointer to user-space, otherwise the
-current code is buggy. For example, compat_do_execve() passes
-argv to compat_count() which does get_user(argv) without any
-conversion.
-
-IOW, even if this should be fixed, I think this have nothing to
-do with this patch. But I'll recheck, thanks.
-
-Oleg.
-
+Probably,.. yeah.
