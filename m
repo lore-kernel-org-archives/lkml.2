@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab0LAVBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 16:01:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44180 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab0LAVBt convert rfc822-to-8bit (ORCPT
+	id S932137Ab0LAVC7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 16:02:59 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:38194 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab0LAVC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 16:01:49 -0500
+	Wed, 1 Dec 2010 16:02:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CwelXsb4+oeFOTp+qeZtpFC3st0gTpxTBoL4T33lfJ3qUZAWSskjeAmPUnVhc+10ne
-         GcohH5Qutbg+FKKLF/4eF9inPbJqnHxOj2/+lICsEmKfclMPWqWZoxgb/TamD3yPqEs5
-         q6CEiaFsj7RUJxLSqNC2Njt96uG9d0qyjKvUk=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=UE/Snh5JDjCcfNRy7f1cB3VmEjFLb7b2yceOcLJ2aucDPNgqlli3I5EwSF8xAUg1j+
+         MtLbXDUXChNyicv0WVZw==
+Date: Wed, 1 Dec 2010 13:02:48 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+In-Reply-To: <20101201123341.d12ef362.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+ <1291234251.6609.39.camel@heimdal.trondhjem.org> <20101201123341.d12ef362.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
-References: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
-Date: Wed, 1 Dec 2010 23:01:47 +0200
-Message-ID: <AANLkTi=Myb9=dF0K=EKCeuTcL_kzY4wd+FkDQHYWsZSs@mail.gmail.com>
-Subject: Re: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
-From: "avictor.za@gmail.com" <avictor.za@gmail.com>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Wed, 1 Dec 2010, Andrew Morton wrote:
+> On Wed, 01 Dec 2010 15:10:50 -0500
+> Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> 
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -602,6 +602,7 @@ struct address_space_operations {
+> >  	sector_t (*bmap)(struct address_space *, sector_t);
+> >  	void (*invalidatepage) (struct page *, unsigned long);
+> >  	int (*releasepage) (struct page *, gfp_t);
+> > +	void (*freepage)(struct page *);
+> >  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+> >  			loff_t offset, unsigned long nr_segs);
+> >  	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+> 
+> It would be good to think about and then clearly spell out exactly what
+> state the page is in here.  It is locked, and I assume clean and not
+> under writeback.  What about its refcount, freezedness status and
+> eligibility for lookups?
+> 
+> And as Hugh pointed out, some callees might needs the address_space*
+> although we can perhaps defer that until such a callee turns up. 
+> If/when that happens we might have a problem though: if this locked
+> page is no longer attached to the address_space then what now pins the
+> address_space, protecting it from inode reclaim?
 
->  config PCI
-> -       bool "PCI support" if ARCH_INTEGRATOR_AP || ARCH_VERSATILE_PB || ARCH_IXP4XX || ARCH_KS8695 || MACH_ARMCORE || ARCH_CNS3XXX
-> +       bool "PCI support" if MIGHT_HAVE_PCI
->        help
->          Find out whether you have a PCI motherboard. PCI is the name of a
->          bus system, i.e. the way the CPU talks to the other stuff inside
+That's an excellent point and trumps mine: it would be actively wrong
+to provide the struct address_space *mapping arg I was asking for.
+(Bet someone then tries stashing it away via page->private though.)
 
-This used to enable PCI support for all KS8695-based boards.  (ARCH_KS8695)
-
-
-> --- a/arch/arm/mach-ks8695/Kconfig
-> +++ b/arch/arm/mach-ks8695/Kconfig
-> @@ -4,6 +4,7 @@ menu "Kendin/Micrel KS8695 Implementations"
->
->  config MACH_KS8695
->        bool "KS8695 development board"
-> +       select MIGHT_HAVE_PCI
->        help
->          Say 'Y' here if you want your kernel to run on the original
->          Kendin-Micrel KS8695 development board.
-
-Where-as this only enables it for the KS8695 Development board (MACH_KS8695)....
-
-
-Regards.
-  Andrew Victor
+Hugh
