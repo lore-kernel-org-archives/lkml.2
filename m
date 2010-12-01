@@ -1,84 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab0LAOUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:20:08 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58683 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754951Ab0LAOUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:20:06 -0500
-Message-ID: <4CF6595A.6010104@kernel.org>
-Date: Wed, 01 Dec 2010 15:19:06 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-References: <20101022012302.GA7487@havoc.gtf.org> <20101129180755.GK15818@bombadil.infradead.org> <4CF506A6.4020200@kernel.org> <20101130153839.GM15818@bombadil.infradead.org> <4CF52652.4030802@kernel.org> <20101130163150.GA25668@bombadil.infradead.org> <20101130175317.GB25668@bombadil.infradead.org> <20101130210938.GF25668@bombadil.infradead.org> <4CF62EE0.7040607@kernel.org> <20101201124445.GG25668@bombadil.infradead.org>
-In-Reply-To: <20101201124445.GG25668@bombadil.infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Dec 2010 14:19:09 +0000 (UTC)
+	id S1755245Ab0LAO0O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:26:14 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45321 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab0LAO0N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 09:26:13 -0500
+Subject: Re: [PATCH 2/3] perf-events: Add support for supplementary event
+ registers v4
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, eranian@google.com
+In-Reply-To: <1291036374-24710-3-git-send-email-andi@firstfloor.org>
+References: <1291036374-24710-1-git-send-email-andi@firstfloor.org>
+	 <1291036374-24710-3-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Dec 2010 15:26:28 +0100
+Message-ID: <1291213588.32004.1560.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+On Mon, 2010-11-29 at 14:12 +0100, Andi Kleen wrote:
 
-On 12/01/2010 01:44 PM, Kyle McMartin wrote:
-> 00:1f.2 SATA controller [0106]: Intel Corporation 5 Series/3400 Series
-...
-> 	Model Number:       HITACHI HTS725032A9A364                 
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 817d2b1..a6754ea 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -93,6 +93,8 @@ struct amd_nb {
+>  	struct event_constraint event_constraints[X86_PMC_IDX_MAX];
+>  };
+>  
+> +struct intel_percore;
+> +
+>  #define MAX_LBR_ENTRIES		16
+>  
+>  struct cpu_hw_events {
+> @@ -128,6 +130,13 @@ struct cpu_hw_events {
+>  	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
+>  
+>  	/*
+> +	 * Intel percore register state.
+> +	 * Coordinate shared resources between HT threads.
+> +	 */
+> +	int				percore_used; /* Used by this CPU? */
+> +	struct intel_percore		*per_core;
+> +
+> +	/*
+>  	 * AMD specific bits
+>  	 */
+>  	struct amd_nb		*amd_nb;
 
-Nothing peculiar.  Hmm... okay, I think I've found what went wrong.
-Can you please try the following patch and see whether the problem
-goes away?
+> +/*
+> + * Per core state
+> + * This used to coordinate shared registers for HT threads.
+> + */
+> +struct intel_percore {
+> +	raw_spinlock_t		lock;		/* protect structure */
+> +	struct er_account	regs[MAX_EXTRA_REGS];
+> +	int			refcnt;		/* number of threads */
+> +	unsigned		core_id;
+> +};
+> +
+>  /*
+>   * Intel PerfMon, used on Core and later.
+>   */
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 5e59050..17a6378 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -3275,6 +3275,7 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
- 	struct ata_port *ap = ata_is_host_link(link) ? link->ap : NULL;
- 	struct ata_eh_context *ehc = &link->eh_context;
- 	struct ata_device *dev, *link_dev = NULL, *lpm_dev = NULL;
-+	enum ata_lpm_policy old_policy = link->lpm_policy;
- 	unsigned int hints = ATA_LPM_EMPTY | ATA_LPM_HIPM;
- 	unsigned int err_mask;
- 	int rc;
-@@ -3338,6 +3339,14 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
- 		goto fail;
- 	}
 
-+	/*
-+	 * Low level driver acked the transition.  Issue DIPM command
-+	 * with the new policy set.
-+	 */
-+	link->lpm_policy = policy;
-+	if (ap && ap->slave_link)
-+		ap->slave_link->lpm_policy = policy;
-+
- 	/* host config updated, enable DIPM if transitioning to MIN_POWER */
- 	ata_for_each_dev(dev, link, ENABLED) {
- 		if (policy == ATA_LPM_MIN_POWER && ata_id_has_dipm(dev->id)) {
-@@ -3353,12 +3362,14 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
- 		}
- 	}
+> +static int intel_pmu_cpu_prepare(int cpu)
+> +{
+> +	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+> +	
+> +	cpuc->per_core = kzalloc_node(sizeof(struct intel_percore), 
+> +				      GFP_KERNEL, cpu_to_node(cpu));
+> +	if (!cpuc->per_core)
+> +		return NOTIFY_BAD;
+> +
+> +	raw_spin_lock_init(&cpuc->per_core->lock);
+> +	cpuc->per_core->core_id = -1;
+> +	return NOTIFY_OK;
+> +}
+> +
+>  static void intel_pmu_cpu_starting(int cpu)
+>  {
+> +	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+> +	int core_id = topology_core_id(cpu);
+> +	int i;
+> +
+> +	for_each_online_cpu(i) {
+> +		struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+> +
+> +		if (pc && pc->core_id == core_id) {
+> +			kfree(cpuc->per_core);
+> +			cpuc->per_core = pc;
+> +			break;
+> +		}
+> +	}
+> +
+> +	cpuc->per_core->core_id = core_id;
+> +	cpuc->per_core->refcnt++;
+> +
+>  	init_debug_store_on_cpu(cpu);
+>  	/*
+>  	 * Deal with CPUs that don't clear their LBRs on power-up.
+> @@ -868,6 +1049,15 @@ static void intel_pmu_cpu_starting(int cpu)
+>  
+>  static void intel_pmu_cpu_dying(int cpu)
+>  {
+> +	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+> +	struct intel_percore *pc = cpuc->per_core;
+> +	
+> +	if (pc) {
+> +		if (pc->core_id == -1 || --pc->refcnt == 0)
+> +			kfree(pc);
+> +		cpuc->per_core = NULL;
+> +	}
+> +
+>  	fini_debug_store_on_cpu(cpu);
+>  }
+>  
+> @@ -892,7 +1082,9 @@ static __initconst const struct x86_pmu intel_pmu = {
+>  	 */
+>  	.max_period		= (1ULL << 31) - 1,
+>  	.get_event_constraints	= intel_get_event_constraints,
+> +	.put_event_constraints	= intel_put_event_constraints,
+>  
+> +	.cpu_prepare		= intel_pmu_cpu_prepare,
+>  	.cpu_starting		= intel_pmu_cpu_starting,
+>  	.cpu_dying		= intel_pmu_cpu_dying,
+>  };
+> @@ -1010,7 +1202,10 @@ static __init int intel_pmu_init(void)
+>  		intel_pmu_lbr_init_nhm();
+>  
+>  		x86_pmu.event_constraints = intel_nehalem_event_constraints;
+> +		x86_pmu.percore_constraints =
+> +			intel_nehalem_percore_constraints;
+>  		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+> +		x86_pmu.extra_regs = intel_nehalem_extra_regs;
+>  		pr_cont("Nehalem events, ");
+>  		break;
+>  
+> @@ -1032,7 +1227,10 @@ static __init int intel_pmu_init(void)
+>  		intel_pmu_lbr_init_nhm();
+>  
+>  		x86_pmu.event_constraints = intel_westmere_event_constraints;
+> +		x86_pmu.percore_constraints =
+> +			intel_westmere_percore_constraints;
+>  		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+> +		x86_pmu.extra_regs = intel_westmere_extra_regs;
+>  		pr_cont("Westmere events, ");
+>  		break;
+>  
 
--	link->lpm_policy = policy;
--	if (ap && ap->slave_link)
--		ap->slave_link->lpm_policy = policy;
- 	return 0;
-
- fail:
-+	/* restore the old policy */
-+	link->lpm_policy = old_policy;
-+	if (ap && ap->slave_link)
-+		ap->slave_link->lpm_policy = old_policy;
-+
- 	/* if no device or only one more chance is left, disable LPM */
- 	if (!dev || ehc->tries[dev->devno] <= 2) {
- 		ata_link_printk(link, KERN_WARNING,
+You seem to have lost the needs_percore stuff.
