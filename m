@@ -1,115 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab0LAWrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 17:47:43 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:2181 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389Ab0LAWrm convert rfc822-to-8bit (ORCPT
+	id S1756926Ab0LAWvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 17:51:20 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:18444 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab0LAWvT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 17:47:42 -0500
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="489735793"
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+	Wed, 1 Dec 2010 17:51:19 -0500
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <20101201143856.51f4f9d9.akpm@linux-foundation.org>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	 <20101201150428.GA2879@elliptictech.com>
-	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	 <1291229669.6609.24.camel@heimdal.trondhjem.org>
-	 <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
-	 <1291234251.6609.39.camel@heimdal.trondhjem.org>
-	 <20101201123341.d12ef362.akpm@linux-foundation.org>
-	 <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
-	 <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
-	 <20101201133831.ea6ba10a.akpm@linux-foundation.org>
-	 <1291240272.6609.50.camel@heimdal.trondhjem.org>
-	 <20101201141351.8609140b.akpm@linux-foundation.org>
-	 <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
-	 <20101201143856.51f4f9d9.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
+CC: "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, hplk <hplk@lists.hp.com>
+Date: Wed, 1 Dec 2010 22:50:43 +0000
+Subject: RE: [PATCH 1/1] hpsa: fix redefinition of PCI_DEVICE_ID_CISSF
+Thread-Topic: [PATCH 1/1] hpsa: fix redefinition of PCI_DEVICE_ID_CISSF
+Thread-Index: AcuRqcxnbd8uXTCMRFCMqQna2tbhJgAACyiQ
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D105549FE@GVW0547EXC.americas.hpqcorp.net>
+References: <20101201171607.GA17943@beardog.cce.hp.com>
+ <20101201144748.cd01d4d1.akpm@linux-foundation.org>
+In-Reply-To: <20101201144748.cd01d4d1.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 17:47:13 -0500
-Message-ID: <1291243633.6609.59.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Dec 2010 22:47:14.0252 (UTC) FILETIME=[B29FF8C0:01CB91A9]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 14:38 -0800, Andrew Morton wrote:
-> On Wed, 1 Dec 2010 14:24:42 -0800
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+
+> -----Original Message-----
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Sent: Wednesday, December 01, 2010 4:48 PM
+> To: Miller, Mike (OS Dev)
+> Cc: James E. J. Bottomley; LKML; LKML-scsi; hplk
+> Subject: Re: [PATCH 1/1] hpsa: fix redefinition of PCI_DEVICE_ID_CISSF
 > 
-> > On Wed, Dec 1, 2010 at 2:13 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > On Wed, 01 Dec 2010 16:51:12 -0500
-> > > Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
-> > >
-> > >> On Wed, 2010-12-01 at 13:38 -0800, Andrew Morton wrote:
-> > >> > Probably on most call paths we'll be OK - if a process is in the middle
-> > >> > of a file truncate, holdin a file* ref which holds an inode ref then
-> > >> > nobody will be unmounting that fs and hence nobody will be unloading
-> > >> > that module.
-> > >> >
-> > >> > However on the random_code->alloc_page->vmscan->releasepage path, none
-> > >> > of that applies.
-> > >>
-> > >> Just out of interest, what ensures that the mapping is still around for
-> > >> the 'spin_unlock_irq(&mapping->tree_lock);' in __remove_mapping()?
-> > >
-> > > Nothing, afacit.
-> > 
-> > No, we're good.
-> > 
-> > Module unload has to go through a "stop_machine()" cycle, and that in
-> > turn requires an idle period for everything. And just a preemption
-> > reschedule isn't enough for that.
-> > 
-> > So what is sufficient is that
-> > 
-> >  - we had the page locked and on the mapping
-> > 
-> >    This implies that we had an inode reference to the module, and the
-> > page lock means that the inode reference cannot go away (because it
-> > will involve invalidate-pages etc)
-> > 
-> >  - we're not sleeping after __remove_mapping, so unload can't happen afterwards.
-> > 
-> > A _lot_ of the module races depend on that latter thing. We have
-> > almost no cases that are strictly about actual reference counts etc.
-> > 
+> On Wed, 1 Dec 2010 11:16:07 -0600
+> Mike Miller <mike.miller@hp.com> wrote:
 > 
-> OK, the stop_machine() plugs a lot of potential race-vs-module-unload
-> things.  But Trond is referring to races against vmscan inode reclaim,
-> unmount, etc.
+> > hpsa: a pci device ID is defined twice
+> >
+> > From: Mike Miller <mike.miller@hp.com>
+> >
+> > PCI_DEVICE_ID_CISSF is defined as 323b in pci_ids.h but redefined as
+> 3fff in
+> > hpsa.c. The ID of 3fff will _never_ ship as a standalone controller.
+> It is
+> > intended only as part a complete storage solution. As such, this
+> patch
+> > removes the redefinition and the StorageWorks P1210m from the product
+> table.
+> >
+> > It also removes a duplicate line for the "unknown" controller
+> support.
 > 
+> It is missing a signed-off-by:, and please quote the warning message
+> when fixing warnings.
 
-Yes, that was my question.
+Sorry about that. I guess I expected stg to do that.
 
-However, Linus' explanation appears to answer one of Hugh's objections:
-we can apparently use a preempt-disable() in order to ensure that the
-module containing the mapping->a_ops is not unloaded until after the
-->freepage() call is complete.
+> 
+> Also, this patch fixes a bug, doesn't it?  323b controllers simply
+> won't work?
 
-That would imply that ->freepage() cannot sleep, but I don't think that
-is too nasty a restriction.
+That's correct.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+-- mikem
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+> 
+> James, it's needed in .37 please.
+> 
+> 
+> From: Mike Miller <mike.miller@hp.com>
+> 
+> drivers/scsi/hpsa.c:93:1: warning: "PCI_DEVICE_ID_HP_CISSF" redefined
+> In file included from include/linux/pci.h:58,
+>                  from drivers/scsi/hpsa.c:25:
+> include/linux/pci_ids.h:746:1: warning: this is the location of the
+> previous definition
+> 
+> PCI_DEVICE_ID_CISSF is defined as 323b in pci_ids.h but redefined as
+> 3fff in
+> hpsa.c. The ID of 3fff will _never_ ship as a standalone controller. It
+> is
+> intended only as part a complete storage solution. As such, this patch
+> removes the redefinition and the StorageWorks P1210m from the product
+> table.
+> 
+> It also removes a duplicate line for the "unknown" controller support.
+> 
+> Signed-off-by: Mike Miller <mike.miller@hp.com>
+> Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  drivers/scsi/hpsa.c |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+> 
+> diff -puN drivers/scsi/hpsa.c~hpsa-fix-redefinition-of-
+> pci_device_id_cissf drivers/scsi/hpsa.c
+> --- a/drivers/scsi/hpsa.c~hpsa-fix-redefinition-of-pci_device_id_cissf
+> +++ a/drivers/scsi/hpsa.c
+> @@ -90,11 +90,7 @@ static const struct pci_device_id hpsa_p
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C,
+> 0x3252},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C,
+> 0x3253},
+>  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C,
+> 0x3254},
+> -#define PCI_DEVICE_ID_HP_CISSF 0x333f
+> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C,
+> 0x333F},
+> -	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,             PCI_ANY_ID,
+> PCI_ANY_ID,
+> -		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+> -	{PCI_VENDOR_ID_COMPAQ,     PCI_ANY_ID,             PCI_ANY_ID,
+> PCI_ANY_ID,
+> +	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+>  		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+>  	{0,}
+>  };
+> @@ -113,8 +109,6 @@ static struct board_type products[] = {
+>  	{0x3249103C, "Smart Array P812", &SA5_access},
+>  	{0x324a103C, "Smart Array P712m", &SA5_access},
+>  	{0x324b103C, "Smart Array P711m", &SA5_access},
+> -	{0x3233103C, "StorageWorks P1210m", &SA5_access},
+> -	{0x333F103C, "StorageWorks P1210m", &SA5_access},
+>  	{0x3250103C, "Smart Array", &SA5_access},
+>  	{0x3250113C, "Smart Array", &SA5_access},
+>  	{0x3250123C, "Smart Array", &SA5_access},
+> _
 
