@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0LAS4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:56:07 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:27935 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab0LAS4F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:56:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KuQwoLFueyd0UNlHbzUjJospevtYJZ4iXivWG7UqmEaap3PjomOy+JTTCZ+B7eKycy
-         M419BQ8qolgfmSvFIj4g==
+	id S1756266Ab0LAS7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:59:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753385Ab0LAS7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:59:05 -0500
+Date: Wed, 1 Dec 2010 19:51:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
+	taskstats
+Message-ID: <20101201185128.GA7656@redhat.com>
+References: <20101129164237.522034198@linux.vnet.ibm.com> <20101129164435.903722027@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikRh0mKkPY=m+kX47+5QNxE-hHSoRbQST3hnDUq@mail.gmail.com>
-References: <1286237003-12406-7-git-send-email-venki@google.com>
-	<tip-305e6835e05513406fa12820e40e4a8ecb63743c@git.kernel.org>
-	<AANLkTin-U-kzr27ArR60K=eE5Jq+sPdTQ7JNhQg711c7@mail.gmail.com>
-	<1291031990.32004.24.camel@laptop>
-	<20101129142213.GA2573@zhy>
-	<1291050395.2697.259.camel@Palantir>
-	<AANLkTikRh0mKkPY=m+kX47+5QNxE-hHSoRbQST3hnDUq@mail.gmail.com>
-Date: Wed, 1 Dec 2010 10:55:59 -0800
-Message-ID: <AANLkTinv6M-aeNjUStMi05UDbi15ZvTKSu9N-hM63F7J@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched: Do not account irq time to current task
-From: Venkatesh Pallipadi <venki@google.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Raistlin <raistlin@linux.it>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101129164435.903722027@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 9:57 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Tue, Nov 30, 2010 at 1:06 AM, Raistlin <raistlin@linux.it> wrote:
->> On Mon, 2010-11-29 at 22:22 +0800, Yong Zhang wrote:
->>> > If you still want to throttle RT tasks simply ensure their bandwidth
->>> > constraint is lower than the available time.
->>>
->>> But the available time is harder to calculated than before.
->>>
->> Well, it shouldn't... I would say it makes it easier! :-P
+On 11/29, Michael Holzheu wrote:
 >
-> It depends on the way how we see it.
-> From the side that we can just focus on task time, it's easy
-> and well understood.  :)
->
-> Now I think we need a way to export the irq_time to user,
-> then the user can determine the average time spending
-> on IRQ.
-> Maybe Venkatesh Pallipadi's patchset titled "Proper
-> kernel irq time reporting" is the one.
->
+> * I left the struct signal locking in the patch, because I think
+>   that in order to get consistent data this is necessary.
 
-Yes. That second patchset exports this information through /proc/stat.
-Peter: Can you pull that patchset into tip.
+OK, I guess you mean that we want to read utime/stime "atomically",
+and thus we need ->siglock to prevent the race with __exit_signal().
 
-Thanks,
-Venki
+> @@ -30,6 +30,7 @@ void bacct_add_tsk(struct taskstats *sta
+>  {
+>  	const struct cred *tcred;
+>  	struct timespec uptime, ts;
+> +	unsigned long flags;
+>  	u64 ac_etime;
+>
+>  	BUILD_BUG_ON(TS_COMM_LEN < TASK_COMM_LEN);
+> @@ -71,6 +72,12 @@ void bacct_add_tsk(struct taskstats *sta
+>  	stats->ac_majflt = tsk->maj_flt;
+>
+>  	strncpy(stats->ac_comm, tsk->comm, sizeof(stats->ac_comm));
+> +	if (thread_group_leader(tsk) && lock_task_sighand(tsk, &flags)) {
+> +		struct cdata *cd = &tsk->signal->cdata_wait;
+> +		stats->ac_cutime = cputime_to_usecs(cd->utime);
+> +		stats->ac_cstime = cputime_to_usecs(cd->stime);
+
+perhaps we need a small comment to explain ->siglock...
+
+But in fact I don't really understand this anyway. This is called
+before we reparent our children. This means that ac_cutime/ac_cstime
+can be changed after that (multithreading, or full_cdata_enabled).
+
+Say, taskstats_exit()->fill_stats()->bacct_add_tsk(). Every thread
+does this, including the group_leader. But, it is possible that
+group_leader exits first, before other threads. IOW, what
+stats->ac_cXtime actually mean?
+
+
+Nevermind, the whole series looks correct to me. Although I still
+can't find the time to read it ;) But at first glance this version
+addresses all concerns we discussed before.
+
+Oleg.
+
