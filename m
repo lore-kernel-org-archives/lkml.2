@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab0LARhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:37:24 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:60568 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab0LARhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:37:24 -0500
-Date: Wed, 1 Dec 2010 19:37:20 +0200
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Julien Cristau <jcristau@debian.org>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org,
+	id S1755529Ab0LARh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:37:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:2060 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753340Ab0LARh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 12:37:57 -0500
+Subject: [PATCH wireless-next] MAINTAINERS: Add ATH GENERIC UTILITIES
+From: Joe Perches <joe@perches.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [PATCH 1/4] drm: fix headers to include linux/types.h
-Message-ID: <20101201173720.GL26184@shisha.kicks-ass.net>
-References: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
- <1291216245-18574-2-git-send-email-virtuoso@slind.org>
- <20101201165418.GU5063@radis.liafa.jussieu.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101201165418.GU5063@radis.liafa.jussieu.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath9k-devel@venema.h4ckr.net, peter@stuge.se,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com>
+References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>
+	 <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
+	 <20101129060732.5130.qmail@stuge.se> <4CF42C17.2070500@openwrt.org>
+	 <1291081185.16349.133.camel@Joe-Laptop> <4CF464D6.2020507@openwrt.org>
+	 <1291148375.18026.342.camel@Joe-Laptop>
+	 <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 09:37:55 -0800
+Message-ID: <1291225075.1845.177.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 05:54:18PM +0100, Julien Cristau wrote:
-> On Wed, Dec  1, 2010 at 17:10:42 +0200, Alexander Shishkin wrote:
-> 
-> > For headers that get exported to userland and make use of u32 style
-> > type names, it is advised to include linux/types.h.
-> > 
-> > This fixes 5 headers_check warnings.
-> > 
-> How many times does this need to be NAKed?  These headers are shared
-> with the BSDs, and they include drm.h which has the linux/types.h
-> include on linux already.
+This file pattern is not currently shown as maintained
+by atheros.  Perhaps it should be?
 
-One of the rules of including files that comes to mind is that one should
-never rely on stuff being included from other headers but always explicitly
-include those which are needed.
-But if compatibility with other OS kernels is a valid reason to disregard
-common coding practices, maybe at least it deserves a comment in those files?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-But I really couldn't care less about these headers, so this is totally up
-to you.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b162fbb..b744d08 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1080,6 +1080,12 @@ S:	Supported
+ F:	Documentation/aoe/
+ F:	drivers/block/aoe/
+ 
++ATHEROS ATH GENERIC UTILITIES
++M:	"Luis R. Rodriguez" <lrodriguez@atheros.com>
++L:	linux-wireless@vger.kernel.org
++S:	Supported
++F:	drivers/net/wireless/ath/*
++
+ ATHEROS ATH5K WIRELESS DRIVER
+ M:	Jiri Slaby <jirislaby@gmail.com>
+ M:	Nick Kossifidis <mickflemm@gmail.com>
 
-Regards,
---
-Alex
+
