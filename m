@@ -1,111 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab0LAJPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 04:15:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:54329 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab0LAJPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 04:15:18 -0500
-Date: Wed, 1 Dec 2010 09:14:14 GMT
-From: tip-bot for Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        julia@diku.dk, hpa@zytor.com, mingo@redhat.com, michaele@au1.ibm.com,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, julia@diku.dk, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, michaele@au1.ibm.com,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1291156021-17711-1-git-send-email-cjashfor@linux.vnet.ibm.com>
-References: <1291156021-17711-1-git-send-email-cjashfor@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: fix event parsing of comma-separated tracepoint events
-Message-ID: <tip-4c635a4e04700a371ef7e4d4bb33ed88747e801e@git.kernel.org>
-Git-Commit-ID: 4c635a4e04700a371ef7e4d4bb33ed88747e801e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753052Ab0LAJPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 04:15:43 -0500
+Received: from netnation.com ([204.174.223.2]:37950 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab0LAJPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 04:15:40 -0500
+Date: Wed, 1 Dec 2010 01:15:35 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Peter Sch??ller <scode@spotify.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mattias de Zalenski <zalenski@spotify.com>, linux-mm@kvack.org
+Subject: Re: Sudden and massive page cache eviction
+Message-ID: <20101201091535.GD31793@hostway.ca>
+References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com> <20101122161158.02699d10.akpm@linux-foundation.org> <1290501502.2390.7029.camel@nimitz> <AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com> <1290529171.2390.7994.camel@nimitz> <AANLkTikCn-YvORocXSJ1Z+ovYNMhKF7TaX=BHWKwrQup@mail.gmail.com> <AANLkTi=mgTHPEYFsryDYnxPa78f-Nr+H7i4+0KPZbxh3@mail.gmail.com> <1290619929.10586.6.camel@nimitz> <AANLkTikT-svqverRLr7Mf6s-17VrOcP_BpyXFpDV=_7s@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Dec 2010 09:14:20 +0000 (UTC)
+In-Reply-To: <AANLkTikT-svqverRLr7Mf6s-17VrOcP_BpyXFpDV=_7s@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4c635a4e04700a371ef7e4d4bb33ed88747e801e
-Gitweb:     http://git.kernel.org/tip/4c635a4e04700a371ef7e4d4bb33ed88747e801e
-Author:     Corey Ashford <cjashfor@linux.vnet.ibm.com>
-AuthorDate: Tue, 30 Nov 2010 14:27:01 -0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 30 Nov 2010 23:04:39 -0200
+On Thu, Nov 25, 2010 at 04:33:01PM +0100, Peter Sch??ller wrote:
 
-perf tools: fix event parsing of comma-separated tracepoint events
+> > simple thing to do in any case. ??You can watch the entries in slabinfo
+> > and see if any of the ones with sizes over 4096 bytes are getting used
+> > often. ??You can also watch /proc/buddyinfo and see how often columns
+> > other than the first couple are moving around.
+> 
+> I collected some information from
+> /proc/{buddyinfo,meminfo,slabinfo,vmstat} and let it sit, polling
+> approximately once per minute. I have some results correlated with
+> another page eviction in graphs. The graph is here:
+> 
+>    http://files.spotify.com/memcut/memgraph-20101124.png
+> 
+> The last sudden eviction there occurred somewhere between 22:30 and
+> 22:45. Some URL:s that can be compared for those periods:
+> 
+>    Before:
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/vmstat
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/buddyinfo
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/meminfo
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/slabinfo
+> 
+>    After:
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/vmstat
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/buddyinfo
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/meminfo
+>    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/slabinfo
 
-There are number of issues that prevent the use of multiple tracepoint events
-being specified in a -e/--event switch, separated by commas.
+Disclaimer: I have no idea what I'm doing. :)
 
-For example, perf stat -e irq:irq_handler_entry,irq:irq_handler_exit ...  fails
-because the tracepoint event parsing code doesn't recognize the comma separator
-properly.
+Your buddyinfo looks to be pretty low for order 3 and above, before and
+after the sudden eviction, so my guess is that it's probably related to
+the issues I'm seeing with fragmentation, but maybe not fighting between
+zones, since you seem to have a larger Normal zone than DMA32.  (Not
+sure, you didn't post /proc/zoneinfo).  Also, you seem to be on an
+actual NUMA system, so other things are happening there, too.
 
-This patch corrects those issues.
+If you have munin installed (it looks like you do), try enabling the
+buddyinfo plugin available since munin 1.4.4.  It graphs the buddyinfo
+data, so it could be lined up with the memory graphs (thanks Erik).
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Julia Lawall <julia@diku.dk>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reported-by: Michael Ellerman <michaele@au1.ibm.com>
-LKML-Reference: <1291156021-17711-1-git-send-email-cjashfor@linux.vnet.ibm.com>
-Signed-off-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/parse-events.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+[snip]
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4af5bd5..c305305 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -434,7 +434,7 @@ parse_single_tracepoint_event(char *sys_name,
- 	id = atoll(id_buf);
- 	attr->config = id;
- 	attr->type = PERF_TYPE_TRACEPOINT;
--	*strp = evt_name + evt_length;
-+	*strp += strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
- 
- 	attr->sample_type |= PERF_SAMPLE_RAW;
- 	attr->sample_type |= PERF_SAMPLE_TIME;
-@@ -495,7 +495,7 @@ static enum event_result parse_tracepoint_event(const char **strp,
- 				    struct perf_event_attr *attr)
- {
- 	const char *evt_name;
--	char *flags;
-+	char *flags = NULL, *comma_loc;
- 	char sys_name[MAX_EVENT_LENGTH];
- 	unsigned int sys_length, evt_length;
- 
-@@ -514,6 +514,11 @@ static enum event_result parse_tracepoint_event(const char **strp,
- 	sys_name[sys_length] = '\0';
- 	evt_name = evt_name + 1;
- 
-+	comma_loc = strchr(evt_name, ',');
-+	if (comma_loc) {
-+		/* take the event name up to the comma */
-+		evt_name = strndup(evt_name, comma_loc - evt_name);
-+	}
- 	flags = strchr(evt_name, ':');
- 	if (flags) {
- 		/* split it out: */
-@@ -524,9 +529,8 @@ static enum event_result parse_tracepoint_event(const char **strp,
- 	evt_length = strlen(evt_name);
- 	if (evt_length >= MAX_EVENT_LENGTH)
- 		return EVT_FAILED;
--
- 	if (strpbrk(evt_name, "*?")) {
--		*strp = evt_name + evt_length;
-+		*strp += strlen(sys_name) + evt_length;
- 		return parse_multiple_tracepoint_event(sys_name, evt_name,
- 						       flags);
- 	} else
+> kmalloc increases:
+> 
+> -kmalloc-4096         301    328   4096    8    8 : tunables    0    0
+>    0 : slabdata     41     41      0
+> +kmalloc-4096         637    680   4096    8    8 : tunables    0    0
+>    0 : slabdata     85     85      0
+> -kmalloc-2048       18215  19696   2048   16    8 : tunables    0    0
+>    0 : slabdata   1231   1231      0
+> +kmalloc-2048       41908  51792   2048   16    8 : tunables    0    0
+>    0 : slabdata   3237   3237      0
+> -kmalloc-1024       85444  97280   1024   32    8 : tunables    0    0
+>    0 : slabdata   3040   3040      0
+> +kmalloc-1024      267031 327104   1024   32    8 : tunables    0    0
+>    0 : slabdata  10222  10222      0
+
+Note that all of the above are actually attempting order-3 allocations
+first; see /sys/kernel/slab/kmalloc-1024/order, for instance.  The "8" is
+means "8 pages per slab", which means order 3 is the attempted allocation
+size.
+
+I did the following on a system to test, but the free memory did not
+actually improve.  It seems that even only order 1 allocations are enough
+to reclaim too much order 0.  Even a "while true; sleep .01; done" caused
+free memory to start increasing due to order 1 (task_struct allocation)
+watermarks waking kswapd, while our other usual VM activity is happening.
+
+#!/bin/bash
+
+for i in /sys/kernel/slab/*/; do
+        if [ `cat $i/object_size` -le 4096 ]; then
+                echo 0 > $i/order
+        else
+                echo 1 > $i/order
+        fi
+done
+
+But this is on another machine, without Mel's patch, and with 8 GB
+memory, so a bigger Normal zone.
+
+[snip]
+
+> If my interpretation and understanding is correct, this indicates that
+> for example, ~3000 to ~10000 3-order allocations resulting from 1 kb
+> kmalloc():s. Meaning about 0.2 gig ( 7000*4*8*1024/1024/1024). Add the
+> other ones and we get some more, but only a few hundred megs in total.
+> 
+> Going by the hypothesis that we are seeing the same thing as reported
+> by Simon Kirby (I'll respond to that E-Mail separately), the total
+> amount is (as far as I understand) not the important part, but the
+> fact that we saw a non-trivial increase in 3-order allocations would
+> perhaps be a consistent observation in that frequent 3-order
+> allocations might be more likely to trigger the behavior Simon
+> reports.
+
+Try installing the "perf" tool.  It can be built from the kernel tree in
+tools/perf, and then you usually can just copy the binary around.  You
+can use it to trace the points which cause kswapd to wake up, which will
+show which processes are doing it, the order, flags, etc.
+
+Just before the eviction is about to happen (or whenever), try this:
+
+perf record --event vmscan:mm_vmscan_wakeup_kswapd --filter 'order>=3' \
+	--call-graph -a sleep 30
+
+Then view the recorded events with "perf trace", which should spit out
+something like this:
+
+    lmtp-3531  [003] 432339.243851: mm_vmscan_wakeup_kswapd: nid=0 zid=2 order=3
+    lmtp-3531  [003] 432339.243856: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=3
+
+The process which woke kswapd may not be directly responsible for the
+allocation as a network interrrupt or something could have happened on
+top of it.  See "perf report", which is a bit dodgy at least for me, to
+see the stack traces, which might make things clearer.  For example, my
+traces show that even kswapd wakes kswapd sometimes, but it's because of
+a trace like this:
+
+    -      9.09%  kswapd0  [kernel.kallsyms]  [k] wakeup_kswapd
+         wakeup_kswapd
+         __alloc_pages_nodemask
+         alloc_pages_current
+         new_slab
+         __slab_alloc
+         __kmalloc_node_track_caller
+         __alloc_skb
+         __netdev_alloc_skb
+         bnx2_poll_work
+         bnx2_poll
+         net_rx_action
+         __do_softirq
+         call_softirq
+         do_softirq
+         irq_exit
+         do_IRQ
+         ret_from_intr
+         truncate_inode_pages
+         proc_evict_inode
+         evict
+         iput
+         dentry_iput
+         d_kill
+         __shrink_dcache_sb
+         shrink_dcache_memory
+         shrink_slab
+         kswapd
+
+Anyway, maybe you'll see some interesting traces.  If kswapd isn't waking
+very often, you can also trace "kmem:mm_page_alloc" or similar (see "perf
+list"), or try a smaller order or a longer sleep.
+
+Cheers,
+
+Simon-
