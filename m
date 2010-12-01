@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab0LAWrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 17:47:06 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50403 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab0LAWrD (ORCPT
+	id S1756710Ab0LAWrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 17:47:43 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:2181 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753389Ab0LAWrm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 17:47:03 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-In-Reply-To: Your message of "Wed, 01 Dec 2010 10:43:59 GMT."
-             <20101201104359.GJ22787@shareable.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1290532938-7332-1-git-send-email-virtuoso@slind.org> <20101123224346.GA19350@tango.0pointer.de>
-            <20101201104359.GJ22787@shareable.org>
+	Wed, 1 Dec 2010 17:47:42 -0500
+X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
+   d="scan'208";a="489735793"
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <20101201143856.51f4f9d9.akpm@linux-foundation.org>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+	 <20101201150428.GA2879@elliptictech.com>
+	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+	 <1291229669.6609.24.camel@heimdal.trondhjem.org>
+	 <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+	 <1291234251.6609.39.camel@heimdal.trondhjem.org>
+	 <20101201123341.d12ef362.akpm@linux-foundation.org>
+	 <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+	 <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+	 <20101201133831.ea6ba10a.akpm@linux-foundation.org>
+	 <1291240272.6609.50.camel@heimdal.trondhjem.org>
+	 <20101201141351.8609140b.akpm@linux-foundation.org>
+	 <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+	 <20101201143856.51f4f9d9.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 01 Dec 2010 17:47:13 -0500
+Message-ID: <1291243633.6609.59.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1291243569_5106P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 01 Dec 2010 17:46:09 -0500
-Message-ID: <20180.1291243569@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4CF6D032.01C7,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 01 Dec 2010 22:47:14.0252 (UTC) FILETIME=[B29FF8C0:01CB91A9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1291243569_5106P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 2010-12-01 at 14:38 -0800, Andrew Morton wrote:
+> On Wed, 1 Dec 2010 14:24:42 -0800
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Wed, Dec 1, 2010 at 2:13 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > On Wed, 01 Dec 2010 16:51:12 -0500
+> > > Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> > >
+> > >> On Wed, 2010-12-01 at 13:38 -0800, Andrew Morton wrote:
+> > >> > Probably on most call paths we'll be OK - if a process is in the middle
+> > >> > of a file truncate, holdin a file* ref which holds an inode ref then
+> > >> > nobody will be unmounting that fs and hence nobody will be unloading
+> > >> > that module.
+> > >> >
+> > >> > However on the random_code->alloc_page->vmscan->releasepage path, none
+> > >> > of that applies.
+> > >>
+> > >> Just out of interest, what ensures that the mapping is still around for
+> > >> the 'spin_unlock_irq(&mapping->tree_lock);' in __remove_mapping()?
+> > >
+> > > Nothing, afacit.
+> > 
+> > No, we're good.
+> > 
+> > Module unload has to go through a "stop_machine()" cycle, and that in
+> > turn requires an idle period for everything. And just a preemption
+> > reschedule isn't enough for that.
+> > 
+> > So what is sufficient is that
+> > 
+> >  - we had the page locked and on the mapping
+> > 
+> >    This implies that we had an inode reference to the module, and the
+> > page lock means that the inode reference cannot go away (because it
+> > will involve invalidate-pages etc)
+> > 
+> >  - we're not sleeping after __remove_mapping, so unload can't happen afterwards.
+> > 
+> > A _lot_ of the module races depend on that latter thing. We have
+> > almost no cases that are strictly about actual reference counts etc.
+> > 
+> 
+> OK, the stop_machine() plugs a lot of potential race-vs-module-unload
+> things.  But Trond is referring to races against vmscan inode reclaim,
+> unmount, etc.
+> 
 
-On Wed, 01 Dec 2010 10:43:59 GMT, Jamie Lokier said:
+Yes, that was my question.
 
-> So maybe CLOCK_MONOTONIC should be changed to include elapsed time
-> during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
-> for programs that want that?
+However, Linus' explanation appears to answer one of Hugh's objections:
+we can apparently use a preempt-disable() in order to ensure that the
+module containing the mapping->a_ops is not unloaded until after the
+->freepage() call is complete.
 
-Wouldn't that be an API break for programs that are expecting the current
-behavior of CLOCK_MONOTONIC?  Yes, there should be a way to request either of
-them - but if there's only one way now, it should continue to act the current
-way, and the added way is the second option.
+That would imply that ->freepage() cannot sleep, but I don't think that
+is too nasty a restriction.
 
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
---==_Exmh_1291243569_5106P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFM9tAxcC3lWbTT17ARAq83AKD3l4x8J6GenNArbVxWjroVAqYMBQCgx6jH
-0zSg7GwZh+i6qj6oBH0g4Do=
-=Jrmy
------END PGP SIGNATURE-----
-
---==_Exmh_1291243569_5106P--
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
