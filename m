@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0LAXeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 18:34:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756037Ab0LAXeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 18:34:06 -0500
-Date: Wed, 1 Dec 2010 18:42:50 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 2/3] KVM: MMU: fix accessed bit set on prefault path
-Message-ID: <20101201204250.GA18395@amt.cnet>
-References: <4CF4C535.8080405@cn.fujitsu.com>
- <4CF4C587.7080000@cn.fujitsu.com>
- <20101130132915.GG2187@redhat.com>
- <4CF52BC6.9020401@cn.fujitsu.com>
- <20101130175005.GA2924@redhat.com>
- <4CF53F41.1040503@cn.fujitsu.com>
- <20101130183833.GB2924@redhat.com>
- <4CF54C4F.80901@cn.fujitsu.com>
- <20101130192059.GC2924@redhat.com>
- <4CF5B0F6.8030900@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF5B0F6.8030900@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756607Ab0LAXhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 18:37:09 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59863 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755655Ab0LAXhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 18:37:06 -0500
+Date: Wed, 1 Dec 2010 15:36:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+Message-Id: <20101201153608.78b331f9.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	<1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+	<1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+	<AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+	<1291229669.6609.24.camel@heimdal.trondhjem.org>
+	<AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+	<1291234251.6609.39.camel@heimdal.trondhjem.org>
+	<20101201123341.d12ef362.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+	<alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+	<20101201133831.ea6ba10a.akpm@linux-foundation.org>
+	<1291240272.6609.50.camel@heimdal.trondhjem.org>
+	<20101201141351.8609140b.akpm@linux-foundation.org>
+	<AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+	<20101201143856.51f4f9d9.akpm@linux-foundation.org>
+	<AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 10:20:38AM +0800, Xiao Guangrong wrote:
-> On 12/01/2010 03:20 AM, Gleb Natapov wrote:
-> 
-> > Firs of all if guest is PV the guest process cannot be killed. Second
-> > why is it a problem that we marked pfn as accessed on speculative path?
-> > What problem it causes especially since it is very likely that the page
-> > will be accessed shortly anyway?
-> > 
-> 
-> Hi Avi, Marcelo,
-> 
-> What is your opinion on this point?
+On Wed, 1 Dec 2010 15:31:11 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Dont think this is an issue. Its very likely the page is going to be
-accessed soon (unlike pte prefetch).
+> On Wed, Dec 1, 2010 at 2:38 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> > OK, the stop_machine() plugs a lot of potential race-vs-module-unload
+> > things. __But Trond is referring to races against vmscan inode reclaim,
+> > unmount, etc.
+> 
+> So?
+> 
+> A filesystem module cannot be unloaded while it's still mounted.
+> 
+> And unmount doesn't succeed until all inodes are gone.
+> 
+> And getting rid of an inode doesn't succeed until all pages associated
+> with it are gone.
+> 
+> And getting rid of the pages involves locking them (whether in
+> truncate or vmscan) and removing them from all lists.
+> 
+> Ergo: vmscan has a locked page leads to the filesystem being
+> guaranteed to not be unmounted.  And that, in turn, guarantees that
+> the module won't be unloaded until the machine has gone through an
+> idle cycle.
+
+The page isn't attached to the address_space any more:
+
+static int __remove_mapping(struct address_space *mapping, struct page *page)
+{
+	...
+		__remove_from_page_cache(page);
+		spin_unlock_irq(&mapping->tree_lock);
+	...
+}
 
