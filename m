@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab0LAHvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:51:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:41622 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269Ab0LAHqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:46:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="682672315"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v16 02/17]Add a new struct for device to manipulate external buffer.
-Date: Wed,  1 Dec 2010 16:08:13 +0800
-Message-Id: <38fbf05a450b34e939aa1b0f3a5126711990f0cc.1291187695.git.xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+	id S1754089Ab0LAHyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:54:11 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59832 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab0LAHyJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:54:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fXZ+nEzW4Np4qdGxBfAgTMJFnaY8AjAZBL0nn/Z5PItrMsuL7ajwUbCG0cu602lp7M
+         DsMa4Hw7llKHdmZLw/heekekOZkLBH7jlIOBMjYJBEx9ReKz/6q7QQGTyk9kx1uiikKI
+         +X4BD5J5+AR5LHUdDhz4DcdlFNG0g+R4m1qVY=
+MIME-Version: 1.0
+In-Reply-To: <20101130101520.17475.79978.stgit@localhost6.localdomain6>
+References: <20101130101126.17475.18729.stgit@localhost6.localdomain6>
+	<20101130101520.17475.79978.stgit@localhost6.localdomain6>
+Date: Wed, 1 Dec 2010 16:54:08 +0900
+Message-ID: <AANLkTik59zL97EqpPSNiy122YFwXqWyRqAkMJDjRtfRE@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Refactor zone_reclaim
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+Hi Balbir,
 
-    Add a structure in structure net_device, the new field is
-    named as mp_port. It's for mediate passthru (zero-copy).
-    It contains the capability for the net device driver,
-    a socket, and an external buffer creator, external means
-    skb buffer belongs to the device may not be allocated from
-    kernel space.
+On Tue, Nov 30, 2010 at 7:15 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> Refactor zone_reclaim, move reusable functionality outside
+> of zone_reclaim. Make zone_reclaim_unmapped_pages modular
+>
+> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> ---
+>  mm/vmscan.c |   35 +++++++++++++++++++++++------------
+>  1 files changed, 23 insertions(+), 12 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 325443a..0ac444f 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2719,6 +2719,27 @@ static long zone_pagecache_reclaimable(struct zone *zone)
+>  }
+>
+>  /*
+> + * Helper function to reclaim unmapped pages, we might add something
+> + * similar to this for slab cache as well. Currently this function
+> + * is shared with __zone_reclaim()
+> + */
+> +static inline void
+> +zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
+> +                               unsigned long nr_pages)
+> +{
+> +       int priority;
+> +       /*
+> +        * Free memory by calling shrink zone with increasing
+> +        * priorities until we have enough memory freed.
+> +        */
+> +       priority = ZONE_RECLAIM_PRIORITY;
+> +       do {
+> +               shrink_zone(priority, zone, sc);
+> +               priority--;
+> +       } while (priority >= 0 && sc->nr_reclaimed < nr_pages);
+> +}
+> +
 
-    Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-    Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-    Reviewed-by: Jeff Dike <jdike@linux.intel.com>
----
- include/linux/netdevice.h |   25 ++++++++++++++++++++++++-
- 1 files changed, 24 insertions(+), 1 deletions(-)
+I don't see any specific logic about naming
+"zone_reclaim_unmapped_pages" in your function.
+Maybe, caller of this function have to handle sc->may_unmap. So, this
+function's naming
+is not good.
+As I see your logic, the function name would be just "zone_reclaim_pages"
+If you want to name it with zone_reclaim_unmapped_pages, it could be
+better with setting sc->may_unmap in this function.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 46c36ff..f6b1870 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -325,6 +325,28 @@ enum netdev_state_t {
- 	__LINK_STATE_DORMANT,
- };
- 
-+/*The structure for mediate passthru(zero-copy). */
-+struct mp_port	{
-+	/* the header len */
-+	int		hdr_len;
-+	/* the max payload len for one descriptor */
-+	int		data_len;
-+	/* the pages for DMA in one time */
-+	int		npages;
-+	/* the socket bind to */
-+	struct socket	*sock;
-+	/* the header len for virtio-net */
-+	int		vnet_hlen;
-+	/* the external buffer page creator */
-+	struct skb_ext_page *(*ctor)(struct mp_port *,
-+				struct sk_buff *, int);
-+	/* the hash function attached to find according
-+	 * backend ring descriptor info for one external
-+	 * buffer page.
-+	 */
-+	struct skb_ext_page *(*hash)(struct net_device *,
-+				struct page *);
-+};
- 
- /*
-  * This structure holds at boot time configured netdevice settings. They
-@@ -1045,7 +1067,8 @@ struct net_device {
- 
- 	/* GARP */
- 	struct garp_port	*garp_port;
--
-+	/* mpassthru */
-+	struct mp_port		*mp_port;
- 	/* class/net/name entry */
- 	struct device		dev;
- 	/* space for optional device, statistics, and wireless sysfs groups */
+
 -- 
-1.7.3
-
+Kind regards,
+Minchan Kim
