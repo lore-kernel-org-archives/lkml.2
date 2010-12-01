@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab0LAKod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:44:33 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:53009 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab0LAKoc (ORCPT
+	id S1754793Ab0LAKuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 05:50:25 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:28141 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751361Ab0LAKuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:44:32 -0500
-Date: Wed, 1 Dec 2010 10:43:59 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-Message-ID: <20101201104359.GJ22787@shareable.org>
-References: <1290532938-7332-1-git-send-email-virtuoso@slind.org> <20101123224346.GA19350@tango.0pointer.de>
+	Wed, 1 Dec 2010 05:50:23 -0500
+Message-ID: <4CF6284C.1010802@dsn.okisemi.com>
+Date: Wed, 01 Dec 2010 19:49:48 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101123224346.GA19350@tango.0pointer.de>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+CC: kok.howg.ewe@intel.com, "Wang Qi\"" <qi.wang@intel.com>,
+        "Wang Yong Y\"" <yong.y.wang@intel.com>,
+        "Intel OTC\"" <joel.clark@intel.com>, margie.foster@intel.com,
+        "Andrew\"" <andrew.chih.howe.khor@intel.com>
+Subject: [PATCH] dma : EG20T PCH: Fix miss-setting DMA descriptor
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lennart Poettering wrote:
-> On Tue, 23.11.10 19:22, Alexander Shishkin (virtuoso@slind.org) wrote:
-> 
-> > Certain userspace applications (like "clock" desktop applets or cron or
-> > systemd) might want to be notified when some other application changes
-> > the system time. There are several known to me reasons for this:
-> >  - avoiding periodic wakeups to poll time changes;
-> >  - rearming CLOCK_REALTIME timers when said changes happen;
-> >  - changing system timekeeping policy for system-wide time management
-> >    programs;
-> >  - keeping guest applications/operating systems running in emulators
-> >    up to date.
-> > 
-> > This is another attempt to approach notifying userspace about system
-> > clock changes. The other one is using an eventfd and a syscall [1]. In
-> > the course of discussing the necessity of a syscall for this kind of
-> > notifications, it was suggested that this functionality can be achieved
-> > via timers [2] (and timerfd in particular [3]). This idea got quite
-> > some support [4], [5], [6] and some vague criticism [7], so I decided
-> > to try and go a bit further with it.
-> 
-> I agree with Kay, this is pretty much exactly what we want for
-> systemd. (Assuming that the time jump due to system suspend is
-> propagated to userspace like any other time jump with this path).
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-I hope the time jump due to suspend is *not* propagated in the same
-way to userspace :-)
 
-What I'd like to see:
 
- 1. Time jump due to the system clock being stepped: Notification.
+Currently, in case of using scatter/gather mode, head of data is not sent to
 
-    This is *not* a change in real time.  It means the clock was
-    corrected/changed.  No physical time passed.
+destination. The cause is second descriptor address is set to NEXT.
 
- 2. Time jump due to suspend/resume: Different notification.
+The NEXT must have head of descriptor address.
 
-    This *is* a change in real time.  Physical time passed.
+This patch sets head of descriptor address to the NEXT.
 
- 3. Time drift corrections: As now, no notification, it's just
-    the clock being regulated.
 
-To signal the difference between 1 and 2, there ought to be some way
-for userspace to determine how much of the clock delta corresponds
-with physical time, by reading some sort of "monotonic" clock :-)
 
-CLOCK_MONOTONIC is unsuitable because it stops at suspend.  Maybe it
-should stay that way.  But maybe not - programs using CLOCK_MONOTONIC
-usually want to trigger timeouts etc. based on real elapsed time, and
-after suspend/resume, it's quite reasonable to want to trigger all of
-a program's short timeouts immediately.  Indeed some network protocol
-userspace may currently behave *incorrectly* over suspend/resume,
-especially those using clock times to validate their caches,
-*because* CLOCK_MONOTONIC doesn't count it.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/dma/pch_dma.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-So maybe CLOCK_MONOTONIC should be changed to include elapsed time
-during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
-for programs that want that?
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 92b6790..a3d54c0 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -259,11 +259,6 @@ static void pdc_dostart(struct pch_dma_chan *pd_chan, struct pch_dma_desc* desc)
+ 		return;
+ 	}
+ 
+-	channel_writel(pd_chan, DEV_ADDR, desc->regs.dev_addr);
+-	channel_writel(pd_chan, MEM_ADDR, desc->regs.mem_addr);
+-	channel_writel(pd_chan, SIZE, desc->regs.size);
+-	channel_writel(pd_chan, NEXT, desc->regs.next);
+-
+ 	dev_dbg(chan2dev(&pd_chan->chan), "chan %d -> dev_addr: %x\n",
+ 		pd_chan->chan.chan_id, desc->regs.dev_addr);
+ 	dev_dbg(chan2dev(&pd_chan->chan), "chan %d -> mem_addr: %x\n",
+@@ -273,10 +268,16 @@ static void pdc_dostart(struct pch_dma_chan *pd_chan, struct pch_dma_desc* desc)
+ 	dev_dbg(chan2dev(&pd_chan->chan), "chan %d -> next: %x\n",
+ 		pd_chan->chan.chan_id, desc->regs.next);
+ 
+-	if (list_empty(&desc->tx_list))
++	if (list_empty(&desc->tx_list)) {
++		channel_writel(pd_chan, DEV_ADDR, desc->regs.dev_addr);
++		channel_writel(pd_chan, MEM_ADDR, desc->regs.mem_addr);
++		channel_writel(pd_chan, SIZE, desc->regs.size);
++		channel_writel(pd_chan, NEXT, desc->regs.next);
+ 		pdc_set_mode(&pd_chan->chan, DMA_CTL0_ONESHOT);
+-	else
++	} else {
++		channel_writel(pd_chan, NEXT, virt_to_phys(&desc->regs));
+ 		pdc_set_mode(&pd_chan->chan, DMA_CTL0_SG);
++	}
+ 
+ 	val = dma_readl(pd, CTL2);
+ 	val |= 1 << (DMA_CTL2_START_SHIFT_BITS + pd_chan->chan.chan_id);
+-- 
+1.6.0.6
 
-That, plus this proposed patch, would signal the difference between 1
-and 2 above nicely.
-
--- Jamie
