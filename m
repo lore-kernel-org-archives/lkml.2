@@ -1,103 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0LANLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 08:11:14 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44191 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab0LANLN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 08:11:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=BwrpsayC/AwojcJFw8x9PK8MR7EzbVle5MCkbLfvPY5SfScLEyCbhs4+MWlO3pW6rE
-         g6MYbLojvaJ1SaG29joa1D/4MEu28I86lboxvIc/CUHM2X0pp6bIxfwOnblN8S4YgnPk
-         sjuSHOG1pl6DfpF65obOA15efBvKc17IfGmWI=
+	id S1755174Ab0LANOl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 08:14:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34573 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab0LANOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 08:14:40 -0500
+Message-ID: <4CF64A34.7070100@redhat.com>
+Date: Wed, 01 Dec 2010 08:14:28 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinpX0p8hv_RJojASbjDNYQ60bODo3kLBobRDtmf@mail.gmail.com>
-References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com> <AANLkTinpX0p8hv_RJojASbjDNYQ60bODo3kLBobRDtmf@mail.gmail.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Wed, 1 Dec 2010 21:10:51 +0800
-Message-ID: <AANLkTinVH0X_wmHgQSeYT-JMVWAjO3CHvy=jh1817swj@mail.gmail.com>
-Subject: Re: [PATCH] Built kernel without -O2 option
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gdb@sourceware.org, hellogcc@freelists.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 2/3] NFS: lock the readdir page while it is in use
+References: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>	 <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>	 <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>	 <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>	 <AANLkTin8FSeM8cQ8BWYWjiyGy33EwzpMfFwauK+4j0uT@mail.gmail.com> <1291177753.7694.17.camel@heimdal.trondhjem.org>
+In-Reply-To: <1291177753.7694.17.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 05:07, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Sun, Nov 28, 2010 at 10:56 PM, Hui Zhu <teawater@gmail.com> wrote:
->> Hi,
->>
->> Now, there are a lot of ways to debug the Linux kernel with GDB, like
->> qemu, kgtp or kgdb and so on.
->> But the developer more like add a printk. It have a lot of reason, a big one is:
->> (gdb) p ret
->> $3 = <value optimized out>
->> And the code execution order is not right.
->>
->> This is becuase the Kernel is bult with gcc -O2.  Gcc will not
->> generate enough debug message with file with -O2.
->> So GDB cannot work very well with Linux kernel.
->>
->> So I make a patch that add a option in "Kernel hacking" called "Close
->> GCC optimization".  It will make kernel be built without -O2.
->>
-> no, it does not, see below ..
->
->> I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
->>
->> And I will put new patch in here and
->> http://code.google.com/p/kgtp/downloads/list
->>
->> Thanks,
->> Hui
->>
->> Signed-off-by: Hui Zhu <teawater@gmail.com>
->> ---
->> [...]
->> +ifdef CONFIG_CC_CLOSE_OPTIMIZATION
->> +CFLAGS_process_$(BITS).o       += -O2
->> +CFLAGS_entry_$(BITS).o         += -O2
->> +CFLAGS_traps.o                 += -O2
->> +CFLAGS_i387.o                  += -O2
->> +CFLAGS_xsave.o                 += -O2
->> +CFLAGS_hpet.o                  += -O2
->> +endif
->>
->> [...]
->>
->> --- a/lib/Kconfig.debug
->> +++ b/lib/Kconfig.debug
->> @@ -136,6 +136,14 @@ config DEBUG_SECTION_MISMATCH
->>          - Enable verbose reporting from modpost to help solving
->>            the section mismatches reported.
->>
->> +config CC_CLOSE_OPTIMIZATION
->> +       bool "Close GCC optimization"
->> +       default n
->> +       help
->> +         Enabling this option will let gcc build kernel without "-O2".
->> +
->> +         If unsure, say N.
->> +
-> You are not consistent with yourself, you add an option saying "do not
-> build the kernel with -O2" and yet, you add "-O2" flags for unknown
-> reason all over the tree...
->
->  - Arnaud
->
+On 11/30/2010 11:29 PM, Trond Myklebust wrote:
 
-You are really good at English.  But not mathematics.
+> I'm not worried about other readdir calls invalidating the page. My
+> concern is rather about the VM memory reclaimers ejecting the page from
+> the page cache, and calling nfs_readdir_clear_array while we're
+> referencing the page.
 
-Add -O2 to build 30 files is better than add -O2 to all files(who know
-how much files in Linux Kernel?).
+Wait, if nfs_readdir_clear_array can clear the page while
+somebody else has a refcount to it, what good is the
+refcount?
 
-Thanks,
-Hui
+Why is your .releasepage modifying the data on the page,
+instead of just the metadata in the struct page?
+
+-- 
+All rights reversed
