@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0LAUDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:03:38 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:55458 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab0LAUDg (ORCPT
+	id S1756887Ab0LAUFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:05:43 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:45404 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755947Ab0LAUFl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:03:36 -0500
-Date: Wed, 1 Dec 2010 12:08:15 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: Greg KH <greg@kroah.com>
-cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
-In-Reply-To: <20101201194751.GA1171@kroah.com>
-Message-ID: <Pine.LNX.4.64.1012011203290.8183@cobra.newdream.net>
-References: <AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com>
- <20101118013002.GC8558@kroah.com> <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
- <20101119020820.GB18767@kroah.com> <AANLkTim4p=tpaQG_XDE5Vk0YAypYCegAguYNKRg-LeDF@mail.gmail.com>
- <20101123001410.GA31294@kroah.com> <AANLkTi=n9aJ_8VAcyOXQxxeprWzerZLf0H+ryHZs7O04@mail.gmail.com>
- <20101123005838.GB29289@kroah.com> <1290558233.1792.73.camel@yehudasa-desktop>
- <Pine.LNX.4.64.1012011117460.8183@cobra.newdream.net> <20101201194751.GA1171@kroah.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 1 Dec 2010 15:05:41 -0500
+X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
+   d="scan'208";a="489661250"
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+	 <20101201150428.GA2879@elliptictech.com>
+	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+	 <1291229669.6609.24.camel@heimdal.trondhjem.org>
+	 <alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 01 Dec 2010 15:05:38 -0500
+Message-ID: <1291233938.6609.37.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 01 Dec 2010 20:05:40.0537 (UTC) FILETIME=[20B87290:01CB9193]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, Greg KH wrote:
-> >  /sys/bus/rbd/{add,remove}
-> >  /sys/bus/rbd/devices/<devid>/                 <-- struct device
-> >  /sys/bus/rbd/devices/<devid>/{some dev attrs}
-> >  /sys/bus/rbd/devices/<devid>/snap_<snapid>/   <-- struct device
-> >  /sys/bus/rbd/devices/<devid>/snap_<snapid>/{some snap attrs}
+On Wed, 2010-12-01 at 11:23 -0800, Hugh Dickins wrote:
+> On Wed, 1 Dec 2010, Trond Myklebust wrote:
+> > On Wed, 2010-12-01 at 08:17 -0800, Linus Torvalds wrote:
+> > > include/linux/fs.h |    1 +
+> > >  mm/vmscan.c        |    3 +++
+> > >  2 files changed, 4 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > > index c9e06cc..090f0ea 100644
+> > > --- a/include/linux/fs.h
+> > > +++ b/include/linux/fs.h
+> > > @@ -602,6 +602,7 @@ struct address_space_operations {
+> > >         sector_t (*bmap)(struct address_space *, sector_t);
+> > >         void (*invalidatepage) (struct page *, unsigned long);
+> > >         int (*releasepage) (struct page *, gfp_t);
+> > > +       void (*freepage)(struct page *);
+> > >         ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec
+> > > *iov,
+> > >                         loff_t offset, unsigned long nr_segs);
+> > >         int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index d31d7ce..1accb01 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -499,6 +499,9 @@ static int __remove_mapping(struct address_space
+> > > *mapping, struct page *page)
+> > >                 mem_cgroup_uncharge_cache_page(page);
+> > >         }
+> > >  
+> > > +       if (mapping->a_ops->freepage)
+> > > +               mapping->a_ops->freepage(page);
 > > 
-> > This works, and I is (I hope) using struct device properly.  The only 
-> > problem, purely from a user interface standpoint, is that the snaps are 
-> > mixed in with attributes, so anybody wanting to iterate over snaps needs 
-> > to do something crufty like
+> > Hmm... Looking again at the problem, it appears that the same callback
+> > needs to be added to truncate_complete_page() and
+> > invalidate_complete_page2(). Otherwise we end up in a situation where
+> > the page can sometimes be removed from the page cache without calling
+> > freepage().
 > > 
-> >  $ for snap in `ls /sys/bus/rbd/devices/$id | grep ^snap_ | cut -c 6-`; do ...
+> > > +
+> > >         return 1;
+> > >  
+> > >  cannot_free:
 > 
-> What's wrong with:
-> 	for snap in `ls /sys/bus/rbd/devices/$id/snap_*`; do ...
-> instead?
+> Yes, I was wondering quite how we would define this ->freepage thing,
+> if it gets called from one place that removes from page cache and not
+> from others.
+> 
+> Another minor problem with it: it would probably need to take the
+> struct address_space *mapping as arg as well as struct page *page:
+> because by this time page->mapping has been reset to NULL.
+> 
+> But I'm not at all keen on adding a calllback in this very special
+> frozen-to-0-references place: please let's not do it without an okay
+> from Nick Piggin (now Cc'ed).
+> 
+> I agree completely with what Linus said originally about how the
+> page cannot be freed while there's a reference to it, and it should
+> be possible to work this without your additional page locks.
+> 
+> Your ->releasepage should be able to judge whether the page is likely
+> (not certain) to be freed - page_count 3? 1 for the page cache, 1 for
+> the page_private reference, 1 for vmscan's reference, I think.  Then
+> it can mark !PageUptodate and proceed with freeing the stuff you had
+> allocated, undo page_has_private and its reference, and return 1 (or
+> return 0 if it decides to hold on to the page).
 
-Yeah, it's really the 'cut -c 6-' bit that I was hoping to avoid.  But it 
-snaps/ simply doesn't map onto the sysfs paradigm cleanly, that's fine.
+That is very brittle. I'd prefer not to have to scan linux-mm every week
+in order to find out if someone changed the page_count.
 
-That being the case, can we get an Acked-by on the current approach/patch?  
-Then I can send something Linus and let him decide what to do for .37.
+However, while reading Documentation/filesystems/vfs.txt (in order to
+add documentation for freepage) I was surprised to read that the
+->releasepage() is itself supposed to be allowed to actually remove the
+page from the address space if it so desires.
 
-Thanks!
-sage
+Looking at the actual code in shrink_page_list() and friends I can't see
+how that can possibly fail to break things, but if it were true, then
+that might enable us to call remove_mapping() in order to safely free
+the page before it gets cleared.
 
+Cheers
+  Trond
 
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-> 
-> And you would be using libudev ideally for a .c file, and iterating over
-> the devices is pretty trivial that way from what I have seen.
-> 
-> > Adding an intermediate snaps/ subdir would let them instead do
-> > 
-> >  $ for snap in `ls /sys/bus/rbd/devices/$id/snaps/`; do ...
-> > 
-> > without worrying about the (arbitrarily named) snaps from colliding with 
-> > device attributes.  Assuming that is a preferable interface, is the 
-> > "right" way to do that to make "snaps" a struct device?  Or is there a 
-> > good reason why that is not preferable?
-> 
-> It's not preferable as that "snaps" directory is a "blank" in the device
-> tree, not showing the heiarchy properly.  You can't walk the devices
-> back from the devices in snaps/ to the parent properly (i.e. you would
-> get stuck at the snaps/ directory as it's not a struct device, but a
-> random kobject.
-> 
-> Hope this helps,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
