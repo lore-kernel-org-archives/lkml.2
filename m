@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab0LAHwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:52:23 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44259 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab0LAHwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:52:22 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Simon Kirby <sim@hostway.ca>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291189227.12777.79.camel@sli10-conroe>
-References: <20101201122638.ABBF.A69D9226@jp.fujitsu.com> <1291189227.12777.79.camel@sli10-conroe>
-Message-Id: <20101201164647.ABD7.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Dec 2010 16:52:18 +0900 (JST)
+	id S1754599Ab0LAHvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:51:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41622 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab0LAHqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:46:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
+   d="scan'208";a="682672315"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [PATCH v16 02/17]Add a new struct for device to manipulate external buffer.
+Date: Wed,  1 Dec 2010 16:08:13 +0800
+Message-Id: <38fbf05a450b34e939aa1b0f3a5126711990f0cc.1291187695.git.xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > we can't make
-> > > > perfect VM heuristics obviously, then we need to compare pros/cons.
-> > > if you don't care about small system, let's consider a NORMAL i386
-> > > system with 896m normal zone, and 896M*3 high zone. normal zone will
-> > > quickly exhaust by high order high zone allocation, leave a latter
-> > > allocation which does need normal zone fail.
-> > 
-> > Not happen. slab don't allocate from highmem and page cache allocation
-> > is always using order-0. When happen high order high zone allocation?
-> ok, thanks, I missed this. then how about a x86_64 box with 896M DMA32
-> and 896*3M NORMAL? some pci devices can only dma to DMA32 zone.
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-First, DMA32 is 4GB. Second, modern high end system don't use 32bit PCI
-device. Third, while we are thinking desktop users, 4GB is not small
-room. nowadays, typical desktop have only 2GB or 4GB memory.
+    Add a structure in structure net_device, the new field is
+    named as mp_port. It's for mediate passthru (zero-copy).
+    It contains the capability for the net device driver,
+    a socket, and an external buffer creator, external means
+    skb buffer belongs to the device may not be allocated from
+    kernel space.
 
-In other word, I agree your pointed issue is exist _potentially_. but
-I don't think it is frequently than Simon's case.
+    Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+    Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+    Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+---
+ include/linux/netdevice.h |   25 ++++++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 1 deletions(-)
 
-In other word, when deciding heuristics, we can't avoid to think issue
-frequency. It's very important.
-
-
-Of cource, if you have better idea, I don't oppose it.
-
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 46c36ff..f6b1870 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -325,6 +325,28 @@ enum netdev_state_t {
+ 	__LINK_STATE_DORMANT,
+ };
+ 
++/*The structure for mediate passthru(zero-copy). */
++struct mp_port	{
++	/* the header len */
++	int		hdr_len;
++	/* the max payload len for one descriptor */
++	int		data_len;
++	/* the pages for DMA in one time */
++	int		npages;
++	/* the socket bind to */
++	struct socket	*sock;
++	/* the header len for virtio-net */
++	int		vnet_hlen;
++	/* the external buffer page creator */
++	struct skb_ext_page *(*ctor)(struct mp_port *,
++				struct sk_buff *, int);
++	/* the hash function attached to find according
++	 * backend ring descriptor info for one external
++	 * buffer page.
++	 */
++	struct skb_ext_page *(*hash)(struct net_device *,
++				struct page *);
++};
+ 
+ /*
+  * This structure holds at boot time configured netdevice settings. They
+@@ -1045,7 +1067,8 @@ struct net_device {
+ 
+ 	/* GARP */
+ 	struct garp_port	*garp_port;
+-
++	/* mpassthru */
++	struct mp_port		*mp_port;
+ 	/* class/net/name entry */
+ 	struct device		dev;
+ 	/* space for optional device, statistics, and wireless sysfs groups */
+-- 
+1.7.3
 
