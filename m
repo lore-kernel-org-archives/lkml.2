@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab0LAKuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:50:46 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:49797 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab0LAKup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:50:45 -0500
-Date: Wed, 1 Dec 2010 10:50:29 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] mm: vmscan: Convert lumpy_mode into a bitmask
-Message-ID: <20101201105029.GL13268@csn.ul.ie>
-References: <1290440635-30071-1-git-send-email-mel@csn.ul.ie> <1290440635-30071-3-git-send-email-mel@csn.ul.ie> <20101201102732.GK15564@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101201102732.GK15564@cmpxchg.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754820Ab0LAKvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 05:51:31 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:61382 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab0LAKva (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 05:51:30 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] spi: spidev: Add 32 bit compat ioctl()
+Date: Wed,  1 Dec 2010 11:51:14 +0100
+Message-Id: <1291200674-25630-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:D21LUfa0isaUmUnzlsUzHllBlIGxUJCICPkEIokv7Lb
+ kyqvIsjv3ahYkjwMywzfgLYXwbOM3f1oYKGLLkP9xhXSgg1bX4
+ yfcSCpfg6bvfFAB5RSXthcIesEkRjwWfzvUI6iJEY0/SGNaH9D
+ wyL1WvkG3YGHf/NzSDrKCSVXmiyoMP5HJEhWr4nICyc4oiM5tX
+ 58ca5uM7TmtJGe9xFa4Tw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 11:27:32AM +0100, Johannes Weiner wrote:
-> On Mon, Nov 22, 2010 at 03:43:50PM +0000, Mel Gorman wrote:
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -51,11 +51,20 @@
-> >  #define CREATE_TRACE_POINTS
-> >  #include <trace/events/vmscan.h>
-> >  
-> > -enum lumpy_mode {
-> > -	LUMPY_MODE_NONE,
-> > -	LUMPY_MODE_ASYNC,
-> > -	LUMPY_MODE_SYNC,
-> > -};
-> > +/*
-> > + * lumpy_mode determines how the inactive list is shrunk
-> > + * LUMPY_MODE_SINGLE: Reclaim only order-0 pages
-> > + * LUMPY_MODE_ASYNC:  Do not block
-> > + * LUMPY_MODE_SYNC:   Allow blocking e.g. call wait_on_page_writeback
-> > + * LUMPY_MODE_CONTIGRECLAIM: For high-order allocations, take a reference
-> > + *			page from the LRU and reclaim all pages within a
-> > + *			naturally aligned range
-> 
-> I find those names terribly undescriptive.  It also strikes me as an
-> odd set of flags.  Can't this be represented with less?
-> 
-> 	LUMPY_MODE_ENABLED
-> 	LUMPY_MODE_SYNC
-> 
-> or, after the rename,
-> 
-> 	RECLAIM_MODE_HIGHER	= 1
-> 	RECLAIM_MODE_SYNC	= 2
-> 	RECLAIM_MODE_LUMPY	= 4
-> 
+Add the compat_ioctl for operations on /dev/spi* so that 32 bit
+userspace applications can access SPI. As far as I can see all data
+structure are already prepared for that, so no additional conversion has
+to be done.
 
-My problem with that is you have to infer what the behaviour is from what the
-flags "are not" as opposed to what they are. For example, !LUMPY_MODE_SYNC
-implies LUMPY_MODE_ASYNC instead of specifying LUMPY_MODE_ASYNC. It also
-looks very odd when trying to distinguish between order-0 standard reclaim,
-lumpy reclaim and reclaim/compaction.
+My use case is MIPS with N32 userspace ABI and toolchain, and that was
+also the platform where I tested it successfully (Cavium Octeon).
 
-> where compaction mode is default if RECLAIM_MODE_HIGHER, and
-> RECLAIM_MODE_LUMPY will go away eventually.
-> 
-> Also, if you have a flag name for 'reclaim with extra efforts for
-> higher order pages' that is better than RECLAIM_MODE_HIGHER... ;)
-> 
-> > +typedef unsigned __bitwise__ lumpy_mode;
-> 
-> lumpy_mode_t / reclaim_mode_t?
-> 
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/spi/spidev.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-It can't hurt!
-
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index ea1bec3..d3d1155 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -543,6 +543,7 @@ static const struct file_operations spidev_fops = {
+ 	.write =	spidev_write,
+ 	.read =		spidev_read,
+ 	.unlocked_ioctl = spidev_ioctl,
++	.compat_ioctl = spidev_ioctl,
+ 	.open =		spidev_open,
+ 	.release =	spidev_release,
+ };
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.1
+
