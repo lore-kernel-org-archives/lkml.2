@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab0LAA7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:59:14 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44075 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab0LAA7N (ORCPT
+	id S1753452Ab0LAA71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:59:27 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:51198 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab0LAA7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:59:13 -0500
-Date: Tue, 30 Nov 2010 19:59:09 -0500
-From: Nelson Elhage <nelhage@ksplice.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm_release: Do a set_fs(USER_DS) before handling
- clear_child_tid.
-Message-ID: <20101201005909.GC18995@ksplice.com>
-References: <1291083556-5894-1-git-send-email-nelhage@ksplice.com>
- <20101130160950.96153286.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130160950.96153286.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 30 Nov 2010 19:59:25 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 1 Dec 2010 09:53:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Hugh Dickins <hughd@google.com>, Ondrej Zary <linux@rainbow-software.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>
+Subject: Re: 2.6.35.5: hibernation broken... AGAIN
+Message-Id: <20101201095349.c1f3ac46.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201012010138.53575.rjw@sisk.pl>
+References: <201011171139.33398.linux@rainbow-software.org>
+	<alpine.LSU.2.00.1011301333380.11072@tigran.mtv.corp.google.com>
+	<201012010007.44553.rjw@sisk.pl>
+	<201012010138.53575.rjw@sisk.pl>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 04:09:50PM -0800, Andrew Morton wrote:
-> On Mon, 29 Nov 2010 21:19:16 -0500
-> Nelson Elhage <nelhage@ksplice.com> wrote:
-> 
-> > If a user manages to trigger a kernel BUG() or page fault with fs set to
-> > KERNEL_DS, fs is not otherwise reset before do_exit(), allowing the user to
-> > write a 0 to an arbitrary address in kernel memory.
+On Wed, 1 Dec 2010 01:38:53 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+
+> On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
+> > On Tuesday, November 30, 2010, Hugh Dickins wrote:
+> > > On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
+> > > > On Saturday, November 27, 2010, Ondrej Zary wrote:
+> ...
+> > > 
+> > > Trivial point, I suppose, but it bothers me that PM is accumulating
+> > > wrappers around wrappers around gfp_allowed_mask.  Looks like
+> > > clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
+> > > were not really what we need.  How about scrapping them, and putting
+> > > pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
 > > 
-> > Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-> > ---
-> > AFAICT this is presently only triggerable in the presence of another bug, but
-> > this potentially turns a lot of DoS bugs into privilege escalation, so it's
-> > worth fixing. Among other things, sock_no_sendpage and the kernel_{read,write}v
-> > calls in splice.c make it easy to call an awful lot of the kernel under
-> > KERNEL_DS.
-> > 
-> > This isn't the only way we could fix this -- we could put the set_fs() at the
-> > start of do_exit, or in all the callers that might call potentially do_exit with
-> > KERNEL_DS set, or else we could do an access_ok inside fork(). I'm happy to put
-> > together one of those patches if someone thinks another approach makes more
-> > sense.
-> > 
-> >  kernel/fork.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/fork.c b/kernel/fork.c
-> > index 3b159c5..a68445e 100644
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -636,7 +636,12 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
-> >  			/*
-> >  			 * We don't check the error code - if userspace has
-> >  			 * not set up a proper pointer then tough luck.
-> > +			 *
-> > +			 * We do set_fs() explicitly in case this task
-> > +			 * exited while inside set_fs(KERNEL_DS) for
-> > +			 * some reason (e.g. on a BUG()).
-> >  			 */
-> > +			set_fs(USER_DS);
-> >  			put_user(0, tsk->clear_child_tid);
-> >  			sys_futex(tsk->clear_child_tid, FUTEX_WAKE,
-> >  					1, NULL, NULL, 0);
+> > Sure, that sounds like a good idea indeed.
 > 
-> Confused.  The user can only exploit the wrong addr_limit if control
-> returns to userspace for the user's code to execute.  But that won't be
-> happening, because this thread will unconditionally exit.
-
-The user can exploit the wrong addr_limit on the very next line, with the
-put_user() there. clear_child_tid is not checked in any way before this
-point. Writing a single zero might not seem like much, but it's enough for
-privilege escalation (e.g. overwrite the top half of a function pointer to point
-to userspace).
-
-I have a PoC code that uses this bug, along with CVE-2010-3849, to write a zero
-to an arbitrary kernel address, so I've tested that this is not theoretical.
-
-That's also why I put the set_fs() hidden inside mm_release, since that's the
-only place where (to my knowledge) it matters.
-
-On re-reading, I didn't mention clear_child_tid anywhere in the commit message,
-which was an error on my part, and explains the confusion. Sorry about that, and
-I hope this clears that up.
-
-Let me know if this makes more sense, and I'll send a revised patch.
-
-- Nelson
-
+> Below is an updated patch in which I tried to address your comments.
 > 
+> I didn't find it very useful to couple pm_restore_gfp_mask() with the thawing
+> of tasks, but nevertheless I think all of the spots where it's needed are
+> covered now.
 > 
-> If/when you unconfuse me, I'd suggest this change only be done if the
-> thread is *known* to have oopsed - doing it for non-oopsed threads
-> seems unpleasant to my mind.  And I think it should be done nice and
-> clearly, right up inside do_exit() by some means.  Or perhaps in the
-> oops code, just before it calls do_exit().  Not hidden down in
-> mm_release().
+> The patch has only been compile-tested for now, so caveat emptor.
+> 
+
+Hmm, can't we have some error check as 
+
+> +static gfp_t saved_gfp_mask;
+
+atomic_t gfp_mask_save_mode_counter;
+
+> +
+> +void pm_restore_gfp_mask(void)
+>  {
+>  	WARN_ON(!mutex_is_locked(&pm_mutex));
+> -	gfp_allowed_mask = mask;
+
+	if (atomic_dec_return(&gfp_mask_save_mode_counter))
+		WARN_ONCE()
+
+> +	if (saved_gfp_mask) {
+> +		gfp_allowed_mask = saved_gfp_mask;
+> +		saved_gfp_mask = 0;
+> +	}
+>  }
+
+> +void pm_restrict_gfp_mask(void)
+>  {
+> -	gfp_t ret = gfp_allowed_mask;
+> -
+>  	WARN_ON(!mutex_is_locked(&pm_mutex));
+> -	gfp_allowed_mask &= ~mask;
+> -	return ret;
+> +	saved_gfp_mask = gfp_allowed_mask;
+> +	gfp_allowed_mask &= ~GFP_IOFS;
+
+	if (atomic_inc_return(&gfp_mask_save_mode_counter) > 1)
+		WARN_ONCE()
+
+or some ?
+
+Thanks,
+-Kame
+
