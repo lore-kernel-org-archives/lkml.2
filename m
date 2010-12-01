@@ -1,343 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab0LAXN4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 18:13:56 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58395 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753581Ab0LAXNy (ORCPT
+	id S1755503Ab0LAXVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 18:21:35 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:48914 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab0LAXVe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 18:13:54 -0500
-X-SpamScore: -18
-X-BigFish: VPS-18(zzbb2dK936eK1432N98dNef8K853kzz1202hzz8275bh8275dhz2fh2a8h691h637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4CF6D694.4030003@am.sony.com>
-Date: Wed, 1 Dec 2010 15:13:24 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
-MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        tglx <tglx@linutronix.de>
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-References: <20100520204810.GA19188@think>	 <1277114522.1875.469.camel@laptop> <1277117647.1875.503.camel@laptop>	 <1277125479.1875.510.camel@laptop> <1277213586.1875.704.camel@laptop>	 <20100622211141.GC21149@elte.hu> <1277284257.1875.820.camel@laptop>
-In-Reply-To: <1277284257.1875.820.camel@laptop>
+	Wed, 1 Dec 2010 18:21:34 -0500
+X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
+   d="scan'208";a="489748026"
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <1291243633.6609.59.camel@heimdal.trondhjem.org>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+	 <20101201150428.GA2879@elliptictech.com>
+	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+	 <1291229669.6609.24.camel@heimdal.trondhjem.org>
+	 <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+	 <1291234251.6609.39.camel@heimdal.trondhjem.org>
+	 <20101201123341.d12ef362.akpm@linux-foundation.org>
+	 <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+	 <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+	 <20101201133831.ea6ba10a.akpm@linux-foundation.org>
+	 <1291240272.6609.50.camel@heimdal.trondhjem.org>
+	 <20101201141351.8609140b.akpm@linux-foundation.org>
+	 <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+	 <20101201143856.51f4f9d9.akpm@linux-foundation.org>
+	 <1291243633.6609.59.camel@heimdal.trondhjem.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 01 Dec 2010 18:21:16 -0500
+Message-ID: <1291245676.6609.62.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 01 Dec 2010 23:21:17.0355 (UTC) FILETIME=[7468BFB0:01CB91AE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/10 02:10, Peter Zijlstra wrote:
-> On Tue, 2010-06-22 at 23:11 +0200, Ingo Molnar wrote:
->> * Peter Zijlstra <peterz@infradead.org> wrote:
->>
->>> So this one boots and builds a kernel on a dual-socket nehalem.
->>>
->>> there's still quite a number of XXXs to fix, but I don't think any of the 
->>> races are crashing potential, mostly wrong accounting and scheduling iffies 
->>> like.
->>>
->>> But give it a go.. see what it does for you (x86 only for now).
->>>
->>> Ingo, any comments other than, eew, scary? :-)
->>
->> None, other than a question: which future kernel do you aim it for? I'd prefer 
->> v2.6.50 or later ;-)
+On Wed, 2010-12-01 at 17:47 -0500, Trond Myklebust wrote:
+> However, Linus' explanation appears to answer one of Hugh's objections:
+> we can apparently use a preempt-disable() in order to ensure that the
+> module containing the mapping->a_ops is not unloaded until after the
+> ->freepage() call is complete.
 > 
-> Well, assuming it all works out and actually reduces runqueue lock
-> contention we still need to sort out all those XXXs in there, I'd say at
-> the soonest somewhere near .38/.39 or so.
-> 
-> Its definitely not something we should rush in.
+> That would imply that ->freepage() cannot sleep, but I don't think that
+> is too nasty a restriction.
 
-This thread was started by Chris Mason back in May:
-   http://lkml.indiana.edu/hypermail/linux/kernel/1005.2/02329.html
+Revised patch would be as follows...
 
-The problem he was trying to fix is:
+----------------------------------------------------------------------------------------
+>From 1cd6bf106ef40dec415e375eb3632b9a84a72d5f Mon Sep 17 00:00:00 2001
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 13:35:19 -0500
+Subject: [PATCH] Call the filesystem back whenever a page is removed from the page cache
 
-> Many different workloads end
-> up hammering very hard on try_to_wake_up, to the point where the
-> runqueue locks dominate CPU profiles.
-> 
-> This includes benchmarking really fast IO subsystems, fast networking,
-> fast pipes...well anywhere that we lots of procs on lots of cpus waiting
-> for short periods on lots of different things.
+NFS needs to be able to release objects that are stored in the page
+cache once the page itself is no longer visible from the page cache.
 
-Chris provided some code as a starting point for a solution.
+This patch adds a callback to the address space operations that allows
+filesystems to perform page cleanups once the page has been removed
+from the page cache.
 
-Peter Zijlstra had some good ideas, and came up with some alternate code,
-culminating with:
-
-   http://lkml.indiana.edu/hypermail/linux/kernel/1006.2/02381.html
-
-Building on this previous work, I have another patch to try to address
-the problem.  I have taken some of Peter's code (the cmpxchg() based
-queueing and unqueueing, plus the cross cpu interrupt), but taken a
-simpler (and hopefully less scary) approach otherwise:
-
-  If the task to be woken is on a run queue on a different cpu then use
-  cmpxchg() to put it onto a pending try_to_wake_up list on the different
-  cpu.  Then send an interrupt to the different cpu to cause that cpu to
-  call try_to_wake_up() for each process on the try_to_wake_up list.
-
-  The result is that the initial run queue lock acquired by try_to_wake_up()
-  will be on the cpu we are currently executing on, not a different cpu.
-
-  This patch does not address the run queue lock contention that may occur
-  if try_to_wake_up() chooses to move the waking process to another cpu,
-  based on the result returned by select_task_rq().
-
-  The patch was created on the -top tree.
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-
-
-Chris, can you check the performance of this patch on your large system?
-
-
-Limitations
-  x86 only
-
-Tests
-  - tested on 2 cpu x86_64
-  - very simplistic workload
-  - results:
-     rq->lock contention count reduced by ~ 95%
-     rq->lock contention wait time reduced by ~ 90%
-     test duration reduced by ~ 0.5% - 4% (in the noise)
-
-Review goals:
-  (1) performance results
-  (2) architectural comments
-
-Review non-goal:
-  code style, etc (but will be a goal in a future review round)
-
-Todo:
-  - add support for additional architectures
-  - polish code style
-  - add a schedule feature to control whether to use the new algorithm
-  - verify that smp_wmb() is implied by cmpxchg() on x86, so that the explicit
-    smp_wmb() in ttwu_queue_wake_up() can be removed.
-
+Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
+[trondmy: cover the cases of invalidate_inode_pages2() and
+          truncate_inode_pages()]
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- arch/x86/kernel/smp.c |    1 	1 +	0 -	0 !
- include/linux/sched.h |    5 	5 +	0 -	0 !
- kernel/sched.c        |  105 	99 +	6 -	0 !
- 3 files changed, 105 insertions(+), 6 deletions(-)
+ Documentation/filesystems/Locking |    7 ++++++-
+ Documentation/filesystems/vfs.txt |    7 +++++++
+ include/linux/fs.h                |    1 +
+ mm/truncate.c                     |    8 ++++++++
+ mm/vmscan.c                       |   11 +++++++++++
+ 5 files changed, 33 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/smp.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/smp.c
-+++ linux-2.6/arch/x86/kernel/smp.c
-@@ -205,6 +205,7 @@ void smp_reschedule_interrupt(struct pt_
- 	/*
- 	 * KVM uses this interrupt to force a cpu out of guest mode
- 	 */
-+	sched_ttwu_pending();
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index a91f308..b6426f1 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -173,12 +173,13 @@ prototypes:
+ 	sector_t (*bmap)(struct address_space *, sector_t);
+ 	int (*invalidatepage) (struct page *, unsigned long);
+ 	int (*releasepage) (struct page *, int);
++	void (*freepage)(struct page *);
+ 	int (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs);
+ 	int (*launder_page) (struct page *);
+ 
+ locking rules:
+-	All except set_page_dirty may block
++	All except set_page_dirty and freepage may block
+ 
+ 			BKL	PageLocked(page)	i_mutex
+ writepage:		no	yes, unlocks (see below)
+@@ -193,6 +194,7 @@ perform_write:		no	n/a			yes
+ bmap:			no
+ invalidatepage:		no	yes
+ releasepage:		no	yes
++freepage:		no	yes
+ direct_IO:		no
+ launder_page:		no	yes
+ 
+@@ -288,6 +290,9 @@ buffers from the page in preparation for freeing it.  It returns zero to
+ indicate that the buffers are (or may be) freeable.  If ->releasepage is zero,
+ the kernel assumes that the fs has no private interest in the buffers.
+ 
++	->freepage() is called when the kernel is done dropping the page
++from the page cache.
++
+ 	->launder_page() may be called prior to releasing a page if
+ it is still found to be dirty. It returns zero if the page was successfully
+ cleaned, or an error value if not. Note that in order to prevent the page
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index ed7e5ef..3b14a55 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -534,6 +534,7 @@ struct address_space_operations {
+ 	sector_t (*bmap)(struct address_space *, sector_t);
+ 	int (*invalidatepage) (struct page *, unsigned long);
+ 	int (*releasepage) (struct page *, int);
++	void (*freepage)(struct page *);
+ 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs);
+ 	struct page* (*get_xip_page)(struct address_space *, sector_t,
+@@ -679,6 +680,12 @@ struct address_space_operations {
+         need to ensure this.  Possibly it can clear the PageUptodate
+         bit if it cannot free private data yet.
+ 
++  freepage: freepage is called once the page is no longer visible in
++        the page cache in order to allow the cleanup of any private
++	data. Since it may be called by the memory reclaimer, it
++	should not assume that the original address_space mapping still
++	exists, and it should not block.
++
+   direct_IO: called by the generic read/write routines to perform
+         direct_IO - that is IO requests which bypass the page cache
+         and transfer data directly between the storage and the
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c9e06cc..090f0ea 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -602,6 +602,7 @@ struct address_space_operations {
+ 	sector_t (*bmap)(struct address_space *, sector_t);
+ 	void (*invalidatepage) (struct page *, unsigned long);
+ 	int (*releasepage) (struct page *, gfp_t);
++	void (*freepage)(struct page *);
+ 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs);
+ 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+diff --git a/mm/truncate.c b/mm/truncate.c
+index ba887bf..76ab2a8 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -108,6 +108,10 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+ 	clear_page_mlock(page);
+ 	remove_from_page_cache(page);
+ 	ClearPageMappedToDisk(page);
++
++	if (mapping->a_ops->freepage)
++		mapping->a_ops->freepage(page);
++
+ 	page_cache_release(page);	/* pagecache ref */
+ 	return 0;
  }
+@@ -390,6 +394,10 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+ 	__remove_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
++
++	if (mapping->a_ops->freepage)
++		mapping->a_ops->freepage(page);
++
+ 	page_cache_release(page);	/* pagecache ref */
+ 	return 1;
+ failed:
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d31d7ce..9e218e7 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -454,6 +454,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(mapping != page_mapping(page));
  
- void smp_call_function_interrupt(struct pt_regs *regs)
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1038,6 +1038,7 @@ struct sched_domain;
-  */
- #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
- #define WF_FORK		0x02		/* child wakeup after fork */
-+#define WF_LOAD		0x04		/* for queued try_to_wake_up() */
- 
- #define ENQUEUE_WAKEUP		1
- #define ENQUEUE_WAKING		2
-@@ -1193,6 +1194,9 @@ struct task_struct {
- 	int lock_depth;		/* BKL lock depth */
- 
- #ifdef CONFIG_SMP
-+	struct task_struct *ttwu_queue_wake_entry;
-+	int ttwu_queue_load;
-+	int ttwu_queue_wake_flags;
- #ifdef __ARCH_WANT_UNLOCKED_CTXSW
- 	int oncpu;
- #endif
-@@ -2017,6 +2021,7 @@ extern void release_uids(struct user_nam
- 
- extern void do_timer(unsigned long ticks);
- 
-+extern void sched_ttwu_pending(void);
- extern int wake_up_state(struct task_struct *tsk, unsigned int state);
- extern int wake_up_process(struct task_struct *tsk);
- extern void wake_up_new_task(struct task_struct *tsk,
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -515,6 +515,8 @@ struct rq {
- 	u64 age_stamp;
- 	u64 idle_stamp;
- 	u64 avg_idle;
-+
-+	struct task_struct *wake_list;
- #endif
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
-@@ -2332,6 +2334,39 @@ static inline void ttwu_post_activation(
- 		wq_worker_waking_up(p, cpu_of(rq));
- }
- 
-+#ifdef CONFIG_SMP
-+static void ttwu_queue_wake_up(struct task_struct *p, int cpu, int wake_flags,
-+			       int load)
-+{
-+	struct task_struct *next = NULL;
-+	struct rq *rq = cpu_rq(cpu);
-+
-+	if (load)
-+		wake_flags |= WF_LOAD;
-+	p->ttwu_queue_load = load;
-+	p->ttwu_queue_wake_flags = wake_flags;
-+	/* xxx
-+	 * smp_wmb() is implied by cmpxchg()
-+	 * (see Documentation/memory-barriers.txt).
-+	 * It is the case for arm.
-+	 * I don't know about x86, so do it explicitly until I know for sure.
-+	 */
-+	smp_wmb();
-+
-+	for (;;) {
-+		struct task_struct *old = next;
-+
-+		p->ttwu_queue_wake_entry = next;
-+		next = cmpxchg(&rq->wake_list, old, p);
-+		if (next == old)
-+			break;
-+	}
-+
-+	if (!next)
-+		smp_send_reschedule(cpu);
-+}
-+#endif
-+
- /**
-  * try_to_wake_up - wake up a thread
-  * @p: the thread to be awakened
-@@ -2354,13 +2389,51 @@ static int try_to_wake_up(struct task_st
- 	unsigned long flags;
- 	unsigned long en_flags = ENQUEUE_WAKEUP;
- 	struct rq *rq;
-+#ifdef CONFIG_SMP
-+	int load;
-+#endif
- 
- 	this_cpu = get_cpu();
- 
-+	local_irq_save(flags);
-+
-+#ifdef CONFIG_SMP
-+	for (;;) {
-+		unsigned int task_state = p->state;
-+
-+		if (!(task_state & state))
-+			goto out_nolock;
-+
-+		/*
-+		 * We've got to store the contributes_to_load state before
-+		 * modifying the task state.
-+		 */
-+		load = task_contributes_to_load(p);
-+
-+		if (cmpxchg(&p->state, task_state, TASK_WAKING) == task_state) {
-+			if (state == TASK_WAKING)
-+				load = (wake_flags & WF_LOAD) ? 1 : 0;
-+			break;
-+		}
-+	}
-+
-+	/*
-+	 * There is a race where task_cpu could be set to
-+	 * this_cpu while task_state is TASK_WAKING?
-+	 *
-+	 * That's ok, the destination cpu will just send it back here when
-+	 * it calls try_to_wake_up() of this process.
-+	 */
-+
-+	cpu = task_cpu(p);
-+	if (cpu != this_cpu) {
-+		ttwu_queue_wake_up(p, cpu, wake_flags, load);
-+		goto out_nolock;
-+	}
-+#endif
-+
- 	smp_wmb();
--	rq = task_rq_lock(p, &flags);
--	if (!(p->state & state))
--		goto out;
-+	rq = __task_rq_lock(p);
- 
- 	if (p->se.on_rq)
- 		goto out_running;
-@@ -2373,18 +2446,16 @@ static int try_to_wake_up(struct task_st
- 		goto out_activate;
- 
++	preempt_disable();
+ 	spin_lock_irq(&mapping->tree_lock);
  	/*
--	 * In order to handle concurrent wakeups and release the rq->lock
--	 * we put the task in TASK_WAKING state.
--	 *
--	 * First fix up the nr_uninterruptible count:
-+	 * Can handle concurrent wakeups and release the rq->lock
-+	 * since we put the task in TASK_WAKING state.
- 	 */
--	if (task_contributes_to_load(p)) {
+ 	 * The non racy check for a busy page.
+@@ -492,10 +493,19 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 		swp_entry_t swap = { .val = page_private(page) };
+ 		__delete_from_swap_cache(page);
+ 		spin_unlock_irq(&mapping->tree_lock);
++		preempt_enable();
+ 		swapcache_free(swap, page);
+ 	} else {
++		void (*freepage)(struct page *);
 +
-+	if (load) {
- 		if (likely(cpu_online(orig_cpu)))
- 			rq->nr_uninterruptible--;
- 		else
- 			this_rq()->nr_uninterruptible--;
++		freepage = mapping->a_ops->freepage;
++
+ 		__remove_from_page_cache(page);
+ 		spin_unlock_irq(&mapping->tree_lock);
++		if (freepage != NULL)
++			freepage(page);
++		preempt_enable();
++
+ 		mem_cgroup_uncharge_cache_page(page);
  	}
--	p->state = TASK_WAKING;
  
- 	if (p->sched_class->task_waking) {
- 		p->sched_class->task_waking(rq, p);
-@@ -2430,13 +2501,32 @@ out_activate:
- 	success = 1;
- out_running:
- 	ttwu_post_activation(p, rq, wake_flags, success);
--out:
--	task_rq_unlock(rq, &flags);
-+	__task_rq_unlock(rq);
-+#ifdef CONFIG_SMP
-+out_nolock:
-+#endif
-+	local_irq_restore(flags);
- 	put_cpu();
+@@ -503,6 +513,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
  
- 	return success;
+ cannot_free:
+ 	spin_unlock_irq(&mapping->tree_lock);
++	preempt_enable();
+ 	return 0;
  }
  
-+#ifdef CONFIG_SMP
-+void sched_ttwu_pending(void)
-+{
-+	struct rq *rq = this_rq();
-+	struct task_struct *p = xchg(&rq->wake_list, NULL);
-+
-+	if (!p)
-+		return;
-+
-+	while (p) {
-+		try_to_wake_up(p, TASK_WAKING, p->ttwu_queue_wake_flags);
-+		p = p->ttwu_queue_wake_entry;
-+	}
-+}
-+#endif
-+
- /**
-  * try_to_wake_up_local - try to wake up a local task with rq lock held
-  * @p: the thread to be awakened
+-- 
+1.7.3.2
+
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
