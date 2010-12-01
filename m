@@ -1,122 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab0LAK23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:28:29 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58440 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab0LAK21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:28:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=MiRKekUvWPCjLRJYGuhsD3988prEMhwxbgLEfSnjs9Iwjr7qJttkV9JAjGteHikquf
-         qKhhTsjnYkXNWWzckxmUrND11IXSPVRFswuMdQ+wP4oCqbcM26XdfxuXZ7XnqvYYPqG3
-         I40oPpLuWWQPE4toopOGjjg4UKhvkUulQi9p8=
-Subject: Re: BUG in skb_dequeue (skb->next is NULL) (was: Re: Kernel crash
- with 2.6.36)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Simon Schubert <2@0x2c.org>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <loom.20101201T095252-592@post.gmane.org>
-References: <alpine.LNX.2.00.1011071631550.2636@dyndns.pervalidus.net>
-	 <loom.20101201T095252-592@post.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 11:28:19 +0100
-Message-ID: <1291199299.2856.499.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754398Ab0LAK2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 05:28:35 -0500
+Received: from www.tglx.de ([62.245.132.106]:59878 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754284Ab0LAK2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 05:28:33 -0500
+Date: Wed, 1 Dec 2010 11:28:28 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: Provide reverse compat handling for irq_chip
+ methods.
+In-Reply-To: <20101130120813.GR12037@mail.wantstofly.org>
+Message-ID: <alpine.LFD.2.00.1012011123150.2653@localhost6.localdomain6>
+References: <20101130120813.GR12037@mail.wantstofly.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 01 décembre 2010 à 09:02 +0000, Simon Schubert a écrit :
-> Frédéric L. W. Meunier <2 <at> pervalidus.net> writes:
+On Tue, 30 Nov 2010, Lennert Buytenhek wrote:
 
-CC netdev
+> kernel/irq/chip.c provides compat wrappers for when users of the
+> new-style (->irq_foo()) irq_chip methods try to call into irq_chips
+> that provide only old-style (->foo()) methods, but doesn't currently
+> provide compatibility in the other direction.
+> 
+> As there exist chained irq flow handlers outside kernel/irq/ that have
+> not been converted over to call the new methods yet, this means that
+> the irq_chips that they are chained off can't be converted to the new
+> methods yet.
+> 
+> This patch adds reverse compat wrappers, so that old-style flow
+> handlers can call into new-style irq_chips, too, and the flow handlers
+> and irq_chips can be converted to the new API independently.
 
-> 
-> > Nov  7 16:21:23 pervalidus kernel: BUG: unable to handle kernel NULL pointer 
-> dereference at (null)
-> 
-> I can confirm the bug reported by Frederic.  The culprit is at:
-> 
->         next->prev = prev;
-> 
-> in __skb_unlink().
-> 
-> Something must be putting NULL pointers in the skb list.
-> 
-> Let me know how I can be of further help.
-> 
-> 
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<ffffffff81459069>] skb_dequeue+0x59/0x90
-> PGD 208379067 PUD 20a523067 PMD 0 
-> Oops: 0002 [#1] SMP 
-> last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-> CPU 1 
-> Modules linked in: binfmt_misc kvm_intel kvm ipt_MASQUERADE iptable_nat nf_nat 
-> xfrm_user nf_conntrack_ipv4 xfrm4_tunnel tunnel4 nf_conntrack ipcomp xfrm_ipcomp 
-> esp4 ah4 nf_defrag_ipv4 xt_TCPMSS xt_tcpmss xt_tcpudp iptable_mangle deflate 
-> ip_tables zlib_deflate ctr x_tables twofish_generic twofish_x86_64 
-> twofish_common camellia serpent blowfish cast5 des_generic xcbc rmd160 
-> sha512_generic sha1_generic crypto_null af_key pppoe pppox xfs exportfs 
-> snd_hda_codec_via snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss 
-> snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi 
-> snd_seq_midi_event snd_seq snd_timer ftdi_sio snd_seq_device usbserial hwmon_vid 
-> coretemp snd lp tpm_tis ppdev tpm parport_pc asus_atk0110 tpm_bios parport 
-> soundcore snd_page_alloc sha256_generic cryptd aes_x86_64 aes_generic dm_crypt 
-> raid10 raid1 raid0 multipath linear raid456 async_pq async_xor xor async_memcpy 
-> async_raid6_recov raid6_pq async_tx fbcon tileblit font bitblit softcursor usb
-> 
-> Pid: 2229, comm: pulseaudio Not tainted 2.6.36 #10 P5Q-VM DO/System Product Name
-> RIP: 0010:[<ffffffff81459069>]  [<ffffffff81459069>] skb_dequeue+0x59/0x90
-> RSP: 0018:ffff880221927a78  EFLAGS: 00010097
-> RAX: 0000000000000282 RBX: ffff88017a6d5e14 RCX: ffff88022236d200
-> RDX: 0000000000000000 RSI: 0000000000000282 RDI: ffff88017a6d5e14
-> RBP: ffff880221927a98 R08: 0000000000000000 R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000293 R12: ffff88022236d200
-> R13: ffff88017a6d5e00 R14: 0000000000000000 R15: 0000000000000000
-> FS:  00007fedd4d9f740(0000) GS:ffff880001e80000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000000 CR3: 000000020837a000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process pulseaudio (pid: 2229, threadinfo ffff880221926000, task 
-> ffff8802210096d0)
-> Stack:
->  ffff88022236d200 ffff88022236d228 ffff88022236d200 ffff880221927f18
-> <0> ffff880221927be8 ffffffff814ef0fa ffff880221927e4c ffff880221927eb4
-> <0> 0000000000000040 ffff8802210096d0 ffff8802210096d0 ffff88017a6d5ea4
-> Call Trace:
->  [<ffffffff814ef0fa>] unix_stream_recvmsg+0x1aa/0x790
->  [<ffffffff8145124d>] sock_recvmsg+0xfd/0x130
->  [<ffffffff81155fd0>] ? pollwake+0x0/0x60
->  [<ffffffff81452b54>] __sys_recvmsg+0x144/0x2e0
->  [<ffffffff81155fd0>] ? pollwake+0x0/0x60
->  [<ffffffff8104d88a>] ? finish_task_switch+0x4a/0xd0
->  [<ffffffff8154fa91>] ? schedule+0x411/0xa50
->  [<ffffffff81452f99>] sys_recvmsg+0x49/0x80
->  [<ffffffff8100b0b2>] system_call_fastpath+0x16/0x1b
-> Code: e5 74 4f 4d 85 e4 74 26 41 83 6d 10 01 49 8b 0c 24 49 8b 54 24 08 49 c7 04 
-> 24 00 00 00 00 49 c7 44 24 08 00 00 00 00 48 89 51 08 <48> 89 0a 48 89 c6 48 89 
-> df e8 39 93 0f 00 4c 89 e0 48 8b 5d e8 
-> RIP  [<ffffffff81459069>] skb_dequeue+0x59/0x90
->  RSP <ffff880221927a78>
-> CR2: 0000000000000000
-> ---[ end trace d4be3de9fdd70935 ]---
-> 
-> cheers
->   simon
-> 
-> 
+Uuurg. That's backwards. Why not fixing the flow handlers first ?
+ 
+Thanks,
 
-Is it reproductible ?
-
-On previous kernel (say 2.6.35) you never hit this bug ?
-
-
-
+	tglx
