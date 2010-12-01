@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0LAOhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:37:08 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40125 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab0LAOhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:37:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=XJ33LuLoplRwg5/41feTbJMi0bxY1oJpSN9lawc4l/LS3mYQQzIIlkn4MFas2tLLp1
-         m5yLux5l/qkWolZ4jkqEiXt7varlKMqK8+1wJL5vsIiIqT5+5GPGj5X8WLyp3BbH6XpT
-         e3y/tOwk1ToulfPpxnh94Ufldr8Npm2xLP+BI=
+	id S1755471Ab0LAOhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:37:54 -0500
+Received: from nbd.name ([46.4.11.11]:33747 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab0LAOhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 09:37:52 -0500
+Message-ID: <4CF65DB9.3050007@openwrt.org>
+Date: Wed, 01 Dec 2010 15:37:45 +0100
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Date: Wed, 1 Dec 2010 15:37:04 +0100
-Message-ID: <AANLkTimDVNfTavhLD9=yD=EYWASoRZQy9FCHkiLNgYFJ@mail.gmail.com>
-Subject: timer.c - high load avarage with idle cpu
-From: Harry Nak <harrynak@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: "Luis R. Rodriguez" <mcgrof@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath9k-devel@venema.h4ckr.net, peter@stuge.se,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ath9k-devel] [PATCH wireless-next] ath: Rename ath_print to
+ ath_debug
+References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>	 <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>	 <20101129060732.5130.qmail@stuge.se> <4CF42C17.2070500@openwrt.org>	 <1291081185.16349.133.camel@Joe-Laptop> <4CF464D6.2020507@openwrt.org>	 <1291148375.18026.342.camel@Joe-Laptop>	 <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com> <1291213675.1845.12.camel@Joe-Laptop>
+In-Reply-To: <1291213675.1845.12.camel@Joe-Laptop>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 2010-12-01 3:27 PM, Joe Perches wrote:
+> On Tue, 2010-11-30 at 23:56 -0800, Luis R. Rodriguez wrote:
+>> On Tue, Nov 30, 2010 at 12:19 PM, Joe Perches <joe@perches.com> wrote:
+>> > Poor function naming is just that.
+>> > It reduces readability and the uses are counter expectation.
+>> The name is perfect, we use it to print anything, even non-debugging stuff.
+> 
+> 'fraid not.
+> 
+> ath/debug.h
+> 
+> #ifdef CONFIG_ATH_DEBUG
+> void ath_print(struct ath_common *common, int dbg_mask, const char *fmt, ...)
+> 	__attribute__ ((format (printf, 3, 4)));
+> #else
+> static inline void __attribute__ ((format (printf, 3, 4)))
+> ath_print(struct ath_common *common, int dbg_mask, const char *fmt, ...)
+> {
+> }
+> #endif /* CONFIG_ATH_DEBUG */
+Now we're getting closer to something worth fixing. IMHO we should
+change the code so that ath_print(common, ATH_DBG_FATAL, ...) prints
+something even with CONFIG_ATH_DEBUG unset. To get this done, some
+renaming would make sense here.
 
-I am developing an application on a at91rm9200 platform. Recently I
-found out that the load average on this system is very high while the
-cpu remains almost idle.
-My application uses a lot of timers but the expiration of such a timer
-causes almost no processing to be performed.
-
-I think I found the reason for this load average/cpu usage
-inconsistency and I (think I ) found a solution:
-
-update_process_times() in timer.c first calls the function
-run_local_timers() before calling scheduler_tick().
-
-run_local_timers() raises TIMER_SOFTIRQ, which causes threads
-associated with any expired timers to be marked RUNNABLE.
-scheduler_tick() -> update_cpu_load() -> calc_load_account_active() ->
-calc_load_fold_active() adds such a thread to the number of active
-threads, thus causing the load average to increase. However this
-particular thread never had to wait to become running and it will not
-consume much cpu time.
-
-My solution is to postpone the call to run_local_timers() until
-scheduler_tick() has been called.
-
-Could anybody confirm my theory and is it possible that my solution
-breaks anything?
-
-- Harry
+- Felix
