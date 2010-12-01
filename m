@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab0LASrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:47:31 -0500
-Received: from claw.goop.org ([74.207.240.146]:47850 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756186Ab0LASra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:47:30 -0500
-Message-ID: <4CF69840.3040704@goop.org>
-Date: Wed, 01 Dec 2010 10:47:28 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1756200Ab0LASvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:51:13 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49207 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab0LASvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:51:11 -0500
+Date: Wed, 1 Dec 2010 19:51:03 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
+Message-ID: <20101201185103.GK32355@pengutronix.de>
+References: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 0/5] Xen PV on HVM fixes
-References: <alpine.DEB.2.00.1012011442280.14723@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1012011442280.14723@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2010 10:22 AM, Stefano Stabellini wrote:
-> Hi all,
-> this patch series is a collection of fixes for Xen PV on HVM.
->
-> The first two patches fix two pirq remapping problems with MSIs, they
-> have been sent to the list few times already for comments.
-> The three following patches are new and fix save/restore bugs.
+On Wed, Dec 01, 2010 at 04:30:12PM +0100, Hans Ulli Kroll wrote:
+> Today more boards with arm cpu have selectable pci bus.
+> This patch makes this more scalable and remove line continuations in
+> Kconfig
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+> ---
+>  arch/arm/Kconfig                 |    7 ++++++-
+>  arch/arm/mach-cns3xxx/Kconfig    |    1 +
+>  arch/arm/mach-integrator/Kconfig |    1 +
+>  arch/arm/mach-ks8695/Kconfig     |    1 +
+>  arch/arm/mach-pxa/Kconfig        |    1 +
+>  arch/arm/mach-versatile/Kconfig  |    1 +
+>  6 files changed, 11 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index a19a526..614cf2f 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -34,6 +34,9 @@ config ARM
+>  config HAVE_PWM
+>  	bool
+>  
+> +config MIGHT_HAVE_PCI
+HAVE_PCI or HAS_PCI is a more usual name for this purpose.
 
-Are you targeting these at 3.6.37-rc?  If so, each changelog commit
-should explicitly say what bug is being fixed, and what the impact of
-the bug is.  The last 3 are OK, but it isn't clear to me whether the
-first two are strictly bugfixes or not.
+Uwe
 
-    J
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
