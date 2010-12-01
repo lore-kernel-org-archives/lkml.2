@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab0LADT1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:19:27 -0500
-Received: from mga01.intel.com ([192.55.52.88]:11096 "EHLO mga01.intel.com"
+	id S1754387Ab0LADUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:20:31 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60286 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab0LADTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:19:25 -0500
+	id S1753995Ab0LADUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:20:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="862956072"
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <AANLkTim5OHVDM6SXg5QS0QVFjDWTnyCKYFmt=OD9ZvOw@mail.gmail.com>
-References: <1290340877.2245.124.camel@localhost>
-	 <AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
-	 <AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
-	 <AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-	 <AANLkTikYsT=5qOTKTaQaf-OwdZDMkrfKWaSb=aDqgrrC@mail.gmail.com>
-	 <AANLkTikB4WeBPn7PM=wkxYh5TpR4LQLBeLffq_3Lzv4n@mail.gmail.com>
-	 <AANLkTim5OHVDM6SXg5QS0QVFjDWTnyCKYFmt=OD9ZvOw@mail.gmail.com>
+   d="scan'208";a="862956378"
+Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any
+ suitable zone is balanced
+From: Shaohua Li <shaohua.li@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Simon Kirby <sim@hostway.ca>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101201115401.ABB1.A69D9226@jp.fujitsu.com>
+References: <20101201112354.ABA8.A69D9226@jp.fujitsu.com>
+	 <1291171667.12777.51.camel@sli10-conroe>
+	 <20101201115401.ABB1.A69D9226@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 11:21:51 +0800
-Message-ID: <1291173711.2405.223.camel@minggr.sh.intel.com>
+Date: Wed, 01 Dec 2010 11:20:28 +0800
+Message-ID: <1291173628.12777.65.camel@sli10-conroe>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 18:06 +0800, Stephane Eranian wrote:
-> On Fri, Nov 26, 2010 at 10:00 AM, Lin Ming <lin@ming.vg> wrote:
-> > On Fri, Nov 26, 2010 at 4:33 PM, Stephane Eranian <eranian@google.com> wrote:
-> >> Lin,
-> >>
-> >> Looked at the perfmon code, and it seems the mask is actual
-> >> cores, not threads:
-> >>                rdmsrl(MSR_NHM_UNC_GLOBAL_CTRL, val);
-> >>                val |= 1ULL << (48 + cpu_data(smp_processor_id()).cpu_core_id);
-> >>                wrmsrl(MSR_NHM_UNC_GLOBAL_CTRL, val);
-> >>
-> >> That seems to imply both threads will get the interrupt.
-> >>
-> >> In the the overflowed event was programmed from on of the two threads, that
-> >> means one will process the overflow, the other will get spurious.
-> >>
-> >> On the cores where no uncore was programmed, then both threads will have
-> >> a spurious interrupt.
-> >
-> > But in my test, if HT is on, only the 2 theads in one of the four cores
-> > will receive the interrupt. Even worse, we don't know which core will
-> > receive the interrupt
-> > when overflow happens.
-> >
-> The MSR_NHM_UNC_GLOBAL_CTRL is per socket not per core.
-
-Understood.
-
+On Wed, 2010-12-01 at 10:59 +0800, KOSAKI Motohiro wrote:
+> > On Wed, 2010-12-01 at 10:23 +0800, KOSAKI Motohiro wrote:
+> > > > On Wed, 2010-12-01 at 01:15 +0800, Mel Gorman wrote:
+> > > > > When the allocator enters its slow path, kswapd is woken up to balance the
+> > > > > node. It continues working until all zones within the node are balanced. For
+> > > > > order-0 allocations, this makes perfect sense but for higher orders it can
+> > > > > have unintended side-effects. If the zone sizes are imbalanced, kswapd
+> > > > > may reclaim heavily on a smaller zone discarding an excessive number of
+> > > > > pages. The user-visible behaviour is that kswapd is awake and reclaiming
+> > > > > even though plenty of pages are free from a suitable zone.
+> > > > > 
+> > > > > This patch alters the "balance" logic to stop kswapd if any suitable zone
+> > > > > becomes balanced to reduce the number of pages it reclaims from other zones.
+> > > > from my understanding, the patch will break reclaim high zone if a low
+> > > > zone meets the high order allocation, even the high zone doesn't meet
+> > > > the high order allocation. This, for example, will make a high order
+> > > > allocation from a high zone fallback to low zone and quickly exhaust low
+> > > > zone, for example DMA. This will break some drivers.
+> > > 
+> > > Have you seen patch [3/3]? I think it migigate your pointed issue.
+> > yes, it improves a lot, but still possible for small systems.
 > 
-> > I'll do more tests to verify this.
-> 
-> In your tests, are your programming the same uncore event
-> across all CPUs? If so then you may have a race condition
-> setting the MSR because it read-modify-write.
-> 
-> What about you program only one uncore event from one CPU?
+> Ok, I got you. so please define your "small systems" word? 
+an embedded system with less memory memory, obviously
 
-This is what I tested, programming only one uncore event from one CPU.
-When HT is off, all four cores in the socket receive the interrupt.
-When HT is on, only the 2 threads in one of the four cores receive the
-interrupt.
+> we can't make
+> perfect VM heuristics obviously, then we need to compare pros/cons.
+if you don't care about small system, let's consider a NORMAL i386
+system with 896m normal zone, and 896M*3 high zone. normal zone will
+quickly exhaust by high order high zone allocation, leave a latter
+allocation which does need normal zone fail.
 
