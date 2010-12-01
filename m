@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab0LBBGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:06:39 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40764 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753389Ab0LBBGi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:06:38 -0500
+	id S1755637Ab0LBBIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:08:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:5863 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751582Ab0LBBIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 20:08:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
+   d="scan'208";a="863356846"
+Date: Thu, 2 Dec 2010 07:45:14 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+Message-ID: <20101201234514.GA13509@shaohui>
+References: <20101130071324.908098411@intel.com>
+ <20101130071437.461969179@intel.com>
+ <alpine.DEB.2.00.1012011656590.1896@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20101201153608.78b331f9.akpm@linux-foundation.org>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
- <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
- <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
- <1291234251.6609.39.camel@heimdal.trondhjem.org> <20101201123341.d12ef362.akpm@linux-foundation.org>
- <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
- <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
- <20101201133831.ea6ba10a.akpm@linux-foundation.org> <1291240272.6609.50.camel@heimdal.trondhjem.org>
- <20101201141351.8609140b.akpm@linux-foundation.org> <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
- <20101201143856.51f4f9d9.akpm@linux-foundation.org> <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
- <20101201153608.78b331f9.akpm@linux-foundation.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Dec 2010 17:05:43 -0800
-Message-ID: <AANLkTinbuRRpg7Y8Zu=PD36BO11+qdjZ9uT=u9gCTpDw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1012011656590.1896@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 3:36 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 1 Dec 2010 15:31:11 -0800
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->> Ergo: vmscan has a locked page leads to the filesystem being
->> guaranteed to not be unmounted.  And that, in turn, guarantees that
->> the module won't be unloaded until the machine has gone through an
->> idle cycle.
->
-> The page isn't attached to the address_space any more:
+On Wed, Dec 01, 2010 at 04:57:35PM -0800, David Rientjes wrote:
+> On Tue, 30 Nov 2010, shaohui.zheng@intel.com wrote:
+> 
+> > From: Shaohui Zheng <shaohui.zheng@intel.com>
+> > 
+> > Implement a debugfs inteface /sys/kernel/debug/mem_hotplug/probe for meomory hotplug
+> > emulation.  it accepts the same parameters like
+> > /sys/devices/system/memory/probe.
+> > 
+> 
+> NACK, we don't need two interfaces to do the same thing.  
 
-Did you even read the email?
+You may not know the background, the sysfs memory/probe interface is a general
+interface.  Even through we have a debugfs interface, we should still keep it.
 
-Here, let me quote the important parts:
+For test purpose, the sysfs is enough, according to the comments from Greg & Dave,
+we create the debugfs interface.
 
-  "module won't be unloaded until the machine has gone through an idle cycle"
+-- 
+Thanks & Regards,
+Shaohui
 
-  "This is pretty much how all the module races are handled. Doing module
-   ref-counts per page (or per packet in flight for things like
-   networking) would be prohibitively expensive."
-
-IOW, the whole "stop_machine()" part is fundamental. That whole
-"module unload won't happen until we've gone through an idle cycle" is
-EXACTLY why we don't need to have the page attached or ref-counted -
-we're still safe.
-
-                    Linus
