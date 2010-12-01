@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab0LAJf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 04:35:28 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48403 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab0LAJf1 convert rfc822-to-8bit (ORCPT
+	id S1752057Ab0LAJjX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 04:39:23 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41108 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab0LAJjV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 04:35:27 -0500
+	Wed, 1 Dec 2010 04:39:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=uBCQUGEYQEujCzW5M7uSRlcvnluBMkKm+fsEwJCxeQJlAKhKwfMl55WTupptoBtCf3
-         2B3EfBfUoqvYjr4hH+2c5uhwgh6CzpHAOqKxUupjS9r+10aciX5A4LQtKYqPadnlpUgY
-         +RulAGT+HQTnFCb7M9BP6g6N6x4e0fAAtLqE0=
+        b=AkmxbSIQzcIghTl2ImbWiFJEKbSP52U3yy1Ysl9NmzkNpoQK6TxUvDvB4hBubqVJ6j
+         vlJ1W8eGDXxpyrDiUNpbUGcf113/W53K0JS9ZbYeE8OLk5MwXFU/7rVnPlKXY43J5CgT
+         6Xn7g9UhHpn93wgbnEFlajSzV201lHsqLbtmM=
 MIME-Version: 1.0
-In-Reply-To: <20101201040628.GA5672@kroah.com>
-References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>
-	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
-	<4CEBC751.6090906@gmail.com>
-	<AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
-	<4CEC3211.7050503@gmail.com>
-	<AANLkTin6Am=17wyMZJRu9bYk5-QTYqZhGtZqV_sDwJW4@mail.gmail.com>
-	<20101129194414.GB14086@kroah.com>
-	<AANLkTi=3Ut-fsLGAQ8MjZus4Q0U4weqsLXeOtjwOrHVJ@mail.gmail.com>
-	<20101201040628.GA5672@kroah.com>
-Date: Wed, 1 Dec 2010 10:35:25 +0100
-Message-ID: <AANLkTimNoTa9GChfDvTH96g_8NgtZFEZYuNOYCisvNvV@mail.gmail.com>
-Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created device.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <c1b20adfd68fc241611845c0ef42fe8fa91ed981.1291187695.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+ <c1b20adfd68fc241611845c0ef42fe8fa91ed981.1291187695.git.xiaohui.xin@intel.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 1 Dec 2010 17:38:59 +0800
+Message-ID: <AANLkTikiU_diGXRx6yxBx-1k-5JFXsty1MuqZyzXVu2Z@mail.gmail.com>
+Subject: Re: [PATCH v16 11/17]Add a hook to intercept external buffers from
+ NIC driver.
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 5:06 AM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Nov 29, 2010 at 09:08:07PM +0100, Belisko Marek wrote:
->> On Mon, Nov 29, 2010 at 8:44 PM, Greg KH <greg@kroah.com> wrote:
->> > On Wed, Nov 24, 2010 at 10:16:36AM +0100, Belisko Marek wrote:
->> >> On Tue, Nov 23, 2010 at 10:28 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->> >> > On 11/23/2010 03:00 PM, Belisko Marek wrote:
->> >> >> On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->> >> >>> On 11/23/2010 01:29 PM, Marek Belisko wrote:
->> >> >>>> Use simple misc device for ioctl driver funtionality testing.
->> >> >>>>
->> >> >>>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
->> >> >>>> ---
->> >> >>>> Â drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c | Â  90 ++++++++++++++++++---
->> >> >>>> Â 1 files changed, 77 insertions(+), 13 deletions(-)
->> >> >>>>
->> >> >>>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->> >> >>>> index 1aec926..d1784a3 100644
->> >> >>>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->> >> >>>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
->> >> >>>> @@ -32,6 +32,7 @@
->> >> >>>> Â #include <linux/poll.h>
->> >> >>>> Â #include <linux/netdevice.h>
->> >> >>>> Â #include <linux/delay.h>
->> >> >>>> +#include <linux/miscdevice.h>
->> >> >>>>
->> >> >>>> Â #include <linux/fs.h>
->> >> >>>> Â #include <linux/kmod.h>
->> >> >>>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
->> >> >>>> Â  Â  Â  .llseek Â  Â  Â  Â  = no_llseek,
->> >> >>>> Â };
->> >> >>>>
->> >> >>>> +struct ft1000_misc_device {
->> >> >>>> + Â  Â  struct miscdevice dev;
->> >> >>>> + Â  Â  int inf_id;
->> >> >>>> +};
->> >> >>>> +
->> >> >>>> +#define FREE_ID (0xFF)
->> >> >>>> +
->> >> >>>> +/* we support just 3 devices */
->> >> >>>> +#define MAX_DEVICE 3
->> >> >>>
->> >> >>> No, why this should be converted to miscdevice? Leave it as chrdev.
->> >> >> Is there any problem with using miscdev?
->> >> >
->> >> > Yes, if you want more than a single device per system.
->> >> >
->> >> >> Old interface create /dev nodes with
->> >> >> calling kernel thread and some usermode_helper or whatever.
->> >> >
->> >> > Yes, that's crap indeed. But doesn't judge for miscdevice.
->> >> >
->> >> >> Just convert to misc dev
->> >> >> where this is done automatically.
->> >> >
->> >> > So the only thing you need to do is to send a uevent to udev appropriately.
->> >> Could be used something like:
->> >> register_chrdev(0,"ft1000", &fops)
->> >> class = class_create(THIS_MODULE, "ft1000");
->> >> device_create(class, NULL, MKDEV(major, i), NULL, "ft1000%d", i);
->> >> Then will be created different devices for every plugged device.
->> >> This should have effect of automatic device node creation also suppose.
->> >
->> > Please don't create new classes.
->> >
->> > Is this a USB device? Â If so, why not just use the USB major number?
->> Yes it is USB device.
->> > Just ask me and I can reserve you a USB minor number for your driver.
->> Idea behind existing code is that for every plugged device you will have created
->> /dev node. NUmber of devices was limited by number of plugged devices.
->> But who will plug more
->> then one device which just used for internet connection? So maybe I
->> should implement some
->> limit and would be nice if you could reserve me some USB minors (lest
->> say max. 3 devices?).
+On Wed, Dec 1, 2010 at 4:08 PM,  <xiaohui.xin@intel.com> wrote:
+> From: Xin Xiaohui <xiaohui.xin@intel.com>
+> @@ -2891,6 +2925,11 @@ static int __netif_receive_skb(struct sk_buff *skb)
+>  ncls:
+>  #endif
 >
-> Send me a patch using the USB major number, and I'll add an additional
-> one that reserves the proper minor number for your driver.
-Patch sent (subject: [PATCH] staging: ft1000: Use usb device registration.)
->
-> thanks,
->
-> greg k-h
->
+> +       /* To intercept mediate passthru(zero-copy) packets here */
+> +       skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
+> +       if (!skb)
+> +               goto out;
+> +
+>        /* Handle special case of bridge or macvlan */
 
-thanks,
+I think it won't work if the skbs is captured by the previous ptype.
+We need to trace the skb pages(skb_shared_info.frags[*].page), but
+currently, there isn't a easy way to do that. skb pages are treated as
+normal pages, and anyone can get it freely. And it is the problem in
+the way to fix the potential data corruption bug.
 
-marek
+Eric thinks af_packets(mmap) isn't worth fixing. But if this patch
+serial has the same problem. It will be worth.
+
+My idea is adding a new function dtor pointer  and some other args
+pointers to the struct skb_shared_info. If skb_shared_info.dtor
+exists, the pages in skb_shared_info.frags are private to this
+skb->head. Anyone who wants to get these pages, should copy them
+instead.
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+Regards,
+Changli Gao(xiaosuo@gmail.com)
