@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0LADrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:47:49 -0500
+	id S1754600Ab0LADrr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:47:47 -0500
 Received: from mx2.netapp.com ([216.240.18.37]:9822 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754536Ab0LADrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754328Ab0LADrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Nov 2010 22:47:46 -0500
 X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="489279740"
+   d="scan'208";a="489279738"
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Nick Bowler <nbowler@elliptictech.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-nfs@vger.kernel.org
-Subject: [PATCH 1/3] NFS: Ensure we use the correct cookie in nfs_readdir_xdr_filler
-Date: Tue, 30 Nov 2010 22:47:12 -0500
-Message-Id: <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
+Subject: [PATCH 0/3] Fix more NFS readdir regressions
+Date: Tue, 30 Nov 2010 22:47:11 -0500
+Message-Id: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
 X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
-References: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
 In-Reply-To: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
 References: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to use the cookie from the previous array entry, not the
-actual cookie that we are searching for.
+OK. The first patch in this series fixes the regression reported by
+Nick Bowler when I apply it to my setup.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- fs/nfs/dir.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+The 2 remaining patches are needed in order to ensure that the
+VM doesn't free the readdir page cache page while we're trying to
+read from it, and to ensure that we don't leak memory...
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index f0a384e..4a78d2b 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -178,6 +178,7 @@ typedef struct {
- 	struct page	*page;
- 	unsigned long	page_index;
- 	u64		*dir_cookie;
-+	u64		last_cookie;
- 	loff_t		current_index;
- 	decode_dirent_t	decode;
- 
-@@ -344,6 +345,8 @@ int nfs_readdir_search_array(nfs_readdir_descriptor_t *desc)
- 	else
- 		status = nfs_readdir_search_for_cookie(array, desc);
- 
-+	if (status == -EAGAIN)
-+		desc->last_cookie = array->last_cookie;
- 	nfs_readdir_release_array(desc->page);
- out:
- 	return status;
-@@ -563,7 +566,7 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
- 	unsigned int array_size = ARRAY_SIZE(pages);
- 
- 	entry.prev_cookie = 0;
--	entry.cookie = *desc->dir_cookie;
-+	entry.cookie = desc->last_cookie;
- 	entry.eof = 0;
- 	entry.fh = nfs_alloc_fhandle();
- 	entry.fattr = nfs_alloc_fattr();
-@@ -672,8 +675,10 @@ int readdir_search_pagecache(nfs_readdir_descriptor_t *desc)
- {
- 	int res;
- 
--	if (desc->page_index == 0)
-+	if (desc->page_index == 0) {
- 		desc->current_index = 0;
-+		desc->last_cookie = 0;
-+	}
- 	while (1) {
- 		res = find_cache_page(desc);
- 		if (res != -EAGAIN)
+Linus, please don't apply these patches quite yet. I'd like to continue
+tests for a couple more days before I send you the pull request.
+
+Cheers
+  Trond
+
+Trond Myklebust (3):
+  NFS: Ensure we use the correct cookie in nfs_readdir_xdr_filler
+  NFS: lock the readdir page while it is in use
+  NFS: Fix a memory leak in nfs_readdir
+
+ fs/nfs/dir.c           |   25 ++++++++++++++++++++++---
+ fs/nfs/inode.c         |    1 +
+ include/linux/nfs_fs.h |    1 +
+ 3 files changed, 24 insertions(+), 3 deletions(-)
+
 -- 
 1.7.3.2
 
