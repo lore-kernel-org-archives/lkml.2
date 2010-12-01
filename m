@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab0LARzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:55:13 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63731 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab0LARzL (ORCPT
+	id S1755585Ab0LARzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:55:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61924 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab0LARzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:55:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:x-url:user-agent;
-        b=QuMduIgVwtIU1mtw/HoxofH++2tlfJvKRGLazYE2zyB/D2kZle7o6WzBmw7sdz2TF2
-         cpg3u1QBVrXQDleOsX4gPiGy3On0DZqz+bWAC+Q6WWi9wO6WGQ/7eIi4wdTQo8UVY1yY
-         QCxJykLGNaUc3inZiKfg43MUnxNe1xu45diOE=
-Date: Wed, 1 Dec 2010 15:55:04 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: eranian@gmail.com
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        robert.richter@amd.com
-Subject: Re: [PATCH] perf: add csv-style output to perf stat
-Message-ID: <20101201175504.GA13584@ghostprotocols.net>
-References: <4cf67197.41e9d80a.7d37.08aa@mx.google.com>
- <20101201170647.GC24641@ghostprotocols.net>
- <AANLkTi=C0FX2f-SS65p9nXWB8ogNqtgJVa8e+N6C32+5@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=C0FX2f-SS65p9nXWB8ogNqtgJVa8e+N6C32+5@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Dec 2010 12:55:31 -0500
+Date: Wed, 1 Dec 2010 09:53:48 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Subject: Re: [PATCH v16 14/17]Add a kconfig entry and make entry for mp
+ device.
+Message-Id: <20101201095348.07421ee5.randy.dunlap@oracle.com>
+In-Reply-To: <a1c255bc496b7aaca26912790f8bb0162dd1f4bf.1291187695.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
+	<a1c255bc496b7aaca26912790f8bb0162dd1f4bf.1291187695.git.xiaohui.xin@intel.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 01, 2010 at 06:24:46PM +0100, stephane eranian escreveu:
-> On Wed, Dec 1, 2010 at 6:06 PM, Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> > Spaces are being added, gack, will fix. Tried to use the same option letter and
-> > long option name as in 'sort':
-> >
-> >       -t, --field-separator=SEP
-> >              use SEP instead of non-blank to blank transition
-> >
-> > But then 'perf stat' already uses -t for --tid, so in 'stat' we would have to
-> > use '-x'/--field-separator.
-> >
-> Fine with me.
-> I can re-spin the patch to add the flexibility to name your SEP.
+On Wed,  1 Dec 2010 16:08:25 +0800 xiaohui.xin@intel.com wrote:
 
-please
- 
-> > Argh, I think we should stop using short options, only assigning something when
-> > it gets from seldomly used to just before making it the default 8-)
+> From: Xin Xiaohui <xiaohui.xin@intel.com>
 > 
-> I tend to use the short options....
+> Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+> Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+> ---
+>  drivers/vhost/Kconfig  |   10 ++++++++++
+>  drivers/vhost/Makefile |    2 ++
+>  2 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+> index e4e2fd1..a6b8cbf 100644
+> --- a/drivers/vhost/Kconfig
+> +++ b/drivers/vhost/Kconfig
+> @@ -9,3 +9,13 @@ config VHOST_NET
+>  	  To compile this driver as a module, choose M here: the module will
+>  	  be called vhost_net.
+>  
+> +config MEDIATE_PASSTHRU
+> +	tristate "mediate passthru network driver (EXPERIMENTAL)"
+> +	depends on VHOST_NET
+> +	---help---
+> +	  zerocopy network I/O support, we call it as mediate passthru to
 
-If you're ok with keeping --field-separator as the long option to match
-what is in 'perf report', deal :-)
+	                       support; we call it "mediate passthru" to
 
-- Arnaldo
+> +	  be distiguish with hardare passthru.
+
+	  distinguish it from hardware passthru.
+
+> +
+> +	  To compile this driver as a module, choose M here: the module will
+> +	  be called mpassthru.
+> +
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
