@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab0LATPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:15:13 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51787 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab0LATPL (ORCPT
+	id S1756546Ab0LATQD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:16:03 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54396 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756466Ab0LATQA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:15:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=bYI0aM8u7RPBCogRvqe1rvSqHc5oiXdsVu1N+yzRa0oNvwm1X8NrUX7Dhdem2ttmXQ
-         qoXthznTRcA8zOILwyYHjuuU9W4hcGOvQwxVputiF5pKE8V21W3/gT5aaC9V9CIs0QLo
-         vV1G9lNhRKuOdYK7+IgsW4iemYb0hxHzryU60=
-MIME-Version: 1.0
-Date: Wed, 1 Dec 2010 11:15:10 -0800
-Message-ID: <AANLkTinXD6p25BoN0+JuvFM9v6K-oibOAFJebP08F29N@mail.gmail.com>
-Subject: [PATCH] bonding: check for assigned mac before adopting the slaves
- mac address
-From: David Strand <dpstrand@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Jay Vosburgh <fubar@us.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 1 Dec 2010 14:16:00 -0500
+Subject: Re: [tip:sched/core] sched: Do not account irq time to current task
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Raistlin <raistlin@linux.it>,
+        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+In-Reply-To: <AANLkTinv6M-aeNjUStMi05UDbi15ZvTKSu9N-hM63F7J@mail.gmail.com>
+References: <1286237003-12406-7-git-send-email-venki@google.com>
+	 <tip-305e6835e05513406fa12820e40e4a8ecb63743c@git.kernel.org>
+	 <AANLkTin-U-kzr27ArR60K=eE5Jq+sPdTQ7JNhQg711c7@mail.gmail.com>
+	 <1291031990.32004.24.camel@laptop> <20101129142213.GA2573@zhy>
+	 <1291050395.2697.259.camel@Palantir>
+	 <AANLkTikRh0mKkPY=m+kX47+5QNxE-hHSoRbQST3hnDUq@mail.gmail.com>
+	 <AANLkTinv6M-aeNjUStMi05UDbi15ZvTKSu9N-hM63F7J@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Dec 2010 20:16:08 +0100
+Message-ID: <1291230968.32004.1937.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restore the check for an unassigned mac address before adopting the
-first slaves as it's own. The change in behavior was introduced with
-the following patch:
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commit;h=c20811a79e671a6a1fe86a8c1afe04aca8a7f085
+On Wed, 2010-12-01 at 10:55 -0800, Venkatesh Pallipadi wrote:
+> Peter: Can you pull that patchset into tip.
 
-Signed-off-by: David Strand <dpstrand@gmail.com>
----
-diff -uprN a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
---- a/drivers/net/bonding/bond_main.c	2010-11-24 11:36:58.125640000 -0800
-+++ b/drivers/net/bonding/bond_main.c	2010-12-01 10:12:33.728640001 -0800
-@@ -1576,7 +1576,7 @@ int bond_enslave(struct net_device *bond
+I'll try and have another look at those patches early next week. Do
+remind me if you haven't heard back from me by Wednesday or something.
 
- 	/* If this is the first slave, then we need to set the master's hardware
- 	 * address to be the same as the slave's. */
--	if (bond->slave_cnt == 0)
-+	if (is_zero_ether_addr(bond->dev->dev_addr))
- 		memcpy(bond->dev->dev_addr, slave_dev->dev_addr,
- 		       slave_dev->addr_len);
+
