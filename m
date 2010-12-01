@@ -1,475 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab0LASzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:55:32 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39103 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab0LASza (ORCPT
+	id S1756332Ab0LASzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:55:11 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2682 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab0LASzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:55:30 -0500
-Date: Wed, 1 Dec 2010 16:54:52 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com
-Subject: Re: [PATCH] perf: add csv-style output to perf stat (v2)
-Message-ID: <20101201185452.GB26071@ghostprotocols.net>
-References: <4cf68aa7.0fedd80a.5294.1203@mx.google.com> <20101201181001.GA26071@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <20101201181001.GA26071@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 1 Dec 2010 13:55:09 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6184"; a="65057777"
+Subject: Re: [PATCH] drivers: char: hvc: add arm JTAG DCC console support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <4CF5DD63.40803@codeaurora.org>
+References: <1291145141-18301-1-git-send-email-dwalker@codeaurora.org>
+	 <4CF5DD63.40803@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 10:54:56 -0800
+Message-ID: <1291229696.14404.39.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Em Wed, Dec 01, 2010 at 04:10:01PM -0200, Arnaldo Carvalho de Melo escreveu:
-> Em Wed, Dec 01, 2010 at 06:49:05PM +0200, Stephane Eranian escreveu:
-> > This patch adds an option (-x/--field-separator) to print counts using
-> > a CSV-style output. The user can pass a custom separator. This makes it
-> > very easy to import counts directly into your favorite spreadsheet without
-> > having to write scripts.
+On Tue, 2010-11-30 at 21:30 -0800, Stephen Boyd wrote:
+> On 11/30/2010 11:25 AM, Daniel Walker wrote:
+> > @@ -682,6 +682,15 @@ config HVC_UDBG
+> >         select HVC_DRIVER
+> >         default n
+> >  
+> > +config HVC_DCC
+> > +       bool "ARM JTAG DCC console"
+> > +       depends on ARM
+> > +       select HVC_DRIVER
+> > +       help
+> > +         This console uses the JTAG DCC on ARM to create a console under the HVC
 > 
-> [root@mica ~]# perf stat -x,  -a -A -- sleep 1
-> -B option not supported with -x
+> Looks like you added one too many spaces for indent here.
+
+The first line is fine, but the other two might need an extra space.
+
+> > diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
+> > new file mode 100644
+> > index 0000000..6470f63
+> > --- /dev/null
+> > +++ b/drivers/char/hvc_dcc.c
+> > +static inline u32 __dcc_getstatus(void)
+> > +{
+> > +	u32 __ret;
+> > +
+> > +	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
+> > +		: "=r" (__ret) : : "cc");
+> > +
+> > +	return __ret;
+> > +}
 > 
->  usage: perf stat [<options>] [<command>]
+> Without marking this asm volatile my compiler decides it can cache the
+> value of __ret in a register and then check the value of it continually
+> in hvc_dcc_put_chars() (I had to replace get_wait/put_wait with 1 and
+> fixup the branch otherwise my disassembler barfed on __dcc_(get|put)char).
 > 
->     -e, --event <event>   event selector. use 'perf list' to list
 > 
-> Guess we'll have to disable big_num automatically when -x is specified,
-> but at the same time notice if the user _explicitely_ asked for -B.
+> 00000000 <hvc_dcc_put_chars>:
+>    0:   ee103e11        mrc     14, 0, r3, cr0, cr1, {0}
+>    4:   e3a0c000        mov     ip, #0  ; 0x0
+>    8:   e2033202        and     r3, r3, #536870912      ; 0x20000000
+>    c:   ea000006        b       2c <hvc_dcc_put_chars+0x2c>
+>   10:   e3530000        cmp     r3, #0  ; 0x0
+>   14:   1afffffd        bne     10 <hvc_dcc_put_chars+0x10>
+>   18:   e7d1000c        ldrb    r0, [r1, ip]
+>   1c:   ee10fe11        mrc     14, 0, pc, cr0, cr1, {0}
+>   20:   2afffffd        bcs     1c <hvc_dcc_put_chars+0x1c>
+>   24:   ee000e15        mcr     14, 0, r0, cr0, cr5, {0}
+>   28:   e28cc001        add     ip, ip, #1      ; 0x1
+>   2c:   e15c0002        cmp     ip, r2
+>   30:   bafffff6        blt     10 <hvc_dcc_put_chars+0x10>
+>   34:   e1a00002        mov     r0, r2
+>   38:   e12fff1e        bx      lr
 > 
-> I'll fix this now.
+> As you can see, the value of the mrc is checked against DCC_STATUS_TX
+> (bit 29) and then stored in r3 for later use. Marking this volatile
+> produces the following:
+> 
+> 00000000 <hvc_dcc_put_chars>:
+>    0:   e3a03000        mov     r3, #0  ; 0x0
+>    4:   ea000007        b       28 <hvc_dcc_put_chars+0x28>
+>    8:   ee100e11        mrc     14, 0, r0, cr0, cr1, {0}
+>    c:   e3100202        tst     r0, #536870912  ; 0x20000000
+>   10:   1afffffc        bne     8 <hvc_dcc_put_chars+0x8>
+>   14:   e7d10003        ldrb    r0, [r1, r3]
+>   18:   ee10fe11        mrc     14, 0, pc, cr0, cr1, {0}
+>   1c:   2afffffd        bcs     18 <hvc_dcc_put_chars+0x18>
+>   20:   ee000e15        mcr     14, 0, r0, cr0, cr5, {0}
+>   24:   e2833001        add     r3, r3, #1      ; 0x1
+>   28:   e1530002        cmp     r3, r2
+>   2c:   bafffff5        blt     8 <hvc_dcc_put_chars+0x8>
+>   30:   e1a00002        mov     r0, r2
+>   34:   e12fff1e        bx      lr
+> 
+> which looks better.
+> 
+> I marked all the asm in this driver as volatile. Is that correct?
 
-Should be OK now, patch attached. Please check if it works as expected
-and then I'll push it to Ingo, thanks.
+Are you talking about __dcc_getstatus only? I don't think adding
+volatile is going to hurt anything, if not having it causes problems.
 
-[root@mica ~]# perf stat -x, -a -A -- sleep 1 2>&1 | head -5
-CPU0,998.225789,task-clock-msecs
-CPU1,998.385393,task-clock-msecs
-CPU2,998.370913,task-clock-msecs
-CPU3,998.356865,task-clock-msecs
-CPU0,2272,context-switches
-[root@mica ~]# perf stat -B -x, -a -A -- sleep 1 2>&1 | head -5
--B option not supported with -x
+> > +#if defined(CONFIG_CPU_V7)
+> > +static inline char __dcc_getchar(void)
+> > +{
+> > +	char __c;
+> > +
+> > +	asm("get_wait:	mrc p14, 0, pc, c0, c1, 0                          \n\
+> > +			bne get_wait                                       \n\
+> > +			mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
+> > +		: "=r" (__c) : : "cc");
+> > +
+> > +	return __c;
+> > +}
+> > +#else
+> > +static inline char __dcc_getchar(void)
+> > +{
+> > +	char __c;
+> > +
+> > +	asm("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
+> > +		: "=r" (__c));
+> > +
+> > +	return __c;
+> > +}
+> > +#endif
+> > +
+> > +#if defined(CONFIG_CPU_V7)
+> > +static inline void __dcc_putchar(char c)
+> > +{
+> > +	asm("put_wait:	mrc p14, 0, pc, c0, c1, 0                 \n\
+> > +			bcs put_wait                              \n\
+> > +			mcr p14, 0, %0, c0, c5, 0                   "
+> > +	: : "r" (c) : "cc");
+> > +}
+> > +#else
+> > +static inline void __dcc_putchar(char c)
+> > +{
+> > +	asm("mcr p14, 0, %0, c0, c5, 0	@ write a char"
+> > +		: /* no output register */
+> > +		: "r" (c));
+> > +}
+> > +#endif
+> > +
+> 
+> I don't think both the v7 and v6 functions are necessary. It seems I can
+> get away with just the second version of __dcc_(get|put)char() on a v7.
+> The mrc p14, 0, pc, c0, c1, 0 will assign the top 4 bits (31-28) to the
+> condition codes NZCV on v7. It also looks like on an ARM11 (a v6) will
+> also do the same thing if I read the manuals right. The test in the
+> inline assembly is saying, wait for a character to be ready or wait for
+> a character to be read then actually write a character or read one. The
+> code in hvc_dcc_put_chars() is already doing the same thing, albeit in a
+> slightly different form. Instead of getting the status bits put into the
+> condition codes and looping with bne or bcs it will read the register,
+> and it with bit 29 or bit 28 to see if it should wait and then continue
+> with the writing/reading. I think you can just drop the looping for the
+> v7 version of the functions and have this driver work on v6 and v7.
 
- usage: perf stat [<options>] [<command>]
+We could maybe drop the looping for TX, but RX has no C based looping
+even tho for v7 it's recommended that we loop (presumably for v6 it's
+not recommended).
 
-    -e, --event <event>   event selector. use 'perf list' to list available events
-[root@mica ~]# perf stat -B -a -- sleep 1 2>&1 | head -10
+> Alternatively, you can make some function that says tx buffer is empty,
+> rx buffer is full or something but I don't see how saving a couple
+> instructions buys us much when we can have one driver for v6 and v7.
+> 
+> I see that Tony Lindgren modified the DCC macros for v7 in commit
+> 200b7a8 (ARM: 5884/1: arm: Fix DCC console for v7, 2010-01-19). I'm not
+> sure why though, since it seems that a v6 and a v7 should really do the
+> same thing by waiting for the buffers to be ready before filling them or
+> reading them. Which probably means we can get low-level dcc debugging on
+> all targets if I'm not mistaken.
 
- Performance counter stats for 'sleep 1':
+This is primarily why these function look they way they do. I'd like to
+hear from Tony, because he apparent didn't think they did the same
+thing.
 
-       3992.488962 task-clock-msecs         #      3.988 CPUs 
-             9,082 context-switches         #      0.002 M/sec
-                15 CPU-migrations           #      0.000 M/sec
-               160 page-faults              #      0.000 M/sec
-        84,802,643 cycles                   #     21.241 M/sec  (scaled from 70.03%)
-        45,056,634 instructions             #      0.531 IPC    (scaled from 80.02%)
-         8,672,889 branches                 #      2.172 M/sec  (scaled from 80.01%)
-[root@mica ~]# perf stat -B -A -a -- sleep 1 2>&1 | head -10
+> > +static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < count; i++) {
+> > +		while (__dcc_getstatus() & DCC_STATUS_TX)
+> > +			cpu_relax();
+> > +
+> > +		__dcc_putchar((char)(buf[i] & 0xFF));
+> 
+> Is this & 0xFF and cast to char unnecessary? buf is a char array, and
+> chars are always 8 bits. Can't we just do __dcc_putchar(buf[i])?
 
- Performance counter stats for 'sleep 1':
+Yeah, doesn't seem like it.
 
-CPU0            998.135082 task-clock-msecs         #      0.997 CPUs 
-CPU1            998.137405 task-clock-msecs         #      0.997 CPUs 
-CPU2            998.144046 task-clock-msecs         #      0.997 CPUs 
-CPU3            998.146202 task-clock-msecs         #      0.997 CPUs 
-CPU0                 2,280 context-switches         #      0.002 M/sec
-CPU1                 2,282 context-switches         #      0.002 M/sec
-CPU2                 2,244 context-switches         #      0.002 M/sec
-[root@mica ~]# perf stat --no-big-num -A -a -- sleep 1 2>&1 | head -10
+> > +static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < count; ++i) {
+> > +		int c = -1;
+> > +
+> > +		if (__dcc_getstatus() & DCC_STATUS_RX)
+> > +			c = __dcc_getchar();
+> > +		if (c < 0)
+> > +			break;
+> > +		buf[i] = c;
+> > +	}
+> 
+> I think this for loop can be simplified. __dcc_getchar() returns a char.
+> It never returns -1, so the check for c < 0 can't be taken if
+> __dcc_getstatus() & DCC_STATUS_RX is true. The only case you break the
+> loop in then is if __dcc_getstatus() & DCC_STATUS_RX is false. So you
+> can have a simple if-else and assign buf[i] in the if branch and break
+> in the else branch.
+> 
 
- Performance counter stats for 'sleep 1':
+Like this?
 
-CPU0            998.125848 task-clock-msecs         #      0.997 CPUs 
-CPU1            998.244633 task-clock-msecs         #      0.997 CPUs 
-CPU2            998.337969 task-clock-msecs         #      0.997 CPUs 
-CPU3            998.313756 task-clock-msecs         #      0.997 CPUs 
-CPU0                  2268 context-switches         #      0.002 M/sec
-CPU1                  2218 context-switches         #      0.002 M/sec
-CPU2                  2218 context-switches         #      0.002 M/sec
-[root@mica ~]#
+	for (i = 0; i < count; ++i) {
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-perf-stat-Add-csv-style-output.patch"
+		if (__dcc_getstatus() & DCC_STATUS_RX)
+			buf[i] = __dcc_getchar();
+		else
+			break;
+	}
 
->From d7470b6afca85ed4388fff57fc9d89f5a3be02ff Mon Sep 17 00:00:00 2001
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 1 Dec 2010 18:49:05 +0200
-Subject: [PATCH] perf stat: Add csv-style output
+It's a micro clean up I guess ..
 
-This patch adds an option (-x/--field-separator) to print counts using a
-CSV-style output. The user can pass a custom separator. This makes it very easy
-to import counts directly into your favorite spreadsheet without having to
-write scripts.
-
-Example:
-$ perf stat --field-separator=,  -a -- sleep 1
-4009.961740,task-clock-msecs
-13,context-switches
-2,CPU-migrations
-189,page-faults
-9596385684,cycles
-3493659441,instructions
-872897069,branches
-41562,branch-misses
-22424,cache-references
-1289,cache-misses
-
-Works also in non-aggregated mode:
-
-$ perf stat -x ,  -a -A -- sleep 1
-CPU0,1002.526168,task-clock-msecs
-CPU1,1002.528365,task-clock-msecs
-CPU2,1002.523360,task-clock-msecs
-CPU3,1002.519878,task-clock-msecs
-CPU0,1,context-switches
-CPU1,5,context-switches
-CPU2,5,context-switches
-CPU3,6,context-switches
-CPU0,0,CPU-migrations
-CPU1,1,CPU-migrations
-CPU2,0,CPU-migrations
-CPU3,1,CPU-migrations
-CPU0,2,page-faults
-CPU1,6,page-faults
-CPU2,9,page-faults
-CPU3,174,page-faults
-CPU0,2399439771,cycles
-CPU1,2380369063,cycles
-CPU2,2399142710,cycles
-CPU3,2373161192,cycles
-CPU0,872900618,instructions
-CPU1,873030960,instructions
-CPU2,872714525,instructions
-CPU3,874460580,instructions
-CPU0,221556839,branches
-CPU1,218134342,branches
-CPU2,218161730,branches
-CPU3,218284093,branches
-CPU0,18556,branch-misses
-CPU1,1449,branch-misses
-CPU2,3447,branch-misses
-CPU3,12714,branch-misses
-CPU0,8330,cache-references
-CPU1,313844,cache-references
-CPU2,47993728,cache-references
-CPU3,826481,cache-references
-CPU0,272,cache-misses
-CPU1,5360,cache-misses
-CPU2,1342193,cache-misses
-CPU3,13992,cache-misses
-
-This second version adds the ability to name a separator and uses
-field-separator as the long option to be consistent with perf report.
-
-Commiter note: Since we enabled --big-num by default in 201e0b0 and -x can't be
-used with it, we need to notice if the user explicitely enabled or disabled -B,
-add code to disable big_num if the user didn't explicitely set --big_num when
--x is used.
-
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frederik Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: paulus@samba.org
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-LKML-Reference: <4cf68aa7.0fedd80a.5294.1203@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-stat.txt |    5 +
- tools/perf/builtin-stat.c              |  144 +++++++++++++++++++++++---------
- 2 files changed, 109 insertions(+), 40 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index c469ba5..b6da7af 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -78,6 +78,11 @@ This option is only valid in system-wide mode.
- --verbose::
-         be more verbose (show counter open errors, etc)
- 
-+-x SEP::
-+--field-separator SEP::
-+print counts using a CSV-style output to make it easy to import directly into
-+spreadsheets. Columns are separated by the string specified in SEP.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index acbf7cc..7ff746d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -52,6 +52,8 @@
- #include <math.h>
- #include <locale.h>
- 
-+#define DEFAULT_SEPARATOR	" "
-+
- static struct perf_event_attr default_attrs[] = {
- 
-   { .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_TASK_CLOCK		},
-@@ -83,7 +85,10 @@ static int			thread_num			=  0;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static bool			big_num				=  true;
-+static int			big_num_opt			=  -1;
- static const char		*cpu_list;
-+static const char		*csv_sep			= NULL;
-+static bool			csv_output			= false;
- 
- 
- static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
-@@ -449,12 +454,18 @@ static void print_noise(int counter, double avg)
- static void nsec_printout(int cpu, int counter, double avg)
- {
- 	double msecs = avg / 1e6;
-+	char cpustr[16] = { '\0', };
-+	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-24s";
- 
- 	if (no_aggr)
--		fprintf(stderr, "CPU%-4d %18.6f  %-24s",
--			cpumap[cpu], msecs, event_name(counter));
--	else
--		fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
-+		sprintf(cpustr, "CPU%*d%s",
-+			csv_output ? 0 : -4,
-+			cpumap[cpu], csv_sep);
-+
-+	fprintf(stderr, fmt, cpustr, msecs, csv_sep, event_name(counter));
-+
-+	if (csv_output)
-+		return;
- 
- 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
- 		fprintf(stderr, " # %10.3f CPUs ",
-@@ -466,18 +477,26 @@ static void abs_printout(int cpu, int counter, double avg)
- {
- 	double total, ratio = 0.0;
- 	char cpustr[16] = { '\0', };
-+	const char *fmt;
-+
-+	if (csv_output)
-+		fmt = "%s%.0f%s%s";
-+	else if (big_num)
-+		fmt = "%s%'18.0f%s%-24s";
-+	else
-+		fmt = "%s%18.0f%s%-24s";
- 
- 	if (no_aggr)
--		sprintf(cpustr, "CPU%-4d", cpumap[cpu]);
-+		sprintf(cpustr, "CPU%*d%s",
-+			csv_output ? 0 : -4,
-+			cpumap[cpu], csv_sep);
- 	else
- 		cpu = 0;
- 
--	if (big_num)
--		fprintf(stderr, "%s %'18.0f  %-24s",
--			cpustr, avg, event_name(counter));
--	else
--		fprintf(stderr, "%s %18.0f  %-24s",
--			cpustr, avg, event_name(counter));
-+	fprintf(stderr, fmt, cpustr, avg, csv_sep, event_name(counter));
-+
-+	if (csv_output)
-+		return;
- 
- 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
- 		total = avg_stats(&runtime_cycles_stats[cpu]);
-@@ -515,8 +534,9 @@ static void print_counter_aggr(int counter)
- 	int scaled = event_scaled[counter];
- 
- 	if (scaled == -1) {
--		fprintf(stderr, " %18s  %-24s\n",
--			"<not counted>", event_name(counter));
-+		fprintf(stderr, "%*s%s%-24s\n",
-+			csv_output ? 0 : 18,
-+			"<not counted>", csv_sep, event_name(counter));
- 		return;
- 	}
- 
-@@ -525,6 +545,11 @@ static void print_counter_aggr(int counter)
- 	else
- 		abs_printout(-1, counter, avg);
- 
-+	if (csv_output) {
-+		fputc('\n', stderr);
-+		return;
-+	}
-+
- 	print_noise(counter, avg);
- 
- 	if (scaled) {
-@@ -554,8 +579,12 @@ static void print_counter(int counter)
- 		ena = cpu_counts[cpu][counter].ena;
- 		run = cpu_counts[cpu][counter].run;
- 		if (run == 0 || ena == 0) {
--			fprintf(stderr, "CPU%-4d %18s  %-24s", cpumap[cpu],
--					"<not counted>", event_name(counter));
-+			fprintf(stderr, "CPU%*d%s%*s%s%-24s",
-+				csv_output ? 0 : -4,
-+				cpumap[cpu], csv_sep,
-+				csv_output ? 0 : 18,
-+				"<not counted>", csv_sep,
-+				event_name(counter));
- 
- 			fprintf(stderr, "\n");
- 			continue;
-@@ -566,11 +595,13 @@ static void print_counter(int counter)
- 		else
- 			abs_printout(cpu, counter, val);
- 
--		print_noise(counter, 1.0);
-+		if (!csv_output) {
-+			print_noise(counter, 1.0);
- 
--		if (run != ena) {
--			fprintf(stderr, "  (scaled from %.2f%%)",
-+			if (run != ena) {
-+				fprintf(stderr, "  (scaled from %.2f%%)",
- 					100.0 * run / ena);
-+			}
- 		}
- 		fprintf(stderr, "\n");
- 	}
-@@ -582,21 +613,23 @@ static void print_stat(int argc, const char **argv)
- 
- 	fflush(stdout);
- 
--	fprintf(stderr, "\n");
--	fprintf(stderr, " Performance counter stats for ");
--	if(target_pid == -1 && target_tid == -1) {
--		fprintf(stderr, "\'%s", argv[0]);
--		for (i = 1; i < argc; i++)
--			fprintf(stderr, " %s", argv[i]);
--	} else if (target_pid != -1)
--		fprintf(stderr, "process id \'%d", target_pid);
--	else
--		fprintf(stderr, "thread id \'%d", target_tid);
-+	if (!csv_output) {
-+		fprintf(stderr, "\n");
-+		fprintf(stderr, " Performance counter stats for ");
-+		if(target_pid == -1 && target_tid == -1) {
-+			fprintf(stderr, "\'%s", argv[0]);
-+			for (i = 1; i < argc; i++)
-+				fprintf(stderr, " %s", argv[i]);
-+		} else if (target_pid != -1)
-+			fprintf(stderr, "process id \'%d", target_pid);
-+		else
-+			fprintf(stderr, "thread id \'%d", target_tid);
- 
--	fprintf(stderr, "\'");
--	if (run_count > 1)
--		fprintf(stderr, " (%d runs)", run_count);
--	fprintf(stderr, ":\n\n");
-+		fprintf(stderr, "\'");
-+		if (run_count > 1)
-+			fprintf(stderr, " (%d runs)", run_count);
-+		fprintf(stderr, ":\n\n");
-+	}
- 
- 	if (no_aggr) {
- 		for (counter = 0; counter < nr_counters; counter++)
-@@ -606,15 +639,17 @@ static void print_stat(int argc, const char **argv)
- 			print_counter_aggr(counter);
- 	}
- 
--	fprintf(stderr, "\n");
--	fprintf(stderr, " %18.9f  seconds time elapsed",
--			avg_stats(&walltime_nsecs_stats)/1e9);
--	if (run_count > 1) {
--		fprintf(stderr, "   ( +- %7.3f%% )",
-+	if (!csv_output) {
-+		fprintf(stderr, "\n");
-+		fprintf(stderr, " %18.9f  seconds time elapsed",
-+				avg_stats(&walltime_nsecs_stats)/1e9);
-+		if (run_count > 1) {
-+			fprintf(stderr, "   ( +- %7.3f%% )",
- 				100*stddev_stats(&walltime_nsecs_stats) /
- 				avg_stats(&walltime_nsecs_stats));
-+		}
-+		fprintf(stderr, "\n\n");
- 	}
--	fprintf(stderr, "\n\n");
- }
- 
- static volatile int signr = -1;
-@@ -644,6 +679,13 @@ static const char * const stat_usage[] = {
- 	NULL
- };
- 
-+static int stat__set_big_num(const struct option *opt __used,
-+			     const char *s __used, int unset)
-+{
-+	big_num_opt = unset ? 0 : 1;
-+	return 0;
-+}
-+
- static const struct option options[] = {
- 	OPT_CALLBACK('e', "event", NULL, "event",
- 		     "event selector. use 'perf list' to list available events",
-@@ -664,12 +706,15 @@ static const struct option options[] = {
- 		    "repeat command and print average + stddev (max: 100)"),
- 	OPT_BOOLEAN('n', "null", &null_run,
- 		    "null run - dont start any counters"),
--	OPT_BOOLEAN('B', "big-num", &big_num,
--		    "print large numbers with thousands\' separators"),
-+	OPT_CALLBACK_NOOPT('B', "big-num", NULL, NULL, 
-+			   "print large numbers with thousands\' separators",
-+			   stat__set_big_num),
- 	OPT_STRING('C', "cpu", &cpu_list, "cpu",
- 		    "list of cpus to monitor in system-wide"),
- 	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
- 		    "disable CPU count aggregation"),
-+	OPT_STRING('x', "field-separator", &csv_sep, "separator",
-+		   "print counts with custom separator"),
- 	OPT_END()
- };
- 
-@@ -682,6 +727,25 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	argc = parse_options(argc, argv, options, stat_usage,
- 		PARSE_OPT_STOP_AT_NON_OPTION);
-+
-+	if (csv_sep)
-+		csv_output = true;
-+	else
-+		csv_sep = DEFAULT_SEPARATOR;
-+
-+	/*
-+	 * let the spreadsheet do the pretty-printing
-+	 */
-+	if (csv_output) {
-+		/* User explicitely passed -B? */
-+		if (big_num_opt == 1) {
-+			fprintf(stderr, "-B option not supported with -x\n");
-+			usage_with_options(stat_usage, options);
-+		} else /* Nope, so disable big number formatting */
-+			big_num = false;
-+	} else if (big_num_opt == 0) /* User passed --no-big-num */
-+		big_num = false;
-+
- 	if (!argc && target_pid == -1 && target_tid == -1)
- 		usage_with_options(stat_usage, options);
- 	if (run_count <= 0)
+Daniel
 -- 
-1.7.1.rc2
 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
---bp/iNruPH9dso1Pn--
