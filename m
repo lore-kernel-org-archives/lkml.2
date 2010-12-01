@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab0LAOz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:55:56 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:57843 "EHLO mx2.netapp.com"
+	id S1753112Ab0LAO42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:56:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043Ab0LAOzz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:55:55 -0500
-X-IronPort-AV: E=Sophos;i="4.59,283,1288594800"; 
-   d="scan'208";a="489486784"
-Subject: Re: [PATCH 2/3] NFS: lock the readdir page while it is in use
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <4CF64A34.7070100@redhat.com>
-References: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
-	 <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTin8FSeM8cQ8BWYWjiyGy33EwzpMfFwauK+4j0uT@mail.gmail.com>
-	 <1291177753.7694.17.camel@heimdal.trondhjem.org>
-	 <4CF64A34.7070100@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 09:55:53 -0500
-Message-ID: <1291215353.6609.15.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Dec 2010 14:55:54.0589 (UTC) FILETIME=[DAA1D8D0:01CB9167]
+	id S1752063Ab0LAO41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 09:56:27 -0500
+Date: Wed, 1 Dec 2010 09:55:56 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Message-ID: <20101201145556.GE4672@redhat.com>
+References: <1291057565.20709.2.camel@marge.simson.net>
+ <20101129192033.GA18372@elte.hu>
+ <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
+ <1291090455.7550.7.camel@marge.simson.net>
+ <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
+ <1291123083.28239.18.camel@marge.simson.net>
+ <20101130151749.GE26758@redhat.com>
+ <1291137221.28239.70.camel@marge.simson.net>
+ <20101130193622.GF26758@redhat.com>
+ <1291183068.7466.140.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291183068.7466.140.camel@marge.simson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 08:14 -0500, Rik van Riel wrote:
-> On 11/30/2010 11:29 PM, Trond Myklebust wrote:
+On Wed, Dec 01, 2010 at 06:57:48AM +0100, Mike Galbraith wrote:
+
+[..]
 > 
-> > I'm not worried about other readdir calls invalidating the page. My
-> > concern is rather about the VM memory reclaimers ejecting the page from
-> > the page cache, and calling nfs_readdir_clear_array while we're
-> > referencing the page.
+> > - I am doing some testing with the patch and w.r.t. cgroup interface some
+> >   things don't seem right.
+> > 
+> >   I have applied your patch and enabled CONFIG_AUTO_GROUP. Now I boot
+> >   into the kernel and open a new ssh connection to the machine. 
+> > 
+> >   # echo $$
+> >     3555
+> >   # cat /proc/3555/autogroup
+> >     /autogroup-63 nice 0
+> > 
+> >   IIUC, task 3555 has been moved into an autogroup. Now I mount the cpu
+> >   controller and this task is visible in root cgroup.
+> > 
+> >   # mount -t cgroup -o cpu none /cgroup/cpu
+> >   # cat /cgroup/cpu/tasks | grep 3555
+> >     3555
+> > 
+> >   First of all this gives user a wrong impression that task 3555 is in
+> >   root cgroup.
 > 
-> Wait, if nfs_readdir_clear_array can clear the page while
-> somebody else has a refcount to it, what good is the
-> refcount?
+> It is in the root cgroup.  It is not in the root autogroup is not
+> auto-cgroups group.
+> 
+> >   Now I create a child group test1 and move the task there and also change
+> >   the weight/shares of the cgroup to 10240.
+> > 
+> >   # mkdir test1
+> >   # echo 3555 > test1/tasks
+> >   # echo 10240 > test1/cpu.shares
+> >   # cat /proc/3555/cgroup
+> >     3:cpu:/test1
+> >   # cat /proc/3555/autogroup
+> >     /autogroup-63 nice 0
+> > 
+> > So again, user will think that task is in cgroup test1 and is being
+> > controlled by the respective weight but that's not the case.
+> 
+> It is the case here.
+> 
+>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  P COMMAND
+>  7573 root      20   0  7996  340  256 R   50  0.0   3:35.86 3 pert
+>  7572 root      20   0  7996  340  256 R   50  0.0   9:21.68 3 pert
+> ...
+> marge:/cgroups/test # echo 7572 > tasks
+> marge:/cgroups/test # echo 4096 > cpu.shares
+> 
+>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  P COMMAND
+>  7572 root      20   0  7996  340  256 R   80  0.0  10:06.92 3 pert
+>  7573 root      20   0  7996  340  256 R   20  0.0   4:05.80 3 pert
+> 
+> When you move a task into a cgroup, it still has an autogroup
+> association, as all tasks (processes actually) do, but it's not used.
 
-Hi Rik
+Ok, so I got confused with the fact that after moving a task into a
+cgroup it is still associated with an autogroup.
 
-This is readdir, so there should normally be only one process accessing
-the page. If that process locks it (we don't have mmap() to worry about,
-so page locking is reasonable here) then the scheme is safe.
+So IIUC, if a task is in root cgroup, then it would not necessarily be driven
+by cpu.shares of root cgroup (as task could be in its own autogroup). But
+if I move the task into a non-root cgroup, then it will for sure be
+subjected to rules imposed by non-root cgroup cpu.shares. That's not too
+bad.
 
-Note that we do clear Pg_uptodate under the page lock in the latest
-version of the releasepage method (patches to be published later today
-after I finish testing).
-
-> Why is your .releasepage modifying the data on the page,
-> instead of just the metadata in the struct page?
-
-We want to be able to free up the data that is referenced by the array
-on the page before the page itself is freed. 
-
-Cheers
-  Trond
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Thanks
+Vivek
