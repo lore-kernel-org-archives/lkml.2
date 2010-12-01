@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab0LATiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:38:04 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:48591 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab0LATiC convert rfc822-to-8bit (ORCPT
+	id S1756624Ab0LATjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:39:16 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33403 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755717Ab0LATjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:38:02 -0500
-Subject: Re: perf hw  in kexeced kernel broken in tip
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-In-Reply-To: <20101201162335.GB2511@redhat.com>
-References: <4CF60095.1020900@kernel.org> <1291202867.4023.3.camel@twins>
-	 <20101201160640.GA2511@redhat.com> <1291219906.32004.1671.camel@laptop>
-	 <20101201162335.GB2511@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 01 Dec 2010 20:38:12 +0100
-Message-ID: <1291232292.32004.1969.camel@laptop>
+	Wed, 1 Dec 2010 14:39:15 -0500
+Date: Wed, 1 Dec 2010 11:38:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Julien Cristau <jcristau@debian.org>
+Cc: Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 1/4] drm: fix headers to include linux/types.h
+Message-Id: <20101201113841.46e92def.akpm@linux-foundation.org>
+In-Reply-To: <20101201165418.GU5063@radis.liafa.jussieu.fr>
+References: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
+	<1291216245-18574-2-git-send-email-virtuoso@slind.org>
+	<20101201165418.GU5063@radis.liafa.jussieu.fr>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 11:23 -0500, Vivek Goyal wrote:
-> > What does kexec normally do to ensure hardware is left in a sane state?
-> 
-> Typically calls device_shutdown() and sysdev_shutdown() from
-> kernel_restart_prepare() to shutdown the devices.
-> 
-> Also calls machine_shutdown() which depending on architecture can take
-> care of various things like stopping other cpus, shutting down LAPIC, 
-> disabling IOAPIC, disabling hpet, shutting down IOMMU etc
-> (native_machine_shutdown()). 
+On Wed, 1 Dec 2010 17:54:18 +0100
+Julien Cristau <jcristau@debian.org> wrote:
 
-So basically there's no sane generic reset callout?
+> On Wed, Dec  1, 2010 at 17:10:42 +0200, Alexander Shishkin wrote:
+> 
+> > For headers that get exported to userland and make use of u32 style
+> > type names, it is advised to include linux/types.h.
+> > 
+> > This fixes 5 headers_check warnings.
+> > 
+> How many times does this need to be NAKed?
+
+Until someone gets a clue and puts comments in there explaining this?
