@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0LACuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 21:50:37 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36125 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab0LACuf (ORCPT
+	id S1754219Ab0LAC66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 21:58:58 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51412 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab0LAC65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 21:50:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Nelson Elhage <nelhage@ksplice.com>
-Subject: Re: [PATCH v2] do_exit(): Make sure we run with get_fs() == USER_DS.
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1291170456-22580-1-git-send-email-nelhage@ksplice.com>
-References: <20101130174947.5ccc3778.akpm@linux-foundation.org> <1291170456-22580-1-git-send-email-nelhage@ksplice.com>
-Message-Id: <20101201115018.ABAE.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 30 Nov 2010 21:58:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=P5NovFb5wjcJHeibDUOBxVGFdKE9czXoQd7qknkblBbHjyaTZVWJn3FTwawfFKD8Wg
+         yxgdCOcU5JJs/az4dqZWDVEJl0ZZar7XcdqmIsPrTJissVNKtiXZdM7/CFhA+e7dZ9kM
+         QXDWTZPKRMTisqwwNbkA6I73RBKK18zo8OtFg=
+Subject: Re: [Regression] 2.6.37-rc1: Lenovo T61 mute button does not work
+From: Calvin Walton <calvin.walton@gmail.com>
+To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20101130185303.GI10354@ics.muni.cz>
+References: <20101130185303.GI10354@ics.muni.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Nov 2010 21:58:44 -0500
+Message-ID: <1291172324.14274.33.camel@nayuki>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Dec 2010 11:50:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
-> otherwise reset before do_exit(). do_exit may later (via mm_release in fork.c)
-> do a put_user to a user-controlled address, potentially allowing a user to
-> leverage an oops into a controlled write into kernel memory.
+On Tue, 2010-11-30 at 19:53 +0100, Lukas Hejtmanek wrote:
+> Hi,
 > 
-> A more logical place to put this might be when we know an oops has occurred,
-> before we call do_exit(), but that would involve changing every architecture, in
-> multiple places. Let's just stick it in do_exit instead.
-> 
-> Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-> ---
->  kernel/exit.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 21aa7b3..68899b3 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -914,6 +914,14 @@ NORET_TYPE void do_exit(long code)
->  	if (unlikely(!tsk->pid))
->  		panic("Attempted to kill the idle task!");
->  
-> +	/*
-> +	 * If do_exit is called because this processes oopsed, it's possible
-> +	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
-> +	 * continuing. This is relevant at least for clearing clear_child_tid in
-> +	 * mm_release.
-> +	 */
-> +	set_fs(USER_DS);
+> in 2.6.26, mute button worked as expected on my ThinkPad T61 - it toggled
+> mute with mixer applet notification. In 2.6.37-rc1, it only mutes without any
+> event to any mixer applet.
 
-"This is relevant" is no good explanation ;)
-Please recognize this is tricky code and Please consider to write more 
-careful and looooong comments.
+The mute button on this series of Thinkpads is a little weird (I have an
+R61i, which is the same iirc) - the behaviour of the button depends on
+the ACPI firmware. With no operating system running, it behaves as a
+persistent hardware mute. Windows apparently uses a proprietary driver
+to control the volume - part of this functionality has been added to the
+Linux thinkpad_acpi driver, but it's not fully enabled yet.
 
-Thanks.
+By default on this series of laptops, Linux runs with the ACPI
+_OSI(Linux) exported - when the bios of this laptop model sees that it's
+running on Linux, it disables the hardware mute functionality and the
+mute button acts as a standard keyboard key.
 
+Search your dmesg for lines containing '_OSI(Linux)' - it should say
+that a BIOS query was honoured. Make sure you do not have 'acpi_osi="!
+Linux"' on your kernel command line.
+
+-- 
+Calvin Walton <calvin.walton@gmail.com>
 
