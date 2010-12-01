@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab0LASGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:06:34 -0500
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:50435 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab0LASGc (ORCPT
+	id S1755860Ab0LASHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:07:31 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41896 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab0LASHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:06:32 -0500
-Subject: Re: [thisops uV3 08/18] Taskstats: Use this_cpu_ops
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101130190845.819605614@linux.com>
-References: <20101130190707.457099608@linux.com>
-	 <20101130190845.819605614@linux.com>
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Wed, 01 Dec 2010 19:06:26 +0100
-Message-ID: <1291226786.2898.22.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Dec 2010 13:07:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Z9Ut3PKl1OM44V2gt1o8Vcya7dP1Yq63xGX19LBHSYSEBr2qt/xsQj/7ZYuW6RjBw7
+         Kaw/4vJPNzM83tndePhta9uJ5b/GBX7a+taIo8jO9O1XhcZcdn+J7GaBKGQYM0/PB16h
+         40VjFaLHUCCkN+IYFQLV7DerjRbrubVI1W0ig=
+Date: Wed, 1 Dec 2010 21:07:24 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/9] x86: only call smp_processor_id in non-preempt
+	cases
+Message-ID: <20101201180724.GA6478@lenovo>
+References: <1291156050-4482-1-git-send-email-dzickus@redhat.com> <1291156050-4482-7-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291156050-4482-7-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Christoph,
-
-On Tue, 2010-11-30 at 13:07 -0600, Christoph Lameter wrote:
-> plain text document attachment (this_cpu_taskstats)
-> Use this_cpu_inc_return in one place and avoid ugly __raw_get_cpu in another.
+On Tue, Nov 30, 2010 at 05:27:27PM -0500, Don Zickus wrote:
+> There are some paths that walk the die_chain with preemption on.
+> Make sure we are in an NMI call before we start doing anything.
 > 
-> Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> This was triggered by do_general_protection calling notify_die with
+> DIE_GPF.
 > 
+> Reported-by: Jan Kiszka <jan.kiszka@web.de>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 > ---
->  kernel/taskstats.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> Index: linux-2.6/kernel/taskstats.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/taskstats.c	2010-11-30 10:06:35.000000000 -0600
-> +++ linux-2.6/kernel/taskstats.c	2010-11-30 10:10:14.000000000 -0600
-> @@ -89,8 +89,7 @@ static int prepare_reply(struct genl_inf
->  		return -ENOMEM;
-> 
->  	if (!info) {
-> -		int seq = get_cpu_var(taskstats_seqnum)++;
-> -		put_cpu_var(taskstats_seqnum);
-> +		int seq = this_cpu_inc_return(taskstats_seqnum);
+>  arch/x86/kernel/apic/hw_nmi.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 
-Hmmm, wouldn't seq now always be one more than before?
-
-I think that "seq = get_cpu_var(taskstats_seqnum)++" first assigns
-taskstats_seqnum to seq and then increases the value in contrast to
-this_cpu_inc_return() that returns the already increased value, correct?
-
-Maybe that does not hurt here, Balbir?
-
->  		reply = genlmsg_put(skb, 0, seq, &family, 0, cmd);
->  	} else
-> @@ -581,7 +580,7 @@ void taskstats_exit(struct task_struct *
->  		fill_tgid_exit(tsk);
->  	}
-> 
-> -	listeners = &__raw_get_cpu_var(listener_array);
-> +	listeners = __this_cpu_ptr(listener_array);
->  	if (list_empty(&listeners->list))
->  		return;
-> 
-> 
-
-
+yup, thanks Don!
+ 
+  Cyrill
