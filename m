@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab0LAXCN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 18:02:13 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58304 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755523Ab0LAXCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 18:02:11 -0500
-Date: Thu, 2 Dec 2010 10:01:58 +1100
-From: Neil Brown <neilb@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-Message-ID: <20101202100158.3387566c@notabene.brown>
-In-Reply-To: <20101201144314.6a827f8d.akpm@linux-foundation.org>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	<20101201150428.GA2879@elliptictech.com>
-	<1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	<AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	<1291229669.6609.24.camel@heimdal.trondhjem.org>
-	<alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
-	<1291233938.6609.37.camel@heimdal.trondhjem.org>
-	<20101201123929.ab7cef1d.akpm@linux-foundation.org>
-	<20101202082913.7cb98444@notabene.brown>
-	<20101201144314.6a827f8d.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1756452Ab0LAXFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 18:05:22 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40543 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755627Ab0LAXFU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 18:05:20 -0500
+Date: Wed, 1 Dec 2010 15:03:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/13] writeback: IO-less balance_dirty_pages()
+Message-Id: <20101201150333.fa4b8955.akpm@linux-foundation.org>
+In-Reply-To: <20101201133818.GA13377@localhost>
+References: <20101117042720.033773013@intel.com>
+	<20101117042849.410279291@intel.com>
+	<1290085474.2109.1480.camel@laptop>
+	<20101129151719.GA30590@localhost>
+	<1291064013.32004.393.camel@laptop>
+	<20101130043735.GA22947@localhost>
+	<1291156522.32004.1359.camel@laptop>
+	<1291156765.32004.1365.camel@laptop>
+	<20101201133818.GA13377@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -40,68 +39,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010 14:43:14 -0800 Andrew Morton <akpm@linux-foundation.org>
-wrote:
+On Wed, 1 Dec 2010 21:38:18 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-> On Thu, 2 Dec 2010 08:29:13 +1100
-> Neil Brown <neilb@suse.de> wrote:
+> It shows that
 > 
-> > > > 
-> > > > However, while reading Documentation/filesystems/vfs.txt (in order to
-> > > > add documentation for freepage) I was surprised to read that the
-> > > > ->releasepage() is itself supposed to be allowed to actually remove the
-> > > > page from the address space if it so desires.
-> > > 
-> > > That doesn't sound right.  It came from Neil in 2006.
-> > > 
-> > > Neil, what were you thinking there?   Did you find such a ->releasepage()?
-> > 
-> > Nope, no idea, sorry.
-> > 
-> > No releasepage functions do anything like that, and no call sites suggest it
-> > could be a possibility.  Quite the reverse - they are likely to remove the
-> > page from the mapping without checking that it is still in the mapping.
-> > 
-> > So that sentence should be deleted.
-> 
-> This?
+> 1) io_schedule_timeout(200ms) always return immediately for iostat,
+>    forming a busy loop.  How can this happen? When iostat received
+>    some signal? Then we may have to break out of the loop on catching
+>    signals. Note that I already have
+>                 if (fatal_signal_pending(current))
+>                         break;
+>    in the balance_dirty_pages() loop. Obviously that's not enough.
 
-Perfect, thanks.
+Presumably the calling task has singal_pending().
 
-NeilBrown
+Using TASK_INTERRUPTIBLE in balance_dirty_pages() seems wrong.  If it's
+going to do that then it must break out if signal_pending(), otherwise
+it's pretty much guaranteed to degenerate into a busywait loop.  Plus
+we *do* want these processes to appear in D state and to contribute to
+load average.
 
-
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> 
-> ->releasepage() does not remove the page from the mapping.
-> 
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  Documentation/filesystems/vfs.txt |    9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff -puN Documentation/filesystems/vfs.txt~documentation-filesystems-vfstxt-fix-repeasepage-description Documentation/filesystems/vfs.txt
-> --- a/Documentation/filesystems/vfs.txt~documentation-filesystems-vfstxt-fix-repeasepage-description
-> +++ a/Documentation/filesystems/vfs.txt
-> @@ -660,11 +660,10 @@ struct address_space_operations {
->    releasepage: releasepage is called on PagePrivate pages to indicate
->          that the page should be freed if possible.  ->releasepage
->          should remove any private data from the page and clear the
-> -        PagePrivate flag.  It may also remove the page from the
-> -        address_space.  If this fails for some reason, it may indicate
-> -        failure with a 0 return value.
-> -	This is used in two distinct though related cases.  The first
-> -        is when the VM finds a clean page with no active users and
-> +        PagePrivate flag. If releasepage() fails for some reason, it must
-> +	indicate failure with a 0 return value.
-> +	releasepage() is used in two distinct though related cases.  The
-> +	first is when the VM finds a clean page with no active users and
->          wants to make it a free page.  If ->releasepage succeeds, the
->          page will be removed from the address_space and become free.
->  
-> _
-
+So it should be TASK_UNINTERRUPTIBLE.
