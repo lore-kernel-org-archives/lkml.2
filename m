@@ -1,190 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab0LALsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:48:15 -0500
-Received: from serv04.lahn.de ([213.239.197.57]:54241 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493Ab0LALsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:48:14 -0500
-Date: Wed, 1 Dec 2010 12:45:28 +0100
-From: Michael Leun <lkml20101129@newton.leun.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: kernel BUG at mm/truncate.c:475!
-Message-ID: <20101201124528.6809c539@xenia.leun.net>
-In-Reply-To: <E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu>
-References: <20101130194945.58962c44@xenia.leun.net>
-	<alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com>
-	<E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754703Ab0LALwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:52:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56859 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab0LALwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:52:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=pCMkS5Rne8yto8YM/hAf59VS1q0eI7BQXrENtazyOpS7BCo+i4kQOfUwrc9bTyUF2i
+         x994pcSUvkTuVxC+iC6UqrI7ooDSCIBvrtZemVF/6dBHCrfUVhds7TdcXNAOeTMNINxz
+         FFVPucguNAX8Gh5NS/8Xu2KPe5MTXJMk9p7ZY=
+Date: Wed, 1 Dec 2010 12:52:28 +0100 (CET)
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+X-X-Sender: elektroman@localhost.localdomain
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
+In-Reply-To: <AANLkTinABzeM9Q+5PvvLX7HKYtDrig=nRHY7KMapJD5k@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1012011244120.8521@localhost.localdomain>
+References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011291745.22566.arnd@arndb.de> <4CF3F687.6040801@gmail.com> <201011292102.41155.arnd@arndb.de> <4CF40AEF.7070200@gmail.com> <alpine.LNX.2.00.1011300910260.7489@localhost.localdomain>
+ <AANLkTinABzeM9Q+5PvvLX7HKYtDrig=nRHY7KMapJD5k@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-572839355-1291204354=:8521"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Dec 2010 11:25:22 +0100
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Tue, 30 Nov 2010, Hugh Dickins wrote:
-> > On Tue, 30 Nov 2010, Michael Leun wrote:
-> > 
-> > > happenes sporadically, cannot reproduce at will.
-> > > 
-> > > 
-> > > Nov 30 15:24:55 elektra kernel: [ 6604.258610] ------------[ cut
-> > > here ]------------ Nov 30 15:24:55 elektra kernel: [ 6604.258628]
-> > > kernel BUG at mm/truncate.c:475! Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.258633] invalid opcode: 0000 [#1] PREEMPT SMP Nov 30
-> > > 15:24:55 elektra kernel: [ 6604.258640] last sysfs
-> > > file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-> > > Nov 30 15:24:55 elektra kernel: [ 6604.258646] CPU 3 Nov 30
-> > > 15:24:55 elektra kernel: [ 6604.258649] Modules linked in: veth
-> > > fuse af_packet bridge 8021q garp stp llc vboxnetadp vboxnetflt
-> > > vboxdrv nouveau ttm drm_kms_helper drm i2c_algo_bit snd_pcm_oss
-> > > snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative
-> > > cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf
-> > > ip6t_REJECT ipt_REJECT ip6t_LOG ipt_LOG xt_limit xt_recent
-> > > nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_mangle
-> > > iptable_mangle iptable_nat ip6table_filter ip6_tables
-> > > iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
-> > > nf_conntrack_ftp nf_conntrack ip_tables x_tables nls_utf8 loop
-> > > arc4 ecb snd_hda_codec_nvhdmi iwlagn iwlcore snd_hda_codec_idt
-> > > snd_hda_intel snd_hda_codec snd_hwdep mac80211 snd_pcm ohci1394
-> > > ieee1394 cfg80211 snd_timer sdhci_pci snd sdhci pcmcia
-> > > firewire_ohci e1000e mmc_core yenta_socket soundcore
-> > > firewire_core pcmcia_rsrc crc_itu_t pcmcia_core ppdev mcs7830
-> > > dm9601 dell_laptop usbnet rfkill snd_page_alloc dell_wmi shpchp
-> > > sr_mod parport_p!
-> >  c !
-> > >  sg cdrom wmi dcdbas intel_ips parport i
-> > > Nov 30 15:24:55 elektra kernel: ntel_agp i2c_i801 pci_hotplug
-> > > iTCO_wdt pcspkr iTCO_vendor_support button video battery ac ext4
-> > > jbd2 crc16 sha256_generic aesni_intel cryptd aes_x86_64
-> > > aes_generic cbc dm_crypt usbhid linear ehci_hcd usbcore sd_mod
-> > > dm_snapshot dm_mod fan processor ahci libahci libata scsi_mod
-> > > thermal thermal_sys Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.258914] Nov 30 15:24:55 elektra kernel: [ 6604.258918]
-> > > Pid: 31399, comm: cut Not tainted 2.6.36.1 #2 0N5KHN/Latitude
-> > > E6510 Nov 30 15:24:55 elektra kernel: [ 6604.258924] RIP:
-> > > 0010:[<ffffffff810ee5e1>]  [<ffffffff810ee5e1>]
-> > > invalidate_inode_pages2_range+0x271/0x350 Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.258939] RSP: 0018:ffff8800774d5b58  EFLAGS:
-> > > 00010246 Nov 30 15:24:55 elektra kernel: [ 6604.258944] RAX:
-> > > 0000000000000000 RBX: ffffea0001ea2f40 RCX: ffff8800c05a5bd0 Nov
-> > > 30 15:24:55 elektra kernel: [ 6604.258950] RDX: 0000000000000000
-> > > RSI: ffff8800774d5a28 RDI: ffff8800c0521a18 Nov 30 15:24:55
-> > > elektra kernel: [ 6604.258956] RBP: ffff8800774d5c38 R08:
-> > > ffff8800c05a5bd0 R09: ffff8800774d5ae8 Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.258962] R10: 0000000000000008 R11:
-> > > 0000000000000001 R12: ffff8800774d5b98 Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.258969] R13: 0000000000000000 R14:
-> > > ffff8800c05219d8 R15: 0000000000000000 Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.258980] FS:  0000000000000000(0000)
-> > > GS:ffff880001cc0000(0000) knlGS:0000000000000000 Nov 30 15:24:55
-> > > elektra kernel: [ 6604.258992] CS:  0010 DS: 0000 ES: 0000 CR0:
-> > > 000000008005003b Nov 30 15:24:55 elektra kernel: [ 6604.258999]
-> > > CR2: 00007f3ad2337290 CR3: 00000000850b3000 CR4: 00000000000006e0
-> > > Nov 30 15:24:55 elektra kernel: [ 6604.259010] DR0:
-> > > 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000 Nov
-> > > 30 15:24:55 elektra kernel: [ 6604.259019] DR3: 0000000000000000
-> > > DR6: 00000000ffff0ff0 DR7: 0000000000000400 Nov 30 15:24:55
-> > > elektra kernel: [ 6604.259028] Process cut (pid: 31399,
-> > > threadinfo ffff8800774d4000, task ffff8800a2bbae40) Nov 30
-> > > 15:24:55 elektra kernel: [ 6604.259038] Stack: Nov 30 15:24:55
-> > > elektra kernel: [ 6604.259042]  ffffffff81074300 ffff8800c05219f0
-> > > 00000001774d5b60 0000000000000001 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259054] <0> ffffffffffffffff 00000000c41fec70
-> > > 000000000000000e 0000000000000000 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259069] <0> ffffea0001ea2f40 ffffea0001a246c8
-> > > ffffea0001a24690 ffffea0001a47348 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259087] Call Trace: Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259094]  [<ffffffff81074300>] ?
-> > > autoremove_wake_function+0x0/0x40 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259101]  [<ffffffff810ee6d2>]
-> > > invalidate_inode_pages2+0x12/0x20 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259111]  [<ffffffffa0848ce0>] fuse_finish_open+0x60/0x70
-> > > [fuse] Nov 30 15:24:55 elektra kernel: [ 6604.259118]
-> > > [<ffffffffa0848d71>] fuse_open_common+0x81/0x90 [fuse] Nov 30
-> > > 15:24:55 elektra kernel: [ 6604.259125]  [<ffffffffa0848d80>] ?
-> > > fuse_open+0x0/0x10 [fuse] Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259132]  [<ffffffffa0848d8b>] fuse_open+0xb/0x10 [fuse]
-> > > Nov 30 15:24:55 elektra kernel: [ 6604.259139]
-> > > [<ffffffff81137a1a>] __dentry_open+0x11a/0x3c0 Nov 30 15:24:55
-> > > elektra kernel: [ 6604.259147]  [<ffffffff811efbda>] ?
-> > > security_inode_permission+0x1a/0x20 Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.259154]  [<ffffffff81138cc4>]
-> > > nameidata_to_filp+0x54/0x70 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259160]  [<ffffffff81147168>] do_last+0x488/0x760 Nov 30
-> > > 15:24:55 elektra kernel: [ 6604.259166]  [<ffffffff81147868>]
-> > > do_filp_open+0x428/0x670 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259173]  [<ffffffffa0842983>] ?
-> > > fuse_request_free+0x13/0x20 [fuse] Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.259181]  [<ffffffffa0842a48>] ?
-> > > fuse_put_request+0xb8/0xc0 [fuse] Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259193]  [<ffffffff81138d40>] do_sys_open+0x60/0x120 Nov
-> > > 30 15:24:55 elektra kernel: [ 6604.259205]  [<ffffffff81138e1b>]
-> > > sys_open+0x1b/0x20 Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259217]  [<ffffffff81002f02>]
-> > > system_call_fastpath+0x16/0x1b Nov 30 15:24:55 elektra kernel:
-> > > [ 6604.259228] Code: fe ff ff 0f 1f 80 00 00 00 00 48 89 c6 31 c9
-> > > 48 c1 e6 0c ba 00 10 00 00 4c 89 f7 e8 ba 37 01 00 8b 43 0c 85 c0
-> > > 0f 88 2e ff ff ff <0f> 0b 0f 1f 44 00 00 48 89 df e8 30 39 ff ff
-> > > 8b 85 50 ff ff ff Nov 30 15:24:55 elektra kernel: [ 6604.259394]
-> > > RIP  [<ffffffff810ee5e1>]
-> > > invalidate_inode_pages2_range+0x271/0x350 Nov 30 15:24:55 elektra
-> > > kernel: [ 6604.259412]  RSP <ffff8800774d5b58> Nov 30 15:24:55
-> > > elektra kernel: [ 6604.265642] ---[ end trace
-> > > 019ef068b5f8e921 ]---
-> > 
-> > BUG_ON(page_mapped(page)) in invalidate_inode_pages2_range():
-> > that's interesting, it may relate to another
-> > BUG_ON(page_mapped(page)) that's been reported recently.
-> > 
-> > This is a 2.6.36.1 kernel you're running: any idea what was the
-> > first kernel on which you started seeing such errors?  and what was
-> > the last good kernel on which you ran the same kind of load but saw
-> > no problems?
+--8323328-572839355-1291204354=:8521
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+
+
+On Tue, 30 Nov 2010, Paulius Zaleckas wrote:
+
+> On Tue, Nov 30, 2010 at 10:15 AM, Hans Ulli Kroll
+> <ulli.kroll@googlemail.com> wrote:
+> >
+> >
+> > On Mon, 29 Nov 2010, Paulius Zaleckas wrote:
+> >
+> >> On 11/29/2010 10:02 PM, Arnd Bergmann wrote:
+> >> > On Monday 29 November 2010 19:52:55 Paulius Zaleckas wrote:
+> >> > > On 11/29/2010 06:45 PM, Arnd Bergmann wrote:
+> >> > > > There are many differences between readl and __raw_readl, including
+> >> > > >
+> >> > > > * __raw_readl does not have barriers and does not serialize with
+> >> > > >     spinlocks, so it breaks on out-of-order CPUs.
+> >> > > > * __raw_readl does not have a specific endianess, while readl is
+> >> > > >     fixed little-endian, just as the hardware is in this case.
+> >> > > >     The endian-conversion is a NOP on little-endian ARM, but required
+> >> > > >     if you actually run on a big-endian ARM (you don't).
+> >> > > > * __raw_readl may not be atomic, gcc is free to split the access
+> >> > > >     into byte wise reads (it normally does not, unless you mark
+> >> > > >     the pointer __attribute__((packed))).
+> >> > > >
+> >> > > > In essence, it is almost never a good idea to use __raw_readl, and
+> >> > > > the double underscores should tell you so.
+> >> > >
+> >> > > You are wrong:
+> >> > >
+> >> > > Since CONFIG_ARM_DMA_MEM_BUFFERABLE is NOT defined for FA526 core,
+> >> > > no barriers are in use when using readl. It just translates into
+> >> > > le32_to_cpu(__raw_readl(x)). Now this CPU has physical pin for endianess
+> >> > > configuration and if you will chose big-endian you will fail to read
+> >> > > internal registers, because they ALSO change endianess and le32_to_cpu()
+> >> > > will screw it. However it is different when accessing registers through
+> >> > > PCI bus, then you need to use readl().
+> >> >
+> >> > Ok, I only checked that the platform does not support big-endian Linux
+> >> > kernel, not if the HW designers screwed up their registers, sorry about
+> >> > that.
+> >> >
+> >> > The other points are of course still valid: If the code ever gets
+> >> > used on an out of order CPU, it is broken. More importantly, if someone
+> >> > looks at the code as an example for writing another PCI support code,
+> >> > it may end up getting copied to some place where it ends up causing
+> >> > trouble.
+> >> >
+> >> > The typical way to deal with mixed-endian hardware reliably is to have
+> >> > a header file containing code like
+> >> >
+> >> > #ifdef CONFIG_GEMINI_BIG_ENDIAN_IO
+> >> > #define gemini_readl(x) __swab32(readl(x))
+> >> > #define ...
+> >> > #else
+> >> > #define gemini_readl(x) readl(x))
+> >> > #endif
+> >> >
+> >> > This also takes care of the (not as unlikely as you'd hope) case that
+> >> > the next person reusing the PCI hardware wires its endianess different
+> >> > from the CPU endianess.
+> >>
+> >> Actually I am not very sure how CPU works in big endian mode :)
+> >> I have never tried it and I think only some guys who made it did that.
+> >> So readl will work for 99.99% of cases. In datasheet they say that:
+> >> "All registers in Gemini use Little Endian and must be accessed by aligned
+> >> 32-bit word operations. The bus connection interface logic provides an Endian
+> >> Conversion function."
+> >> For me it looks like it can mean whatever you want :)
+> >>
+> >
+> > I think the endianes pin switched only the cpu, not the hardware
+> > registers.
 > 
-> The fault handler unlocks the page if vm_ops->page_mkwrite() is
-> defined.  That looks somewhat racy at first glance.
+> Yes, but original driver used readl/writel and it does le32_to_cpu,
+> so that structure definition is just reversing it.
+> If you will use __raw_readl/__raw_writel than there will be no need
+> for this redefinition.
 > 
-> Quick test: does removing the page_mkwrite() callback from fuse make
-> the problem go away?
+> > Here is some sample code from the ethernet devive on Gemini
+> > typedef union
+> > {
+> >        unsigned int bits32;
+> >        struct bit
+> >        {
+> > #if (BIG_ENDIAN==1)
+> >                unsigned int reserved           : 15;   // bit 31:17
+> >                unsigned int v_bit_mode         : 1;    // bit 16
+> >                unsigned int device_id          : 12;   // bit 15:4
+> >                unsigned int revision_id        : 4;    // bit  3:0
+> > #else
+> >                unsigned int revision_id        : 4;    // bit  3:0
+> >                unsigned int device_id          : 12;   // bit 15:4
+> >                unsigned int v_bit_mode         : 1;    // bit 16
+> >                unsigned int reserved           : 15;   // bit 31:17
+> > #endif
 > 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index c822458..a445358 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -1328,7 +1328,6 @@ static int fuse_page_mkwrite(struct
-> vm_area_struct *vma, struct vm_fault *vmf) static const struct
-> vm_operations_struct fuse_file_vm_ops = { .close		=
-> fuse_vma_close, .fault		= filemap_fault,
-> -	.page_mkwrite	= fuse_page_mkwrite,
->  };
->  
->  static int fuse_file_mmap(struct file *file, struct vm_area_struct
-> *vma)
-> 
-> Thanks,
-> Miklos
+> The other thing is that this endianess redefinition is very starnge since
+> it should swap bytes and not bits inside this struct. So I assume that
+> big endian was never tested on this driver and it will not work.
+> But ofcouse I can be wrong here :)
 > 
 
-At the moment I've downgraded to 2.6.36 - I cannot remember to have
-seen this there - which does not need to mean anything, because
-workload has changed (several unshared mount/network namespaces chrooted
-into unionfs-fuse mounted roots - cool stuff...).
+At this momment my brain restarts in very slow motion mode ;-)
+This can't work. The definition Storlinksemi uses for swapping bits and 
+bytes are totaly wrong. 
+They never _even_ testet this, or understand little endian or big endian.
+Take this simple sample
 
-Would you suspect to make 2.6.36 <> 2.6.36.1 a difference here?
+typedef union {
+	unsigned int bits32;
+	struct bit {
+#if (BIG_ENDIAN==0) 
+		unsigned int a	: 1;		
+		unsigned int b  : 31;
+#else
+		unsigned int b  : 31;
+		unsigned int a  : 1;
+#endif
+	};
+} TEST;
 
-Later, when I've results from the test with 2.6.36 of course I'll try
-the quick test you suggested.
+They swaped the bits inside one byte
 
--- 
-MfG,
-
-Michael Leun
-
+> >        } bits;
+> > } TOE_VERSION_T;
+> >
+> >
+> >
+> 
+--8323328-572839355-1291204354=:8521--
