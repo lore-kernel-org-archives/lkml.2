@@ -1,671 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab0LAS1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:27:51 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:13052 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab0LAS1s (ORCPT
+	id S1756093Ab0LAS3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:29:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58699 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437Ab0LAS3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:27:48 -0500
-X-IronPort-AV: E=Sophos;i="4.59,284,1288584000"; 
-   d="scan'208";a="124875761"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
-        Stefano.Stabellini@eu.citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 2/2] hvc_xen: implement multiconsole support
-Date: Wed,  1 Dec 2010 18:26:42 +0000
-Message-Id: <1291228002-15309-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop>
-References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop>
-X-OriginalArrivalTime: 01 Dec 2010 18:26:55.0028 (UTC) FILETIME=[54D78740:01CB9185]
+	Wed, 1 Dec 2010 13:29:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gXM/rzHArbDRtiixVzwucjbwMHZ7sU5jfQb9uY1NQIpWFEH7Q9ugRA1bjKcWw4t7JM
+         dcZ4az6Xc1Ul9oVMXNSbuoOWD0cck2QbVs17578yruITYqlxl2VzGbvH0Z3Q54INdHi2
+         2KochszYu/lfH8B21rZQsZYBICXXfApwo/fNo=
+Date: Wed, 1 Dec 2010 19:29:16 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [BUG(?)] perf_events: combining multiple tracepoint events
+ into a group produces no counts on member events
+Message-ID: <20101201182910.GC3438@nowhere>
+References: <4CF59E20.1040301@linux.vnet.ibm.com>
+ <1291203990.4023.16.camel@twins>
+ <1291205078.32004.1381.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291205078.32004.1381.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Wed, Dec 01, 2010 at 01:04:37PM +0100, Peter Zijlstra wrote:
+> @@ -4833,7 +5101,8 @@ static int perf_event_set_filter(struct 
+>  	char *filter_str;
+>  	int ret;
+>  
+> -	if (event->attr.type != PERF_TYPE_TRACEPOINT)
+> +	if (event->attr.type != PERF_TYPE_TRACEPOINT ||
+> +	    event->attr.config == ~0ULL)
+>  		return -EINVAL;
+>  
+>  	filter_str = strndup_user(arg, PAGE_SIZE);
+> @@ -4851,6 +5120,74 @@ static void perf_event_free_filter(struc
+>  	ftrace_profile_free_filter(event);
+>  }
+>  
+> +static int perf_event_add_tp(struct perf_event *event, int tp_id)
+> +{
+> +	if (event->attr.type != PERF_TYPE_TRACEPOINT &&
 
-This patch implements support for multiple consoles:
-consoles other than the first one are setup using the traditional xenbus
-and grant-table based mechanism.
-We use a list to keep track of the allocated consoles, we don't
-expect too many of them anyway.
+Should it be || instead?
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/char/hvc_xen.c |  460 +++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 401 insertions(+), 59 deletions(-)
+> +	    event->attr.config != ~0ULL)
+> +		return -EINVAL;
+> +
+> +	return __perf_event_add_tp(event, tp_id);
+> +}
+> +
+> +/*
+> + * Called from the exit path, _after_ all events have been detached from it.
+> + */
+> +static void perf_tp_event_exit(struct task_struct *tsk)
+> +{
+> +	struct perf_tp_idr *idr = tsk->perf_tp_idr;
+> +
+> +	if (!idr)
+> +		return;
+> +
+> +	idr_remove_all(&idr->idr);
+> +	idr_destroy(&idr->idr);
+> +}
+> +
+> +static void perf_tp_event_delayed_put(struct task_struct *tsk)
+> +{
+> +	struct perf_tp_idr *idr = tsk->perf_tp_idr;
+> +
+> +	tsk->perf_tp_idr = NULL;
+> +	kfree(idr);
+> +}
+> +
+> +static int perf_tp_inherit_idr(int id, void *p, void *data)
+> +{
+> +	struct perf_event *child = data;
+> +
+> +	return __perf_event_add_tp(child, id);
+> +}
+> +
+> +static int perf_tp_event_inherit(struct perf_event *parent_event,
+> +				 struct perf_event *child_event)
+> +{
+> +	int ret;
+> +
+> +	if (parent_event->attr.type != PERF_TYPE_TRACEPOINT ||
+> +	    parent_event->attr.config != ~0ULL)
+> +		return 0;
+> +
+> +	/*
+> +	 * The child is not yet exposed, hence no need to serialize things
+> +	 * on that side.
+> +	 */
+> +	mutex_lock(&parent_event->tp_idr.lock);
+> +	ret = idr_for_each(&parent_event->tp_idr.idr,
+> +			perf_tp_inherit_idr,
+> +			child_event);
+> +	mutex_unlock(&parent_event->tp_idr.lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static void perf_tp_event_init_task(struct task_struct *child)
+> +{
+> +	/*
+> +	 * Clear the idr pointer copied from the parent.
+> +	 */
+> +	child->perf_tp_idr = NULL;
+> +}
+> +
+>  #else
+>  
+>  static inline void perf_tp_register(void)
+> @@ -4866,6 +5203,29 @@ static void perf_event_free_filter(struc
+>  {
+>  }
+>  
+> +static int perf_event_add_tp(struct perf_event *event, int tp_id)
+> +{
+> +	return -ENOENT;
+> +}
+> +
+> +static void perf_tp_event_exit(struct task_struct *tsk)
+> +{
+> +}
+> +
+> +static void perf_tp_event_delayed_put(struct task_struct *tsk)
+> +{
+> +}
+> +
+> +static int perf_tp_event_inherit(struct perf_event *parent_event,
+> +				 struct perf_event *child_event)
+> +{
+> +	return 0;
+> +}
+> +
+> +static void perf_tp_event_init_task()(struct task_struct *child)
+> +{
+> +}
+> +
+>  #endif /* CONFIG_EVENT_TRACING */
+>  
+>  #ifdef CONFIG_HAVE_HW_BREAKPOINT
+> @@ -5290,6 +5650,9 @@ perf_event_alloc(struct perf_event_attr 
+>  	INIT_LIST_HEAD(&event->sibling_list);
+>  	init_waitqueue_head(&event->waitq);
+>  	init_irq_work(&event->pending, perf_pending_event);
+> +#ifdef CONFIG_EVENT_TRACING
+> +	perf_tp_idr_init(&event->tp_idr);
+> +#endif
+>  
+>  	mutex_init(&event->mmap_mutex);
+>  
+> @@ -5308,6 +5671,7 @@ perf_event_alloc(struct perf_event_attr 
+>  
+>  	if (task) {
+>  		event->attach_state = PERF_ATTACH_TASK;
+> +		event->hw.event_target = task;
+>  #ifdef CONFIG_HAVE_HW_BREAKPOINT
+>  		/*
+>  		 * hw_breakpoint is a bit difficult here..
+> @@ -5353,7 +5717,7 @@ perf_event_alloc(struct perf_event_attr 
+>  	if (err) {
+>  		if (event->ns)
+>  			put_pid_ns(event->ns);
+> -		kfree(event);
+> +		free_event(event);
+>  		return ERR_PTR(err);
+>  	}
+>  
+> @@ -5694,7 +6058,6 @@ SYSCALL_DEFINE5(perf_event_open,
+>  	}
+>  
+>  	perf_install_in_context(ctx, event, cpu);
+> -	++ctx->generation;
+>  	mutex_unlock(&ctx->mutex);
+>  
+>  	event->owner = current;
+> @@ -5763,7 +6126,6 @@ perf_event_create_kernel_counter(struct 
+>  	WARN_ON_ONCE(ctx->parent_ctx);
+>  	mutex_lock(&ctx->mutex);
+>  	perf_install_in_context(ctx, event, cpu);
+> -	++ctx->generation;
+>  	mutex_unlock(&ctx->mutex);
+>  
+>  	return event;
+> @@ -5936,6 +6298,8 @@ void perf_event_exit_task(struct task_st
+>  
+>  	for_each_task_context_nr(ctxn)
+>  		perf_event_exit_task_context(child, ctxn);
+> +
+> +	perf_tp_event_exit(child);
+>  }
+>  
+>  static void perf_free_event(struct perf_event *event,
+> @@ -5998,6 +6362,8 @@ void perf_event_delayed_put(struct task_
+>  
+>  	for_each_task_context_nr(ctxn)
+>  		WARN_ON_ONCE(task->perf_event_ctxp[ctxn]);
+> +
+> +	perf_tp_event_delayed_put(task);
+>  }
+>  
+>  /*
+> @@ -6013,6 +6379,7 @@ inherit_event(struct perf_event *parent_
+>  {
+>  	struct perf_event *child_event;
+>  	unsigned long flags;
+> +	int ret;
+>  
+>  	/*
+>  	 * Instead of creating recursive hierarchies of events,
+> @@ -6030,6 +6397,13 @@ inherit_event(struct perf_event *parent_
+>  					   NULL);
+>  	if (IS_ERR(child_event))
+>  		return child_event;
+> +
+> +	ret = perf_tp_event_inherit(parent_event, child_event);
+> +	if (ret) {
+> +		free_event(child_event);
+> +		return ERR_PTR(ret);
+> +	}
+> +
+>  	get_ctx(child_ctx);
+>  
+>  	/*
+> @@ -6134,9 +6508,7 @@ inherit_task_group(struct perf_event *ev
+>  		child->perf_event_ctxp[ctxn] = child_ctx;
+>  	}
+>  
+> -	ret = inherit_group(event, parent, parent_ctx,
+> -			    child, child_ctx);
+> -
+> +	ret = inherit_group(event, parent, parent_ctx, child, child_ctx);
+>  	if (ret)
+>  		*inherited_all = 0;
+>  
+> @@ -6157,9 +6529,6 @@ int perf_event_init_context(struct task_
+>  
+>  	child->perf_event_ctxp[ctxn] = NULL;
+>  
+> -	mutex_init(&child->perf_event_mutex);
+> -	INIT_LIST_HEAD(&child->perf_event_list);
+> -
+>  	if (likely(!parent->perf_event_ctxp[ctxn]))
+>  		return 0;
+>  
+> @@ -6236,6 +6605,11 @@ int perf_event_init_task(struct task_str
+>  {
+>  	int ctxn, ret;
+>  
+> +	mutex_init(&child->perf_event_mutex);
+> +	INIT_LIST_HEAD(&child->perf_event_list);
+> +
+> +	perf_tp_event_init_task(child);
+> +
+>  	for_each_task_context_nr(ctxn) {
+>  		ret = perf_event_init_context(child, ctxn);
+>  		if (ret)
+> Index: linux-2.6/kernel/trace/trace_event_perf.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/trace/trace_event_perf.c
+> +++ linux-2.6/kernel/trace/trace_event_perf.c
+> @@ -8,6 +8,7 @@
+>  #include <linux/module.h>
+>  #include <linux/kprobes.h>
+>  #include "trace.h"
+> +#include "trace_output.h"
+>  
+>  static char __percpu *perf_trace_buf[PERF_NR_CONTEXTS];
+>  
+> @@ -47,9 +48,7 @@ static int perf_trace_event_perm(struct 
+>  static int perf_trace_event_init(struct ftrace_event_call *tp_event,
+>  				 struct perf_event *p_event)
+>  {
+> -	struct hlist_head __percpu *list;
+>  	int ret;
+> -	int cpu;
+>  
+>  	ret = perf_trace_event_perm(tp_event, p_event);
+>  	if (ret)
+> @@ -61,15 +60,6 @@ static int perf_trace_event_init(struct 
+>  
+>  	ret = -ENOMEM;
+>  
+> -	list = alloc_percpu(struct hlist_head);
+> -	if (!list)
+> -		goto fail;
+> -
+> -	for_each_possible_cpu(cpu)
+> -		INIT_HLIST_HEAD(per_cpu_ptr(list, cpu));
+> -
+> -	tp_event->perf_events = list;
+> -
+>  	if (!total_ref_count) {
+>  		char __percpu *buf;
+>  		int i;
+> @@ -100,63 +90,40 @@ static int perf_trace_event_init(struct 
+>  		}
+>  	}
+>  
+> -	if (!--tp_event->perf_refcount) {
+> -		free_percpu(tp_event->perf_events);
+> -		tp_event->perf_events = NULL;
+> -	}
+> +	--tp_event->perf_refcount;
+>  
+>  	return ret;
+>  }
+>  
+> -int perf_trace_init(struct perf_event *p_event)
+> +int perf_trace_init(struct perf_event *p_event, int event_id)
+>  {
+>  	struct ftrace_event_call *tp_event;
+> -	int event_id = p_event->attr.config;
+> +	struct trace_event *t_event;
+>  	int ret = -EINVAL;
+>  
+> +	trace_event_read_lock();
+> +	t_event = ftrace_find_event(event_id);
+> +	if (!t_event)
+> +		goto out;
+> +
+> +	tp_event = container_of(t_event, struct ftrace_event_call, event);
+> +
+>  	mutex_lock(&event_mutex);
+> -	list_for_each_entry(tp_event, &ftrace_events, list) {
+> -		if (tp_event->event.type == event_id &&
+> -		    tp_event->class && tp_event->class->reg &&
+> -		    try_module_get(tp_event->mod)) {
+> -			ret = perf_trace_event_init(tp_event, p_event);
+> -			if (ret)
+> -				module_put(tp_event->mod);
+> -			break;
+> -		}
+> +	if (tp_event->class && tp_event->class->reg &&
+> +			try_module_get(tp_event->mod)) {
+> +		ret = perf_trace_event_init(tp_event, p_event);
+> +		if (ret)
+> +			module_put(tp_event->mod);
+>  	}
+>  	mutex_unlock(&event_mutex);
+> +out:
+> +	trace_event_read_unlock();
+>  
+>  	return ret;
+>  }
+>  
+> -int perf_trace_add(struct perf_event *p_event, int flags)
+> -{
+> -	struct ftrace_event_call *tp_event = p_event->tp_event;
+> -	struct hlist_head __percpu *pcpu_list;
+> -	struct hlist_head *list;
+> -
+> -	pcpu_list = tp_event->perf_events;
+> -	if (WARN_ON_ONCE(!pcpu_list))
+> -		return -EINVAL;
+> -
+> -	if (!(flags & PERF_EF_START))
+> -		p_event->hw.state = PERF_HES_STOPPED;
+> -
+> -	list = this_cpu_ptr(pcpu_list);
+> -	hlist_add_head_rcu(&p_event->hlist_entry, list);
+> -
+> -	return 0;
+> -}
+> -
+> -void perf_trace_del(struct perf_event *p_event, int flags)
+> -{
+> -	hlist_del_rcu(&p_event->hlist_entry);
+> -}
+> -
+> -void perf_trace_destroy(struct perf_event *p_event)
+> +static void __perf_trace_destroy(struct ftrace_event_call *tp_event)
+>  {
+> -	struct ftrace_event_call *tp_event = p_event->tp_event;
+>  	int i;
+>  
+>  	mutex_lock(&event_mutex);
+> @@ -171,9 +138,6 @@ void perf_trace_destroy(struct perf_even
+>  	 */
+>  	tracepoint_synchronize_unregister();
+>  
+> -	free_percpu(tp_event->perf_events);
+> -	tp_event->perf_events = NULL;
+> -
+>  	if (!--total_ref_count) {
+>  		for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+>  			free_percpu(perf_trace_buf[i]);
+> @@ -185,6 +149,27 @@ void perf_trace_destroy(struct perf_even
+>  	mutex_unlock(&event_mutex);
+>  }
+>  
+> +void perf_trace_destroy(struct perf_event *p_event)
+> +{
+> +	__perf_trace_destroy(p_event->tp_event);
+> +}
 
-diff --git a/drivers/char/hvc_xen.c b/drivers/char/hvc_xen.c
-index dfcd939..b51e6de 100644
---- a/drivers/char/hvc_xen.c
-+++ b/drivers/char/hvc_xen.c
-@@ -2,6 +2,7 @@
-  * xen console driver interface to hvc_console.c
-  *
-  * (c) 2007 Gerd Hoffmann <kraxel@suse.de>
-+ * (c) 2010 Stefano Stabellini <stefano.stabellini@citrix.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -23,6 +24,7 @@
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/types.h>
-+#include <linux/list.h>
- 
- #include <asm/io.h>
- #include <asm/xen/hypervisor.h>
-@@ -30,47 +32,69 @@
- #include <xen/xen.h>
- #include <xen/interface/xen.h>
- #include <xen/hvm.h>
-+#include <xen/grant_table.h>
- #include <xen/page.h>
- #include <xen/events.h>
- #include <xen/interface/io/console.h>
- #include <xen/hvc-console.h>
-+#include <xen/xenbus.h>
- 
- #include "hvc_console.h"
- 
- #define HVC_COOKIE   0x58656e /* "Xen" in hex */
- 
--static struct hvc_struct *hvc;
--static int xencons_irq;
-+struct xencons_info {
-+	struct list_head list;
-+	struct xenbus_device *xbdev;
-+	struct xencons_interface *intf;
-+	unsigned int evtchn;
-+	struct hvc_struct *hvc;
-+	int irq;
-+	int vtermno;
-+	grant_ref_t gntref;
-+};
-+
-+static LIST_HEAD(xenconsoles);
-+static DEFINE_SPINLOCK(xencons_lock);
-+static struct xenbus_driver xencons_driver;
- 
- /* ------------------------------------------------------------------ */
- 
--static unsigned long console_pfn = ~0ul;
--static unsigned int console_evtchn = ~0;
--static struct xencons_interface *xencons_if = NULL;
-+static struct xencons_info *vtermno_to_xencons(int vtermno)
-+{
-+	struct xencons_info *entry, *ret = NULL;
-+
-+	if (list_empty(&xenconsoles))
-+			return NULL;
-+
-+	spin_lock(&xencons_lock);
-+	list_for_each_entry(entry, &xenconsoles, list) {
-+		if (entry->vtermno == vtermno) {
-+			ret  = entry;
-+			break;
-+		}
-+	}
-+	spin_unlock(&xencons_lock);
-+
-+	return ret;
-+}
- 
--static inline struct xencons_interface *xencons_interface(void)
-+static inline int xenbus_devid_to_vtermno(int devid)
- {
--	if (xencons_if != NULL)
--		return xencons_if;
--	if (console_pfn == ~0ul)
--		return mfn_to_virt(xen_start_info->console.domU.mfn);
--	else
--		return __va(console_pfn << PAGE_SHIFT);
-+	return devid + HVC_COOKIE;
- }
- 
--static inline void notify_daemon(void)
-+static inline void notify_daemon(struct xencons_info *cons)
- {
- 	/* Use evtchn: this is called early, before irq is set up. */
--	if (console_evtchn == ~0ul)
--		notify_remote_via_evtchn(xen_start_info->console.domU.evtchn);
--	else
--		notify_remote_via_evtchn(console_evtchn);
-+	notify_remote_via_evtchn(cons->evtchn);
- }
- 
--static int __write_console(const char *data, int len)
-+static int __write_console(struct xencons_info *xencons,
-+		const char *data, int len)
- {
--	struct xencons_interface *intf = xencons_interface();
- 	XENCONS_RING_IDX cons, prod;
-+	struct xencons_interface *intf = xencons->intf;
- 	int sent = 0;
- 
- 	cons = intf->out_cons;
-@@ -85,13 +109,16 @@ static int __write_console(const char *data, int len)
- 	intf->out_prod = prod;
- 
- 	if (sent)
--		notify_daemon();
-+		notify_daemon(xencons);
- 	return sent;
- }
- 
- static int domU_write_console(uint32_t vtermno, const char *data, int len)
- {
- 	int ret = len;
-+	struct xencons_info *cons = vtermno_to_xencons(vtermno);
-+	if (cons == NULL)
-+		return -EINVAL;
- 
- 	/*
- 	 * Make sure the whole buffer is emitted, polling if
-@@ -100,7 +127,7 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
- 	 * kernel is crippled.
- 	 */
- 	while (len) {
--		int sent = __write_console(data, len);
-+		int sent = __write_console(cons, data, len);
- 		
- 		data += sent;
- 		len -= sent;
-@@ -114,9 +141,13 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
- 
- static int domU_read_console(uint32_t vtermno, char *buf, int len)
- {
--	struct xencons_interface *intf = xencons_interface();
-+	struct xencons_interface *intf;
- 	XENCONS_RING_IDX cons, prod;
- 	int recv = 0;
-+	struct xencons_info *xencons = vtermno_to_xencons(vtermno);
-+	if (xencons == NULL)
-+		return -EINVAL;
-+	intf = xencons->intf;
- 
- 	cons = intf->in_cons;
- 	prod = intf->in_prod;
-@@ -129,7 +160,7 @@ static int domU_read_console(uint32_t vtermno, char *buf, int len)
- 	mb();			/* read ring before consuming */
- 	intf->in_cons = cons;
- 
--	notify_daemon();
-+	notify_daemon(xencons);
- 	return recv;
- }
- 
-@@ -172,33 +203,111 @@ static int xen_hvm_console_init(void)
- 	int r;
- 	uint64_t v = 0;
- 	unsigned long mfn;
-+	struct xencons_info *info;
- 
- 	if (!xen_hvm_domain())
- 		return -ENODEV;
- 
--	if (xencons_if != NULL)
--		return -EBUSY;
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (!info) {
-+		info = kmalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		if (!info)
-+			return -ENOMEM;
-+	}
-+
-+	/* already configured */
-+	if (info->intf != NULL)
-+		return 0;
- 
- 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
--	if (r < 0)
-+	if (r < 0) {
-+		kfree(info);
- 		return -ENODEV;
--	console_evtchn = v;
-+	}
-+	info->evtchn = v;
-+	info->irq = bind_evtchn_to_irq(info->evtchn);
- 	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
--	if (r < 0)
-+	if (r < 0) {
-+		kfree(info);
- 		return -ENODEV;
-+	}
- 	mfn = v;
--	xencons_if = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
--	if (xencons_if == NULL)
-+	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
-+	if (info->intf == NULL) {
-+		kfree(info);
-+		return -ENODEV;
-+	}
-+	info->vtermno = HVC_COOKIE;
-+
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
-+	return 0;
-+}
-+
-+static int xen_pv_console_init(void)
-+{
-+	struct xencons_info *info;
-+
-+	if (!xen_pv_domain())
- 		return -ENODEV;
- 
-+	if (!xen_start_info->console.domU.evtchn)
-+		return -ENODEV;
-+
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (!info) {
-+		info = kmalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		if (!info)
-+			return -ENOMEM;
-+	}
-+
-+	/* already configured */
-+	if (info->intf != NULL)
-+		return 0;
-+
-+	info->evtchn = xen_start_info->console.domU.evtchn;
-+	info->irq = bind_evtchn_to_irq(info->evtchn);
-+	info->intf = mfn_to_virt(xen_start_info->console.domU.mfn);
-+	info->vtermno = HVC_COOKIE;
-+
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
-+	return 0;
-+}
-+
-+static int xen_initial_domain_console_init(void)
-+{
-+	struct xencons_info *info;
-+
-+	if (!xen_initial_domain())
-+		return -ENODEV;
-+
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (!info) {
-+		info = kmalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		if (!info)
-+			return -ENOMEM;
-+	}
-+
-+	info->irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
-+	info->vtermno = HVC_COOKIE;
-+
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
- 	return 0;
- }
- 
- static int __init xen_hvc_init(void)
- {
--	struct hvc_struct *hp;
--	struct hv_ops *ops;
- 	int r;
-+	struct xencons_info *info;
-+	const struct hv_ops *ops;
- 
- 	if (!xen_domain())
- 		return -ENODEV;
-@@ -207,43 +316,251 @@ static int __init xen_hvc_init(void)
- 			!xen_start_info->console.domU.evtchn)
- 		return -ENODEV;
- 
-+
- 	if (xen_initial_domain()) {
- 		ops = &dom0_hvc_ops;
--		xencons_irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
-+		r = xen_initial_domain_console_init();
-+		if (r < 0)
-+			return r;
- 	} else {
- 		ops = &domU_hvc_ops;
--		if (xen_pv_domain()) {
--			console_pfn = mfn_to_pfn(xen_start_info->console.domU.mfn);
--			console_evtchn = xen_start_info->console.domU.evtchn;
--		} else {
-+		if (xen_hvm_domain())
- 			r = xen_hvm_console_init();
--			if (r < 0)
--				return r;
--		}
--		xencons_irq = bind_evtchn_to_irq(console_evtchn);
--		if (xencons_irq < 0)
--			xencons_irq = 0; /* NO_IRQ */
-+		else
-+			r = xen_pv_console_init();
-+		if (r < 0)
-+			return r;
-+
-+	}
-+
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (info->irq < 0)
-+		info->irq = 0; /* NO_IRQ */
-+
-+	info->hvc = hvc_alloc(HVC_COOKIE, info->irq, ops, 256);
-+	if (IS_ERR(info->hvc)) {
-+		r = PTR_ERR(info->hvc);
-+		spin_lock(&xencons_lock);
-+		list_del(&info->list);
-+		spin_unlock(&xencons_lock);
-+		if (info->irq)
-+			unbind_from_irqhandler(info->irq, NULL);
-+		kfree(info);
-+		return r;
-+	}
-+
-+	return xenbus_register_frontend(&xencons_driver);
-+}
-+
-+void xen_console_resume(void)
-+{
-+	struct xencons_info *info = vtermno_to_xencons(HVC_COOKIE);
-+	if (info != NULL && info->irq)
-+		rebind_evtchn_irq(info->evtchn, info->irq);
-+}
-+
-+static void xencons_disconnect_backend(struct xencons_info *info)
-+{
-+	if (info->irq > 0)
-+		unbind_from_irqhandler(info->irq, NULL);
-+	info->irq = 0;
-+	if (info->evtchn > 0)
-+		xenbus_free_evtchn(info->xbdev, info->evtchn);
-+	info->evtchn = 0;
-+	if (info->gntref > 0)
-+		gnttab_free_grant_references(info->gntref);
-+	info->gntref = 0;
-+	if (info->hvc != NULL)
-+		hvc_remove(info->hvc);
-+	info->hvc = NULL;
-+}
-+
-+static void xencons_free(struct xencons_info *info)
-+{
-+	xencons_disconnect_backend(info);
-+	free_page((unsigned long)info->intf);
-+	info->intf = NULL;
-+	info->vtermno = 0;
-+	kfree(info);
-+}
-+
-+static int xencons_remove(struct xenbus_device *dev)
-+{
-+	struct xencons_info *info = dev_get_drvdata(&dev->dev);
-+
-+	spin_lock(&xencons_lock);
-+	list_del(&info->list);
-+	spin_unlock(&xencons_lock);
-+	xencons_free(info);
-+	return 0;
-+}
-+
-+static int xencons_connect_backend(struct xenbus_device *dev,
-+				  struct xencons_info *info)
-+{
-+	int ret, evtchn, devid, ref, irq;
-+	struct xenbus_transaction xbt;
-+	grant_ref_t gref_head;
-+	unsigned long mfn;
-+
-+	ret = xenbus_alloc_evtchn(dev, &evtchn);
-+	if (ret)
-+		return ret;
-+	info->evtchn = evtchn;
-+	irq = bind_evtchn_to_irq(evtchn);
-+	if (irq < 0)
-+		return irq;
-+	info->irq = irq;
-+	devid = dev->nodename[strlen(dev->nodename) - 1] - '0';
-+	info->hvc = hvc_alloc(xenbus_devid_to_vtermno(devid),
-+			irq, &domU_hvc_ops, 256);
-+	if (IS_ERR(info->hvc))
-+		return PTR_ERR(info->hvc);
-+	if (xen_pv_domain())
-+		mfn = virt_to_mfn(info->intf);
-+	else
-+		mfn = __pa(info->intf) >> PAGE_SHIFT;
-+	ret = gnttab_alloc_grant_references(1, &gref_head);
-+	if (ret < 0)
-+		return ret;
-+	info->gntref = gref_head;
-+	ref = gnttab_claim_grant_reference(&gref_head);
-+	if (ref < 0)
-+		return ref;
-+	gnttab_grant_foreign_access_ref(ref, info->xbdev->otherend_id,
-+			mfn, 0);
-+
-+ again:
-+	ret = xenbus_transaction_start(&xbt);
-+	if (ret) {
-+		xenbus_dev_fatal(dev, ret, "starting transaction");
-+		return ret;
-+	}
-+	ret = xenbus_printf(xbt, dev->nodename, "ring-ref", "%d", ref);
-+	if (ret)
-+		goto error_xenbus;
-+	ret = xenbus_printf(xbt, dev->nodename, "port", "%u",
-+			    evtchn);
-+	if (ret)
-+		goto error_xenbus;
-+	ret = xenbus_printf(xbt, dev->nodename, "type", "ioemu");
-+	if (ret)
-+		goto error_xenbus;
-+	ret = xenbus_transaction_end(xbt, 0);
-+	if (ret) {
-+		if (ret == -EAGAIN)
-+			goto again;
-+		xenbus_dev_fatal(dev, ret, "completing transaction");
-+		return ret;
- 	}
- 
--	hp = hvc_alloc(HVC_COOKIE, xencons_irq, ops, 256);
--	if (IS_ERR(hp))
--		return PTR_ERR(hp);
-+	xenbus_switch_state(dev, XenbusStateInitialised);
-+	return 0;
-+
-+ error_xenbus:
-+	xenbus_transaction_end(xbt, 1);
-+	xenbus_dev_fatal(dev, ret, "writing xenstore");
-+	return ret;
-+}
-+
-+static int __devinit xencons_probe(struct xenbus_device *dev,
-+				  const struct xenbus_device_id *id)
-+{
-+	int ret, devid;
-+	struct xencons_info *info;
-+
-+	devid = dev->nodename[strlen(dev->nodename) - 1] - '0';
-+	if (devid == 0)
-+		return 0;
- 
--	hvc = hp;
-+	info = kmalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+	if (!info)
-+		goto error_nomem;
-+	dev_set_drvdata(&dev->dev, info);
-+	info->xbdev = dev;
-+	info->vtermno = xenbus_devid_to_vtermno(devid);
-+	info->intf = (void *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
-+	if (!info->intf)
-+		goto error_nomem;
-+
-+	ret = xencons_connect_backend(dev, info);
-+	if (ret < 0)
-+		goto error;
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
- 
- 	return 0;
-+
-+ error_nomem:
-+	ret = -ENOMEM;
-+	xenbus_dev_fatal(dev, ret, "allocating device memory");
-+ error:
-+	xencons_free(info);
-+	return ret;
- }
- 
--void xen_console_resume(void)
-+static int xencons_resume(struct xenbus_device *dev)
- {
--	if (xencons_irq)
--		rebind_evtchn_irq(console_evtchn, xencons_irq);
-+	struct xencons_info *info = dev_get_drvdata(&dev->dev);
-+
-+	xencons_disconnect_backend(info);
-+	memset(info->intf, 0, PAGE_SIZE);
-+	return xencons_connect_backend(dev, info);
- }
- 
-+static void xencons_backend_changed(struct xenbus_device *dev,
-+				   enum xenbus_state backend_state)
-+{
-+	switch (backend_state) {
-+	case XenbusStateReconfiguring:
-+	case XenbusStateReconfigured:
-+	case XenbusStateInitialising:
-+	case XenbusStateInitialised:
-+	case XenbusStateUnknown:
-+	case XenbusStateClosed:
-+		break;
-+
-+	case XenbusStateInitWait:
-+		break;
-+
-+	case XenbusStateConnected:
-+		xenbus_switch_state(dev, XenbusStateConnected);
-+		break;
-+
-+	case XenbusStateClosing:
-+		xenbus_frontend_closed(dev);
-+		break;
-+	}
-+}
-+
-+static const struct xenbus_device_id xencons_ids[] = {
-+	{ "console" },
-+	{ "" }
-+};
-+
-+
- static void __exit xen_hvc_fini(void)
- {
--	if (hvc)
--		hvc_remove(hvc);
-+	struct xencons_info *entry, *next;
-+
-+	if (list_empty(&xenconsoles))
-+			return;
-+
-+	spin_lock(&xencons_lock);
-+	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
-+		list_del(&entry->list);
-+		if (entry->xbdev)
-+			xencons_remove(entry->xbdev);
-+		else {
-+			if (entry->irq > 0)
-+				unbind_from_irqhandler(entry->irq, NULL);
-+			if (entry->hvc);
-+				hvc_remove(entry->hvc);
-+			kfree(entry);
-+		}
-+	}
-+	spin_unlock(&xencons_lock);
- }
- 
- static int xen_cons_init(void)
-@@ -256,18 +573,31 @@ static int xen_cons_init(void)
- 	if (xen_initial_domain())
- 		ops = &dom0_hvc_ops;
- 	else {
-+		int r;
- 		ops = &domU_hvc_ops;
- 
--		if (xen_pv_domain())
--			console_evtchn = xen_start_info->console.domU.evtchn;
-+		if (xen_hvm_domain())
-+			r = xen_hvm_console_init();
- 		else
--			xen_hvm_console_init();
-+			r = xen_pv_console_init();
-+		if (r < 0)
-+			return r;
- 	}
- 
- 	hvc_instantiate(HVC_COOKIE, 0, ops);
- 	return 0;
- }
- 
-+static struct xenbus_driver xencons_driver = {
-+	.name = "xenconsole",
-+	.owner = THIS_MODULE,
-+	.ids = xencons_ids,
-+	.probe = xencons_probe,
-+	.remove = xencons_remove,
-+	.resume = xencons_resume,
-+	.otherend_changed = xencons_backend_changed,
-+};
-+
- module_init(xen_hvc_init);
- module_exit(xen_hvc_fini);
- console_initcall(xen_cons_init);
-@@ -284,23 +614,35 @@ static void xenboot_write_console(struct console *console, const char *string,
- 	if (xen_initial_domain())
- 		return;
- 
--	domU_write_console(0, "(early) ", 8);
-+	domU_write_console(HVC_COOKIE, "(early) ", 8);
- 	while (off < len && NULL != (pos = strchr(string+off, '\n'))) {
- 		linelen = pos-string+off;
- 		if (off + linelen > len)
- 			break;
--		domU_write_console(0, string+off, linelen);
--		domU_write_console(0, "\r\n", 2);
-+		domU_write_console(HVC_COOKIE, string+off, linelen);
-+		domU_write_console(HVC_COOKIE, "\r\n", 2);
- 		off += linelen + 1;
- 	}
- 	if (off < len)
--		domU_write_console(0, string+off, len-off);
-+		domU_write_console(HVC_COOKIE, string+off, len-off);
-+}
-+
-+static int xenboot_console_init(void)
-+{
-+	if (xen_hvm_domain())
-+		return -ENODEV;
-+
-+	if (!xen_initial_domain())
-+		return xen_pv_console_init();
-+
-+	return 0;
- }
- 
- struct console xenboot_console = {
- 	.name		= "xenboot",
- 	.write		= xenboot_write_console,
- 	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
-+	.early_setup = xenboot_console_init,
- };
- #endif	/* CONFIG_EARLY_PRINTK */
- 
--- 
-1.5.6.5
+Is this a leftover? It doesn't seem to be used anymore.
 
+Other than that, the whole looks good. May be I need to have
+one more look at the trace_output.c changes, but the conversion
+from hlist to idr seemed fine at a glance.
+
+Adding Steve in Cc.
