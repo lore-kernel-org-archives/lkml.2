@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab0LAXoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 18:44:03 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:62441 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756589Ab0LAXn6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 18:43:58 -0500
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="489755159"
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	 <20101201150428.GA2879@elliptictech.com>
-	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	 <1291229669.6609.24.camel@heimdal.trondhjem.org>
-	 <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
-	 <1291234251.6609.39.camel@heimdal.trondhjem.org>
-	 <20101201123341.d12ef362.akpm@linux-foundation.org>
-	 <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
-	 <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
-	 <20101201133831.ea6ba10a.akpm@linux-foundation.org>
-	 <1291240272.6609.50.camel@heimdal.trondhjem.org>
-	 <20101201141351.8609140b.akpm@linux-foundation.org>
-	 <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
-	 <20101201143856.51f4f9d9.akpm@linux-foundation.org>
-	 <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 18:43:56 -0500
-Message-ID: <1291247036.6609.76.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Dec 2010 23:43:58.0075 (UTC) FILETIME=[9F7624B0:01CB91B1]
+	id S1756757Ab0LAXnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 18:43:52 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:41414 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756062Ab0LAXnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 18:43:51 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/AFXQ62NTAHa/Yfpa/B0VBFApjaq22kdptyZ3sfd
+	tq4yf9D0wCHYNa
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Mark Allyn <mark.a.allyn@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Joe Perches <joe@perches.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 1/3] staging/sep: Fix sparse warning 'do-while statement is not a compound statement'
+Date: Thu,  2 Dec 2010 00:43:32 +0100
+Message-Id: <1291247014-21525-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <20101201225214.GA15796@kroah.com>
+References: <20101201225214.GA15796@kroah.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 15:31 -0800, Linus Torvalds wrote:
-> On Wed, Dec 1, 2010 at 2:38 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > OK, the stop_machine() plugs a lot of potential race-vs-module-unload
-> > things.  But Trond is referring to races against vmscan inode reclaim,
-> > unmount, etc.
-> 
-> So?
-> 
-> A filesystem module cannot be unloaded while it's still mounted.
-> 
-> And unmount doesn't succeed until all inodes are gone.
-> 
-> And getting rid of an inode doesn't succeed until all pages associated
-> with it are gone.
-> 
-> And getting rid of the pages involves locking them (whether in
-> truncate or vmscan) and removing them from all lists.
-> 
-> Ergo: vmscan has a locked page leads to the filesystem being
-> guaranteed to not be unmounted.  And that, in turn, guarantees that
-> the module won't be unloaded until the machine has gone through an
-> idle cycle.
-> 
-> It really is that simple. There's nothing subtle there. The reason
-> spin_unlock(&mapping->tree_lock) is safe is exactly the above trivial
-> chain of dependencies. And it's also exactly why
-> mapping->a_ops->freepage() would also be safe.
-> 
-> This is pretty much how all the module races are handled. Doing module
-> ref-counts per page (or per packet in flight for things like
-> networking) would be prohibitively expensive. There's no way we can
-> ever do that.
+This patch fixes the warning generated by sparse: 'do-while statement is
+not a compound statement' by adding the necessary brackets around the do
+block
 
-Although the page is locked, it may no longer be visible to the lockless
-page lookup once the radix_tree_delete() completes in
-__remove_from_page_cache.
-Furthermore, if the same routine causes mapping->nr_pages to go to zero
-before iput_final() hits truncate_inode_pages(), then the latter exits
-immediately.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+KernelVersion: linux-next-20101202
 
-Both these cases would appear to allow iput_final() to release the inode
-before vmscan gets round to unlocking the mapping->tree_lock since
-truncate_inode_pages() no longer thinks it has any work to do.
+ drivers/staging/sep/sep_dev.h    |    4 ++--
+ drivers/staging/sep/sep_driver.c |   12 ++++++------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/staging/sep/sep_dev.h b/drivers/staging/sep/sep_dev.h
+index 7b4993b..0ffe68c 100644
+--- a/drivers/staging/sep/sep_dev.h
++++ b/drivers/staging/sep/sep_dev.h
+@@ -147,9 +147,9 @@ static inline u32 sep_read_reg(struct sep_device *dev, int reg)
+ static inline void sep_wait_sram_write(struct sep_device *dev)
+ {
+ 	u32 reg_val;
+-	do
++	do {
+ 		reg_val = sep_read_reg(dev, HW_SRAM_DATA_READY_REG_ADDR);
+-	while (!(reg_val & 1));
++	} while (!(reg_val & 1));
+ }
+ 
+ 
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index 7633111..d734887 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -2587,9 +2587,9 @@ static int sep_start_handler(struct sep_device *sep)
+ 	dev_dbg(&sep->pdev->dev, "sep_start_handler start\n");
+ 
+ 	/* Wait in polling for message from SEP */
+-	do
++	do {
+ 		reg_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR3_REG_ADDR);
+-	while (!reg_val);
++	} while (!reg_val);
+ 
+ 	/* Check the value */
+ 	if (reg_val == 0x1)
+@@ -2754,9 +2754,9 @@ static int sep_init_handler(struct sep_device *sep, unsigned long arg)
+ 	/* Wait for acknowledge */
+ 	dev_dbg(&sep->pdev->dev, "init; waiting for msg response\n");
+ 
+-	do
++	do {
+ 		reg_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR3_REG_ADDR);
+-	while (!(reg_val & 0xFFFFFFFD));
++	} while (!(reg_val & 0xFFFFFFFD));
+ 
+ 	if (reg_val == 0x1) {
+ 		dev_warn(&sep->pdev->dev, "init; device int failed\n");
+@@ -2774,9 +2774,9 @@ static int sep_init_handler(struct sep_device *sep, unsigned long arg)
+ 	/* Wait for response */
+ 	dev_dbg(&sep->pdev->dev, "init; waiting for zero set response\n");
+ 
+-	do
++	do {
+ 		reg_val = sep_read_reg(sep, HW_HOST_SEP_HOST_GPR3_REG_ADDR);
+-	while (reg_val != 0);
++	} while (reg_val != 0);
+ 
+ end_function:
+ 	dev_dbg(&sep->pdev->dev, "init is done\n");
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.2.2
 
