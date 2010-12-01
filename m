@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab0LAVXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 16:23:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19453 "EHLO mx1.redhat.com"
+	id S1753105Ab0LAV0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 16:26:37 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46059 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab0LAVXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 16:23:31 -0500
-Date: Wed, 1 Dec 2010 16:23:10 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jon Nelson <jnelson@jamponi.net>, Matt <jackdachef@gmail.com>
-Cc: Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
-        htejun@gmail.com, linux-ext4@vger.kernel.org
-Subject: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier
- support is effective)
-Message-ID: <20101201212310.GA15648@redhat.com>
-References: <20101114205925.GA20451@redhat.com>
- <AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>
- <4CE05A9E.9090204@redhat.com>
- <AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
- <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
- <20101201165229.GC13415@redhat.com>
- <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com>
- <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com>
+	id S1751876Ab0LAV0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 16:26:36 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: 2.6.35.5: hibernation broken... AGAIN
+Date: Wed, 1 Dec 2010 22:25:40 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Hugh Dickins <hughd@google.com>, Ondrej Zary <linux@rainbow-software.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>
+References: <201011171139.33398.linux@rainbow-software.org> <201012010138.53575.rjw@sisk.pl> <20101201095349.c1f3ac46.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101201095349.c1f3ac46.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF6B3E8.2000406@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012012225.40329.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01 2010 at  3:45pm -0500,
-Milan Broz <mbroz@redhat.com> wrote:
-
+On Wednesday, December 01, 2010, KAMEZAWA Hiroyuki wrote:
+> On Wed, 1 Dec 2010 01:38:53 +0100
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> On 12/01/2010 08:34 PM, Jon Nelson wrote:
-> > Perhaps this is useful: for myself, I found that when I started using
-> > 2.6.37rc3 that postgresql starting having a *lot* of problems with
-> > corruption. Specifically, I noted zeroed pages, corruption in headers,
-> > all sorts of stuff on /newly created/ tables, especially during index
-> > creation. I had a fairly high hit rate of failure. I backed off to
-> > 2.6.34.7 and have *zero* problems (in fact, prior to 2.6.37rc3, I had
-> > never had a corruption issue with postgresql). I ran on 2.6.36 for a
-> > few weeks as well, without issue.
+> > On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
+> > > On Tuesday, November 30, 2010, Hugh Dickins wrote:
+> > > > On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
+> > > > > On Saturday, November 27, 2010, Ondrej Zary wrote:
+> > ...
+> > > > 
+> > > > Trivial point, I suppose, but it bothers me that PM is accumulating
+> > > > wrappers around wrappers around gfp_allowed_mask.  Looks like
+> > > > clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
+> > > > were not really what we need.  How about scrapping them, and putting
+> > > > pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
+> > > 
+> > > Sure, that sounds like a good idea indeed.
 > > 
-> > I am using kcrypt with lvm on top of that, and ext4 on top of that.
+> > Below is an updated patch in which I tried to address your comments.
+> > 
+> > I didn't find it very useful to couple pm_restore_gfp_mask() with the thawing
+> > of tasks, but nevertheless I think all of the spots where it's needed are
+> > covered now.
+> > 
+> > The patch has only been compile-tested for now, so caveat emptor.
+> > 
 > 
-> With unpatched dmcrypt (IOW with Linus' git)? Then it must be ext4 or
-> dm-core problem because there were no patches for dm-crypt...
+> Hmm, can't we have some error check as 
+> 
+> > +static gfp_t saved_gfp_mask;
+> 
+> atomic_t gfp_mask_save_mode_counter;
+> 
+> > +
+> > +void pm_restore_gfp_mask(void)
+> >  {
+> >  	WARN_ON(!mutex_is_locked(&pm_mutex));
+> > -	gfp_allowed_mask = mask;
+> 
+> 	if (atomic_dec_return(&gfp_mask_save_mode_counter))
+> 		WARN_ONCE()
+> 
+> > +	if (saved_gfp_mask) {
+> > +		gfp_allowed_mask = saved_gfp_mask;
+> > +		saved_gfp_mask = 0;
+> > +	}
+> >  }
+> 
+> > +void pm_restrict_gfp_mask(void)
+> >  {
+> > -	gfp_t ret = gfp_allowed_mask;
+> > -
+> >  	WARN_ON(!mutex_is_locked(&pm_mutex));
+> > -	gfp_allowed_mask &= ~mask;
+> > -	return ret;
+> > +	saved_gfp_mask = gfp_allowed_mask;
+> > +	gfp_allowed_mask &= ~GFP_IOFS;
+> 
+> 	if (atomic_inc_return(&gfp_mask_save_mode_counter) > 1)
+> 		WARN_ONCE()
+> 
+> or some ?
 
-Matt and Jon,
+What exactly would that be useful for?
 
-If you'd be up to it: could you try testing your dm-crypt+ext4
-corruption reproducers against the following two 2.6.37-rc commits:
-
-1) 1de3e3df917459422cb2aecac440febc8879d410
-then
-2) bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
-
-Then, depending on results of no corruption for those commits, bonus
-points for testing the same commits but with Andi and Milan's latest
-dm-crypt cpu scalability patch applied too:
-https://patchwork.kernel.org/patch/365542/
-
-Thanks!
-Mike
+Rafael
