@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab0LAPl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 10:41:29 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63923 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab0LAPl2 (ORCPT
+	id S1753133Ab0LAPmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 10:42:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38247 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab0LAPmn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 10:41:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Subject: Re: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
-Date: Wed, 1 Dec 2010 16:41:22 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-References: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
-In-Reply-To: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
+	Wed, 1 Dec 2010 10:42:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Mi/nq5zfQElDez4gwe+0cDJkK65w2FxintwOloUXiqrKJBKlfT1V8udPir87wtr0vo
+         JbKm50GvpiZyIB1KoA8tqUd/+dQAHv62lm+tXb9s4GILsBZyteaeWfN2HOdo+ERyOp8e
+         vr7BZesFcFAEKOy/KlZqo1iJ8FeX3e2XDk7sw=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012011641.22191.arnd@arndb.de>
-X-Provags-ID: V02:K0:p11Q71X4mvp4PY8jT8XDduM82w0tMNJd8tsszGztSm2
- Hoee6iAmDPJSNWV3WrhhzD8otwj26oBr7aSlDyOPAkdPKsxXGD
- 02ouoJIj/QpfWoqB7NgHfHx7HXwLDNlR7V1bWZec5fQeGVKyyh
- t2Axyit2932TLoCE9znHfPhXuMopj1yoGoLC8VESuv8L0Yh7sT
- 0j2f85j2JKHFINLaZPCNQ==
+In-Reply-To: <AANLkTinW6Yp8W4x7DxVCY-AttMMWhkxFKXbmqK9fzpVD@mail.gmail.com>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
+	<20101129081619.GD5218@cr0.nay.redhat.com>
+	<AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com>
+	<4CF36741.9000808@loongson.cn>
+	<AANLkTiktPFtCdYpZai-L_WCOpBrZYN5yN_V7GZ5tKGXG@mail.gmail.com>
+	<4CF3762B.9010102@loongson.cn>
+	<AANLkTimGn53kwcTYe41Y-fwTQ0vzShLCr3LAr8yW9p=J@mail.gmail.com>
+	<AANLkTim44iCdyTsgXohL7TxWCi7=fA8RRZg3kuqUVczx@mail.gmail.com>
+	<AANLkTikn31b=Woy3iMQDaZ54iTa1TK2NcJmGf2+Ou1VP@mail.gmail.com>
+	<AANLkTinW6Yp8W4x7DxVCY-AttMMWhkxFKXbmqK9fzpVD@mail.gmail.com>
+Date: Wed, 1 Dec 2010 23:42:42 +0800
+Message-ID: <AANLkTimNHfTWOv8NjM__UFv--pHZ739ML5HXxFhNN+43@mail.gmail.com>
+Subject: Re: [hellogcc] Re: [PATCH] Built kernel without -O2 option
+From: jovi zhang <bookjovi@gmail.com>
+To: Hui Zhu <teawater@gmail.com>, bekars <bekars@gmail.com>,
+        qiaochong@loongson.cn
+Cc: hellogcc@freelists.org,
+        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, gdb@sourceware.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 December 2010, Hans Ulli Kroll wrote:
-> Today more boards with arm cpu have selectable pci bus.
-> This patch makes this more scalable and remove line continuations in
-> Kconfig
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+Please don't use Chinese word in this mailing list, maybe somebody
+need to read LKML guideline firstly.
 
-Looks good to me!
+Does this patch have many use case upon it? if there have many use
+case, maybe we can worth to do it, otherwise it maybe need to
+consider..., as we known, there have many person debug kernel just
+using -O2 or kdb, etc...
+we need to think once bring this config option, there will have so
+many maintain work on it, every maintainer need to care for their
+commit file to make sure the file can work with this -O0 mode.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+If there have some files missed to support with the -O0 mode, the
+kernel will not stable(also it have a little hard to find which
+file/function cause unstable), and the unstable kernel is not
+everybody want to see.
+
+>> +ifdef CONFIG_CC_CLOSE_OPTIMIZATION
+>> +CFLAGS_process_$(BITS).o       += -O2
+>> +CFLAGS_entry_$(BITS).o         += -O2
+>> +CFLAGS_traps.o                 += -O2
+>> +CFLAGS_i387.o                  += -O2
+>> +CFLAGS_xsave.o                 += -O2
+>> +CFLAGS_hpet.o                  += -O2
+
+CONFIG_CC_CLOSE_OPTIMIZATION really misunderstand user in here with adding -O2.
+
+   Thanks.
