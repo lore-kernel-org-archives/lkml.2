@@ -1,29 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab0LADjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:39:32 -0500
-Received: from lo.gmane.org ([80.91.229.12]:38647 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab0LADjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:39:31 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
+	id S1754588Ab0LADjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:39:53 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:21700 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab0LADjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:39:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:newsgroups:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=YtubH4iaunBC7Tk5nTcy31dJEp9gO1BxlbDZp0RW9wlP2bw5C6XpRe5PPukUIH5vAt
+         O6rn5gQuiT/hkA0sUlgA==
+Message-ID: <4CF5C379.8030204@google.com>
+Date: Tue, 30 Nov 2010 19:39:37 -0800
 From: Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Date: Tue, 30 Nov 2010 19:39:09 -0800
-Message-ID: <4CF5C35D.1060003@google.com>
-References: <20101121133744.GA10765@elte.hu>	 <1290700829.4759.16.camel@maggy.simson.net> <1290954299.30515.15.camel@marge.simson.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel
+To: Mike Galbraith <efault@gmx.de>
+CC: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>
-X-Gmane-NNTP-Posting-Host: 216-239-45-4.google.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+Subject: Re: [PATCH v4] sched: automated per session task groups
+References: <20101121133744.GA10765@elte.hu>	 <1290700829.4759.16.camel@maggy.simson.net> <1290954299.30515.15.camel@marge.simson.net>
 In-Reply-To: <1290954299.30515.15.camel@marge.simson.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -86,5 +93,4 @@ Should have something tomorrow.
 >   }
 >   #else /* !CONFG_FAIR_GROUP_SCHED */
 >
-
 
