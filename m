@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab0LAGQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 01:16:18 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:60860 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751167Ab0LAGQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 01:16:17 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19WishMGtVWhtqgLnCR9XWa0xrUpeRcsc78/AEUjA
-	Dp+5pRFCzJLuMt
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Paul Turner <pjt@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4CF5C379.8030204@google.com>
-References: <20101121133744.GA10765@elte.hu>
-	 <1290700829.4759.16.camel@maggy.simson.net>
-	 <1290954299.30515.15.camel@marge.simson.net>  <4CF5C379.8030204@google.com>
-Content-Type: text/plain
-Date: Wed, 01 Dec 2010 07:16:13 +0100
-Message-Id: <1291184173.7466.147.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1751918Ab0LAGVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 01:21:45 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55096 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab0LAGVn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 01:21:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Di6StY5vkouwZ0yPRqu9VBQq7pjtQrL17I0ezHzl7OXThhXwTuVMr2Io+2LQd7RzMS
+         56eMLDIkca5CMK7NhtHz6qfS9kK+uSQHE7e0EhuPrBdKSg4wRghbxqu7oBC7yHcCvfEg
+         6+Nzdljb1Num9V6wurKjFO8NQhMh53DHwVezo=
+MIME-Version: 1.0
+In-Reply-To: <20101130233204.GB14383@n2100.arm.linux.org.uk>
+References: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
+	<20101130171658.GA24034@oksana.dev.rtsoft.ru>
+	<20101130233204.GB14383@n2100.arm.linux.org.uk>
+Date: Wed, 1 Dec 2010 11:51:42 +0530
+Message-ID: <AANLkTi=WHBqq5U8OzkMaprk=vzphZBV0HhLEDF-uAZxW@mail.gmail.com>
+Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU bootup
+From: Srinidhi Kasagar <srinidhikasagar@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Anton Vorontsov <avorontsov@mvista.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jamie Iles <jamie.iles@picochip.com>, Colin Cross <ccross@android.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-tegra@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 19:39 -0800, Paul Turner wrote:
-> On 11/28/10 06:24, Mike Galbraith wrote:
-> >
-> > Something else is seriously wrong though.  36.1 with attached (plus
-> > sched, cgroup: Fixup broken cgroup movement) works a treat, whereas
-> > 37.git and tip with fixlet below both suck rocks.  With a make -j40
-> > running, wakeup-latency is showing latencies of>100ms, amarok skips,
-> > mouse lurches badly.. generally horrid.  Something went south.
-> 
-> I'm looking at this.
-> 
-> The share:share ratios looked good in static testing, but perhaps we 
-> need a little more wake-up boost to improve interactivity.
+On Wed, Dec 1, 2010 at 5:02 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Nov 30, 2010 at 08:16:58PM +0300, Anton Vorontsov wrote:
 
-Yeah, feels like a wakeup issue.  I too did a (brief) static test, and
-that looked ok.
+[...]
 
-	-Mike
+>> +     sub     r4, r4, r5
+>> +     add     r6, r6, r4
+>> +#if __LINUX_ARM_ARCH__ >= 7
+>> +     dsb
+>> +#endif
+>
+> Another question though - probably for Linus though - why is the u8500
+> code needing this dsb whereas other ARMv7 implementations don't appear
+> to require it?
 
+No strong reason, we can safely ignore this now.
+
+srinidhi
