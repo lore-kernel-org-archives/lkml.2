@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab0LADjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:39:43 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:56365 "EHLO gir.skynet.ie"
+	id S1754643Ab0LADrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:47:48 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:9822 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754533Ab0LADjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:39:37 -0500
-Date: Wed, 1 Dec 2010 03:39:21 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1012010334080.20976@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754384Ab0LADrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:47:46 -0500
+X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
+   d="scan'208";a="489279741"
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Bowler <nbowler@elliptictech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Subject: [PATCH 2/3] NFS: lock the readdir page while it is in use
+Date: Tue, 30 Nov 2010 22:47:13 -0500
+Message-Id: <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
+References: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
+In-Reply-To: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
+References: <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Otherwise, the VM may end up removing it while we're reading from it.
 
-Hi Linus,
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+ fs/nfs/dir.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-lots of regression fixes, I delayed sending this until I tracked down why 
-37-rc wouldn't show anything on my newly acquired HP 2540p when 2.6.36 
-worked, some eDP changes to fix some Sony's regressed the HPs so we've just reverted it and 
-hopefully jbarnes can work out what he did wrong when get he gets back. So 
-anyone who's Sony magically started to work in -rc1 will be disappointed 
-but at least we don't have a regression since .36.
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 4a78d2b..6edef12 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -639,6 +639,7 @@ int nfs_readdir_filler(nfs_readdir_descriptor_t *desc, struct page* page)
+ static
+ void cache_page_release(nfs_readdir_descriptor_t *desc)
+ {
++	unlock_page(desc->page);
+ 	page_cache_release(desc->page);
+ 	desc->page = NULL;
+ }
+@@ -646,8 +647,20 @@ void cache_page_release(nfs_readdir_descriptor_t *desc)
+ static
+ struct page *get_cache_page(nfs_readdir_descriptor_t *desc)
+ {
+-	return read_cache_page(desc->file->f_path.dentry->d_inode->i_mapping,
++	struct page *page;
++
++	for (;;) {
++		page = read_cache_page(desc->file->f_path.dentry->d_inode->i_mapping,
+ 			desc->page_index, (filler_t *)nfs_readdir_filler, desc);
++		if (IS_ERR(page))
++			break;
++		lock_page(page);
++		if (page->mapping != NULL && PageUptodate(page))
++			break;
++		unlock_page(page);
++		page_cache_release(page);
++	}
++	return page;
+ }
+ 
+ /*
+@@ -770,6 +783,7 @@ int uncached_readdir(nfs_readdir_descriptor_t *desc, void *dirent,
+ 
+ 	desc->page_index = 0;
+ 	desc->page = page;
++	lock_page(page);
+ 
+ 	status = nfs_readdir_xdr_to_array(desc, page, inode);
+ 	if (status < 0)
+-- 
+1.7.3.2
 
-Otherwise there are regression fixes for Intel and Radeon hw, with the 
-biggest change being the pagefault handling fixes in i915.
-
-Dave.
-
-The following changes since commit 3561d43fd289f590fdae672e5eb831b8d5cf0bf6:
-
-  Linux 2.6.37-rc3 (2010-11-21 15:18:56 -0800)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (6):
-      drm/radeon/kms: fix regression in rs4xx i2c setup
-      drm/radeon/kms: fix resume regression for some r5xx laptops
-      Revert "drm/radeon/kms: fix typo in r600 cs checker"
-      drm/radeon/kms: fix typos in disabled vbios code
-      drm/radeon/kms: fix interlaced and doublescan handling
-      drm/radeon/kms: add workaround for dce3 ddc line vbios bug
-
-Chris Wilson (9):
-      drm/i915: Prevent integer overflow when validating the execbuffer
-      drm/i915: Only save/restore cursor regs if !KMS
-      Merge remote branch 'linus' into drm-intel-fixes
-      drm/i915/sdvo: Only enable HDMI encodings only if the commandset is supported
-      drm/i915: Handle pagefaults in execbuffer user relocations
-      drm/i915/sdvo: Always fallback to querying the shared DDC line
-      drm/i915/sdvo: Always add a 30ms delay to make SDVO TV detection reliable
-      drm/i915: Clear pfit registers when not used by any outputs
-      Revert "drm/i915/dp: use VBT provided eDP params if available"
-
-Daniel Vetter (1):
-      drm/i915: fix regression due to ba3d8d749b01548b9
-
-Dave Airlie (2):
-      Merge remote branch 'intel/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
-      Merge remote branch 'intel/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
-
-Joe Perches (1):
-      MAINTAINERS: INTEL DRM DRIVERS list (intel-gfx) is subscribers-only
-
-Keith Packard (2):
-      drm: Set connector DPMS status to ON in drm_crtc_helper_set_config
-      drm: record monitor status in output_poll_execute
-
- MAINTAINERS                                |    2 +-
- drivers/gpu/drm/drm_crtc_helper.c          |   14 +-
- drivers/gpu/drm/i915/i915_gem.c            |  513 +++++++++++++++++-----------
- drivers/gpu/drm/i915/i915_suspend.c        |   40 ++--
- drivers/gpu/drm/i915/intel_display.c       |    7 +-
- drivers/gpu/drm/i915/intel_dp.c            |  146 +++-----
- drivers/gpu/drm/i915/intel_drv.h           |    2 +-
- drivers/gpu/drm/i915/intel_lvds.c          |   19 +-
- drivers/gpu/drm/i915/intel_sdvo.c          |   84 ++----
- drivers/gpu/drm/radeon/atom.c              |    1 +
- drivers/gpu/drm/radeon/r600_cs.c           |    2 +-
- drivers/gpu/drm/radeon/r600_reg.h          |    1 +
- drivers/gpu/drm/radeon/radeon_atombios.c   |   16 +
- drivers/gpu/drm/radeon/radeon_bios.c       |   13 +-
- drivers/gpu/drm/radeon/radeon_combios.c    |    2 +-
- drivers/gpu/drm/radeon/radeon_connectors.c |   34 ++
- 16 files changed, 511 insertions(+), 385 deletions(-)
