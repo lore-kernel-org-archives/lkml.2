@@ -1,184 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab0LAJPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 04:15:43 -0500
-Received: from netnation.com ([204.174.223.2]:37950 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab0LAJPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 04:15:40 -0500
-Date: Wed, 1 Dec 2010 01:15:35 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Peter Sch??ller <scode@spotify.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Mattias de Zalenski <zalenski@spotify.com>, linux-mm@kvack.org
-Subject: Re: Sudden and massive page cache eviction
-Message-ID: <20101201091535.GD31793@hostway.ca>
-References: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com> <20101122161158.02699d10.akpm@linux-foundation.org> <1290501502.2390.7029.camel@nimitz> <AANLkTik2Fn-ynUap2fPcRxRdKA=5ZRYG0LJTmqf80y+q@mail.gmail.com> <1290529171.2390.7994.camel@nimitz> <AANLkTikCn-YvORocXSJ1Z+ovYNMhKF7TaX=BHWKwrQup@mail.gmail.com> <AANLkTi=mgTHPEYFsryDYnxPa78f-Nr+H7i4+0KPZbxh3@mail.gmail.com> <1290619929.10586.6.camel@nimitz> <AANLkTikT-svqverRLr7Mf6s-17VrOcP_BpyXFpDV=_7s@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikT-svqverRLr7Mf6s-17VrOcP_BpyXFpDV=_7s@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752239Ab0LAJQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 04:16:49 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40229 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab0LAJQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 04:16:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=iwp22QGSB9DZtnDO/t/eZ9xvGN5fKSJ92EoxICUSLLmaidPgeHXPD6OJPcKuakMvGA
+         qlOcYdGYMF4ovoJp8sHb0hWDTOK5A8EYt+cmvUDpv/ww4uBPyCbojRoUx3d10mP204k7
+         EXZ41EFn2AazK+bSgdpu4wMpZEy9JrL/6+RIY=
+Subject: [PATCH] ASoC: ak4535: Improve readability for setting mute
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Richard Purdie <richard@openedhand.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain
+Date: Wed, 01 Dec 2010 17:22:34 +0800
+Message-Id: <1291195354.5563.6.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 25, 2010 at 04:33:01PM +0100, Peter Sch??ller wrote:
+The mute/unmute is controled by SMUTE (Soft Mute Control bit):
+        0: Normal Operation (Default)
+        1: DAC outputs soft-muted
 
-> > simple thing to do in any case. ??You can watch the entries in slabinfo
-> > and see if any of the ones with sizes over 4096 bytes are getting used
-> > often. ??You can also watch /proc/buddyinfo and see how often columns
-> > other than the first couple are moving around.
-> 
-> I collected some information from
-> /proc/{buddyinfo,meminfo,slabinfo,vmstat} and let it sit, polling
-> approximately once per minute. I have some results correlated with
-> another page eviction in graphs. The graph is here:
-> 
->    http://files.spotify.com/memcut/memgraph-20101124.png
-> 
-> The last sudden eviction there occurred somewhere between 22:30 and
-> 22:45. Some URL:s that can be compared for those periods:
-> 
->    Before:
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/vmstat
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/buddyinfo
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/meminfo
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:39:30/slabinfo
-> 
->    After:
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/vmstat
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/buddyinfo
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/meminfo
->    http://files.spotify.com/memcut/memstat-20101124/2010-11-24T22:45:31/slabinfo
+I think this change improves readability.
 
-Disclaimer: I have no idea what I'm doing. :)
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/ak4535.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Your buddyinfo looks to be pretty low for order 3 and above, before and
-after the sudden eviction, so my guess is that it's probably related to
-the issues I'm seeing with fragmentation, but maybe not fighting between
-zones, since you seem to have a larger Normal zone than DMA32.  (Not
-sure, you didn't post /proc/zoneinfo).  Also, you seem to be on an
-actual NUMA system, so other things are happening there, too.
+diff --git a/sound/soc/codecs/ak4535.c b/sound/soc/codecs/ak4535.c
+index 7367545..8b38739 100644
+--- a/sound/soc/codecs/ak4535.c
++++ b/sound/soc/codecs/ak4535.c
+@@ -366,9 +366,9 @@ static int ak4535_set_dai_fmt(struct snd_soc_dai *codec_dai,
+ static int ak4535_mute(struct snd_soc_dai *dai, int mute)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	u16 mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC) & 0xffdf;
++	u16 mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
+ 	if (!mute)
+-		ak4535_write(codec, AK4535_DAC, mute_reg);
++		ak4535_write(codec, AK4535_DAC, mute_reg & ~0x20);
+ 	else
+ 		ak4535_write(codec, AK4535_DAC, mute_reg | 0x20);
+ 	return 0;
+@@ -381,11 +381,11 @@ static int ak4535_set_bias_level(struct snd_soc_codec *codec,
+ 
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+-		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC) & 0xffdf;
+-		ak4535_write(codec, AK4535_DAC, mute_reg);
++		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
++		ak4535_write(codec, AK4535_DAC, mute_reg & ~0x20);
+ 		break;
+ 	case SND_SOC_BIAS_PREPARE:
+-		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC) & 0xffdf;
++		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
+ 		ak4535_write(codec, AK4535_DAC, mute_reg | 0x20);
+ 		break;
+ 	case SND_SOC_BIAS_STANDBY:
+-- 
+1.7.2
 
-If you have munin installed (it looks like you do), try enabling the
-buddyinfo plugin available since munin 1.4.4.  It graphs the buddyinfo
-data, so it could be lined up with the memory graphs (thanks Erik).
 
-[snip]
 
-> kmalloc increases:
-> 
-> -kmalloc-4096         301    328   4096    8    8 : tunables    0    0
->    0 : slabdata     41     41      0
-> +kmalloc-4096         637    680   4096    8    8 : tunables    0    0
->    0 : slabdata     85     85      0
-> -kmalloc-2048       18215  19696   2048   16    8 : tunables    0    0
->    0 : slabdata   1231   1231      0
-> +kmalloc-2048       41908  51792   2048   16    8 : tunables    0    0
->    0 : slabdata   3237   3237      0
-> -kmalloc-1024       85444  97280   1024   32    8 : tunables    0    0
->    0 : slabdata   3040   3040      0
-> +kmalloc-1024      267031 327104   1024   32    8 : tunables    0    0
->    0 : slabdata  10222  10222      0
-
-Note that all of the above are actually attempting order-3 allocations
-first; see /sys/kernel/slab/kmalloc-1024/order, for instance.  The "8" is
-means "8 pages per slab", which means order 3 is the attempted allocation
-size.
-
-I did the following on a system to test, but the free memory did not
-actually improve.  It seems that even only order 1 allocations are enough
-to reclaim too much order 0.  Even a "while true; sleep .01; done" caused
-free memory to start increasing due to order 1 (task_struct allocation)
-watermarks waking kswapd, while our other usual VM activity is happening.
-
-#!/bin/bash
-
-for i in /sys/kernel/slab/*/; do
-        if [ `cat $i/object_size` -le 4096 ]; then
-                echo 0 > $i/order
-        else
-                echo 1 > $i/order
-        fi
-done
-
-But this is on another machine, without Mel's patch, and with 8 GB
-memory, so a bigger Normal zone.
-
-[snip]
-
-> If my interpretation and understanding is correct, this indicates that
-> for example, ~3000 to ~10000 3-order allocations resulting from 1 kb
-> kmalloc():s. Meaning about 0.2 gig ( 7000*4*8*1024/1024/1024). Add the
-> other ones and we get some more, but only a few hundred megs in total.
-> 
-> Going by the hypothesis that we are seeing the same thing as reported
-> by Simon Kirby (I'll respond to that E-Mail separately), the total
-> amount is (as far as I understand) not the important part, but the
-> fact that we saw a non-trivial increase in 3-order allocations would
-> perhaps be a consistent observation in that frequent 3-order
-> allocations might be more likely to trigger the behavior Simon
-> reports.
-
-Try installing the "perf" tool.  It can be built from the kernel tree in
-tools/perf, and then you usually can just copy the binary around.  You
-can use it to trace the points which cause kswapd to wake up, which will
-show which processes are doing it, the order, flags, etc.
-
-Just before the eviction is about to happen (or whenever), try this:
-
-perf record --event vmscan:mm_vmscan_wakeup_kswapd --filter 'order>=3' \
-	--call-graph -a sleep 30
-
-Then view the recorded events with "perf trace", which should spit out
-something like this:
-
-    lmtp-3531  [003] 432339.243851: mm_vmscan_wakeup_kswapd: nid=0 zid=2 order=3
-    lmtp-3531  [003] 432339.243856: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=3
-
-The process which woke kswapd may not be directly responsible for the
-allocation as a network interrrupt or something could have happened on
-top of it.  See "perf report", which is a bit dodgy at least for me, to
-see the stack traces, which might make things clearer.  For example, my
-traces show that even kswapd wakes kswapd sometimes, but it's because of
-a trace like this:
-
-    -      9.09%  kswapd0  [kernel.kallsyms]  [k] wakeup_kswapd
-         wakeup_kswapd
-         __alloc_pages_nodemask
-         alloc_pages_current
-         new_slab
-         __slab_alloc
-         __kmalloc_node_track_caller
-         __alloc_skb
-         __netdev_alloc_skb
-         bnx2_poll_work
-         bnx2_poll
-         net_rx_action
-         __do_softirq
-         call_softirq
-         do_softirq
-         irq_exit
-         do_IRQ
-         ret_from_intr
-         truncate_inode_pages
-         proc_evict_inode
-         evict
-         iput
-         dentry_iput
-         d_kill
-         __shrink_dcache_sb
-         shrink_dcache_memory
-         shrink_slab
-         kswapd
-
-Anyway, maybe you'll see some interesting traces.  If kswapd isn't waking
-very often, you can also trace "kmem:mm_page_alloc" or similar (see "perf
-list"), or try a smaller order or a longer sleep.
-
-Cheers,
-
-Simon-
