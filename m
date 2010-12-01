@@ -1,237 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab0LAPCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 10:02:20 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51533 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab0LAPCT convert rfc822-to-8bit (ORCPT
+	id S1754245Ab0LAPCj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 10:02:39 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56300 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab0LAPCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 10:02:19 -0500
+	Wed, 1 Dec 2010 10:02:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=xU0vA9p0PstAPeReDoH1CotkHn5/yBqwImpv9mOyE7UMjlfXYGdmkjRtGrVlKP6uaE
-         XITxAVQPwutYyCjdrSzKbh8ljZ/o8m6kj88d9Per06PDD/jwztBoqEAV0bVJAM7mmfsM
-         tF9qLuMAmaJvr0rT3e6W00hmPW97pdZt0UV7o=
+        d=googlemail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=p9WPePBOA0r8sfR33NnktNSVLNqQ5UmnrHh22wGzB6a9tJimBeFfc1a+UKvFHfUQdR
+         vcXlYmvMeJdoZuIaRSSfZpZtKtFwwxyYVlXRpRXnYxY2Td2xlcCjaP6Y9GkDUowMZdtq
+         At2VsfaM+7wwc+83B+vL9gx4qGEXxZUtecsYE=
+Date: Wed, 1 Dec 2010 16:02:14 +0100 (CET)
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+X-X-Sender: elektroman@localhost.localdomain
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
+In-Reply-To: <AANLkTi=4ob3DKnva0eO6pzdXckwAPsBczE73_Xq_L0v3@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1012011536520.8521@localhost.localdomain>
+References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com> <201011291745.22566.arnd@arndb.de> <4CF3F687.6040801@gmail.com> <201011292102.41155.arnd@arndb.de> <4CF40AEF.7070200@gmail.com> <alpine.LNX.2.00.1011300910260.7489@localhost.localdomain>
+ <AANLkTinABzeM9Q+5PvvLX7HKYtDrig=nRHY7KMapJD5k@mail.gmail.com> <alpine.LNX.2.00.1012011244120.8521@localhost.localdomain> <AANLkTi=4ob3DKnva0eO6pzdXckwAPsBczE73_Xq_L0v3@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikn31b=Woy3iMQDaZ54iTa1TK2NcJmGf2+Ou1VP@mail.gmail.com>
-References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com>
- <20101129081619.GD5218@cr0.nay.redhat.com> <AANLkTinnJjqmXmbpAYmV9Tsc0VJV=WDM+GY6Gi1cJFCB@mail.gmail.com>
- <4CF36741.9000808@loongson.cn> <AANLkTiktPFtCdYpZai-L_WCOpBrZYN5yN_V7GZ5tKGXG@mail.gmail.com>
- <4CF3762B.9010102@loongson.cn> <AANLkTimGn53kwcTYe41Y-fwTQ0vzShLCr3LAr8yW9p=J@mail.gmail.com>
- <AANLkTim44iCdyTsgXohL7TxWCi7=fA8RRZg3kuqUVczx@mail.gmail.com> <AANLkTikn31b=Woy3iMQDaZ54iTa1TK2NcJmGf2+Ou1VP@mail.gmail.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Wed, 1 Dec 2010 23:01:56 +0800
-Message-ID: <AANLkTinW6Yp8W4x7DxVCY-AttMMWhkxFKXbmqK9fzpVD@mail.gmail.com>
-Subject: Re: [hellogcc] Re: [PATCH] Built kernel without -O2 option
-To: hellogcc@freelists.org
-Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, gdb@sourceware.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-400002316-1291215749=:8521"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/1 bekars <bekars@gmail.com>:
-> ÎÒÊµÑéµÄÊÇ
->>>> #!/bin/sh
->>>> gcc "$@" -O0 ||
->>>>  gcc "$@" -O1 ||
->>>>  gcc "$@"
->>>>
->>>>
->>>>>> then
->>>>>>
->>>>>> make CC=./mycc vmlinux
->
-> Õâ¸ö·½·¨£¬¸Ð¾õ¼òµ¥Ð©£¬µ«ÊÇ±àÒë²»¹ý£¬ÄãµÄpatchÎÒÃ÷ÌìÊÔÊÔ¡£
->
-> ÎÒÒªµ÷ÊÔÍøÂçÏµÍ³£¬ÓÚÊÇÐÞ¸ÄÁËnet/Makefile£¬¼ÓÉÏKBUILD_CFLAGS  +=
-> -O0£¬±àÒëÖ®ºóÄÜÆô¶¯ÄÚºË£¬µ«ÊÇÒ»ÓÐÍøÂçÍ¨ÐÅ¾ÍpanicÁË£¬ÄÚºË¶¥²ãµÄMakefileÎÒÓÃµÄÊÇ-O1ÓÅ»¯Ñ¡Ïî
->
-> ÇëÎÊÊÇ²»ÊÇÒ»²¿·ÖÓÃ-O0£¬Ò»²¿·ÖÓÃ-O2»ò-O1£¬±àÒë³öÀ´µÄÄÚºË»á²»ÎÈ¶¨£¿
->
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I think is because some function without -O2 will need a lot of stack
-(I got some warning about it when I built).
-Call this function will make kernel stack overflow.
-
-So I add some function to -O2 and increase the stack size of amd64.
-
-+#ifdef CONFIG_CC_CLOSE_OPTIMIZATION
-+#define THREAD_ORDER   2
-+#else
- #define THREAD_ORDER   1
-+#endif
- #define THREAD_SIZE  (PAGE_SIZE << THREAD_ORDER)
- #define CURRENT_MASK (~(THREAD_SIZE - 1))
-
-Thanks,
-Hui
+--8323328-400002316-1291215749=:8521
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
 
 
-> ÔÚ 2010Äê12ÔÂ1ÈÕ ÏÂÎç9:24£¬Hui Zhu <teawater@gmail.com> Ð´µÀ£º
->> 2.6.35.4 is a little old.
->>
->> What I try is 2.6.37-rc3+ and 2.6.37-rc4+ amd64 and i386.
->>
->> Thanks,
->> Hui
->>
->> 2010/12/1 bekars <bekars@gmail.com>:
->>> Õâ¸öºÃÏñ²»ÐÐ£¬ÎÒÔÚ2.6.35.4ÄÚºËÉÏ±àÒë£¬±¨´í£º
->>>
->>>  ./mm.sh -Wp,-MD,arch/x86/kernel/.entry_32.o.d  -nostdinc -isystem
->>> /usr/lib/gcc/i486-linux-gnu/4.3.2/include
->>> -I/home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include
->>> -Iinclude  -include include/generated/autoconf.h -D__KERNEL__
->>> -D__ASSEMBLY__ -m32 -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1
->>> -DCONFIG_AS_CFI_SECTIONS=1  -gdwarf-2        -c -o
->>> arch/x86/kernel/entry_32.o arch/x86/kernel/entry_32.S
->>> /home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include/asm/dwarf2.h:
->>> Assembler messages:
->>> /home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include/asm/dwarf2.h:46:
->>> Error: unknown pseudo-op: `.cfi_sections'
->>> /home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include/asm/dwarf2.h:
->>> Assembler messages:
->>> /home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include/asm/dwarf2.h:46:
->>> Error: unknown pseudo-op: `.cfi_sections'
->>> /home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include/asm/dwarf2.h:
->>> Assembler messages:
->>> /home/baiyu/Melon/RSW3/base_system/linux.DEV/LKGDB/arch/x86/include/asm/dwarf2.h:46:
->>> Error: unknown pseudo-op: `.cfi_sections'
->>> make[2]: *** [arch/x86/kernel/entry_32.o] Error 1
->>> make[1]: *** [arch/x86/kernel] Error 2
->>> make: *** [arch/x86] Error 2
->>>
->>>
->>>
->>> ÔÚ 2010Äê11ÔÂ29ÈÕ ÏÂÎç5:45£¬ÇÇ³ç <qiaochong@loongson.cn> Ð´µÀ£º
->>>> Hui Zhu Ð´µÀ:
->>>>> In this way, you will got a lot of error.
->>>>>
->>>>> Hui
->>>>>
->>>>> On Mon, Nov 29, 2010 at 16:41, ÇÇ³ç <qiaochong@loongson.cn> wrote:
->>>>>
->>>>>> does not need change kernel,just write a shell mycc as bellow:
->>>>>>
->>>>>> #!/bin/sh
->>>>>> gcc "$@" -O0
->>>>>>
->>>>>>
->>>> change mycc to this will work,:)
->>>>
->>>> #!/bin/sh
->>>> gcc "$@" -O0 ||
->>>>  gcc "$@" -O1 ||
->>>>  gcc "$@"
->>>>
->>>>
->>>>>> then
->>>>>>
->>>>>> make CC=./mycc vmlinux
->>>>>>
->>>>>> Hui Zhu said
->>>>>>
->>>>>> On Mon, Nov 29, 2010 at 16:16, Am¨¦rico Wang <xiyou.wangcong@gmail.com>
->>>>>> wrote:
->>>>>>
->>>>>>
->>>>>> On Mon, Nov 29, 2010 at 11:56:15AM +0800, Hui Zhu wrote:
->>>>>>
->>>>>>
->>>>>> Hi,
->>>>>>
->>>>>> Now, there are a lot of ways to debug the Linux kernel with GDB, like
->>>>>> qemu, kgtp or kgdb and so on.
->>>>>> But the developer more like add a printk. It have a lot of reason, a big one
->>>>>> is:
->>>>>> (gdb) p ret
->>>>>> $3 = <value optimized out>
->>>>>> And the code execution order is not right.
->>>>>>
->>>>>> This is becuase the Kernel is bult with gcc -O2.  Gcc will not
->>>>>> generate enough debug message with file with -O2.
->>>>>> So GDB cannot work very well with Linux kernel.
->>>>>>
->>>>>> So I make a patch that add a option in "Kernel hacking" called "Close
->>>>>> GCC optimization".  It will make kernel be built without -O2.
->>>>>>
->>>>>> I built and use it in i386 and x86_64.  I will try to make it OK in other
->>>>>> arch.
->>>>>>
->>>>>>
->>>>>>
->>>>>> The problem is that some functions _have to_ be inlined and gcc without -O2
->>>>>> doesn't inline them. Have check all the cases? I doubt.
->>>>>>
->>>>>>
->>>>>> If they really need O2, I set  them to O2.
->>>>>> Actually, this is the main work, find out the file that need the O2.  :)
->>>>>>
->>>>>> For example:
->>>>>> ifdef CONFIG_CC_CLOSE_OPTIMIZATION
->>>>>> CFLAGS_fpu.o                           += -O2
->>>>>> CFLAGS_aesni-intel_glue.o              += -O2
->>>>>> CFLAGS_ghash-clmulni-intel_glue.o      += -O2
->>>>>> endif
->>>>>>
->>>>>> And I will try to find more of these type files.
->>>>>>
->>>>>>
->>>>>>
->>>>>> Also, what is size of vmlinux before applying your patch and after that?
->>>>>> Does it increase too much?
->>>>>>
->>>>>>
->>>>>>
->>>>>> Before the patch:
->>>>>> ls -alh vmlinuz-2.6.37-rc3+
->>>>>> -rw-r--r-- 1 root root 4.1M 2010-11-25 12:02 vmlinuz-2.6.37-rc3+
->>>>>> ls -alh b26no/vmlinux
->>>>>> -rwxr-xr-x 1 teawater teawater 135M 2010-11-25 13:31 b26no/vmlinux
->>>>>>
->>>>>> After the patch:
->>>>>> ls -alh vmlinuz-2.6.37-rc3debug+
->>>>>> -rw-r--r-- 1 root root 4.6M 2010-11-25 14:02 vmlinuz-2.6.37-rc3debug+
->>>>>> ls -alh b26/vmlinux
->>>>>> -rwxr-xr-x 1 teawater teawater 140M 2010-11-25 11:14 b26/vmlinux
->>>>>>
->>>>>> Thanks,
->>>>>> Hui
->>>>>>
->>>>>>
->>>>>>
->>>>>>
->>>>>> --
->>>>>>
->>>>>> ÇÇ³ç qiaochong@loongson.cn
->>>>>>
->>>>>> 2010Äê 11ÔÂ 29ÈÕ ÐÇÆÚÒ» 16:35:38 CST
->>>>>>
->>>>>
->>>>>
->>>>>
->>>>
->>>>
->>>> --
->>>>
->>>> ÇÇ³ç qiaochong@loongson.cn
->>>> ÁúÐ¾ÖÐ¿Æ¼¼Êõ·þÎñÖÐÐÄÓÐÏÞ¹«Ë¾
->>>> office:010-62600855-615
->>>> mobile:13521990614
->>>>
->>>> 2010Äê 11ÔÂ 29ÈÕ ÐÇÆÚÒ» 17:38:14 CST
->>>>
->>>>
->>>
->>>
->>
->>
->
->
+On Wed, 1 Dec 2010, Paulius Zaleckas wrote:
+
+> On Wed, Dec 1, 2010 at 1:52 PM, Hans Ulli Kroll
+> <ulli.kroll@googlemail.com> wrote:
+> >
+> >
+> > On Tue, 30 Nov 2010, Paulius Zaleckas wrote:
+> >
+> >> On Tue, Nov 30, 2010 at 10:15 AM, Hans Ulli Kroll
+> >> <ulli.kroll@googlemail.com> wrote:
+> >> >
+> >> >
+> >> > On Mon, 29 Nov 2010, Paulius Zaleckas wrote:
+> >> >
+> >> >> On 11/29/2010 10:02 PM, Arnd Bergmann wrote:
+> >> >> > On Monday 29 November 2010 19:52:55 Paulius Zaleckas wrote:
+> >> >> > > On 11/29/2010 06:45 PM, Arnd Bergmann wrote:
+> >> >> > > > There are many differences between readl and __raw_readl, including
+> >> >> > > >
+> >> >> > > > * __raw_readl does not have barriers and does not serialize with
+> >> >> > > >     spinlocks, so it breaks on out-of-order CPUs.
+> >> >> > > > * __raw_readl does not have a specific endianess, while readl is
+> >> >> > > >     fixed little-endian, just as the hardware is in this case.
+> >> >> > > >     The endian-conversion is a NOP on little-endian ARM, but required
+> >> >> > > >     if you actually run on a big-endian ARM (you don't).
+> >> >> > > > * __raw_readl may not be atomic, gcc is free to split the access
+> >> >> > > >     into byte wise reads (it normally does not, unless you mark
+> >> >> > > >     the pointer __attribute__((packed))).
+> >> >> > > >
+> >> >> > > > In essence, it is almost never a good idea to use __raw_readl, and
+> >> >> > > > the double underscores should tell you so.
+> >> >> > >
+> >> >> > > You are wrong:
+> >> >> > >
+> >> >> > > Since CONFIG_ARM_DMA_MEM_BUFFERABLE is NOT defined for FA526 core,
+> >> >> > > no barriers are in use when using readl. It just translates into
+> >> >> > > le32_to_cpu(__raw_readl(x)). Now this CPU has physical pin for endianess
+> >> >> > > configuration and if you will chose big-endian you will fail to read
+> >> >> > > internal registers, because they ALSO change endianess and le32_to_cpu()
+> >> >> > > will screw it. However it is different when accessing registers through
+> >> >> > > PCI bus, then you need to use readl().
+> >> >> >
+> >> >> > Ok, I only checked that the platform does not support big-endian Linux
+> >> >> > kernel, not if the HW designers screwed up their registers, sorry about
+> >> >> > that.
+> >> >> >
+> >> >> > The other points are of course still valid: If the code ever gets
+> >> >> > used on an out of order CPU, it is broken. More importantly, if someone
+> >> >> > looks at the code as an example for writing another PCI support code,
+> >> >> > it may end up getting copied to some place where it ends up causing
+> >> >> > trouble.
+> >> >> >
+> >> >> > The typical way to deal with mixed-endian hardware reliably is to have
+> >> >> > a header file containing code like
+> >> >> >
+> >> >> > #ifdef CONFIG_GEMINI_BIG_ENDIAN_IO
+> >> >> > #define gemini_readl(x) __swab32(readl(x))
+> >> >> > #define ...
+> >> >> > #else
+> >> >> > #define gemini_readl(x) readl(x))
+> >> >> > #endif
+> >> >> >
+> >> >> > This also takes care of the (not as unlikely as you'd hope) case that
+> >> >> > the next person reusing the PCI hardware wires its endianess different
+> >> >> > from the CPU endianess.
+> >> >>
+> >> >> Actually I am not very sure how CPU works in big endian mode :)
+> >> >> I have never tried it and I think only some guys who made it did that.
+> >> >> So readl will work for 99.99% of cases. In datasheet they say that:
+> >> >> "All registers in Gemini use Little Endian and must be accessed by aligned
+> >> >> 32-bit word operations. The bus connection interface logic provides an Endian
+> >> >> Conversion function."
+> >> >> For me it looks like it can mean whatever you want :)
+> >> >>
+> >> >
+> >> > I think the endianes pin switched only the cpu, not the hardware
+> >> > registers.
+> >>
+> >> Yes, but original driver used readl/writel and it does le32_to_cpu,
+> >> so that structure definition is just reversing it.
+> >> If you will use __raw_readl/__raw_writel than there will be no need
+> >> for this redefinition.
+> >>
+> >> > Here is some sample code from the ethernet devive on Gemini
+> >> > typedef union
+> >> > {
+> >> >        unsigned int bits32;
+> >> >        struct bit
+> >> >        {
+> >> > #if (BIG_ENDIAN==1)
+> >> >                unsigned int reserved           : 15;   // bit 31:17
+> >> >                unsigned int v_bit_mode         : 1;    // bit 16
+> >> >                unsigned int device_id          : 12;   // bit 15:4
+> >> >                unsigned int revision_id        : 4;    // bit  3:0
+> >> > #else
+> >> >                unsigned int revision_id        : 4;    // bit  3:0
+> >> >                unsigned int device_id          : 12;   // bit 15:4
+> >> >                unsigned int v_bit_mode         : 1;    // bit 16
+> >> >                unsigned int reserved           : 15;   // bit 31:17
+> >> > #endif
+> >>
+> >> The other thing is that this endianess redefinition is very starnge since
+> >> it should swap bytes and not bits inside this struct. So I assume that
+> >> big endian was never tested on this driver and it will not work.
+> >> But ofcouse I can be wrong here :)
+> >>
+> >
+> > At this momment my brain restarts in very slow motion mode ;-)
+> > This can't work. The definition Storlinksemi uses for swapping bits and
+> > bytes are totaly wrong.
+> > They never _even_ testet this, or understand little endian or big endian.
+> > Take this simple sample
+> >
+> > typedef union {
+> >        unsigned int bits32;
+> >        struct bit {
+> > #if (BIG_ENDIAN==0)
+> >                unsigned int a  : 1;
+> >                unsigned int b  : 31;
+> > #else
+> >                unsigned int b  : 31;
+> >                unsigned int a  : 1;
+> > #endif
+> >        };
+> > } TEST;
+> >
+> > They swaped the bits inside one byte
+> 
+> Ha! Wait a minute. Looks like we are both wrong...
+> Read the beginning of: http://thread.gmane.org/gmane.linux.kernel/1037608
+> 
+> So it means we should use readl/writel and get rid of these non-portable
+> bit-fields...
+> 
+
+get rid of _endianes_.
+Endianes is ordering of bytes (octets) in address space and _not_ bits in 
+registers nor bytes.
+
+With the above example :
+ a = 1;
+ b = 0;
+
+you will get on little endian cpu this
+ 0x01, 0x00, 0x00, 0x00 (0x00000001UL) in memory
+on big endian
+ 0x00, 0x00, 0x00, 0x01 (0x01000000UL)
+_note_ the bits are not swapped, _only_ bytes.
+
+but if we use this _strange_ register layout with BIG_ENDIAN is set
+ 0x00, 0x00, 0x00, 0x80 (0x80000000UL)
+ 
+I've done this _on_ paper to understand this.
+ 
+> >> >        } bits;
+> >> > } TOE_VERSION_T;
+> >> >
+> >> >
+> >> >
+> >>
+> 
+--8323328-400002316-1291215749=:8521--
