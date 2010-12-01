@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0LAVWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 16:22:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23180 "EHLO mx1.redhat.com"
+	id S1755724Ab0LAVXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 16:23:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19453 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab0LAVWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 16:22:43 -0500
-Date: Wed, 1 Dec 2010 22:22:40 +0100
-From: Karel Zak <kzak@redhat.com>
-To: util-linux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [ANNOUNCE] util-linux without -ng
-Message-ID: <20101201212240.GA3077@nb.net.home>
+	id S1752920Ab0LAVXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 16:23:31 -0500
+Date: Wed, 1 Dec 2010 16:23:10 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jon Nelson <jnelson@jamponi.net>, Matt <jackdachef@gmail.com>
+Cc: Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
+        htejun@gmail.com, linux-ext4@vger.kernel.org
+Subject: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier
+ support is effective)
+Message-ID: <20101201212310.GA15648@redhat.com>
+References: <20101114205925.GA20451@redhat.com>
+ <AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>
+ <4CE05A9E.9090204@redhat.com>
+ <AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
+ <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
+ <20101201165229.GC13415@redhat.com>
+ <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com>
+ <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4CF6B3E8.2000406@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 01 2010 at  3:45pm -0500,
+Milan Broz <mbroz@redhat.com> wrote:
 
- The util-linux-ng project has been renamed back to util-linux.
+> 
+> On 12/01/2010 08:34 PM, Jon Nelson wrote:
+> > Perhaps this is useful: for myself, I found that when I started using
+> > 2.6.37rc3 that postgresql starting having a *lot* of problems with
+> > corruption. Specifically, I noted zeroed pages, corruption in headers,
+> > all sorts of stuff on /newly created/ tables, especially during index
+> > creation. I had a fairly high hit rate of failure. I backed off to
+> > 2.6.34.7 and have *zero* problems (in fact, prior to 2.6.37rc3, I had
+> > never had a corruption issue with postgresql). I ran on 2.6.36 for a
+> > few weeks as well, without issue.
+> > 
+> > I am using kcrypt with lvm on top of that, and ext4 on top of that.
+> 
+> With unpatched dmcrypt (IOW with Linus' git)? Then it must be ext4 or
+> dm-core problem because there were no patches for dm-crypt...
 
- Please, update your bookmarks and address books:
+Matt and Jon,
 
-           web: http://kernel.org/~kzak/util-linux/
-  mailing list: util-linux@vger.kernel.org
-      tarballs: ftp://ftp.kernel.org/pub/linux/utils/util-linux/
-        gitweb: http://git.kernel.org/?p=utils/util-linux/util-linux.git
-           git: git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git
+If you'd be up to it: could you try testing your dm-crypt+ext4
+corruption reproducers against the following two 2.6.37-rc commits:
 
- Note that old addresses still work. Thanks to kernel.org admins!
+1) 1de3e3df917459422cb2aecac440febc8879d410
+then
+2) bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
 
-    Karel
+Then, depending on results of no corruption for those commits, bonus
+points for testing the same commits but with Andi and Milan's latest
+dm-crypt cpu scalability patch applied too:
+https://patchwork.kernel.org/patch/365542/
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Thanks!
+Mike
