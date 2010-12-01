@@ -1,118 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab0LASvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:51:53 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:40083 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab0LASvw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:51:52 -0500
-Subject: Re: [BUG(?)] perf_events: combining multiple tracepoint events
- into a group produces no counts on member events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20101201180237.GB3438@nowhere>
-References: <4CF59E20.1040301@linux.vnet.ibm.com>
-	 <1291203990.4023.16.camel@twins> <1291205078.32004.1381.camel@laptop>
-	 <20101201180237.GB3438@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 01 Dec 2010 19:52:06 +0100
-Message-ID: <1291229526.32004.1882.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756259Ab0LASv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:51:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12083 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756240Ab0LASvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:51:54 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+In-Reply-To: <1290552635-3356-5-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1290552635-3356-5-git-send-email-zohar@linux.vnet.ibm.com> <1290552635-3356-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v1.5 4/5] keys: add new trusted key-type
+Date: Wed, 01 Dec 2010 17:48:30 +0000
+Message-ID: <9594.1291225710@redhat.com>
+From: David Howells <dhowells@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 19:02 +0100, Frederic Weisbecker wrote:
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-> >  struct task_struct {
-> >  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
-> >  	void *stack;
-> > @@ -1452,6 +1458,9 @@ struct task_struct {
-> >  	struct perf_event_context *perf_event_ctxp[perf_nr_task_contexts];
-> >  	struct mutex perf_event_mutex;
-> >  	struct list_head perf_event_list;
-> > +#ifdef CONFIG_EVENT_TRACING
-> > +	struct perf_tp_idr *perf_tp_idr;
-> 
-> Why not attaching this to the ctx eventually? This makes one pointer less
-> in task_struct.
+> +static int TSS_sha1(const unsigned char *data, const unsigned int datalen,
+> +		    unsigned char *digest)
 
-What context? :-) There's now two context's (with the possibility of
-even more), which one will hold the tracepoint stuff?
+You seem to have made a bunch of integer length parameters 'const'.  Why?  I
+was suggesting making them size_t, not const.
 
-Also, since we only need one such structure, adding it to the context
-doesn't make sense.
+I was suggesting making the data pointers const.
 
-> > @@ -370,6 +372,7 @@ list_del_event(struct perf_event *event,
-> >  	 */
-> >  	if (event->state > PERF_EVENT_STATE_OFF)
-> >  		event->state = PERF_EVENT_STATE_OFF;
-> > +	++ctx->generation;
-> 
-> What's the role of the ctx->generation? It seems to be incremented two times
-> but doesn't appear to have any purpose.
+> +	if (!ret)
+> +		TSS_rawhmac(digest, key, keylen, SHA1_DIGEST_SIZE,
+> +			    paramdigest, TPM_NONCE_SIZE, h1,
+> +			    TPM_NONCE_SIZE, h2, 1, &c, 0, 0);
 
-You didn't look hard enough, its a sequence stamp on the context for
-inheritance, then later, when we want to compare inherited contexts we
-can simply compare generation numbers, if they're the same the contexts
-are the same.
+TSS_rawhmac() can return an error.
 
-> >  }
-> >  
-> >  static void perf_group_detach(struct perf_event *event)
-> > @@ -1228,6 +1231,12 @@ void perf_event_context_sched_out(struct
-> >  	if (!cpuctx->task_ctx)
-> >  		return;
-> >  
-> > +#if 0
-> > +	/*
-> > +	 * Need to sort out how to make task_struct::perf_tp_idr
-> > +	 * work with this fancy switching stuff.. tracepoints could be
-> > +	 * in multiple contexts due to the software event muck.
-> > +	 */
-> 
-> Not sure what's the issue here. Each ctx have the perf_tp_idr matching
-> active tracepoints, isn't it?
+> +	ret = trusted_tpm_send(TPM_ANY_NUM, tb->data, sizeof tb->data);
+> +	memcpy(buf, tb->data + TPM_GETRANDOM_SIZE, len);
 
-No, there's only 1 idr per task. Having one per context means we have to
-iterate all contexts when a tracepoint triggers and it adds yet another
-pointer chase. It also means we have to manage more stuff when
-tracepoints change context etc..
+trusted_tpm_send() won't fail?
 
-But yes, it would make this part easier, I just don't like the added
-fast path overhead.
+> +static int my_get_random(unsigned char *buf, int len)
+> +{
+> +	struct tpm_buf *tb;
+> +	int ret;
+> +
+> +	tb = kzalloc(sizeof *tb, GFP_KERNEL);
+> +	if (!tb)
+> +		return -ENOMEM;
+> +	ret = tpm_get_random(tb, buf, len);
 
-> > +static struct perf_tp_idr *perf_event_idr(struct perf_event *event, bool create)
-> > +{
-> > +	struct perf_tp_idr *tp_idr;
-> > +	struct task_struct *task;
-> > +
-> > +	if (event->attach_state & PERF_ATTACH_TASK) {
-> > +		task = event->hw.event_target;
-> > +		tp_idr = task->perf_tp_idr;
-> > +		if (!tp_idr && create)
-> 
-> Is it possible that task->perf_tp_idr can eventually disappear
-> under us there? Like when an event is released from that task?
+Isn't is it pointless to use kzalloc() rather than kmalloc()?
 
-We hold a ref on the task on the create path, I'd have to actually think
-about the destroy path, but I think there's a problem there.
+> +	my_get_random(hash, SHA1_DIGEST_SIZE);
+> +	return tpm_pcr_extend(TPM_ANY_NUM, pcrnum, hash) ? -EINVAL : 0;
 
-I used to have a PERF_ATTACH_CONTEXT/GROUP test in there as well, dunno
-why that didn't work out.
+my_get_random() won't fail?
 
-> > +			tp_idr = perf_tp_init_task(event, task);
-> > +	} else
-> > +		tp_idr = &per_cpu(perf_tp_idr, event->cpu);
-> > +
-> > +	return tp_idr;
-> > +}
+> +	ret = TSS_rawhmac(s->secret, key, SHA1_DIGEST_SIZE, TPM_NONCE_SIZE,
+> +			  enonce, TPM_NONCE_SIZE, ononce, 0, 0);
+> +	return ret;
 
+These can be merged.
 
+> +static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+> +{
+> +	int ret;
+> +
+> +	INIT_BUF(tb);
+> +	store16(tb, TPM_TAG_RQU_COMMAND);
+> +	store32(tb, TPM_OIAP_SIZE);
+> +	store32(tb, TPM_ORD_OIAP);
+> +	ret = trusted_tpm_send(TPM_ANY_NUM, tb->data, MAX_BUF_SIZE);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	*handle = LOAD32(tb->data, TPM_DATA_OFFSET);
+> +	memcpy(nonce, &tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)],
+> +	       TPM_NONCE_SIZE);
+> +	return ret;
+> +}
+
+If you don't need to return ret specifically, returning 0 would be more
+efficient.
+
+> +	ret = TSS_checkhmac1(tb->data, ordinal, td->nonceodd, sess.secret,
+> +			     SHA1_DIGEST_SIZE, storedsize, TPM_DATA_OFFSET, 0,
+> +			     0);
+> +
+> +	/* copy the returned blob to caller */
+> +	memcpy(blob, tb->data + TPM_DATA_OFFSET, storedsize);
+> +	*bloblen = storedsize;
+
+Don't do that if TSS_checkhmac1() fails.
+
+> +	TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
+> +		     enonce1, nonceodd, cont, sizeof(uint32_t),
+> +		     &ordinal, bloblen, blob, 0, 0);
+
+TSS_authhmac() is called several times without checking for errors.
+
+> +	ret = TSS_checkhmac2(tb->data, ordinal, nonceodd,
+> +			     keyauth, SHA1_DIGEST_SIZE,
+> +			     blobauth, SHA1_DIGEST_SIZE,
+> +			     sizeof(uint32_t), TPM_DATA_OFFSET,
+> +			     *datalen, TPM_DATA_OFFSET + sizeof(uint32_t), 0,
+> +			     0);
+> +	if (ret < 0)
+> +		pr_info("trusted_key: TSS_checkhmac2 failed (%d)\n", ret);
+> +	memcpy(data, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t), *datalen);
+> +	return ret;
+
+Don't do the memcpy() if TSS_checkhmac2() fails.
+
+> +	ret = tpm_unseal(tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
+> +			 o->blobauth, p->key, &p->key_len);
+> +	/* pull migratable flag out of sealed key */
+> +	p->migratable = p->key[--p->key_len];
+
+Don't do that if tpm_unseal() fails.
+
+> +static const match_table_t key_tokens = {
+> +	{Opt_new, "new"},
+> +	{Opt_load, "load"},
+> +	{Opt_update, "update"},
+> +	{Opt_keyhandle, "keyhandle=%s"},
+> +	{Opt_keyauth, "keyauth=%s"},
+> +	{Opt_blobauth, "blobauth=%s"},
+> +	{Opt_pcrinfo, "pcrinfo=%s"},
+> +	{Opt_pcrlock, "pcrlock=%s"},
+> +	{Opt_migratable, "migratable=%s"},
+> +	{Opt_err, NULL}
+
+Spaces after { and before }.  I'd also suggest using tabs to align the strings
+vertically, but that's up to you.
+
+> +	p = kzalloc(sizeof *p, GFP_KERNEL);
+> +
+> +	/* migratable by default */
+> +	p->migratable = 1;
+
+NAK!  p might be NULL.
+
+David
