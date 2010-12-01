@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab0LAFXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 00:23:01 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:35875 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab0LAFW4 (ORCPT
+	id S1752672Ab0LAFXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 00:23:12 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:51046 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab0LAFXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 00:22:56 -0500
-Date: Wed, 1 Dec 2010 10:52:48 +0530
+	Wed, 1 Dec 2010 00:23:09 -0500
+Date: Wed, 1 Dec 2010 10:52:59 +0530
 From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
         akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm <kvm@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+        kvm <kvm@vger.kernel.org>
 Subject: Re: [PATCH 3/3] Provide control over unmapped pages
-Message-ID: <20101201052248.GM2746@balbir.in.ibm.com>
+Message-ID: <20101201052259.GN2746@balbir.in.ibm.com>
 Reply-To: balbir@linux.vnet.ibm.com
 References: <20101130101126.17475.18729.stgit@localhost6.localdomain6>
  <20101130101602.17475.32611.stgit@localhost6.localdomain6>
- <20101130204532.8322.A69D9226@jp.fujitsu.com>
- <20101201051632.GH2746@balbir.in.ibm.com>
+ <20101201103254.b823eae0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101201051816.GI2746@balbir.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101201051632.GH2746@balbir.in.ibm.com>
+In-Reply-To: <20101201051816.GI2746@balbir.in.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Balbir Singh <balbir@linux.vnet.ibm.com> [2010-12-01 10:46:32]:
+* Balbir Singh <balbir@linux.vnet.ibm.com> [2010-12-01 10:48:16]:
 
-> * KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-12-01 09:14:13]:
+> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-12-01 10:32:54]:
 > 
+> > On Tue, 30 Nov 2010 15:46:31 +0530
+> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > 
 > > > Provide control using zone_reclaim() and a boot parameter. The
 > > > code reuses functionality from zone_reclaim() to isolate unmapped
 > > > pages and reclaim them as a priority, ahead of other mapped pages.
@@ -75,192 +78,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > > > +				wakeup_kswapd(zone, order);
 > > > +
 > > 
-> > You don't have to add extra branch into fast path.
-> > 
-> > 
-> > >  			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
-> > >  			if (zone_watermark_ok(zone, order, mark,
-> > >  				    classzone_idx, alloc_flags))
-> > > @@ -4136,10 +4139,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
-> > >  
-> > >  		zone->spanned_pages = size;
-> > >  		zone->present_pages = realsize;
-> > > -#ifdef CONFIG_NUMA
-> > > -		zone->node = nid;
-> > >  		zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
-> > >  						/ 100;
-> > > +#ifdef CONFIG_NUMA
-> > > +		zone->node = nid;
-> > >  		zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
-> > >  #endif
-> > >  		zone->name = zone_names[j];
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index 0ac444f..98950f4 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -145,6 +145,21 @@ static DECLARE_RWSEM(shrinker_rwsem);
-> > >  #define scanning_global_lru(sc)	(1)
-> > >  #endif
-> > >  
-> > > +static unsigned long balance_unmapped_pages(int priority, struct zone *zone,
-> > > +						struct scan_control *sc);
-> > > +static int unmapped_page_control __read_mostly;
-> > > +
-> > > +static int __init unmapped_page_control_parm(char *str)
-> > > +{
-> > > +	unmapped_page_control = 1;
-> > > +	/*
-> > > +	 * XXX: Should we tweak swappiness here?
-> > > +	 */
-> > > +	return 1;
-> > > +}
-> > > +__setup("unmapped_page_control", unmapped_page_control_parm);
-> > > +
-> > > +
-> > >  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
-> > >  						  struct scan_control *sc)
-> > >  {
-> > > @@ -2223,6 +2238,12 @@ loop_again:
-> > >  				shrink_active_list(SWAP_CLUSTER_MAX, zone,
-> > >  							&sc, priority, 0);
-> > >  
-> > > +			/*
-> > > +			 * We do unmapped page balancing once here and once
-> > > +			 * below, so that we don't lose out
-> > > +			 */
-> > > +			balance_unmapped_pages(priority, zone, &sc);
-> > 
-> > You can't invoke any reclaim from here. It is in zone balancing detection
-> > phase. It mean your code reclaim pages from zones which has lots free pages too.
-> 
-> The goal is to check not only for zone_watermark_ok, but also to see
-> if unmapped pages are way higher than expected values.
-> 
-> > 
-> > > +
-> > >  			if (!zone_watermark_ok_safe(zone, order,
-> > >  					high_wmark_pages(zone), 0, 0)) {
-> > >  				end_zone = i;
-> > > @@ -2258,6 +2279,11 @@ loop_again:
-> > >  				continue;
-> > >  
-> > >  			sc.nr_scanned = 0;
-> > > +			/*
-> > > +			 * Balance unmapped pages upfront, this should be
-> > > +			 * really cheap
-> > > +			 */
-> > > +			balance_unmapped_pages(priority, zone, &sc);
-> > 
-> > 
-> > This code break page-cache/slab balancing logic. And this is conflict
-> > against Nick's per-zone slab effort.
+> > Hm, I'm not sure the final vision of this feature. Does this reclaiming feature
+> > can't be called directly via balloon driver just before alloc_page() ?
 > >
 > 
-> OK, cc'ing Nick for comments.
+> That is a separate patch, this is a boot paramter based control
+> approach.
 >  
-> > Plus, high-order + priority=5 reclaim Simon's case. (see "Free memory never 
-> > fully used, swapping" threads)
+> > Do you need to keep page caches small even when there are free memory on host ?
 > >
 > 
-> OK, this path should not add to swapping activity, if that is your
-> concern.
-> 
->  
-> > >  
-> > >  			/*
-> > >  			 * Call soft limit reclaim before calling shrink_zone.
-> > > @@ -2491,7 +2517,8 @@ void wakeup_kswapd(struct zone *zone, int order)
-> > >  		pgdat->kswapd_max_order = order;
-> > >  	if (!waitqueue_active(&pgdat->kswapd_wait))
-> > >  		return;
-> > > -	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
-> > > +	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0) &&
-> > > +		!should_balance_unmapped_pages(zone))
-> > >  		return;
-> > >  
-> > >  	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
-> > > @@ -2740,6 +2767,49 @@ zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
-> > >  }
-> > >  
-> > >  /*
-> > > + * Routine to balance unmapped pages, inspired from the code under
-> > > + * CONFIG_NUMA that does unmapped page and slab page control by keeping
-> > > + * min_unmapped_pages in the zone. We currently reclaim just unmapped
-> > > + * pages, slab control will come in soon, at which point this routine
-> > > + * should be called balance cached pages
-> > > + */
-> > > +static unsigned long balance_unmapped_pages(int priority, struct zone *zone,
-> > > +						struct scan_control *sc)
-> > > +{
-> > > +	if (unmapped_page_control &&
-> > > +		(zone_unmapped_file_pages(zone) > zone->min_unmapped_pages)) {
-> > > +		struct scan_control nsc;
-> > > +		unsigned long nr_pages;
-> > > +
-> > > +		nsc = *sc;
-> > > +
-> > > +		nsc.swappiness = 0;
-> > > +		nsc.may_writepage = 0;
-> > > +		nsc.may_unmap = 0;
-> > > +		nsc.nr_reclaimed = 0;
-> > 
-> > Don't you need to fill nsc.nr_to_reclaim field?
-> > 
-> 
-> Yes, since the relcaim code looks at nr_reclaimed, it needs to be 0 at
-> every iteration - did I miss something?
-> 
-> > > +
-> > > +		nr_pages = zone_unmapped_file_pages(zone) -
-> > > +				zone->min_unmapped_pages;
-> > > +		/* Magically try to reclaim eighth the unmapped cache pages */
-> > > +		nr_pages >>= 3;
-> > 
-> > Please don't make magic.
-> >
->  
-> OK, it is a hueristic, how do I use it?
-> 
-> > > +
-> > > +		zone_reclaim_unmapped_pages(zone, &nsc, nr_pages);
-> > > +		return nsc.nr_reclaimed;
-> > > +	}
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +#define UNMAPPED_PAGE_RATIO 16
-> > 
-> > Please don't make magic ratio.
-> 
-> OK, it is a hueristic, how do I use heuristics - sysctl?
-> 
-> > 
-> > > +bool should_balance_unmapped_pages(struct zone *zone)
-> > > +{
-> > > +	if (unmapped_page_control &&
-> > > +		(zone_unmapped_file_pages(zone) >
-> > > +			UNMAPPED_PAGE_RATIO * zone->min_unmapped_pages))
-> > > +		return true;
-> > > +	return false;
-> > > +}
-> > > +
-> > > +/*
-> > >   * Try to free up some pages from this zone through reclaim.
-> > >   */
-> > >  static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
-> > 
-> > 
-> > Hmm....
-> > 
-> > As far as I reviewed, I can't find any reason why this patch works as expected.
-> > So, I think cleancache looks promising more than this idea. Have you seen Dan's
-> > patch? I would suggested discuss him.
-> 
-> Please try the patch, I've been using it and it works exactly as
-> expected for me. kswapd does the balancing and works well. I've posted
-> some data as well.
+> The goal is to avoid duplication, as you know page cache fills itself
+> to consume as much memory as possible. The host generally does not
+> have a lot of free memory in a consolidated environment. 
 >
-
 My local MTA failed to deliver the message, trying again. 
 
 -- 
