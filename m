@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab0LALPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:15:47 -0500
-Received: from cantor.suse.de ([195.135.220.2]:37560 "EHLO mx1.suse.de"
+	id S1752916Ab0LALRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:17:48 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45967 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab0LALPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:15:46 -0500
-Date: Wed, 1 Dec 2010 12:15:40 +0100
-From: "Dr. Werner Fink" <werner@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-Message-ID: <20101201111539.GA12029@boole.suse.de>
-Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
-	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-References: <20101118112335.434de53a@lxorguk.ukuu.org.uk>
- <20101118121256.GA19884@boole.suse.de>
- <20101118125822.16718289@lxorguk.ukuu.org.uk>
- <20101118131420.GA23872@boole.suse.de>
- <20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
- <20101119132145.GA22883@boole.suse.de>
- <20101119154705.7829487a@lxorguk.ukuu.org.uk>
- <20101119180258.GA6745@kroah.com>
- <20101119184150.GA8997@boole.suse.de>
- <20101120124020.43710d91@lxorguk.ukuu.org.uk>
+	id S1752147Ab0LALRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:17:46 -0500
+Message-ID: <4CF62EE0.7040607@kernel.org>
+Date: Wed, 01 Dec 2010 12:17:52 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101120124020.43710d91@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates for 2.6.37
+References: <20101022012302.GA7487@havoc.gtf.org> <20101129180755.GK15818@bombadil.infradead.org> <4CF506A6.4020200@kernel.org> <20101130153839.GM15818@bombadil.infradead.org> <4CF52652.4030802@kernel.org> <20101130163150.GA25668@bombadil.infradead.org> <20101130175317.GB25668@bombadil.infradead.org> <20101130210938.GF25668@bombadil.infradead.org>
+In-Reply-To: <20101130210938.GF25668@bombadil.infradead.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Dec 2010 11:17:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 12:40:20PM +0000, Alan Cox wrote:
-> > Uhmm ... just to say it: I've been asked by Fedorea people and also
-> > by Debian people why I had not submitted this patch and I've told
-> > them that I had it done long time ago ;)
-> > 
-> > It seems to me that there is some demand but most user space
-> > monitoring applications uses workarounds (AFAICR plymouth
-> > uses hard coded VT for boot and shutdown).
+Hello,
+
+On 11/30/2010 10:09 PM, Kyle McMartin wrote:
+>> Ok, running it, I haven't seen the issue across three suspends... Will
+>> update when it inevitably happens.
 > 
-> I think the market won the argument on this one - so please yes - submit
-> it.
+> [10273.011241] ata1.00: internal command failure: stat=0xef
+> ehi_desc="irq_stat 0x00400001, PHY RDY changed"
 
-Just to be sure, do you have noticed my mail with the
-ID <20101119170736.GA4177@boole.suse.de> which had
-attached the the patch?
-
-   Werner
+Hmmm, so it's a timing problem.  For some reason, a PHY event is being
+reported after reset is complete which unfortunately gets reported
+while DIPM command is in progress.  Hmmm... what's broken is that the
+PHY event happens after reset is complete.  Can you please attach the
+output of "lspci -nn" and "hdparm -I /dev/sda"?  Looks a lot like a
+timing issue.  Maybe we'll have to add a delay somewhere.  :-(
 
 -- 
-System V style init programs - http://savannah.nongnu.org/projects/sysvinit/
+tejun
