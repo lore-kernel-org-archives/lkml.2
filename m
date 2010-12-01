@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab0LANEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 08:04:49 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:33307 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab0LANEs convert rfc822-to-8bit (ORCPT
+	id S1755098Ab0LANFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 08:05:13 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47610 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab0LANFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 08:04:48 -0500
+	Wed, 1 Dec 2010 08:05:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vyJ1xcnBXjSW0vgUtv0+1YZWNV+KMSkT09+TJmRUpbT5xJXaZIspuLy7GISwped/+o
-         IEC+WhfB8YwvdabZc6zg==
-MIME-Version: 1.0
-In-Reply-To: <1291173711.2405.223.camel@minggr.sh.intel.com>
-References: <1290340877.2245.124.camel@localhost>
-	<AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
-	<AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
-	<AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-	<AANLkTikYsT=5qOTKTaQaf-OwdZDMkrfKWaSb=aDqgrrC@mail.gmail.com>
-	<AANLkTikB4WeBPn7PM=wkxYh5TpR4LQLBeLffq_3Lzv4n@mail.gmail.com>
-	<AANLkTim5OHVDM6SXg5QS0QVFjDWTnyCKYFmt=OD9ZvOw@mail.gmail.com>
-	<1291173711.2405.223.camel@minggr.sh.intel.com>
-Date: Wed, 1 Dec 2010 14:04:44 +0100
-Message-ID: <AANLkTi=qDsNwVAoHF=x62C8x=x3cGaobTZNDGHDr8YZ+@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=APc4tEHrGW+LaffcgTcS3KnVxJqeBYfBIPYiglfKl6zZax1JtJUxn3/8S2mwhrR7A3
+         WYtIHFeKluEXFHowAbJK5mbPQLny2qRgNLC2+bnKMjYhow/TBwDRNXG1LqmlLSDT7S4w
+         R4vjEX8npvVkFuk7pfj9tFxZS6yWPK/oHghew=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: turbografx - fix reference counting
+Date: Wed,  1 Dec 2010 22:05:01 +0900
+Message-Id: <1291208701-3016-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 4:21 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->
-> On Fri, 2010-11-26 at 18:06 +0800, Stephane Eranian wrote:
-> > On Fri, Nov 26, 2010 at 10:00 AM, Lin Ming <lin@ming.vg> wrote:
-> > > On Fri, Nov 26, 2010 at 4:33 PM, Stephane Eranian <eranian@google.com> wrote:
-> > >> Lin,
-> > >>
-> > >> Looked at the perfmon code, and it seems the mask is actual
-> > >> cores, not threads:
-> > >>                rdmsrl(MSR_NHM_UNC_GLOBAL_CTRL, val);
-> > >>                val |= 1ULL << (48 + cpu_data(smp_processor_id()).cpu_core_id);
-> > >>                wrmsrl(MSR_NHM_UNC_GLOBAL_CTRL, val);
-> > >>
-> > >> That seems to imply both threads will get the interrupt.
-> > >>
-> > >> In the the overflowed event was programmed from on of the two threads, that
-> > >> means one will process the overflow, the other will get spurious.
-> > >>
-> > >> On the cores where no uncore was programmed, then both threads will have
-> > >> a spurious interrupt.
-> > >
-> > > But in my test, if HT is on, only the 2 theads in one of the four cores
-> > > will receive the interrupt. Even worse, we don't know which core will
-> > > receive the interrupt
-> > > when overflow happens.
-> > >
-> > The MSR_NHM_UNC_GLOBAL_CTRL is per socket not per core.
->
-> Understood.
->
-> >
-> > > I'll do more tests to verify this.
-> >
-> > In your tests, are your programming the same uncore event
-> > across all CPUs? If so then you may have a race condition
-> > setting the MSR because it read-modify-write.
-> >
-> > What about you program only one uncore event from one CPU?
->
-> This is what I tested, programming only one uncore event from one CPU.
+The ref-count of parport gained from parport_find_number()
+was not released in normal path.
 
-> When HT is off, all four cores in the socket receive the interrupt.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ drivers/input/joystick/turbografx.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-If the value of the MSR is 0xf << 48?
+diff --git a/drivers/input/joystick/turbografx.c b/drivers/input/joystick/turbografx.c
+index d53b9e9..27b6a3c 100644
+--- a/drivers/input/joystick/turbografx.c
++++ b/drivers/input/joystick/turbografx.c
+@@ -245,6 +245,7 @@ static struct tgfx __init *tgfx_probe(int parport, int *n_buttons, int n_devs)
+ 		goto err_free_tgfx;
+         }
+ 
++	parport_put_port(pp);
+ 	return tgfx;
+ 
+  err_free_dev:
+-- 
+1.7.0.4
 
-> When HT is on, only the 2 threads in one of the four cores receive the
-> interrupt.
-Something is not right here. Next week, I may be able to run some tests
-on a Nehalem using perfmon to compare. Could you also send me your
-latest uncore patch against tip-x86?
-Thanks.
