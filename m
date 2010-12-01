@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab0LADJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:09:53 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36677 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab0LADJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:09:51 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 0/4] exec: unify compat/non-compat code
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>
-In-Reply-To: <20101130200016.GD11905@redhat.com>
-References: <20101130195456.GA11905@redhat.com> <20101130200016.GD11905@redhat.com>
-Message-Id: <20101201120806.ABB9.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754270Ab0LADT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:19:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:11096 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977Ab0LADTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:19:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
+   d="scan'208";a="862956072"
+Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <AANLkTim5OHVDM6SXg5QS0QVFjDWTnyCKYFmt=OD9ZvOw@mail.gmail.com>
+References: <1290340877.2245.124.camel@localhost>
+	 <AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
+	 <AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
+	 <AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
+	 <AANLkTikYsT=5qOTKTaQaf-OwdZDMkrfKWaSb=aDqgrrC@mail.gmail.com>
+	 <AANLkTikB4WeBPn7PM=wkxYh5TpR4LQLBeLffq_3Lzv4n@mail.gmail.com>
+	 <AANLkTim5OHVDM6SXg5QS0QVFjDWTnyCKYFmt=OD9ZvOw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 11:21:51 +0800
+Message-ID: <1291173711.2405.223.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Dec 2010 12:09:46 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (remove stable)
-> 
-> On 11/30, Oleg Nesterov wrote:
+On Fri, 2010-11-26 at 18:06 +0800, Stephane Eranian wrote:
+> On Fri, Nov 26, 2010 at 10:00 AM, Lin Ming <lin@ming.vg> wrote:
+> > On Fri, Nov 26, 2010 at 4:33 PM, Stephane Eranian <eranian@google.com> wrote:
+> >> Lin,
+> >>
+> >> Looked at the perfmon code, and it seems the mask is actual
+> >> cores, not threads:
+> >>                rdmsrl(MSR_NHM_UNC_GLOBAL_CTRL, val);
+> >>                val |= 1ULL << (48 + cpu_data(smp_processor_id()).cpu_core_id);
+> >>                wrmsrl(MSR_NHM_UNC_GLOBAL_CTRL, val);
+> >>
+> >> That seems to imply both threads will get the interrupt.
+> >>
+> >> In the the overflowed event was programmed from on of the two threads, that
+> >> means one will process the overflow, the other will get spurious.
+> >>
+> >> On the cores where no uncore was programmed, then both threads will have
+> >> a spurious interrupt.
 > >
-> > I'll send the cleanups which unify compat/non-compat code on
-> > top of these fixes, this is not stable material.
+> > But in my test, if HT is on, only the 2 theads in one of the four cores
+> > will receive the interrupt. Even worse, we don't know which core will
+> > receive the interrupt
+> > when overflow happens.
+> >
+> The MSR_NHM_UNC_GLOBAL_CTRL is per socket not per core.
+
+Understood.
+
 > 
-> On top of
+> > I'll do more tests to verify this.
 > 
-> 	[PATCH 1/2] exec: make argv/envp memory visible to oom-killer
-> 	[PATCH 2/2] exec: copy-and-paste the fixes into compat_do_execve() paths
+> In your tests, are your programming the same uncore event
+> across all CPUs? If so then you may have a race condition
+> setting the MSR because it read-modify-write.
 > 
-> Imho, execve code in fs/compat.c must die. It is very hard to
-> maintain this copy-and-paste horror.
+> What about you program only one uncore event from one CPU?
 
-I strongly like this series. (yes, I made fault to forgot to change compat.c
-multiple times ;)
-
-Unfortunatelly, this is a bit large and I have no time now. I expect I
-can review this at this or next weekend.....
-Hopefully, anyoneelse will review this and ignore me....
-
-
+This is what I tested, programming only one uncore event from one CPU.
+When HT is off, all four cores in the socket receive the interrupt.
+When HT is on, only the 2 threads in one of the four cores receive the
+interrupt.
 
