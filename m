@@ -1,61 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0LAU2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:28:48 -0500
-Received: from tomasu.net ([64.85.170.234]:56293 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755632Ab0LAU2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:28:47 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Pekka Pietikainen <pp@ee.oulu.fi>
-Subject: Re: low overhead packet capturing on linux
-Date: Wed, 1 Dec 2010 13:28:32 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <201011301728.05197.thomas@fjellstrom.ca> <20101201121957.GA3747@ee.oulu.fi>
-In-Reply-To: <20101201121957.GA3747@ee.oulu.fi>
+	id S1756955Ab0LAUbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:31:31 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:21389 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab0LAUba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 15:31:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=oGKmpitFl6Q6df6kT+S1gtTnq4hD29E5T3/VU0Lpx0rGOa4U76sEgHKsiCRA6CWFxU
+         pTgxeKHcrxuby+jSuqRQ==
+Date: Wed, 1 Dec 2010 12:31:18 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+In-Reply-To: <1291234251.6609.39.camel@heimdal.trondhjem.org>
+Message-ID: <alpine.LSU.2.00.1012011224460.18014@tigran.mtv.corp.google.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+ <1291234251.6609.39.camel@heimdal.trondhjem.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012011328.32937.thomas@fjellstrom.ca>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 1, 2010, Pekka Pietikainen wrote:
-> On Tue, Nov 30, 2010 at 05:28:05PM -0700, Thomas Fjellstrom wrote:
-> > I'm working on a little tool to monitor and measure bandwidth use on a vm
-> > host, down to keeping track of all guest and host bandwidth, including,
-> > eventually per layer7 protocol use.
+Adding Nick Piggin back to the Cc.
+
+I do think it needs to be freepage(struct address_space *, struct page *),
+even if you happen not to need to know the mapping in the NFS case.
+
+On Wed, 1 Dec 2010, Trond Myklebust wrote:
+> On Wed, 2010-12-01 at 11:47 -0800, Linus Torvalds wrote:
+> > On Wed, Dec 1, 2010 at 10:54 AM, Trond Myklebust
+> > <Trond.Myklebust@netapp.com> wrote:
+> > >
+> > > Hmm... Looking again at the problem, it appears that the same callback
+> > > needs to be added to truncate_complete_page() and
+> > > invalidate_complete_page2(). Otherwise we end up in a situation where
+> > > the page can sometimes be removed from the page cache without calling
+> > > freepage().
 > > 
-> > Right now I have a pretty simple setup, I setup an AF_PACKET socket,
-> > select on it, and read data as it comes in. Obviously, this has a fatal
-> > flaw. It takes up a rather large amount of cpu time just to capture the
-> > packets. On a GbE interface, it uses up easily 60-80% cpu (on a 2.6Ghz
-> > amd phenom II cpu core) just to capture the packets, trying to do
-> > anything fancy with them will likely cause the kernel to drop some
-> > packets.
+> > Yes, I think any caller of __remove_from_page_cache() should do it
+> > once it has dropped all locks.
 > > 
-> > So what I'm looking for is a very low overhead way to capture packets.
-> > I've come up with a few ideas, some of which I have no idea if they'd
-> > even work.
+> > And to be consistent with that rule, even in the __remove_mapping()
+> > function I suspect the code to call ->freepage() might as well be done
+> > only in the __remove_from_page_cache() case (ie not in the
+> > PageSwapCache() case).
+> > 
+> > Then, add the case to the end of "remove_page_cache()" itself, and now
+> > it's really easy to just grep for __remove_from_page_cache() and make
+> > sure they all do it.
+> > 
+> > That sounds sane, no?
+> > 
+> >                 Linus
 > 
-> Have you checked out
+> Something like the following then?
 > 
-> http://public.lanl.gov/cpw/ (IIRC it's actually a part of recent libpcap,
-> but could be wrong) and http://www.ntop.org/PF_RING.html ?
-
-Hi,
-
-Thanks, yes, at least I've seen the cpw page, probably briefly looked at the 
-PF_RING stuff before. But I'll take a closer look this time, thanks :)
-
-When I was looking before, I was unduly rejecting things that required 
-patching the kernel, or adding special drivers. But if it really can help I 
-might as well take a look.
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+> -----------------------------------------------------------------------------------------
+> From 3a46d5eab1ac6efe9dfaf873e23de7589e0acccc Mon Sep 17 00:00:00 2001
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Wed, 1 Dec 2010 13:35:19 -0500
+> Subject: [PATCH] Call the filesystem back whenever a page is removed from the page cache
+> 
+> NFS needs to be able to release objects that are stored in the page
+> cache once the page itself is no longer visible from the page cache.
+> 
+> This patch adds a callback to the address space operations that allows
+> filesystems to perform page cleanups once the page has been removed
+> from the page cache.
+> 
+> Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
+> [trondmy: cover the cases of invalidate_inode_pages2() and
+>           truncate_inode_pages()]
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+>  Documentation/filesystems/Locking |    5 +++++
+>  Documentation/filesystems/vfs.txt |    5 +++++
+>  include/linux/fs.h                |    1 +
+>  mm/truncate.c                     |    8 ++++++++
+>  mm/vmscan.c                       |    3 +++
+>  5 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+> index a91f308..06d6b71 100644
+> --- a/Documentation/filesystems/Locking
+> +++ b/Documentation/filesystems/Locking
+> @@ -173,6 +173,7 @@ prototypes:
+>  	sector_t (*bmap)(struct address_space *, sector_t);
+>  	int (*invalidatepage) (struct page *, unsigned long);
+>  	int (*releasepage) (struct page *, int);
+> +	void (*freepage)(struct page *);
+>  	int (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+>  			loff_t offset, unsigned long nr_segs);
+>  	int (*launder_page) (struct page *);
+> @@ -193,6 +194,7 @@ perform_write:		no	n/a			yes
+>  bmap:			no
+>  invalidatepage:		no	yes
+>  releasepage:		no	yes
+> +freepage:		no	yes
+>  direct_IO:		no
+>  launder_page:		no	yes
+>  
+> @@ -288,6 +290,9 @@ buffers from the page in preparation for freeing it.  It returns zero to
+>  indicate that the buffers are (or may be) freeable.  If ->releasepage is zero,
+>  the kernel assumes that the fs has no private interest in the buffers.
+>  
+> +	->freepage() is called when the kernel is done dropping the page
+> +from the page cache.
+> +
+>  	->launder_page() may be called prior to releasing a page if
+>  it is still found to be dirty. It returns zero if the page was successfully
+>  cleaned, or an error value if not. Note that in order to prevent the page
+> diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+> index ed7e5ef..76de6fd 100644
+> --- a/Documentation/filesystems/vfs.txt
+> +++ b/Documentation/filesystems/vfs.txt
+> @@ -534,6 +534,7 @@ struct address_space_operations {
+>  	sector_t (*bmap)(struct address_space *, sector_t);
+>  	int (*invalidatepage) (struct page *, unsigned long);
+>  	int (*releasepage) (struct page *, int);
+> +	void (*freepage)(struct page *);
+>  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+>  			loff_t offset, unsigned long nr_segs);
+>  	struct page* (*get_xip_page)(struct address_space *, sector_t,
+> @@ -679,6 +680,10 @@ struct address_space_operations {
+>          need to ensure this.  Possibly it can clear the PageUptodate
+>          bit if it cannot free private data yet.
+>  
+> +  freepage: freepage is called once the page is no longer visible in
+> +        the page cache in order to allow the cleanup of any private
+> +	data.
+> +
+>    direct_IO: called by the generic read/write routines to perform
+>          direct_IO - that is IO requests which bypass the page cache
+>          and transfer data directly between the storage and the
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index c9e06cc..090f0ea 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -602,6 +602,7 @@ struct address_space_operations {
+>  	sector_t (*bmap)(struct address_space *, sector_t);
+>  	void (*invalidatepage) (struct page *, unsigned long);
+>  	int (*releasepage) (struct page *, gfp_t);
+> +	void (*freepage)(struct page *);
+>  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+>  			loff_t offset, unsigned long nr_segs);
+>  	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index ba887bf..76ab2a8 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -108,6 +108,10 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+>  	clear_page_mlock(page);
+>  	remove_from_page_cache(page);
+>  	ClearPageMappedToDisk(page);
+> +
+> +	if (mapping->a_ops->freepage)
+> +		mapping->a_ops->freepage(page);
+> +
+>  	page_cache_release(page);	/* pagecache ref */
+>  	return 0;
+>  }
+> @@ -390,6 +394,10 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+>  	__remove_from_page_cache(page);
+>  	spin_unlock_irq(&mapping->tree_lock);
+>  	mem_cgroup_uncharge_cache_page(page);
+> +
+> +	if (mapping->a_ops->freepage)
+> +		mapping->a_ops->freepage(page);
+> +
+>  	page_cache_release(page);	/* pagecache ref */
+>  	return 1;
+>  failed:
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index d31d7ce..c6fc55d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -497,6 +497,9 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+>  		__remove_from_page_cache(page);
+>  		spin_unlock_irq(&mapping->tree_lock);
+>  		mem_cgroup_uncharge_cache_page(page);
+> +
+> +		if (mapping->a_ops->freepage)
+> +			mapping->a_ops->freepage(page);
+>  	}
+>  
+>  	return 1;
+> -- 
+> 1.7.3.2
