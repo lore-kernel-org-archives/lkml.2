@@ -1,177 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab0LANIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 08:08:09 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40544 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab0LANII convert rfc822-to-8bit (ORCPT
+	id S1755087Ab0LANLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 08:11:05 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39219 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab0LANLC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 08:08:08 -0500
+	Wed, 1 Dec 2010 08:11:02 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=NDSCxiuPlq6PzLiEcPhYV6lnFnIMQJISKBOxkztssnXOCpAldIO7WtWKIhL36xOfeZ
-         QGPHAgNfNmXKjOcmOK99j/r7iXpEzysLfydsY4BH6UCUSbfDgG76vPhazzso1sSMZ/Y0
-         jZ8X90b0v3guyHnWsYG+lACZasaB1VmPuAGaQ=
+        b=RaTu/0hoTTMqmJ2Fg4YYOYtWDLAiHhJd81JGwXZk9+HnLiuvmWjJ/irO8Gdp2AzMYJ
+         TxzN0Hls4CLEbGGjFWq79WhEmUvwrJouZE5TeqAXkQE9EbIxk/bjbn6fcUNYSB5qNVvQ
+         iJ9z+hnzF9HRJp1E1u27jdJf+6iC7D2jQ0cPc=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1012011244120.8521@localhost.localdomain>
-References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com>
-	<201011291745.22566.arnd@arndb.de>
-	<4CF3F687.6040801@gmail.com>
-	<201011292102.41155.arnd@arndb.de>
-	<4CF40AEF.7070200@gmail.com>
-	<alpine.LNX.2.00.1011300910260.7489@localhost.localdomain>
-	<AANLkTinABzeM9Q+5PvvLX7HKYtDrig=nRHY7KMapJD5k@mail.gmail.com>
-	<alpine.LNX.2.00.1012011244120.8521@localhost.localdomain>
-Date: Wed, 1 Dec 2010 15:08:06 +0200
-Message-ID: <AANLkTi=4ob3DKnva0eO6pzdXckwAPsBczE73_Xq_L0v3@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20101130143631.GC26758@redhat.com>
+References: <AANLkTimV=6=Je=k6UW=ivJtmR0ONoTrscM2i8YJd5JjA@mail.gmail.com>
+	<20101130143631.GC26758@redhat.com>
+Date: Wed, 1 Dec 2010 21:11:01 +0800
+Message-ID: <AANLkTimAAr7PgH85G+yqOXwdExRUHbZm3HXz0WsRjLuW@mail.gmail.com>
+Subject: Re: [PATCH] add rb_next in block throttle
+From: Hillf Danton <dhillf@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 1:52 PM, Hans Ulli Kroll
-<ulli.kroll@googlemail.com> wrote:
->
->
-> On Tue, 30 Nov 2010, Paulius Zaleckas wrote:
->
->> On Tue, Nov 30, 2010 at 10:15 AM, Hans Ulli Kroll
->> <ulli.kroll@googlemail.com> wrote:
->> >
->> >
->> > On Mon, 29 Nov 2010, Paulius Zaleckas wrote:
->> >
->> >> On 11/29/2010 10:02 PM, Arnd Bergmann wrote:
->> >> > On Monday 29 November 2010 19:52:55 Paulius Zaleckas wrote:
->> >> > > On 11/29/2010 06:45 PM, Arnd Bergmann wrote:
->> >> > > > There are many differences between readl and __raw_readl, including
->> >> > > >
->> >> > > > * __raw_readl does not have barriers and does not serialize with
->> >> > > >     spinlocks, so it breaks on out-of-order CPUs.
->> >> > > > * __raw_readl does not have a specific endianess, while readl is
->> >> > > >     fixed little-endian, just as the hardware is in this case.
->> >> > > >     The endian-conversion is a NOP on little-endian ARM, but required
->> >> > > >     if you actually run on a big-endian ARM (you don't).
->> >> > > > * __raw_readl may not be atomic, gcc is free to split the access
->> >> > > >     into byte wise reads (it normally does not, unless you mark
->> >> > > >     the pointer __attribute__((packed))).
->> >> > > >
->> >> > > > In essence, it is almost never a good idea to use __raw_readl, and
->> >> > > > the double underscores should tell you so.
->> >> > >
->> >> > > You are wrong:
->> >> > >
->> >> > > Since CONFIG_ARM_DMA_MEM_BUFFERABLE is NOT defined for FA526 core,
->> >> > > no barriers are in use when using readl. It just translates into
->> >> > > le32_to_cpu(__raw_readl(x)). Now this CPU has physical pin for endianess
->> >> > > configuration and if you will chose big-endian you will fail to read
->> >> > > internal registers, because they ALSO change endianess and le32_to_cpu()
->> >> > > will screw it. However it is different when accessing registers through
->> >> > > PCI bus, then you need to use readl().
->> >> >
->> >> > Ok, I only checked that the platform does not support big-endian Linux
->> >> > kernel, not if the HW designers screwed up their registers, sorry about
->> >> > that.
->> >> >
->> >> > The other points are of course still valid: If the code ever gets
->> >> > used on an out of order CPU, it is broken. More importantly, if someone
->> >> > looks at the code as an example for writing another PCI support code,
->> >> > it may end up getting copied to some place where it ends up causing
->> >> > trouble.
->> >> >
->> >> > The typical way to deal with mixed-endian hardware reliably is to have
->> >> > a header file containing code like
->> >> >
->> >> > #ifdef CONFIG_GEMINI_BIG_ENDIAN_IO
->> >> > #define gemini_readl(x) __swab32(readl(x))
->> >> > #define ...
->> >> > #else
->> >> > #define gemini_readl(x) readl(x))
->> >> > #endif
->> >> >
->> >> > This also takes care of the (not as unlikely as you'd hope) case that
->> >> > the next person reusing the PCI hardware wires its endianess different
->> >> > from the CPU endianess.
->> >>
->> >> Actually I am not very sure how CPU works in big endian mode :)
->> >> I have never tried it and I think only some guys who made it did that.
->> >> So readl will work for 99.99% of cases. In datasheet they say that:
->> >> "All registers in Gemini use Little Endian and must be accessed by aligned
->> >> 32-bit word operations. The bus connection interface logic provides an Endian
->> >> Conversion function."
->> >> For me it looks like it can mean whatever you want :)
->> >>
->> >
->> > I think the endianes pin switched only the cpu, not the hardware
->> > registers.
+On Tue, Nov 30, 2010 at 10:36 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Nov 26, 2010 at 10:06:27PM +0800, Hillf Danton wrote:
+>> When selecting group for dispatching, the first entry of the service
+>> tree is sequentially dequeued, then the first entry is recomputed by
+>> calling rb_first().
 >>
->> Yes, but original driver used readl/writel and it does le32_to_cpu,
->> so that structure definition is just reversing it.
->> If you will use __raw_readl/__raw_writel than there will be no need
->> for this redefinition.
+>> When the first is removed from service tree, new first could also be
+>> computed with rb_next(), since it could be faster than rb_first in
+>> this special environment.
 >>
->> > Here is some sample code from the ethernet devive on Gemini
->> > typedef union
->> > {
->> >        unsigned int bits32;
->> >        struct bit
->> >        {
->> > #if (BIG_ENDIAN==1)
->> >                unsigned int reserved           : 15;   // bit 31:17
->> >                unsigned int v_bit_mode         : 1;    // bit 16
->> >                unsigned int device_id          : 12;   // bit 15:4
->> >                unsigned int revision_id        : 4;    // bit  3:0
->> > #else
->> >                unsigned int revision_id        : 4;    // bit  3:0
->> >                unsigned int device_id          : 12;   // bit 15:4
->> >                unsigned int v_bit_mode         : 1;    // bit 16
->> >                unsigned int reserved           : 15;   // bit 31:17
->> > #endif
->>
->> The other thing is that this endianess redefinition is very starnge since
->> it should swap bytes and not bits inside this struct. So I assume that
->> big endian was never tested on this driver and it will not work.
->> But ofcouse I can be wrong here :)
->>
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> ---
 >
-> At this momment my brain restarts in very slow motion mode ;-)
-> This can't work. The definition Storlinksemi uses for swapping bits and
-> bytes are totaly wrong.
-> They never _even_ testet this, or understand little endian or big endian.
-> Take this simple sample
+> Ok. So set the leftmost element with the help of rb_next() at the time of
+> deletion of existing leftmost element. Not sure whether it is cheaper or
+> not but does not harm doing it this way.
 >
-> typedef union {
->        unsigned int bits32;
->        struct bit {
-> #if (BIG_ENDIAN==0)
->                unsigned int a  : 1;
->                unsigned int b  : 31;
-> #else
->                unsigned int b  : 31;
->                unsigned int a  : 1;
-> #endif
->        };
-> } TEST;
->
-> They swaped the bits inside one byte
+> Have you tested it to make sure nothing is broken?
 
-Ha! Wait a minute. Looks like we are both wrong...
-Read the beginning of: http://thread.gmane.org/gmane.linux.kernel/1037608
+Hm..if broken, we rush out and gnarl at Andrea Arcangeli as loud as we could.
 
-So it means we should use readl/writel and get rid of these non-portable
-bit-fields...
-
->> >        } bits;
->> > } TOE_VERSION_T;
->> >
->> >
->> >
+Thanks
+Hillf
+>
+> Thanks
+> Vivek
+>
 >>
+>> --- a/block/blk-throttle.c Â  Â 2010-11-01 19:54:12.000000000 +0800
+>> +++ b/block/blk-throttle.c Â  Â 2010-11-26 21:27:40.000000000 +0800
+>> @@ -251,7 +251,7 @@ static void rb_erase_init(struct rb_node
+>> Â static void throtl_rb_erase(struct rb_node *n, struct throtl_rb_root *root)
+>> Â {
+>> Â  Â  Â  if (root->left == n)
+>> - Â  Â  Â  Â  Â  Â  root->left = NULL;
+>> + Â  Â  Â  Â  Â  Â  root->left = rb_next(n);
+>> Â  Â  Â  rb_erase_init(n, &root->rb);
+>> Â  Â  Â  --root->count;
+>> Â }
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at Â http://www.tux.org/lkml/
+>
