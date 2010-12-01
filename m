@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab0LAIDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 03:03:39 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58396 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab0LAIDi (ORCPT
+	id S1753754Ab0LAIHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 03:07:44 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:59070 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316Ab0LAIHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 03:03:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=HVbgF+48/UVAUgjkgy5lOGhdSECcon3dHVWJXfIsP3ZtrlQszG4tyUkAGX/Vb7PBRB
-         43neRrPwApofO4k+Pitc6bfKLikyH5IUdnY9eqgzqDXFYaHVtFeZ8oduz01Bj67GR2bA
-         vfyT+Klb9l72NNCxJ53WGXt7VrjO3bYYTgwPE=
-Subject: Re: [Patch] bonding: clean up netpoll code
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
-        Neil Horman <nhorman@redhat.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-In-Reply-To: <20101201075043.5741.29172.sendpatchset@localhost.localdomain>
-References: <20101201075043.5741.29172.sendpatchset@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 09:03:32 +0100
-Message-ID: <1291190612.2856.481.camel@edumazet-laptop>
+	Wed, 1 Dec 2010 03:07:42 -0500
+Date: Wed, 1 Dec 2010 09:07:32 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH] net/r8169: Remove the firmware of RTL8111D
+Message-ID: <20101201080732.GA3234@electric-eye.fr.zoreil.com>
+References: <1291180966-3124-1-git-send-email-hayeswang@realtek.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291180966-3124-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 01 décembre 2010 à 02:45 -0500, Amerigo Wang a écrit :
-> Against net-next-2.6.
-> 
-> This patch unifies the netpoll code in bonding with netpoll code in bridge,
-> thanks to Herbert that code is much cleaner now.
-> 
-> It also removes the flag IFF_IN_NETPOLL, we don't need it any more since
-> we have netpoll_tx_running() now.
-> 
-> It passes my basic testings.
+Hayes Wang <hayeswang@realtek.com> :
+> Remove the firmware of RTL8111D from the kernel.
+> The binary file of firmware would be moved to linux-firmware repository.
 
-Sorry this NETPOLL patch is frightening...
+The driver can not simply go along when request_firmware fails. Though Ben's
+code did not take care of it, the driver should imho propagate some return
+code. Ben ?
 
-Could you split it in several parts ?
+There is no change in rtl8168d_3_hw_phy_config : could you add a comment
+so that people know it is different ?
 
-The removal of IFF_IN_NETPOLL deserves a patch on its own, its not a
-cleanup at all, if you ask me.
+Could you Cc: the linux-firmware patch as well ?
 
-Thanks
+Minor nit: please keep the code free of capitalized hex data.
 
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> index 7d33ef4..cad1ba8 100644
+> --- a/drivers/net/r8169.c
+> +++ b/drivers/net/r8169.c
+[...]
+> @@ -1383,6 +1384,28 @@ static void rtl_phy_write(void __iomem *ioaddr, const struct phy_reg *regs, int
+>  	}
+>  }
+>  
+> +static void rtl_phy_write_fw(void __iomem *ioaddr, const struct firmware *fw)
+> +{
+[...]
+> +		default:
+> +			printk(KERN_WARNING "%s: Unknown action\n",
+> +				__FUNCTION__);
 
+A bit old school. It gives no information about the device.
+Use netif_{err/info} or such ?
 
+Thanks.
+
+-- 
+Ueimor
