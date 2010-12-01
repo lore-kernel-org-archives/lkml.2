@@ -1,170 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab0LAQxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:53:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753993Ab0LAQxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:53:17 -0500
-Date: Wed, 1 Dec 2010 11:52:29 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Matt <jackdachef@gmail.com>
-Cc: Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
-        htejun@gmail.com
-Subject: Re: dm-crypt barrier support is effective
-Message-ID: <20101201165229.GC13415@redhat.com>
-References: <20101107194547.GA12521@basil.fritz.box>
- <4CD71C8B.1050604@redhat.com>
- <20101107230508.GB17592@basil.fritz.box>
- <20101108145809.GD29714@redhat.com>
- <1289238930-sup-9765@think>
- <20101114205925.GA20451@redhat.com>
- <AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>
- <4CE05A9E.9090204@redhat.com>
- <AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
- <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
+	id S1755035Ab0LAQxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:53:20 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:53700 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab0LAQxS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 11:53:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=LJmEDUdzD1mI5cCtB1N1WH82XKG+aE1IYauCsKSO5SEnosOp2B3NqIzrhC4hFaocGi
+         UZLQQFiNf3wdbKR1PP2keSaZVnYwOKI9Lrqw/DorIG5myScBvAs+MZqe2feQOHQde2xs
+         1/zlSj+4henN2RXWoD/osvzHhSWvAl0JWK+QA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101201132437.GA32555@linux-mips.org>
+References: <AANLkTi=4gtEC9fZyvc9g6uHecvjPrr0dDc==KsDOvq2Q@mail.gmail.com>
+	<20101201132437.GA32555@linux-mips.org>
+Date: Wed, 1 Dec 2010 22:23:17 +0530
+Message-ID: <AANLkTimEb32MAC_KUm+ZjXntJqiE=_OPbO6C3Se4MFEN@mail.gmail.com>
+Subject: Change of Default kernel page size i.e 4KB
+From: naveen yadav <yad.naveen@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01 2010 at 11:05am -0500,
-Matt <jackdachef@gmail.com> wrote:
+Hi all,
 
-> On Mon, Nov 15, 2010 at 12:24 AM, Matt <jackdachef@gmail.com> wrote:
-> > On Sun, Nov 14, 2010 at 10:54 PM, Milan Broz <mbroz@redhat.com> wrote:
-> >> On 11/14/2010 10:49 PM, Matt wrote:
-> >>> only with the dm-crypt scaling patch I could observe the data-corruption
-> >>
-> >> even with v5 I sent on Friday?
-> >>
-> >> Are you sure that it is not related to some fs problem in 2.6.37-rc1?
-> >>
-> >> If it works on 2.6.36 without problems, it is probably problems somewhere
-> >> else (flush/fua conversion was trivial here - DM is still doing full flush
-> >> and there are no other changes in code IMHO.)
-> >>
-> >> Milan
-> >>
-> >
-> > Hi Milan,
-> >
-> > I'm aware of your new v5 patch (which should include several
-> > improvements (or potential fixes in my case) over the v3 patch)
-> >
-> > as I already wrote my schedule unfortunately currently doesn't allow
-> > me to test it
-> >
-> > * in the case of no corruption it would be nice to have 2.6.37-rc* running :)
-> >
-> > * in the case of data corruption that would mean restoring my system -
-> > since it's my production box and right now I don't have a fallback at
-> > reach
-> > at earliest I could give it a shot at the beginning of December. Then
-> > I could also test reiserfs and ext4 as a system partition to rule out
-> > that it's
-> > a ext4-specific thing (currently I'm running reiserfs on my system-partition).
-> >
-> > Thanks !
-> >
-> > Matt
-> >
-> 
-> 
-> OK guys,
-> 
-> I've updated my system to latest glibc 2.12.1-r3 (on gentoo) and gcc
-> hardened 4.5.1-r1 with 1.4 patchset which also uses pie (that one
-> should fix problems with graphite)
-> 
-> not much system changes besides that,
-> 
-> with those it worked fine with 2.6.36 and I couldn't observe any
-> filesystem corruption
+ I have few drivers and very big application running on ARM and MIPS target.
+ I want to check the performance by changing the page size ie.
+ 8K, 16K, 32K etc.
 
-So dm-crypt cpu scalability v5 with 2.6.36 worked fine.
+ Is it possile, If yes then what all care i need to take .
 
-> the bad news is: I'm again seeing corruption (!) [on ext4, on the /
-> (root) partition]:
-
-...
-
-> ===> so the No.1 trigger of this kind of corruption where files are
-> empty, missing or the content gets corrupted (at least for me) is
-> compiling software which is part of the system (e.g. emerge -e
-> system);
-> 
-> the system is Gentoo ~amd64; with binutils 2.20.51.0.12 (afaik this
-> one has changed from 2.20.51.0.10 to 2.20.51.0.12 from my last
-> report); gcc 4.5.1 (Gentoo Hardened 4.5.1-r1 p1.4, pie-0.4.5) <--
-> works fine with 2.6.36 and 2.6.36.1
-> 
-> I'm not sure whether benchmarks would have the same "impact"
-
-Seems this emerge is a good test if it reliably enduces the corruption.
-
-> the kernel currently running is 2.6.37-rc4 with the [PATCH v5] dm
-> crypt: scale to multiple CPUs
-> 
-> besides that additional patchsets are applied (I apologize that it's
-> not only plain vanilla with the dm-crypt patch):
-> * Prevent kswapd dumping excessive amounts of memory in response to
-> high-order allocation
-> * ext4: coordinate data-only flush requests sent by fsync
-> * vmscan: protect executable page from inactive list scan
-> * writeback livelock fixes v2
-
-Have you actually experienced any of the issues the above patches are
-meant to address?  Seems you're applying patches guessing/hoping
-that they'll fix the dm-crypt corruption.
-
-> I originally had hoped that the mentioned patch in "ext4: coordinate
-> data-only flush requests sent by fsync", namely: "md: Call
-> blk_queue_flush() to establish flush/fua" and additional changes &
-> fixes to 2.6.37-rc4 would once and for all fix problems but it didn't
-
-That md patch doesn't help DM at all.  And the ext4 coordination patch
-is completely bleeding and actually broken (especially as it relates to
-DM -- but that breakage is ony a concern for request-based DM,
-e.g. DM-mapth), anyway see: 
-https://www.redhat.com/archives/dm-devel/2010-November/msg00185.html
-
-I'm not sure which patches you're using for the ext4 fsync changes but
-please don't use them at all.  It is purely an optimization for
-extremely heavy fsync workloads and is only getting in the way at this
-point.
-
-> I'm also using the the writeback livelock fixes and the dm-crypt scale
-> to multiple CPUs with 2.6.36 so those generally work fine
-> 
-> so it has be something that changed from 2.6.36->2.6.37 within
-> dm-crypt or other parts that gets stressed and breaks during usage of
-> the "[PATCH v5] dm crypt: scale to multiple CPUs" patch
-> 
-> the other included patches surely won't be the cause for that (100%).
-> 
-> Filesystem corruption only seems to occur on the / (root) where the
-> system resides -
-
-We need better fault isolation; you've introduced enough change that it
-isn't helping zero in on what your particular problem is.  Milan has
-tested he latest version of the dm-crypt cpu scalability patch quite a
-bit and hasn't seen any corruption -- but clearly the corruption you're
-seeing is a real concern and we need to get to the bottom of it.
-
-I'd really appreciate it if you could just use Linus' latest linux-2.6
-tree plus Milan's latest patch (technically v6 even though it wasn't
-labeled as such): https://patchwork.kernel.org/patch/365542/
-
-Porting that same v6 patch to 2.6.36 would also be nice (to verify you
-still don't see any corruption there).
-
-Mike
+thanks
