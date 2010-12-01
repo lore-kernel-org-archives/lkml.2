@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab0LAHvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:51:04 -0500
+	id S1753340Ab0LAHq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:46:26 -0500
 Received: from mga02.intel.com ([134.134.136.20]:41622 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753376Ab0LAHq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:46:28 -0500
+	id S1753138Ab0LAHqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:46:24 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="682672332"
+   d="scan'208";a="682672310"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v16 04/17]Add a function make external buffer owner to query capability.
-Date: Wed,  1 Dec 2010 16:08:15 +0800
-Message-Id: <74292887b1ddbeede664065dc5988ebe15425185.1291187695.git.xiaohui.xin@intel.com>
+Subject: [PATCH v16 01/17] Add a new structure for skb buffer from external.
+Date: Wed,  1 Dec 2010 16:08:12 +0800
+Message-Id: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-The external buffer owner can use the functions to get
-the capability of the underlying NIC driver.
-
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhaonew@gmail.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |    2 ++
- net/core/dev.c            |   41 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 0 deletions(-)
+ include/linux/skbuff.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 575777f..8dcf6de 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1736,6 +1736,8 @@ extern gro_result_t	napi_frags_finish(struct napi_struct *napi,
- 					  gro_result_t ret);
- extern struct sk_buff *	napi_frags_skb(struct napi_struct *napi);
- extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
-+extern int netdev_mp_port_prep(struct net_device *dev,
-+				struct mp_port *port);
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 77eb60d..696e690 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -211,6 +211,15 @@ struct skb_shared_info {
+ 	skb_frag_t	frags[MAX_SKB_FRAGS];
+ };
  
- static inline void napi_free_frags(struct napi_struct *napi)
- {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 660dd41..84fbb83 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2942,6 +2942,47 @@ out:
- 	return ret;
- }
- 
-+/* To support meidate passthru(zero-copy) with NIC driver,
-+ * we'd better query NIC driver for the capability it can
-+ * provide, especially for packet split mode, now we only
-+ * query for the header size, and the payload a descriptor
-+ * may carry.
-+ * Now, it's only called by mpassthru device.
++/* The structure is for a skb which pages may point to
++ * an external buffer, which is not allocated from kernel space.
++ * It also contains a destructor for itself.
 + */
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+int netdev_mp_port_prep(struct net_device *dev,
-+		struct mp_port *port)
-+{
-+	int rc;
-+	int npages, data_len;
-+	const struct net_device_ops *ops = dev->netdev_ops;
++struct skb_ext_page {
++	struct		page *page;
++	void		(*dtor)(struct skb_ext_page *);
++};
 +
-+	if (ops->ndo_mp_port_prep) {
-+		rc = ops->ndo_mp_port_prep(dev, port);
-+		if (rc)
-+			return rc;
-+	} else
-+		return -EINVAL;
-+
-+	if (port->hdr_len <= 0)
-+		goto err;
-+
-+	npages = port->npages;
-+	data_len = port->data_len;
-+	if (npages <= 0 || npages > MAX_SKB_FRAGS ||
-+			(data_len < PAGE_SIZE * (npages - 1) ||
-+			 data_len > PAGE_SIZE * npages))
-+		goto err;
-+
-+	return 0;
-+err:
-+	dev_warn(&dev->dev, "invalid page constructor parameters\n");
-+
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(netdev_mp_port_prep);
-+#endif
-+
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
+ /* We divide dataref into two halves.  The higher 16 bits hold references
+  * to the payload part of skb->data.  The lower 16 bits hold references to
+  * the entire skb->data.  A clone of a headerless skb holds the length of
 -- 
 1.7.3
 
