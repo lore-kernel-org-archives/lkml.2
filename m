@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab0LAMzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 07:55:23 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:50606 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755024Ab0LAMzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 07:55:21 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-References: <00a701cb8883$649d39f0$2dd7add0$@mprc.pku.edu.cn> <201011291735.19556.arnd@arndb.de> <009b01cb9079$6605cd90$321168b0$@mprc.pku.edu.cn> <201011301626.42547.arnd@arndb.de>
-In-Reply-To: <201011301626.42547.arnd@arndb.de>
-Subject: RE: [PATCH] a new UniCore32 arch-dependent patch for linux-2.6.37-rc1
-Date: Wed, 1 Dec 2010 20:54:59 +0800
-Message-ID: <00ef01cb9156$fd21d920$f7658b60$@mprc.pku.edu.cn>
+	id S1754784Ab0LANDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 08:03:25 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50570 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860Ab0LANDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 08:03:24 -0500
+Date: Wed, 1 Dec 2010 13:02:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Stuge <peter@stuge.se>
+Cc: Greg KH <greg@kroah.com>, Jimmy RUBIN <jimmy.rubin@stericsson.com>,
+        Dan JOHANSSON <dan.johansson@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
+Message-ID: <20101201130248.GA21710@n2100.arm.linux.org.uk>
+References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local> <201011261224.59490.arnd@arndb.de> <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com> <201011301621.48140.arnd@arndb.de> <20101130184049.GC8521@n2100.arm.linux.org.uk> <20101130184834.GA16055@kroah.com> <20101130220550.GD8521@n2100.arm.linux.org.uk> <20101130230533.GA11342@kroah.com> <20101130234215.GE8521@n2100.arm.linux.org.uk> <20101201125339.30270.qmail@stuge.se>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGzHwPsQ4MuY7Ev2RR1f0Fo5aRFLgHaGlRQARhXLX4CFVtVjJOUMJJg
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201125339.30270.qmail@stuge.se>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Tuesday, November 30, 2010 11:27 PM
-> To: Guan Xuetao
-> Cc: 'Greg KH'; 'Andrew Morton'; 'Linus Torvalds'; linux-
-> kernel@vger.kernel.org; linux-arch@vger.kernel.org
-> Subject: Re: [PATCH] a new UniCore32 arch-dependent patch for linux-
-> 2.6.37-rc1
+On Wed, Dec 01, 2010 at 01:53:39PM +0100, Peter Stuge wrote:
+> Russell King - ARM Linux wrote:
+> > I feel it would be better to allow the current situation to continue.
 > 
-> On Tuesday 30 November 2010, Guan Xuetao wrote:
-> > > On Saturday 27 November 2010, Guan Xuetao wrote:
-> > > > >
-> > > > > In what way does the architecture enforce this? What are the
-> > > > > contents of this page? Can you make it an actual VDSO rather
-> > > > > than a magic page that sits in the user address space?
-> > > > Page table is created for vector page and exceptions entry stub.
-> > > > However, vector page is not in the user address space.
-> > >
-> > > Interesting. So if it's not mapped into user space, why do you even
-> > > need to have the vectors at a specific page? I think ARM only maps
-> > > it to the high page because that page is shared to user space, while
-> > > most architectures just have their interrupt vectors in the linar
-> > > mapping, since the hardware typically uses the physical address to
-find it.
-> >
-> > In UniCore-32, when MMU enabled, vector page address is virtual address.
+> I think this misses the point, and is somewhat redundant; I think
+> everyone knows that it is easiest to never change anything. But
+> then nothing improves.
 > 
-> Ok. I see.
 > 
-> The arch_exit_mmap() and arch_setup_additional_pages() functions seems
-> to refer to how ARM maps this page into user space as well, you should
-> probably change that.
-Vector page is also used as kuser page, so arch_setup_additional_pages need
-to 
-Map it into user space.
-
+> > If we start telling people that they can't use statically declared
+> > devices without first having an alternative,
 > 
-> I've finished the second half of the code review now, I'll follow up with
-an
-> email but drop the personal Cc to everyone besides us, in case people are
-> getting bored from the discussion by now ;-)
-Thanks again.
+> I would consider it early warning that the way things have been done
+> before will go away. And I would thus write drivers in a way that
+> demonstrates and includes that understanding.
 
-Guan Xuetao
+Clearly you haven't understood my point.
 
+If we go down the route you suggest, we're going to end up with
+everyone doing something different, which will then need to be cleaned
+up once the proper solution is in place.  That could easily become
+much more work than just waiting for the proper solution.
+
+What is easier - to fix all instances which statically declare, or
+to fix all instances which statically declare _and_ all the bodged up
+alternative solutions?
