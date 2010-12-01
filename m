@@ -1,59 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab0LATFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:05:13 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40523 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356Ab0LATFK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:05:10 -0500
-Date: Wed, 1 Dec 2010 19:04:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
-Message-ID: <20101201190429.GC29347@n2100.arm.linux.org.uk>
-References: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com> <20101201185103.GK32355@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101201185103.GK32355@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756474Ab0LATHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:07:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:17885 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753890Ab0LATHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 14:07:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,284,1288594800"; 
+   d="scan'208";a="632102309"
+From: jacob.jun.pan@linux.intel.com
+To: container cgroup <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <menage@google.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [RFC PATCH 1/2] cgroup: add per cgroup timer_slack_ns
+Date: Wed,  1 Dec 2010 11:00:11 -0800
+Message-Id: <1291230012-9536-2-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1291230012-9536-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1291230012-9536-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 07:51:03PM +0100, Uwe Kleine-König wrote:
-> On Wed, Dec 01, 2010 at 04:30:12PM +0100, Hans Ulli Kroll wrote:
-> > Today more boards with arm cpu have selectable pci bus.
-> > This patch makes this more scalable and remove line continuations in
-> > Kconfig
-> > 
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-> > ---
-> >  arch/arm/Kconfig                 |    7 ++++++-
-> >  arch/arm/mach-cns3xxx/Kconfig    |    1 +
-> >  arch/arm/mach-integrator/Kconfig |    1 +
-> >  arch/arm/mach-ks8695/Kconfig     |    1 +
-> >  arch/arm/mach-pxa/Kconfig        |    1 +
-> >  arch/arm/mach-versatile/Kconfig  |    1 +
-> >  6 files changed, 11 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index a19a526..614cf2f 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -34,6 +34,9 @@ config ARM
-> >  config HAVE_PWM
-> >  	bool
-> >  
-> > +config MIGHT_HAVE_PCI
-> HAVE_PCI or HAS_PCI is a more usual name for this purpose.
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-This has been discussed in the thread "[PATCH] ARM: Gemini: Add support
-for PCI Bus".
+Per task timer_slack_ns was introduced a while ago to allow tuning
+timer rounding behavior such that tasks can be made mode power friendly.
+This patch introduces per cgroup timer slack value which will override
+the default timer slack value once a task is attached to a cgroup. By
+default, the root cgroup timer slack value is set to the same 50us as
+in all the tasks.
+At runtime, user can choose to change cgroup timer slack value by
+echo xxx > cgroup.timer_slack_ns
+
+The usage of such feature can be found in mobile devices where certain
+background apps are attached to a cgroup and minimum wakeups are desired.
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ include/linux/cgroup.h    |    1 +
+ include/linux/init_task.h |    3 ++-
+ kernel/cgroup.c           |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 46 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index ed4ba11..afac9bb 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -194,6 +194,7 @@ struct cgroup_pidlist {
+ 
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
++	unsigned long timer_slack_ns;
+ 
+ 	/*
+ 	 * count users of this cgroup. >0 means busy, but doesn't
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 1f8c06c..5860af6 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -110,6 +110,7 @@ extern struct cred init_cred;
+ # define INIT_PERF_EVENTS(tsk)
+ #endif
+ 
++#define TIMER_SLACK_NS_DEFAULT (50000) /* 50 usec default slack */
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -163,7 +164,7 @@ extern struct cred init_cred;
+ 	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
+ 	.fs_excl	= ATOMIC_INIT(0),				\
+ 	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
+-	.timer_slack_ns = 50000, /* 50 usec default slack */		\
++	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,		        \
+ 	.pids = {							\
+ 		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
+ 		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 66a416b..0e0a254 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -57,6 +57,7 @@
+ #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
+ #include <linux/eventfd.h>
+ #include <linux/poll.h>
++#include <linux/init_task.h>
+ 
+ #include <asm/atomic.h>
+ 
+@@ -1324,6 +1325,7 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ 	root->number_of_cgroups = 1;
+ 	cgrp->root = root;
+ 	cgrp->top_cgroup = cgrp;
++	cgrp->timer_slack_ns = TIMER_SLACK_NS_DEFAULT;
+ 	init_cgroup_housekeeping(cgrp);
+ }
+ 
+@@ -1787,6 +1789,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 		goto out;
+ 	}
+ 	rcu_assign_pointer(tsk->cgroups, newcg);
++	tsk->timer_slack_ns = cgrp->timer_slack_ns;
+ 	task_unlock(tsk);
+ 
+ 	/* Update the css_set linked lists if we're using them */
+@@ -3049,6 +3052,38 @@ static int cgroup_write_notify_on_release(struct cgroup *cgrp,
+ 	return 0;
+ }
+ 
++static u64 cgroup_read_timer_slack_ns(struct cgroup *cgrp,
++				struct cftype *cft)
++{
++	return cgrp->timer_slack_ns;
++}
++
++static int cgroup_write_timer_slack_ns(struct cgroup *cgrp,
++				struct cftype *cft,
++				u64 val)
++{
++	struct cgroup_iter it;
++	struct task_struct *task;
++
++	/* TODO: upper range checking for max slack */
++	if (val)
++		cgrp->timer_slack_ns = val;
++	else {
++		printk(KERN_ERR "cgroup %s: invalid timer slack value %llu\n",
++			cgrp->dentry->d_name.name, val);
++		return -EINVAL;
++	}
++
++	/* change timer slack value for all tasks in the cgroup */
++	cgroup_iter_start(cgrp, &it);
++	while ((task = cgroup_iter_next(cgrp, &it)))
++		task->timer_slack_ns = val;
++
++	cgroup_iter_end(cgrp, &it);
++
++	return 0;
++}
++
+ /*
+  * Unregister event and free resources.
+  *
+@@ -3268,6 +3303,13 @@ static struct cftype files[] = {
+ 		.read_u64 = cgroup_clone_children_read,
+ 		.write_u64 = cgroup_clone_children_write,
+ 	},
++	{
++		.name = CGROUP_FILE_GENERIC_PREFIX "timer_slack_ns",
++		.read_u64 = cgroup_read_timer_slack_ns,
++		.write_u64 = cgroup_write_timer_slack_ns,
++		.mode = S_IRUGO | S_IWUSR,
++	},
++
+ };
+ 
+ static struct cftype cft_release_agent = {
+@@ -3393,6 +3435,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	cgrp->parent = parent;
+ 	cgrp->root = parent->root;
+ 	cgrp->top_cgroup = parent->top_cgroup;
++	cgrp->timer_slack_ns = TIMER_SLACK_NS_DEFAULT;
+ 
+ 	if (notify_on_release(parent))
+ 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+-- 
+1.7.0.4
+
