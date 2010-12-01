@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0LAR6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:58:22 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:45492 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755407Ab0LAR6U convert rfc822-to-8bit (ORCPT
+	id S1755632Ab0LASBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:01:16 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:58847 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab0LASBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:58:20 -0500
-X-IronPort-AV: E=Sophos;i="4.59,284,1288594800"; 
-   d="scan'208";a="489582571"
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	 <20101201150428.GA2879@elliptictech.com>
-	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 12:58:17 -0500
-Message-ID: <1291226297.6609.17.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Dec 2010 17:58:19.0355 (UTC) FILETIME=[56389AB0:01CB9181]
+	Wed, 1 Dec 2010 13:01:14 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Shawn Bohrer <shawn.bohrer@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 10/15] perf sched: Document missing options
+Date: Wed,  1 Dec 2010 16:01:00 -0200
+Message-Id: <1291226465-26337-11-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1291226465-26337-1-git-send-email-acme@infradead.org>
+References: <1291226465-26337-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 08:17 -0800, Linus Torvalds wrote:
-> On Wed, Dec 1, 2010 at 7:36 AM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > We need to ensure that the entries in the nfs_cache_array get cleared
-> > when the page is removed from the page cache. To do so, we use the
-> > releasepage address_space operation (which also requires us to set
-> > the Pg_private flag).
-> 
-> So I really think that the whole "releasepage" use in NFS is simply
-> overly complicated and was obviously too subtle.
-> 
-> The whole need for odd return values, for the page lock, and for the
-> addition of clearing the up-to-date bit comes from the fact that this
-> wasn't really what releasepage was designed for.
-> 
-> 'releasepage' was really designed for the filesystem having its own
-> version of 'try_to_free_buffers()', which is just an optimistic "ok,
-> we may be releasing this page, so try to get rid of any IO structures
-> you have cached". It wasn't really a memory management thing.
-> 
-> And the thing is, it looks trivial to do the memory management
-> approach by adding a new callback that gets called after the page is
-> actually removed from the page cache. If we do that, then there are no
-> races with any other users, since we remove things from the page cache
-> atomically wrt page cache lookup. So the need for playing games with
-> page locking and 'uptodate' simply goes away. As does the PG_private
-> thing or the interaction with invalidatepage() etc.
-> 
-> So this is a TOTALLY UNTESTED trivial patch that just adds another
-> callback. Does this work? I dunno. But I get the feeling that instead
-> of having NFS work around the odd semantics that don't actually match
-> what NFS wants, introducing a new callback with much simpler semantics
-> would be simpler for everybody, and avoid the need for subtle code.
-> 
-> Hmm?
-> 
->                    Linus
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
 
-This works for me, and I can code up a patch that uses it if you like...
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1291168642-11402-11-git-send-email-shawn.bohrer@gmail.com>
+Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-sched.txt |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
+index 8417644..46822d5 100644
+--- a/tools/perf/Documentation/perf-sched.txt
++++ b/tools/perf/Documentation/perf-sched.txt
+@@ -8,11 +8,11 @@ perf-sched - Tool to trace/measure scheduler properties (latencies)
+ SYNOPSIS
+ --------
+ [verse]
+-'perf sched' {record|latency|replay|trace}
++'perf sched' {record|latency|map|replay|trace}
+ 
+ DESCRIPTION
+ -----------
+-There are four variants of perf sched:
++There are five variants of perf sched:
+ 
+   'perf sched record <command>' to record the scheduling events
+   of an arbitrary workload.
+@@ -30,8 +30,22 @@ There are four variants of perf sched:
+   of the workload as it occurred when it was recorded - and can repeat
+   it a number of times, measuring its performance.)
+ 
++  'perf sched map' to print a textual context-switching outline of
++  workload captured via perf sched record.  Columns stand for
++  individual CPUs, and the two-letter shortcuts stand for tasks that
++  are running on a CPU. A '*' denotes the CPU that had the event, and
++  a dot signals an idle CPU.
++
+ OPTIONS
+ -------
++-i::
++--input=<file>::
++        Input file name. (default: perf.data)
++
++-v::
++--verbose::
++        Be more verbose. (show symbol address, etc)
++
+ -D::
+ --dump-raw-trace=::
+         Display verbose dump of the sched data.
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.6.2.5
 
