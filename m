@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab0LAQLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:11:52 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46840 "EHLO mx1.suse.de"
+	id S1754069Ab0LAQPF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:15:05 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:38965 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab0LAQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:11:41 -0500
-Date: Wed, 1 Dec 2010 08:10:39 -0800
-From: Greg KH <gregkh@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
-Message-ID: <20101201161039.GB29318@suse.de>
-References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752090Ab0LAQPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 11:15:03 -0500
+Date: Wed, 1 Dec 2010 08:14:57 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
+        Neil Horman <nhorman@redhat.com>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>
+Subject: Re: [Patch] bonding: clean up netpoll code
+Message-ID: <20101201081457.23102445@nehalam>
+In-Reply-To: <20101201075043.5741.29172.sendpatchset@localhost.localdomain>
+References: <20101201075043.5741.29172.sendpatchset@localhost.localdomain>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 01:28:41PM +0900, Namhyung Kim wrote:
-> Annotate whci_hcd_id_table as '__used' to fix following warning:
-> 
->   CC      drivers/usb/host/whci/hcd.o
-> drivers/usb/host/whci/hcd.c:359: warning: ‘whci_hcd_id_table’ defined but not used
+On Wed, 1 Dec 2010 02:45:45 -0500
+Amerigo Wang <amwang@redhat.com> wrote:
 
-Are you seeing this warning when you build the module into the kernel,
-or as a module?
+> +	if ((slave_dev->npinfo = bond_netpoll_info(bond))) {
 
-thanks,
+Split assignment and conditional into two lines
 
-greg k-h
+
+-- 
