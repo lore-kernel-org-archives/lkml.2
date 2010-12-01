@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0LAO7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:59:52 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:39866 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751736Ab0LAO7v (ORCPT
+	id S1753858Ab0LAPBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 10:01:36 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:44677 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751173Ab0LAPBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:59:51 -0500
-Date: Wed, 1 Dec 2010 09:59:49 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
-Subject: Re: Nobody cared about IRQs at shutdown
-In-Reply-To: <1291144540.5573.4.camel@Nokia-N900-51-1>
-Message-ID: <Pine.LNX.4.44L0.1012010948270.1629-100000@iolanthe.rowland.org>
+	Wed, 1 Dec 2010 10:01:35 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: dDnalm0VM1nn3oPaigNYEbJOEWegpXeLyy1w9swD_MUos42
+ jfW42qw7t.p7LvVItYrgLkBPjtPRqiAXsiIkctScszujtFzpc4Ne1K21dBPk
+ MzJvJmrqcsq4a_OgLAt4XpCkEHPYeMmIuwltiE9OF2eobMQrav9.QKgLjGSk
+ hKXXJk42DrHq7aizj3yShdV2zZqKfndiEOiApa.cOZyY6YGrddCUvcOKIu1l
+ AvTIeiWM90wpidAJy78odibwL_qvVlBQ6sgU82khzuXm6d.fFHAKp6uOhfwp
+ CC1E7a1MrVzm1Os58XtI.
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 1 Dec 2010 09:01:32 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] Provide control over unmapped pages
+In-Reply-To: <20101130142509.4f49d452.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1012010859020.2849@router.home>
+References: <20101130101126.17475.18729.stgit@localhost6.localdomain6> <20101130101602.17475.32611.stgit@localhost6.localdomain6> <20101130142509.4f49d452.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, Alexander E. Patrakov wrote:
+On Tue, 30 Nov 2010, Andrew Morton wrote:
 
-> Alan Stern wrote:
-> > On Tue, 30 Nov 2010, Alexander E. Patrakov wrote:
-> > 
-> > > In fact, I think that there is something bad, not specific to USB, 
-> > > FireWire or SATA. Without systemd, all those subsystems function 
-> > > properly at shutdown. With systemd, it looks like there are many 
-> > > mishandled interrupts (all of USB, FireWire and SATA) at shutdown.
-> > > What    could be this common thing? ACPI?
-> > 
-> > I don't know -- what is systemd?
-> 
-> Systemd is a new init developed by Lennart Poettering. You can learn more at http://freedesktop.org/wiki/Software/systemd
-> 
-> It employs high concurrency in starting and stopping services, starts many things on demand and thus boots faster than the traditional SysV init. And also exposes this bug :(
+> > +#define UNMAPPED_PAGE_RATIO 16
+>
+> Well.  Giving 16 a name didn't really clarify anything.  Attentive
+> readers will want to know what this does, why 16 was chosen and what
+> the effects of changing it will be.
 
-All right.
+The meaning is analoguous to the other zone reclaim ratio. But yes it
+should be justified and defined.
 
-One last test.  What happens if you unbind the firewire driver and all
-the UHCI controllers except the one attached to IRQ 16?
+> > Reviewed-by: Christoph Lameter <cl@linux.com>
+>
+> So you're OK with shoving all this flotsam into 100,000,000 cellphones?
+> This was a pretty outrageous patchset!
 
-Possible explanations: IRQs are being misrouted, so the system thinks
-it gets IRQ 16 when in fact a different interrupt line was activated
-(this is related to ACPI, but I don't see any connection to systemd).  
-Or the interrupt layer is malfunctioning and it thinks IRQs are
-arriving when they aren't.
-
-Alan Stern
-
+This is a feature that has been requested over and over for years. Using
+/proc/vm/drop_caches for fixing situations where one simply has too many
+page cache pages is not so much fun in the long run.
 
