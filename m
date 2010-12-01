@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab0LAKI2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:08:28 -0500
-Received: from lo.gmane.org ([80.91.229.12]:51162 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752986Ab0LAKI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:08:26 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Alexander Clouter <alex@digriz.org.uk>
-Subject: Re: low overhead packet capturing on linux
-Date: Wed, 1 Dec 2010 09:21:05 +0000
-Message-ID: <1lghs7-l16.ln1@chipmunk.wormnet.eu>
-References: <201011301728.05197.thomas@fjellstrom.ca>
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
-User-Agent: tin/1.9.6-20100522 ("Lochruan") (UNIX) (Linux/2.6.32-5-sparc64-smp (sparc64))
+	id S1753150Ab0LAKRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 05:17:13 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:48704 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab0LAKRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 05:17:12 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Subject: Re: Free memory never fully used, swapping
+Cc: kosaki.motohiro@jp.fujitsu.com, Simon Kirby <sim@hostway.ca>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+In-Reply-To: <alpine.DEB.2.00.1011301309240.3134@router.home>
+References: <20101130092534.82D5.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011301309240.3134@router.home>
+Message-Id: <20101201114226.ABAB.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Dec 2010 19:17:07 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
->
-> I'm working on a little tool to monitor and measure bandwidth use on a vm 
-> host, down to keeping track of all guest and host bandwidth, including, 
-> eventually per layer7 protocol use.
->
-...iptables?  You get packet and byte counters there for free and you 
-can have a 'web, smtp, $service[0], $service[1], ... , other' easily 
-enough.
+> On Tue, 30 Nov 2010, KOSAKI Motohiro wrote:
+> 
+> > This?
+> 
+> Specifying a parameter to temporarily override to see if this has the
+> effect is ok. But this has worked for years now. There must be something
+> else going with with reclaim that causes these issues now.
 
-Five to eight years ago we (an ISP) used this at a previous workplace of 
-mine to do xDSL traffic accounting for our users.
+I don't think this has worked. Simon have found the corner case recently,
+but it is not new.
 
-Cheers
+So I hope you realize that high order allocation is no free lunch. __GFP_NORETRY
+makes no sense really. Even though we have compaction, high order reclaim is still
+costly operation.
 
--- 
-Alexander Clouter
-.sigmonster says: problem drinker, n.:
-                  	A man who never buys.
+I don't think SLUB's high order allocation trying is bad idea. but now It 
+does more costly trying. that's bad. Also I'm worry about SLUB assume too 
+higher end machine. Now Both SLES and RHEL decided to don't use SLUB, 
+instead use SLAB. Now linux community is fragmented. If you are still 
+interesting SL*B unification, can you please consider to join corner 
+case smashing activity?
+
+
 
