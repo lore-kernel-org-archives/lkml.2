@@ -1,53 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab0LARdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:33:50 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57169 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab0LARdt convert rfc822-to-8bit (ORCPT
+	id S1755482Ab0LARfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:35:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55939 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab0LARfM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:33:49 -0500
+	Wed, 1 Dec 2010 12:35:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xm0hkPQKdkljEOwWMpWMkeO6GQE0Tyybwcz0hzDMKFgCNgUDqsAKAm5nfCFBrm7DLE
+         FlwRchNypbfR4mM1dRGTzcjTF+c6u2wdRsFBdXXhahY/67QAWYkRowQ/LIp3kMUBPsbT
+         Bf9XBrCXFurQIIWYeWKSX2DJwYNRqkeZX+5CY=
 MIME-Version: 1.0
-In-Reply-To: <20101201161927.GC9337@hack>
-References: <AANLkTik_TQfQDERdRQaQek3S7280sQBmHGKOnhJwU5EE@mail.gmail.com>
-	<AANLkTim=srU8kv-DwL4jgwRS-yH8WN34PgCqsijZvYeV@mail.gmail.com>
-	<20101201161927.GC9337@hack>
-Date: Wed, 1 Dec 2010 17:33:48 +0000
-X-Google-Sender-Auth: 7A0evGTTA9WXWdcVfzpZJmJUgv4
-Message-ID: <AANLkTikFt=dyEdsKp+VtU76pKyoLzdug1ZDPPD-3h=K-@mail.gmail.com>
-Subject: Re: Problems using EXPORT_SYMBOL with lib/flex_array
-From: Alex Bennee <kernel-hacker@bennee.com>
-To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101201165229.GC13415@redhat.com>
+References: <20101107194547.GA12521@basil.fritz.box>
+	<4CD71C8B.1050604@redhat.com>
+	<20101107230508.GB17592@basil.fritz.box>
+	<20101108145809.GD29714@redhat.com>
+	<1289238930-sup-9765@think>
+	<20101114205925.GA20451@redhat.com>
+	<AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>
+	<4CE05A9E.9090204@redhat.com>
+	<AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
+	<AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
+	<20101201165229.GC13415@redhat.com>
+Date: Wed, 1 Dec 2010 18:35:10 +0100
+Message-ID: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+Subject: Re: dm-crypt barrier support is effective
+From: Matt <jackdachef@gmail.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
+        htejun@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 December 2010 16:19, Am√©rico Wang <xiyou.wangcong@gmail.com> wrote:
-> On Wed, Dec 01, 2010 at 01:20:30PM +0000, Alex Bennee wrote:
->>On 1 December 2010 12:05, Alex Bennee <kernel-hacker@bennee.com>
-wrote:
-<snip>
->>Tweaking the lib/Makefile so obj-y included flex_array.o did
->>the trick.
->>
->>I'm unsure if this behaviour is what is wanted?
+On Wed, Dec 1, 2010 at 5:52 PM, Mike Snitzer <snitzer@redhat.com> wrote:
+> On Wed, Dec 01 2010 at 11:05am -0500,
+> Matt <jackdachef@gmail.com> wrote:
 >
-> Yes, but not sure about flex_array.o.
-> Which functions in flex_array.c do you need in your module anyway?
+>> On Mon, Nov 15, 2010 at 12:24 AM, Matt <jackdachef@gmail.com> wrote:
+>> > On Sun, Nov 14, 2010 at 10:54 PM, Milan Broz <mbroz@redhat.com> wrote:
+>> >> On 11/14/2010 10:49 PM, Matt wrote:
+>> >>> only with the dm-crypt scaling patch I could observe the data-corruption
+>> >>
+>> >> even with v5 I sent on Friday?
+>> >>
+>> >> Are you sure that it is not related to some fs problem in 2.6.37-rc1?
+>> >>
+>> >> If it works on 2.6.36 without problems, it is probably problems somewhere
+>> >> else (flush/fua conversion was trivial here - DM is still doing full flush
+>> >> and there are no other changes in code IMHO.)
+>> >>
+>> >> Milan
+>> >>
+>> >
+>> > Hi Milan,
+>> >
+>> > I'm aware of your new v5 patch (which should include several
+>> > improvements (or potential fixes in my case) over the v3 patch)
+>> >
+>> > as I already wrote my schedule unfortunately currently doesn't allow
+>> > me to test it
+>> >
+>> > * in the case of no corruption it would be nice to have 2.6.37-rc* running :)
+>> >
+>> > * in the case of data corruption that would mean restoring my system -
+>> > since it's my production box and right now I don't have a fallback at
+>> > reach
+>> > at earliest I could give it a shot at the beginning of December. Then
+>> > I could also test reiserfs and ext4 as a system partition to rule out
+>> > that it's
+>> > a ext4-specific thing (currently I'm running reiserfs on my system-partition).
+>> >
+>> > Thanks !
+>> >
+>> > Matt
+>> >
+>>
+>>
+>> OK guys,
+>>
+>> I've updated my system to latest glibc 2.12.1-r3 (on gentoo) and gcc
+>> hardened 4.5.1-r1 with 1.4 patchset which also uses pie (that one
+>> should fix problems with graphite)
+>>
+>> not much system changes besides that,
+>>
+>> with those it worked fine with 2.6.36 and I couldn't observe any
+>> filesystem corruption
+>
+> So dm-crypt cpu scalability v5 with 2.6.36 worked fine.
+>
+>> the bad news is: I'm again seeing corruption (!) [on ext4, on the /
+>> (root) partition]:
+>
+> ...
+>
+>> ===> so the No.1 trigger of this kind of corruption where files are
+>> empty, missing or the content gets corrupted (at least for me) is
+>> compiling software which is part of the system (e.g. emerge -e
+>> system);
+>>
+>> the system is Gentoo ~amd64; with binutils 2.20.51.0.12 (afaik this
+>> one has changed from 2.20.51.0.10 to 2.20.51.0.12 from my last
+>> report); gcc 4.5.1 (Gentoo Hardened 4.5.1-r1 p1.4, pie-0.4.5) <--
+>> works fine with 2.6.36 and 2.6.36.1
+>>
+>> I'm not sure whether benchmarks would have the same "impact"
+>
+> Seems this emerge is a good test if it reliably enduces the corruption.
+>
+>> the kernel currently running is 2.6.37-rc4 with the [PATCH v5] dm
+>> crypt: scale to multiple CPUs
+>>
+>> besides that additional patchsets are applied (I apologize that it's
+>> not only plain vanilla with the dm-crypt patch):
+>> * Prevent kswapd dumping excessive amounts of memory in response to
+>> high-order allocation
+>> * ext4: coordinate data-only flush requests sent by fsync
+>> * vmscan: protect executable page from inactive list scan
+>> * writeback livelock fixes v2
+>
+> Have you actually experienced any of the issues the above patches are
+> meant to address? †Seems you're applying patches guessing/hoping
+> that they'll fix the dm-crypt corruption.
+>
+>> I originally had hoped that the mentioned patch in "ext4: coordinate
+>> data-only flush requests sent by fsync", namely: "md: Call
+>> blk_queue_flush() to establish flush/fua" and additional changes &
+>> fixes to 2.6.37-rc4 would once and for all fix problems but it didn't
+>
+> That md patch doesn't help DM at all. †And the ext4 coordination patch
+> is completely bleeding and actually broken (especially as it relates to
+> DM -- but that breakage is ony a concern for request-based DM,
+> e.g. DM-mapth), anyway see:
+> https://www.redhat.com/archives/dm-devel/2010-November/msg00185.html
+>
+> I'm not sure which patches you're using for the ext4 fsync changes but
+> please don't use them at all. †It is purely an optimization for
+> extremely heavy fsync workloads and is only getting in the way at this
+> point.
+>
+>> I'm also using the the writeback livelock fixes and the dm-crypt scale
+>> to multiple CPUs with 2.6.36 so those generally work fine
+>>
+>> so it has be something that changed from 2.6.36->2.6.37 within
+>> dm-crypt or other parts that gets stressed and breaks during usage of
+>> the "[PATCH v5] dm crypt: scale to multiple CPUs" patch
+>>
+>> the other included patches surely won't be the cause for that (100%).
+>>
+>> Filesystem corruption only seems to occur on the / (root) where the
+>> system resides -
+>
+> We need better fault isolation; you've introduced enough change that it
+> isn't helping zero in on what your particular problem is. †Milan has
+> tested he latest version of the dm-crypt cpu scalability patch quite a
+> bit and hasn't seen any corruption -- but clearly the corruption you're
+> seeing is a real concern and we need to get to the bottom of it.
+>
+> I'd really appreciate it if you could just use Linus' latest linux-2.6
+> tree plus Milan's latest patch (technically v6 even though it wasn't
+> labeled as such): https://patchwork.kernel.org/patch/365542/
+>
+> Porting that same v6 patch to 2.6.36 would also be nice (to verify you
+> still don't see any corruption there).
+>
+> Mike
+>
 
-I want to use it to store a sparse array of ATM cell re-assembly
-buffers for my ATM over Ethernet driver. Using the per-vcc user_back
-structure causes problems when stacked with things like br2684.
+Hi Mike,
 
-So I'm currently using flex_array_alloc/free/clear/put although I
-exported them all. I would have thought using library functions was
-preferable to rolling your own?
+those other patches were for other problems I was seeing: e.g.
+interactivity/latency problems I was experiencing during heavy
+flushing, etc. and some more - so I speculated that those would
+improve it
 
-I'm open to other suggestions though.
 
--- 
-Alex, homepage: http://www.bennee.com/~alex/
-http://www.half-llama.co.uk
+OK, enough of that additional stuff which distracts from this issue -
+I'll leave them out for now ...
+
+Thanks for the info !
+
+To console you: I was using v5 from Milan's patch up until now and I
+haven't noticed any corruption with it in conjunction with 2.6.36
+
+I modified it according to Milan's mail:
+
+>On 11/15/2010 08:25 AM, Heinz Diehl wrote:
+>> On 15.11.2010, Milan Broz wrote:
+>
+>> drivers/md/dm-crypt.c: In function crypt_ctr':
+>> drivers/md/dm-crypt.c:1408: error: WQ_MEM_RECLAIM' undeclared (first use in this function)
+>> drivers/md/dm-crypt.c:1408: error: (Each undeclared identifier is reported only once
+>> drivers/md/dm-crypt.c:1408: error: for each function it appears in.)
+
+>It should be enough to just replace WQ_MEM_RECLAIM to WQ_RESCUER for 2.6.36.
+>(that define is new in 2.6.37)
+
+>Milan
+
+http://www.redhat.com/archives/dm-devel/2010-November/msg00099.html
+
+and that worked fine
+
+Thanks for pointing to v6 ! I hadn't noticed that there was a new one :)
+
+Well, so I'll restore my box to a working/productive state and will
+try out v6 (I'm pretty confident that it'll work without problems).
+
+After that I'll see what info Tejun and the others need when the next
+corruption might occur with vanilla 2.6.37-rc* and v6 so that there's
+something to investigate
+
+Thanks & Regards
+
+Matt
