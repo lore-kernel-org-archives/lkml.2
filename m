@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab0LADjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:39:53 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:21700 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab0LADjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:39:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:newsgroups:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=YtubH4iaunBC7Tk5nTcy31dJEp9gO1BxlbDZp0RW9wlP2bw5C6XpRe5PPukUIH5vAt
-         O6rn5gQuiT/hkA0sUlgA==
-Message-ID: <4CF5C379.8030204@google.com>
-Date: Tue, 30 Nov 2010 19:39:37 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	id S1754580Ab0LADjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:39:43 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:56365 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754533Ab0LADjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:39:37 -0500
+Date: Wed, 1 Dec 2010 03:39:21 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1012010334080.20976@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Mike Galbraith <efault@gmx.de>
-CC: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-References: <20101121133744.GA10765@elte.hu>	 <1290700829.4759.16.camel@maggy.simson.net> <1290954299.30515.15.camel@marge.simson.net>
-In-Reply-To: <1290954299.30515.15.camel@marge.simson.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/10 06:24, Mike Galbraith wrote:
-> On Thu, 2010-11-25 at 09:00 -0700, Mike Galbraith wrote:
->
->> My vacation is (sniff) over, so I won't get a fully tested patch out the
->> door for review until I get back home.
->
-> Either I forgot to pack my eyeballs, or laptop is just too dinky and
-> annoying.  Now back home on beloved box, this little bugger poked me
-> dead in the eye.
->
-> Something else is seriously wrong though.  36.1 with attached (plus
-> sched, cgroup: Fixup broken cgroup movement) works a treat, whereas
-> 37.git and tip with fixlet below both suck rocks.  With a make -j40
-> running, wakeup-latency is showing latencies of>100ms, amarok skips,
-> mouse lurches badly.. generally horrid.  Something went south.
->
 
-I'm looking at this.
+Hi Linus,
 
-The share:share ratios looked good in static testing, but perhaps we 
-need a little more wake-up boost to improve interactivity.
+lots of regression fixes, I delayed sending this until I tracked down why 
+37-rc wouldn't show anything on my newly acquired HP 2540p when 2.6.36 
+worked, some eDP changes to fix some Sony's regressed the HPs so we've just reverted it and 
+hopefully jbarnes can work out what he did wrong when get he gets back. So 
+anyone who's Sony magically started to work in -rc1 will be disappointed 
+but at least we don't have a regression since .36.
 
-Should have something tomorrow.
+Otherwise there are regression fixes for Intel and Radeon hw, with the 
+biggest change being the pagefault handling fixes in i915.
 
-- Paul
+Dave.
 
-> sched: fix 3d4b47b4 typo.
->
-> Signed-off-by: Mike Galbraith<efault@gmx.de>
-> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar<mingo@elte.hu>
-> LKML-Reference: new submission
-> ---
->   kernel/sched.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -8087,7 +8087,6 @@ static inline void unregister_fair_sched
->   {
->   	struct rq *rq = cpu_rq(cpu);
->   	unsigned long flags;
-> -	int i;
->
->   	/*
->   	* Only empty task groups can be destroyed; so we can speculatively
-> @@ -8097,7 +8096,7 @@ static inline void unregister_fair_sched
->   		return;
->
->   	raw_spin_lock_irqsave(&rq->lock, flags);
-> -	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
-> +	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
->   	raw_spin_unlock_irqrestore(&rq->lock, flags);
->   }
->   #else /* !CONFG_FAIR_GROUP_SCHED */
->
+The following changes since commit 3561d43fd289f590fdae672e5eb831b8d5cf0bf6:
 
+  Linux 2.6.37-rc3 (2010-11-21 15:18:56 -0800)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (6):
+      drm/radeon/kms: fix regression in rs4xx i2c setup
+      drm/radeon/kms: fix resume regression for some r5xx laptops
+      Revert "drm/radeon/kms: fix typo in r600 cs checker"
+      drm/radeon/kms: fix typos in disabled vbios code
+      drm/radeon/kms: fix interlaced and doublescan handling
+      drm/radeon/kms: add workaround for dce3 ddc line vbios bug
+
+Chris Wilson (9):
+      drm/i915: Prevent integer overflow when validating the execbuffer
+      drm/i915: Only save/restore cursor regs if !KMS
+      Merge remote branch 'linus' into drm-intel-fixes
+      drm/i915/sdvo: Only enable HDMI encodings only if the commandset is supported
+      drm/i915: Handle pagefaults in execbuffer user relocations
+      drm/i915/sdvo: Always fallback to querying the shared DDC line
+      drm/i915/sdvo: Always add a 30ms delay to make SDVO TV detection reliable
+      drm/i915: Clear pfit registers when not used by any outputs
+      Revert "drm/i915/dp: use VBT provided eDP params if available"
+
+Daniel Vetter (1):
+      drm/i915: fix regression due to ba3d8d749b01548b9
+
+Dave Airlie (2):
+      Merge remote branch 'intel/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
+      Merge remote branch 'intel/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
+
+Joe Perches (1):
+      MAINTAINERS: INTEL DRM DRIVERS list (intel-gfx) is subscribers-only
+
+Keith Packard (2):
+      drm: Set connector DPMS status to ON in drm_crtc_helper_set_config
+      drm: record monitor status in output_poll_execute
+
+ MAINTAINERS                                |    2 +-
+ drivers/gpu/drm/drm_crtc_helper.c          |   14 +-
+ drivers/gpu/drm/i915/i915_gem.c            |  513 +++++++++++++++++-----------
+ drivers/gpu/drm/i915/i915_suspend.c        |   40 ++--
+ drivers/gpu/drm/i915/intel_display.c       |    7 +-
+ drivers/gpu/drm/i915/intel_dp.c            |  146 +++-----
+ drivers/gpu/drm/i915/intel_drv.h           |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c          |   19 +-
+ drivers/gpu/drm/i915/intel_sdvo.c          |   84 ++----
+ drivers/gpu/drm/radeon/atom.c              |    1 +
+ drivers/gpu/drm/radeon/r600_cs.c           |    2 +-
+ drivers/gpu/drm/radeon/r600_reg.h          |    1 +
+ drivers/gpu/drm/radeon/radeon_atombios.c   |   16 +
+ drivers/gpu/drm/radeon/radeon_bios.c       |   13 +-
+ drivers/gpu/drm/radeon/radeon_combios.c    |    2 +-
+ drivers/gpu/drm/radeon/radeon_connectors.c |   34 ++
+ 16 files changed, 511 insertions(+), 385 deletions(-)
