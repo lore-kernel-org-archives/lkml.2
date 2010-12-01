@@ -1,232 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab0LAAOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:14:20 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:48862 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab0LAAOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:14:18 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/3] Provide control over unmapped pages
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>
-In-Reply-To: <20101130101602.17475.32611.stgit@localhost6.localdomain6>
-References: <20101130101126.17475.18729.stgit@localhost6.localdomain6> <20101130101602.17475.32611.stgit@localhost6.localdomain6>
-Message-Id: <20101130204532.8322.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+	id S1752896Ab0LAAOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:14:51 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:49941 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082Ab0LAAOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 19:14:49 -0500
+Subject: Re: [PATCH v6 0/4] ext4: Coordinate data-only flush requests sent
+ by fsync
+From: Mingming Cao <cmm@us.ibm.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Jens Axboe <axboe@kernel.dk>,
+        "Theodore Ts'o" <tytso@mit.edu>, Neil Brown <neilb@suse.de>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
+        dm-devel@redhat.com, Tejun Heo <tj@kernel.org>,
+        linux-ext4@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Josef Bacik <josef@redhat.com>
+In-Reply-To: <4CF43BC9.8040603@redhat.com>
+References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
+	 <4CF43BC9.8040603@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Dec 2010 09:14:13 +0900 (JST)
+Date: Tue, 30 Nov 2010 16:14:39 -0800
+Message-ID: <1291162479.2419.179.camel@mingming-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Provide control using zone_reclaim() and a boot parameter. The
-> code reuses functionality from zone_reclaim() to isolate unmapped
-> pages and reclaim them as a priority, ahead of other mapped pages.
+On Mon, 2010-11-29 at 18:48 -0500, Ric Wheeler wrote:
+> On 11/29/2010 05:05 PM, Darrick J. Wong wrote:
+> > On certain types of hardware, issuing a write cache flush takes a considerable
+> > amount of time.  Typically, these are simple storage systems with write cache
+> > enabled and no battery to save that cache after a power failure.  When we
+> > encounter a system with many I/O threads that write data and then call fsync
+> > after more transactions accumulate, ext4_sync_file performs a data-only flush,
+> > the performance of which is suboptimal because each of those threads issues its
+> > own flush command to the drive instead of trying to coordinate the flush,
+> > thereby wasting execution time.
+> >
+> > Instead of each fsync call initiating its own flush, there's now a flag to
+> > indicate if (0) no flushes are ongoing, (1) we're delaying a short time to
+> > collect other fsync threads, or (2) we're actually in-progress on a flush.
+> >
+> > So, if someone calls ext4_sync_file and no flushes are in progress, the flag
+> > shifts from 0->1 and the thread delays for a short time to see if there are any
+> > other threads that are close behind in ext4_sync_file.  After that wait, the
+> > state transitions to 2 and the flush is issued.  Once that's done, the state
+> > goes back to 0 and a completion is signalled.
+> >
+> > Those close-behind threads see the flag is already 1, and go to sleep until the
+> > completion is signalled.  Instead of issuing a flush themselves, they simply
+> > wait for that first thread to do it for them.  If they see that the flag is 2,
+> > they wait for the current flush to finish, and start over.
+> >
+> > However, there are a couple of exceptions to this rule.  First, there exist
+> > high-end storage arrays with battery-backed write caches for which flush
+> > commands take very little time (<  2ms); on these systems, performing the
+> > coordination actually lowers performance.  Given the earlier patch to the block
+> > layer to report low-level device flush times, we can detect this situation and
+> > have all threads issue flushes without coordinating, as we did before.  The
+> > second case is when there's a single thread issuing flushes, in which case it
+> > can skip the coordination.
+> >
+> > This author of this patch is aware that jbd2 has a similar flush coordination
+> > scheme for journal commits.  An earlier version of this patch simply created a
+> > new empty journal transaction and committed it, but that approach was shown to
+> > increase the amount of write traffic heading towards the disk, which in turn
+> > lowered performance considerably, especially in the case where directio was in
+> > use.  Therefore, this patch adds the coordination code directly to ext4.
 > 
-> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> ---
->  include/linux/swap.h |    5 ++-
->  mm/page_alloc.c      |    7 +++--
->  mm/vmscan.c          |   72 +++++++++++++++++++++++++++++++++++++++++++++++++-
->  3 files changed, 79 insertions(+), 5 deletions(-)
+> Hi Darrick,
 > 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index eba53e7..78b0830 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -252,11 +252,12 @@ extern int vm_swappiness;
->  extern int remove_mapping(struct address_space *mapping, struct page *page);
->  extern long vm_total_pages;
->  
-> -#ifdef CONFIG_NUMA
-> -extern int zone_reclaim_mode;
->  extern int sysctl_min_unmapped_ratio;
->  extern int sysctl_min_slab_ratio;
->  extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
-> +extern bool should_balance_unmapped_pages(struct zone *zone);
-> +#ifdef CONFIG_NUMA
-> +extern int zone_reclaim_mode;
->  #else
->  #define zone_reclaim_mode 0
->  static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 62b7280..4228da3 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1662,6 +1662,9 @@ zonelist_scan:
->  			unsigned long mark;
->  			int ret;
->  
-> +			if (should_balance_unmapped_pages(zone))
-> +				wakeup_kswapd(zone, order);
-> +
+> Just curious why we would need to have batching in both places? Doesn't your 
+> patch set make the jbd2 transaction batching redundant?
+> 
 
-You don't have to add extra branch into fast path.
+We hoped JBD2 could take care of the batching too. But ftrace shows
+there are a fair amount of barriers (440 barriers/second, if I remember
+right) sending from ext4_sync_file(), but not coming from jbd2 side. :(
 
+> I noticed that the patches have a default delay and a mount option to override 
+> that default. The jbd2 code today tries to measure the average time needed in a 
+> transaction and automatically tune itself. Can't we do something similar with 
+> your patch set? (I hate to see yet another mount option added!)
+> 
 
->  			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
->  			if (zone_watermark_ok(zone, order, mark,
->  				    classzone_idx, alloc_flags))
-> @@ -4136,10 +4139,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->  
->  		zone->spanned_pages = size;
->  		zone->present_pages = realsize;
-> -#ifdef CONFIG_NUMA
-> -		zone->node = nid;
->  		zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
->  						/ 100;
-> +#ifdef CONFIG_NUMA
-> +		zone->node = nid;
->  		zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
->  #endif
->  		zone->name = zone_names[j];
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 0ac444f..98950f4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -145,6 +145,21 @@ static DECLARE_RWSEM(shrinker_rwsem);
->  #define scanning_global_lru(sc)	(1)
->  #endif
->  
-> +static unsigned long balance_unmapped_pages(int priority, struct zone *zone,
-> +						struct scan_control *sc);
-> +static int unmapped_page_control __read_mostly;
-> +
-> +static int __init unmapped_page_control_parm(char *str)
-> +{
-> +	unmapped_page_control = 1;
-> +	/*
-> +	 * XXX: Should we tweak swappiness here?
-> +	 */
-> +	return 1;
-> +}
-> +__setup("unmapped_page_control", unmapped_page_control_parm);
-> +
-> +
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
->  						  struct scan_control *sc)
->  {
-> @@ -2223,6 +2238,12 @@ loop_again:
->  				shrink_active_list(SWAP_CLUSTER_MAX, zone,
->  							&sc, priority, 0);
->  
-> +			/*
-> +			 * We do unmapped page balancing once here and once
-> +			 * below, so that we don't lose out
-> +			 */
-> +			balance_unmapped_pages(priority, zone, &sc);
+I don't like a new mount option too. Darrick's new mount option is for
+the threshold to turn on/off batching. Probably could make it a tunables
+instead of a mount option.
 
-You can't invoke any reclaim from here. It is in zone balancing detection
-phase. It mean your code reclaim pages from zones which has lots free pages too.
-
-> +
->  			if (!zone_watermark_ok_safe(zone, order,
->  					high_wmark_pages(zone), 0, 0)) {
->  				end_zone = i;
-> @@ -2258,6 +2279,11 @@ loop_again:
->  				continue;
->  
->  			sc.nr_scanned = 0;
-> +			/*
-> +			 * Balance unmapped pages upfront, this should be
-> +			 * really cheap
-> +			 */
-> +			balance_unmapped_pages(priority, zone, &sc);
-
-
-This code break page-cache/slab balancing logic. And this is conflict
-against Nick's per-zone slab effort.
-
-Plus, high-order + priority=5 reclaim Simon's case. (see "Free memory never 
-fully used, swapping" threads)
-
->  
->  			/*
->  			 * Call soft limit reclaim before calling shrink_zone.
-> @@ -2491,7 +2517,8 @@ void wakeup_kswapd(struct zone *zone, int order)
->  		pgdat->kswapd_max_order = order;
->  	if (!waitqueue_active(&pgdat->kswapd_wait))
->  		return;
-> -	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
-> +	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0) &&
-> +		!should_balance_unmapped_pages(zone))
->  		return;
->  
->  	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
-> @@ -2740,6 +2767,49 @@ zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
->  }
->  
->  /*
-> + * Routine to balance unmapped pages, inspired from the code under
-> + * CONFIG_NUMA that does unmapped page and slab page control by keeping
-> + * min_unmapped_pages in the zone. We currently reclaim just unmapped
-> + * pages, slab control will come in soon, at which point this routine
-> + * should be called balance cached pages
-> + */
-> +static unsigned long balance_unmapped_pages(int priority, struct zone *zone,
-> +						struct scan_control *sc)
-> +{
-> +	if (unmapped_page_control &&
-> +		(zone_unmapped_file_pages(zone) > zone->min_unmapped_pages)) {
-> +		struct scan_control nsc;
-> +		unsigned long nr_pages;
-> +
-> +		nsc = *sc;
-> +
-> +		nsc.swappiness = 0;
-> +		nsc.may_writepage = 0;
-> +		nsc.may_unmap = 0;
-> +		nsc.nr_reclaimed = 0;
-
-Don't you need to fill nsc.nr_to_reclaim field?
-
-> +
-> +		nr_pages = zone_unmapped_file_pages(zone) -
-> +				zone->min_unmapped_pages;
-> +		/* Magically try to reclaim eighth the unmapped cache pages */
-> +		nr_pages >>= 3;
-
-Please don't make magic.
-
-> +
-> +		zone_reclaim_unmapped_pages(zone, &nsc, nr_pages);
-> +		return nsc.nr_reclaimed;
-> +	}
-> +	return 0;
-> +}
-> +
-> +#define UNMAPPED_PAGE_RATIO 16
-
-Please don't make magic ratio.
-
-> +bool should_balance_unmapped_pages(struct zone *zone)
-> +{
-> +	if (unmapped_page_control &&
-> +		(zone_unmapped_file_pages(zone) >
-> +			UNMAPPED_PAGE_RATIO * zone->min_unmapped_pages))
-> +		return true;
-> +	return false;
-> +}
-> +
-> +/*
->   * Try to free up some pages from this zone through reclaim.
->   */
->  static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
-
-
-Hmm....
-
-As far as I reviewed, I can't find any reason why this patch works as expected.
-So, I think cleancache looks promising more than this idea. Have you seen Dan's
-patch? I would suggested discuss him.
-
-Thanks.
+Regards,
+Mingming
+> Regards,
+> 
+> Ric
+> 
+> 
 
 
