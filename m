@@ -1,126 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0LAAFC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:05:02 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47408 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab0LAAFA convert rfc822-to-8bit (ORCPT
+	id S1752211Ab0LAAJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:09:55 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34015 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751366Ab0LAAJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:05:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=C3izLBcUGZrSxWFrl1WfvI9mJxbibx7jymrll1SMLzfg+yzfhMR50101BzLC7RRuPR
-         oJXPK+urzB03MbmMZ/Y+uFqzXFzPjv0eXSAc027N89uNYNY1BOt/d0v9kXMEi06Uj9yN
-         dNo0qUfy4YJTIpEZHGTuX8ioP8mYq4VX9a1QA=
-MIME-Version: 1.0
-In-Reply-To: <20101130154905.b5c8ab31.akpm@linux-foundation.org>
-References: <1291085501-31494-1-git-send-email-ying.huang@intel.com>
-	<1291085501-31494-3-git-send-email-ying.huang@intel.com>
-	<20101129190343.7d7cea12.akpm@linux-foundation.org>
-	<1291087752.12648.95.camel@yhuang-dev>
-	<20101129194033.393e1f70.akpm@linux-foundation.org>
-	<1291100431.12648.165.camel@yhuang-dev>
-	<20101130154905.b5c8ab31.akpm@linux-foundation.org>
-Date: Wed, 1 Dec 2010 08:04:58 +0800
-Message-ID: <AANLkTimLDCy3TebSAtC8b9RbBeyLBqiA=xmSHsQPQfct@mail.gmail.com>
-Subject: Re: [PATCH -v2 2/3] ACPI, APEI, Add APEI generic error status print support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Nov 2010 19:09:54 -0500
+Date: Tue, 30 Nov 2010 16:09:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nelson Elhage <nelhage@ksplice.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm_release: Do a set_fs(USER_DS) before handling
+ clear_child_tid.
+Message-Id: <20101130160950.96153286.akpm@linux-foundation.org>
+In-Reply-To: <1291083556-5894-1-git-send-email-nelhage@ksplice.com>
+References: <1291083556-5894-1-git-send-email-nelhage@ksplice.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 7:49 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 30 Nov 2010 15:00:31 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
->
->> > However in this case you are avowedly treating the printks as a
->> > userspace interface, with the intention that software be written to
->> > parse them, yes?  So once they're in place, we cannot change them?  That
->> > makes it more important.
->>
->> If my understanding is correct, Linus still don't like the idea of user
->> space hardware error tool.
->
-> I'm sure he has no problem with a userspace tool ;) Surely what he doesn't
-> like is the proposed kernel interface.
->
->>  On the other hand, if we need this tool, I
->> think printk is not a good tool-oriented hardware error reporting
->> interface for it, because:
->>
->> - There is no overall format or record boundaries for printk, because
->> printk is traditionally for 1-2 lines.  This makes that printk is hard
->> to parse in general.
->
-> Well.  These things can be addressed by careful choice of output
-> format.
->
->> - Messages from different CPUs may be interleaved.
->
-> A single printk() should be atomic.
->
->> - Good error reporting is too verbose for kernel log
->>
->> - printk has no internal priority support, so that high severity errors
->> has no more priority than low severity ones.
->>
->>
->> So my opinion is:
->>
->> - Use printk as human oriented hardware error reporting.
->> - Use another tool oriented interface for user space hardware error tool
->> if necessary.
->>
->> Do you agree?  Do you think printk can be used as a good tool-oriented
->> hardware error reporting interface too?
->
-> I agree that using printk() is pretty sucky.
->
-> However your proposals are waaaaaaaaay too narrow and specific IMO.
-> There are several reasons why people want more regular and structured
-> kerenl->userspace messaging features.  One such requirement is for
-> internationalisation: people want messages to come out in some
-> non-language-specific manner so that userspace tools can perform
-> catalogue lookups and display the messages in the appropriate language.
->  Others (eg google) want to feed the messages into large-scale
-> capturing systems for offline analysis.  And there are other
-> requirements which I forget.  Such a messaging/logging system would
-> also incorporate the requirement to log to a persistent store.
->
-> So I think that quite a lot of people would be interested in proposals
-> for a new and improved kernel->userspace messaging/logging facility.
-> But talking about "hardware error reporting" (especially when it covers
-> only a teeny subset of possible hardware errors!) is very myopic.
->
-> And implementing the broad facility would be a pretty big project.  Simply
-> chasing down all the stakeholders and understanding their needs would
-> turn one's hair grey.
->
-> So we're a bit stuck, really.  We would benefit from a quite broad and
-> expensive-to-implement messaging/logging system, but we don't even know
-> what that will look like yet.  You have a small and highly-specific
-> subset of that.  If we merge the subset then it probably will live
-> forever even if the broader feature gets written one day, because the
-> subset is userspace-visible and adds interfaces which the larger system
-> probably won't even implement.
->
-> So...  for your pretty narrow and specific problem, perhaps using
-> printk as a stopgap until somethine better to come along is the correct
-> choice.
+On Mon, 29 Nov 2010 21:19:16 -0500
+Nelson Elhage <nelhage@ksplice.com> wrote:
 
-OK. I will work on the printk based solution, at least as the first step.
+> If a user manages to trigger a kernel BUG() or page fault with fs set to
+> KERNEL_DS, fs is not otherwise reset before do_exit(), allowing the user to
+> write a 0 to an arbitrary address in kernel memory.
+> 
+> Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+> ---
+> AFAICT this is presently only triggerable in the presence of another bug, but
+> this potentially turns a lot of DoS bugs into privilege escalation, so it's
+> worth fixing. Among other things, sock_no_sendpage and the kernel_{read,write}v
+> calls in splice.c make it easy to call an awful lot of the kernel under
+> KERNEL_DS.
+> 
+> This isn't the only way we could fix this -- we could put the set_fs() at the
+> start of do_exit, or in all the callers that might call potentially do_exit with
+> KERNEL_DS set, or else we could do an access_ok inside fork(). I'm happy to put
+> together one of those patches if someone thinks another approach makes more
+> sense.
+> 
+>  kernel/fork.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 3b159c5..a68445e 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -636,7 +636,12 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>  			/*
+>  			 * We don't check the error code - if userspace has
+>  			 * not set up a proper pointer then tough luck.
+> +			 *
+> +			 * We do set_fs() explicitly in case this task
+> +			 * exited while inside set_fs(KERNEL_DS) for
+> +			 * some reason (e.g. on a BUG()).
+>  			 */
+> +			set_fs(USER_DS);
+>  			put_user(0, tsk->clear_child_tid);
+>  			sys_futex(tsk->clear_child_tid, FUTEX_WAKE,
+>  					1, NULL, NULL, 0);
 
-Best Regards,
-Huang Ying
+Confused.  The user can only exploit the wrong addr_limit if control
+returns to userspace for the user's code to execute.  But that won't be
+happening, because this thread will unconditionally exit.
+
+
+If/when you unconfuse me, I'd suggest this change only be done if the
+thread is *known* to have oopsed - doing it for non-oopsed threads
+seems unpleasant to my mind.  And I think it should be done nice and
+clearly, right up inside do_exit() by some means.  Or perhaps in the
+oops code, just before it calls do_exit().  Not hidden down in
+mm_release().
