@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab0LAHth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:49:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19205 "EHLO mga02.intel.com"
+	id S1753634Ab0LAHqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:46:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41622 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753730Ab0LAHqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:46:38 -0500
+	id S1753496Ab0LAHqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:46:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="682672369"
+   d="scan'208";a="682672335"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v16 09/17] Don't do skb recycle, if device use external buffer.
-Date: Wed,  1 Dec 2010 16:08:20 +0800
-Message-Id: <bdfdfa415111ae265325af3c0e8fc5bfe68618cd.1291187695.git.xiaohui.xin@intel.com>
+Subject: [PATCH v16 05/17] Add a function to indicate if device use external buffer.
+Date: Wed,  1 Dec 2010 16:08:16 +0800
+Message-Id: <1291190917-5286-1-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
 References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
@@ -32,26 +32,25 @@ Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- net/core/skbuff.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ include/linux/netdevice.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index d3ece5c..11833b4 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -550,6 +550,12 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
- 	if (skb_shared(skb) || skb_cloned(skb))
- 		return false;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 8dcf6de..f91d9bb 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1739,6 +1739,11 @@ extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
+ extern int netdev_mp_port_prep(struct net_device *dev,
+ 				struct mp_port *port);
  
-+	/* if the device wants to do mediate passthru, the skb may
-+	 * get external buffer, so don't recycle
-+	 */
-+	if (dev_is_mpassthru(skb->dev))
-+		return 0;
++static inline bool dev_is_mpassthru(struct net_device *dev)
++{
++	return dev && dev->mp_port;
++}
 +
- 	skb_release_head_state(skb);
- 
- 	shinfo = skb_shinfo(skb);
+ static inline void napi_free_frags(struct napi_struct *napi)
+ {
+ 	kfree_skb(napi->skb);
 -- 
 1.7.3
 
