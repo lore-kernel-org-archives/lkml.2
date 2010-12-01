@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab0LAQYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:24:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21425 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab0LAQYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:24:37 -0500
-Date: Wed, 1 Dec 2010 11:23:35 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-Subject: Re: perf hw  in kexeced kernel broken in tip
-Message-ID: <20101201162335.GB2511@redhat.com>
-References: <4CF60095.1020900@kernel.org>
- <1291202867.4023.3.camel@twins>
- <20101201160640.GA2511@redhat.com>
- <1291219906.32004.1671.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291219906.32004.1671.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754784Ab0LAQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:28:25 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48818 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab0LAQ2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 11:28:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=wXFJOg0dS24S3ZAZCgGNKY7lWDd+UlJbuKh4rTvMFyHH1krQto6OuaWFKqPVuDolal
+         ZDs//j5Q1RjMFJr9wuc0lBh/jPfqkpMccUb+q60VXPZIuCEubVBMnsSPNW+K7Yr/qXdp
+         WX+4RoiOe/A2OuIKPrUNQiz5rhYUo09EejaQI=
+Subject: [PATCH] ifdef gic_present variable that is used only by malta
+From: Anoop P A <anoop.pa@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 22:01:15 +0530
+Message-ID: <1291221075.31413.24.camel@paanoop1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 05:11:46PM +0100, Peter Zijlstra wrote:
-> On Wed, 2010-12-01 at 11:06 -0500, Vivek Goyal wrote:
-> > On Wed, Dec 01, 2010 at 12:27:47PM +0100, Peter Zijlstra wrote:
-> > > On Wed, 2010-12-01 at 00:00 -0800, Yinghai Lu wrote:
-> > > > First kernel:
-> > > > [    1.139418] calling  init_hw_perf_events+0x0/0xb77 @ 1
-> > > > [    1.159111] Performance Events: PEBS fmt1+, Nehalem events, Intel PMU
-> > > > driver.
-> > > > [    1.159567] ... version:                3
-> > > > [    1.179121] ... bit width:              48
-> > > > [    1.179353] ... generic registers:      4
-> > > > [    1.179593] ... value mask:             0000ffffffffffff
-> > > > [    1.199211] ... max period:             000000007fffffff
-> > > > [    1.199554] ... fixed-purpose events:   3
-> > > > [    1.219108] ... event mask:             000000070000000f
-> > > > [    1.219454] initcall init_hw_perf_events+0x0/0xb77 returned 0 after
-> > > > 11719 usecs
-> > > > 
-> > > > .....
-> > > > [   20.220997] checking TSC synchronization [CPU#0 -> CPU#11]: passed.
-> > > > [   20.260818] NMI watchdog enabled, takes one hw-pmu counter.
-> > > > 
-> > > > kexeced kernel.
-> > > > 
-> > > > 
-> > > > [    1.169470] calling  init_hw_perf_events+0x0/0xb77 @ 1
-> > > > [    1.189265] Performance Events: PEBS fmt1+, Nehalem events, Broken
-> > > > PMU hardware detected, software events only.
-> > > > ...
-> > > > [   21.010407] NMI watchdog failed to create perf event on cpu14:
-> > > > fffffffffffffffe
-> > > > 
-> > > > caused by:
-> > > 
-> > > *sigh*, and people ask me why kexec/kdump are such bad ideas..
-> > > 
-> > > apparently kexec doesn't properly shut down the first kernel and leaves
-> > > a counter running, then when we write and read the counter value they
-> > > don't match because its still running and voila, crap happens.
-> > > 
-> > > I've CC'ed the kexec people, maybe they got clue as to how to sort this.
-> > 
-> > So we can shutdown counters while first kernel is going down. Is there a
-> > simple function already which I can call?
-> 
-> Dunno, the cpu hotplug stuff should suffice I think, but then I don't
-> think you actually unplug the boot cpu.
-> 
-> What does kexec normally do to ensure hardware is left in a sane state?
+gic_present variable will be used only in malta platforms.Other
+platforms with VSMP support will throw link error.
+ 
 
-Typically calls device_shutdown() and sysdev_shutdown() from
-kernel_restart_prepare() to shutdown the devices.
+Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+---
+ arch/mips/kernel/smp-mt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Also calls machine_shutdown() which depending on architecture can take
-care of various things like stopping other cpus, shutting down LAPIC, 
-disabling IOAPIC, disabling hpet, shutting down IOMMU etc
-(native_machine_shutdown()).
+diff --git a/arch/mips/kernel/smp-mt.c b/arch/mips/kernel/smp-mt.c
+index 43e7cdc..5b91c1a 100644
+--- a/arch/mips/kernel/smp-mt.c
++++ b/arch/mips/kernel/smp-mt.c
+@@ -151,6 +151,7 @@ static void vsmp_send_ipi_mask(const struct cpumask
+*mask, unsigned int action)
+ 
+ static void __cpuinit vsmp_init_secondary(void)
+ {
++#ifdef CONFIG_MIPS_MALTA
+ 	extern int gic_present;
+ 
+ 	/* This is Malta specific: IPI,performance and timer inetrrupts */
+@@ -158,6 +159,7 @@ static void __cpuinit vsmp_init_secondary(void)
+ 		change_c0_status(ST0_IM, STATUSF_IP3 | STATUSF_IP4 |
+ 					 STATUSF_IP6 | STATUSF_IP7);
+ 	else
++#endif /* CONFIG_MIPS_MALTA */
+ 		change_c0_status(ST0_IM, STATUSF_IP0 | STATUSF_IP1 |
+ 					 STATUSF_IP6 | STATUSF_IP7);
+ }
+-- 
+1.7.0.4
 
-Thanks
-Vivek
+
+
