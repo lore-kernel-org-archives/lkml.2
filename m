@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab0LALHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:07:46 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:55890 "EHLO gir.skynet.ie"
+	id S1751925Ab0LALKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:10:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24807 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901Ab0LALHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:07:45 -0500
-Date: Wed, 1 Dec 2010 11:07:28 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any
-	suitable zone is balanced
-Message-ID: <20101201110728.GN13268@csn.ul.ie>
-References: <1291137339-6323-1-git-send-email-mel@csn.ul.ie> <1291137339-6323-2-git-send-email-mel@csn.ul.ie> <1291169636.12777.43.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1291169636.12777.43.camel@sli10-conroe>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1751117Ab0LALKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:10:35 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [Patch] net: kill an RCU warning in inet_fill_link_af()
+Date: Wed,  1 Dec 2010 19:14:23 +0800
+Message-Id: <1291202063-6239-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 10:13:56AM +0800, Shaohua Li wrote:
-> On Wed, 2010-12-01 at 01:15 +0800, Mel Gorman wrote:
-> > When the allocator enters its slow path, kswapd is woken up to balance the
-> > node. It continues working until all zones within the node are balanced. For
-> > order-0 allocations, this makes perfect sense but for higher orders it can
-> > have unintended side-effects. If the zone sizes are imbalanced, kswapd
-> > may reclaim heavily on a smaller zone discarding an excessive number of
-> > pages. The user-visible behaviour is that kswapd is awake and reclaiming
-> > even though plenty of pages are free from a suitable zone.
-> > 
-> > This patch alters the "balance" logic to stop kswapd if any suitable zone
-> > becomes balanced to reduce the number of pages it reclaims from other zones.
->
-> from my understanding, the patch will break reclaim high zone if a low
-> zone meets the high order allocation, even the high zone doesn't meet
-> the high order allocation.
+From: WANG Cong <amwang@redhat.com>
 
-Indeed this is possible and it's a situation confirmed by Simon. Patch 3
-should cover it because replacing "are any zones ok?" with "are zones
-representing at least 25% of the node balanced?"
+The latest net-next-2.6 triggers an RCU warning during boot,
+lockdep complains that in inet_fill_link_af() we call rcu_dereference_check()
+without rcu_read_lock() protection.
 
-> This, for example, will make a high order
-> allocation from a high zone fallback to low zone and quickly exhaust low
-> zone, for example DMA. This will break some drivers.
-> 
+This patch fixes it by replacing __in_dev_get_rcu() with in_dev_get().
 
-The lowmem reserve would prevent that happening so the drivers would be
-fine. The real impact is that kswapd would stop when DMA was balanced
-even though it was really DMA32 or Normal needed to be balanced for
-proper behaviour.
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-On lowmem reserves though, there is another buglet in
-sleeping_prematurely. The classzone_idx it uses means that the wrong
-lowmem_reserve is used for the majority of allocation requests.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+---
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index d9f71ba..73baed8 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1258,31 +1258,36 @@ errout:
+ 
+ static size_t inet_get_link_af_size(const struct net_device *dev)
+ {
+-	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct in_device *in_dev = in_dev_get(dev);
+ 
+ 	if (!in_dev)
+ 		return 0;
+ 
++	in_dev_put(in_dev);
+ 	return nla_total_size(IPV4_DEVCONF_MAX * 4); /* IFLA_INET_CONF */
+ }
+ 
+ static int inet_fill_link_af(struct sk_buff *skb, const struct net_device *dev)
+ {
+-	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct in_device *in_dev = in_dev_get(dev);
+ 	struct nlattr *nla;
+-	int i;
++	int i, ret = 0;
+ 
+ 	if (!in_dev)
+ 		return -ENODATA;
+ 
+ 	nla = nla_reserve(skb, IFLA_INET_CONF, IPV4_DEVCONF_MAX * 4);
+-	if (nla == NULL)
+-		return -EMSGSIZE;
++	if (nla == NULL) {
++		ret = -EMSGSIZE;
++		goto out;
++	}
+ 
+ 	for (i = 0; i < IPV4_DEVCONF_MAX; i++)
+ 		((u32 *) nla_data(nla))[i] = in_dev->cnf.data[i];
+ 
+-	return 0;
++out:
++	in_dev_put(in_dev);
++	return ret;
+ }
+ 
+ static const struct nla_policy inet_af_policy[IFLA_INET_MAX+1] = {
+@@ -1293,11 +1298,14 @@ static int inet_validate_link_af(const struct net_device *dev,
+ 				 const struct nlattr *nla)
+ {
+ 	struct nlattr *a, *tb[IFLA_INET_MAX+1];
++	struct in_device *in_dev = in_dev_get(dev);
+ 	int err, rem;
+ 
+-	if (dev && !__in_dev_get_rcu(dev))
++	if (dev && !in_dev)
+ 		return -EAFNOSUPPORT;
+ 
++	in_dev_put(in_dev);
++
+ 	err = nla_parse_nested(tb, IFLA_INET_MAX, nla, inet_af_policy);
+ 	if (err < 0)
+ 		return err;
+@@ -1319,7 +1327,7 @@ static int inet_validate_link_af(const struct net_device *dev,
+ 
+ static int inet_set_link_af(struct net_device *dev, const struct nlattr *nla)
+ {
+-	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct in_device *in_dev = in_dev_get(dev);
+ 	struct nlattr *a, *tb[IFLA_INET_MAX+1];
+ 	int rem;
+ 
+@@ -1334,6 +1342,7 @@ static int inet_set_link_af(struct net_device *dev, const struct nlattr *nla)
+ 			ipv4_devconf_set(in_dev, nla_type(a), nla_get_u32(a));
+ 	}
+ 
++	in_dev_put(in_dev);
+ 	return 0;
+ }
+ 
