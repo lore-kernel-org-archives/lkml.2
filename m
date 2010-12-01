@@ -1,116 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab0LAMwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 07:52:55 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52927 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077Ab0LAMwx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 07:52:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,283,1288594800"; 
-   d="scan'208,223";a="863095128"
-Date: Wed, 1 Dec 2010 20:49:37 +0800
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, arjan@linux.intel.com,
-        alan@linux.intel.com, akpm@linux-foundation.org
-Subject: [PATCH v4 3/4]implement hardware_reset callback for sdhci host
-Message-ID: <20101201124937.GD5421@intel.com>
-Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+	id S1755163Ab0LAMxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 07:53:44 -0500
+Received: from foo.stuge.se ([213.88.146.6]:36698 "HELO foo.stuge.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754985Ab0LAMxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 07:53:43 -0500
+Message-ID: <20101201125339.30270.qmail@stuge.se>
+Date: Wed, 1 Dec 2010 13:53:39 +0100
+From: Peter Stuge <peter@stuge.se>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg KH <greg@kroah.com>, Jimmy RUBIN <jimmy.rubin@stericsson.com>,
+        Dan JOHANSSON <dan.johansson@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
+Mail-Followup-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Greg KH <greg@kroah.com>, Jimmy RUBIN <jimmy.rubin@stericsson.com>,
+	Dan JOHANSSON <dan.johansson@stericsson.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	"linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local> <201011261224.59490.arnd@arndb.de> <AANLkTinCYdb8p4-H+Aki-z+i7ZL2ETwGJdDxOQ4XpBJ+@mail.gmail.com> <201011301621.48140.arnd@arndb.de> <20101130184049.GC8521@n2100.arm.linux.org.uk> <20101130184834.GA16055@kroah.com> <20101130220550.GD8521@n2100.arm.linux.org.uk> <20101130230533.GA11342@kroah.com> <20101130234215.GE8521@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101130234215.GE8521@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0fadd39a6c09f9040a614bb251187b03f8fadd79 Mon Sep 17 00:00:00 2001
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Date: Wed, 1 Dec 2010 19:41:25 +0800
-Subject: [PATCH 3/4] implement hardware_reset callback for sdhci host
+Russell King - ARM Linux wrote:
+> I feel it would be better to allow the current situation to continue.
 
-hardware_reset callback will be used for host to trigger
-RST_n signal. So a new callback reset_emmc was added to use
-GPIO lines or something else to trigger reset signal.
-This patch implement hardware_reset callback for sdhci host
-controller.
+I think this misses the point, and is somewhat redundant; I think
+everyone knows that it is easiest to never change anything. But
+then nothing improves.
 
-reset_emmc: new callback. sdhci host controller can use GPIO
-lines or something else to trigger reset signal by this callback.
-Different sdhci host controller should implement this separately.
-So this patch only add definition in head file for this callback.
 
-Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
----
- drivers/mmc/host/sdhci.c |   23 +++++++++++++++++++++++
- drivers/mmc/host/sdhci.h |   12 ++++++++++++
- 2 files changed, 35 insertions(+), 0 deletions(-)
+> If we start telling people that they can't use statically declared
+> devices without first having an alternative,
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 8a74fcb..d40b16c 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1283,11 +1283,34 @@ out:
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
- 
-+/*
-+ *  HW reset callback for eMMC4.4 card
-+ *  In this function, HC will do the real HW reset
-+ *  for eMMC4.4 card
-+ *
-+ *  RETURN VALUE:
-+ *  0: reset emmc successfully
-+ *  -ENODEV: no valid hardware to do so
-+ */
-+static int sdhci_hardware_reset(struct mmc_host *mmc)
-+{
-+	int err = 1;
-+	struct sdhci_host *host;
-+
-+	host = mmc_priv(mmc);
-+
-+	if (host->ops && host->ops->reset_emmc)
-+		err = host->ops->reset_emmc(host);
-+
-+	return err;
-+}
-+
- static const struct mmc_host_ops sdhci_ops = {
- 	.request	= sdhci_request,
- 	.set_ios	= sdhci_set_ios,
- 	.get_ro		= sdhci_get_ro,
- 	.enable_sdio_irq = sdhci_enable_sdio_irq,
-+	.hardware_reset = sdhci_hardware_reset,
- };
- 
- /*****************************************************************************\
-diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-index 1efe7dc..2a9b20c 100644
---- a/drivers/mmc/host/sdhci.h
-+++ b/drivers/mmc/host/sdhci.h
-@@ -221,6 +221,18 @@ struct sdhci_ops {
- 	void (*platform_send_init_74_clocks)(struct sdhci_host *host,
- 					     u8 power_mode);
- 	unsigned int    (*get_ro)(struct sdhci_host *host);
-+
-+	/*
-+	 * eMMC card reset callback.
-+	 * This callback can be used by sdhci layer to support eMMC4.4
-+	 * hardware reset feature. In this function, should trigger a
-+	 * RST_n signal to reset eMMC card.
-+	 *
-+	 * return value:
-+	 * 0: successfully reset eMMC card.
-+	 * -ENODEV: no valid hardware to reset eMMC card.
-+	 */
-+	int		(*reset_emmc)(struct sdhci_host *host);
- };
- 
- #ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
--- 
-1.6.6.1
+I would consider it early warning that the way things have been done
+before will go away. And I would thus write drivers in a way that
+demonstrates and includes that understanding.
 
+The same problem exists in hardware products needing any kind of
+longish lifetime. Deal with evolving components by having clean
+and simple interfaces, and by not relying on a particular interface
+very deep on either side of the edge. Simple I think.
+
+
+//Peter
