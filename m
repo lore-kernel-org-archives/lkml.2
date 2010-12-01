@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab0LARAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:00:22 -0500
-Received: from coloquinte.cristau.org ([91.121.16.100]:58091 "EHLO
-	coloquinte.cristau.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940Ab0LARAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:00:21 -0500
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 12:00:21 EST
-Date: Wed, 1 Dec 2010 17:54:18 +0100
-From: Julien Cristau <jcristau@debian.org>
-To: Alexander Shishkin <virtuoso@slind.org>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/4] drm: fix headers to include linux/types.h
-Message-ID: <20101201165418.GU5063@radis.liafa.jussieu.fr>
-References: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
- <1291216245-18574-2-git-send-email-virtuoso@slind.org>
+	id S1755369Ab0LARCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:02:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab0LARCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 12:02:22 -0500
+Message-ID: <4CF67F8E.6050308@redhat.com>
+Date: Wed, 01 Dec 2010 12:02:06 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291216245-18574-2-git-send-email-virtuoso@slind.org>
-X-Operating-System: Linux 2.6.32-5-amd64 x86_64
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <4CF67955.2050808@redhat.com> <AANLkTinwrhUOQ0LnavQY6+TQS_TqnRS0q-XXykZ8ap5G@mail.gmail.com>
+In-Reply-To: <AANLkTinwrhUOQ0LnavQY6+TQS_TqnRS0q-XXykZ8ap5G@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec  1, 2010 at 17:10:42 +0200, Alexander Shishkin wrote:
+On 12/01/2010 11:47 AM, Linus Torvalds wrote:
+> On Wed, Dec 1, 2010 at 8:35 AM, Rik van Riel<riel@redhat.com>  wrote:
+>>
+>> Surely somebody can have just looked up the page and
+>> gotten a reference count, right before your ->freepage
+>> call is invoked?
+>
+> No.
+>
+> The removal from the page cache is atomic, even in the presence of the
+> lockless lookup.
+>
+> The page cache lookup does a "get_page_unless_zero()" on the count, so
+> when __remove_mapping() has removed the page using
+> "page_freeze_refs()", it's really gone, and cannot be looked up.
 
-> For headers that get exported to userland and make use of u32 style
-> type names, it is advised to include linux/types.h.
-> 
-> This fixes 5 headers_check warnings.
-> 
-How many times does this need to be NAKed?  These headers are shared
-with the BSDs, and they include drm.h which has the linux/types.h
-include on linux already.
+Doh, you're right.  I forgot to look at all the stuff that
+__remove_mapping does nowadays and remembered some very old
+code from vmscan.c instead.
 
-Cheers,
-Julien
+Acked-by: Rik van Riel <riel@redhat.com>
+
+-- 
+All rights reversed
