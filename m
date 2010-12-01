@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab0LATz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:55:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33289 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756823Ab0LATzz (ORCPT
+	id S1756869Ab0LAT4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:56:42 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:54665 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755529Ab0LAT4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:55:55 -0500
+	Wed, 1 Dec 2010 14:56:41 -0500
+Date: Wed, 1 Dec 2010 20:56:38 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org, gregkh@elf.ucw.cz
+Subject: Re: [PATCH] add netdev led trigger
+Message-ID: <20101201195638.GE15294@elf.ucw.cz>
+References: <1289768305-1224-1-git-send-email-ecc@cmu.edu>
+ <20101117105925.GC1574@ucw.cz>
+ <20101117160919.GC10992@kroah.com>
+ <20101117195843.GA31357@elf.ucw.cz>
+ <20101117200614.GK15096@localhost>
+ <20101130192053.GB5295@ucw.cz>
+ <20101130232204.GF21496@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1291229669.6609.24.camel@heimdal.trondhjem.org>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
- <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
- <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <1291229669.6609.24.camel@heimdal.trondhjem.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Dec 2010 11:47:14 -0800
-Message-ID: <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130232204.GF21496@localhost>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 10:54 AM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
->
-> Hmm... Looking again at the problem, it appears that the same callback
-> needs to be added to truncate_complete_page() and
-> invalidate_complete_page2(). Otherwise we end up in a situation where
-> the page can sometimes be removed from the page cache without calling
-> freepage().
+Hi!
 
-Yes, I think any caller of __remove_from_page_cache() should do it
-once it has dropped all locks.
+> > Please be consistent with rest of kernel...
+> 
+> There seem to be several ways this is done in existing sysfs drivers,
+> and most aren't documented yet in Documentation/ABI.
 
-And to be consistent with that rule, even in the __remove_mapping()
-function I suspect the code to call ->freepage() might as well be done
-only in the __remove_from_page_cache() case (ie not in the
-PageSwapCache() case).
+Greg is official sysfs maintainer.
 
-Then, add the case to the end of "remove_page_cache()" itself, and now
-it's really easy to just grep for __remove_from_page_cache() and make
-sure they all do it.
+> 1. "0" and "1"
 
-That sounds sane, no?
+This should do the trick.
 
-                Linus
+> 2. "enable" and "disable"
+> 3. "enabled" and "disabled"
+> 4. "enable" and "disable" when writing, but "enabled" and "disabled"
+>     when read back
+> 
+> Some require trailing "\n", others make it optional.
+> 
+> Which is the One True Way?
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
