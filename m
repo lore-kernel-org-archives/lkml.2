@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab0LAC7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 21:59:19 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52789 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab0LAC7Q (ORCPT
+	id S1754277Ab0LADEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:04:41 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57386 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab0LADEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 21:59:16 -0500
+	Tue, 30 Nov 2010 22:04:40 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Simon Kirby <sim@hostway.ca>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291171667.12777.51.camel@sli10-conroe>
-References: <20101201112354.ABA8.A69D9226@jp.fujitsu.com> <1291171667.12777.51.camel@sli10-conroe>
-Message-Id: <20101201115401.ABB1.A69D9226@jp.fujitsu.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 2/2] exec: copy-and-paste the fixes into compat_do_execve() paths
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, stable@kernel.org
+In-Reply-To: <20101130195602.GC11905@redhat.com>
+References: <20101130195456.GA11905@redhat.com> <20101130195602.GC11905@redhat.com>
+Message-Id: <20101201120530.ABB6.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Dec 2010 11:59:12 +0900 (JST)
+Date: Wed,  1 Dec 2010 12:04:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2010-12-01 at 10:23 +0800, KOSAKI Motohiro wrote:
-> > > On Wed, 2010-12-01 at 01:15 +0800, Mel Gorman wrote:
-> > > > When the allocator enters its slow path, kswapd is woken up to balance the
-> > > > node. It continues working until all zones within the node are balanced. For
-> > > > order-0 allocations, this makes perfect sense but for higher orders it can
-> > > > have unintended side-effects. If the zone sizes are imbalanced, kswapd
-> > > > may reclaim heavily on a smaller zone discarding an excessive number of
-> > > > pages. The user-visible behaviour is that kswapd is awake and reclaiming
-> > > > even though plenty of pages are free from a suitable zone.
-> > > > 
-> > > > This patch alters the "balance" logic to stop kswapd if any suitable zone
-> > > > becomes balanced to reduce the number of pages it reclaims from other zones.
-> > > from my understanding, the patch will break reclaim high zone if a low
-> > > zone meets the high order allocation, even the high zone doesn't meet
-> > > the high order allocation. This, for example, will make a high order
-> > > allocation from a high zone fallback to low zone and quickly exhaust low
-> > > zone, for example DMA. This will break some drivers.
-> > 
-> > Have you seen patch [3/3]? I think it migigate your pointed issue.
-> yes, it improves a lot, but still possible for small systems.
+> Note: this patch targets 2.6.37 and tries to be as simple as possible.
+> That is why it adds more copy-and-paste horror into fs/compat.c and
+> uglifies fs/exec.c, this will be cleanuped later.
+> 
+> compat_copy_strings() plays with bprm->vma/mm directly and thus has
+> two problems: it lacks the RLIMIT_STACK check and argv/envp memory
+> is not visible to oom killer.
+> 
+> Export acct_arg_size() and get_arg_page(), change compat_copy_strings()
+> to use get_arg_page(), change compat_do_execve() to do acct_arg_size(0)
+> as do_execve() does.
+> 
+> Add the fatal_signal_pending/cond_resched checks into compat_count() and
+> compat_copy_strings(), this matches the code in fs/exec.c and certainly
+> makes sense.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Ok, I got you. so please define your "small systems" word? we can't make
-perfect VM heuristics obviously, then we need to compare pros/cons.
-
-Of cource, I'm glad if you have better idea and show it.
+Looks good to me.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
 
 
