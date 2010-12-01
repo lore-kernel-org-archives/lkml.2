@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab0LAQ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:28:25 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48818 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab0LAQ2Y (ORCPT
+	id S1754726Ab0LAQeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:34:50 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:61549 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874Ab0LAQet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:28:24 -0500
+	Wed, 1 Dec 2010 11:34:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=wXFJOg0dS24S3ZAZCgGNKY7lWDd+UlJbuKh4rTvMFyHH1krQto6OuaWFKqPVuDolal
-         ZDs//j5Q1RjMFJr9wuc0lBh/jPfqkpMccUb+q60VXPZIuCEubVBMnsSPNW+K7Yr/qXdp
-         WX+4RoiOe/A2OuIKPrUNQiz5rhYUo09EejaQI=
-Subject: [PATCH] ifdef gic_present variable that is used only by malta
-From: Anoop P A <anoop.pa@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 22:01:15 +0530
-Message-ID: <1291221075.31413.24.camel@paanoop1-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=SBtUKUia2YBPC4CIwIbhFobNk0zJdx+znFY0N4Kr4rKMa73OkfAwFlX+uKzNk0ItLX
+         +GYYzath/CacsPl7b2NRz/F+WaFxnb+ayFZFiFHEHkFPD1SXl9ODsaDRtZgO5Apvz9zu
+         3mmwjNdg7Oeok11QJqzu7eY6QxkfAyZpYoTss=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] MIPS: Fix build failure on mips_sc_is_activated()
+Date: Thu,  2 Dec 2010 01:34:42 +0900
+Message-Id: <1291221282-9056-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gic_present variable will be used only in malta platforms.Other
-platforms with VSMP support will throw link error.
- 
+The commit ea31a6b20371 ("MIPS: Honor L2 bypass bit") breaks
+malta build as follows. Looks like not compile-tested :(
 
-Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+  CC      arch/mips/mm/sc-mips.o
+arch/mips/mm/sc-mips.c: In function 'mips_sc_is_activated':
+arch/mips/mm/sc-mips.c:77:7 error: 'config2' undeclared (first use in this function)
+arch/mips/mm/sc-mips.c:77:7 note: each undeclared identifier is reported only once
+arch/mips/mm/sc-mips.c:77:7       for each function it appears in
+arch/mips/mm/sc-mips.c:81:2 error: 'tmp' undeclared (first use in this function)
+arch/mips/mm/sc-mips.c:86:1 warning: control reaches end of non-void function
+make[3]: *** [arch/mips/mm/sc-mips.o] Error 1
+make[2]: *** [arch/mips/mm/sc-mips.o] Error 2
+make[1]: *** [sub-make] Error 2
+make: *** [all] Error 2
+
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- arch/mips/kernel/smp-mt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/mips/mm/sc-mips.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/kernel/smp-mt.c b/arch/mips/kernel/smp-mt.c
-index 43e7cdc..5b91c1a 100644
---- a/arch/mips/kernel/smp-mt.c
-+++ b/arch/mips/kernel/smp-mt.c
-@@ -151,6 +151,7 @@ static void vsmp_send_ipi_mask(const struct cpumask
-*mask, unsigned int action)
- 
- static void __cpuinit vsmp_init_secondary(void)
+diff --git a/arch/mips/mm/sc-mips.c b/arch/mips/mm/sc-mips.c
+index 505feca..a168f52 100644
+--- a/arch/mips/mm/sc-mips.c
++++ b/arch/mips/mm/sc-mips.c
+@@ -66,8 +66,11 @@ static struct bcache_ops mips_sc_ops = {
+  * 12..15 as implementation defined so below function will eventually have
+  * to be replaced by a platform specific probe.
+  */
+-static inline int mips_sc_is_activated(struct cpuinfo_mips *c)
++static inline int mips_sc_is_activated(struct cpuinfo_mips *c,
++				       unsigned int config2)
  {
-+#ifdef CONFIG_MIPS_MALTA
- 	extern int gic_present;
- 
- 	/* This is Malta specific: IPI,performance and timer inetrrupts */
-@@ -158,6 +159,7 @@ static void __cpuinit vsmp_init_secondary(void)
- 		change_c0_status(ST0_IM, STATUSF_IP3 | STATUSF_IP4 |
- 					 STATUSF_IP6 | STATUSF_IP7);
++	unsigned int tmp;
++
+ 	/* Check the bypass bit (L2B) */
+ 	switch (c->cputype) {
+ 	case CPU_34K:
+@@ -83,6 +86,8 @@ static inline int mips_sc_is_activated(struct cpuinfo_mips *c)
+ 		c->scache.linesz = 2 << tmp;
  	else
-+#endif /* CONFIG_MIPS_MALTA */
- 		change_c0_status(ST0_IM, STATUSF_IP0 | STATUSF_IP1 |
- 					 STATUSF_IP6 | STATUSF_IP7);
+ 		return 0;
++
++	return 1;
  }
+ 
+ static inline int __init mips_sc_probe(void)
+@@ -108,7 +113,7 @@ static inline int __init mips_sc_probe(void)
+ 
+ 	config2 = read_c0_config2();
+ 
+-	if (!mips_sc_is_activated(c))
++	if (!mips_sc_is_activated(c, config2))
+ 		return 0;
+ 
+ 	tmp = (config2 >> 8) & 0x0f;
 -- 
 1.7.0.4
-
-
 
