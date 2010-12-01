@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab0LAA71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:59:27 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:51198 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab0LAA7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:59:25 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 1 Dec 2010 09:53:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Hugh Dickins <hughd@google.com>, Ondrej Zary <linux@rainbow-software.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@in.ibm.com>
-Subject: Re: 2.6.35.5: hibernation broken... AGAIN
-Message-Id: <20101201095349.c1f3ac46.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <201012010138.53575.rjw@sisk.pl>
-References: <201011171139.33398.linux@rainbow-software.org>
-	<alpine.LSU.2.00.1011301333380.11072@tigran.mtv.corp.google.com>
-	<201012010007.44553.rjw@sisk.pl>
-	<201012010138.53575.rjw@sisk.pl>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753478Ab0LABAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 20:00:24 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50537 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753121Ab0LABAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 20:00:23 -0500
+Message-ID: <4CF59E20.1040301@linux.vnet.ibm.com>
+Date: Tue, 30 Nov 2010 17:00:16 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [BUG(?)] perf_events: combining multiple tracepoint events into a
+ group produces no counts on member events
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010 01:38:53 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
-> > On Tuesday, November 30, 2010, Hugh Dickins wrote:
-> > > On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
-> > > > On Saturday, November 27, 2010, Ondrej Zary wrote:
-> ...
-> > > 
-> > > Trivial point, I suppose, but it bothers me that PM is accumulating
-> > > wrappers around wrappers around gfp_allowed_mask.  Looks like
-> > > clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
-> > > were not really what we need.  How about scrapping them, and putting
-> > > pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
-> > 
-> > Sure, that sounds like a good idea indeed.
-> 
-> Below is an updated patch in which I tried to address your comments.
-> 
-> I didn't find it very useful to couple pm_restore_gfp_mask() with the thawing
-> of tasks, but nevertheless I think all of the spots where it's needed are
-> covered now.
-> 
-> The patch has only been compile-tested for now, so caveat emptor.
-> 
+Hi,
 
-Hmm, can't we have some error check as 
+I'm not sure that what I'm seeing is a bug, or was something intentional.
 
-> +static gfp_t saved_gfp_mask;
+If I place multiple tracepoint events into a group and measure counts of 
+these events on a process, I get no counts for the tracepoint events 
+other than the group leader.
 
-atomic_t gfp_mask_save_mode_counter;
+Is this expected behavior?
 
-> +
-> +void pm_restore_gfp_mask(void)
->  {
->  	WARN_ON(!mutex_is_locked(&pm_mutex));
-> -	gfp_allowed_mask = mask;
+It's not clear to me why this should be the case; grouping shouldn't 
+have any ill effects on tracepoint events, from my understanding.
 
-	if (atomic_dec_return(&gfp_mask_save_mode_counter))
-		WARN_ONCE()
+I noticed this because my private version of the perf tool has the event 
+group patch https://lkml.org/lkml/2010/11/24/584 as well as the patch 
+which fixes the parsing of multiple tracepoint events in the same -e 
+switch: https://lkml.org/lkml/2010/11/30/460
 
-> +	if (saved_gfp_mask) {
-> +		gfp_allowed_mask = saved_gfp_mask;
-> +		saved_gfp_mask = 0;
-> +	}
->  }
+When I dig into the code a bit, I find that each event opens 
+successfully, so that's not the problem.  If I disable the grouping, 
+then I get counts for all of the tracepoint events.
 
-> +void pm_restrict_gfp_mask(void)
->  {
-> -	gfp_t ret = gfp_allowed_mask;
-> -
->  	WARN_ON(!mutex_is_locked(&pm_mutex));
-> -	gfp_allowed_mask &= ~mask;
-> -	return ret;
-> +	saved_gfp_mask = gfp_allowed_mask;
-> +	gfp_allowed_mask &= ~GFP_IOFS;
-
-	if (atomic_inc_return(&gfp_mask_save_mode_counter) > 1)
-		WARN_ONCE()
-
-or some ?
-
-Thanks,
--Kame
+- Corey
 
