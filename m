@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab0LAAag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:30:36 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47392 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752990Ab0LAAaf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:30:35 -0500
-Date: Tue, 30 Nov 2010 16:29:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC] vmalloc: eagerly clear ptes on vunmap
-Message-Id: <20101130162938.8a6b0df4.akpm@linux-foundation.org>
-In-Reply-To: <4CF40DCB.5010007@goop.org>
-References: <4CEF6B8B.8080206@goop.org>
-	<20101127103656.GA6884@amd>
-	<4CF40DCB.5010007@goop.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1753277Ab0LAAb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:31:56 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:55557 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875Ab0LAAbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 19:31:55 -0500
+Date: Wed, 1 Dec 2010 11:31:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jarkko Nikula <jhnikula@gmail.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20101201113138.f6146790.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__1_Dec_2010_11_31_38_+1100_DluGYa0p.vKCBp+O"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Nov 2010 12:32:11 -0800
-Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+--Signature=_Wed__1_Dec_2010_11_31_38_+1100_DluGYa0p.vKCBp+O
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> When unmapping a region in the vmalloc space, clear the ptes immediately.
-> There's no point in deferring this because there's no amortization
-> benefit.
-> 
-> The TLBs are left dirty, and they are flushed lazily to amortize the
-> cost of the IPIs.
-> 
-> This specific motivation for this patch is a regression since 2.6.36 when
-> using NFS under Xen, triggered by the NFS client's use of vm_map_ram()
-> introduced in 56e4ebf877b6043c289bda32a5a7385b80c17dee.  XFS also uses
-> vm_map_ram() and could cause similar problems.
-> 
+Hi all,
 
-Do we have any quantitative info on that regression?  The patch fixed
-it, I assume?
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+sound/soc/soc-core.c: In function 'soc_probe_aux_dev':
+sound/soc/soc-core.c:1647: error: 'struct snd_soc_dapm_context' has no memb=
+er named 'list'
+sound/soc/soc-core.c:1647: error: 'struct snd_soc_card' has no member named=
+ 'dapm_list'
+
+Caused by commit 2eea392d0a28a0a07d36a9da544eb40f81bf4cb6 ("ASoC: Add
+support for optional auxiliary dailess codecs").
+
+I have used the version of the sound-asoc tree from next-20101130 for today
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__1_Dec_2010_11_31_38_+1100_DluGYa0p.vKCBp+O
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM9ZdqAAoJEDMEi1NhKgbsMv4H/2ghT8wGiHcJTcr2Uhsf+BfW
+piQkRDwHqfdhYStPGFVADITSKrdKNF34nlzGrz5xFGMz8lCPNjliI9az02zQ7QRX
+R9CtCq1P6SbZkBFixD6doj6e708+QzhzAAgNUDirFVpa7HQPNQuL/7RabkCFRhXv
+xu9v7J2SuGsXWGXYIfOfEXjrgMlM/nAl3n458mKPcP+/ZCmG6/Ocfg26xY3PCrE/
+dJWUnM364jz2GLUgCQ86IdxvuN7l3N8NqnfaYdg8hc3M7GxyINknYh1ie+wbQoZc
+vliji8jwO5A7J2OGI8HGHQ/NWxJOWOnVCn1304RyyiHt7oUsxIDyPif2/TyX428=
+=C+tW
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_Dec_2010_11_31_38_+1100_DluGYa0p.vKCBp+O--
