@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab0LABuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 20:50:32 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50867 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753513Ab0LABub (ORCPT
+	id S1753713Ab0LAB61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 20:58:27 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50611 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab0LAB60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 20:50:31 -0500
-Date: Tue, 30 Nov 2010 17:49:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nelson Elhage <nelhage@ksplice.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm_release: Do a set_fs(USER_DS) before handling
- clear_child_tid.
-Message-Id: <20101130174947.5ccc3778.akpm@linux-foundation.org>
-In-Reply-To: <20101201005909.GC18995@ksplice.com>
-References: <1291083556-5894-1-git-send-email-nelhage@ksplice.com>
-	<20101130160950.96153286.akpm@linux-foundation.org>
-	<20101201005909.GC18995@ksplice.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Nov 2010 20:58:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=BvJxdqJ/oQoKBqamWeSMMW/7oSarej0DfPRzcOBPEiKml0JxwLrnTRKI32RGjGUK+9
+         U/j0rhTH8CyuUDEeRl8bYn1TNBwpwR1coCGybbMBcmy97KtmgHldoHRLUkp/0hnYO4Vm
+         dHzFr1re6oil9tXuVAr6/em04A+kjYFTeAf18=
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Shawn Bohrer <shawn.bohrer@gmail.com>
+Subject: [PATCH 00/14] perf documentation updates
+Date: Tue, 30 Nov 2010 19:57:08 -0600
+Message-Id: <1291168642-11402-1-git-send-email-shawn.bohrer@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010 19:59:09 -0500 Nelson Elhage <nelhage@ksplice.com> wrote:
+While using perf I found that many of the commands had options that were
+not documented in their man pages.  The following patches update all of
+the man pages to include the missing options each command supports.
+Additionally there are a few spelling fixes, and a fix for perf diff
+which had two options that used the same flag.
 
-> On Tue, Nov 30, 2010 at 04:09:50PM -0800, Andrew Morton wrote:
-> > On Mon, 29 Nov 2010 21:19:16 -0500
-> > Nelson Elhage <nelhage@ksplice.com> wrote:
-> > 
-> > > +			 * exited while inside set_fs(KERNEL_DS) for
-> > > +			 * some reason (e.g. on a BUG()).
-> > >  			 */
-> > > +			set_fs(USER_DS);
-> > >  			put_user(0, tsk->clear_child_tid);
-> > >  			sys_futex(tsk->clear_child_tid, FUTEX_WAKE,
-> > >  					1, NULL, NULL, 0);
-> > 
-> > Confused.  The user can only exploit the wrong addr_limit if control
-> > returns to userspace for the user's code to execute.  But that won't be
-> > happening, because this thread will unconditionally exit.
-> 
-> The user can exploit the wrong addr_limit on the very next line, with the
-> put_user() there. clear_child_tid is not checked in any way before this
-> point. Writing a single zero might not seem like much, but it's enough for
-> privilege escalation (e.g. overwrite the top half of a function pointer to point
-> to userspace).
+Shawn Bohrer (14):
+  perf: Document missing annotate options.
+  perf: Document missing buildid-list options.
+  perf: fix diff displacement and modules options short flag
+  perf: Document missing diff options
+  perf: Document missing kvm options
+  perf: Document missing lock options
+  perf: Fix spelling mistake in probe documentation
+  perf: Document missing record options
+  perf: Document missing report options
+  perf: Document missing sched options
+  perf: Document missing stat options
+  perf: Fix spelling mistake in test documentation
+  perf: Document missing top options
+  perf: Document missing trace options
 
-Ah, OK.  Doh.
+ tools/perf/Documentation/perf-annotate.txt     |   37 +++++++++++++++++-
+ tools/perf/Documentation/perf-buildid-list.txt |    3 +
+ tools/perf/Documentation/perf-diff.txt         |   19 +++++++++-
+ tools/perf/Documentation/perf-kvm.txt          |    8 +++-
+ tools/perf/Documentation/perf-lock.txt         |   15 +++++++
+ tools/perf/Documentation/perf-probe.txt        |    2 +-
+ tools/perf/Documentation/perf-record.txt       |   17 ++++++--
+ tools/perf/Documentation/perf-report.txt       |   49 ++++++++++++++++++++++--
+ tools/perf/Documentation/perf-sched.txt        |   18 ++++++++-
+ tools/perf/Documentation/perf-stat.txt         |   34 +++++++++++++---
+ tools/perf/Documentation/perf-test.txt         |    2 +-
+ tools/perf/Documentation/perf-top.txt          |   28 ++++++++++++--
+ tools/perf/Documentation/perf-trace.txt        |    7 +++
+ tools/perf/builtin-diff.c                      |    2 +-
+ 14 files changed, 214 insertions(+), 27 deletions(-)
 
-> I have a PoC code that uses this bug, along with CVE-2010-3849, to write a zero
-> to an arbitrary kernel address, so I've tested that this is not theoretical.
-> 
-> That's also why I put the set_fs() hidden inside mm_release, since that's the
-> only place where (to my knowledge) it matters.
-> 
-> On re-reading, I didn't mention clear_child_tid anywhere in the commit message,
-> which was an error on my part, and explains the confusion. Sorry about that, and
-> I hope this clears that up.
-> 
-> Let me know if this makes more sense, and I'll send a revised patch.
-
-I do think it would be better to fix up the addr_limit somewhere within
-the oops code rather than in the regular code.  Presumably just before
-calling do_exit().  Isn't that the logical place?  Plus it fixes up any
-other such problems, whether they be there now or in the future.
-
-Although that involves altering every arch, each in multiple places. 
-ick.  Maybe at the start of do_exit()?
-
-
+-- 
+1.7.3.2
 
