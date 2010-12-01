@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab0LAQsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:48:21 -0500
-Received: from re01.intra2net.com ([82.165.28.202]:35297 "EHLO
-	re01.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab0LAQsT (ORCPT
+	id S1755302Ab0LAQtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:49:20 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34636 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab0LAQtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:48:19 -0500
-X-Greylist: delayed 1138 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 11:48:19 EST
-From: "Gerd v. Egidy" <lists@egidy.de>
-To: linux-kernel@vger.kernel.org
-Subject: how to read block device size from sysfs?
-Date: Wed, 1 Dec 2010 17:29:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-61.fc13.x86_64; KDE/4.5.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012011729.18661.lists@egidy.de>
+	Wed, 1 Dec 2010 11:49:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hMrNZpz1WxlG8ZaVac2ACu2lkM+GW0DRafFkILax4DQ1AgSfiS+o2iGbf8wWG2wn28
+         PQelKaSAU9h6WRX47YGhnR9xKd8r0j4j9FaEIrhaHTy52zJkk2/4Fz/TSZEXGrWhUCKj
+         v+AhXBW7Zv79ugW1yRyPoZAUZuo2A9twB5nB4=
+Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
+From: Namhyung Kim <namhyung@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101201161039.GB29318@suse.de>
+References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
+	 <20101201161039.GB29318@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Dec 2010 01:49:11 +0900
+Message-ID: <1291222151.1684.46.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2010-12-01 (수), 08:10 -0800, Greg KH:
+> On Wed, Dec 01, 2010 at 01:28:41PM +0900, Namhyung Kim wrote:
+> > Annotate whci_hcd_id_table as '__used' to fix following warning:
+> > 
+> >   CC      drivers/usb/host/whci/hcd.o
+> > drivers/usb/host/whci/hcd.c:359: warning: ‘whci_hcd_id_table’ defined but not used
+> 
+> Are you seeing this warning when you build the module into the kernel,
+> or as a module?
+> 
+> thanks,
+> 
+> greg k-h
 
-I want to read the size of a block device in bytes from sysfs.
+I saw it during allyesconfig build but not on allmodconfig.
+Maybe we can wrap it up in #ifdef CONFIG_MODULES ?
 
-There are /sys/block/<device>/size and 
-/sys/block/<device>/<device><partition>/size.
-
-But these values are reported in sectors, not in bytes. As discs with 4K 
-sectors are on the horizon now, I don't want to make wrong assumptions on the 
-sector size.
-
-So what is the correct sector size for /sys/block/<device>/size?
-
-/sys/block/<device>/queue/logical_block_size,
-/sys/block/<device>/queue/physical_block_size or something else?
-
-While searching for an answer I've stumbled across some reports about drives 
-lying about their sector sizes to "improve" compatibility. Is there some best 
-practice to still get the correct size in bytes?
-
-Kind regards,
-
-Gerd
+Thanks.
 
 -- 
-Address (better: trap) for people I really don't want to get mail from:
-jonas@cactusamerica.com
+Regards,
+Namhyung Kim
+
+
