@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab0LATqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:46:52 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62796 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819Ab0LATqu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:46:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=oA/wHRI79PsHmtF4c7k76UPu7/wW3JV8iVjD5CZeJ/cUdV+/YLOxcHzpXJiCq0WxdG
-         g8RwJiBh1zB9i/0xkdI9pxkr/d5YTyYINHrWHIKkp4GKsLsvllYseVwhdmIVWK+eFS2P
-         CzoS26jT1NIzWItl8JyWA/Dec6XvOJmuaTLXs=
+	id S1756765Ab0LATrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:47:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829Ab0LATrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 14:47:17 -0500
+Date: Wed, 1 Dec 2010 14:46:44 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: perf hw  in kexeced kernel broken in tip
+Message-ID: <20101201194644.GD2511@redhat.com>
+References: <4CF60095.1020900@kernel.org>
+ <1291202867.4023.3.camel@twins>
+ <20101201160640.GA2511@redhat.com>
+ <1291219906.32004.1671.camel@laptop>
+ <20101201162335.GB2511@redhat.com>
+ <1291232292.32004.1969.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <1291225075.1845.177.camel@Joe-Laptop>
-References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>
- <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
- <20101129060732.5130.qmail@stuge.se> <4CF42C17.2070500@openwrt.org>
- <1291081185.16349.133.camel@Joe-Laptop> <4CF464D6.2020507@openwrt.org>
- <1291148375.18026.342.camel@Joe-Laptop> <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com>
- <1291225075.1845.177.camel@Joe-Laptop>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 1 Dec 2010 11:46:29 -0800
-Message-ID: <AANLkTinU+jWBXUdW2v9WSL2SZWQn8FHai4+=dAPTASe6@mail.gmail.com>
-Subject: Re: [PATCH wireless-next] MAINTAINERS: Add ATH GENERIC UTILITIES
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath9k-devel@venema.h4ckr.net, peter@stuge.se,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291232292.32004.1969.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 9:37 AM, Joe Perches <joe@perches.com> wrote:
-> This file pattern is not currently shown as maintained
-> by atheros.  Perhaps it should be?
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Wed, Dec 01, 2010 at 08:38:12PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-12-01 at 11:23 -0500, Vivek Goyal wrote:
+> > > What does kexec normally do to ensure hardware is left in a sane state?
+> > 
+> > Typically calls device_shutdown() and sysdev_shutdown() from
+> > kernel_restart_prepare() to shutdown the devices.
+> > 
+> > Also calls machine_shutdown() which depending on architecture can take
+> > care of various things like stopping other cpus, shutting down LAPIC, 
+> > disabling IOAPIC, disabling hpet, shutting down IOMMU etc
+> > (native_machine_shutdown()). 
+> 
+> So basically there's no sane generic reset callout?
 
-Sure but its maintained by the community and Atheros hackers, not just me.
+I think ->shutdown() calls are sane generic callouts. Isn't it?
 
-  Luis
+There seem to be few exceptions for LAPIC, IOMMU and HPET and I am not
+sure why they are not covered by shutdown calls. CCing Eric, he might
+have more insight into it.
+
+Thanks
+Vivek
