@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab0LAHq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 02:46:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:41622 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138Ab0LAHqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 02:46:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="682672310"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v16 01/17] Add a new structure for skb buffer from external.
-Date: Wed,  1 Dec 2010 16:08:12 +0800
-Message-Id: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1291187695.git.xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
+	id S1753674Ab0LAHwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 02:52:23 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44259 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab0LAHwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 02:52:22 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Simon Kirby <sim@hostway.ca>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1291189227.12777.79.camel@sli10-conroe>
+References: <20101201122638.ABBF.A69D9226@jp.fujitsu.com> <1291189227.12777.79.camel@sli10-conroe>
+Message-Id: <20101201164647.ABD7.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Dec 2010 16:52:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+> > > > we can't make
+> > > > perfect VM heuristics obviously, then we need to compare pros/cons.
+> > > if you don't care about small system, let's consider a NORMAL i386
+> > > system with 896m normal zone, and 896M*3 high zone. normal zone will
+> > > quickly exhaust by high order high zone allocation, leave a latter
+> > > allocation which does need normal zone fail.
+> > 
+> > Not happen. slab don't allocate from highmem and page cache allocation
+> > is always using order-0. When happen high order high zone allocation?
+> ok, thanks, I missed this. then how about a x86_64 box with 896M DMA32
+> and 896*3M NORMAL? some pci devices can only dma to DMA32 zone.
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
----
- include/linux/skbuff.h |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+First, DMA32 is 4GB. Second, modern high end system don't use 32bit PCI
+device. Third, while we are thinking desktop users, 4GB is not small
+room. nowadays, typical desktop have only 2GB or 4GB memory.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 77eb60d..696e690 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -211,6 +211,15 @@ struct skb_shared_info {
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
- 
-+/* The structure is for a skb which pages may point to
-+ * an external buffer, which is not allocated from kernel space.
-+ * It also contains a destructor for itself.
-+ */
-+struct skb_ext_page {
-+	struct		page *page;
-+	void		(*dtor)(struct skb_ext_page *);
-+};
-+
- /* We divide dataref into two halves.  The higher 16 bits hold references
-  * to the payload part of skb->data.  The lower 16 bits hold references to
-  * the entire skb->data.  A clone of a headerless skb holds the length of
--- 
-1.7.3
+In other word, I agree your pointed issue is exist _potentially_. but
+I don't think it is frequently than Simon's case.
+
+In other word, when deciding heuristics, we can't avoid to think issue
+frequency. It's very important.
+
+
+Of cource, if you have better idea, I don't oppose it.
+
 
