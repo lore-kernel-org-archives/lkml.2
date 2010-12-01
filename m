@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab0LAAMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:12:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6549 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab0LAAMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:12:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="579243760"
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX
- protection for kernel data)
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mat <castet.matthieu@free.fr>, Andi Kleen <andi@firstfloor.org>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
-In-Reply-To: <1291116438.32004.649.camel@laptop>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
-	 <1290431008.2072.119.camel@laptop>	<1290443379.4cea9a73cd9ce@imp.free.fr>
-	 <1290443758.2072.318.camel@laptop>	<20101122164247.GC21836@basil.fritz.box>
-	 <20101123235527.54293b59@mat-laptop>  <20101126183144.300a71a4@mat-laptop>
-	 <1291093230.2405.191.camel@minggr.sh.intel.com>
-	 <1291116438.32004.649.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 08:15:04 +0800
-Message-ID: <1291162504.2405.216.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1752657Ab0LAAMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:12:53 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59519 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab0LAAMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 19:12:51 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/2] exec: make argv/envp memory visible to oom-killer
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, stable@kernel.org
+In-Reply-To: <20101130195534.GB11905@redhat.com>
+References: <20101130195456.GA11905@redhat.com> <20101130195534.GB11905@redhat.com>
+Message-Id: <20101201090350.ABA2.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Dec 2010 09:12:47 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 19:27 +0800, Peter Zijlstra wrote:
-> On Tue, 2010-11-30 at 13:00 +0800, Lin Ming wrote:
-> > echo 0 > /sys/devices/system/cpu/cpu1/online;
-> > echo 1 > /sys/devices/system/cpu/cpu1/online;
-> > 
-> > then machine just reboots...
-> > 
+> Brad Spengler published a local memory-allocation DoS that
+> evades the OOM-killer (though not the virtual memory RLIMIT):
+> http://www.grsecurity.net/~spender/64bit_dos.c
 > 
-> That should work on current -tip (and my test machine confirms with a
-> -tip of yesterday) due to:
-
-Yes, I know.
-
-I tested for Mat's request to confirm that CPU suspend/resume also
-broken, not only S3.
-
-And no interesting trace I can get because machine just reboots
-immediately when CPU suspend/resume.
-
-Thanks.
-
+> execve()->copy_strings() can allocate a lot of memory, but
+> this is not visible to oom-killer, nobody can see the nascent
+> bprm->mm and take it into account.
 > 
-> ---
-> commit 691513f70d3957939a318da970987b876c720861
-> Author: Lin Ming <ming.m.lin@intel.com>
-> Date:   Mon Nov 22 14:03:28 2010 +0100
+> With this patch get_arg_page() increments current's MM_ANONPAGES
+> counter every time we allocate the new page for argv/envp. When
+> do_execve() succeds or fails, we change this counter back.
 > 
->     x86: Resume trampoline must be executable
->     
->     commit 5bd5a452(x86: Add NX protection for kernel data) marked the
->     trampoline area NX - which unsurprisingly breaks resume and cpu
->     hotplug.
->     
->     Revert the portion of that commit, which touches the trampoline.
->     
->     Originally-from: Lin Ming <ming.m.lin@intel.com>
->     LKML-Reference: <1290410581.2405.24.camel@minggr.sh.intel.com>
->     Cc: Matthieu Castet <castet.matthieu@free.fr>
->     Cc: Siarhei Liakh <sliakh.lkml@gmail.com>
->     Cc: Xuxian Jiang <jiang@cs.ncsu.edu>
->     Cc: Ingo Molnar <mingo@elte.hu>
->     Cc: Arjan van de Ven <arjan@infradead.org>
->     Cc: Andi Kleen <andi@firstfloor.org>
->     Tested-by: Peter Zijlstra <peterz@infradead.org>
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Technically this is not 100% correct, we can't know if the new
+> page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
+> I don't think this really matters and everything becomes correct
+> once exec changes ->mm or fails.
 > 
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index ce59c05..71a5929 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -788,7 +788,6 @@ void mark_rodata_ro(void)
->  	unsigned long rodata_start =
->  		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
->  	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
-> -	unsigned long kernel_end = (((unsigned long)&__init_end + HPAGE_SIZE) & HPAGE_MASK);
->  	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
->  	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
->  	unsigned long data_start = (unsigned long) &_sdata;
-> @@ -803,7 +802,7 @@ void mark_rodata_ro(void)
->  	 * The rodata section (but not the kernel text!) should also be
->  	 * not-executable.
->  	 */
-> -	set_memory_nx(rodata_start, (kernel_end - rodata_start) >> PAGE_SHIFT);
-> +	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
+> Reported-by: Brad Spengler <spender@grsecurity.net>
+> By-discussion-with: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Looks good to me.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+
+Thank you very much.
+
+
+> --- K/fs/exec.c~acct_exec_mem	2010-11-30 18:27:15.000000000 +0100
+> +++ K/fs/exec.c	2010-11-30 18:28:54.000000000 +0100
+> @@ -164,6 +164,25 @@ out:
 >  
->  	rodata_test();
+>  #ifdef CONFIG_MMU
 >  
-> 
+> +static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+
+One minor request.
+
+I guess this function can easily makes confusing to a code reader. So I
+hope you write small function comments. describe to
+ - What is oom nascent issue
+ - Why we think inaccurate account is ok
+
+
+> +{
+> +	struct mm_struct *mm = current->mm;
+> +	long diff = (long)(pages - bprm->vma_pages);
+> +
+> +	if (!mm || !diff)
+> +		return;
+> +
+> +	bprm->vma_pages = pages;
+> +
+> +#ifdef SPLIT_RSS_COUNTING
+> +	add_mm_counter(mm, MM_ANONPAGES, diff);
+> +#else
+> +	spin_lock(&mm->page_table_lock);
+> +	add_mm_counter(mm, MM_ANONPAGES, diff);
+> +	spin_unlock(&mm->page_table_lock);
+> +#endif
+> +}
+> +
+
+
 
 
