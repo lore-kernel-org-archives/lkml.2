@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab0LASPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:15:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876Ab0LASPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:15:23 -0500
-Date: Wed, 1 Dec 2010 19:07:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, stable@kernel.org
-Subject: Re: [PATCH 1/2] exec: make argv/envp memory visible to oom-killer
-Message-ID: <20101201180753.GA6143@redhat.com>
-References: <20101130195456.GA11905@redhat.com> <20101130195534.GB11905@redhat.com> <20101201090350.ABA2.A69D9226@jp.fujitsu.com>
+	id S1754843Ab0LASWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:22:17 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:40578 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab0LASWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:22:16 -0500
+X-IronPort-AV: E=Sophos;i="4.59,284,1288569600"; 
+   d="scan'208";a="3140251"
+Date: Wed, 1 Dec 2010 18:22:09 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: linux-kernel@vger.kernel.org
+CC: xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH 0/5] Xen PV on HVM fixes
+Message-ID: <alpine.DEB.2.00.1012011442280.14723@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101201090350.ABA2.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01, KOSAKI Motohiro wrote:
->
-> > +static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
->
-> One minor request.
->
-> I guess this function can easily makes confusing to a code reader. So I
-> hope you write small function comments. describe to
->  - What is oom nascent issue
->  - Why we think inaccurate account is ok
+Hi all,
+this patch series is a collection of fixes for Xen PV on HVM.
 
-Agreed, this needs a comment.
+The first two patches fix two pirq remapping problems with MSIs, they
+have been sent to the list few times already for comments.
+The three following patches are new and fix save/restore bugs.
 
-The patch was already applied, I'll send a separate one on top
-of the next "unify exec/compat" series. Or, I'll add the comments
-into this series, depending on review.
+Stefano Stabellini (5):
+      xen: use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
+      xen: fix MSI setup and teardown for PV on HVM guests
+      xen: resume the pv console for hvm guests too
+      xen: fix save/restore for PV on HVM guests with pirq remapping
+      xen: unplug the emulated devices at resume time
 
-Thanks,
+ arch/x86/pci/xen.c                 |   27 +++++++---
+ arch/x86/xen/platform-pci-unplug.c |    2 +-
+ arch/x86/xen/suspend.c             |    1 +
+ arch/x86/xen/xen-ops.h             |    2 +-
+ drivers/xen/events.c               |  105 +++++++++++++++++++++++++-----------
+ drivers/xen/manage.c               |    1 +
+ include/xen/events.h               |    7 ++-
+ include/xen/interface/physdev.h    |   10 ++++
+ 8 files changed, 114 insertions(+), 41 deletions(-)
 
-Oleg.
+A branch with these fixes based on 2.6.37-rc4 is available here:
 
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc4-pvhvm-fixes
+
+Cheers,
+
+Stefano
