@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab0LAUMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:12:31 -0500
-Received: from xenotime.net ([72.52.115.56]:42700 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755647Ab0LAUM3 convert rfc822-to-8bit (ORCPT
+	id S1756896Ab0LAUNj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:13:39 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:39599 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755655Ab0LAUNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:12:29 -0500
-Date: Wed, 1 Dec 2010 12:12:25 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Julien Cristau <jcristau@debian.org>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 1/4] drm: fix headers to include
- linux/types.h
-Message-Id: <20101201121225.7a478a25.rdunlap@xenotime.net>
-In-Reply-To: <AANLkTikYmVQ3A+DArFq+7z1MvhZDR6z+3-VdJpoRMV1K@mail.gmail.com>
-References: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
-	<1291216245-18574-2-git-send-email-virtuoso@slind.org>
-	<20101201165418.GU5063@radis.liafa.jussieu.fr>
-	<20101201113841.46e92def.akpm@linux-foundation.org>
-	<AANLkTikYmVQ3A+DArFq+7z1MvhZDR6z+3-VdJpoRMV1K@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 1 Dec 2010 15:13:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=lgfWy66mW1Qa3pF+az+1xR0bhJU8VmwwgAm5f5fhxf63ZCiDHiVGPHJcB2IHxDs6+s
+         3WI3zXAfzul50Asszy3w==
+Date: Wed, 1 Dec 2010 12:13:32 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] ksm: annotate ksm_thread_mutex is no deadlock
+ source
+In-Reply-To: <20101201143008.ABCE.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.LSU.2.00.1012011158120.17318@tigran.mtv.corp.google.com>
+References: <alpine.LSU.2.00.1010252248210.2939@sister.anvils> <20101026163218.B7BF.A69D9226@jp.fujitsu.com> <20101201143008.ABCE.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Dec 2010 05:55:59 +1000 Dave Airlie wrote:
-
-> On Thu, Dec 2, 2010 at 5:38 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Wed, 1 Dec 2010 17:54:18 +0100
-> > Julien Cristau <jcristau@debian.org> wrote:
-> >
-> >> On Wed, Dec  1, 2010 at 17:10:42 +0200, Alexander Shishkin wrote:
-> >>
-> >> > For headers that get exported to userland and make use of u32 style
-> >> > type names, it is advised to include linux/types.h.
-> >> >
-> >> > This fixes 5 headers_check warnings.
-> >> >
-> >> How many times does this need to be NAKed?
-> >
-> > Until someone gets a clue and puts comments in there explaining this?
+On Wed, 1 Dec 2010, KOSAKI Motohiro wrote:
 > 
-> how about someone fixing the dumb scripts to understand that C header
-> includes aren't single level.
-
-Still, drm is an exception here, so it needs to be documented as such.
-
-
-> Like 10 people have posted this patch and not one has come back with a
-> fix for the app after I pointed it out, like really if people think
-> they can write C good enough to send kernel patches,
-> maybe they could put some more effort in and actually fix a real problem.
+> commit 62b61f611e(ksm: memory hotremove migration only) made following
+> new lockdep warning.
 > 
-> We should start hashing signed-off-by's so people can't get any glory from them.
+>   =======================================================
+>   [ INFO: possible circular locking dependency detected ]
+>   -------------------------------------------------------
+>   bash/1621 is trying to acquire lock:
+>    ((memory_chain).rwsem){.+.+.+}, at: [<ffffffff81079339>]
+>   __blocking_notifier_call_chain+0x69/0xc0
+> 
+>   but task is already holding lock:
+>    (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8113a3aa>]
+>   ksm_memory_callback+0x3a/0xc0
+> 
+>   which lock already depends on the new lock.
+> 
+>   the existing dependency chain (in reverse order) is:
+> 
+>   -> #1 (ksm_thread_mutex){+.+.+.}:
+>        [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
+>        [<ffffffff81505d74>] __mutex_lock_common+0x44/0x3f0
+>        [<ffffffff81506228>] mutex_lock_nested+0x48/0x60
+>        [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0
+>        [<ffffffff8150c21c>] notifier_call_chain+0x8c/0xe0
+>        [<ffffffff8107934e>] __blocking_notifier_call_chain+0x7e/0xc0
+>        [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
+>        [<ffffffff813afbfb>] memory_notify+0x1b/0x20
+>        [<ffffffff81141b7c>] remove_memory+0x1cc/0x5f0
+>        [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
+>        [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
+>        [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
+>        [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
+>        [<ffffffff8114f398>] vfs_write+0xc8/0x190
+>        [<ffffffff8114fc14>] sys_write+0x54/0x90
+>        [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
+> 
+>   -> #0 ((memory_chain).rwsem){.+.+.+}:
+>        [<ffffffff8108b5ba>] __lock_acquire+0x155a/0x1600
+>        [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
+>        [<ffffffff81506601>] down_read+0x51/0xa0
+>        [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0
+>        [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
+>        [<ffffffff813afbfb>] memory_notify+0x1b/0x20
+>        [<ffffffff81141f1e>] remove_memory+0x56e/0x5f0
+>        [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
+>        [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
+>        [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
+>        [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
+>        [<ffffffff8114f398>] vfs_write+0xc8/0x190
+>        [<ffffffff8114fc14>] sys_write+0x54/0x90
+>        [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
+> 
+> But it's false positive. Both memory_chain.rwsem and ksm_thread_mutex
+> have outer lock (mem_hotplug_mutex). then, they can't make deadlock.
+> 
+> Thus, This patch annotate ksm_thread_mutex is not deadlock source.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thank you (I assume it does the job, I've not yet checked).  My only
+issue with this is that the comment you added below tells a different
+story from the fuller comment you give above.  Maybe change it to:
+
+	* mutex_lock_nested() is necessary because lockdep was alarmed that
+	* here we take ksm_thread_mutex inside notifier chain mutex, and
+	* later take notifier chain mutex inside ksm_thread_mutex to unlock
+	* it: but that's safe because both are inside mem_hotplug_mutex.
+
+Acked-by: Hugh Dickins <hughd@google.com>
+
+> ---
+>  mm/ksm.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> index 65ab5c7..5aa4900 100644
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -1724,8 +1724,10 @@ static int ksm_memory_callback(struct notifier_block *self,
+>  		/*
+>  		 * Keep it very simple for now: just lock out ksmd and
+>  		 * MADV_UNMERGEABLE while any memory is going offline.
+> +		 * Mutex_lock_nested() is necessary to tell that
+> +		 * ksm_thread_mutex is not unlocked here intentionally.
+>  		 */
+> -		mutex_lock(&ksm_thread_mutex);
+> +		mutex_lock_nested(&ksm_thread_mutex, SINGLE_DEPTH_NESTING);
+>  		break;
+>  
+>  	case MEM_OFFLINE:
+> -- 
+> 1.6.5.2
