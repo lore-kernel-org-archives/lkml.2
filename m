@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0LAQp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:45:57 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:59977 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab0LAQp4 (ORCPT
+	id S1755270Ab0LAQsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:48:03 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45332 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752990Ab0LAQsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:45:56 -0500
-Message-ID: <4CF67BBE.8050303@panasas.com>
-Date: Wed, 01 Dec 2010 18:45:50 +0200
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	Wed, 1 Dec 2010 11:48:00 -0500
 MIME-Version: 1.0
+In-Reply-To: <4CF67955.2050808@redhat.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+ <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+ <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <4CF67955.2050808@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 08:47:34 -0800
+Message-ID: <AANLkTinwrhUOQ0LnavQY6+TQS_TqnRS0q-XXykZ8ap5G@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
 To: Rik van Riel <riel@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Nick Bowler <nbowler@elliptictech.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@lst.de>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <4CF67955.2050808@redhat.com>
-In-Reply-To: <4CF67955.2050808@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Dec 2010 16:45:53.0639 (UTC) FILETIME=[37F8F770:01CB9177]
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-01 18:35, Rik van Riel wrote:
-> On 12/01/2010 11:17 AM, Linus Torvalds wrote:
-> 
->> So this is a TOTALLY UNTESTED trivial patch that just adds another
->> callback. Does this work? I dunno. But I get the feeling that instead
->> of having NFS work around the odd semantics that don't actually match
->> what NFS wants, introducing a new callback with much simpler semantics
->> would be simpler for everybody, and avoid the need for subtle code.
-> 
+On Wed, Dec 1, 2010 at 8:35 AM, Rik van Riel <riel@redhat.com> wrote:
+>
 > Surely somebody can have just looked up the page and
 > gotten a reference count, right before your ->freepage
 > call is invoked?
-> 
-> CPU A				CPU B
-> 
-> look up page
-> grab refcount
-> 				->freepage
-> 
-> use contents of page
-> 
-> Am I overlooking something obvious?
-> 
 
-The page is not cached any more at this point therefore
-looking it up won't find it.
+No.
 
-Benny
+The removal from the page cache is atomic, even in the presence of the
+lockless lookup.
+
+The page cache lookup does a "get_page_unless_zero()" on the count, so
+when __remove_mapping() has removed the page using
+"page_freeze_refs()", it's really gone, and cannot be looked up.
+
+And if that is broken, then we have much more serious problems (like
+aliasing the same page when doing mmap/read etc), so that's more than
+just an implementation detail, it's a fundamental requirement of the
+whole page-cache design.
+
+And that's the whole point of adding this callback to the
+__remove_mapping() stage: that's the _only_ point where we really end
+up knowing that "yes, we really removed that page, and there are no
+more users".
+
+                              Linus
