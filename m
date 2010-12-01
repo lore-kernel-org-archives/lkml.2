@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0LAQeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:34:50 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61549 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab0LAQet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:34:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=SBtUKUia2YBPC4CIwIbhFobNk0zJdx+znFY0N4Kr4rKMa73OkfAwFlX+uKzNk0ItLX
-         +GYYzath/CacsPl7b2NRz/F+WaFxnb+ayFZFiFHEHkFPD1SXl9ODsaDRtZgO5Apvz9zu
-         3mmwjNdg7Oeok11QJqzu7eY6QxkfAyZpYoTss=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] MIPS: Fix build failure on mips_sc_is_activated()
-Date: Thu,  2 Dec 2010 01:34:42 +0900
-Message-Id: <1291221282-9056-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755023Ab0LAQfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:35:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31136 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753858Ab0LAQfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 11:35:45 -0500
+Message-ID: <4CF67955.2050808@redhat.com>
+Date: Wed, 01 Dec 2010 11:35:33 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+In-Reply-To: <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit ea31a6b20371 ("MIPS: Honor L2 bypass bit") breaks
-malta build as follows. Looks like not compile-tested :(
+On 12/01/2010 11:17 AM, Linus Torvalds wrote:
 
-  CC      arch/mips/mm/sc-mips.o
-arch/mips/mm/sc-mips.c: In function 'mips_sc_is_activated':
-arch/mips/mm/sc-mips.c:77:7 error: 'config2' undeclared (first use in this function)
-arch/mips/mm/sc-mips.c:77:7 note: each undeclared identifier is reported only once
-arch/mips/mm/sc-mips.c:77:7       for each function it appears in
-arch/mips/mm/sc-mips.c:81:2 error: 'tmp' undeclared (first use in this function)
-arch/mips/mm/sc-mips.c:86:1 warning: control reaches end of non-void function
-make[3]: *** [arch/mips/mm/sc-mips.o] Error 1
-make[2]: *** [arch/mips/mm/sc-mips.o] Error 2
-make[1]: *** [sub-make] Error 2
-make: *** [all] Error 2
+> So this is a TOTALLY UNTESTED trivial patch that just adds another
+> callback. Does this work? I dunno. But I get the feeling that instead
+> of having NFS work around the odd semantics that don't actually match
+> what NFS wants, introducing a new callback with much simpler semantics
+> would be simpler for everybody, and avoid the need for subtle code.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/mips/mm/sc-mips.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+Surely somebody can have just looked up the page and
+gotten a reference count, right before your ->freepage
+call is invoked?
 
-diff --git a/arch/mips/mm/sc-mips.c b/arch/mips/mm/sc-mips.c
-index 505feca..a168f52 100644
---- a/arch/mips/mm/sc-mips.c
-+++ b/arch/mips/mm/sc-mips.c
-@@ -66,8 +66,11 @@ static struct bcache_ops mips_sc_ops = {
-  * 12..15 as implementation defined so below function will eventually have
-  * to be replaced by a platform specific probe.
-  */
--static inline int mips_sc_is_activated(struct cpuinfo_mips *c)
-+static inline int mips_sc_is_activated(struct cpuinfo_mips *c,
-+				       unsigned int config2)
- {
-+	unsigned int tmp;
-+
- 	/* Check the bypass bit (L2B) */
- 	switch (c->cputype) {
- 	case CPU_34K:
-@@ -83,6 +86,8 @@ static inline int mips_sc_is_activated(struct cpuinfo_mips *c)
- 		c->scache.linesz = 2 << tmp;
- 	else
- 		return 0;
-+
-+	return 1;
- }
- 
- static inline int __init mips_sc_probe(void)
-@@ -108,7 +113,7 @@ static inline int __init mips_sc_probe(void)
- 
- 	config2 = read_c0_config2();
- 
--	if (!mips_sc_is_activated(c))
-+	if (!mips_sc_is_activated(c, config2))
- 		return 0;
- 
- 	tmp = (config2 >> 8) & 0x0f;
+CPU A				CPU B
+
+look up page
+grab refcount
+				->freepage
+
+use contents of page
+
+Am I overlooking something obvious?
+
 -- 
-1.7.0.4
-
+All rights reversed
