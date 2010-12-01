@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab0LAPL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 10:11:57 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:49249 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab0LAPLo (ORCPT
+	id S1754026Ab0LAPOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 10:14:11 -0500
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:57254 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751173Ab0LAPOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 10:11:44 -0500
-From: Alexander Shishkin <virtuoso@slind.org>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Buzzard <jonathan@buzzard.org.uk>,
-        tlinux-users@tce.toshiba-dme.co.jp
-Subject: [PATCH 4/4] toshiba.h: hide a function prototypes behind __KERNEL__ macro
-Date: Wed,  1 Dec 2010 17:10:45 +0200
-Message-Id: <1291216245-18574-5-git-send-email-virtuoso@slind.org>
-X-Mailer: git-send-email 1.7.2.1.45.gb66c2
-In-Reply-To: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
-References: <1291216245-18574-1-git-send-email-virtuoso@slind.org>
+	Wed, 1 Dec 2010 10:14:09 -0500
+Date: Wed, 1 Dec 2010 08:14:04 -0700
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Max Asbock <masbock@linux.vnet.ibm.com>, indou.takao@jp.fujitsu.com,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        David Woodhouse <dwmw2@infradead.org>, stable@kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [patch 2/4] x86, vtd: fix the vt-d fault handling irq
+ migration in the x2apic mode
+Message-ID: <20101201151404.GA2069@helgaas.com>
+References: <20101201062225.292364637@intel.com>
+ <20101201062244.447287381@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201062244.447287381@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, tosh_smm() prototype is present in a header
-file exported to userland. This patch fixes it.
+On Tue, Nov 30, 2010 at 10:22:27PM -0800, Suresh Siddha wrote:
+> From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> Subject: x86, vtd: fix the vt-d fault handling irq migration in the x2apic mode
+> 
+> In x2apic mode, we need to set the upper address register of the fault
+> handling interrupt register of the vt-d hardware. Without this
+> irq migration of the vt-d fault handling interrupt is broken.
+> 
+> Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: stable@kernel.org [v2.6.32+]
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> Index: tip/arch/x86/kernel/apic/io_apic.c
+> ===================================================================
+> --- tip.orig/arch/x86/kernel/apic/io_apic.c
+> +++ tip/arch/x86/kernel/apic/io_apic.c
+> @@ -3367,6 +3367,8 @@ dmar_msi_set_affinity(struct irq_data *d
+>  	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+>  	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+>  	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+> +	if (x2apic_mode)
+> +		msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
 
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Jonathan Buzzard <jonathan@buzzard.org.uk>
-CC: tlinux-users@tce.toshiba-dme.co.jp
-CC: linux-kernel@vger.kernel.org
----
- include/linux/toshiba.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Is it necessary to test x2apic_mode here?  It looks like
+MSI_ADDR_EXT_DEST_ID() gives you everything above the low 8
+bits of the APIC ID.  If those bits are always zero except in
+x2apic_mode, we might not need the test.
 
-diff --git a/include/linux/toshiba.h b/include/linux/toshiba.h
-index 6a7c4ed..772dedb 100644
---- a/include/linux/toshiba.h
-+++ b/include/linux/toshiba.h
-@@ -33,6 +33,8 @@ typedef struct {
- 	unsigned int edi __attribute__ ((packed));
- } SMMRegisters;
- 
-+#ifdef __KERNEL__
- int tosh_smm(SMMRegisters *regs);
-+#endif /* __KERNEL__ */
- 
- #endif
--- 
-1.7.2.1.45.gb66c2
+Does the ia64 dmar_msi_set_affinity() need the same fix?
 
+Why do we have both x2apic_enabled() and x2apic_mode?  They
+seem sort of redundant.  (Not related to this patch, of course.)
+
+Bjorn
