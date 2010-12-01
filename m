@@ -1,279 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0LAQCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:02:37 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:44856 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab0LAQCg (ORCPT
+	id S1754800Ab0LAQDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:03:15 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47901 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab0LAQDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:02:36 -0500
+	Wed, 1 Dec 2010 11:03:14 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=EyotKUouOF8MznC6oEmhz2uV+MbV3Hj5f2J3Y7j+6FFdb7mM2cmpdtkEBBtdwhCk7A
-         tW+Mc3H7DYcYmGZPOZvQ==
-Message-ID: <4cf67197.41e9d80a.7d37.08aa@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 1 Dec 2010 17:00:05 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com, robert.richter@amd.com, acme@redhat.com
-Subject: [PATCH] perf: add csv-style output to perf stat
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qagjbO4cpX/PdGG4E0IaBAgwM2oHWePw6n9lFuKqYO1LR74LDk+N3Bdm+nsE0SZK+z
+         uoL5OKZE2WY0QBssS+IGV++ww9DelT991i2Xxe4kdlCgDAZa9oHF7kmYLC2TR8Tk0tGM
+         OO05rIYmLVe+OjbARTSE9MiDCsqhUZszEDm2Q=
+Subject: Re: [Patch] net: kill an RCU warning in inet_fill_link_af()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        Thomas Graf <tgraf@infradead.org>
+In-Reply-To: <1291202063-6239-1-git-send-email-amwang@redhat.com>
+References: <1291202063-6239-1-git-send-email-amwang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 17:03:06 +0100
+Message-ID: <1291219386.2856.924.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an option (-x) to print counts using a CSV-style output.
-This makes it very easy to import counts directly into your favorite
-spreadsheet without having to write scripts.
+Le mercredi 01 décembre 2010 à 19:14 +0800, Amerigo Wang a écrit :
+> From: WANG Cong <amwang@redhat.com>
+> 
+> The latest net-next-2.6 triggers an RCU warning during boot,
+> lockdep complains that in inet_fill_link_af() we call rcu_dereference_check()
+> without rcu_read_lock() protection.
+> 
+> This patch fixes it by replacing __in_dev_get_rcu() with in_dev_get().
 
-Example:
-$  perf stat -x -a -- sleep 1
-4009.795961,task-clock-msecs
-20,context-switches
-2,CPU-migrations
-190,page-faults
-9595983335,cycles
-3492776872,instructions
-872718098,branches
-29798,branch-misses
-44646,cache-references
-5026,cache-misses
+Here is a better version, thanks a lot for your report and initial
+patch.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+
+[PATCH net-next-2.6] net: kill an RCU warning in inet_fill_link_af()
+
+commits 9f0f7272 (ipv4: AF_INET link address family) and cf7afbfeb8c
+(rtnl: make link af-specific updates atomic) used incorrect
+__in_dev_get_rcu() in RTNL protected contexts, triggering PROVE_RCU
+warnings.
+
+Switch to __in_dev_get_rtnl(), wich is more appropriate, since we hold
+RTNL.
+
+Based on a report and initial patch from Amerigo Wang.
+
+Reported-by: Amerigo Wang <amwang@redhat.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Graf <tgraf@infradead.org>
 ---
+ net/ipv4/devinet.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index c405bca..717c11d 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -58,6 +58,11 @@ to activate system-wide monitoring. Default is to count on all CPUs.
- Do not aggregate counts across all monitored CPUs in system-wide mode (-a).
- This option is only valid in system-wide mode.
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index d9f71ba..3b06770 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1258,7 +1258,7 @@ errout:
  
-+-x::
-+--csv::
-+print counts using a CSV-style (comma separated) output to make it easy to
-+import directly into spreadsheets.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 970a7f2..325608d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -76,6 +76,7 @@ static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
- static bool			no_aggr				= false;
-+static bool			csv_output			=  false;
- static pid_t			target_pid			= -1;
- static pid_t			target_tid			= -1;
- static pid_t			*all_tids			=  NULL;
-@@ -84,6 +85,7 @@ static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static bool			big_num				=  false;
- static const char		*cpu_list;
-+static const char		*sep;
- 
- 
- static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
-@@ -449,12 +451,16 @@ static void print_noise(int counter, double avg)
- static void nsec_printout(int cpu, int counter, double avg)
+ static size_t inet_get_link_af_size(const struct net_device *dev)
  {
- 	double msecs = avg / 1e6;
-+	char cpustr[16] = { '\0', };
-+	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-24s";
+-	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct in_device *in_dev = __in_dev_get_rtnl(dev);
  
- 	if (no_aggr)
--		fprintf(stderr, "CPU%-4d %18.6f  %-24s",
--			cpumap[cpu], msecs, event_name(counter));
--	else
--		fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
-+		sprintf(cpustr, "CPU%-4d%s", cpumap[cpu], sep);
-+
-+	fprintf(stderr, fmt, cpustr, msecs, sep, event_name(counter));
-+
-+	if (csv_output)
-+		return;
+ 	if (!in_dev)
+ 		return 0;
+@@ -1268,7 +1268,7 @@ static size_t inet_get_link_af_size(const struct net_device *dev)
  
- 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
- 		fprintf(stderr, " # %10.3f CPUs ",
-@@ -466,18 +472,24 @@ static void abs_printout(int cpu, int counter, double avg)
+ static int inet_fill_link_af(struct sk_buff *skb, const struct net_device *dev)
  {
- 	double total, ratio = 0.0;
- 	char cpustr[16] = { '\0', };
-+	const char *fmt;
-+
-+	if (csv_output)
-+		fmt = "%s%.0f%s%s";
-+	else if (big_num)
-+		fmt = "%s%'18.0f%s%-24s";
-+	else
-+		fmt = "%s%18.0f%s%-24s";
+-	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct in_device *in_dev = __in_dev_get_rtnl(dev);
+ 	struct nlattr *nla;
+ 	int i;
  
- 	if (no_aggr)
--		sprintf(cpustr, "CPU%-4d", cpumap[cpu]);
-+		sprintf(cpustr, "CPU%-4d%s", cpumap[cpu], sep);
- 	else
- 		cpu = 0;
+@@ -1295,7 +1295,7 @@ static int inet_validate_link_af(const struct net_device *dev,
+ 	struct nlattr *a, *tb[IFLA_INET_MAX+1];
+ 	int err, rem;
  
--	if (big_num)
--		fprintf(stderr, "%s %'18.0f  %-24s",
--			cpustr, avg, event_name(counter));
--	else
--		fprintf(stderr, "%s %18.0f  %-24s",
--			cpustr, avg, event_name(counter));
-+	fprintf(stderr, fmt, cpustr, avg, sep, event_name(counter));
-+
-+	if (csv_output)
-+		return;
+-	if (dev && !__in_dev_get_rcu(dev))
++	if (dev && !__in_dev_get_rtnl(dev))
+ 		return -EAFNOSUPPORT;
  
- 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
- 		total = avg_stats(&runtime_cycles_stats[cpu]);
-@@ -515,8 +527,8 @@ static void print_counter_aggr(int counter)
- 	int scaled = event_scaled[counter];
+ 	err = nla_parse_nested(tb, IFLA_INET_MAX, nla, inet_af_policy);
+@@ -1319,7 +1319,7 @@ static int inet_validate_link_af(const struct net_device *dev,
  
- 	if (scaled == -1) {
--		fprintf(stderr, " %18s  %-24s\n",
--			"<not counted>", event_name(counter));
-+		fprintf(stderr, "%18s%s%-24s\n",
-+			"<not counted>", sep, event_name(counter));
- 		return;
- 	}
+ static int inet_set_link_af(struct net_device *dev, const struct nlattr *nla)
+ {
+-	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct in_device *in_dev = __in_dev_get_rtnl(dev);
+ 	struct nlattr *a, *tb[IFLA_INET_MAX+1];
+ 	int rem;
  
-@@ -525,6 +537,11 @@ static void print_counter_aggr(int counter)
- 	else
- 		abs_printout(-1, counter, avg);
- 
-+	if (csv_output) {
-+		fputc('\n', stderr);
-+		return;
-+	}
-+
- 	print_noise(counter, avg);
- 
- 	if (scaled) {
-@@ -554,8 +571,10 @@ static void print_counter(int counter)
- 		ena = cpu_counts[cpu][counter].ena;
- 		run = cpu_counts[cpu][counter].run;
- 		if (run == 0 || ena == 0) {
--			fprintf(stderr, "CPU%-4d %18s  %-24s", cpumap[cpu],
--					"<not counted>", event_name(counter));
-+			fprintf(stderr, "CPU%-4d%s%18s%s%-24s",
-+				cpumap[cpu], sep,
-+				"<not counted>", sep,
-+				event_name(counter));
- 
- 			fprintf(stderr, "\n");
- 			continue;
-@@ -566,11 +585,13 @@ static void print_counter(int counter)
- 		else
- 			abs_printout(cpu, counter, val);
- 
--		print_noise(counter, 1.0);
-+		if (!csv_output) {
-+			print_noise(counter, 1.0);
- 
--		if (run != ena) {
--			fprintf(stderr, "  (scaled from %.2f%%)",
-+			if (run != ena) {
-+				fprintf(stderr, "  (scaled from %.2f%%)",
- 					100.0 * run / ena);
-+			}
- 		}
- 		fprintf(stderr, "\n");
- 	}
-@@ -582,21 +603,23 @@ static void print_stat(int argc, const char **argv)
- 
- 	fflush(stdout);
- 
--	fprintf(stderr, "\n");
--	fprintf(stderr, " Performance counter stats for ");
--	if(target_pid == -1 && target_tid == -1) {
--		fprintf(stderr, "\'%s", argv[0]);
--		for (i = 1; i < argc; i++)
--			fprintf(stderr, " %s", argv[i]);
--	} else if (target_pid != -1)
--		fprintf(stderr, "process id \'%d", target_pid);
--	else
--		fprintf(stderr, "thread id \'%d", target_tid);
-+	if (!csv_output) {
-+		fprintf(stderr, "\n");
-+		fprintf(stderr, " Performance counter stats for ");
-+		if(target_pid == -1 && target_tid == -1) {
-+			fprintf(stderr, "\'%s", argv[0]);
-+			for (i = 1; i < argc; i++)
-+				fprintf(stderr, " %s", argv[i]);
-+		} else if (target_pid != -1)
-+			fprintf(stderr, "process id \'%d", target_pid);
-+		else
-+			fprintf(stderr, "thread id \'%d", target_tid);
- 
--	fprintf(stderr, "\'");
--	if (run_count > 1)
--		fprintf(stderr, " (%d runs)", run_count);
--	fprintf(stderr, ":\n\n");
-+		fprintf(stderr, "\'");
-+		if (run_count > 1)
-+			fprintf(stderr, " (%d runs)", run_count);
-+		fprintf(stderr, ":\n\n");
-+	}
- 
- 	if (no_aggr) {
- 		for (counter = 0; counter < nr_counters; counter++)
-@@ -606,15 +629,17 @@ static void print_stat(int argc, const char **argv)
- 			print_counter_aggr(counter);
- 	}
- 
--	fprintf(stderr, "\n");
--	fprintf(stderr, " %18.9f  seconds time elapsed",
--			avg_stats(&walltime_nsecs_stats)/1e9);
--	if (run_count > 1) {
--		fprintf(stderr, "   ( +- %7.3f%% )",
-+	if (!csv_output) {
-+		fprintf(stderr, "\n");
-+		fprintf(stderr, " %18.9f  seconds time elapsed",
-+				avg_stats(&walltime_nsecs_stats)/1e9);
-+		if (run_count > 1) {
-+			fprintf(stderr, "   ( +- %7.3f%% )",
- 				100*stddev_stats(&walltime_nsecs_stats) /
- 				avg_stats(&walltime_nsecs_stats));
-+		}
-+		fprintf(stderr, "\n\n");
- 	}
--	fprintf(stderr, "\n\n");
- }
- 
- static volatile int signr = -1;
-@@ -670,6 +695,8 @@ static const struct option options[] = {
- 		    "list of cpus to monitor in system-wide"),
- 	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
- 		    "disable CPU count aggregation"),
-+	OPT_BOOLEAN('x', "csv", &csv_output,
-+		    "print counts in CSV format"),
- 	OPT_END()
- };
- 
-@@ -682,6 +709,17 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	argc = parse_options(argc, argv, options, stat_usage,
- 		PARSE_OPT_STOP_AT_NON_OPTION);
-+
-+	sep = csv_output ? "," : " ";
-+
-+	/*
-+	 * let the spreadsheet do the pretty-printing
-+	 */
-+	if (csv_output && big_num) {
-+		fprintf(stderr, "-B option not supported with -x\n");
-+		usage_with_options(stat_usage, options);
-+	}
-+
- 	if (!argc && target_pid == -1 && target_tid == -1)
- 		usage_with_options(stat_usage, options);
- 	if (run_count <= 0)
+
+
