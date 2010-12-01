@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab0LASEO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:04:14 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:58862 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755581Ab0LASBP (ORCPT
+	id S1756002Ab0LASEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:04:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45362 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab0LASEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:01:15 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Shawn Bohrer <shawn.bohrer@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/15] perf diff: Fix displacement and modules options short flag
-Date: Wed,  1 Dec 2010 16:00:53 -0200
-Message-Id: <1291226465-26337-4-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1291226465-26337-1-git-send-email-acme@infradead.org>
-References: <1291226465-26337-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 1 Dec 2010 13:04:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=G5kUutI4zLWjNNqJgrDsMnJvPGRFjtNcafObsmPKD+XIuaaTzuIVCZ4qbKoOW04G24
+         iQYsBWYPCAFOzUj3yLaSP/RgFJdh9n9/I0l9wzH78ql8XdI9Az0WSi0JXcn7DBWxTXAM
+         +kkrchWyo/njTvdXi/dXQmbiZP097CdoVoAG0=
+Date: Wed, 1 Dec 2010 20:04:20 +0200 (EET)
+From: Tero Roponen <tero.roponen@gmail.com>
+X-X-Sender: terrop@localhost6.localdomain6
+To: linux-kernel@vger.kernel.org
+cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH] slub: Fix a crash during slabinfo -v
+Message-ID: <alpine.LFD.2.02.1012012002440.1633@localhost6.localdomain6>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
 
-The --displacement and --modules options to perf diff both use -m as a
-short flag.  Change --displacement to use -M since other perf commands
-use -m, --modules.
+Commit f7cb1933621bce66a77f690776a16fe3ebbc4d58 ("SLUB: Pass active
+and inactive redzone flags instead of boolean to debug functions")
+missed two instances of check_object(). This caused a lot of warnings
+during 'slabinfo -v' finally leading to a crash:
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1291168642-11402-4-git-send-email-shawn.bohrer@gmail.com>
-Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-diff.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  BUG ext4_xattr: Freepointer corrupt
+  ...
+  BUG buffer_head: Freepointer corrupt
+  ...
+  BUG ext4_alloc_context: Freepointer corrupt
+  ...
+  ...
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+  IP: [<ffffffff810a291f>] file_sb_list_del+0x1c/0x35
+  PGD 79d78067 PUD 79e67067 PMD 0
+  Oops: 0002 [#1] SMP
+  last sysfs file: /sys/kernel/slab/:t-0000192/validate
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index fca1d44..221b823 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -173,7 +173,7 @@ static const char * const diff_usage[] = {
- static const struct option options[] = {
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show symbol address, etc)"),
--	OPT_BOOLEAN('m', "displacement", &show_displacement,
-+	OPT_BOOLEAN('M', "displacement", &show_displacement,
- 		    "Show position displacement relative to baseline"),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
--- 
-1.6.2.5
+This patch fixes the problem by converting the two missed instances.
 
+Signed-off-by: Tero Roponen <tero.roponen@gmail.com>
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 981fb73..bec0e35 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3401,13 +3401,13 @@ static int validate_slab(struct kmem_cache *s, struct page *page,
+ 
+ 	for_each_free_object(p, s, page->freelist) {
+ 		set_bit(slab_index(p, s, addr), map);
+-		if (!check_object(s, page, p, 0))
++		if (!check_object(s, page, p, SLUB_RED_INACTIVE))
+			return 0;
+ 	}
+ 
+ 	for_each_object(p, s, addr, page->objects)
+ 		if (!test_bit(slab_index(p, s, addr), map))
+-			if (!check_object(s, page, p, 1))
++			if (!check_object(s, page, p, SLUB_RED_ACTIVE))
+ 				return 0;
+ 	return 1;
+ }
