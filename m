@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab0LAXhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 18:37:09 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59863 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755655Ab0LAXhG (ORCPT
+	id S1756734Ab0LAXlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 18:41:07 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:54879 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756369Ab0LAXlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 18:37:06 -0500
-Date: Wed, 1 Dec 2010 15:36:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-Message-Id: <20101201153608.78b331f9.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	<AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	<1291229669.6609.24.camel@heimdal.trondhjem.org>
-	<AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
-	<1291234251.6609.39.camel@heimdal.trondhjem.org>
-	<20101201123341.d12ef362.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
-	<alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
-	<20101201133831.ea6ba10a.akpm@linux-foundation.org>
-	<1291240272.6609.50.camel@heimdal.trondhjem.org>
-	<20101201141351.8609140b.akpm@linux-foundation.org>
-	<AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
-	<20101201143856.51f4f9d9.akpm@linux-foundation.org>
-	<AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Dec 2010 18:41:05 -0500
+X-SpamScore: 1
+X-BigFish: VS1(zz15bfM26b7nzz1202hzz8275bhz2dh2a8h691h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+From: Timur Tabi <timur@freescale.com>
+To: <greg@kroah.com>, <kay.sievers@vrfy.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] driver-core: document restrictions on device_rename()
+Date: Wed, 1 Dec 2010 17:40:54 -0600
+Message-ID: <1291246854-19283-1-git-send-email-timur@freescale.com>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010 15:31:11 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Add text, courtesy of Kay Sievers, that provides some background on
+device_rename() and why it shouldn't be used.
 
-> On Wed, Dec 1, 2010 at 2:38 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > OK, the stop_machine() plugs a lot of potential race-vs-module-unload
-> > things. __But Trond is referring to races against vmscan inode reclaim,
-> > unmount, etc.
-> 
-> So?
-> 
-> A filesystem module cannot be unloaded while it's still mounted.
-> 
-> And unmount doesn't succeed until all inodes are gone.
-> 
-> And getting rid of an inode doesn't succeed until all pages associated
-> with it are gone.
-> 
-> And getting rid of the pages involves locking them (whether in
-> truncate or vmscan) and removing them from all lists.
-> 
-> Ergo: vmscan has a locked page leads to the filesystem being
-> guaranteed to not be unmounted.  And that, in turn, guarantees that
-> the module won't be unloaded until the machine has gone through an
-> idle cycle.
+Signed-off-by: Timur Tabi <timur@freescale.com>
+---
+ drivers/base/core.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
-The page isn't attached to the address_space any more:
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 6ed6454..8ff1531 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1513,6 +1513,34 @@ EXPORT_SYMBOL_GPL(device_destroy);
+  * exclusion between two different calls of device_rename
+  * on the same device to ensure that new_name is valid and
+  * won't conflict with other devices.
++ *
++ * Note: Don't call this function.  Currently, the networking layer calls this
++ * function, but that will change.  The following text from Kay Sievers offer
++ * some insight:
++ *
++ * Renaming devices is racy at many levels, symlinks and other stuff are not
++ * replaced atomically, you get a "move" uevent", but it's not easy to connect
++ * the event to the old and new device. Device nodes are not renamed at all,
++ * there isn't even support for that in the kernel now.
++ *
++ * In the meantime during renaming, your target name might be taken by another
++ * driver, creating conflicts. Or the old name is taken directly after you
++ * renamed it -- then you get events for the same DEVPATH, before you even seet
++ * the "move" event. It's just a mess, and nothing new should ever rely on
++ * kernel device renaming. Besides that it's not even implemented now for other
++ * things than (driver-core wise very simple) network devices.
++ *
++ * We are currently about to change network renaming in udev to completely
++ * disallow renaming of devices in the same namespace as the kernel uses,
++ * because we can't solve the problems properly, that arise with swapping names
++ * of multiple interfaces without races. Means, renaming of eth[0-9]* will only
++ * be allowed to some other name than eth[0-9]*, for the mentioned reasons.
++ *
++ * Make up a "real" name in the driver before you register anything, or add
++ * some other attributes for userspace to find the device, or use udev to add
++ * symlinks -- but never rename kernel devices later, it's a complete mess. We
++ * don't even want to get into that and try to implement the missing pieces in
++ * the core. We really have other pieces to fix in the driver core mess. :)
+  */
+ int device_rename(struct device *dev, const char *new_name)
+ {
+-- 
+1.7.2.3
 
-static int __remove_mapping(struct address_space *mapping, struct page *page)
-{
-	...
-		__remove_from_page_cache(page);
-		spin_unlock_irq(&mapping->tree_lock);
-	...
-}
 
