@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab0LATwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:52:41 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59485 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756073Ab0LATwj (ORCPT
+	id S1756816Ab0LATzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:55:48 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41513 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab0LATzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:52:39 -0500
+	Wed, 1 Dec 2010 14:55:47 -0500
+Date: Wed, 1 Dec 2010 20:55:42 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
+Message-ID: <20101201195542.GL32355@pengutronix.de>
+References: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com> <20101201185103.GK32355@pengutronix.de> <20101201190429.GC29347@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
- <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
- <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
- <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
- <1291229669.6609.24.camel@heimdal.trondhjem.org> <alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Dec 2010 11:52:17 -0800
-Message-ID: <AANLkTika6iMcX9=WhLrwHSNoSAcWuzAoJ_uX3yvSOwck@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-To: Hugh Dickins <hughd@google.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101201190429.GC29347@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 11:23 AM, Hugh Dickins <hughd@google.com> wrote:
->
-> But I'd prefer us not to throw in another callback if it's well
-> workable with the ->releasepage we already have.
+On Wed, Dec 01, 2010 at 07:04:29PM +0000, Russell King - ARM Linux wrote:
+> On Wed, Dec 01, 2010 at 07:51:03PM +0100, Uwe Kleine-König wrote:
+> > On Wed, Dec 01, 2010 at 04:30:12PM +0100, Hans Ulli Kroll wrote:
+> > > Today more boards with arm cpu have selectable pci bus.
+> > > This patch makes this more scalable and remove line continuations in
+> > > Kconfig
+> > > 
+> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+> > > ---
+> > >  arch/arm/Kconfig                 |    7 ++++++-
+> > >  arch/arm/mach-cns3xxx/Kconfig    |    1 +
+> > >  arch/arm/mach-integrator/Kconfig |    1 +
+> > >  arch/arm/mach-ks8695/Kconfig     |    1 +
+> > >  arch/arm/mach-pxa/Kconfig        |    1 +
+> > >  arch/arm/mach-versatile/Kconfig  |    1 +
+> > >  6 files changed, 11 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > > index a19a526..614cf2f 100644
+> > > --- a/arch/arm/Kconfig
+> > > +++ b/arch/arm/Kconfig
+> > > @@ -34,6 +34,9 @@ config ARM
+> > >  config HAVE_PWM
+> > >  	bool
+> > >  
+> > > +config MIGHT_HAVE_PCI
+> > HAVE_PCI or HAS_PCI is a more usual name for this purpose.
+> 
+> This has been discussed in the thread "[PATCH] ARM: Gemini: Add support
+> for PCI Bus".
+Ah, I see, MIGHT_HAVE_PCI only makes the prompt available.  Hmm, well
+OK.
 
-The thing is, NFS already really uses releasepage for its "real"
-designed usage, in the form of the fscache case (which the directory
-inodes don't use).
+Thanks for clearifying
+Uwe
 
-I really hate mixing things up. The NFS directory case really hasn't
-got anything to do with releasepage, and taking the page lock on the
-read side is just really sad. As is marking the page not up-to-date,
-just so that it will get filled again.
-
-In fact, I don't even know if it's kosher by VFS standards to clear
-the up-to-date bit in the first place after it has already gotten set.
-It absolutely isn't for anything that can be mmap'ed. Obviously, mmap
-doesn't work on the directory cache anyway, but the point is that the
-work-arounds for the semantic gap are really quite ugly.
-
-Certainly much uglier than just adding some much simpler semantics to
-the "now I'm releasing the page" case in the VM.
-
-                                 Linus
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
