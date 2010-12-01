@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab0LALco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:32:44 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44306 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab0LALcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:32:43 -0500
-Date: Wed, 1 Dec 2010 12:32:13 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] mm: vmscan: Reclaim order-0 and use compaction
- instead of lumpy reclaim
-Message-ID: <20101201113212.GS15564@cmpxchg.org>
-References: <1290440635-30071-1-git-send-email-mel@csn.ul.ie>
- <1290440635-30071-4-git-send-email-mel@csn.ul.ie>
- <20101201102745.GL15564@cmpxchg.org>
- <20101201105648.GM13268@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101201105648.GM13268@csn.ul.ie>
+	id S1752844Ab0LALdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:33:33 -0500
+Received: from fep15.mx.upcmail.net ([62.179.121.35]:50232 "EHLO
+	fep15.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab0LALdc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:33:32 -0500
+X-SourceIP: 80.56.199.130
+Subject: Re: [PATCH v4] sched: automated per session task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1291183068.7466.140.camel@marge.simson.net>
+References: <AANLkTimQ2Kp2=um9ip7J2=-joskmz4P-0b_SrexFbTh0@mail.gmail.com>
+	 <1291052268.32004.171.camel@laptop>
+	 <1291057565.20709.2.camel@marge.simson.net>
+	 <20101129192033.GA18372@elte.hu>
+	 <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
+	 <1291090455.7550.7.camel@marge.simson.net>
+	 <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
+	 <1291123083.28239.18.camel@marge.simson.net>
+	 <20101130151749.GE26758@redhat.com>
+	 <1291137221.28239.70.camel@marge.simson.net>
+	 <20101130193622.GF26758@redhat.com>
+	 <1291183068.7466.140.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 12:33:22 +0100
+Message-ID: <1291203202.4023.5.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=JvXQbuMnWGQeb488dJ7w43Du7THgE+O7ieb9U20/rjk= c=1 sm=0 a=gKIfv9-gHswA:10 a=IkcTkHD0fZMA:10 a=7qMPYs2lnLYI8HPw-Z0A:9 a=BQZezhZjZM4HEwVQqF3t9prredEA:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 10:56:49AM +0000, Mel Gorman wrote:
-> On Wed, Dec 01, 2010 at 11:27:45AM +0100, Johannes Weiner wrote:
-> > On Mon, Nov 22, 2010 at 03:43:51PM +0000, Mel Gorman wrote:
-> > > Lumpy reclaim is disruptive. It reclaims a large number of pages and ignores
-> > > the age of the pages it reclaims. This can incur significant stalls and
-> > > potentially increase the number of major faults.
-> > > 
-> > > Compaction has reached the point where it is considered reasonably stable
-> > > (meaning it has passed a lot of testing) and is a potential candidate for
-> > > displacing lumpy reclaim. This patch introduces an alternative to lumpy
-> > > reclaim whe compaction is available called reclaim/compaction. The basic
-> > > operation is very simple - instead of selecting a contiguous range of pages
-> > > to reclaim, a number of order-0 pages are reclaimed and then compaction is
-> > > later by either kswapd (compact_zone_order()) or direct compaction
-> > > (__alloc_pages_direct_compact()).
-> > > 
-> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > > @@ -286,18 +290,20 @@ static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
-> > >  	lumpy_mode syncmode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
-> > >  
-> > >  	/*
-> > > -	 * Some reclaim have alredy been failed. No worth to try synchronous
-> > > -	 * lumpy reclaim.
-> > > +	 * Initially assume we are entering either lumpy reclaim or
-> > > +	 * reclaim/compaction.Depending on the order, we will either set the
-> > > +	 * sync mode or just reclaim order-0 pages later.
-> > >  	 */
-> > > -	if (sync && sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE)
-> > > -		return;
-> > > +	if (COMPACTION_BUILD)
-> > > +		sc->lumpy_reclaim_mode = LUMPY_MODE_COMPACTION;
-> > > +	else
-> > > +		sc->lumpy_reclaim_mode = LUMPY_MODE_CONTIGRECLAIM;
-> > 
-> > Isn't this a regression for !COMPACTION_BUILD in that earlier kernels
-> > would not do sync lumpy reclaim when somebody disabled it during the
-> > async run?
-> > 
-> 
-> You'll need to clarify your question I'm afraid. In 2.6.36 for example,
-> if lumpy reclaim gets disabled then sync reclaim does not happen at all.
-> This was due to large stalls being observed when copying large amounts
-> of data to slow storage such as a USB external drive.
+On Wed, 2010-12-01 at 06:57 +0100, Mike Galbraith wrote:
+> IMHO, cgroups should have been 'nice' from the start, but the folks who
+> wrote it did what they thought best.  I like nice a lot better than
+> shares, so I used nice. 
 
-Sorry for the noise, I just verified that it really was dead code.  We
-have
+Agreed, but by the time I realized that the shares thing was already in
+the wild. I did (probably still do) have a patch that adds a nice file
+to the cgroup file.
 
-	if (should_reclaim_stall())
-		set_lumpy_reclaim_mode(.sync=true)
+Anyway, I think the whole proc/nice interface for autogroups is already
+a tad too far. If people want control they can use cgroups, but I really
+don't care enough to argue much about it.
 
-but because the branch is never taken if lumpy is disabled, the
-conditional in set_lumpy_reclaim_mode() is dead.
+
+
