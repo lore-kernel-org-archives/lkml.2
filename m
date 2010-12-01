@@ -1,66 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab0LAAjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 19:39:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:11297 "EHLO mga09.intel.com"
+	id S1753395Ab0LAAjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 19:39:54 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:43342 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977Ab0LAAjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 19:39:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="579251950"
-Date: Wed, 1 Dec 2010 07:16:13 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [2/8, v5] NUMA Hotplug Emulator: Add node hotplug emulation
-Message-ID: <20101130231613.GA9117@shaohui>
-References: <20101129091750.950277284@intel.com>
- <20101129091935.703824659@intel.com>
- <alpine.DEB.2.00.1011291600020.21653@chino.kir.corp.google.com>
- <20101130012205.GB3021@shaohui>
- <alpine.DEB.2.00.1011301208060.12979@chino.kir.corp.google.com>
+	id S1752918Ab0LAAjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 19:39:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: 2.6.35.5: hibernation broken... AGAIN
+Date: Wed, 1 Dec 2010 01:38:53 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Ondrej Zary <linux@rainbow-software.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>
+References: <201011171139.33398.linux@rainbow-software.org> <alpine.LSU.2.00.1011301333380.11072@tigran.mtv.corp.google.com> <201012010007.44553.rjw@sisk.pl>
+In-Reply-To: <201012010007.44553.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011301208060.12979@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012010138.53575.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 12:10:09PM -0800, David Rientjes wrote:
-> On Tue, 30 Nov 2010, Shaohui Zheng wrote:
+On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
+> On Tuesday, November 30, 2010, Hugh Dickins wrote:
+> > On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
+> > > On Saturday, November 27, 2010, Ondrej Zary wrote:
+...
+> > 
+> > Trivial point, I suppose, but it bothers me that PM is accumulating
+> > wrappers around wrappers around gfp_allowed_mask.  Looks like
+> > clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
+> > were not really what we need.  How about scrapping them, and putting
+> > pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
 > 
-> > We have two memory hotplug interfaces here:
-> > add_node: add a new NUMA node
-> > probe: add memory section
-> > 
-> > so puting add_node to node/add_node and puting probe to memory/probe should make sense. 
-> > it is similar with sysfs hierarchy.
-> > 
-> > if we want to move the add_node to mem_hotplug/add_node, I'd prefer to put the probe
-> > interface to mem_hotplug/probe since they are also related to memory hotplug.
-> > 
-> > I will include this change in next patchset.
-> > 
-> 
-> No, please don't move the 'probe' trigger to debugfs; hotadding memory 
-> should not depend on CONFIG_DEBUG_FS.  Node hotplug emulation _is_ a 
-> debugging function and can therefore be defined in debugfs as I did but 
-> with a s/hotplug/mem_hotplug change that Greg suggested.
+> Sure, that sounds like a good idea indeed.
 
-David,
-	we provide both debugfs and sysfs interface for memory probe, the sysfs 
-interface is always available. For debugfs interface, it depends on CONFIG_DEBUG_FS.
-	we can also think that memory hotplug emulation _is_ a debuging function,
-so we accept Dave's suggestion to provide debugfs interface.
+Below is an updated patch in which I tried to address your comments.
 
--- 
-Thanks & Regards,
-Shaohui
+I didn't find it very useful to couple pm_restore_gfp_mask() with the thawing
+of tasks, but nevertheless I think all of the spots where it's needed are
+covered now.
 
+The patch has only been compile-tested for now, so caveat emptor.
+
+Thanks,
+Rafael
+
+---
+ include/linux/gfp.h      |    4 ++--
+ kernel/power/hibernate.c |   22 ++++++++++++----------
+ kernel/power/suspend.c   |    5 ++---
+ kernel/power/user.c      |    2 ++
+ mm/page_alloc.c          |   18 +++++++++++-------
+ 5 files changed, 29 insertions(+), 22 deletions(-)
+
+Index: linux-2.6/kernel/power/hibernate.c
+===================================================================
+--- linux-2.6.orig/kernel/power/hibernate.c
++++ linux-2.6/kernel/power/hibernate.c
+@@ -327,7 +327,6 @@ static int create_image(int platform_mod
+ int hibernation_snapshot(int platform_mode)
+ {
+ 	int error;
+-	gfp_t saved_mask;
+ 
+ 	error = platform_begin(platform_mode);
+ 	if (error)
+@@ -339,7 +338,7 @@ int hibernation_snapshot(int platform_mo
+ 		goto Close;
+ 
+ 	suspend_console();
+-	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
++	pm_restrict_gfp_mask();
+ 	error = dpm_suspend_start(PMSG_FREEZE);
+ 	if (error)
+ 		goto Recover_platform;
+@@ -348,7 +347,10 @@ int hibernation_snapshot(int platform_mo
+ 		goto Recover_platform;
+ 
+ 	error = create_image(platform_mode);
+-	/* Control returns here after successful restore */
++	/*
++	 * Control returns here (1) after the image has been created or the
++	 * image creation has failed and (2) after a successful restore.
++	 */
+ 
+  Resume_devices:
+ 	/* We may need to release the preallocated image pages here. */
+@@ -357,7 +359,10 @@ int hibernation_snapshot(int platform_mo
+ 
+ 	dpm_resume_end(in_suspend ?
+ 		(error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE);
+-	set_gfp_allowed_mask(saved_mask);
++
++	if (error || !in_suspend)
++		pm_restore_gfp_mask();
++
+ 	resume_console();
+  Close:
+ 	platform_end(platform_mode);
+@@ -452,17 +457,16 @@ static int resume_target_kernel(bool pla
+ int hibernation_restore(int platform_mode)
+ {
+ 	int error;
+-	gfp_t saved_mask;
+ 
+ 	pm_prepare_console();
+ 	suspend_console();
+-	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
++	pm_restrict_gfp_mask();
+ 	error = dpm_suspend_start(PMSG_QUIESCE);
+ 	if (!error) {
+ 		error = resume_target_kernel(platform_mode);
+ 		dpm_resume_end(PMSG_RECOVER);
+ 	}
+-	set_gfp_allowed_mask(saved_mask);
++	pm_restore_gfp_mask();
+ 	resume_console();
+ 	pm_restore_console();
+ 	return error;
+@@ -476,7 +480,6 @@ int hibernation_restore(int platform_mod
+ int hibernation_platform_enter(void)
+ {
+ 	int error;
+-	gfp_t saved_mask;
+ 
+ 	if (!hibernation_ops)
+ 		return -ENOSYS;
+@@ -492,7 +495,6 @@ int hibernation_platform_enter(void)
+ 
+ 	entering_platform_hibernation = true;
+ 	suspend_console();
+-	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
+ 	error = dpm_suspend_start(PMSG_HIBERNATE);
+ 	if (error) {
+ 		if (hibernation_ops->recover)
+@@ -536,7 +538,6 @@ int hibernation_platform_enter(void)
+  Resume_devices:
+ 	entering_platform_hibernation = false;
+ 	dpm_resume_end(PMSG_RESTORE);
+-	set_gfp_allowed_mask(saved_mask);
+ 	resume_console();
+ 
+  Close:
+@@ -647,6 +648,7 @@ int hibernate(void)
+ 		if (!error)
+ 			power_down();
+ 		in_suspend = 0;
++		pm_restore_gfp_mask();
+ 	} else {
+ 		pr_debug("PM: Image restored successfully.\n");
+ 	}
+Index: linux-2.6/kernel/power/user.c
+===================================================================
+--- linux-2.6.orig/kernel/power/user.c
++++ linux-2.6/kernel/power/user.c
+@@ -263,6 +263,7 @@ static long snapshot_ioctl(struct file *
+ 	case SNAPSHOT_UNFREEZE:
+ 		if (!data->frozen || data->ready)
+ 			break;
++		pm_restore_gfp_mask();
+ 		thaw_processes();
+ 		usermodehelper_enable();
+ 		data->frozen = 0;
+@@ -275,6 +276,7 @@ static long snapshot_ioctl(struct file *
+ 			error = -EPERM;
+ 			break;
+ 		}
++		pm_restore_gfp_mask();
+ 		error = hibernation_snapshot(data->platform_support);
+ 		if (!error)
+ 			error = put_user(in_suspend, (int __user *)arg);
+Index: linux-2.6/mm/page_alloc.c
+===================================================================
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -104,19 +104,23 @@ gfp_t gfp_allowed_mask __read_mostly = G
+  * only be modified with pm_mutex held, unless the suspend/hibernate code is
+  * guaranteed not to run in parallel with that modification).
+  */
+-void set_gfp_allowed_mask(gfp_t mask)
++
++static gfp_t saved_gfp_mask;
++
++void pm_restore_gfp_mask(void)
+ {
+ 	WARN_ON(!mutex_is_locked(&pm_mutex));
+-	gfp_allowed_mask = mask;
++	if (saved_gfp_mask) {
++		gfp_allowed_mask = saved_gfp_mask;
++		saved_gfp_mask = 0;
++	}
+ }
+ 
+-gfp_t clear_gfp_allowed_mask(gfp_t mask)
++void pm_restrict_gfp_mask(void)
+ {
+-	gfp_t ret = gfp_allowed_mask;
+-
+ 	WARN_ON(!mutex_is_locked(&pm_mutex));
+-	gfp_allowed_mask &= ~mask;
+-	return ret;
++	saved_gfp_mask = gfp_allowed_mask;
++	gfp_allowed_mask &= ~GFP_IOFS;
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
+Index: linux-2.6/include/linux/gfp.h
+===================================================================
+--- linux-2.6.orig/include/linux/gfp.h
++++ linux-2.6/include/linux/gfp.h
+@@ -360,7 +360,7 @@ void drain_local_pages(void *dummy);
+ 
+ extern gfp_t gfp_allowed_mask;
+ 
+-extern void set_gfp_allowed_mask(gfp_t mask);
+-extern gfp_t clear_gfp_allowed_mask(gfp_t mask);
++extern void pm_restrict_gfp_mask(void);
++extern void pm_restore_gfp_mask(void);
+ 
+ #endif /* __LINUX_GFP_H */
+Index: linux-2.6/kernel/power/suspend.c
+===================================================================
+--- linux-2.6.orig/kernel/power/suspend.c
++++ linux-2.6/kernel/power/suspend.c
+@@ -197,7 +197,6 @@ static int suspend_enter(suspend_state_t
+ int suspend_devices_and_enter(suspend_state_t state)
+ {
+ 	int error;
+-	gfp_t saved_mask;
+ 
+ 	if (!suspend_ops)
+ 		return -ENOSYS;
+@@ -208,7 +207,7 @@ int suspend_devices_and_enter(suspend_st
+ 			goto Close;
+ 	}
+ 	suspend_console();
+-	saved_mask = clear_gfp_allowed_mask(GFP_IOFS);
++	pm_restrict_gfp_mask();
+ 	suspend_test_start();
+ 	error = dpm_suspend_start(PMSG_SUSPEND);
+ 	if (error) {
+@@ -225,7 +224,7 @@ int suspend_devices_and_enter(suspend_st
+ 	suspend_test_start();
+ 	dpm_resume_end(PMSG_RESUME);
+ 	suspend_test_finish("resume devices");
+-	set_gfp_allowed_mask(saved_mask);
++	pm_restore_gfp_mask();
+ 	resume_console();
+  Close:
+ 	if (suspend_ops->end)
