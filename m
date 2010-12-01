@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab0LAT2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:28:12 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:36178 "EHLO mgw-sa01.nokia.com"
+	id S1756619Ab0LAT3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:29:54 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52872 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755642Ab0LAT2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:28:11 -0500
-From: Felipe Contreras <felipe.contreras@nokia.com>
-Subject: Re: [PATCHv5 0/4] omap: iovmm - fixes for iovmm module
-To: Hiroshi.DOYU@nokia.com, x0095840@ti.com, h-kanigeri2@ti.com
-Cc: tony@atomide.com, linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20101129.104729.97149649.Hiroshi.DOYU@nokia.com>
-References: <1288033806-1496-1-git-send-email-x0095840@ti.com> <20101129.104729.97149649.Hiroshi.DOYU@nokia.com>
-User-Agent: notmuch 0.4-75-gd52f68c
-Message-ID: <1291231567-notmuch-felipe.contreras@nokia.com>
-Date: Wed, 01 Dec 2010 21:27:39 +0200
-X-Nokia-AV: Clean
+	id S1755308Ab0LAT3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 14:29:53 -0500
+Date: Wed, 1 Dec 2010 09:36:04 -0800
+From: Greg KH <gregkh@suse.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
+Message-ID: <20101201173604.GA30708@suse.de>
+References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
+ <20101201161039.GB29318@suse.de>
+ <1291222151.1684.46.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291222151.1684.46.camel@leonhard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hiroshi.DOYU@nokia.com wrote:
-> From: ext Fernando Guzman Lugo <x0095840@ti.com>
-> Subject: [PATCHv5 0/4] omap: iovmm - fixes for iovmm module
-> Date: Mon, 25 Oct 2010 21:10:02 +0200
+On Thu, Dec 02, 2010 at 01:49:11AM +0900, Namhyung Kim wrote:
+> 2010-12-01 (수), 08:10 -0800, Greg KH:
+> > On Wed, Dec 01, 2010 at 01:28:41PM +0900, Namhyung Kim wrote:
+> > > Annotate whci_hcd_id_table as '__used' to fix following warning:
+> > > 
+> > >   CC      drivers/usb/host/whci/hcd.o
+> > > drivers/usb/host/whci/hcd.c:359: warning: ‘whci_hcd_id_table’ defined but not used
+> > 
+> > Are you seeing this warning when you build the module into the kernel,
+> > or as a module?
+> > 
+> > thanks,
+> > 
+> > greg k-h
 > 
-> > Version 5:
-> > * Changes in "iommu: create new api to set valid da range"
-> >   - Change range variables to platform data structure.
-> 
-> Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+> I saw it during allyesconfig build but not on allmodconfig.
+> Maybe we can wrap it up in #ifdef CONFIG_MODULES ?
 
-Does that means you are going to send a pull request with these for .38?
+No, don't do that, your __used is the correct thing here, I just wanted
+to make sure why you were seeing this warning.
 
-Fernando, is there a branch where you have all the changes needed in
-tidspbridge?
+thanks,
 
-I guess the only patch missing would be the one for linux-arm.
-
-Cheers.
-
--- 
-Felipe Contreras
+greg k-h
