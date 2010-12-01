@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab0LASvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:51:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49207 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259Ab0LASvL (ORCPT
+	id S1756234Ab0LASvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:51:53 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:40083 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab0LASvw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:51:11 -0500
-Date: Wed, 1 Dec 2010 19:51:03 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Kconfig: add new symbol MIGHT_HAVE_PCI
-Message-ID: <20101201185103.GK32355@pengutronix.de>
-References: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291217412-9435-1-git-send-email-ulli.kroll@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 1 Dec 2010 13:51:52 -0500
+Subject: Re: [BUG(?)] perf_events: combining multiple tracepoint events
+ into a group produces no counts on member events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101201180237.GB3438@nowhere>
+References: <4CF59E20.1040301@linux.vnet.ibm.com>
+	 <1291203990.4023.16.camel@twins> <1291205078.32004.1381.camel@laptop>
+	 <20101201180237.GB3438@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Dec 2010 19:52:06 +0100
+Message-ID: <1291229526.32004.1882.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 04:30:12PM +0100, Hans Ulli Kroll wrote:
-> Today more boards with arm cpu have selectable pci bus.
-> This patch makes this more scalable and remove line continuations in
-> Kconfig
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-> ---
->  arch/arm/Kconfig                 |    7 ++++++-
->  arch/arm/mach-cns3xxx/Kconfig    |    1 +
->  arch/arm/mach-integrator/Kconfig |    1 +
->  arch/arm/mach-ks8695/Kconfig     |    1 +
->  arch/arm/mach-pxa/Kconfig        |    1 +
->  arch/arm/mach-versatile/Kconfig  |    1 +
->  6 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index a19a526..614cf2f 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -34,6 +34,9 @@ config ARM
->  config HAVE_PWM
->  	bool
->  
-> +config MIGHT_HAVE_PCI
-HAVE_PCI or HAS_PCI is a more usual name for this purpose.
+On Wed, 2010-12-01 at 19:02 +0100, Frederic Weisbecker wrote:
 
-Uwe
+> >  struct task_struct {
+> >  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+> >  	void *stack;
+> > @@ -1452,6 +1458,9 @@ struct task_struct {
+> >  	struct perf_event_context *perf_event_ctxp[perf_nr_task_contexts];
+> >  	struct mutex perf_event_mutex;
+> >  	struct list_head perf_event_list;
+> > +#ifdef CONFIG_EVENT_TRACING
+> > +	struct perf_tp_idr *perf_tp_idr;
+> 
+> Why not attaching this to the ctx eventually? This makes one pointer less
+> in task_struct.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+What context? :-) There's now two context's (with the possibility of
+even more), which one will hold the tracepoint stuff?
+
+Also, since we only need one such structure, adding it to the context
+doesn't make sense.
+
+> > @@ -370,6 +372,7 @@ list_del_event(struct perf_event *event,
+> >  	 */
+> >  	if (event->state > PERF_EVENT_STATE_OFF)
+> >  		event->state = PERF_EVENT_STATE_OFF;
+> > +	++ctx->generation;
+> 
+> What's the role of the ctx->generation? It seems to be incremented two times
+> but doesn't appear to have any purpose.
+
+You didn't look hard enough, its a sequence stamp on the context for
+inheritance, then later, when we want to compare inherited contexts we
+can simply compare generation numbers, if they're the same the contexts
+are the same.
+
+> >  }
+> >  
+> >  static void perf_group_detach(struct perf_event *event)
+> > @@ -1228,6 +1231,12 @@ void perf_event_context_sched_out(struct
+> >  	if (!cpuctx->task_ctx)
+> >  		return;
+> >  
+> > +#if 0
+> > +	/*
+> > +	 * Need to sort out how to make task_struct::perf_tp_idr
+> > +	 * work with this fancy switching stuff.. tracepoints could be
+> > +	 * in multiple contexts due to the software event muck.
+> > +	 */
+> 
+> Not sure what's the issue here. Each ctx have the perf_tp_idr matching
+> active tracepoints, isn't it?
+
+No, there's only 1 idr per task. Having one per context means we have to
+iterate all contexts when a tracepoint triggers and it adds yet another
+pointer chase. It also means we have to manage more stuff when
+tracepoints change context etc..
+
+But yes, it would make this part easier, I just don't like the added
+fast path overhead.
+
+> > +static struct perf_tp_idr *perf_event_idr(struct perf_event *event, bool create)
+> > +{
+> > +	struct perf_tp_idr *tp_idr;
+> > +	struct task_struct *task;
+> > +
+> > +	if (event->attach_state & PERF_ATTACH_TASK) {
+> > +		task = event->hw.event_target;
+> > +		tp_idr = task->perf_tp_idr;
+> > +		if (!tp_idr && create)
+> 
+> Is it possible that task->perf_tp_idr can eventually disappear
+> under us there? Like when an event is released from that task?
+
+We hold a ref on the task on the create path, I'd have to actually think
+about the destroy path, but I think there's a problem there.
+
+I used to have a PERF_ATTACH_CONTEXT/GROUP test in there as well, dunno
+why that didn't work out.
+
+> > +			tp_idr = perf_tp_init_task(event, task);
+> > +	} else
+> > +		tp_idr = &per_cpu(perf_tp_idr, event->cpu);
+> > +
+> > +	return tp_idr;
+> > +}
+
+
