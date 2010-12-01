@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab0LAR47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:56:59 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48519
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751469Ab0LAR46 (ORCPT
+	id S1755619Ab0LAR6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:58:22 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:45492 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755407Ab0LAR6U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:56:58 -0500
-Date: Wed, 01 Dec 2010 09:57:23 -0800 (PST)
-Message-Id: <20101201.095723.193718753.davem@davemloft.net>
-To: michal.simek@petalogix.com
-Cc: roland@redhat.com, oleg@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        john.williams@petalogix.com, edgar.iglesias@gmail.com
-Subject: Re: Flushing whole page instead of work for ptrace
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4CF68174.10301@petalogix.com>
-References: <4CEFA8AE.2090804@petalogix.com>
-	<20101130233250.35603401C8@magilla.sf.frob.com>
-	<4CF68174.10301@petalogix.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 1 Dec 2010 12:58:20 -0500
+X-IronPort-AV: E=Sophos;i="4.59,284,1288594800"; 
+   d="scan'208";a="489582571"
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+	 <20101201150428.GA2879@elliptictech.com>
+	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 01 Dec 2010 12:58:17 -0500
+Message-ID: <1291226297.6609.17.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 01 Dec 2010 17:58:19.0355 (UTC) FILETIME=[56389AB0:01CB9181]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Simek <michal.simek@petalogix.com>
-Date: Wed, 01 Dec 2010 18:10:12 +0100
-
-> Roland McGrath wrote:
->> This is a VM question more than a ptrace question.  I can't give you
->> any authoritative answers about the VM issues.
->> Documentation/cachetlb.txt says:
->> 	Any time the kernel writes to a page cache page, _OR_
->> 	the kernel is about to read from a page cache page and
->> 	user space shared/writable mappings of this page potentially
->> 	exist, this routine is called.
->> In your case, the kernel is only reading (write=0 passed to
->> access_process_vm and get_user_pages).  In normal situations,
->> the page in question will have only a private and read-only
->> mapping in user space.  So the call should not be required in
->> these cases--if the code can tell that's so.
->> Perhaps something like the following would be safe.
->> But you really need some VM folks to tell you for sure.
->> diff --git a/mm/memory.c b/mm/memory.c
->> index 02e48aa..2864ee7 100644
->> --- a/mm/memory.c
->> +++ b/mm/memory.c
->> @@ -1484,7 +1484,8 @@ int __get_user_pages(struct task_struct *tsk,
->> struct mm_struct *mm,
->>  				pages[i] = page;
->>   				flush_anon_page(vma, page, start);
->> -				flush_dcache_page(page);
->> + if ((vm_flags & VM_WRITE) || (vma->vm_flags & VM_SHARED)
->> +					flush_dcache_page(page);
->>  			}
->>  			if (vmas)
->>  				vmas[i] = vma;
->> Thanks,
->> Roland
+On Wed, 2010-12-01 at 08:17 -0800, Linus Torvalds wrote:
+> On Wed, Dec 1, 2010 at 7:36 AM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > We need to ensure that the entries in the nfs_cache_array get cleared
+> > when the page is removed from the page cache. To do so, we use the
+> > releasepage address_space operation (which also requires us to set
+> > the Pg_private flag).
 > 
-> Andrew any comment?
+> So I really think that the whole "releasepage" use in NFS is simply
+> overly complicated and was obviously too subtle.
+> 
+> The whole need for odd return values, for the page lock, and for the
+> addition of clearing the up-to-date bit comes from the fact that this
+> wasn't really what releasepage was designed for.
+> 
+> 'releasepage' was really designed for the filesystem having its own
+> version of 'try_to_free_buffers()', which is just an optimistic "ok,
+> we may be releasing this page, so try to get rid of any IO structures
+> you have cached". It wasn't really a memory management thing.
+> 
+> And the thing is, it looks trivial to do the memory management
+> approach by adding a new callback that gets called after the page is
+> actually removed from the page cache. If we do that, then there are no
+> races with any other users, since we remove things from the page cache
+> atomically wrt page cache lookup. So the need for playing games with
+> page locking and 'uptodate' simply goes away. As does the PG_private
+> thing or the interaction with invalidatepage() etc.
+> 
+> So this is a TOTALLY UNTESTED trivial patch that just adds another
+> callback. Does this work? I dunno. But I get the feeling that instead
+> of having NFS work around the odd semantics that don't actually match
+> what NFS wants, introducing a new callback with much simpler semantics
+> would be simpler for everybody, and avoid the need for subtle code.
+> 
+> Hmm?
+> 
+>                    Linus
 
-I don't have any comments on this specific patch but I will note
-that special care is needed _after_ the access to kick out aliases
-so that other future accesses to this page, which are oblivious to
-what ptrace did, don't see illegal D-cache aliases.
+This works for me, and I can code up a patch that uses it if you like...
 
-Have a look at arch/sparc/kernel/ptrace_64.c:flush_ptrace_access().
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Also, another issue is that much of the time ptrace() is just fetching
-very small chunks (perhaps, a stack frame, or some variable in the
-program image), so doing an entire page flush when we only copy
-a few bytes out of the page is overkill.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Sparc64's flush_ptrace_access() tries to address this as well.
