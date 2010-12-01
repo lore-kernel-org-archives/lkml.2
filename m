@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab0LAD0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 22:26:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10398 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab0LAD0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 22:26:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,282,1288594800"; 
-   d="scan'208";a="682617298"
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <1290771419.2145.137.camel@laptop>
-References: <1290340877.2245.124.camel@localhost>
-	 <AANLkTikt8AkZjNahrzTStJ5qM0D4Z+H_7snZBgsABm24@mail.gmail.com>
-	 <AANLkTimzEDXzF=hMzmNCvsPok1kqxd0vjNKuYur_+J5L@mail.gmail.com>
-	 <AANLkTimN6_v6VibsNU70kV_QUnF4Fj0=M=Akp8aASE-3@mail.gmail.com>
-	 <1290770652.2145.128.camel@laptop>
-	 <AANLkTika3r2=gCh4nX-raRU3BoFpWMUEapn3w2bgyGAd@mail.gmail.com>
-	 <1290771419.2145.137.camel@laptop>
+	id S1754504Ab0LAD2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 22:28:54 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53846 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab0LAD2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 22:28:53 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 1/3] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Simon Kirby <sim@hostway.ca>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1291173628.12777.65.camel@sli10-conroe>
+References: <20101201115401.ABB1.A69D9226@jp.fujitsu.com> <1291173628.12777.65.camel@sli10-conroe>
+Message-Id: <20101201122638.ABBF.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 11:28:43 +0800
-Message-ID: <1291174123.2405.228.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Dec 2010 12:28:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-26 at 19:36 +0800, Peter Zijlstra wrote:
-> On Fri, 2010-11-26 at 12:25 +0100, Stephane Eranian wrote:
-> > On Fri, Nov 26, 2010 at 12:24 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > On Fri, 2010-11-26 at 09:18 +0100, Stephane Eranian wrote:
-> > >
-> > >> In the perf_event model, given that any one of the 4 cores can be used
-> > >> to program uncore events, you have no choice but to broadcast to all
-> > >> 4 cores. Each has to demultiplex and figure out which of its counters
-> > >> have overflowed.
-> > >
-> > > Not really, you can redirect all these events to the first online cpu of
-> > > the node.
-> > >
-> > > You can re-write event->cpu in pmu::event_init(), and register cpu
-> > > hotplug notifiers to migrate the state around.
-> > >
-> > I am sure you could. But then the user thinks the event is controlled
-> > from CPUx when it's actually from CPUz. I am sure it can work but
-> > that's confusing, especially interrupt-wise.
-> 
-> Well, its either that or keeping a node wide state like we do for AMD
-> and serialize everything from there.
-> 
-> And I'm not sure what's most expensive, steering the interrupt to one
-> core only, or broadcasting every interrupt, I'd favour the first
-> approach.
-> 
-> The whole thing is a node-wide resource, so the user needs to think in
-> nodes anyway, we already do a cpu->node mapping for identifying the
-> thing.
+> On Wed, 2010-12-01 at 10:59 +0800, KOSAKI Motohiro wrote:
+> > > On Wed, 2010-12-01 at 10:23 +0800, KOSAKI Motohiro wrote:
+> > > > > On Wed, 2010-12-01 at 01:15 +0800, Mel Gorman wrote:
+> > > > > > When the allocator enters its slow path, kswapd is woken up to balance the
+> > > > > > node. It continues working until all zones within the node are balanced. For
+> > > > > > order-0 allocations, this makes perfect sense but for higher orders it can
+> > > > > > have unintended side-effects. If the zone sizes are imbalanced, kswapd
+> > > > > > may reclaim heavily on a smaller zone discarding an excessive number of
+> > > > > > pages. The user-visible behaviour is that kswapd is awake and reclaiming
+> > > > > > even though plenty of pages are free from a suitable zone.
+> > > > > > 
+> > > > > > This patch alters the "balance" logic to stop kswapd if any suitable zone
+> > > > > > becomes balanced to reduce the number of pages it reclaims from other zones.
+> > > > > from my understanding, the patch will break reclaim high zone if a low
+> > > > > zone meets the high order allocation, even the high zone doesn't meet
+> > > > > the high order allocation. This, for example, will make a high order
+> > > > > allocation from a high zone fallback to low zone and quickly exhaust low
+> > > > > zone, for example DMA. This will break some drivers.
+> > > > 
+> > > > Have you seen patch [3/3]? I think it migigate your pointed issue.
+> > > yes, it improves a lot, but still possible for small systems.
+> > 
+> > Ok, I got you. so please define your "small systems" word? 
+> an embedded system with less memory memory, obviously
 
-How about a new sub-command for node-wide events statistics?
+Typical embedded system don't have multiple zone. It's not obvious.
 
-perf node -n <node> -e <event>?
+
+> > we can't make
+> > perfect VM heuristics obviously, then we need to compare pros/cons.
+> if you don't care about small system, let's consider a NORMAL i386
+> system with 896m normal zone, and 896M*3 high zone. normal zone will
+> quickly exhaust by high order high zone allocation, leave a latter
+> allocation which does need normal zone fail.
+
+Not happen. slab don't allocate from highmem and page cache allocation
+is always using order-0. When happen high order high zone allocation?
+
+
+
 
 
