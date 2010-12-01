@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab0LAJLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 04:11:30 -0500
-Received: from hera.kernel.org ([140.211.167.34]:54091 "EHLO hera.kernel.org"
+	id S1752586Ab0LAJLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 04:11:49 -0500
+Received: from hera.kernel.org ([140.211.167.34]:54133 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751642Ab0LAJLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 04:11:25 -0500
-Date: Wed, 1 Dec 2010 09:10:35 GMT
+	id S1751232Ab0LAJLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 04:11:46 -0500
+Date: Wed, 1 Dec 2010 09:11:15 GMT
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
@@ -14,233 +14,231 @@ Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101130163819.908482530@linutronix.de>
-References: <20101130163819.908482530@linutronix.de>
+In-Reply-To: <20101130163820.029687218@linutronix.de>
+References: <20101130163820.029687218@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session: Fix list sort algorithm
-Message-ID: <tip-a1225decc43849a73f7e4c333c3fdbbb8a9c1e65@git.kernel.org>
-Git-Commit-ID: a1225decc43849a73f7e4c333c3fdbbb8a9c1e65
+Subject: [tip:perf/core] perf session: Cleanup __perf_session__process_events()
+Message-ID: <tip-0331ee0cf4187dcdc2b184cf701d8b58bf9ff637@git.kernel.org>
+Git-Commit-ID: 0331ee0cf4187dcdc2b184cf701d8b58bf9ff637
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Dec 2010 09:10:35 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Dec 2010 09:11:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a1225decc43849a73f7e4c333c3fdbbb8a9c1e65
-Gitweb:     http://git.kernel.org/tip/a1225decc43849a73f7e4c333c3fdbbb8a9c1e65
+Commit-ID:  0331ee0cf4187dcdc2b184cf701d8b58bf9ff637
+Gitweb:     http://git.kernel.org/tip/0331ee0cf4187dcdc2b184cf701d8b58bf9ff637
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 30 Nov 2010 17:49:33 +0000
+AuthorDate: Tue, 30 Nov 2010 17:49:38 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 30 Nov 2010 19:52:36 -0200
+CommitDate: Tue, 30 Nov 2010 19:57:01 -0200
 
-perf session: Fix list sort algorithm
+perf session: Cleanup __perf_session__process_events()
 
-The homebrewn sort algorithm fails to sort in time order. One of the problem
-spots is that it fails to deal with equal timestamps correctly.
-
-My first gut reaction was to replace the fancy list with an rbtree, but the
-performance is 3 times worse.
-
-Rewrite it so it works.
+Replace the pseudo C++ self argument with session and give the mmap related
+variables a sensible name. shift is a complete misnomer - it took me several
+rounds of cursing to figure out that it's not a shift value.
 
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <20101130163819.908482530@linutronix.de>
+LKML-Reference: <20101130163820.029687218@linutronix.de>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |  113 +++++++++++++++++++--------------------------
- tools/perf/util/session.h |    4 +-
- 2 files changed, 49 insertions(+), 68 deletions(-)
+ tools/perf/util/session.c |   77 +++++++++++++++++++++-----------------------
+ 1 files changed, 37 insertions(+), 40 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3ae6955..daca557 100644
+index 525bcf6..2fdbccf 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -104,7 +104,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 	self->mmap_window = 32;
- 	self->machines = RB_ROOT;
- 	self->repipe = repipe;
--	INIT_LIST_HEAD(&self->ordered_samples.samples_head);
-+	INIT_LIST_HEAD(&self->ordered_samples.samples);
- 	machine__init(&self->host_machine, "", HOST_KERNEL_ID);
- 
- 	if (mode == O_RDONLY) {
-@@ -393,27 +393,33 @@ struct sample_queue {
- static void flush_sample_queue(struct perf_session *s,
- 			       struct perf_event_ops *ops)
+@@ -567,13 +567,13 @@ static int perf_session__process_sample(event_t *event, struct perf_session *s,
+ static int perf_session__process_event(struct perf_session *self,
+ 				       event_t *event,
+ 				       struct perf_event_ops *ops,
+-				       u64 offset, u64 head)
++				       u64 file_offset)
  {
--	struct list_head *head = &s->ordered_samples.samples_head;
--	u64 limit = s->ordered_samples.next_flush;
-+	struct ordered_samples *os = &s->ordered_samples;
-+	struct list_head *head = &os->samples;
- 	struct sample_queue *tmp, *iter;
-+	u64 limit = os->next_flush;
-+	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
+ 	trace_event(event);
  
- 	if (!ops->ordered_samples || !limit)
- 		return;
- 
- 	list_for_each_entry_safe(iter, tmp, head, list) {
- 		if (iter->timestamp > limit)
--			return;
--
--		if (iter == s->ordered_samples.last_inserted)
--			s->ordered_samples.last_inserted = NULL;
-+			break;
- 
- 		ops->sample((event_t *)iter->event, s);
- 
--		s->ordered_samples.last_flush = iter->timestamp;
-+		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
- 		free(iter->event);
- 		free(iter);
+ 	if (event->header.type < PERF_RECORD_HEADER_MAX) {
+ 		dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
+-			    offset + head, event->header.size,
++			    file_offset, event->header.size,
+ 			    event__name[event->header.type]);
+ 		hists__inc_nr_events(&self->hists, event->header.type);
  	}
+@@ -606,7 +606,7 @@ static int perf_session__process_event(struct perf_session *self,
+ 		return ops->event_type(event, self);
+ 	case PERF_RECORD_HEADER_TRACING_DATA:
+ 		/* setup for reading amidst mmap */
+-		lseek(self->fd, offset + head, SEEK_SET);
++		lseek(self->fd, file_offset, SEEK_SET);
+ 		return ops->tracing_data(event, self);
+ 	case PERF_RECORD_HEADER_BUILD_ID:
+ 		return ops->build_id(event, self);
+@@ -705,8 +705,7 @@ more:
+ 	}
+ 
+ 	if (size == 0 ||
+-	    (skip = perf_session__process_event(self, &event, ops,
+-						0, head)) < 0) {
++	    (skip = perf_session__process_event(self, &event, ops, head)) < 0) {
+ 		dump_printf("%#Lx [%#x]: skipping unknown header type: %d\n",
+ 			    head, event.header.size, event.header.type);
+ 		/*
+@@ -735,19 +734,19 @@ out_err:
+ 	return err;
+ }
+ 
+-int __perf_session__process_events(struct perf_session *self,
++int __perf_session__process_events(struct perf_session *session,
+ 				   u64 data_offset, u64 data_size,
+ 				   u64 file_size, struct perf_event_ops *ops)
+ {
++	u64 head, page_offset, file_offset;
+ 	int err, mmap_prot, mmap_flags;
+-	u64 head, shift;
+-	u64 offset = 0;
++	struct ui_progress *progress;
+ 	size_t	page_size;
+ 	event_t *event;
+ 	uint32_t size;
+ 	char *buf;
+-	struct ui_progress *progress = ui_progress__new("Processing events...",
+-							self->size);
 +
-+	if (list_empty(head)) {
-+		os->last_sample = NULL;
-+	} else if (last_ts <= limit) {
-+		os->last_sample =
-+			list_entry(head->prev, struct sample_queue, list);
-+	}
- }
++	progress = ui_progress__new("Processing events...", session->size);
+ 	if (progress == NULL)
+ 		return -1;
  
- /*
-@@ -465,71 +471,50 @@ static int process_finished_round(event_t *event __used,
- 	return 0;
- }
+@@ -755,21 +754,20 @@ int __perf_session__process_events(struct perf_session *self,
  
--static void __queue_sample_end(struct sample_queue *new, struct list_head *head)
--{
--	struct sample_queue *iter;
--
--	list_for_each_entry_reverse(iter, head, list) {
--		if (iter->timestamp < new->timestamp) {
--			list_add(&new->list, &iter->list);
--			return;
--		}
--	}
--
--	list_add(&new->list, head);
--}
--
--static void __queue_sample_before(struct sample_queue *new,
--				  struct sample_queue *iter,
--				  struct list_head *head)
--{
--	list_for_each_entry_continue_reverse(iter, head, list) {
--		if (iter->timestamp < new->timestamp) {
--			list_add(&new->list, &iter->list);
--			return;
--		}
--	}
--
--	list_add(&new->list, head);
--}
--
--static void __queue_sample_after(struct sample_queue *new,
--				 struct sample_queue *iter,
--				 struct list_head *head)
--{
--	list_for_each_entry_continue(iter, head, list) {
--		if (iter->timestamp > new->timestamp) {
--			list_add_tail(&new->list, &iter->list);
--			return;
--		}
--	}
--	list_add_tail(&new->list, head);
--}
--
- /* The queue is ordered by time */
- static void __queue_sample_event(struct sample_queue *new,
- 				 struct perf_session *s)
- {
--	struct sample_queue *last_inserted = s->ordered_samples.last_inserted;
--	struct list_head *head = &s->ordered_samples.samples_head;
-+	struct ordered_samples *os = &s->ordered_samples;
-+	struct sample_queue *sample = os->last_sample;
-+	u64 timestamp = new->timestamp;
-+	struct list_head *p;
+ 	page_size = sysconf(_SC_PAGESIZE);
  
-+	os->last_sample = new;
+-	head = data_offset;
+-	shift = page_size * (head / page_size);
+-	offset += shift;
+-	head -= shift;
++	page_offset = page_size * (data_offset / page_size);
++	file_offset = page_offset;
++	head = data_offset - page_offset;
  
--	if (!last_inserted) {
--		__queue_sample_end(new, head);
-+	if (!sample) {
-+		list_add(&new->list, &os->samples);
-+		os->max_timestamp = timestamp;
- 		return;
+ 	mmap_prot  = PROT_READ;
+ 	mmap_flags = MAP_SHARED;
+ 
+-	if (self->header.needs_swap) {
++	if (session->header.needs_swap) {
+ 		mmap_prot  |= PROT_WRITE;
+ 		mmap_flags = MAP_PRIVATE;
+ 	}
+ remap:
+-	buf = mmap(NULL, page_size * self->mmap_window, mmap_prot,
+-		   mmap_flags, self->fd, offset);
++	buf = mmap(NULL, page_size * session->mmap_window, mmap_prot,
++		   mmap_flags, session->fd, file_offset);
+ 	if (buf == MAP_FAILED) {
+ 		pr_err("failed to mmap file\n");
+ 		err = -errno;
+@@ -778,36 +776,35 @@ remap:
+ 
+ more:
+ 	event = (event_t *)(buf + head);
+-	ui_progress__update(progress, offset);
++	ui_progress__update(progress, file_offset);
+ 
+-	if (self->header.needs_swap)
++	if (session->header.needs_swap)
+ 		perf_event_header__bswap(&event->header);
+ 	size = event->header.size;
+ 	if (size == 0)
+ 		size = 8;
+ 
+-	if (head + event->header.size >= page_size * self->mmap_window) {
++	if (head + event->header.size >= page_size * session->mmap_window) {
+ 		int munmap_ret;
+ 
+-		shift = page_size * (head / page_size);
+-
+-		munmap_ret = munmap(buf, page_size * self->mmap_window);
++		munmap_ret = munmap(buf, page_size * session->mmap_window);
+ 		assert(munmap_ret == 0);
+ 
+-		offset += shift;
+-		head -= shift;
++		page_offset = page_size * (head / page_size);
++		file_offset += page_offset;
++		head -= page_offset;
+ 		goto remap;
  	}
  
- 	/*
--	 * Most of the time the current event has a timestamp
--	 * very close to the last event inserted, unless we just switched
--	 * to another event buffer. Having a sorting based on a list and
--	 * on the last inserted event that is close to the current one is
--	 * probably more efficient than an rbtree based sorting.
-+	 * last_sample might point to some random place in the list as it's
-+	 * the last queued event. We expect that the new event is close to
-+	 * this.
- 	 */
--	if (last_inserted->timestamp >= new->timestamp)
--		__queue_sample_before(new, last_inserted, head);
--	else
--		__queue_sample_after(new, last_inserted, head);
-+	if (sample->timestamp <= timestamp) {
-+		while (sample->timestamp <= timestamp) {
-+			p = sample->list.next;
-+			if (p == &os->samples) {
-+				list_add_tail(&new->list, &os->samples);
-+				os->max_timestamp = timestamp;
-+				return;
-+			}
-+			sample = list_entry(p, struct sample_queue, list);
-+		}
-+		list_add_tail(&new->list, &sample->list);
-+	} else {
-+		while (sample->timestamp > timestamp) {
-+			p = sample->list.prev;
-+			if (p == &os->samples) {
-+				list_add(&new->list, &os->samples);
-+				return;
-+			}
-+			sample = list_entry(p, struct sample_queue, list);
-+		}
-+		list_add(&new->list, &sample->list);
-+	}
+ 	size = event->header.size;
+ 
+ 	dump_printf("\n%#Lx [%#x]: event: %d\n",
+-		    offset + head, event->header.size, event->header.type);
++		    file_offset + head, event->header.size, event->header.type);
+ 
+-	if (size == 0 ||
+-	    perf_session__process_event(self, event, ops, offset, head) < 0) {
++	if (size == 0 || perf_session__process_event(session, event, ops,
++						     file_offset + head) < 0) {
+ 		dump_printf("%#Lx [%#x]: skipping unknown header type: %d\n",
+-			    offset + head, event->header.size,
++			    file_offset + head, event->header.size,
+ 			    event->header.type);
+ 		/*
+ 		 * assume we lost track of the stream, check alignment, and
+@@ -821,36 +818,36 @@ more:
+ 
+ 	head += size;
+ 
+-	if (offset + head >= data_offset + data_size)
++	if (file_offset + head >= data_offset + data_size)
+ 		goto done;
+ 
+-	if (offset + head < file_size)
++	if (file_offset + head < file_size)
+ 		goto more;
+ done:
+ 	err = 0;
+ 	/* do the final flush for ordered samples */
+-	self->ordered_samples.next_flush = ULLONG_MAX;
+-	flush_sample_queue(self, ops);
++	session->ordered_samples.next_flush = ULLONG_MAX;
++	flush_sample_queue(session, ops);
+ out_err:
+ 	ui_progress__delete(progress);
+ 
+ 	if (ops->lost == event__process_lost &&
+-	    self->hists.stats.total_lost != 0) {
++	    session->hists.stats.total_lost != 0) {
+ 		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
+ 			    "Check IO/CPU overload!\n\n",
+-			    self->hists.stats.total_period,
+-			    self->hists.stats.total_lost);
++			    session->hists.stats.total_period,
++			    session->hists.stats.total_lost);
+ 	}
+-	
+-	if (self->hists.stats.nr_unknown_events != 0) {
++
++	if (session->hists.stats.nr_unknown_events != 0) {
+ 		ui__warning("Found %u unknown events!\n\n"
+ 			    "Is this an older tool processing a perf.data "
+ 			    "file generated by a more recent tool?\n\n"
+ 			    "If that is not the case, consider "
+ 			    "reporting to linux-kernel@vger.kernel.org.\n\n",
+-			    self->hists.stats.nr_unknown_events);
++			    session->hists.stats.nr_unknown_events);
+ 	}
+-		
++
+ 	return err;
  }
  
- static int queue_sample_event(event_t *event, struct sample_data *data,
-@@ -559,10 +544,6 @@ static int queue_sample_event(event_t *event, struct sample_data *data,
- 	memcpy(new->event, event, event->header.size);
- 
- 	__queue_sample_event(new, s);
--	s->ordered_samples.last_inserted = new;
--
--	if (new->timestamp > s->ordered_samples.max_timestamp)
--		s->ordered_samples.max_timestamp = new->timestamp;
- 
- 	return 0;
- }
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 9fa0fc2..a00f32e 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -17,8 +17,8 @@ struct ordered_samples {
- 	u64			last_flush;
- 	u64			next_flush;
- 	u64			max_timestamp;
--	struct list_head	samples_head;
--	struct sample_queue	*last_inserted;
-+	struct list_head	samples;
-+	struct sample_queue	*last_sample;
- };
- 
- struct perf_session {
