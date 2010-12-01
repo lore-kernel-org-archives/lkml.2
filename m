@@ -1,152 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab0LALVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:21:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55168 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab0LALVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:21:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RZFUm+wJXMn7ku+HSGKgjAXf9LKqULSFJhLZ6RE0hj/yJ6IUfuWOoXdNMhK9iMn4Lg
-         U7+JufwbjEJuQL+U1hwkVBYeE1XH3WmQZFBomKN8xsOabpP3F+KulGOu8EobCkMLM2ha
-         fgOWXqVYULGIaSmvDh841s5hLn6mEr6CqQhdo=
-Subject: Re: [Patch] net: kill an RCU warning in inet_fill_link_af()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-In-Reply-To: <1291202063-6239-1-git-send-email-amwang@redhat.com>
-References: <1291202063-6239-1-git-send-email-amwang@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 12:21:16 +0100
-Message-ID: <1291202476.2856.584.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753145Ab0LALVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:21:48 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:40994 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233Ab0LALVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:21:47 -0500
+Date: Wed, 1 Dec 2010 12:21:16 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] mm: vmscan: Convert lumpy_mode into a bitmask
+Message-ID: <20101201112116.GR15564@cmpxchg.org>
+References: <1290440635-30071-1-git-send-email-mel@csn.ul.ie>
+ <1290440635-30071-3-git-send-email-mel@csn.ul.ie>
+ <20101201102732.GK15564@cmpxchg.org>
+ <20101201105029.GL13268@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201105029.GL13268@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 01 décembre 2010 à 19:14 +0800, Amerigo Wang a écrit :
-> From: WANG Cong <amwang@redhat.com>
+On Wed, Dec 01, 2010 at 10:50:29AM +0000, Mel Gorman wrote:
+> On Wed, Dec 01, 2010 at 11:27:32AM +0100, Johannes Weiner wrote:
+> > On Mon, Nov 22, 2010 at 03:43:50PM +0000, Mel Gorman wrote:
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -51,11 +51,20 @@
+> > >  #define CREATE_TRACE_POINTS
+> > >  #include <trace/events/vmscan.h>
+> > >  
+> > > -enum lumpy_mode {
+> > > -	LUMPY_MODE_NONE,
+> > > -	LUMPY_MODE_ASYNC,
+> > > -	LUMPY_MODE_SYNC,
+> > > -};
+> > > +/*
+> > > + * lumpy_mode determines how the inactive list is shrunk
+> > > + * LUMPY_MODE_SINGLE: Reclaim only order-0 pages
+> > > + * LUMPY_MODE_ASYNC:  Do not block
+> > > + * LUMPY_MODE_SYNC:   Allow blocking e.g. call wait_on_page_writeback
+> > > + * LUMPY_MODE_CONTIGRECLAIM: For high-order allocations, take a reference
+> > > + *			page from the LRU and reclaim all pages within a
+> > > + *			naturally aligned range
+> > 
+> > I find those names terribly undescriptive.  It also strikes me as an
+> > odd set of flags.  Can't this be represented with less?
+> > 
+> > 	LUMPY_MODE_ENABLED
+> > 	LUMPY_MODE_SYNC
+> > 
+> > or, after the rename,
+> > 
+> > 	RECLAIM_MODE_HIGHER	= 1
+> > 	RECLAIM_MODE_SYNC	= 2
+> > 	RECLAIM_MODE_LUMPY	= 4
+> > 
 > 
-> The latest net-next-2.6 triggers an RCU warning during boot,
-> lockdep complains that in inet_fill_link_af() we call rcu_dereference_check()
-> without rcu_read_lock() protection.
+> My problem with that is you have to infer what the behaviour is from what the
+> flags "are not" as opposed to what they are. For example, !LUMPY_MODE_SYNC
+> implies LUMPY_MODE_ASYNC instead of specifying LUMPY_MODE_ASYNC.
+
+Sounds like a boolean value to me.  And it shows: you never actually
+check for RECLAIM_MODE_ASYNC in the code, you just always set it to
+the opposite of RECLAIM_MODE_SYNC - the flag which is actually read.
+
+> It also looks very odd when trying to distinguish between order-0
+> standard reclaim, lumpy reclaim and reclaim/compaction.
+
+That is true, because this is still an actual tristate.  It's probably
+better to defer until lumpy reclaim is gone and there is only one flag
+for higher-order reclaim left.
+
+> > > +typedef unsigned __bitwise__ lumpy_mode;
+> > 
+> > lumpy_mode_t / reclaim_mode_t?
+> > 
 > 
-> This patch fixes it by replacing __in_dev_get_rcu() with in_dev_get().
-> 
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
+> It can't hurt!
 
-Sorry patch is not the right fix. Please take a look at commit 95ae6b22
-
-We are working hard to remove all the not needed get()/put(), not to add
-new ones ;)
-
-
-> ---
-> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-> index d9f71ba..73baed8 100644
-> --- a/net/ipv4/devinet.c
-> +++ b/net/ipv4/devinet.c
-> @@ -1258,31 +1258,36 @@ errout:
->  
->  static size_t inet_get_link_af_size(const struct net_device *dev)
->  {
-> -	struct in_device *in_dev = __in_dev_get_rcu(dev);
-> +	struct in_device *in_dev = in_dev_get(dev);
->  
->  	if (!in_dev)
->  		return 0;
->  
-> +	in_dev_put(in_dev);
->  	return nla_total_size(IPV4_DEVCONF_MAX * 4); /* IFLA_INET_CONF */
->  }
->  
-
-In this function why should we even take a reference, just to check if
-pointer exists ?
-
-If RTNL is held (I believe so), just use __in_dev_get_rtnl()
-
->  static int inet_fill_link_af(struct sk_buff *skb, const struct net_device *dev)
->  {
-> -	struct in_device *in_dev = __in_dev_get_rcu(dev);
-> +	struct in_device *in_dev = in_dev_get(dev);
->  	struct nlattr *nla;
-> -	int i;
-> +	int i, ret = 0;
->  
->  	if (!in_dev)
->  		return -ENODATA;
->  
->  	nla = nla_reserve(skb, IFLA_INET_CONF, IPV4_DEVCONF_MAX * 4);
-> -	if (nla == NULL)
-> -		return -EMSGSIZE;
-> +	if (nla == NULL) {
-> +		ret = -EMSGSIZE;
-> +		goto out;
-> +	}
->  
->  	for (i = 0; i < IPV4_DEVCONF_MAX; i++)
->  		((u32 *) nla_data(nla))[i] = in_dev->cnf.data[i];
->  
-> -	return 0;
-> +out:
-> +	in_dev_put(in_dev);
-> +	return ret;
->  }
-
-
-In this function we hold RTNL...
- Please use __in_dev_get_rtnl()
-
-
->  
->  static const struct nla_policy inet_af_policy[IFLA_INET_MAX+1] = {
-> @@ -1293,11 +1298,14 @@ static int inet_validate_link_af(const struct net_device *dev,
->  				 const struct nlattr *nla)
->  {
->  	struct nlattr *a, *tb[IFLA_INET_MAX+1];
-> +	struct in_device *in_dev = in_dev_get(dev);
->  	int err, rem;
->  
-> -	if (dev && !__in_dev_get_rcu(dev))
-> +	if (dev && !in_dev)
->  		return -EAFNOSUPPORT;
->  
-> +	in_dev_put(in_dev);
-> +
->  	err = nla_parse_nested(tb, IFLA_INET_MAX, nla, inet_af_policy);
->  	if (err < 0)
->  		return err;
-> @@ -1319,7 +1327,7 @@ static int inet_validate_link_af(const struct net_device *dev,
->  
->  static int inet_set_link_af(struct net_device *dev, const struct nlattr *nla)
->  {
-> -	struct in_device *in_dev = __in_dev_get_rcu(dev);
-> +	struct in_device *in_dev = in_dev_get(dev);
->  	struct nlattr *a, *tb[IFLA_INET_MAX+1];
->  	int rem;
->  
-> @@ -1334,6 +1342,7 @@ static int inet_set_link_af(struct net_device *dev, const struct nlattr *nla)
->  			ipv4_devconf_set(in_dev, nla_type(a), nla_get_u32(a));
->  	}
->  
-> +	in_dev_put(in_dev);
->  	return 0;
->  }
-
-Same here. RTNL is held. Please use __in_dev_get_rtnl()
-
-
-
+Thanks :)
