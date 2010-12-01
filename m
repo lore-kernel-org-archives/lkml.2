@@ -1,113 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0LAVvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 16:51:16 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:36857 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752882Ab0LAVvP convert rfc822-to-8bit (ORCPT
+	id S1755660Ab0LAWDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 17:03:03 -0500
+Received: from vms173017pub.verizon.net ([206.46.173.17]:65306 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab0LAWDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 16:51:15 -0500
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="489712432"
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <20101201133831.ea6ba10a.akpm@linux-foundation.org>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	 <20101201150428.GA2879@elliptictech.com>
-	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	 <1291229669.6609.24.camel@heimdal.trondhjem.org>
-	 <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
-	 <1291234251.6609.39.camel@heimdal.trondhjem.org>
-	 <20101201123341.d12ef362.akpm@linux-foundation.org>
-	 <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
-	 <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
-	 <20101201133831.ea6ba10a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 16:51:12 -0500
-Message-ID: <1291240272.6609.50.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Dec 2010 21:51:14.0449 (UTC) FILETIME=[E006B810:01CB91A1]
+	Wed, 1 Dec 2010 17:03:01 -0500
+Date: Wed, 01 Dec 2010 17:02:37 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH 12/13] ACPI / PM: Drop acpi_bus_get_power()
+In-reply-to: <201011250012.06151.rjw@sisk.pl>
+Message-id: <alpine.LFD.2.00.1012011702210.2314@x980>
+References: <201011250001.11297.rjw@sisk.pl> <201011250012.06151.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: MULTIPART/MIXED; BOUNDARY="8323328-1586859742-1291240960=:2314"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 13:38 -0800, Andrew Morton wrote:
-> On Wed, 1 Dec 2010 13:15:07 -0800 (PST)
-> Hugh Dickins <hughd@google.com> wrote:
-> 
-> > On Wed, 1 Dec 2010, Hugh Dickins wrote:
-> > > On Wed, 1 Dec 2010, Andrew Morton wrote:
-> > > > On Wed, 01 Dec 2010 15:10:50 -0500
-> > > > Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
-> > > > 
-> > > > > --- a/include/linux/fs.h
-> > > > > +++ b/include/linux/fs.h
-> > > > > @@ -602,6 +602,7 @@ struct address_space_operations {
-> > > > >  	sector_t (*bmap)(struct address_space *, sector_t);
-> > > > >  	void (*invalidatepage) (struct page *, unsigned long);
-> > > > >  	int (*releasepage) (struct page *, gfp_t);
-> > > > > +	void (*freepage)(struct page *);
-> > > > >  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
-> > > > >  			loff_t offset, unsigned long nr_segs);
-> > > > >  	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
-> > > > 
-> > > > It would be good to think about and then clearly spell out exactly what
-> > > > state the page is in here.  It is locked, and I assume clean and not
-> > > > under writeback.  What about its refcount, freezedness status and
-> > > > eligibility for lookups?
-> > > > 
-> > > > And as Hugh pointed out, some callees might needs the address_space*
-> > > > although we can perhaps defer that until such a callee turns up. 
-> > > > If/when that happens we might have a problem though: if this locked
-> > > > page is no longer attached to the address_space then what now pins the
-> > > > address_space, protecting it from inode reclaim?
-> > > 
-> > > That's an excellent point and trumps mine: it would be actively wrong
-> > > to provide the struct address_space *mapping arg I was asking for.
-> > > (Bet someone then tries stashing it away via page->private though.)
-> > 
-> > Hmm, thinking further along the same lines: can we even guarantee that
-> > the filesystem module is still loaded at that point?  i.e. might
-> > mapping->freepage now be pointing off into the garbage heap?
-> 
-> I don't see anything on the VFS side which would prevent a module
-> unload.  Or, more realistically, a concurrent unmount, freeing of the
-> superblock and everything associated with it.  All we have here is a
-> page*.
-> 
-> Probably on most call paths we'll be OK - if a process is in the middle
-> of a file truncate, holdin a file* ref which holds an inode ref then
-> nobody will be unmounting that fs and hence nobody will be unloading
-> that module.
-> 
-> However on the random_code->alloc_page->vmscan->releasepage path, none
-> of that applies.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Just out of interest, what ensures that the mapping is still around for
-the 'spin_unlock_irq(&mapping->tree_lock);' in __remove_mapping()?
+--8323328-1586859742-1291240960=:2314
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
-I'm clearly missing whatever mechanism prevents iput_final() from racing
-with vmscan if the latter clears out the last page from the mapping.
+  CC [M]  drivers/platform/x86/fujitsu-laptop.o
+drivers/platform/x86/fujitsu-laptop.c: In function ¡acpi_fujitsu_add¢:
+drivers/platform/x86/fujitsu-laptop.c:692: error: implicit declaration of 
+function ¡acpi_bus_get_power¢
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+--8323328-1586859742-1291240960=:2314--
