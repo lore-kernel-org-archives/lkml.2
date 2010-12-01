@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab0LASNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:13:51 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:24898 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751876Ab0LASNv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:13:51 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: NHT6By8VM1kQtDawWMQyIrAZm76zCfpCWpZfTkGHJfj0Utp
- KR9lnaMpBF59TCesA268uL9Gb_zyzN9G8IYp9YtrIjvCYrlzsTcpb6IelMhc
- .MHhU9BW3Q2izzuz.ISwNL3S_6EwQVX7FzDmaYWTdHcHp_SsPnutxsZ5nlje
- 3GFbLz6inxlbjRdGOj6OstWk7dSrmrH2k0Ic_s47E5XjZHL6MORAOY5Jk7ku
- J9goGX6zRSKwtl575AObs29Jw1qEdBPu0YsZUFcQ-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 1 Dec 2010 12:13:44 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [thisops uV3 08/18] Taskstats: Use this_cpu_ops
-In-Reply-To: <1291226786.2898.22.camel@holzheu-laptop>
-Message-ID: <alpine.DEB.2.00.1012011212490.3774@router.home>
-References: <20101130190707.457099608@linux.com>  <20101130190845.819605614@linux.com> <1291226786.2898.22.camel@holzheu-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756010Ab0LASPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:15:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876Ab0LASPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 13:15:23 -0500
+Date: Wed, 1 Dec 2010 19:07:53 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, stable@kernel.org
+Subject: Re: [PATCH 1/2] exec: make argv/envp memory visible to oom-killer
+Message-ID: <20101201180753.GA6143@redhat.com>
+References: <20101130195456.GA11905@redhat.com> <20101130195534.GB11905@redhat.com> <20101201090350.ABA2.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201090350.ABA2.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, Michael Holzheu wrote:
-
-> >  		return -ENOMEM;
-> >
-> >  	if (!info) {
-> > -		int seq = get_cpu_var(taskstats_seqnum)++;
-> > -		put_cpu_var(taskstats_seqnum);
-> > +		int seq = this_cpu_inc_return(taskstats_seqnum);
+On 12/01, KOSAKI Motohiro wrote:
 >
-> Hmmm, wouldn't seq now always be one more than before?
+> > +static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
 >
-> I think that "seq = get_cpu_var(taskstats_seqnum)++" first assigns
-> taskstats_seqnum to seq and then increases the value in contrast to
-> this_cpu_inc_return() that returns the already increased value, correct?
+> One minor request.
+>
+> I guess this function can easily makes confusing to a code reader. So I
+> hope you write small function comments. describe to
+>  - What is oom nascent issue
+>  - Why we think inaccurate account is ok
 
-Correct. We need to subtract one from that (which will eliminate the minus
--1 that the inline this_cpu_inc_return creates).
+Agreed, this needs a comment.
+
+The patch was already applied, I'll send a separate one on top
+of the next "unify exec/compat" series. Or, I'll add the comments
+into this series, depending on review.
+
+Thanks,
+
+Oleg.
 
