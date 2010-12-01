@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab0LAMwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 07:52:08 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64191 "EHLO mga09.intel.com"
+	id S1755017Ab0LAMw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 07:52:28 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29722 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754934Ab0LAMwG convert rfc822-to-8bit (ORCPT
+	id S1754854Ab0LAMw0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 07:52:06 -0500
+	Wed, 1 Dec 2010 07:52:26 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,283,1288594800"; 
-   d="scan'208,223";a="682751070"
-Date: Wed, 1 Dec 2010 20:49:00 +0800
+   d="scan'208,223";a="579446057"
+Date: Wed, 1 Dec 2010 20:49:21 +0800
 From: Chuanxiao Dong <chuanxiao.dong@intel.com>
 To: linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, arjan@linux.intel.com,
         alan@linux.intel.com, akpm@linux-foundation.org
-Subject: [PATCH v4 1/4]enable HW reset capbility
-Message-ID: <20101201124900.GB5421@intel.com>
+Subject: [PATCH v4 2/4]add two new callback to help implement HW reset
+Message-ID: <20101201124921.GC5421@intel.com>
 Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,96 +27,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d3be0b4fe8e8a40294830dfd8d0543d1e957fd29 Mon Sep 17 00:00:00 2001
+>From af18430a90d1a7a42495e6924f1d60b0cf69e20b Mon Sep 17 00:00:00 2001
 From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Date: Wed, 1 Dec 2010 19:14:02 +0800
-Subject: [PATCH 1/4] enable HW reset caps of MMC card if card supports
+Date: Wed, 1 Dec 2010 20:14:22 +0800
+Subject: [PATCH 2/4] add two new callback to use HW reset feature
 
-HW reset capbility enable bit is byte 162 in card EXT_CSD
-register, only version4.4 card or later can support to enable
-this feature.
+HW reset will reset eMMC card. So after reset, card should
+also be reinitialized. Add two new callbacks to implement
+reset and reinitialize. MMC core layer will check whether
+occures a timeout error in the new added routine
+mmc_handle_timeout_error
 
-HW reset feature can be used to reset eMMC card when occures
-timeout errors during read/write/erase.
+mmc_handle_timeout_error: check whether occures a timeout error.
+If occures, use HW reset callbacks to do reset and reinitialize
+
+hardware_reset: trigger a RST_n signal for host to reset card.
+This callback was just defined in header file, not implemented in
+this patch.
 
 Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
 ---
- drivers/mmc/core/mmc.c   |   29 +++++++++++++++++++++++++++++
- include/linux/mmc/card.h |    1 +
- include/linux/mmc/mmc.h  |    1 +
- 3 files changed, 31 insertions(+), 0 deletions(-)
+ drivers/mmc/core/core.c  |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/core.h  |    9 +++++++++
+ drivers/mmc/core/mmc.c   |   31 +++++++++++++++++++++++++++++++
+ include/linux/mmc/core.h |    1 +
+ include/linux/mmc/host.h |   13 +++++++++++++
+ 5 files changed, 99 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 77f93c3..85cc7f6 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -310,6 +310,10 @@ static int mmc_read_ext_csd(struct mmc_card *card)
- 			ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
- 		card->ext_csd.trim_timeout = 300 *
- 			ext_csd[EXT_CSD_TRIM_MULT];
-+		/*
-+		 * check Hardware reset cap
-+		 */
-+		card->ext_csd.rst = ext_csd[EXT_CSD_RST];
- 	}
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 6286898..530fc35 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -82,6 +82,51 @@ static void mmc_flush_scheduled_work(void)
+ }
  
- 	if (ext_csd[EXT_CSD_ERASED_MEM_CONT])
-@@ -484,6 +488,31 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 	}
- 
- 	/*
-+	 * eMMC4.4 version card has HW reset capbility.
-+	 * Enable this feature here:
-+	 * RST_N_FUNCTION register is W/R, one time programmable
-+	 * or readable.
-+	 * So need to enable this register only once after power on
-+	 */
-+	if (card->csd.mmca_vsn >= CSD_SPEC_VER_4 &&
-+			card->ext_csd.rev >= 4 &&
-+			card->ext_csd.rst == 0) {
-+		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+				EXT_CSD_RST, 1);
-+
-+		if (err && err != -EBADMSG)
-+			goto free_card;
-+
-+		if (err) {
-+			printk(KERN_WARNING "%s: switch to rst enable "
-+				   "failed %d\n",
-+				   mmc_hostname(card->host), err);
-+			err = 0;
-+		} else
-+			card->ext_csd.rst = 1;
-+	}
+ /**
++ *	mmc_handle_timeout_error - handle command and data timeout
++ *	errors.
++ *	@host: MMC host used to handle error
++ *	@error: error condition
++ *
++ *	check whether there is a command or data timeout error occured,
++ *	if so, reset and reinit eMMC card if card has such capbility.
++ *	1. let host controller do a specific hardware reset for eMMC
++ *	   card (trigger RST_n signal).
++ *	2. after reset done, reinit eMMC card.
++ */
++void mmc_handle_timeout_error(struct mmc_host *host, int error)
++{
++	struct mmc_card *card = host->card;
 +
 +	/*
- 	 * Activate high speed (if supported)
- 	 */
- 	if ((card->ext_csd.hs_max_dtr != 0) &&
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 8ce0827..ebee676 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -54,6 +54,7 @@ struct mmc_ext_csd {
- 	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
- 	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
- 	unsigned int		trim_timeout;		/* In milliseconds */
-+	unsigned int		rst; /* hardware reset enable bit */
++	 * If error condition is not timeout, do nothing
++	 */
++	if (error != -ETIMEDOUT)
++		return;
++	/*
++	 * make sure mmc_reqeust is not NULL
++	 * make sure mmc_card has HW reset capbility
++	 */
++	if (!card || !card->ext_csd.rst)
++		return;
++
++	/* check whether host has such callback */
++	if (!host->ops->hardware_reset ||
++			!host->bus_ops->reinit)
++		return;
++
++	/*
++	 * if there occurs any timeout error, HW reset
++	 * eMMC card and reinit again.
++	 */
++	if (host->ops->hardware_reset(host))
++		pr_warn("MMC card reset failed\n");
++	else
++		if (host->bus_ops->reinit(host))
++			pr_warn("MMC card reinit failed\n");
++}
++EXPORT_SYMBOL(mmc_handle_timeout_error);
++
++/**
+  *	mmc_request_done - finish processing an MMC request
+  *	@host: MMC host which completed request
+  *	@mrq: MMC request which request
+diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
+index 026c975..4980e2f 100644
+--- a/drivers/mmc/core/core.h
++++ b/drivers/mmc/core/core.h
+@@ -24,6 +24,15 @@ struct mmc_bus_ops {
+ 	int (*resume)(struct mmc_host *);
+ 	int (*power_save)(struct mmc_host *);
+ 	int (*power_restore)(struct mmc_host *);
++	/*
++	 * New added callback
++	 * Used to reinit card when HW reset occurs
++	 *
++	 * return value:
++	 * 0: successfully reinit card.
++	 * negative value: failed to reinit
++	 */
++	int (*reinit)(struct mmc_host *);
  };
  
- struct sd_scr {
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 956fbd8..b7ab0da 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -251,6 +251,7 @@ struct _mmc_csd {
-  * EXT_CSD fields
-  */
+ void mmc_attach_bus(struct mmc_host *host, const struct mmc_bus_ops *ops);
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 85cc7f6..bc4611a 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -732,6 +732,35 @@ static int mmc_awake(struct mmc_host *host)
+ 	return err;
+ }
  
-+#define EXT_CSD_RST		162	/* onetime programmable R/W */
- #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
- #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
- #define EXT_CSD_BUS_WIDTH		183	/* R/W */
++/**
++ * mmc_reinit_card - reinitialize card after HW reset
++ *
++ * this callback is used to reinitialize card after a HW
++ * reset occurs.
++ * Reture value:
++ * 0: successfully reinitialize
++ * other: failed to reinitialize
++ *
++ * claim_host should be called before using this callback.
++ */
++static int mmc_reinit_card(struct mmc_host *host)
++{
++	int err;
++	/*
++	 * Before init card, set the clock to be
++	 * the init frequency
++	 */
++	host->ios.clock = host->f_init;
++	mmc_set_clock(host, host->ios.clock);
++
++	err = mmc_init_card(host, host->ocr, host->card);
++	if (err)
++		pr_err("%s: Error %d while reinit card\n",
++				mmc_hostname(host), err);
++
++	return err;
++}
++
+ static const struct mmc_bus_ops mmc_ops = {
+ 	.awake = mmc_awake,
+ 	.sleep = mmc_sleep,
+@@ -740,6 +769,7 @@ static const struct mmc_bus_ops mmc_ops = {
+ 	.suspend = NULL,
+ 	.resume = NULL,
+ 	.power_restore = mmc_power_restore,
++	.reinit = mmc_reinit_card,
+ };
+ 
+ static const struct mmc_bus_ops mmc_ops_unsafe = {
+@@ -750,6 +780,7 @@ static const struct mmc_bus_ops mmc_ops_unsafe = {
+ 	.suspend = mmc_suspend,
+ 	.resume = mmc_resume,
+ 	.power_restore = mmc_power_restore,
++	.reinit = mmc_reinit_card,
+ };
+ 
+ static void mmc_attach_bus_ops(struct mmc_host *host)
+diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+index 64e013f..115d589 100644
+--- a/include/linux/mmc/core.h
++++ b/include/linux/mmc/core.h
+@@ -131,6 +131,7 @@ struct mmc_request {
+ struct mmc_host;
+ struct mmc_card;
+ 
++extern void mmc_handle_timeout_error(struct mmc_host *, int);
+ extern void mmc_wait_for_req(struct mmc_host *, struct mmc_request *);
+ extern int mmc_wait_for_cmd(struct mmc_host *, struct mmc_command *, int);
+ extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 381c77f..3a7008d 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -117,6 +117,19 @@ struct mmc_host_ops {
+ 
+ 	/* optional callback for HC quirks */
+ 	void	(*init_card)(struct mmc_host *host, struct mmc_card *card);
++
++	/*
++	 * eMMC4.4 HW reset feature callback
++	 *
++	 * eMMC4.4 card can be reset if host triggers a RST_n signal
++	 * This callback will be used to for host to trigger such
++	 * signal.
++	 *
++	 * return value:
++	 * 0: successfully reset the eMMC card.
++	 * -ENODEV: no valid hardware to do so.
++	 */
++	int (*hardware_reset)(struct mmc_host *host);
+ };
+ 
+ struct mmc_card;
 -- 
 1.6.6.1
 
