@@ -1,131 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0LAUNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:13:39 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:39599 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755655Ab0LAUNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:13:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=lgfWy66mW1Qa3pF+az+1xR0bhJU8VmwwgAm5f5fhxf63ZCiDHiVGPHJcB2IHxDs6+s
-         3WI3zXAfzul50Asszy3w==
-Date: Wed, 1 Dec 2010 12:13:32 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] ksm: annotate ksm_thread_mutex is no deadlock
- source
-In-Reply-To: <20101201143008.ABCE.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1012011158120.17318@tigran.mtv.corp.google.com>
-References: <alpine.LSU.2.00.1010252248210.2939@sister.anvils> <20101026163218.B7BF.A69D9226@jp.fujitsu.com> <20101201143008.ABCE.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1756919Ab0LAUQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:16:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:2085 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755919Ab0LAUQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 15:16:57 -0500
+Subject: Re: [PATCH wireless-next] MAINTAINERS: Add ATH GENERIC UTILITIES
+From: Joe Perches <joe@perches.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath9k-devel@venema.h4ckr.net, peter@stuge.se,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinU+jWBXUdW2v9WSL2SZWQn8FHai4+=dAPTASe6@mail.gmail.com>
+References: <5febb0e1fba0ec2bb77f6ade8b251ba0edf4614c.1290988277.git.joe@perches.com>
+	 <AANLkTinc251WbwuLqFbOZ5ipNGZW7=wub3DoWwy42=+e@mail.gmail.com>
+	 <20101129060732.5130.qmail@stuge.se> <4CF42C17.2070500@openwrt.org>
+	 <1291081185.16349.133.camel@Joe-Laptop> <4CF464D6.2020507@openwrt.org>
+	 <1291148375.18026.342.camel@Joe-Laptop>
+	 <AANLkTik2qtGUgkZYSjcEH9jHHsevKnxOvz4s6On94U9o@mail.gmail.com>
+	 <1291225075.1845.177.camel@Joe-Laptop>
+	 <AANLkTinU+jWBXUdW2v9WSL2SZWQn8FHai4+=dAPTASe6@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 12:16:55 -0800
+Message-ID: <1291234615.1845.196.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, KOSAKI Motohiro wrote:
-> 
-> commit 62b61f611e(ksm: memory hotremove migration only) made following
-> new lockdep warning.
-> 
->   =======================================================
->   [ INFO: possible circular locking dependency detected ]
->   -------------------------------------------------------
->   bash/1621 is trying to acquire lock:
->    ((memory_chain).rwsem){.+.+.+}, at: [<ffffffff81079339>]
->   __blocking_notifier_call_chain+0x69/0xc0
-> 
->   but task is already holding lock:
->    (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8113a3aa>]
->   ksm_memory_callback+0x3a/0xc0
-> 
->   which lock already depends on the new lock.
-> 
->   the existing dependency chain (in reverse order) is:
-> 
->   -> #1 (ksm_thread_mutex){+.+.+.}:
->        [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
->        [<ffffffff81505d74>] __mutex_lock_common+0x44/0x3f0
->        [<ffffffff81506228>] mutex_lock_nested+0x48/0x60
->        [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0
->        [<ffffffff8150c21c>] notifier_call_chain+0x8c/0xe0
->        [<ffffffff8107934e>] __blocking_notifier_call_chain+0x7e/0xc0
->        [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
->        [<ffffffff813afbfb>] memory_notify+0x1b/0x20
->        [<ffffffff81141b7c>] remove_memory+0x1cc/0x5f0
->        [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
->        [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
->        [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
->        [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
->        [<ffffffff8114f398>] vfs_write+0xc8/0x190
->        [<ffffffff8114fc14>] sys_write+0x54/0x90
->        [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
-> 
->   -> #0 ((memory_chain).rwsem){.+.+.+}:
->        [<ffffffff8108b5ba>] __lock_acquire+0x155a/0x1600
->        [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
->        [<ffffffff81506601>] down_read+0x51/0xa0
->        [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0
->        [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
->        [<ffffffff813afbfb>] memory_notify+0x1b/0x20
->        [<ffffffff81141f1e>] remove_memory+0x56e/0x5f0
->        [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
->        [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
->        [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
->        [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
->        [<ffffffff8114f398>] vfs_write+0xc8/0x190
->        [<ffffffff8114fc14>] sys_write+0x54/0x90
->        [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
-> 
-> But it's false positive. Both memory_chain.rwsem and ksm_thread_mutex
-> have outer lock (mem_hotplug_mutex). then, they can't make deadlock.
-> 
-> Thus, This patch annotate ksm_thread_mutex is not deadlock source.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Wed, 2010-12-01 at 11:46 -0800, Luis R. Rodriguez wrote:
+> On Wed, Dec 1, 2010 at 9:37 AM, Joe Perches <joe@perches.com> wrote:
+> > This file pattern is not currently shown as maintained
+> > by atheros.  Perhaps it should be?
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> Sure but its maintained by the community and Atheros hackers, not just me.
 
-Thank you (I assume it does the job, I've not yet checked).  My only
-issue with this is that the comment you added below tells a different
-story from the fuller comment you give above.  Maybe change it to:
+No doubt.
 
-	* mutex_lock_nested() is necessary because lockdep was alarmed that
-	* here we take ksm_thread_mutex inside notifier chain mutex, and
-	* later take notifier chain mutex inside ksm_thread_mutex to unlock
-	* it: but that's safe because both are inside mem_hotplug_mutex.
+$ git log next-20101130 -- drivers/net/wireless/ath/*.[ch] | \
+	grep -P "(^Author)" | cut -f2- -d":" | sort | uniq -c | sort -rn | head
+     27  Luis R. Rodriguez <lrodriguez@atheros.com>
+      6  Felix Fietkau <nbd@openwrt.org>
+      4  Bruno Randolf <br1@einfach.org>
+      3  Sujith <Sujith.Manoharan@atheros.com>
+      3  John W. Linville <linville@tuxdriver.com>
+      3  Joe Perches <joe@perches.com>
+      3  Bob Copeland <me@bobcopeland.com>
+      2  Pavel Roskin <proski@gnu.org>
+      2  Johannes Berg <johannes@sipsolutions.net>
+      2  David S. Miller <davem@davemloft.net>
 
-Acked-by: Hugh Dickins <hughd@google.com>
+Without any sort of MAINTAINERS entry, the results
+for files in that directory are like this:
 
-> ---
->  mm/ksm.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index 65ab5c7..5aa4900 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -1724,8 +1724,10 @@ static int ksm_memory_callback(struct notifier_block *self,
->  		/*
->  		 * Keep it very simple for now: just lock out ksmd and
->  		 * MADV_UNMERGEABLE while any memory is going offline.
-> +		 * Mutex_lock_nested() is necessary to tell that
-> +		 * ksm_thread_mutex is not unlocked here intentionally.
->  		 */
-> -		mutex_lock(&ksm_thread_mutex);
-> +		mutex_lock_nested(&ksm_thread_mutex, SINGLE_DEPTH_NESTING);
->  		break;
->  
->  	case MEM_OFFLINE:
-> -- 
-> 1.6.5.2
+$ ./scripts/get_maintainer.pl -f --rolestats drivers/net/wireless/ath/main.c
+"John W. Linville" <linville@tuxdriver.com> (maintainer:NETWORKING [WIREL...)
+linux-wireless@vger.kernel.org (open list:NETWORKING [WIREL...)
+netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+linux-kernel@vger.kernel.org (open list)
+
+Perhaps you want to be cc'd?
+Perhaps there are atheros lists that should be cc'd?
+If cc'ing linux-wireless is good enough,
+that's good enough for me too.
+
+cheers, Joe
+
