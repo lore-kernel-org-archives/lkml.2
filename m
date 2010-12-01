@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab0LANLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 08:11:05 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39219 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab0LANLC convert rfc822-to-8bit (ORCPT
+	id S1755196Ab0LANLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 08:11:14 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44191 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754917Ab0LANLN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 08:11:02 -0500
+	Wed, 1 Dec 2010 08:11:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=RaTu/0hoTTMqmJ2Fg4YYOYtWDLAiHhJd81JGwXZk9+HnLiuvmWjJ/irO8Gdp2AzMYJ
-         TxzN0Hls4CLEbGGjFWq79WhEmUvwrJouZE5TeqAXkQE9EbIxk/bjbn6fcUNYSB5qNVvQ
-         iJ9z+hnzF9HRJp1E1u27jdJf+6iC7D2jQ0cPc=
+        b=BwrpsayC/AwojcJFw8x9PK8MR7EzbVle5MCkbLfvPY5SfScLEyCbhs4+MWlO3pW6rE
+         g6MYbLojvaJ1SaG29joa1D/4MEu28I86lboxvIc/CUHM2X0pp6bIxfwOnblN8S4YgnPk
+         sjuSHOG1pl6DfpF65obOA15efBvKc17IfGmWI=
 MIME-Version: 1.0
-In-Reply-To: <20101130143631.GC26758@redhat.com>
-References: <AANLkTimV=6=Je=k6UW=ivJtmR0ONoTrscM2i8YJd5JjA@mail.gmail.com>
-	<20101130143631.GC26758@redhat.com>
-Date: Wed, 1 Dec 2010 21:11:01 +0800
-Message-ID: <AANLkTimAAr7PgH85G+yqOXwdExRUHbZm3HXz0WsRjLuW@mail.gmail.com>
-Subject: Re: [PATCH] add rb_next in block throttle
-From: Hillf Danton <dhillf@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTinpX0p8hv_RJojASbjDNYQ60bODo3kLBobRDtmf@mail.gmail.com>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com> <AANLkTinpX0p8hv_RJojASbjDNYQ60bODo3kLBobRDtmf@mail.gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Wed, 1 Dec 2010 21:10:51 +0800
+Message-ID: <AANLkTinVH0X_wmHgQSeYT-JMVWAjO3CHvy=jh1817swj@mail.gmail.com>
+Subject: Re: [PATCH] Built kernel without -O2 option
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gdb@sourceware.org, hellogcc@freelists.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 10:36 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Fri, Nov 26, 2010 at 10:06:27PM +0800, Hillf Danton wrote:
->> When selecting group for dispatching, the first entry of the service
->> tree is sequentially dequeued, then the first entry is recomputed by
->> calling rb_first().
+On Tue, Nov 30, 2010 at 05:07, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Sun, Nov 28, 2010 at 10:56 PM, Hui Zhu <teawater@gmail.com> wrote:
+>> Hi,
 >>
->> When the first is removed from service tree, new first could also be
->> computed with rb_next(), since it could be faster than rb_first in
->> this special environment.
+>> Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>> qemu, kgtp or kgdb and so on.
+>> But the developer more like add a printk. It have a lot of reason, a big one is:
+>> (gdb) p ret
+>> $3 = <value optimized out>
+>> And the code execution order is not right.
 >>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> This is becuase the Kernel is bult with gcc -O2.  Gcc will not
+>> generate enough debug message with file with -O2.
+>> So GDB cannot work very well with Linux kernel.
+>>
+>> So I make a patch that add a option in "Kernel hacking" called "Close
+>> GCC optimization".  It will make kernel be built without -O2.
+>>
+> no, it does not, see below ..
+>
+>> I built and use it in i386 and x86_64.  I will try to make it OK in other arch.
+>>
+>> And I will put new patch in here and
+>> http://code.google.com/p/kgtp/downloads/list
+>>
+>> Thanks,
+>> Hui
+>>
+>> Signed-off-by: Hui Zhu <teawater@gmail.com>
 >> ---
->
-> Ok. So set the leftmost element with the help of rb_next() at the time of
-> deletion of existing leftmost element. Not sure whether it is cheaper or
-> not but does not harm doing it this way.
->
-> Have you tested it to make sure nothing is broken?
-
-Hm..if broken, we rush out and gnarl at Andrea Arcangeli as loud as we could.
-
-Thanks
-Hillf
->
-> Thanks
-> Vivek
->
+>> [...]
+>> +ifdef CONFIG_CC_CLOSE_OPTIMIZATION
+>> +CFLAGS_process_$(BITS).o       += -O2
+>> +CFLAGS_entry_$(BITS).o         += -O2
+>> +CFLAGS_traps.o                 += -O2
+>> +CFLAGS_i387.o                  += -O2
+>> +CFLAGS_xsave.o                 += -O2
+>> +CFLAGS_hpet.o                  += -O2
+>> +endif
 >>
->> --- a/block/blk-throttle.c Â  Â 2010-11-01 19:54:12.000000000 +0800
->> +++ b/block/blk-throttle.c Â  Â 2010-11-26 21:27:40.000000000 +0800
->> @@ -251,7 +251,7 @@ static void rb_erase_init(struct rb_node
->> Â static void throtl_rb_erase(struct rb_node *n, struct throtl_rb_root *root)
->> Â {
->> Â  Â  Â  if (root->left == n)
->> - Â  Â  Â  Â  Â  Â  root->left = NULL;
->> + Â  Â  Â  Â  Â  Â  root->left = rb_next(n);
->> Â  Â  Â  rb_erase_init(n, &root->rb);
->> Â  Â  Â  --root->count;
->> Â }
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at Â http://www.tux.org/lkml/
+>> [...]
+>>
+>> --- a/lib/Kconfig.debug
+>> +++ b/lib/Kconfig.debug
+>> @@ -136,6 +136,14 @@ config DEBUG_SECTION_MISMATCH
+>>          - Enable verbose reporting from modpost to help solving
+>>            the section mismatches reported.
+>>
+>> +config CC_CLOSE_OPTIMIZATION
+>> +       bool "Close GCC optimization"
+>> +       default n
+>> +       help
+>> +         Enabling this option will let gcc build kernel without "-O2".
+>> +
+>> +         If unsure, say N.
+>> +
+> You are not consistent with yourself, you add an option saying "do not
+> build the kernel with -O2" and yet, you add "-O2" flags for unknown
+> reason all over the tree...
 >
+>  - Arnaud
+>
+
+You are really good at English.  But not mathematics.
+
+Add -O2 to build 30 files is better than add -O2 to all files(who know
+how much files in Linux Kernel?).
+
+Thanks,
+Hui
