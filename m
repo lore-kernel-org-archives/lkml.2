@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab0LAJQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 04:16:49 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40229 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab0LAJQr (ORCPT
+	id S1751782Ab0LAJf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 04:35:28 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48403 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab0LAJf1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 04:16:47 -0500
+	Wed, 1 Dec 2010 04:35:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=iwp22QGSB9DZtnDO/t/eZ9xvGN5fKSJ92EoxICUSLLmaidPgeHXPD6OJPcKuakMvGA
-         qlOcYdGYMF4ovoJp8sHb0hWDTOK5A8EYt+cmvUDpv/ww4uBPyCbojRoUx3d10mP204k7
-         EXZ41EFn2AazK+bSgdpu4wMpZEy9JrL/6+RIY=
-Subject: [PATCH] ASoC: ak4535: Improve readability for setting mute
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Richard Purdie <richard@openedhand.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain
-Date: Wed, 01 Dec 2010 17:22:34 +0800
-Message-Id: <1291195354.5563.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uBCQUGEYQEujCzW5M7uSRlcvnluBMkKm+fsEwJCxeQJlAKhKwfMl55WTupptoBtCf3
+         2B3EfBfUoqvYjr4hH+2c5uhwgh6CzpHAOqKxUupjS9r+10aciX5A4LQtKYqPadnlpUgY
+         +RulAGT+HQTnFCb7M9BP6g6N6x4e0fAAtLqE0=
+MIME-Version: 1.0
+In-Reply-To: <20101201040628.GA5672@kroah.com>
+References: <1290515373-16145-1-git-send-email-marek.belisko@open-nandra.com>
+	<1290515373-16145-3-git-send-email-marek.belisko@open-nandra.com>
+	<4CEBC751.6090906@gmail.com>
+	<AANLkTimWb1KxhUph+bCELJ1nshnTScB1sU+hb=9CTceb@mail.gmail.com>
+	<4CEC3211.7050503@gmail.com>
+	<AANLkTin6Am=17wyMZJRu9bYk5-QTYqZhGtZqV_sDwJW4@mail.gmail.com>
+	<20101129194414.GB14086@kroah.com>
+	<AANLkTi=3Ut-fsLGAQ8MjZus4Q0U4weqsLXeOtjwOrHVJ@mail.gmail.com>
+	<20101201040628.GA5672@kroah.com>
+Date: Wed, 1 Dec 2010 10:35:25 +0100
+Message-ID: <AANLkTimNoTa9GChfDvTH96g_8NgtZFEZYuNOYCisvNvV@mail.gmail.com>
+Subject: Re: [PATCH 2/6] staging: ft1000: Use misc device instead self created device.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mute/unmute is controled by SMUTE (Soft Mute Control bit):
-        0: Normal Operation (Default)
-        1: DAC outputs soft-muted
+On Wed, Dec 1, 2010 at 5:06 AM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Nov 29, 2010 at 09:08:07PM +0100, Belisko Marek wrote:
+>> On Mon, Nov 29, 2010 at 8:44 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Wed, Nov 24, 2010 at 10:16:36AM +0100, Belisko Marek wrote:
+>> >> On Tue, Nov 23, 2010 at 10:28 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>> >> > On 11/23/2010 03:00 PM, Belisko Marek wrote:
+>> >> >> On Tue, Nov 23, 2010 at 2:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>> >> >>> On 11/23/2010 01:29 PM, Marek Belisko wrote:
+>> >> >>>> Use simple misc device for ioctl driver funtionality testing.
+>> >> >>>>
+>> >> >>>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>> >> >>>> ---
+>> >> >>>>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   90 ++++++++++++++++++---
+>> >> >>>>  1 files changed, 77 insertions(+), 13 deletions(-)
+>> >> >>>>
+>> >> >>>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>> >> >>>> index 1aec926..d1784a3 100644
+>> >> >>>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>> >> >>>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+>> >> >>>> @@ -32,6 +32,7 @@
+>> >> >>>>  #include <linux/poll.h>
+>> >> >>>>  #include <linux/netdevice.h>
+>> >> >>>>  #include <linux/delay.h>
+>> >> >>>> +#include <linux/miscdevice.h>
+>> >> >>>>
+>> >> >>>>  #include <linux/fs.h>
+>> >> >>>>  #include <linux/kmod.h>
+>> >> >>>> @@ -78,6 +79,47 @@ static struct file_operations ft1000fops =
+>> >> >>>>       .llseek         = no_llseek,
+>> >> >>>>  };
+>> >> >>>>
+>> >> >>>> +struct ft1000_misc_device {
+>> >> >>>> +     struct miscdevice dev;
+>> >> >>>> +     int inf_id;
+>> >> >>>> +};
+>> >> >>>> +
+>> >> >>>> +#define FREE_ID (0xFF)
+>> >> >>>> +
+>> >> >>>> +/* we support just 3 devices */
+>> >> >>>> +#define MAX_DEVICE 3
+>> >> >>>
+>> >> >>> No, why this should be converted to miscdevice? Leave it as chrdev.
+>> >> >> Is there any problem with using miscdev?
+>> >> >
+>> >> > Yes, if you want more than a single device per system.
+>> >> >
+>> >> >> Old interface create /dev nodes with
+>> >> >> calling kernel thread and some usermode_helper or whatever.
+>> >> >
+>> >> > Yes, that's crap indeed. But doesn't judge for miscdevice.
+>> >> >
+>> >> >> Just convert to misc dev
+>> >> >> where this is done automatically.
+>> >> >
+>> >> > So the only thing you need to do is to send a uevent to udev appropriately.
+>> >> Could be used something like:
+>> >> register_chrdev(0,"ft1000", &fops)
+>> >> class = class_create(THIS_MODULE, "ft1000");
+>> >> device_create(class, NULL, MKDEV(major, i), NULL, "ft1000%d", i);
+>> >> Then will be created different devices for every plugged device.
+>> >> This should have effect of automatic device node creation also suppose.
+>> >
+>> > Please don't create new classes.
+>> >
+>> > Is this a USB device?  If so, why not just use the USB major number?
+>> Yes it is USB device.
+>> > Just ask me and I can reserve you a USB minor number for your driver.
+>> Idea behind existing code is that for every plugged device you will have created
+>> /dev node. NUmber of devices was limited by number of plugged devices.
+>> But who will plug more
+>> then one device which just used for internet connection? So maybe I
+>> should implement some
+>> limit and would be nice if you could reserve me some USB minors (lest
+>> say max. 3 devices?).
+>
+> Send me a patch using the USB major number, and I'll add an additional
+> one that reserves the proper minor number for your driver.
+Patch sent (subject: [PATCH] staging: ft1000: Use usb device registration.)
+>
+> thanks,
+>
+> greg k-h
+>
 
-I think this change improves readability.
+thanks,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/ak4535.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+marek
 
-diff --git a/sound/soc/codecs/ak4535.c b/sound/soc/codecs/ak4535.c
-index 7367545..8b38739 100644
---- a/sound/soc/codecs/ak4535.c
-+++ b/sound/soc/codecs/ak4535.c
-@@ -366,9 +366,9 @@ static int ak4535_set_dai_fmt(struct snd_soc_dai *codec_dai,
- static int ak4535_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	u16 mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC) & 0xffdf;
-+	u16 mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
- 	if (!mute)
--		ak4535_write(codec, AK4535_DAC, mute_reg);
-+		ak4535_write(codec, AK4535_DAC, mute_reg & ~0x20);
- 	else
- 		ak4535_write(codec, AK4535_DAC, mute_reg | 0x20);
- 	return 0;
-@@ -381,11 +381,11 @@ static int ak4535_set_bias_level(struct snd_soc_codec *codec,
- 
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
--		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC) & 0xffdf;
--		ak4535_write(codec, AK4535_DAC, mute_reg);
-+		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
-+		ak4535_write(codec, AK4535_DAC, mute_reg & ~0x20);
- 		break;
- 	case SND_SOC_BIAS_PREPARE:
--		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC) & 0xffdf;
-+		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
- 		ak4535_write(codec, AK4535_DAC, mute_reg | 0x20);
- 		break;
- 	case SND_SOC_BIAS_STANDBY:
 -- 
-1.7.2
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-
-
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
