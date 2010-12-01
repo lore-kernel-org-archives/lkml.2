@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab0LAKvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:51:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:61382 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab0LAKva (ORCPT
+	id S1754723Ab0LAKz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 05:55:28 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34757 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab0LAKz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:51:30 -0500
-From: Bernhard Walle <walle@corscience.de>
-To: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] spi: spidev: Add 32 bit compat ioctl()
-Date: Wed,  1 Dec 2010 11:51:14 +0100
-Message-Id: <1291200674-25630-1-git-send-email-walle@corscience.de>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V02:K0:D21LUfa0isaUmUnzlsUzHllBlIGxUJCICPkEIokv7Lb
- kyqvIsjv3ahYkjwMywzfgLYXwbOM3f1oYKGLLkP9xhXSgg1bX4
- yfcSCpfg6bvfFAB5RSXthcIesEkRjwWfzvUI6iJEY0/SGNaH9D
- wyL1WvkG3YGHf/NzSDrKCSVXmiyoMP5HJEhWr4nICyc4oiM5tX
- 58ca5uM7TmtJGe9xFa4Tw==
+	Wed, 1 Dec 2010 05:55:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cx6x5UPofkdnwcjDGEKJxU9s9Z/PVCVqDviVIN6hAkkyb5VPpbSG3kte56QWI+N4iY
+         8BdoNIMCNBh5ppDVYjORZom/kJwQ3dd0l+Xwpi8CY60PwLME0VPlbhfGlpBQz1KH1a4K
+         BdzriOKNd7hAk0OH1DfB4AP3UYuTAM1faRH1E=
+Subject: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Michael Leun <lkml20101129@newton.leun.net>,
+        David Miller <davem@davemloft.net>
+Cc: Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Gross <jesse@nicira.com>,
+        stable@kernel.org
+In-Reply-To: <20101201111716.424fb771@xenia.leun.net>
+References: <20101129201716.1d0257c4@xenia.leun.net>
+	 <4CF442FA.4070701@candelatech.com> <20101130095944.41b5f7b6@xenia.leun.net>
+	 <1291108809.2904.3.camel@edumazet-laptop>
+	 <20101201111716.424fb771@xenia.leun.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 11:55:14 +0100
+Message-ID: <1291200914.2856.546.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the compat_ioctl for operations on /dev/spi* so that 32 bit
-userspace applications can access SPI. As far as I can see all data
-structure are already prepared for that, so no additional conversion has
-to be done.
+Le mercredi 01 décembre 2010 à 11:17 +0100, Michael Leun a écrit :
 
-My use case is MIPS with N32 userspace ABI and toolchain, and that was
-also the platform where I tested it successfully (Cavium Octeon).
+> Yup, from what I've tested this works (and tcpdump sees broadcast
+> packets even for vlans not configured at the moment including vlan tag
+> - yipee!).
+> 
 
-Signed-off-by: Bernhard Walle <walle@corscience.de>
+Thanks Michael !
+
+Here is the revised patch again then for stable team, via David Miller
+agreement.
+
+
+[PATCH v2 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used.
+
+Normally hardware accelerated vlan packets are quickly dropped if
+there is no corresponding vlan device configured.  The one exception
+is promiscuous mode, where we allow all of these packets through so
+they can be picked up by tcpdump.  However, this behavior causes a
+crash if we actually try to receive these packets.  This fixes that
+crash by ignoring packets with vids not corresponding to a configured
+device in the vlan hwaccel routines and then dropping them before they
+get to consumers in the network stack.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Jesse Gross <jesse@nicira.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Michael Leun <lkml20101129@newton.leun.net>
 ---
- drivers/spi/spidev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+v2: survives to tcpdump :)
 
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index ea1bec3..d3d1155 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -543,6 +543,7 @@ static const struct file_operations spidev_fops = {
- 	.write =	spidev_write,
- 	.read =		spidev_read,
- 	.unlocked_ioctl = spidev_ioctl,
-+	.compat_ioctl = spidev_ioctl,
- 	.open =		spidev_open,
- 	.release =	spidev_release,
- };
--- 
-1.7.1
+ net/core/dev.c        |   10 ++++++++++
+ net/8021q/vlan_core.c |    3 +++
+ 2 files changed, 13 insertions(+)
+
+--- linux-2.6.36/net/core/dev.c.orig
++++ linux-2.6.36/net/core/dev.c
+@@ -2891,6 +2891,15 @@
+ ncls:
+ #endif
+ 
++	/* If we got this far with a hardware accelerated VLAN tag, it means
++	 * that we were put in promiscuous mode but nobody is interested in
++	 * this vid. Drop the packet now to prevent it from getting propagated
++	 * to other parts of the stack that won't know how to deal with packets
++	 * tagged in this manner.
++	 */
++	if (unlikely(vlan_tx_tag_present(skb)))
++		goto bypass;
++
+ 	/* Handle special case of bridge or macvlan */
+ 	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+@@ -2927,6 +2936,7 @@
+ 		}
+ 	}
+ 
++bypass:
+ 	if (pt_prev) {
+ 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+ 	} else {
+--- linux-2.6.36/net/8021q/vlan_core.c.orig
++++ linux-2.6.36/net/8021q/vlan_core.c
+@@ -43,6 +43,9 @@
+ 	struct net_device *dev = skb->dev;
+ 	struct vlan_rx_stats     *rx_stats;
+ 
++	if (unlikely(!is_vlan_dev(dev)))
++		return 0;
++
+ 	skb->dev = vlan_dev_info(dev)->real_dev;
+ 	netif_nit_deliver(skb);
+ 
+
 
