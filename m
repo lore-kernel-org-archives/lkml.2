@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab0LAWno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 17:43:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40716 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752366Ab0LAWnn (ORCPT
+	id S1756567Ab0LAWnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 17:43:55 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:29718 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab0LAWnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 17:43:43 -0500
-Date: Wed, 1 Dec 2010 14:43:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 1 Dec 2010 17:43:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=OV2h5Q/m31k915ZzuVIhp0lgezTeUpoXW8QBMHM07Ah7KVh3OQaw3Fn8wt7TxxWtqv
+         5S+nazofSYadtuwEbnzw==
+Date: Wed, 1 Dec 2010 14:43:42 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Piggin <npiggin@kernel.dk>,
         Nick Bowler <nbowler@elliptictech.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
 Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-Message-Id: <20101201144314.6a827f8d.akpm@linux-foundation.org>
-In-Reply-To: <20101202082913.7cb98444@notabene.brown>
-References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
-	<20101201150428.GA2879@elliptictech.com>
-	<1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
-	<1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
-	<AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
-	<1291229669.6609.24.camel@heimdal.trondhjem.org>
-	<alpine.LSU.2.00.1012011058560.16407@tigran.mtv.corp.google.com>
-	<1291233938.6609.37.camel@heimdal.trondhjem.org>
-	<20101201123929.ab7cef1d.akpm@linux-foundation.org>
-	<20101202082913.7cb98444@notabene.brown>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1012011436250.20449@tigran.mtv.corp.google.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com> <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com> <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com> <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com> <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+ <1291234251.6609.39.camel@heimdal.trondhjem.org> <20101201123341.d12ef362.akpm@linux-foundation.org> <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com> <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+ <20101201133831.ea6ba10a.akpm@linux-foundation.org> <1291240272.6609.50.camel@heimdal.trondhjem.org> <20101201141351.8609140b.akpm@linux-foundation.org> <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Dec 2010 08:29:13 +1100
-Neil Brown <neilb@suse.de> wrote:
-
-> > > 
-> > > However, while reading Documentation/filesystems/vfs.txt (in order to
-> > > add documentation for freepage) I was surprised to read that the
-> > > ->releasepage() is itself supposed to be allowed to actually remove the
-> > > page from the address space if it so desires.
-> > 
-> > That doesn't sound right.  It came from Neil in 2006.
-> > 
-> > Neil, what were you thinking there?   Did you find such a ->releasepage()?
+On Wed, 1 Dec 2010, Linus Torvalds wrote:
+> On Wed, Dec 1, 2010 at 2:13 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Wed, 01 Dec 2010 16:51:12 -0500
+> > Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> >
+> >> On Wed, 2010-12-01 at 13:38 -0800, Andrew Morton wrote:
+> >> > Probably on most call paths we'll be OK - if a process is in the middle
+> >> > of a file truncate, holdin a file* ref which holds an inode ref then
+> >> > nobody will be unmounting that fs and hence nobody will be unloading
+> >> > that module.
+> >> >
+> >> > However on the random_code->alloc_page->vmscan->releasepage path, none
+> >> > of that applies.
+> >>
+> >> Just out of interest, what ensures that the mapping is still around for
+> >> the 'spin_unlock_irq(&mapping->tree_lock);' in __remove_mapping()?
+> >
+> > Nothing, afacit.
 > 
-> Nope, no idea, sorry.
+> No, we're good.
 > 
-> No releasepage functions do anything like that, and no call sites suggest it
-> could be a possibility.  Quite the reverse - they are likely to remove the
-> page from the mapping without checking that it is still in the mapping.
+> Module unload has to go through a "stop_machine()" cycle, and that in
+> turn requires an idle period for everything. And just a preemption
+> reschedule isn't enough for that.
 > 
-> So that sentence should be deleted.
+> So what is sufficient is that
+> 
+>  - we had the page locked and on the mapping
+> 
+>    This implies that we had an inode reference to the module, and the
+> page lock means that the inode reference cannot go away (because it
+> will involve invalidate-pages etc)
 
-This?
+I'm not so sure of that: doesn't it test inode->i_data.nrpages in
+various places, and skip ahead if that is already 0?  I don't see
+the necessary serialization when nrpages comes down to 0.
 
-From: Andrew Morton <akpm@linux-foundation.org>
+> 
+>  - we're not sleeping after __remove_mapping, so unload can't happen afterwards.
+> 
+> A _lot_ of the module races depend on that latter thing. We have
+> almost no cases that are strictly about actual reference counts etc.
 
-->releasepage() does not remove the page from the mapping.
+Okay, I'm reassured on my module unload point; but not on the
+question of safety of spin_unlock_irq(&mapping->tree_lock)
+which Trond lobbed back in return.
 
-Cc: Neil Brown <neilb@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- Documentation/filesystems/vfs.txt |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff -puN Documentation/filesystems/vfs.txt~documentation-filesystems-vfstxt-fix-repeasepage-description Documentation/filesystems/vfs.txt
---- a/Documentation/filesystems/vfs.txt~documentation-filesystems-vfstxt-fix-repeasepage-description
-+++ a/Documentation/filesystems/vfs.txt
-@@ -660,11 +660,10 @@ struct address_space_operations {
-   releasepage: releasepage is called on PagePrivate pages to indicate
-         that the page should be freed if possible.  ->releasepage
-         should remove any private data from the page and clear the
--        PagePrivate flag.  It may also remove the page from the
--        address_space.  If this fails for some reason, it may indicate
--        failure with a 0 return value.
--	This is used in two distinct though related cases.  The first
--        is when the VM finds a clean page with no active users and
-+        PagePrivate flag. If releasepage() fails for some reason, it must
-+	indicate failure with a 0 return value.
-+	releasepage() is used in two distinct though related cases.  The
-+	first is when the VM finds a clean page with no active users and
-         wants to make it a free page.  If ->releasepage succeeds, the
-         page will be removed from the address_space and become free.
- 
-_
-
+Hugh
