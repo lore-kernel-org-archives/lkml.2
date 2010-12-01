@@ -1,227 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab0LAMw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 07:52:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:29722 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab0LAMw0 convert rfc822-to-8bit (ORCPT
+	id S1755051Ab0LAMwr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 07:52:47 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59066 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab0LAMwq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 07:52:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,283,1288594800"; 
-   d="scan'208,223";a="579446057"
-Date: Wed, 1 Dec 2010 20:49:21 +0800
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, arjan@linux.intel.com,
-        alan@linux.intel.com, akpm@linux-foundation.org
-Subject: [PATCH v4 2/4]add two new callback to help implement HW reset
-Message-ID: <20101201124921.GC5421@intel.com>
-Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+	Wed, 1 Dec 2010 07:52:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=lfWNTVUnS0Y2ZfhfVZEvlxwXCXw0oszgmrPXHpPhd0XzY+8o9Xw/uiw61+bewwKunb
+         qfKBOwwm/n7Am1d2LqyDk4hJ9sj9P/qBgm2KgynnOSlsjfaSbnwqIek4zn6zD13mtN1Y
+         VaoVapZ1AFJ6lWQS5uVAJJ3MbtwpZyTpdXV1w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <87r5e4lab7.fsf@basil.nowhere.org>
+References: <AANLkTimewZ4QhxzL2vOYYV85pegy8Fu6Rb4XUAPqGUXS@mail.gmail.com> <87r5e4lab7.fsf@basil.nowhere.org>
+From: Hui Zhu <teawater@gmail.com>
+Date: Wed, 1 Dec 2010 20:52:16 +0800
+Message-ID: <AANLkTimwnKamJ+UBO1CCn9Hb3PWGgFmC1c0iQr_KeyzO@mail.gmail.com>
+Subject: Re: [PATCH] Built kernel without -O2 option
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, gdb@sourceware.org, hellogcc@freelists.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From af18430a90d1a7a42495e6924f1d60b0cf69e20b Mon Sep 17 00:00:00 2001
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Date: Wed, 1 Dec 2010 20:14:22 +0800
-Subject: [PATCH 2/4] add two new callback to use HW reset feature
+On Mon, Nov 29, 2010 at 17:59, Andi Kleen <andi@firstfloor.org> wrote:
+> Hui Zhu <teawater@gmail.com> writes:
+>
+>> Now, there are a lot of ways to debug the Linux kernel with GDB, like
+>> qemu, kgtp or kgdb and so on.
+>> But the developer more like add a printk. It have a lot of reason, a big one is:
+>> (gdb) p ret
+>> $3 = <value optimized out>
+>> And the code execution order is not right.
+>
+> Really the right place to fix a lot of this would be gcc (and perhaps
+> gdb). I suspect with some careful work the debugging experience
+> for -O2 could be improved a lot.
+> I also believe the latest gccs already have improvements in this area.
+>
 
-HW reset will reset eMMC card. So after reset, card should
-also be reinitialized. Add two new callbacks to implement
-reset and reinitialize. MMC core layer will check whether
-occures a timeout error in the new added routine
-mmc_handle_timeout_error
+If you think they are OK, go get a new gcc and try.  :)
 
-mmc_handle_timeout_error: check whether occures a timeout error.
-If occures, use HW reset callbacks to do reset and reinitialize
+>>
+>> This is becuase the Kernel is bult with gcc -O2.  Gcc will not
+>> generate enough debug message with file with -O2.
+>> So GDB cannot work very well with Linux kernel.
+>>
+>> So I make a patch that add a option in "Kernel hacking" called "Close
+>> GCC optimization".  It will make kernel be built without -O2.
+>
+>
+> You need to at least keep aggressive inlining for header files,
+> otherwise there will be too much code bloat and bad code.
+>
+> Like -O1 -finline-functions ?
+>
 
-hardware_reset: trigger a RST_n signal for host to reset card.
-This callback was just defined in header file, not implemented in
-this patch.
+If I can build OK, why I need add some options?
 
-Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
----
- drivers/mmc/core/core.c  |   45 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/core.h  |    9 +++++++++
- drivers/mmc/core/mmc.c   |   31 +++++++++++++++++++++++++++++++
- include/linux/mmc/core.h |    1 +
- include/linux/mmc/host.h |   13 +++++++++++++
- 5 files changed, 99 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 6286898..530fc35 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -82,6 +82,51 @@ static void mmc_flush_scheduled_work(void)
- }
- 
- /**
-+ *	mmc_handle_timeout_error - handle command and data timeout
-+ *	errors.
-+ *	@host: MMC host used to handle error
-+ *	@error: error condition
-+ *
-+ *	check whether there is a command or data timeout error occured,
-+ *	if so, reset and reinit eMMC card if card has such capbility.
-+ *	1. let host controller do a specific hardware reset for eMMC
-+ *	   card (trigger RST_n signal).
-+ *	2. after reset done, reinit eMMC card.
-+ */
-+void mmc_handle_timeout_error(struct mmc_host *host, int error)
-+{
-+	struct mmc_card *card = host->card;
-+
-+	/*
-+	 * If error condition is not timeout, do nothing
-+	 */
-+	if (error != -ETIMEDOUT)
-+		return;
-+	/*
-+	 * make sure mmc_reqeust is not NULL
-+	 * make sure mmc_card has HW reset capbility
-+	 */
-+	if (!card || !card->ext_csd.rst)
-+		return;
-+
-+	/* check whether host has such callback */
-+	if (!host->ops->hardware_reset ||
-+			!host->bus_ops->reinit)
-+		return;
-+
-+	/*
-+	 * if there occurs any timeout error, HW reset
-+	 * eMMC card and reinit again.
-+	 */
-+	if (host->ops->hardware_reset(host))
-+		pr_warn("MMC card reset failed\n");
-+	else
-+		if (host->bus_ops->reinit(host))
-+			pr_warn("MMC card reinit failed\n");
-+}
-+EXPORT_SYMBOL(mmc_handle_timeout_error);
-+
-+/**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-  *	@mrq: MMC request which request
-diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
-index 026c975..4980e2f 100644
---- a/drivers/mmc/core/core.h
-+++ b/drivers/mmc/core/core.h
-@@ -24,6 +24,15 @@ struct mmc_bus_ops {
- 	int (*resume)(struct mmc_host *);
- 	int (*power_save)(struct mmc_host *);
- 	int (*power_restore)(struct mmc_host *);
-+	/*
-+	 * New added callback
-+	 * Used to reinit card when HW reset occurs
-+	 *
-+	 * return value:
-+	 * 0: successfully reinit card.
-+	 * negative value: failed to reinit
-+	 */
-+	int (*reinit)(struct mmc_host *);
- };
- 
- void mmc_attach_bus(struct mmc_host *host, const struct mmc_bus_ops *ops);
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 85cc7f6..bc4611a 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -732,6 +732,35 @@ static int mmc_awake(struct mmc_host *host)
- 	return err;
- }
- 
-+/**
-+ * mmc_reinit_card - reinitialize card after HW reset
-+ *
-+ * this callback is used to reinitialize card after a HW
-+ * reset occurs.
-+ * Reture value:
-+ * 0: successfully reinitialize
-+ * other: failed to reinitialize
-+ *
-+ * claim_host should be called before using this callback.
-+ */
-+static int mmc_reinit_card(struct mmc_host *host)
-+{
-+	int err;
-+	/*
-+	 * Before init card, set the clock to be
-+	 * the init frequency
-+	 */
-+	host->ios.clock = host->f_init;
-+	mmc_set_clock(host, host->ios.clock);
-+
-+	err = mmc_init_card(host, host->ocr, host->card);
-+	if (err)
-+		pr_err("%s: Error %d while reinit card\n",
-+				mmc_hostname(host), err);
-+
-+	return err;
-+}
-+
- static const struct mmc_bus_ops mmc_ops = {
- 	.awake = mmc_awake,
- 	.sleep = mmc_sleep,
-@@ -740,6 +769,7 @@ static const struct mmc_bus_ops mmc_ops = {
- 	.suspend = NULL,
- 	.resume = NULL,
- 	.power_restore = mmc_power_restore,
-+	.reinit = mmc_reinit_card,
- };
- 
- static const struct mmc_bus_ops mmc_ops_unsafe = {
-@@ -750,6 +780,7 @@ static const struct mmc_bus_ops mmc_ops_unsafe = {
- 	.suspend = mmc_suspend,
- 	.resume = mmc_resume,
- 	.power_restore = mmc_power_restore,
-+	.reinit = mmc_reinit_card,
- };
- 
- static void mmc_attach_bus_ops(struct mmc_host *host)
-diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
-index 64e013f..115d589 100644
---- a/include/linux/mmc/core.h
-+++ b/include/linux/mmc/core.h
-@@ -131,6 +131,7 @@ struct mmc_request {
- struct mmc_host;
- struct mmc_card;
- 
-+extern void mmc_handle_timeout_error(struct mmc_host *, int);
- extern void mmc_wait_for_req(struct mmc_host *, struct mmc_request *);
- extern int mmc_wait_for_cmd(struct mmc_host *, struct mmc_command *, int);
- extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 381c77f..3a7008d 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -117,6 +117,19 @@ struct mmc_host_ops {
- 
- 	/* optional callback for HC quirks */
- 	void	(*init_card)(struct mmc_host *host, struct mmc_card *card);
-+
-+	/*
-+	 * eMMC4.4 HW reset feature callback
-+	 *
-+	 * eMMC4.4 card can be reset if host triggers a RST_n signal
-+	 * This callback will be used to for host to trigger such
-+	 * signal.
-+	 *
-+	 * return value:
-+	 * 0: successfully reset the eMMC card.
-+	 * -ENODEV: no valid hardware to do so.
-+	 */
-+	int (*hardware_reset)(struct mmc_host *host);
- };
- 
- struct mmc_card;
--- 
-1.6.6.1
-
+Thanks,
+Hui
