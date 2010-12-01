@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab0LAROu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 12:14:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36143 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab0LAROs (ORCPT
+	id S1755320Ab0LARQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 12:16:13 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:37474 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab0LARQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 12:14:48 -0500
-Date: Wed, 1 Dec 2010 17:14:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Caudle <scaudle@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        adharmap@codeaurora.org, linux-kernel@vger.kernel.org, miltonm@bga.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] [ARM] gic: Unmask private interrupts on all cores
-	during IRQ enable
-Message-ID: <20101201171425.GA29347@n2100.arm.linux.org.uk>
-References: <1288820762-16077-1-git-send-email-scaudle@codeaurora.org> <20101130180718.GB8521@n2100.arm.linux.org.uk> <4CF6797A.2010807@codeaurora.org>
-MIME-Version: 1.0
+	Wed, 1 Dec 2010 12:16:12 -0500
+Date: Wed, 1 Dec 2010 11:16:07 -0600
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, hplk@lists.hp.com
+Subject: [PATCH 1/1] hpsa: fix redefinition of PCI_DEVICE_ID_CISSF
+Message-ID: <20101201171607.GA17943@beardog.cce.hp.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CF6797A.2010807@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 11:36:10AM -0500, Stephen Caudle wrote:
-> On 11/30/2010 01:07 PM, Russell King - ARM Linux wrote:
->> Sorry, missed this.
->>
->> If it's a private peripheral, it can only be accessed from its associated
->> CPU.  What that means is you don't want to enable the interrupt on other
->> CPUs as the peripheral may not be present or initialized on that CPU.
->
-> Understood.  But the alternative is to require all code that requests a  
-> PPI to have to enable the IRQ on the other cores.  This seems  
-> unreasonable to me.
+Patch 1 of 1
 
-It is also unreasonable to have one core enabling the PPI on other
-cores where the hardware behind the interrupt may not have been
-initialized yet.  If it is a private interrupt for a private peripheral,
-then only the associated CPU should be enabling that interrupt.
+hpsa: a pci device ID is defined twice
 
-I guess this is something which genirq can't cope with, in which case
-either genirq needs to be modified to cope with private CPU interrupts,
-which are controlled individually by their associated CPU, or we need a
-private interface to support this.
+From: Mike Miller <mike.miller@hp.com>
+
+PCI_DEVICE_ID_CISSF is defined as 323b in pci_ids.h but redefined as 3fff in
+hpsa.c. The ID of 3fff will _never_ ship as a standalone controller. It is
+intended only as part a complete storage solution. As such, this patch
+removes the redefinition and the StorageWorks P1210m from the product table.
+
+It also removes a duplicate line for the "unknown" controller support.
+---
+ drivers/scsi/hpsa.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index b2fb2b2..a6dea08 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -90,11 +90,7 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
+-#define PCI_DEVICE_ID_HP_CISSF 0x333f
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x333F},
+-	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,             PCI_ANY_ID, PCI_ANY_ID,
+-		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+-	{PCI_VENDOR_ID_COMPAQ,     PCI_ANY_ID,             PCI_ANY_ID, PCI_ANY_ID,
++	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+ };
+@@ -113,8 +109,6 @@ static struct board_type products[] = {
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+ 	{0x324a103C, "Smart Array P712m", &SA5_access},
+ 	{0x324b103C, "Smart Array P711m", &SA5_access},
+-	{0x3233103C, "StorageWorks P1210m", &SA5_access},
+-	{0x333F103C, "StorageWorks P1210m", &SA5_access},
+ 	{0x3250103C, "Smart Array", &SA5_access},
+ 	{0x3250113C, "Smart Array", &SA5_access},
+ 	{0x3250123C, "Smart Array", &SA5_access},
