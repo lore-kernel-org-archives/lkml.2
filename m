@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab0LAQhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:37:18 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:49021 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754001Ab0LAQhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:37:17 -0500
-X-Authenticated: #1587495
-X-Provags-ID: V01U2FsdGVkX19+hkdeYdB+gnYGX3g3JYMx0hk1kCf9IUb0sXjk77
-	ZLyX4vt2eae4Zy
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Subject: Re: [PATCH] net/r8169: Remove the firmware of RTL8111D
-Date: Wed, 1 Dec 2010 17:36:55 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-1.slh.2-aptosid-686; KDE/4.4.5; i686; ; )
-Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-References: <1291180966-3124-1-git-send-email-hayeswang@realtek.com> <20101201080732.GA3234@electric-eye.fr.zoreil.com>
-In-Reply-To: <20101201080732.GA3234@electric-eye.fr.zoreil.com>
+	id S1755240Ab0LAQmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:42:07 -0500
+Received: from catholic.ebb.org ([67.207.139.67]:54807 "EHLO catholic.ebb.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755178Ab0LAQmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 11:42:05 -0500
+X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 11:42:05 EST
+From: "Bradley M. Kuhn" <bkuhn@ebb.org>
+To: david@lang.hm
+Cc: Pavel Machek <pavel@ucw.cz>, "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "Perez-Gonzalez\, Inaky" <inaky.perez-gonzalez@intel.com>,
+        Charles Marker <Charles.Marker@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
+        Don Breslin <Don.Breslin@atheros.com>,
+        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
+Subject: Re: Challenges with doing hardware bring up with Linux first
+Organization: Opinions expressed in this email are my own and are not necessarily those of any organization with which I have an affiliation.
+References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
+	<20101118113441.74fcdc21@lxorguk.ukuu.org.uk>
+	<AANLkTikOZbtyhsk0OBb4OdUi6qj-7k_hU-aW_Pkhfpq0@mail.gmail.com>
+	<20101130192648.GA1623@ucw.cz>
+	<AANLkTinMyAeVJJc7Lc-vt_Ywr+vcSf-GAiQwggTGbqh8@mail.gmail.com>
+	<20101130200019.GA28735@elf.ucw.cz>
+	<alpine.DEB.2.00.1011301209090.423@asgard.lang.hm>
+X-No-Archive: yes
+X-Disclaimer: Opinions expressed in this email are my own and are not necessarily those of any organization with which I have an affiliation.
+X-Archive: no
+Date: Wed, 01 Dec 2010 11:02:52 -0500
+In-Reply-To: <alpine.DEB.2.00.1011301209090.423@asgard.lang.hm>
+	(david@lang.hm's message of "Tue, 30 Nov 2010 12:13:05 -0800 (PST)")
+Message-ID: <87hbex1nwz.fsf@ebb.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012011736.59625.s.L-H@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+I assume someone started cc'ing me on this thread to get my opinion as a
+non-lawyer GPL geek.
 
-On Wednesday 01 December 2010, Francois Romieu wrote:
-> Hayes Wang <hayeswang@realtek.com> :
-> > Remove the firmware of RTL8111D from the kernel.
-> > The binary file of firmware would be moved to linux-firmware repository.
-> 
-> The driver can not simply go along when request_firmware fails. Though Ben's
-> code did not take care of it, the driver should imho propagate some return
-> code. Ben ?
-[...]
+david@lang.hm wrote:
+> However, there are quite a few files in the kernel that are BSD
+> licensed, when combined with other GPL code, the only way you can
+> re-distribute the result is under the GPL, so it is effectivly
+> 'converted' when you compile, but by leaving the file BSD,
+> improvements to it can be shared back with the original authors and
+> put into their main codebase, so it's actually more polite to leave
+> the license as-is for this file.
 
-At least for RTL8111D-1 (rtl8168d_1_hw_phy_config(), phy_reg_init_2[])
-a missing firmware update doesn't seem to be fatal
-	http://bugs.debian.org/561309#45
-
-I'm running that card (onboard of the Intel D945GSEJT mainboard), with
-rtl8168d_1_hw_phy_config()/ phy_reg_init_2[] stripped out, without any 
-noticable issues for about a year as always-on home server and good 
-GBit/s performance.
-
-[    3.861378] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
-[    3.861462] r8169 0000:01:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[    3.861575] r8169 0000:01:00.0: setting latency timer to 64
-[    3.861703] r8169 0000:01:00.0: irq 45 for MSI/MSI-X
-[    3.865188] r8169 0000:01:00.0: eth0: RTL8168d/8111d at 0xf8406000, 00:1c:c0:ee:22:88, XID 081000c0 IRQ 45
-
-using Debian's firmware removal patch and without the required firmware
-image being present
-[    3.870663] eth0: unable to apply firmware patch
-
-[   16.364231] r8169 0000:01:00.0: eth0: link up
-[   26.562069] eth0: no IPv6 routers present
-
-Debian has been shipping (unstable and a little later squeeze, the 
-upcoming stable) kernels with this firmware stripped out since late 
-december 2009.
-
-Therefore I'd think it's safe to just make some noise about missing 
-firmware images and not cease operations completely for this chipset.
-
-Regards
-	Stefan Lippers-Hollmann
+FWIW, I agree more or less completely with the above.  I think the
+implications are the same for ISC as well, as Luis points out elsewhere
+in the thread.
+-- 
+   -- bkuhn
