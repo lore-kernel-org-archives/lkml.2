@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab0LAOuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 09:50:14 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:21565 "EHLO mx2.netapp.com"
+	id S1752940Ab0LAOz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 09:55:56 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:57843 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752345Ab0LAOuM convert rfc822-to-8bit (ORCPT
+	id S1752043Ab0LAOzz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 09:50:12 -0500
+	Wed, 1 Dec 2010 09:55:55 -0500
 X-IronPort-AV: E=Sophos;i="4.59,283,1288594800"; 
-   d="scan'208";a="489483851"
+   d="scan'208";a="489486784"
 Subject: Re: [PATCH 2/3] NFS: lock the readdir page while it is in use
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-nfs@vger.kernel.org
-In-Reply-To: <AANLkTi=p8mF2=G8TPi7TciEYS8cyDNp8OG+ksrF7b-vf@mail.gmail.com>
+In-Reply-To: <4CF64A34.7070100@redhat.com>
 References: <1291175234-23824-1-git-send-email-Trond.Myklebust@netapp.com>
 	 <AANLkTimg+4EYfYnKqNsoOpvCcDs+Pb=FB+arb4NvFpx_@mail.gmail.com>
 	 <1291175234-23824-2-git-send-email-Trond.Myklebust@netapp.com>
 	 <1291175234-23824-3-git-send-email-Trond.Myklebust@netapp.com>
 	 <AANLkTin8FSeM8cQ8BWYWjiyGy33EwzpMfFwauK+4j0uT@mail.gmail.com>
 	 <1291177753.7694.17.camel@heimdal.trondhjem.org>
-	 <AANLkTi=p8mF2=G8TPi7TciEYS8cyDNp8OG+ksrF7b-vf@mail.gmail.com>
+	 <4CF64A34.7070100@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 09:49:55 -0500
-Message-ID: <1291214995.6609.10.camel@heimdal.trondhjem.org>
+Date: Wed, 01 Dec 2010 09:55:53 -0500
+Message-ID: <1291215353.6609.15.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Dec 2010 14:49:57.0043 (UTC) FILETIME=[0584A830:01CB9167]
+X-OriginalArrivalTime: 01 Dec 2010 14:55:54.0589 (UTC) FILETIME=[DAA1D8D0:01CB9167]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-30 at 21:06 -0800, Linus Torvalds wrote:
-> On Tue, Nov 30, 2010 at 8:29 PM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
+On Wed, 2010-12-01 at 08:14 -0500, Rik van Riel wrote:
+> On 11/30/2010 11:29 PM, Trond Myklebust wrote:
+> 
 > > I'm not worried about other readdir calls invalidating the page. My
 > > concern is rather about the VM memory reclaimers ejecting the page from
 > > the page cache, and calling nfs_readdir_clear_array while we're
 > > referencing the page.
 > 
-> I think you're making a fundamental mistake here, and you're confused
-> by a much deeper problem.
-> 
-> The thing is, the ".releasepage" callback gets called _before_ the
-> page actually gets removed from the page cache, and there is no
-> guarantee that it will always be removed at all!
-> 
-> In fact, anybody holding a reference to it will result in
-> page_freeze_refs() not successfully clearing all the refs, and that in
-> turn will abort the actual freeing of the page. So while you hold the
-> page count, your page will NOT be freed. Guaranteed.
-> 
-> But it is true that the ".releasepage()" function may be called. So if
-> your NFS release callback ends up invalidating the data on that page,
-> that page lock thing will make a difference, yes.
-> 
-> But at the same time, are you sure that you are able to then handle
-> the case of that page still existing in the page cache and being used
-> afterwards? Looking at the code, it doesn't look that way to me.
-> 
-> So I think you're confused, and the NFS code totally incorrectly
-> thinks that ".releasepage" is something that happens at the last use
-> of the page. It simply is not so. In fact, you seem to return 0, which
-> I think means "failure to release", so the VM will just mark it busy
-> again afterwards.
-> 
-> Now, I think you do have a few options:
-> 
->  - keep the current model. BUT! In the page cache release function
-> (nfs_readdir_clear_array), make sure that you also clear the
-> up-to-date bit, so that the page gets read back in since it no longer
-> contains any valid information. And return success for the
-> "releasepage" operatioin.
+> Wait, if nfs_readdir_clear_array can clear the page while
+> somebody else has a refcount to it, what good is the
+> refcount?
 
-This is the option I'm attempting for now. I'm quite fine with the page
-only being readable while under the page lock since this is readdir, and
-so we don't have to worry about mmap() and its ilk.
+Hi Rik
 
-My latest incarnation of the patches has added in all the PagePrivate()
-foo to make try_to_release_page() work, and also adds in an
-invalidatepage() address space operation (I rediscovered that
-truncate_inode_pages() will otherwise call block_invalidatepage, and
-subsequently Oops).
+This is readdir, so there should normally be only one process accessing
+the page. If that process locks it (we don't have mmap() to worry about,
+so page locking is reasonable here) then the scheme is safe.
 
-I'm still in the process of testing, but the latest patchset appears to
-be doing all the right things for now. I'll post an update later today
-so that Nick and others can test too.
+Note that we do clear Pg_uptodate under the page lock in the latest
+version of the releasepage method (patches to be published later today
+after I finish testing).
+
+> Why is your .releasepage modifying the data on the page,
+> instead of just the metadata in the struct page?
+
+We want to be able to free up the data that is referenced by the array
+on the page before the page itself is freed. 
 
 Cheers
   Trond
+
 -- 
 Trond Myklebust
 Linux NFS client maintainer
