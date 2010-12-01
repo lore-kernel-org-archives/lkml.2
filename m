@@ -1,315 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab0LACeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Nov 2010 21:34:05 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:34473 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754024Ab0LACeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Nov 2010 21:34:03 -0500
-Date: Wed, 1 Dec 2010 13:33:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for December 1
-Message-Id: <20101201133354.a7c198b1.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754045Ab0LACnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Nov 2010 21:43:07 -0500
+Received: from eastrmmtao103.cox.net ([68.230.240.9]:64511 "EHLO
+	eastrmmtao103.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab0LACnG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Nov 2010 21:43:06 -0500
+X-VR-Score: -235.00
+X-Authority-Analysis: v=1.1 cv=f2Wgv+KVwlvowBhtJCNWyh9ERg7KylIyDx2PcquLkk4=
+ c=1 sm=1 a=8nJEP1OIZ-IA:10 a=PNuEMszh5xg2EB3JV8u8OQ==:17 a=pGLkceISAAAA:8
+ a=iE-e0aDHAAAA:8 a=i4umUFy8n_ICKVjxqz8A:9 a=GwSF5JYlSIlJIn0SI7MA:7
+ a=tSdps0qc7GLS6dKzFGeJWKguPPgA:4 a=wPNLvfGTeEIA:10 a=MSl-tDqOz04A:10
+ a=cLqIjics26UGNhcI:21 a=lvhUrqGJ2KeuGS-u:21 a=PNuEMszh5xg2EB3JV8u8OQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Date: Tue, 30 Nov 2010 21:43:02 -0500
+From: Mike Blumenkrantz <mike@zentific.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2 epoll questions
+Message-ID: <20101130214302.3e0ca37a@darc.ath.cx>
+In-Reply-To: <1291100631.2725.39.camel@edumazet-laptop>
+References: <20101129191705.094f5c4d@darc.ath.cx>
+	<1291100631.2725.39.camel@edumazet-laptop>
+Organization: Zentific
+X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__1_Dec_2010_13_33_54_+1100_cN7piXS0eNHhJJ58"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_Dec_2010_13_33_54_+1100_cN7piXS0eNHhJJ58
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 30 Nov 2010 08:03:51 +0100
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Hi all,
+> Le lundi 29 novembre 2010 à 19:17 -0500, Mike Blumenkrantz a écrit :
+> > Hi,
+> > 
+> > I am not subscribed to the list yet, and I would appreciate it if all
+> > replies could be CCed to me :).
+> > 
+> > I have two questions regarding epoll.  The epoll code that I am using can
+> > all be found in the file here for those interested:
+> > https://svn.enlightenment.org/svn/e/trunk/ecore/src/lib/ecore/ecore_main.c
+> > 
+> > 1) Is there any known reason why adding fds to an epoll fd would begin to
+> > slow down dramatically after ~6000 fds are added?  It is entirely possible
+> > that the problem is not epoll at all, but I wanted to ask and see if there
+> > was some O(n) code somewhere that was known.
+> > 
+> 
+> No particular slowdown, I once used more than 1.5 million fds in epoll
+> fd.
+> 
+> Of course, if you only add/remove fds as fast as possible, its going to
+> be slower, since epoll fds are stored in a tree, and the time of
+> insert/delete of one item depends on the tree depth. Maybe this is your
+> case and your working set is larger than your cpu caches after ~6000
+> fds ?
+Upon hearing that you have successfully used 1.5 million fds, I began analyzing
+the code further and discovered one remaining instance of O(n) code.  Upon
+removal, execution proceeded as expected for O(1) during runtime.
+> 
+> 
+> > 2) If a select on an epoll fd (not one inside the epoll, the actual epoll fd
+> > itself) returns EBADF, is there a way to determine which fd is causing the
+> > error and then remove it?  I am occasionally running into this issue, and it
+> > seems to be caused by code which I do not necessarily control closing a fd
+> > that is part of my epoll fd without my knowledge (meaning that the closed
+> > fd is still in epoll).
+> 
+> Strange, I never got this EBADF error. On epoll_ctl() or epoll_wait() ?
+> (I dont understand your "select on epoll fd"). epoll is meant to replace
+> select()...
+In some cases, you cannot use epoll_wait because you are using fds from other
+libraries which you do not control (here we have integrated glib's main loop
+into our own, and so are monitoring fds which we do not directly own).  In
+these cases, you must use select instead.
+> 
+> When you close a file descriptor, its automatically removed from epoll
+> as well.
 
-Changes since 20101130:
-
-New tree: ux500-core
-
-The rmobile tree gained a conflict against the arm tree.
-
-The v4l-dvb tree still has its build failure for which I applied a patch.
-
-The sound-asoc tree gained a build failure so I used the version form
-next-20101130.
-
-The tip tree still has its build failures so I have reverted 3 commits.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 181 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
-Applying: rmobile: merge fixup for clkdev changes
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
-Merging hid/for-next
-CONFLICT (content): Merge conflict in drivers/hid/hid-input.c
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Applying: media: const and __devinitdata do not mix
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-$ git reset --hard HEAD^
-Merging refs/next/20101130/sound-asoc
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in MAINTAINERS
-CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging tip/auto-latest
-[master 053ede3] Revert "x86, nmi_watchdog: Remove all stub function calls =
-from old nmi_watchdog"
-$ git commit -v -a[master f028822] Revert "x86, nmi_watchdog: Remove the ol=
-d nmi_watchdog"
-[master 18cbce2] Revert "perf, arch: Cleanup perf-pmu init vs lockup-detect=
-or"
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-Merging swiotlb-xen/master
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
-face.c
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/soft-inter=
-face.c
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Wed__1_Dec_2010_13_33_54_+1100_cN7piXS0eNHhJJ58
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM9bQSAAoJEDMEi1NhKgbseYEH/2RzQsz+iqYhRtPw8YpK1or8
-p9PjLnN79hP5p3LXU9N1GKpiToqQ2Q3EFJef3zjHVe4Jei+4+ef9FgsylKHB2yZ+
-IRqbY1kHNKBIavHJduyMhEgCuDR0Ne8FLJwhqfwFkGMO91hAiMeuQl6zOZJUT648
-7B4GBE/mpQ1aXs7nPf7UKOybhuOQvTVwFEUI2jwehwTc5iRuo5WPJ3TpKPV5T4sB
-5XPlLRRJYf1VKS3mUbbApbs8T+ISkvDg7TFGUtHjG5rd0giLzJSD1B+y2M4qrxzd
-t+DHcwWv6Jx4YYIzJq2fzqsqdk+EnFV977bVPomD8DUYN6b4iz/oZM8cKyYmpYI=
-=JqjB
------END PGP SIGNATURE-----
-
---Signature=_Wed__1_Dec_2010_13_33_54_+1100_cN7piXS0eNHhJJ58--
+-- 
+Mike Blumenkrantz
+Zentific: Our boolean values are huge.
