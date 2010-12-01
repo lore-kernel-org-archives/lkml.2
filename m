@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab0LAK5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 05:57:07 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:46511 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab0LAK5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 05:57:05 -0500
-Date: Wed, 1 Dec 2010 10:56:49 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S1754277Ab0LALAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:00:25 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:59635 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab0LALAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 06:00:23 -0500
+Date: Wed, 1 Dec 2010 13:00:17 +0200
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] mm: vmscan: Reclaim order-0 and use compaction
-	instead of lumpy reclaim
-Message-ID: <20101201105648.GM13268@csn.ul.ie>
-References: <1290440635-30071-1-git-send-email-mel@csn.ul.ie> <1290440635-30071-4-git-send-email-mel@csn.ul.ie> <20101201102745.GL15564@cmpxchg.org>
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for
+ clock changes
+Message-ID: <20101201110017.GK26184@shisha.kicks-ass.net>
+References: <1290532938-7332-1-git-send-email-virtuoso@slind.org>
+ <20101123224346.GA19350@tango.0pointer.de>
+ <20101201104359.GJ22787@shareable.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101201102745.GL15564@cmpxchg.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101201104359.GJ22787@shareable.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 11:27:45AM +0100, Johannes Weiner wrote:
-> On Mon, Nov 22, 2010 at 03:43:51PM +0000, Mel Gorman wrote:
-> > Lumpy reclaim is disruptive. It reclaims a large number of pages and ignores
-> > the age of the pages it reclaims. This can incur significant stalls and
-> > potentially increase the number of major faults.
+On Wed, Dec 01, 2010 at 10:43:59AM +0000, Jamie Lokier wrote:
+> Lennart Poettering wrote:
+> > On Tue, 23.11.10 19:22, Alexander Shishkin (virtuoso@slind.org) wrote:
 > > 
-> > Compaction has reached the point where it is considered reasonably stable
-> > (meaning it has passed a lot of testing) and is a potential candidate for
-> > displacing lumpy reclaim. This patch introduces an alternative to lumpy
-> > reclaim whe compaction is available called reclaim/compaction. The basic
-> > operation is very simple - instead of selecting a contiguous range of pages
-> > to reclaim, a number of order-0 pages are reclaimed and then compaction is
-> > later by either kswapd (compact_zone_order()) or direct compaction
-> > (__alloc_pages_direct_compact()).
+> > > Certain userspace applications (like "clock" desktop applets or cron or
+> > > systemd) might want to be notified when some other application changes
+> > > the system time. There are several known to me reasons for this:
+> > >  - avoiding periodic wakeups to poll time changes;
+> > >  - rearming CLOCK_REALTIME timers when said changes happen;
+> > >  - changing system timekeeping policy for system-wide time management
+> > >    programs;
+> > >  - keeping guest applications/operating systems running in emulators
+> > >    up to date.
+> > > 
+> > > This is another attempt to approach notifying userspace about system
+> > > clock changes. The other one is using an eventfd and a syscall [1]. In
+> > > the course of discussing the necessity of a syscall for this kind of
+> > > notifications, it was suggested that this functionality can be achieved
+> > > via timers [2] (and timerfd in particular [3]). This idea got quite
+> > > some support [4], [5], [6] and some vague criticism [7], so I decided
+> > > to try and go a bit further with it.
 > > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > I agree with Kay, this is pretty much exactly what we want for
+> > systemd. (Assuming that the time jump due to system suspend is
+> > propagated to userspace like any other time jump with this path).
 > 
-> > @@ -286,18 +290,20 @@ static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
-> >  	lumpy_mode syncmode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
-> >  
-> >  	/*
-> > -	 * Some reclaim have alredy been failed. No worth to try synchronous
-> > -	 * lumpy reclaim.
-> > +	 * Initially assume we are entering either lumpy reclaim or
-> > +	 * reclaim/compaction.Depending on the order, we will either set the
-> > +	 * sync mode or just reclaim order-0 pages later.
-> >  	 */
-> > -	if (sync && sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE)
-> > -		return;
-> > +	if (COMPACTION_BUILD)
-> > +		sc->lumpy_reclaim_mode = LUMPY_MODE_COMPACTION;
-> > +	else
-> > +		sc->lumpy_reclaim_mode = LUMPY_MODE_CONTIGRECLAIM;
-> 
-> Isn't this a regression for !COMPACTION_BUILD in that earlier kernels
-> would not do sync lumpy reclaim when somebody disabled it during the
-> async run?
-> 
+> I hope the time jump due to suspend is *not* propagated in the same
+> way to userspace :-)
 
-You'll need to clarify your question I'm afraid. In 2.6.36 for example,
-if lumpy reclaim gets disabled then sync reclaim does not happen at all.
-This was due to large stalls being observed when copying large amounts
-of data to slow storage such as a USB external drive.
+Can you please check if my new patch from earlier today [1] seems better?
 
-> If so, it should be trivial to fix.  Aside from that
+[1] http://marc.info/?l=linux-kernel&m=129116762414291&w=2
+
+> What I'd like to see:
 > 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+>  1. Time jump due to the system clock being stepped: Notification.
 > 
+>     This is *not* a change in real time.  It means the clock was
+>     corrected/changed.  No physical time passed.
+> 
+>  2. Time jump due to suspend/resume: Different notification.
+> 
+>     This *is* a change in real time.  Physical time passed.
+> 
+>  3. Time drift corrections: As now, no notification, it's just
+>     the clock being regulated.
 
-Thanks
+Generally, I used CLOCK_MONOTONIC + TFD_NOTIFY_CLOCK_SET to signal
+suspend/resume time changes and CLOCK_REALTIME + TFD_NOTIFY_CLOCK_SET
+to signal wall clock changes. Without TFD_NOTIFY_CLOCK_SET it works
+as it did before.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> To signal the difference between 1 and 2, there ought to be some way
+> for userspace to determine how much of the clock delta corresponds
+> with physical time, by reading some sort of "monotonic" clock :-)
+> 
+> CLOCK_MONOTONIC is unsuitable because it stops at suspend.  Maybe it
+> should stay that way.  But maybe not - programs using CLOCK_MONOTONIC
+> usually want to trigger timeouts etc. based on real elapsed time, and
+> after suspend/resume, it's quite reasonable to want to trigger all of
+> a program's short timeouts immediately.  Indeed some network protocol
+> userspace may currently behave *incorrectly* over suspend/resume,
+> especially those using clock times to validate their caches,
+> *because* CLOCK_MONOTONIC doesn't count it.
+> 
+> So maybe CLOCK_MONOTONIC should be changed to include elapsed time
+> during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
+> for programs that want that?
+> 
+> That, plus this proposed patch, would signal the difference between 1
+> and 2 above nicely.
+
+Regards,
+--
+Alex
