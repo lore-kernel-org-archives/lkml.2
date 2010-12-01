@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab0LAT7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:59:47 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58958 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819Ab0LAT7p (ORCPT
+	id S1756875Ab0LAUDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:03:38 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:55458 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756526Ab0LAUDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:59:45 -0500
-Date: Wed, 1 Dec 2010 20:59:39 +0100
-From: Heinz Diehl <htd@fritha.org>
-To: Milan Broz <mbroz@redhat.com>
-Cc: Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
-        htejun@gmail.com
-Subject: Re: dm-crypt barrier support is effective
-Message-ID: <20101201195939.GA6491@fritha.org>
-References: <20101108145809.GD29714@redhat.com>
- <1289238930-sup-9765@think>
- <20101114205925.GA20451@redhat.com>
- <AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>
- <4CE05A9E.9090204@redhat.com>
- <AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
- <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
- <20101201165229.GC13415@redhat.com>
- <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com>
+	Wed, 1 Dec 2010 15:03:36 -0500
+Date: Wed, 1 Dec 2010 12:08:15 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: Greg KH <greg@kroah.com>
+cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
+In-Reply-To: <20101201194751.GA1171@kroah.com>
+Message-ID: <Pine.LNX.4.64.1012011203290.8183@cobra.newdream.net>
+References: <AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com>
+ <20101118013002.GC8558@kroah.com> <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
+ <20101119020820.GB18767@kroah.com> <AANLkTim4p=tpaQG_XDE5Vk0YAypYCegAguYNKRg-LeDF@mail.gmail.com>
+ <20101123001410.GA31294@kroah.com> <AANLkTi=n9aJ_8VAcyOXQxxeprWzerZLf0H+ryHZs7O04@mail.gmail.com>
+ <20101123005838.GB29289@kroah.com> <1290558233.1792.73.camel@yehudasa-desktop>
+ <Pine.LNX.4.64.1012011117460.8183@cobra.newdream.net> <20101201194751.GA1171@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF692D1.1010906@redhat.com>
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Wanderlust/2.15.7 (Almost =?utf-8?Q?Unreal?=
- =?utf-8?B?KSBTRU1JLzEuMTQuNiAoTWFydW9rYSkgRkxJTS8xLjE0LjkgKEdvasWNKSBB?=
- =?utf-8?Q?PEL=2F10=2E7?= Emacs/22.3 (x86_64-pc-linux-gnu) MULE/5.0 (SAKAKI)
-X-Provags-ID: V02:K0:4qo+ODVu23z26iR3KafrPuLjWxOIAwK9LzI6q1NBPjG
- gE6UIXvCDGba6BTMYeT8AVcWwVJsRAJuLAtpIee13yuhRXaKBS
- alNKtNCnQ8fqL4YvpINdJUDXTl0/hOzsjoPxWJJbxLIqZ+D9eJ
- UenrPER5EXYJRw1axdy0Zok570d26KPkzix5CSBiun6P3WlAav
- STdb3H9ZSfVTU9w20B8fw==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.12.2010, Milan Broz wrote: 
+On Wed, 1 Dec 2010, Greg KH wrote:
+> >  /sys/bus/rbd/{add,remove}
+> >  /sys/bus/rbd/devices/<devid>/                 <-- struct device
+> >  /sys/bus/rbd/devices/<devid>/{some dev attrs}
+> >  /sys/bus/rbd/devices/<devid>/snap_<snapid>/   <-- struct device
+> >  /sys/bus/rbd/devices/<devid>/snap_<snapid>/{some snap attrs}
+> > 
+> > This works, and I is (I hope) using struct device properly.  The only 
+> > problem, purely from a user interface standpoint, is that the snaps are 
+> > mixed in with attributes, so anybody wanting to iterate over snaps needs 
+> > to do something crufty like
+> > 
+> >  $ for snap in `ls /sys/bus/rbd/devices/$id | grep ^snap_ | cut -c 6-`; do ...
+> 
+> What's wrong with:
+> 	for snap in `ls /sys/bus/rbd/devices/$id/snap_*`; do ...
+> instead?
 
-> Anyway, I run several tests on 2.6.37-rc3+ and see no integrity
-> problems (using xfs,ext3 and ext4 over dmcrypt).
+Yeah, it's really the 'cut -c 6-' bit that I was hoping to avoid.  But it 
+snaps/ simply doesn't map onto the sysfs paradigm cleanly, that's fine.
 
-Not that this might help, but just for testing purposes, I have run all 
-the -rcX from 2.6.36 on with Milan's patch (XFS filesystem) under heavy 
-load and disk i/o, and have not encountered a single problem or corruption.
+That being the case, can we get an Acked-by on the current approach/patch?  
+Then I can send something Linus and let him decide what to do for .37.
 
+Thanks!
+sage
+
+
+
+
+> 
+> And you would be using libudev ideally for a .c file, and iterating over
+> the devices is pretty trivial that way from what I have seen.
+> 
+> > Adding an intermediate snaps/ subdir would let them instead do
+> > 
+> >  $ for snap in `ls /sys/bus/rbd/devices/$id/snaps/`; do ...
+> > 
+> > without worrying about the (arbitrarily named) snaps from colliding with 
+> > device attributes.  Assuming that is a preferable interface, is the 
+> > "right" way to do that to make "snaps" a struct device?  Or is there a 
+> > good reason why that is not preferable?
+> 
+> It's not preferable as that "snaps" directory is a "blank" in the device
+> tree, not showing the heiarchy properly.  You can't walk the devices
+> back from the devices in snaps/ to the parent properly (i.e. you would
+> get stuck at the snaps/ directory as it's not a struct device, but a
+> random kobject.
+> 
+> Hope this helps,
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
