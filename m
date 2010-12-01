@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab0LAQQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 11:16:07 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43824 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab0LAQQF (ORCPT
+	id S1754285Ab0LAQSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 11:18:06 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42216 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751829Ab0LAQSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 11:16:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wDazTJorH9dvHAsx4n3xK7cm39Gr+UNWESjgIazH+ysDqtiry3KFq2D0hATP9/DMEW
-         xsgIBYAn2IiuekqXpbTHKZmnGrDe7f2rVm09rI5gloZqsJRFuBpgZm9IYpIrY1CwTffN
-         EYbvhAZkfKtvVX3Guq8KPNGqssrIesi758NAE=
-Date: Thu, 2 Dec 2010 00:19:27 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Alex Bennee <kernel-hacker@bennee.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Problems using EXPORT_SYMBOL with lib/flex_array
-Message-ID: <20101201161927.GC9337@hack>
-References: <AANLkTik_TQfQDERdRQaQek3S7280sQBmHGKOnhJwU5EE@mail.gmail.com> <AANLkTim=srU8kv-DwL4jgwRS-yH8WN34PgCqsijZvYeV@mail.gmail.com>
+	Wed, 1 Dec 2010 11:18:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim=srU8kv-DwL4jgwRS-yH8WN34PgCqsijZvYeV@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+ <20101201150428.GA2879@elliptictech.com> <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 08:17:38 -0800
+Message-ID: <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: multipart/mixed; boundary=00032557542a0c5e6004965ba615
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 01:20:30PM +0000, Alex Bennee wrote:
->On 1 December 2010 12:05, Alex Bennee <kernel-hacker@bennee.com> wrote:
->> Hi,
->>
->> I want to be able to use the flex_array functions in my module so I
->> wanted to EXPORT_SYMBOL the API.
->> <snip>
->> Am I being a
->> little dim or is there some other magic foo that needs doing to add an
->> export to a library function?
->
->It turns out for library code there is. If the .o is only included in
->the lib-y section then it will never get scanned for exported kernel
->symbols. Tweaking the lib/Makefile so obj-y included flex_array.o did
->the trick.
->
->I'm unsure if this behaviour is what is wanted?
->
+--00032557542a0c5e6004965ba615
+Content-Type: text/plain; charset=ISO-8859-1
 
-Yes, but not sure about flex_array.o.
-Which functions in flex_array.c do you need in your module anyway?
+On Wed, Dec 1, 2010 at 7:36 AM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+>
+> We need to ensure that the entries in the nfs_cache_array get cleared
+> when the page is removed from the page cache. To do so, we use the
+> releasepage address_space operation (which also requires us to set
+> the Pg_private flag).
 
--- 
-Live like a child, think like the god.
- 
+So I really think that the whole "releasepage" use in NFS is simply
+overly complicated and was obviously too subtle.
+
+The whole need for odd return values, for the page lock, and for the
+addition of clearing the up-to-date bit comes from the fact that this
+wasn't really what releasepage was designed for.
+
+'releasepage' was really designed for the filesystem having its own
+version of 'try_to_free_buffers()', which is just an optimistic "ok,
+we may be releasing this page, so try to get rid of any IO structures
+you have cached". It wasn't really a memory management thing.
+
+And the thing is, it looks trivial to do the memory management
+approach by adding a new callback that gets called after the page is
+actually removed from the page cache. If we do that, then there are no
+races with any other users, since we remove things from the page cache
+atomically wrt page cache lookup. So the need for playing games with
+page locking and 'uptodate' simply goes away. As does the PG_private
+thing or the interaction with invalidatepage() etc.
+
+So this is a TOTALLY UNTESTED trivial patch that just adds another
+callback. Does this work? I dunno. But I get the feeling that instead
+of having NFS work around the odd semantics that don't actually match
+what NFS wants, introducing a new callback with much simpler semantics
+would be simpler for everybody, and avoid the need for subtle code.
+
+Hmm?
+
+                   Linus
+
+--00032557542a0c5e6004965ba615
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gh6f5ghm0
+
+IGluY2x1ZGUvbGludXgvZnMuaCB8ICAgIDEgKwogbW0vdm1zY2FuLmMgICAgICAgIHwgICAgMyAr
+KysKIDIgZmlsZXMgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlm
+ZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvZnMuaCBiL2luY2x1ZGUvbGludXgvZnMuaAppbmRleCBj
+OWUwNmNjLi4wOTBmMGVhIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2ZzLmgKKysrIGIvaW5j
+bHVkZS9saW51eC9mcy5oCkBAIC02MDIsNiArNjAyLDcgQEAgc3RydWN0IGFkZHJlc3Nfc3BhY2Vf
+b3BlcmF0aW9ucyB7CiAJc2VjdG9yX3QgKCpibWFwKShzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqLCBz
+ZWN0b3JfdCk7CiAJdm9pZCAoKmludmFsaWRhdGVwYWdlKSAoc3RydWN0IHBhZ2UgKiwgdW5zaWdu
+ZWQgbG9uZyk7CiAJaW50ICgqcmVsZWFzZXBhZ2UpIChzdHJ1Y3QgcGFnZSAqLCBnZnBfdCk7CisJ
+dm9pZCAoKmZyZWVwYWdlKShzdHJ1Y3QgcGFnZSAqKTsKIAlzc2l6ZV90ICgqZGlyZWN0X0lPKShp
+bnQsIHN0cnVjdCBraW9jYiAqLCBjb25zdCBzdHJ1Y3QgaW92ZWMgKmlvdiwKIAkJCWxvZmZfdCBv
+ZmZzZXQsIHVuc2lnbmVkIGxvbmcgbnJfc2Vncyk7CiAJaW50ICgqZ2V0X3hpcF9tZW0pKHN0cnVj
+dCBhZGRyZXNzX3NwYWNlICosIHBnb2ZmX3QsIGludCwKZGlmZiAtLWdpdCBhL21tL3Ztc2Nhbi5j
+IGIvbW0vdm1zY2FuLmMKaW5kZXggZDMxZDdjZS4uMWFjY2IwMSAxMDA2NDQKLS0tIGEvbW0vdm1z
+Y2FuLmMKKysrIGIvbW0vdm1zY2FuLmMKQEAgLTQ5OSw2ICs0OTksOSBAQCBzdGF0aWMgaW50IF9f
+cmVtb3ZlX21hcHBpbmcoc3RydWN0IGFkZHJlc3Nfc3BhY2UgKm1hcHBpbmcsIHN0cnVjdCBwYWdl
+ICpwYWdlKQogCQltZW1fY2dyb3VwX3VuY2hhcmdlX2NhY2hlX3BhZ2UocGFnZSk7CiAJfQogCisJ
+aWYgKG1hcHBpbmctPmFfb3BzLT5mcmVlcGFnZSkKKwkJbWFwcGluZy0+YV9vcHMtPmZyZWVwYWdl
+KHBhZ2UpOworCiAJcmV0dXJuIDE7CiAKIGNhbm5vdF9mcmVlOgo=
+--00032557542a0c5e6004965ba615--
