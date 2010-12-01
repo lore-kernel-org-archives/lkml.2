@@ -1,303 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab0LASyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 13:54:33 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab0LASyb convert rfc822-to-8bit (ORCPT
+	id S1756282Ab0LASys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 13:54:48 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:13168 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756112Ab0LASyq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 13:54:31 -0500
-Date: Wed, 1 Dec 2010 19:54:27 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Alberto Panizzo <alberto.panizzo@gmail.com>
-cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Magnus Damm <damm@opensource.se>,
-        =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
-        linux-media@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] mx3_camera: Support correctly the YUV222 and BAYER
- configurations of CSI
-In-Reply-To: <1290965045.3016.11.camel@realization>
-Message-ID: <Pine.LNX.4.64.1012011832430.28110@axis700.grange>
-References: <1290964687.3016.5.camel@realization> <1290965045.3016.11.camel@realization>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+	Wed, 1 Dec 2010 13:54:46 -0500
+X-IronPort-AV: E=Sophos;i="4.59,284,1288594800"; 
+   d="scan'208";a="489618543"
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-2-git-send-email-Trond.Myklebust@netapp.com>
+	 <20101201150428.GA2879@elliptictech.com>
+	 <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+	 <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+	 <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:9cq4T3DTGK/2Gtk25r75z2S69o3EmJjamMRQ7RSXXi5
- q2AsgZcbgcB2JWJOukJKrdDOZnkb3BD9KjRGKS3w5E6gySs8OL
- SLRv55z5gUVVKqpCwjy07oFMErHfmhxwE2IK62YLcJiveE5fn4
- KwKEBp0qKh7qnrOXpmjhg6OghA9LD84BZC93XpgpIBNB9eTv4r
- THEgPoQZW7qp40f2/lit1Ts0pZpR96rMrNnBJSS0m4=
+Organization: NetApp Inc
+Date: Wed, 01 Dec 2010 13:54:29 -0500
+Message-ID: <1291229669.6609.24.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 01 Dec 2010 18:54:31.0077 (UTC) FILETIME=[2FEC8D50:01CB9189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Nov 2010, Alberto Panizzo wrote:
+On Wed, 2010-12-01 at 08:17 -0800, Linus Torvalds wrote:
+> On Wed, Dec 1, 2010 at 7:36 AM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > We need to ensure that the entries in the nfs_cache_array get cleared
+> > when the page is removed from the page cache. To do so, we use the
+> > releasepage address_space operation (which also requires us to set
+> > the Pg_private flag).
+> 
+> So I really think that the whole "releasepage" use in NFS is simply
+> overly complicated and was obviously too subtle.
+> 
+> The whole need for odd return values, for the page lock, and for the
+> addition of clearing the up-to-date bit comes from the fact that this
+> wasn't really what releasepage was designed for.
+> 
+> 'releasepage' was really designed for the filesystem having its own
+> version of 'try_to_free_buffers()', which is just an optimistic "ok,
+> we may be releasing this page, so try to get rid of any IO structures
+> you have cached". It wasn't really a memory management thing.
+> 
+> And the thing is, it looks trivial to do the memory management
+> approach by adding a new callback that gets called after the page is
+> actually removed from the page cache. If we do that, then there are no
+> races with any other users, since we remove things from the page cache
+> atomically wrt page cache lookup. So the need for playing games with
+> page locking and 'uptodate' simply goes away. As does the PG_private
+> thing or the interaction with invalidatepage() etc.
+> 
+> So this is a TOTALLY UNTESTED trivial patch that just adds another
+> callback. Does this work? I dunno. But I get the feeling that instead
+> of having NFS work around the odd semantics that don't actually match
+> what NFS wants, introducing a new callback with much simpler semantics
+> would be simpler for everybody, and avoid the need for subtle code.
+> 
+> Hmm?
+> 
+>                    Linus
 
-> This patch is tested and works with the OV2640 camera that output
-> YUV422 (UYVY) and RGB565 data.
+
+> include/linux/fs.h |    1 +
+>  mm/vmscan.c        |    3 +++
+>  2 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> The YUV422 format is managed to be converted in IPU internal YUV444 format
-> so this stream could be used in the future to feed directly other IPU
-> blocks.
-> The RGB565 format is managed as GENERIC and can be moved only from CSI
-> to memory.
-> 
-> Signed-off-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-> ---
-> 
-> Before applying, please give me feedback if this break in some way other
-> pixel formats!
-> 
-> 
->  drivers/media/video/mx3_camera.c |  126 +++++++++++++++++++++++++++++++++-----
->  1 files changed, 110 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/media/video/mx3_camera.c b/drivers/media/video/mx3_camera.c
-> index 29c5fc3..6811d6f 100644
-> --- a/drivers/media/video/mx3_camera.c
-> +++ b/drivers/media/video/mx3_camera.c
-> @@ -55,6 +55,31 @@
->  #define CSI_SENS_CONF_EXT_VSYNC_SHIFT		15
->  #define CSI_SENS_CONF_DIVRATIO_SHIFT		16
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index c9e06cc..090f0ea 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -602,6 +602,7 @@ struct address_space_operations {
+>         sector_t (*bmap)(struct address_space *, sector_t);
+>         void (*invalidatepage) (struct page *, unsigned long);
+>         int (*releasepage) (struct page *, gfp_t);
+> +       void (*freepage)(struct page *);
+>         ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec
+> *iov,
+>                         loff_t offset, unsigned long nr_segs);
+>         int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index d31d7ce..1accb01 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -499,6 +499,9 @@ static int __remove_mapping(struct address_space
+> *mapping, struct page *page)
+>                 mem_cgroup_uncharge_cache_page(page);
+>         }
 >  
-> +/*
-> + * IPU support the following data formatting (44.1.1.3 Data Flows and Formats):
-> + * 1 YUV 4:4:4 or RGB—8 bits per color component
-> + * 2 YUV 4:4:4 or RGB—10 bits per color component
-> + * 3 Generic data (from sensor to the system memory only)
-> + * The formats 1 and 2 are aligned in words of 32 bits, 3 is free and not
-> + * recognized by IPU blocks.
-> + *
-> + * Taking the value of SENS_DATA_FORMAT and DATA_WIDTH, the CSI tries to
-> + * align (or rearrange) the sampled data to fit the IPU supported formats
-> + * as follows:
-> + * - CSI_SENS_CONF_DATA_FMT_RGB_YUV444: It consider the pixel as a sequence of
-> + *	3 components of width DATA_WIDTH aligning these to a 32 bit word.
-> + *	The CSI output in this case can feed other IPU blocks.
-> + * - CSI_SENS_CONF_DATA_FMT_YUV422: It consider the pixel as a sequence of
-> + *	2 components of width DATA_WIDTH were the first is the alternating U V
+> +       if (mapping->a_ops->freepage)
+> +               mapping->a_ops->freepage(page);
 
-s/were/where/
-
-> + *	components and the second is Y. It construct the YUV444 word repeating
-> + *	the previous U, V samples aligning the results to a 32 bit word.
-> + *	The CSI output in this case can feed other IPU blocks.
-> + * - CSI_SENS_CONF_DATA_FMT_BAYER: No rework is performed in this case.
-> + *	The sensor data is given as is, considering _every sample_ as a pixel
-> + *	data. This format (combined with the GENERIC IPU pixel formats) can
-> + *	carry all the other sensor pixel formats to the system memory.
-> + *	The CSI output in this case _can not_ feed other IPU blocks.
-> + */
->  #define CSI_SENS_CONF_DATA_FMT_RGB_YUV444	(0UL << CSI_SENS_CONF_DATA_FMT_SHIFT)
->  #define CSI_SENS_CONF_DATA_FMT_YUV422		(2UL << CSI_SENS_CONF_DATA_FMT_SHIFT)
->  #define CSI_SENS_CONF_DATA_FMT_BAYER		(3UL << CSI_SENS_CONF_DATA_FMT_SHIFT)
-> @@ -323,14 +348,12 @@ static enum pixel_fmt fourcc_to_ipu_pix(__u32 fourcc)
->  {
->  	/* Add more formats as need arises and test possibilities appear... */
->  	switch (fourcc) {
-> -	case V4L2_PIX_FMT_RGB565:
-> -		return IPU_PIX_FMT_RGB565;
->  	case V4L2_PIX_FMT_RGB24:
->  		return IPU_PIX_FMT_RGB24;
-> +	case V4L2_PIX_FMT_UYVY:
-> +		return IPU_PIX_FMT_UYVY;
-> +	case V4L2_PIX_FMT_RGB565:
->  	case V4L2_PIX_FMT_RGB332:
-> -		return IPU_PIX_FMT_RGB332;
-> -	case V4L2_PIX_FMT_YUV422P:
-> -		return IPU_PIX_FMT_YVU422P;
->  	default:
->  		return IPU_PIX_FMT_GENERIC;
->  	}
-
-Ok, so far mx3_camera has only been used with mt9m022 and mt9t031 sensors 
-(from what I can see in the mainline), both are bayer. It can also work 
-with monochrome cameras, and that would be the IPU_PIX_FMT_GENERIC case 
-too. So, I wouldn't mind removing the rest, and only adding / fixing what 
-you've now tested / implemented with your omnivision sensor. If anyone is 
-using mx3_camera with any other formats and thinks, that they work - 
-please, shout now. I'll probably also post a separate mail with this 
-warning.
-
-> @@ -358,9 +381,25 @@ static void mx3_videobuf_queue(struct videobuf_queue *vq,
->  
->  	/* This is the configuration of one sg-element */
->  	video->out_pixel_fmt	= fourcc_to_ipu_pix(fourcc);
-> -	video->out_width	= icd->user_width;
-> -	video->out_height	= icd->user_height;
-> -	video->out_stride	= icd->user_width;
-> +
-> +	if (video->out_pixel_fmt == IPU_PIX_FMT_GENERIC) {
-> +		/*
-> +		 * IPU_PIX_FMT_GENERIC transport bytes, not pixels. So convert
-> +		 * video->out_width and stride to the correct unit.
-> +		 */
-> +		int bytes_per_line = soc_mbus_bytes_per_line(icd->user_width,
-> +						icd->current_fmt->host_fmt);
-> +		BUG_ON(bytes_per_line <= 0);
-> +
-> +		video->out_width	= bytes_per_line;
-> +		video->out_height	= icd->user_height;
-> +		video->out_stride	= bytes_per_line;
-> +	} else {
-> +		/* For IPU known formats the pixel unit is OK */
-> +		video->out_width	= icd->user_width;
-> +		video->out_height	= icd->user_height;
-> +		video->out_stride	= icd->user_width;
-> +	}
->  
->  #ifdef DEBUG
->  	/* helps to see what DMA actually has written */
-> @@ -730,18 +769,68 @@ static int mx3_camera_get_formats(struct soc_camera_device *icd, unsigned int id
->  	if (xlate) {
->  		xlate->host_fmt	= fmt;
->  		xlate->code	= code;
-> +		dev_dbg(dev, "Providing format %c%c%c%c in pass-through mode\n",
-> +			(xlate->host_fmt->fourcc >> (0*8)) & 0xFF,
-> +			(xlate->host_fmt->fourcc >> (1*8)) & 0xFF,
-> +			(xlate->host_fmt->fourcc >> (2*8)) & 0xFF,
-> +			(xlate->host_fmt->fourcc >> (3*8)) & 0xFF);
->  		xlate++;
-> -		dev_dbg(dev, "Providing format %x in pass-through mode\n",
-> -			xlate->host_fmt->fourcc);
-
-make it even simpler: s/xlate->host_fmt/fmt/g
-
->  	}
->  
->  	return formats;
->  }
->  
-> +static int samples_per_pixel(enum v4l2_mbus_pixelcode mcode)
-> +{
-> +	switch (mcode) {
-> +	case V4L2_MBUS_FMT_YUYV8_2X8:
-> +	case V4L2_MBUS_FMT_YVYU8_2X8:
-> +	case V4L2_MBUS_FMT_VYUY8_2X8:
-> +	case V4L2_MBUS_FMT_YVYU10_2X10:
-> +	case V4L2_MBUS_FMT_YUYV10_2X10:
-> +	case V4L2_MBUS_FMT_RGB444_2X8_PADHI_LE:
-> +	case V4L2_MBUS_FMT_RGB444_2X8_PADHI_BE:
-> +	case V4L2_MBUS_FMT_RGB555_2X8_PADHI_LE:
-> +	case V4L2_MBUS_FMT_RGB555_2X8_PADHI_BE:
-> +	case V4L2_MBUS_FMT_RGB565_2X8_LE:
-> +	case V4L2_MBUS_FMT_RGB565_2X8_BE:
-> +	case V4L2_MBUS_FMT_BGR565_2X8_LE:
-> +	case V4L2_MBUS_FMT_BGR565_2X8_BE:
-> +		return 2;
-> +	case V4L2_MBUS_FMT_SBGGR8_1X8:
-> +	case V4L2_MBUS_FMT_SBGGR10_1X10:
-> +	case V4L2_MBUS_FMT_GREY8_1X8:
-> +	case V4L2_MBUS_FMT_Y10_1X10:
-> +	case V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_LE:
-> +	case V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_BE:
-
-Are these two really 1 sample per pixel?
-
-> +	case V4L2_MBUS_FMT_SGRBG8_1X8:
-> +		return 1;
-> +	default:
-> +		/* Add other pixel codes as needed */
-> +		return 0;
-> +	}
-> +}
-
-Let's just do the following:
-
-s32 soc_mbus_samples_per_pixel(const struct soc_mbus_pixelfmt *mf)
-{
-	switch (mf->packing) {
-	case SOC_MBUS_PACKING_NONE:
-	case SOC_MBUS_PACKING_EXTEND16:
-		return 1;
-	case SOC_MBUS_PACKING_2X8_PADHI:
-	case SOC_MBUS_PACKING_2X8_PADLO:
-		return 2;
-	}
-	return -EINVAL;
-}
-EXPORT_SYMBOL(soc_mbus_samples_per_pixel);
-
-in drivers/media/video/soc_mediabus.c, agree?
+Hmm... Looking again at the problem, it appears that the same callback
+needs to be added to truncate_complete_page() and
+invalidate_complete_page2(). Otherwise we end up in a situation where
+the page can sometimes be removed from the page cache without calling
+freepage().
 
 > +
->  static void configure_geometry(struct mx3_camera_dev *mx3_cam,
-> -			       unsigned int width, unsigned int height)
-> +			       unsigned int width, unsigned int height,
-> +			       enum v4l2_mbus_pixelcode code)
->  {
->  	u32 ctrl, width_field, height_field;
-> +	const struct soc_mbus_pixelfmt *fmt;
-> +
-> +	fmt = soc_mbus_get_fmtdesc(code);
-> +	BUG_ON(!fmt);
-> +
-> +	if (fourcc_to_ipu_pix(fmt->fourcc) == IPU_PIX_FMT_GENERIC) {
-> +		/*
-> +		 * As we don't have an IPU native format, the CSI will be
-> +		 * configured to output BAYER and here we need to convert
-> +		 * geometry unit from pixels to samples.
-> +		 * TODO: Support vertical down sampling (YUV420)
-> +		 */
-> +		width = width * samples_per_pixel(code);
-> +		BUG_ON(!width);
-> +	}
+>         return 1;
+>  
+>  cannot_free:
 
-		width *= soc_mbus_samples_per_pixel(fmt);
-		BUG_ON((int)width < 0);
+Cheers
+  Trond
 
->  
->  	/* Setup frame size - this cannot be changed on-the-fly... */
->  	width_field = width - 1;
-> @@ -850,7 +939,7 @@ static int mx3_camera_set_crop(struct soc_camera_device *icd,
->  				return ret;
->  		}
->  
-> -		configure_geometry(mx3_cam, mf.width, mf.height);
-> +		configure_geometry(mx3_cam, mf.width, mf.height, mf.code);
->  	}
->  
->  	dev_dbg(icd->dev.parent, "Sensor cropped %dx%d\n",
-> @@ -893,7 +982,7 @@ static int mx3_camera_set_fmt(struct soc_camera_device *icd,
->  	 * mxc_v4l2_s_fmt()
->  	 */
->  
-> -	configure_geometry(mx3_cam, pix->width, pix->height);
-> +	configure_geometry(mx3_cam, pix->width, pix->height, xlate->code);
->  
->  	mf.width	= pix->width;
->  	mf.height	= pix->height;
-> @@ -1112,10 +1201,15 @@ static int mx3_camera_set_bus_param(struct soc_camera_device *icd, __u32 pixfmt)
->  		  (3 << CSI_SENS_CONF_DATA_FMT_SHIFT) |
->  		  (3 << CSI_SENS_CONF_DATA_WIDTH_SHIFT));
->  
-> -	/* TODO: Support RGB and YUV formats */
-> +	/* TODO: Support RGB_YUV444 formats */
->  
-> -	/* This has been set in mx3_camera_activate(), but we clear it above */
-> -	sens_conf |= CSI_SENS_CONF_DATA_FMT_BAYER;
-> +	switch (xlate->code) {
-> +	case V4L2_MBUS_FMT_UYVY8_2X8:
-> +		sens_conf |= CSI_SENS_CONF_DATA_FMT_YUV422;
-> +		break;
-> +	default:
-> +		sens_conf |= CSI_SENS_CONF_DATA_FMT_BAYER;
-> +	}
->  
->  	if (common_flags & SOCAM_PCLK_SAMPLE_FALLING)
->  		sens_conf |= 1 << CSI_SENS_CONF_PIX_CLK_POL_SHIFT;
-> -- 
-> 1.6.3.3
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-If after all the above changed your set up still works, we're cool!;)
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
