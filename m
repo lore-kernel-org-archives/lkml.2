@@ -1,212 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab0LAT6A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 14:58:00 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:1823 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab0LAT57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 14:57:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=IydwnYnDyCc9BXutECd5X930ol5DiPxfRQq6fU2C1xzlUotv7GxavavfTpogcuyP9A
-         Ef50d3dkWRv27sW+sRJQ==
-Date: Wed, 1 Dec 2010 11:57:49 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] mem-hotplug: Introduce {un}lock_memory_hotplug()
-In-Reply-To: <20101201142722.ABCB.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1012011146001.17318@tigran.mtv.corp.google.com>
-References: <alpine.LSU.2.00.1010252248210.2939@sister.anvils> <20101026163218.B7BF.A69D9226@jp.fujitsu.com> <20101201142722.ABCB.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1756809Ab0LAT64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 14:58:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18057 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754784Ab0LAT6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 14:58:55 -0500
+Date: Wed, 1 Dec 2010 14:58:35 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: perf hw  in kexeced kernel broken in tip
+Message-ID: <20101201195835.GE2511@redhat.com>
+References: <4CF60095.1020900@kernel.org>
+ <1291202867.4023.3.camel@twins>
+ <20101201160640.GA2511@redhat.com>
+ <1291219906.32004.1671.camel@laptop>
+ <20101201162335.GB2511@redhat.com>
+ <1291232292.32004.1969.camel@laptop>
+ <20101201194644.GD2511@redhat.com>
+ <1291232989.32004.1987.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291232989.32004.1987.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, KOSAKI Motohiro wrote:
-
-> Now, hwpoison are using lock_system_sleep() for prevent a race
-> with memory hotplug. However lock_system_sleep() is no-op if
-> CONFIG_HIBERNATION=n. Therefore we need new lock.
+On Wed, Dec 01, 2010 at 08:49:49PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-12-01 at 14:46 -0500, Vivek Goyal wrote:
+> > On Wed, Dec 01, 2010 at 08:38:12PM +0100, Peter Zijlstra wrote:
+> > > On Wed, 2010-12-01 at 11:23 -0500, Vivek Goyal wrote:
+> > > > > What does kexec normally do to ensure hardware is left in a sane state?
+> > > > 
+> > > > Typically calls device_shutdown() and sysdev_shutdown() from
+> > > > kernel_restart_prepare() to shutdown the devices.
+> > > > 
+> > > > Also calls machine_shutdown() which depending on architecture can take
+> > > > care of various things like stopping other cpus, shutting down LAPIC, 
+> > > > disabling IOAPIC, disabling hpet, shutting down IOMMU etc
+> > > > (native_machine_shutdown()). 
+> > > 
+> > > So basically there's no sane generic reset callout?
+> > 
+> > I think ->shutdown() calls are sane generic callouts. Isn't it?
 > 
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Suggested-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ->shutdown looks like it's about to reset/halt the hardware, no point in
+> slowing down the regular shutdown/reboot path for something like this,
+> we know the hardware will get reset to a sane state.
 
-Yes, that looks better than what I had had in mind (further abusing
-pm_mutex).  I notice that if MEMORY_HOTPLUG is off but HIBERNATION on,
-lock_memory_hotplug does nothing where lock_system_sleep did something;
-but I don't think that's a problem at all.  Thanks.
+I think we already call ->shutdown() in regular reboot path.
 
-Acked-by: Hugh Dickins <hughd@google.com>
+kernel_restart()
+  kernel_restart_prepare()
+    device_shutdown();
+    sysdev_shutdown();
 
-> ---
->  include/linux/memory_hotplug.h |    6 ++++++
->  mm/memory-failure.c            |    8 ++++----
->  mm/memory_hotplug.c            |   31 ++++++++++++++++++++++++-------
->  3 files changed, 34 insertions(+), 11 deletions(-)
+So it should not make lot of difference if perf subsystem/counters are
+also shutdown using ->shutdown().
+
 > 
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> index 4307231..31c237a 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -161,6 +161,9 @@ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
->  extern void put_page_bootmem(struct page *page);
->  #endif
->  
-> +void lock_memory_hotplug(void);
-> +void unlock_memory_hotplug(void);
-> +
->  #else /* ! CONFIG_MEMORY_HOTPLUG */
->  /*
->   * Stub functions for when hotplug is off
-> @@ -192,6 +195,9 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
->  {
->  }
->  
-> +static inline void lock_memory_hotplug(void) {}
-> +static inline void unlock_memory_hotplug(void) {}
-> +
->  #endif /* ! CONFIG_MEMORY_HOTPLUG */
->  
->  #ifdef CONFIG_MEMORY_HOTREMOVE
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 1243241..46ab2c0 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -51,6 +51,7 @@
->  #include <linux/slab.h>
->  #include <linux/swapops.h>
->  #include <linux/hugetlb.h>
-> +#include <linux/memory_hotplug.h>
->  #include "internal.h"
->  
->  int sysctl_memory_failure_early_kill __read_mostly = 0;
-> @@ -1230,11 +1231,10 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
->  		return 1;
->  
->  	/*
-> -	 * The lock_system_sleep prevents a race with memory hotplug,
-> -	 * because the isolation assumes there's only a single user.
-> +	 * The lock_memory_hotplug prevents a race with memory hotplug.
->  	 * This is a big hammer, a better would be nicer.
->  	 */
-> -	lock_system_sleep();
-> +	lock_memory_hotplug();
->  
->  	/*
->  	 * Isolate the page, so that it doesn't get reallocated if it
-> @@ -1264,7 +1264,7 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
->  		ret = 1;
->  	}
->  	unset_migratetype_isolate(p);
-> -	unlock_system_sleep();
-> +	unlock_memory_hotplug();
->  	return ret;
->  }
->  
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 833e286..7549a01 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -34,6 +34,23 @@
->  
->  #include "internal.h"
->  
-> +DEFINE_MUTEX(mem_hotplug_mutex);
-> +
-> +void lock_memory_hotplug(void)
-> +{
-> +	mutex_lock(&mem_hotplug_mutex);
-> +
-> +	/* for exclusive hibernation if CONFIG_HIBERNATION=y */
-> +	lock_system_sleep();
-> +}
-> +
-> +void unlock_memory_hotplug(void)
-> +{
-> +	unlock_system_sleep();
-> +	mutex_unlock(&mem_hotplug_mutex);
-> +}
-> +
-> +
->  /* add this memory to iomem resource */
->  static struct resource *register_memory_resource(u64 start, u64 size)
->  {
-> @@ -491,7 +508,7 @@ int mem_online_node(int nid)
->  	pg_data_t	*pgdat;
->  	int	ret;
->  
-> -	lock_system_sleep();
-> +	lock_memory_hotplug();
->  	pgdat = hotadd_new_pgdat(nid, 0);
->  	if (pgdat) {
->  		ret = -ENOMEM;
-> @@ -502,7 +519,7 @@ int mem_online_node(int nid)
->  	BUG_ON(ret);
->  
->  out:
-> -	unlock_system_sleep();
-> +	unlock_memory_hotplug();
->  	return ret;
->  }
->  
-> @@ -514,7 +531,7 @@ int __ref add_memory(int nid, u64 start, u64 size)
->  	struct resource *res;
->  	int ret;
->  
-> -	lock_system_sleep();
-> +	lock_memory_hotplug();
->  
->  	res = register_memory_resource(start, size);
->  	ret = -EEXIST;
-> @@ -561,7 +578,7 @@ error:
->  		release_memory_resource(res);
->  
->  out:
-> -	unlock_system_sleep();
-> +	unlock_memory_hotplug();
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(add_memory);
-> @@ -789,7 +806,7 @@ static int offline_pages(unsigned long start_pfn,
->  	if (!test_pages_in_a_zone(start_pfn, end_pfn))
->  		return -EINVAL;
->  
-> -	lock_system_sleep();
-> +	lock_memory_hotplug();
->  
->  	zone = page_zone(pfn_to_page(start_pfn));
->  	node = zone_to_nid(zone);
-> @@ -877,7 +894,7 @@ repeat:
->  	vm_total_pages = nr_free_pagecache_pages();
->  
->  	memory_notify(MEM_OFFLINE, &arg);
-> -	unlock_system_sleep();
-> +	unlock_memory_hotplug();
->  	return 0;
->  
->  failed_removal:
-> @@ -888,7 +905,7 @@ failed_removal:
->  	undo_isolate_page_range(start_pfn, end_pfn);
->  
->  out:
-> -	unlock_system_sleep();
-> +	unlock_memory_hotplug();
->  	return ret;
->  }
->  
-> -- 
-> 1.6.5.2
+> > There seem to be few exceptions for LAPIC, IOMMU and HPET and I am not
+> > sure why they are not covered by shutdown calls. CCing Eric, he might
+> > have more insight into it.
+> 
+> That's all arch specific, but even there I don't think the reset code
+> should live outside of kexec.
+
+I would not know the history but I have heard stories that if you don't
+shutdown the hardware over restart, BIOS might not be expecting it and
+might get trumped.
+
+Thanks
+Vivek
