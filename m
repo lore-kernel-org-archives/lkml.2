@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab0LALga (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 06:36:30 -0500
-Received: from fep19.mx.upcmail.net ([62.179.121.39]:40972 "EHLO
-	fep19.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab0LALg3 (ORCPT
+	id S1754089Ab0LALht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 06:37:49 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33345 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab0LALhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 06:36:29 -0500
-X-SourceIP: 80.56.199.130
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101201050129.GA5210@cr0.nay.redhat.com>
-References: <1291052268.32004.171.camel@laptop>
-	 <1291057565.20709.2.camel@marge.simson.net>
-	 <20101129192033.GA18372@elte.hu>
-	 <AANLkTi=jra_M+F9OKj31uS6EMu+ZkPT++GSrNd_bgXSy@mail.gmail.com>
-	 <1291090455.7550.7.camel@marge.simson.net>
-	 <AANLkTi=YDHyRcP5NSdVDRMW0_oj1L85aLzGV9hFGw1FN@mail.gmail.com>
-	 <1291123083.28239.18.camel@marge.simson.net>
-	 <20101130151749.GE26758@redhat.com>
-	 <1291137221.28239.70.camel@marge.simson.net>
-	 <20101130193622.GF26758@redhat.com>
-	 <20101201050129.GA5210@cr0.nay.redhat.com>
+	Wed, 1 Dec 2010 06:37:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=lI+cazJjDWOUUl515kRgal172UtxCXsmy+IJDStpvLUUQfH7b25OIJHyyxBHALBlA5
+         iAX+bU4kH2vUfbync1hkgjUSby6hDEVc3Gvi/mIBkgpO6AKbhnmiEIIZY0OyVCLslglb
+         7tkEEwifYSY4FXC1T3HZFUzVEtV32l62NdZqc=
+Subject: [PATCH net-next-2.6] : __in_dev_get_rtnl() can use
+ rtnl_dereference()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+In-Reply-To: <1291202476.2856.584.camel@edumazet-laptop>
+References: <1291202063-6239-1-git-send-email-amwang@redhat.com>
+	 <1291202476.2856.584.camel@edumazet-laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 12:36:22 +0100
-Message-ID: <1291203382.4023.8.camel@twins>
+Date: Wed, 01 Dec 2010 12:37:42 +0100
+Message-ID: <1291203462.2856.607.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-Cloudmark-Analysis: v=1.1 cv=tMVj8KYobzzX0EiRnC7vY2isLrCxFvdg4RrHWPZXwJ0= c=1 sm=0 a=gKIfv9-gHswA:10 a=IkcTkHD0fZMA:10 a=oltX-cS-elkNFLK3PyEA:9 a=oNRsIWIIUBTQ-v2HD8Q3MtNFbsYA:4 a=QEXdDO2ut3YA:10 a=DX-OgpOofmOqxaeW:21 a=myZf2QWFswRyW73m:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 13:01 +0800, Américo Wang wrote:
-> 
-> Hmm, maybe we can make AUTO_GROUP depend on !CGROUPS?
-> 
-> It seems that autogroup only uses 'struct task_group', no other cgroup things,
-> so I think that is reasonable and doable. 
+Le mercredi 01 décembre 2010 à 12:21 +0100, Eric Dumazet a écrit :
 
-That's only going to create more #ifdefery in sched.c (and we already
-got way too much of that), for little to no gain.
+> Same here. RTNL is held. Please use __in_dev_get_rtnl()
 
-But yes, technically that could be done.
+By the way we can use rtnl_dereference() in __in_dev_get_rtnl()
+
+[PATCH net-next-2.6] : __in_dev_get_rtnl() can use rtnl_dereference()
+
+If caller holds RTNL, we dont need a memory barrier
+(smp_read_barrier_depends) included in rcu_dereference().
+
+Just use rtnl_dereference() to properly document the assertions.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ include/linux/inetdevice.h |    2 +-
+ 1 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/inetdevice.h b/include/linux/inetdevice.h
+index 2b86eaf..ae8fdc5 100644
+--- a/include/linux/inetdevice.h
++++ b/include/linux/inetdevice.h
+@@ -222,7 +222,7 @@ static inline struct in_device *in_dev_get(const struct net_device *dev)
+ 
+ static inline struct in_device *__in_dev_get_rtnl(const struct net_device *dev)
+ {
+-	return rcu_dereference_check(dev->ip_ptr, lockdep_rtnl_is_held());
++	return rtnl_dereference(dev->ip_ptr);
+ }
+ 
+ extern void in_dev_finish_destroy(struct in_device *idev);
+
 
