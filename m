@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab0LAUHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 15:07:13 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46248 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755745Ab0LAUHL convert rfc822-to-8bit (ORCPT
+	id S1756255Ab0LAUJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 15:09:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56900 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab0LAUJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 15:07:11 -0500
-Subject: Re: perf hw  in kexeced kernel broken in tip
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-In-Reply-To: <20101201195835.GE2511@redhat.com>
-References: <4CF60095.1020900@kernel.org> <1291202867.4023.3.camel@twins>
-	 <20101201160640.GA2511@redhat.com> <1291219906.32004.1671.camel@laptop>
-	 <20101201162335.GB2511@redhat.com> <1291232292.32004.1969.camel@laptop>
-	 <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop>
-	 <20101201195835.GE2511@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 01 Dec 2010 21:07:16 +0100
-Message-ID: <1291234036.32004.2008.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 1 Dec 2010 15:09:20 -0500
+Date: Wed, 1 Dec 2010 15:09:07 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Tejun Heo <tj@kernel.org>, Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates for 2.6.37
+Message-ID: <20101201200907.GI25668@bombadil.infradead.org>
+References: <4CF506A6.4020200@kernel.org>
+ <20101130153839.GM15818@bombadil.infradead.org>
+ <4CF52652.4030802@kernel.org>
+ <20101130163150.GA25668@bombadil.infradead.org>
+ <20101130175317.GB25668@bombadil.infradead.org>
+ <20101130210938.GF25668@bombadil.infradead.org>
+ <4CF62EE0.7040607@kernel.org>
+ <20101201124445.GG25668@bombadil.infradead.org>
+ <4CF6595A.6010104@kernel.org>
+ <20101201155026.GH25668@bombadil.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201155026.GH25668@bombadil.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 14:58 -0500, Vivek Goyal wrote:
-> On Wed, Dec 01, 2010 at 08:49:49PM +0100, Peter Zijlstra wrote:
-> > On Wed, 2010-12-01 at 14:46 -0500, Vivek Goyal wrote:
-> > > On Wed, Dec 01, 2010 at 08:38:12PM +0100, Peter Zijlstra wrote:
-> > > > On Wed, 2010-12-01 at 11:23 -0500, Vivek Goyal wrote:
-> > > > > > What does kexec normally do to ensure hardware is left in a sane state?
-> > > > > 
-> > > > > Typically calls device_shutdown() and sysdev_shutdown() from
-> > > > > kernel_restart_prepare() to shutdown the devices.
-> > > > > 
-> > > > > Also calls machine_shutdown() which depending on architecture can take
-> > > > > care of various things like stopping other cpus, shutting down LAPIC, 
-> > > > > disabling IOAPIC, disabling hpet, shutting down IOMMU etc
-> > > > > (native_machine_shutdown()). 
-> > > > 
-> > > > So basically there's no sane generic reset callout?
-> > > 
-> > > I think ->shutdown() calls are sane generic callouts. Isn't it?
+On Wed, Dec 01, 2010 at 10:50:26AM -0500, Kyle McMartin wrote:
+> > Nothing peculiar.  Hmm... okay, I think I've found what went wrong.
+> > Can you please try the following patch and see whether the problem
+> > goes away?
 > > 
-> > ->shutdown looks like it's about to reset/halt the hardware, no point in
-> > slowing down the regular shutdown/reboot path for something like this,
-> > we know the hardware will get reset to a sane state.
 > 
-> I think we already call ->shutdown() in regular reboot path.
+> Thanks, I'll let you know when/if it drops to 1.5gbps.
 > 
-> kernel_restart()
->   kernel_restart_prepare()
->     device_shutdown();
->     sysdev_shutdown();
-> 
-> So it should not make lot of difference if perf subsystem/counters are
-> also shutdown using ->shutdown().
 
-Oh, but I'm not a device or sysdev thing, I'll never get something like
-that.
+Looks to stay at 3.0 Gbps now... but gives up on EH after 5 retries?
 
-> > 
-> > > There seem to be few exceptions for LAPIC, IOMMU and HPET and I am not
-> > > sure why they are not covered by shutdown calls. CCing Eric, he might
-> > > have more insight into it.
-> > 
-> > That's all arch specific, but even there I don't think the reset code
-> > should live outside of kexec.
-> 
-> I would not know the history but I have heard stories that if you don't
-> shutdown the hardware over restart, BIOS might not be expecting it and
-> might get trumped.
+[ 4342.048572] ata1: hard resetting link
+[ 4342.507282] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 4342.510118] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.510127] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4342.510413] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.510421] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4342.514766] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.514774] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4342.515024] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.515031] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4342.516697] ata1.00: configured for UDMA/100
+[ 4342.516977] ata1: hard resetting link
+[ 4342.976018] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 4342.978892] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.978900] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4342.979186] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.979193] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4342.983577] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.983585] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4342.983865] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4342.983872] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4342.984989] ata1.00: configured for UDMA/100
+[ 4342.985408] ata1: hard resetting link
+[ 4343.445045] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 4343.447845] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.447856] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4343.448119] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.448126] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4343.451322] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.451330] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4343.451628] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.451635] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4343.452961] ata1.00: configured for UDMA/100
+[ 4343.453269] ata1: hard resetting link
+[ 4343.912801] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 4343.915808] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.915816] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4343.916102] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.916110] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4343.921403] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.921411] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4343.921679] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4343.921686] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4343.923580] ata1.00: configured for UDMA/100
+[ 4343.923841] ata1: hard resetting link
+[ 4344.383113] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 4344.386020] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4344.386029] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4344.386309] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4344.386320] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4344.390462] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4344.390470] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE
+LOCK) filtered out
+[ 4344.390737] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES)
+succeeded
+[ 4344.390744] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+filtered out
+[ 4344.392217] ata1.00: configured for UDMA/100
+[ 4344.392496] ata1: EH pending after 5 tries, giving up
+[ 4344.392507] ata1: EH complete
 
-Never yet had a problem with that.
+regards, Kyle
