@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab0LBVzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:55:21 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:42613 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758032Ab0LBVyE (ORCPT
+	id S1758124Ab0LBVzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:55:19 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32081 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758038Ab0LBVyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Dec 2010 16:54:04 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: s9VnubMVM1lCknTDnok51qH9Rm6J_T_NbK.gq6sth2wbxYe
- ZxSnej4atz5TS8ZWmdVV.iZds_3h.MmM6lX0FKwxEovt.sX56PyxfJSNOlJj
- pizYz_UMevQ4.od23XsV892YcrdTqT9umIrfN4EvfnH7OdXJG_hlG584Eo2Y
- AVhEZ7LA1xhoeUoY2kf.kV1Z8nheItq94MNxckGjWyHyhYD8CJF6D1HjOVBF
- ZuP7xeJvyIWdms3hKY.PvPOJ2cS2K9GZztMakYDJfGI5OYTGa6Gqax_4NFJ2
- dKNoJYgB5bqeV52fVynrz
+X-YMail-OSG: Djv_Sx8VM1k35V8I5J0tWBh.Y.ltMP1AZF81sxIqr2onX6C
+ rpqQW5ADbofJsbH5L.XS6kHqwRsfqr8GljUnomhFxcZiJfaURJXmNP9N.WjU
+ MCJIOUMQo2QT0SDKYWKmaBiF72VkguyDl9eJqD6ybpENvJRucerKz._kBEkC
+ uNciwvv8rmmZ49BAT91a_1jdFUo.wXr_uj48mXnYNoDksZo9C1racbfCpTPK
+ GNyHqsT3p.VI5uCJoULZQW9sqT6YjKv4ja5nunOvKFr94zrWbDPeg53QjiqQ
+ ckj1tsnEij09km_gtT.zD
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101202215400.609058574@linux.com>
+Message-Id: <20101202215401.808262317@linux.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 02 Dec 2010 15:53:43 -0600
+Date: Thu, 02 Dec 2010 15:53:45 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linux-foundation.org
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
@@ -25,323 +25,164 @@ Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [rfc: cpuops adv V1 3/8] x86: this_cpu_cmpxchg and this_cpu_cmpxchg_double operations
+Subject: [rfc: cpuops adv V1 5/8] vmstat: User per cpu atomics to avoid interrupt disable / enable
 References: <20101202215340.562309713@linux.com>
-Content-Disposition: inline; filename=this_cpu_cmpxchg_x86
+Content-Disposition: inline; filename=vmstat_group
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide support as far as the hardware capabilities of the x86 cpus
-allow.
+Currently the operations to increment vm counters must disable interrupts
+in order to not mess up their housekeeping of counters.
 
-V1->V2:
-	- Mark %rdx clobbering during cmpxchg16b
-	- Provide emulation of cmpxchg16b for early AMD processors
+So use this_cpu_cmpxchg() to avoid the overhead. Since we can no longer
+count on preremption being disabled  we still have some minor issues.
+The fetching of the counter thresholds is racy.
+A threshold from another cpu may be applied if we happen to be
+rescheduled on another cpu.  However, the following vmstat operation
+will then bring the counter again under the threshold limit.
+
+The operations for __xxx_zone_state are not changed since the caller
+has taken care of the synchronization needs (and therefore the cycle
+count is even less than the optimized version for the irq disable case
+provided here).
+
+The optimization using this_cpu_cmpxchg will only be used if the arch
+supports efficient this_cpu_ops (must have CONFIG_CMPXCHG_LOCAL set!)
+
+The use of this_cpu_cmpxchg reduces the cycle count for the counter
+operations by %80 (inc_zone_page_state goes from 170 cycles to 32).
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/Kconfig.cpu          |    3 
- arch/x86/include/asm/percpu.h |  183 +++++++++++++++++++++++++++++++++++++++++-
- arch/x86/lib/Makefile         |    1 
- arch/x86/lib/cmpxchg16b_emu.S |   55 ++++++++++++
- 4 files changed, 238 insertions(+), 4 deletions(-)
+ mm/vmstat.c |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 87 insertions(+), 14 deletions(-)
 
-Index: linux-2.6/arch/x86/lib/Makefile
+Index: linux-2.6/mm/vmstat.c
 ===================================================================
---- linux-2.6.orig/arch/x86/lib/Makefile	2010-11-30 15:14:05.000000000 -0600
-+++ linux-2.6/arch/x86/lib/Makefile	2010-12-01 09:50:55.000000000 -0600
-@@ -42,4 +42,5 @@ else
-         lib-y += memmove_64.o memset_64.o
-         lib-y += copy_user_64.o rwlock_64.o copy_user_nocache_64.o
- 	lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem_64.o
-+	lib-y += cmpxchg16b_emu.o
- endif
-Index: linux-2.6/arch/x86/lib/cmpxchg16b_emu.S
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6/arch/x86/lib/cmpxchg16b_emu.S	2010-12-01 09:50:55.000000000 -0600
-@@ -0,0 +1,55 @@
-+/*
-+ *	This program is free software; you can redistribute it and/or
-+ *	modify it under the terms of the GNU General Public License
-+ *	as published by the Free Software Foundation; version 2
-+ *	of the License.
-+ *
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/alternative-asm.h>
-+#include <asm/frame.h>
-+#include <asm/dwarf2.h>
-+
-+
-+.text
-+
-+/*
-+ * Inputs:
-+ * %rsi : memory location to compare
-+ * %rax : low 64 bits of old value
-+ * %rdx : high 64 bits of old value
-+ * %rbx : low 64 bits of new value
-+ * %rcx : high 64 bits of new value
-+ * %al  : Operation successful
-+ */
-+ENTRY(cmpxchg16b_local_emu)
-+CFI_STARTPROC
-+
-+#
-+# Emulate 'cmpxchg16b %gs:(%rsi)' except we return the result in
-+# al not via the ZF. Caller will access al to get result.
-+#
-+cmpxchg16b_local_emu:
-+	pushf
-+	cli
-+
-+	cmpq  %gs:(%rsi), %rax
-+	jne not_same
-+	cmpq %gs:8(%rsi), %rdx
-+	jne not_same
-+
-+	movq %rbx,  %gs:(%rsi)
-+	movq %rcx, %gs:8(%rsi)
-+
-+	popf
-+	mov $1, %al
-+	ret
-+
-+ not_same:
-+	popf
-+	xor  %al,%al
-+	ret
-+
-+CFI_ENDPROC
-+ENDPROC(cmpxchg16b_local_emu)
-Index: linux-2.6/arch/x86/include/asm/percpu.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-01 09:47:44.000000000 -0600
-+++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-01 09:50:55.000000000 -0600
-@@ -212,6 +212,83 @@ do {									\
- 	ret__;								\
- })
+--- linux-2.6.orig/mm/vmstat.c	2010-12-01 10:04:19.000000000 -0600
++++ linux-2.6/mm/vmstat.c	2010-12-01 10:09:06.000000000 -0600
+@@ -185,20 +185,6 @@ void __mod_zone_page_state(struct zone *
+ EXPORT_SYMBOL(__mod_zone_page_state);
  
-+/*
-+ * Beware: xchg on x86 has an implied lock prefix. There will be the cost of
-+ * full lock semantics even though they are not needed.
-+ */
-+#define percpu_xchg_op(var, nval)					\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __new = (nval);					\
-+	switch (sizeof(var)) {						\
-+	case 1:								\
-+		asm("xchgb %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "q" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 2:								\
-+		asm("xchgw %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 4:								\
-+		asm("xchgl %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 8:								\
-+		asm("xchgq %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	default: __bad_percpu_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
-+/*
-+ * cmpxchg has no such implies lock semantics as a result it is much
-+ * more efficient for cpu local operations.
-+ */
-+#define percpu_cmpxchg_op(var, oval, nval)				\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __old = (oval);					\
-+	typeof(var) __new = (nval);					\
-+	switch (sizeof(var)) {						\
-+	case 1:								\
-+		asm("cmpxchgb %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "q" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 2:								\
-+		asm("cmpxchgw %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 4:								\
-+		asm("cmpxchgl %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 8:								\
-+		asm("cmpxchgq %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	default: __bad_percpu_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
- #define percpu_from_op(op, var, constraint)		\
- ({							\
- 	typeof(var) pfo_ret__;				\
-@@ -335,14 +412,76 @@ do {									\
- #define irqsafe_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
- #define irqsafe_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
- 
-+#define __this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define __this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define __this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+
- #ifndef CONFIG_M386
- #define __this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
- #define __this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
- #define __this_cpu_add_return_4(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
--#endif
-+#define this_cpu_add_return_1(pcp, val)		percpu_add_return_op((pcp), val)
-+#define this_cpu_add_return_2(pcp, val)		percpu_add_return_op((pcp), val)
-+#define this_cpu_add_return_4(pcp, val)		percpu_add_return_op((pcp), val)
-+
-+#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define irqsafe_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define irqsafe_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define irqsafe_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#endif /* !CONFIG_M386 */
-+
-+#ifdef CONFIG_X86_CMPXCHG64
-+#define percpu_cmpxchg8b_double(pcp, o1, o2, n1, n2)			\
-+({									\
-+	char __ret;							\
-+	typeof(o1) __o1 = o1;						\
-+	typeof(o1) __n1 = n1;						\
-+	typeof(o2) __o2 = o2;						\
-+	typeof(o2) __n2 = n2;						\
-+	typeof(o2) __dummy = n2;						\
-+	asm("cmpxchg8b "__percpu_arg(1)"\n\tsetz %0\n\t"		\
-+		    : "=a"(__ret), "=m" (*pcp), "=d"(__dummy)		\
-+		    :  "b"(__n1), "c"(__n2), "a"(__o1), "d"(__o2));	\
-+	__ret;								\
-+})
-+#endif /* CONFIG_X86_CMPXCHG64 */
-+
-+#define __this_cpu_cmpxchg_double_4(pcp, o1, o2, n1, n2) percpu_cmpxchg8b_double((pcp), o1, o2, n1, n2)
-+#define this_cpu_cmpxchg_double_4(pcp, o1, o2, n1, n2)	percpu_cmpxchg8b_double((pcp), o1, o2, n1, n2)
-+#define irqsafe_cpu_cmpxchg_double_4(pcp, o1, o2, n1, n2)	percpu_cmpxchg8b_double((pcp), o1, o2, n1, n2)
-+
-+#ifndef CONFIG_X86_64
-+#ifdef CONFIG_X86_CMPXCHG64
-+/* We can support a 8 byte cmpxchg with a special instruction on 32 bit */
-+#define __this_cpu_cmpxchg_8(pcp, oval, nval)				\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __old = (oval);					\
-+	typeof(var) __new = (nval);					\
-+	asm("cmpxchg8b %2, "__percpu_arg(1)				\
-+	    : "=A" (__ret), "+m" (&pcp)					\
-+	    : "b" (((u32)new), "c" ((u32)(new >> 32)),  "0" (__old)	\
-+	    : "memory");						\
-+	__ret;								\
-+})
-+
-+#define this_cpu_cmpxchg_8(pcp, oval, nval)	__this_cpu_cmpxchg_8(pcp, oval, nval)
-+#define irqsafe_cmpxchg_8(pcp, oval, nval)	__this_cpu_cmpxchg_8(pcp, oval, nval)
-+
-+#endif /* CONFIG_X86_CMPXCHG64 */
-+#endif /* !CONFIG_X86_64 */
-+
  /*
-  * Per cpu atomic 64 bit operations are only available under 64 bit.
-  * 32 bit must fall back to generic operations.
-@@ -370,6 +509,42 @@ do {									\
- #define __this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
+- * For an unknown interrupt state
+- */
+-void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+-					int delta)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-	__mod_zone_page_state(zone, item, delta);
+-	local_irq_restore(flags);
+-}
+-EXPORT_SYMBOL(mod_zone_page_state);
+-
+-/*
+  * Optimized increment and decrement functions.
+  *
+  * These are only for a single page and therefore can take a struct page *
+@@ -265,6 +251,92 @@ void __dec_zone_page_state(struct page *
+ }
+ EXPORT_SYMBOL(__dec_zone_page_state);
  
-+#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+
-+#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+#define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op((pcp), oval, nval)
-+
++#ifdef CONFIG_CMPXCHG_LOCAL
 +/*
-+ * Pretty complex macro to generate cmpxchg16 instruction. The instruction
-+ * is not supported on early AMD64 processors so we must be able to emulate
-+ * it in software. The address used in the cmpxchg16 instruction must be
-+ * aligned to a 16 byte boundary.
++ * If we have cmpxchg_local support then we do not need to incur the overhead
++ * that comes with local_irq_save/restore if we use this_cpu_cmpxchg.
++ *
++ * mod_state() modifies the zone counter state through atomic per cpu
++ * operations.
++ *
++ * Overstep mode specifies how overstep should handled:
++ *     0       No overstepping
++ *     1       Overstepping half of threshold
++ *     -1      Overstepping minus half of threshold
++*/
++static inline void mod_state(struct zone *zone,
++       enum zone_stat_item item, int delta, int overstep_mode)
++{
++	struct per_cpu_pageset __percpu *pcp = zone->pageset;
++	s8 __percpu *p = pcp->vm_stat_diff + item;
++	long o, n, t, z;
++
++	do {
++		z = 0;  /* overflow to zone counters */
++
++		/*
++		 * The fetching of the stat_threshold is racy. We may apply
++		 * a counter threshold to the wrong the cpu if we get
++		 * rescheduled while executing here. However, the following
++		 * will apply the threshold again and therefore bring the
++		 * counter under the threshold.
++		 */
++		t = this_cpu_read(pcp->stat_threshold);
++
++		o = this_cpu_read(*p);
++		n = delta + o;
++
++		if (n > t || n < -t) {
++			int os = overstep_mode * (t >> 1) ;
++
++			/* Overflow must be added to zone counters */
++			z = n + os;
++			n = -os;
++		}
++	} while (this_cpu_cmpxchg(*p, o, n) != o);
++
++	if (z)
++		zone_page_state_add(z, zone, item);
++}
++
++void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
++					int delta)
++{
++	mod_state(zone, item, delta, 0);
++}
++EXPORT_SYMBOL(mod_zone_page_state);
++
++void inc_zone_state(struct zone *zone, enum zone_stat_item item)
++{
++	mod_state(zone, item, 1, 1);
++}
++
++void inc_zone_page_state(struct page *page, enum zone_stat_item item)
++{
++	mod_state(page_zone(page), item, 1, 1);
++}
++EXPORT_SYMBOL(inc_zone_page_state);
++
++void dec_zone_page_state(struct page *page, enum zone_stat_item item)
++{
++	mod_state(page_zone(page), item, -1, -1);
++}
++EXPORT_SYMBOL(dec_zone_page_state);
++#else
++/*
++ * Use interrupt disable to serialize counter updates
 + */
-+#define percpu_cmpxchg16b(pcp, o1, o2, n1, n2)			\
-+({									\
-+	char __ret;							\
-+	typeof(o1) __o1 = o1;						\
-+	typeof(o1) __n1 = n1;						\
-+	typeof(o2) __o2 = o2;						\
-+	typeof(o2) __n2 = n2;						\
-+	typeof(o2) __dummy;						\
-+	VM_BUG_ON(((unsigned long)pcp) % 16);				\
-+	alternative_io("call cmpxchg16b_local_emu\n\t" P6_NOP4,		\
-+			"cmpxchg16b %%gs:(%%rsi)\n\tsetz %0\n\t",	\
-+			X86_FEATURE_CX16,				\
-+		    	ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),	\
-+		        "S" (pcp), "b"(__n1), "c"(__n2),		\
-+			 "a"(__o1), "d"(__o2));				\
-+	__ret;								\
-+})
++void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
++					int delta)
++{
++	unsigned long flags;
 +
-+#define __this_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2) percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
-+#define this_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2)	percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
-+#define irqsafe_cpu_cmpxchg_double_8(pcp, o1, o2, n1, n2)	percpu_cmpxchg16b((pcp), o1, o2, n1, n2)
++	local_irq_save(flags);
++	__mod_zone_page_state(zone, item, delta);
++	local_irq_restore(flags);
++}
++EXPORT_SYMBOL(mod_zone_page_state);
 +
- #endif
+ void inc_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+ 	unsigned long flags;
+@@ -295,6 +367,7 @@ void dec_zone_page_state(struct page *pa
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(dec_zone_page_state);
++#endif
  
- /* This is not atomic against other CPUs -- CPU preemption needs to be off */
-Index: linux-2.6/arch/x86/Kconfig.cpu
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig.cpu	2010-12-01 10:04:37.000000000 -0600
-+++ linux-2.6/arch/x86/Kconfig.cpu	2010-12-01 10:05:18.000000000 -0600
-@@ -310,6 +310,9 @@ config X86_INTERNODE_CACHE_SHIFT
- config X86_CMPXCHG
- 	def_bool X86_64 || (X86_32 && !M386)
- 
-+config CMPXCHG_LOCAL
-+	def_bool X86_64 || (X86_32 && !M386)
-+
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
+ /*
+  * Update the zone counters for one cpu.
 
