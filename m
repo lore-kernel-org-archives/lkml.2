@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab0LBMpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 07:45:40 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37936 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512Ab0LBMpi (ORCPT
+	id S932159Ab0LBMpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 07:45:49 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49731 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757513Ab0LBMpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 07:45:38 -0500
+	Thu, 2 Dec 2010 07:45:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ku+UX/IFsN79N73FEo6WA2FkasWqs/x+pxLfrFE9ChOSvQGUyJItfLhRKU+Y5b9YJK
-         +/zA6JU42GOBBbZMOTA0WgmZuHIwghHSKW+eH71vYBUJeAUQXFs2VsHhCNDgBF9fwr4C
-         zm1ZE+crWTHHD5lsDHVew2924tTe9xoAieG24=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=r12YXofPKR1s7nkjHQRr+DlmekTYDqJGv/lCK9qLM2WSmC3fM0WCmW7dmzlJaFXik3
+         u6XFYQ/Y4btAYnRhUN35/OsCcJH1U7vqfGAW5bBjD5RjpzG8T6G6SelVO7R1w9MjZ6HP
+         EDgbYRwSOKadZvuyTrasG1SJmKjiyBAwoboIU=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH 1/2] wireless: ray_cs: use '%pm' format option to print MAC
-Date: Thu,  2 Dec 2010 14:45:07 +0200
-Message-Id: <1291293908-29180-1-git-send-email-andy.shevchenko@gmail.com>
+        Chas Williams <chas@cmf.nrl.navy.mil>,
+        linux-atm-general@lists.sourceforge.net
+Subject: [PATCH 2/2] atm: lanai: use kernel's '%pM' format option to print MAC
+Date: Thu,  2 Dec 2010 14:45:08 +0200
+Message-Id: <1291293908-29180-2-git-send-email-andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1291293908-29180-1-git-send-email-andy.shevchenko@gmail.com>
+References: <1291293908-29180-1-git-send-email-andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net
 ---
- drivers/net/wireless/ray_cs.c |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/atm/lanai.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/ray_cs.c b/drivers/net/wireless/ray_cs.c
-index 2b1cbba..0764d1a 100644
---- a/drivers/net/wireless/ray_cs.c
-+++ b/drivers/net/wireless/ray_cs.c
-@@ -1776,11 +1776,8 @@ static void ray_update_multi_list(struct net_device *dev, int all)
- 		/* Copy the kernel's list of MC addresses to card */
- 		netdev_for_each_mc_addr(ha, dev) {
- 			memcpy_toio(p, ha->addr, ETH_ALEN);
--			dev_dbg(&link->dev,
--			      "ray_update_multi add addr %02x%02x%02x%02x%02x%02x\n",
--			      ha->addr[0], ha->addr[1],
--			      ha->addr[2], ha->addr[3],
--			      ha->addr[4], ha->addr[5]);
-+			dev_dbg(&link->dev, "ray_update_multi add addr %pm\n",
-+				ha->addr);
- 			p += ETH_ALEN;
- 			i++;
- 		}
-@@ -2015,11 +2012,8 @@ static irqreturn_t ray_interrupt(int irq, void *dev_id)
- 				memcpy_fromio(&local->bss_id,
- 					      prcs->var.rejoin_net_complete.
- 					      bssid, ADDRLEN);
--				dev_dbg(&link->dev,
--				      "ray_cs new BSSID = %02x%02x%02x%02x%02x%02x\n",
--				      local->bss_id[0], local->bss_id[1],
--				      local->bss_id[2], local->bss_id[3],
--				      local->bss_id[4], local->bss_id[5]);
-+				dev_dbg(&link->dev, "ray_cs new BSSID = %pm\n",
-+					local->bss_id);
- 				if (!sniffer)
- 					authenticate(local);
- 			}
+diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
+index cbe15a8..930051d 100644
+--- a/drivers/atm/lanai.c
++++ b/drivers/atm/lanai.c
+@@ -2241,11 +2241,8 @@ static int __devinit lanai_dev_open(struct atm_dev *atmdev)
+ 	memcpy(atmdev->esi, eeprom_mac(lanai), ESI_LEN);
+ 	lanai_timed_poll_start(lanai);
+ 	printk(KERN_NOTICE DEV_LABEL "(itf %d): rev.%d, base=0x%lx, irq=%u "
+-	    "(%02X-%02X-%02X-%02X-%02X-%02X)\n", lanai->number,
+-	    (int) lanai->pci->revision, (unsigned long) lanai->base,
+-	    lanai->pci->irq,
+-	    atmdev->esi[0], atmdev->esi[1], atmdev->esi[2],
+-	    atmdev->esi[3], atmdev->esi[4], atmdev->esi[5]);
++		"(%pMF)\n", lanai->number, (int) lanai->pci->revision,
++		(unsigned long) lanai->base, lanai->pci->irq, atmdev->esi);
+ 	printk(KERN_NOTICE DEV_LABEL "(itf %d): LANAI%s, serialno=%u(0x%X), "
+ 	    "board_rev=%d\n", lanai->number,
+ 	    lanai->type==lanai2 ? "2" : "HB", (unsigned int) lanai->serialno,
 -- 
 1.7.2.3
 
