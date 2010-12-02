@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab0LBC1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:27:30 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:49955 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755503Ab0LBC13 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:27:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=YUYuxQE8pDZrN5-PJq1Q3jw7cP2yZKCXNAvPP@mail.gmail.com>
-References: <1291147139-23472-1-git-send-email-davidsin@ti.com>
-	<1291147139-23472-2-git-send-email-davidsin@ti.com>
-	<AANLkTi=q1HzYBpMH_pP+S5BtBQpHs62+zNfd_MtWHFuu@mail.gmail.com>
-	<AANLkTi=YUYuxQE8pDZrN5-PJq1Q3jw7cP2yZKCXNAvPP@mail.gmail.com>
-Date: Wed, 1 Dec 2010 20:27:24 -0600
-Message-ID: <AANLkTik1o4Ka_UnwWvmjVhQGrPwrOpPGG4mmu4zSiH+U@mail.gmail.com>
-Subject: Re: [RFC v2 1/8] TILER-DMM: DMM-PAT driver for TI TILER
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: "Varadarajan, Charulatha" <charu@ti.com>
-Cc: David Sin <davidsin@ti.com>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lajos Molnar <molnar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756720Ab0LBC3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:29:50 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42761 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755928Ab0LBC3t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:29:49 -0500
+Date: Wed, 1 Dec 2010 18:28:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        sam@ravnborg.org, eric.dumazet@gmail.com
+Subject: Re: [patch 1/3]make readmostly section correctly align
+Message-Id: <20101201182854.dd70bdf2.akpm@linux-foundation.org>
+In-Reply-To: <1291255341.12777.115.camel@sli10-conroe>
+References: <1291255341.12777.115.camel@sli10-conroe>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 8:10 PM, Kanigeri, Hari <h-kanigeri2@ti.com> wrote:
-> On Wed, Dec 1, 2010 at 12:04 AM, Varadarajan, Charulatha <charu@ti.com> wrote:
->> David,
->
->>
->>> +               if (!oh)
->>> +                       goto error;
->>> +
->>> +               data->base = oh->_mpu_rt_va;
->>
->> not required. Make use of platform_get APIs in probe to extract the
->> base, dma and irq info using pdev.
->
-> Not sure about using platform_get APIs. I think one has to use
-> omap_hwmod_get_mpu_rt_va to get the address, which internally returns
-> oh-<_mpu_rt_va.
-small correction... omap_device_get_rt_va and not omap_hwmod_get_mpu_rt_va.
+On Thu, 02 Dec 2010 10:02:21 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
 
-Thank you,
-Best regards,
-Hari Kanigeri
+> readmostly section should end at cache line aligned address, otherwise the last
+> several data might share cachline with other data and make the readmostly data
+> still have cache bounce.
+> For example, in ia64, secpath_cachep is the last readmostly data, and it shares
+> cacheline with init_uts_ns.
+> a000000100e80480 d secpath_cachep
+> a000000100e80488 D init_uts_ns
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> ---
+>  include/asm-generic/vmlinux.lds.h |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> Index: linux/include/asm-generic/vmlinux.lds.h
+> ===================================================================
+> --- linux.orig/include/asm-generic/vmlinux.lds.h	2010-12-01 16:49:48.000000000 +0800
+> +++ linux/include/asm-generic/vmlinux.lds.h	2010-12-02 09:22:32.000000000 +0800
+> @@ -192,7 +192,8 @@
+>  
+>  #define READ_MOSTLY_DATA(align)						\
+>  	. = ALIGN(align);						\
+> -	*(.data..read_mostly)
+> +	*(.data..read_mostly)						\
+> +	. = ALIGN(align);
+>  
+>  #define CACHELINE_ALIGNED_DATA(align)					\
+>  	. = ALIGN(align);						\
+> 
+
+Surely the sane way to do this is to ensure that each section *starts*
+at an at-least-cacheline aligned address and then not worry about how
+the section ends.  So shouldn't we be fixing DATA_DATA?
+
+With your approach, .data may end up sharing a cacheline with
+some other section in some undesirable manner on a different arch.
+
+"fixing" DATA_DATA would involve page-aligning it, which sucks a bit. 
+Things would be better if include/asm-generic/vmlinux.lds.h had access
+to a globally-agreed cacheline-size, as it does the page size.
+
+otoh, .data.read_mostly is "special", in that it wants the tail end of
+its last cacheline not to share with any other section.  Most other
+sections aren't like that.
+
