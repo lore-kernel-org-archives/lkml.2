@@ -1,170 +1,507 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab0LBVzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:55:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38258 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758104Ab0LBVzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:55:20 -0500
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] PCI: Disable ASPM if BIOS asks us to
-Date: Thu,  2 Dec 2010 16:55:04 -0500
-Message-Id: <1291326904-14822-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1758126Ab0LBVzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:55:17 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:38176 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758045Ab0LBVyE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 16:54:04 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: tAf.6j4VM1nFOzFaUPOf1u_MjGXDcboGe2l3NRND1n.Ola0
+ fDYQLW18rfNPY1ks53YGzDk5tQi7cmk0xzxGX_R7jpASL_NDCpA_zL_XOSu8
+ sDtJABQUJwueBBkFltuqgViX7Et2BFxgN3jQGE6LXpcdZxAjGfX1gajIK6uN
+ Tdk7xclkE4yncrrwTmFOFEH50Q2zUgLkpyQpGLdrNLiz7OXYyPRYgX.emCXJ
+ UaLcVnDEXCBN4gXWZJMcF.MSQ2g9QtpT.MmquLBza.lptZZGK07rB
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20101202215402.400104537@linux.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 02 Dec 2010 15:53:46 -0600
+From: Christoph Lameter <cl@linux.com>
+To: akpm@linux-foundation.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-kernel@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [rfc: cpuops adv V1 6/8] Lockless (and preemptless) fastpaths for slub
+References: <20101202215340.562309713@linux.com>
+Content-Disposition: inline; filename=slub_generation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently refuse to touch the ASPM registers if the BIOS tells us that
-ASPM isn't supported. This can cause problems if the BIOS has (for any
-reason) enabled ASPM on some devices anyway. Change the code such that we
-explicitly clear ASPM if the FADT indicates that ASPM isn't supported,
-and make sure we tidy up appropriately on device removal in order to deal
-with the hotplug case. If ASPM is disabled because the BIOS doesn't hand
-over control then we won't touch the registers.
+Use the this_cpu_cmpxchg_double functionality to implement a lockless
+allocation algorithm on arches that support fast this_cpu_ops.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Each of the per cpu pointers is paired with a transaction id that ensures
+that updates of the per cpu information can only occur in sequence on
+a certain cpu.
+
+A transaction id is a "long" integer that is comprised of an event number
+and the cpu number. The event number is incremented for every change to the
+per cpu state. This means that the cmpxchg instruction can verify for an
+update that nothing interfered and that we are updating the percpu structure
+for the processor where we picked up the information and that we are also
+currently on that processor when we update the information.
+
+This results in a significant decrease of the overhead in the fastpaths. It
+also makes it easy to adopt the fast path for realtime kernels since this
+is lockless and does not require that the use of the current per cpu area
+over the critical section. It is only important that the per cpu area is
+current at the beginning of the critical section and at that end.
+
+So there is no need even to disable preemption which will make the allocations
+scale well in a RT environment.
+
+Test results show that the fastpath cycle count is reduced by up to ~ 40%
+(alloc/free test goes from ~140 cycles down to ~80). The slowpath for kfree
+adds a few cycles.
+
+Sadly this does nothing for the slowpath which is where the main issues with
+performance in slub are but the best case performance rises significantly.
+(For that see the next patches)
+
+Kmalloc: alloc/free test
+
+Before:
+
+10000 times kmalloc(8)/kfree -> 142 cycles
+10000 times kmalloc(16)/kfree -> 142 cycles
+10000 times kmalloc(32)/kfree -> 142 cycles
+10000 times kmalloc(64)/kfree -> 142 cycles
+10000 times kmalloc(128)/kfree -> 142 cycles
+10000 times kmalloc(256)/kfree -> 140 cycles
+10000 times kmalloc(512)/kfree -> 140 cycles
+10000 times kmalloc(1024)/kfree -> 144 cycles
+10000 times kmalloc(2048)/kfree -> 144 cycles
+10000 times kmalloc(4096)/kfree -> 144 cycles
+10000 times kmalloc(8192)/kfree -> 144 cycles
+10000 times kmalloc(16384)/kfree -> 913 cycles
+
+After:
+
+10000 times kmalloc(8)/kfree -> 81 cycles
+10000 times kmalloc(16)/kfree -> 81 cycles
+10000 times kmalloc(32)/kfree -> 81 cycles
+10000 times kmalloc(64)/kfree -> 81 cycles
+10000 times kmalloc(128)/kfree -> 81 cycles
+10000 times kmalloc(256)/kfree -> 87 cycles
+10000 times kmalloc(512)/kfree -> 87 cycles
+10000 times kmalloc(1024)/kfree -> 87 cycles
+10000 times kmalloc(2048)/kfree -> 84 cycles
+10000 times kmalloc(4096)/kfree -> 81 cycles
+10000 times kmalloc(8192)/kfree -> 81 cycles
+10000 times kmalloc(16384)/kfree -> 927 cycles
+
+
+Kmalloc: Repeatedly allocate then free test
+
+Before:
+
+10000 times kmalloc(8) -> 102 cycles kfree -> 111 cycles
+10000 times kmalloc(16) -> 101 cycles kfree -> 111 cycles
+10000 times kmalloc(32) -> 120 cycles kfree -> 114 cycles
+10000 times kmalloc(64) -> 161 cycles kfree -> 130 cycles
+10000 times kmalloc(128) -> 284 cycles kfree -> 129 cycles
+10000 times kmalloc(256) -> 410 cycles kfree -> 134 cycles
+10000 times kmalloc(512) -> 312 cycles kfree -> 197 cycles
+10000 times kmalloc(1024) -> 377 cycles kfree -> 494 cycles
+10000 times kmalloc(2048) -> 571 cycles kfree -> 522 cycles
+10000 times kmalloc(4096) -> 674 cycles kfree -> 565 cycles
+10000 times kmalloc(8192) -> 836 cycles kfree -> 648 cycles
+10000 times kmalloc(16384) -> 1201 cycles kfree -> 775 cycles
+
+After:
+
+10000 times kmalloc(8) -> 69 cycles kfree -> 115 cycles
+10000 times kmalloc(16) -> 73 cycles kfree -> 115 cycles
+10000 times kmalloc(32) -> 86 cycles kfree -> 119 cycles
+10000 times kmalloc(64) -> 122 cycles kfree -> 125 cycles
+10000 times kmalloc(128) -> 247 cycles kfree -> 132 cycles
+10000 times kmalloc(256) -> 375 cycles kfree -> 137 cycles
+10000 times kmalloc(512) -> 283 cycles kfree -> 183 cycles
+10000 times kmalloc(1024) -> 316 cycles kfree -> 504 cycles
+10000 times kmalloc(2048) -> 516 cycles kfree -> 531 cycles
+10000 times kmalloc(4096) -> 610 cycles kfree -> 570 cycles
+10000 times kmalloc(8192) -> 759 cycles kfree -> 651 cycles
+10000 times kmalloc(16384) -> 1169 cycles kfree -> 778 cycles
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
 ---
- drivers/pci/pci-acpi.c          |    2 +-
- drivers/pci/pcie/aspm.c         |   20 +++++++++++++++-----
- drivers/pci/pcie/portdrv_core.c |    2 +-
- drivers/pci/pcie/portdrv_pci.c  |    2 +-
- include/linux/pci-aspm.h        |    4 ++--
- 5 files changed, 20 insertions(+), 10 deletions(-)
+ include/linux/slub_def.h |    5 -
+ mm/slub.c                |  228 ++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 219 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 24e19c5..e2c47cb 100644
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -399,7 +399,7 @@ static int __init acpi_pci_init(void)
+Index: linux-2.6/include/linux/slub_def.h
+===================================================================
+--- linux-2.6.orig/include/linux/slub_def.h	2010-12-02 14:53:23.000000000 -0600
++++ linux-2.6/include/linux/slub_def.h	2010-12-02 14:58:48.000000000 -0600
+@@ -36,7 +36,10 @@ enum stat_item {
+ 	NR_SLUB_STAT_ITEMS };
  
- 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
- 		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
--		pcie_no_aspm();
-+		pcie_no_aspm(true);
- 	}
- 
- 	ret = register_acpi_bus_type(&acpi_pci_bus);
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 7122281..08a2232 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -68,7 +68,7 @@ struct pcie_link_state {
- 	struct aspm_latency acceptable[8];
- };
- 
--static int aspm_disabled, aspm_force;
-+static int aspm_disabled, aspm_force, aspm_clear_state;
- static DEFINE_MUTEX(aspm_lock);
- static LIST_HEAD(link_list);
- 
-@@ -498,6 +498,10 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
- 	struct pci_dev *child;
- 	int pos;
- 	u32 reg32;
-+
-+	if (aspm_clear_state)
-+		return -EINVAL;
-+
- 	/*
- 	 * Some functions in a slot might not all be PCIe functions,
- 	 * very strange. Disable ASPM for the whole slot
-@@ -563,12 +567,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
- 	struct pcie_link_state *link;
- 	int blacklist = !!pcie_aspm_sanity_check(pdev);
- 
--	if (aspm_disabled || !pci_is_pcie(pdev) || pdev->link_state)
-+	if (!pci_is_pcie(pdev) || pdev->link_state)
- 		return;
- 	if (pdev->pcie_type != PCI_EXP_TYPE_ROOT_PORT &&
- 	    pdev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)
- 		return;
- 
-+	if (aspm_disabled && !aspm_clear_state)
-+		return;
-+
- 	/* VIA has a strange chipset, root port is under a bridge */
- 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT &&
- 	    pdev->bus->self)
-@@ -641,7 +648,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
- 	struct pci_dev *parent = pdev->bus->self;
- 	struct pcie_link_state *link, *root, *parent_link;
- 
--	if (aspm_disabled || !pci_is_pcie(pdev) ||
-+	if ((aspm_disabled && !aspm_clear_state) || !pci_is_pcie(pdev) ||
- 	    !parent || !parent->link_state)
- 		return;
- 	if ((parent->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
-@@ -899,10 +906,13 @@ static int __init pcie_aspm_disable(char *str)
- 
- __setup("pcie_aspm=", pcie_aspm_disable);
- 
--void pcie_no_aspm(void)
-+void pcie_no_aspm(bool clear)
+ struct kmem_cache_cpu {
+-	void **freelist;	/* Pointer to first free per cpu object */
++	void **freelist;		/* Pointer to next available object */
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long tid;	/* Globally unique transaction id */
++#endif
+ 	struct page *page;	/* The slab from which we are allocating */
+ 	int node;		/* The node of the page (or -1 for debug) */
+ #ifdef CONFIG_SLUB_STATS
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2010-12-02 14:53:23.000000000 -0600
++++ linux-2.6/mm/slub.c	2010-12-02 15:36:55.000000000 -0600
+@@ -805,14 +805,24 @@ static inline void slab_post_alloc_hook(
+ static inline void slab_free_hook(struct kmem_cache *s, void *x)
  {
--	if (!aspm_force)
-+	if (!aspm_force) {
- 		aspm_disabled = 1;
-+		if (clear)
-+			aspm_clear_state = clear;
+ 	kmemleak_free_recursive(x, s->flags);
+-}
+ 
+-static inline void slab_free_hook_irq(struct kmem_cache *s, void *object)
+-{
+-	kmemcheck_slab_free(s, object, s->objsize);
+-	debug_check_no_locks_freed(object, s->objsize);
+-	if (!(s->flags & SLAB_DEBUG_OBJECTS))
+-		debug_check_no_obj_freed(object, s->objsize);
++	/*
++	 * Trouble is that we no longer disable interupts in the fast path
++	 * So in order to make the debug calls that expect irqs to be
++	 * disabled we need to disable interrupts temporarily.
++	 */
++#if defined(CONFIG_KMEMCHECK) || defined(CONFIG_LOCKDEP)
++	{
++		unsigned long flags;
++
++		local_irq_save(flags);
++		kmemcheck_slab_free(s, x, s->objsize);
++		debug_check_no_locks_freed(x, s->objsize);
++		if (!(s->flags & SLAB_DEBUG_OBJECTS))
++			debug_check_no_obj_freed(x, s->objsize);
++		local_irq_restore(flags);
 +	}
++#endif
  }
  
- /**
-diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-index a9c222d..bb0fda1 100644
---- a/drivers/pci/pcie/portdrv_core.c
-+++ b/drivers/pci/pcie/portdrv_core.c
-@@ -244,7 +244,7 @@ static int get_port_device_capability(struct pci_dev *dev)
- 	err = pcie_port_platform_notify(dev, &cap_mask);
- 	if (pcie_ports_auto) {
- 		if (err) {
--			pcie_no_aspm();
-+			pcie_no_aspm(false);
- 			return 0;
- 		}
- 	} else {
-diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-index f9033e1..87f5343 100644
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -328,7 +328,7 @@ static int __init pcie_portdrv_init(void)
- 	int retval;
+ /*
+@@ -1099,9 +1109,6 @@ static inline void slab_post_alloc_hook(
  
- 	if (pcie_ports_disabled) {
--		pcie_no_aspm();
-+		pcie_no_aspm(false);
- 		return -EACCES;
+ static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
+ 
+-static inline void slab_free_hook_irq(struct kmem_cache *s,
+-		void *object) {}
+-
+ #endif /* CONFIG_SLUB_DEBUG */
+ 
+ /*
+@@ -1485,6 +1492,77 @@ static void unfreeze_slab(struct kmem_ca
  	}
- 
-diff --git a/include/linux/pci-aspm.h b/include/linux/pci-aspm.h
-index 91ba0b3..c7176a6 100644
---- a/include/linux/pci-aspm.h
-+++ b/include/linux/pci-aspm.h
-@@ -27,7 +27,7 @@ extern void pcie_aspm_init_link_state(struct pci_dev *pdev);
- extern void pcie_aspm_exit_link_state(struct pci_dev *pdev);
- extern void pcie_aspm_pm_state_change(struct pci_dev *pdev);
- extern void pci_disable_link_state(struct pci_dev *pdev, int state);
--extern void pcie_no_aspm(void);
-+extern void pcie_no_aspm(bool clear_state);
- #else
- static inline void pcie_aspm_init_link_state(struct pci_dev *pdev)
- {
-@@ -42,7 +42,7 @@ static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
- {
  }
  
--static inline void pcie_no_aspm(void)
-+static inline void pcie_no_aspm(bool clear_state)
- {
++#ifdef CONFIG_CMPXCHG_LOCAL
++#ifdef CONFIG_PREEMPT
++/*
++ * Calculate the next globally unique transaction for disambiguiation
++ * during cmpxchg. The transactions start with the cpu number and are then
++ * incremented by CONFIG_NR_CPUS.
++ */
++#define TID_STEP  roundup_pow_of_two(CONFIG_NR_CPUS)
++#else
++/*
++ * No preemption supported therefore also no need to check for
++ * different cpus.
++ */
++#define TID_STEP 1
++#endif
++
++static inline unsigned long next_tid(unsigned long tid)
++{
++	return tid + TID_STEP;
++}
++
++static inline unsigned int tid_to_cpu(unsigned long tid)
++{
++	return tid % TID_STEP;
++}
++
++static inline unsigned long tid_to_event(unsigned long tid)
++{
++	return tid / TID_STEP;
++}
++
++static inline unsigned int init_tid(int cpu)
++{
++	return cpu;
++}
++
++static inline void note_cmpxchg_failure(const char *n,
++		const struct kmem_cache *s, unsigned long tid)
++{
++#ifdef CONFIG_DEBUG_VM
++	unsigned long actual_tid = __this_cpu_read(s->cpu_slab->tid);
++
++	printk(KERN_INFO "%s %s: cmpxchg redo ", n, s->name);
++
++#ifdef CONFIG_PREEMPT
++	if (tid_to_cpu(tid) != tid_to_cpu(actual_tid))
++		printk("due to cpu change %d -> %d\n",
++			tid_to_cpu(tid), tid_to_cpu(actual_tid));
++	else
++#endif
++	if (tid_to_event(tid) != tid_to_event(actual_tid))
++		printk("due to cpu running other code. Event %ld->%ld\n",
++			tid_to_event(tid), tid_to_event(actual_tid));
++	else
++		printk("for unknown reason: actual=%lx was=%lx target=%lx\n",
++			actual_tid, tid, next_tid(tid));
++#endif
++}
++
++#endif
++
++void init_kmem_cache_cpus(struct kmem_cache *s)
++{
++#if defined(CONFIG_CMPXCHG_LOCAL) && defined(CONFIG_PREEMPT)
++	int cpu;
++
++	for_each_possible_cpu(cpu)
++		per_cpu_ptr(s->cpu_slab, cpu)->tid = init_tid(cpu);
++#endif
++
++}
+ /*
+  * Remove the cpu slab
+  */
+@@ -1516,6 +1594,9 @@ static void deactivate_slab(struct kmem_
+ 		page->inuse--;
+ 	}
+ 	c->page = NULL;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	c->tid = next_tid(c->tid);
++#endif
+ 	unfreeze_slab(s, page, tail);
  }
- #endif
--- 
-1.7.3.2
+ 
+@@ -1650,6 +1731,19 @@ static void *__slab_alloc(struct kmem_ca
+ {
+ 	void **object;
+ 	struct page *new;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long flags;
++
++	local_irq_save(flags);
++#ifdef CONFIG_PREEMPT
++	/*
++	 * We may have been preempted and rescheduled on a different
++	 * cpu before disabling interrupts. Need to reload cpu area
++	 * pointer.
++	 */
++	c = this_cpu_ptr(s->cpu_slab);
++#endif
++#endif
+ 
+ 	/* We handle __GFP_ZERO in the caller */
+ 	gfpflags &= ~__GFP_ZERO;
+@@ -1676,6 +1770,10 @@ load_freelist:
+ 	c->node = page_to_nid(c->page);
+ unlock_out:
+ 	slab_unlock(c->page);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	c->tid = next_tid(c->tid);
++	local_irq_restore(flags);
++#endif
+ 	stat(s, ALLOC_SLOWPATH);
+ 	return object;
+ 
+@@ -1737,23 +1835,73 @@ static __always_inline void *slab_alloc(
+ {
+ 	void **object;
+ 	struct kmem_cache_cpu *c;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long tid;
++#else
+ 	unsigned long flags;
++#endif
+ 
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+ 
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
++redo:
++#endif
++
++	/*
++	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
++	 * enabled. We may switch back and forth between cpus while
++	 * reading from one cpu area. That does not matter as long
++	 * as we end up on the original cpu again when doing the cmpxchg.
++	 */
+ 	c = __this_cpu_ptr(s->cpu_slab);
++
++#ifdef CONFIG_CMPXCHG_LOCAL
++	/*
++	 * The transaction ids are globally unique per cpu and per operation on
++	 * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
++	 * occurs on the right processor and that there was no operation on the
++	 * linked list in between.
++	 */
++	tid = c->tid;
++	barrier();
++#endif
++
+ 	object = c->freelist;
+ 	if (unlikely(!object || !node_match(c, node)))
+ 
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 
+ 	else {
++#ifdef CMPXCHG_LOCAL
++		/*
++		 * The cmpxchg will only match if there was no additonal
++		 * operation and if we are on the right processor.
++		 *
++		 * The cmpxchg does the following atomically (without lock semantics!)
++		 * 1. Relocate first pointer to the current per cpu area.
++		 * 2. Verify that tid and freelist have not been changed
++		 * 3. If they were not changed replace tid and freelist
++		 *
++		 * Since this is without lock semantics the protection is only against
++		 * code executing on this cpu *not* from access by other cpus.
++		 */
++		if (unlikely(!irqsafe_cpu_cmpxchg_double(&s->cpu_slab->freelist, object, tid,
++				get_freepointer(s, object), next_tid(tid)))) {
++
++			note_cmpxchg_failure("slab_alloc", s, tid);
++			goto redo;
++		}
++#else
+ 		c->freelist = get_freepointer(s, object);
++#endif
+ 		stat(s, ALLOC_FASTPATH);
+ 	}
++
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_restore(flags);
++#endif
+ 
+ 	if (unlikely(gfpflags & __GFP_ZERO) && object)
+ 		memset(object, 0, s->objsize);
+@@ -1817,9 +1965,13 @@ static void __slab_free(struct kmem_cach
+ {
+ 	void *prior;
+ 	void **object = (void *)x;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long flags;
+ 
+-	stat(s, FREE_SLOWPATH);
++	local_irq_save(flags);
++#endif
+ 	slab_lock(page);
++	stat(s, FREE_SLOWPATH);
+ 
+ 	if (kmem_cache_debug(s))
+ 		goto debug;
+@@ -1849,6 +2001,9 @@ checks_ok:
+ 
+ out_unlock:
+ 	slab_unlock(page);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	local_irq_restore(flags);
++#endif
+ 	return;
+ 
+ slab_empty:
+@@ -1860,6 +2015,9 @@ slab_empty:
+ 		stat(s, FREE_REMOVE_PARTIAL);
+ 	}
+ 	slab_unlock(page);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	local_irq_restore(flags);
++#endif
+ 	stat(s, FREE_SLAB);
+ 	discard_slab(s, page);
+ 	return;
+@@ -1886,23 +2044,53 @@ static __always_inline void slab_free(st
+ {
+ 	void **object = (void *)x;
+ 	struct kmem_cache_cpu *c;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long tid;
++#else
+ 	unsigned long flags;
++#endif
+ 
+ 	slab_free_hook(s, x);
+ 
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
++#endif
++
++redo:
++	/*
++	 * Determine the currently cpus per cpu slab.
++	 * The cpu may change afterward. However that does not matter since
++	 * data is retrieved via this pointer. If we are on the same cpu
++	 * during the cmpxchg then the free will succedd.
++	 */
+ 	c = __this_cpu_ptr(s->cpu_slab);
+ 
+-	slab_free_hook_irq(s, x);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	tid = c->tid;
++	barrier();
++#endif
+ 
+ 	if (likely(page == c->page && c->node != NUMA_NO_NODE)) {
+ 		set_freepointer(s, object, c->freelist);
++
++#ifdef CONFIG_CMPXCHG_LOCAL
++		if (unlikely(!irqsafe_cpu_cmpxchg_double(&s->cpu_slab->freelist,
++				c->freelist, tid,
++				object, next_tid(tid)))) {
++
++			note_cmpxchg_failure("slab_free", s, tid);
++			goto redo;
++		}
++#else
+ 		c->freelist = object;
++#endif
+ 		stat(s, FREE_FASTPATH);
+ 	} else
+ 		__slab_free(s, page, x, addr);
+ 
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_restore(flags);
++#endif
+ }
+ 
+ void kmem_cache_free(struct kmem_cache *s, void *x)
+@@ -2105,9 +2293,23 @@ static inline int alloc_kmem_cache_cpus(
+ 	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
+ 			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
+ 
++#ifdef CONFIG_CMPXCHG_LOCAL
++	/*
++	 * Must align to double word boundary for the long cmpxchg instructions
++	 * to work.
++	 */
++	s->cpu_slab = __alloc_percpu(sizeof(struct kmem_cache_cpu), 2 * sizeof(void *));
++#else
++	/* Regular alignment is sufficient */
+ 	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
++#endif
++
++	if (!s->cpu_slab)
++		return 0;
++
++	init_kmem_cache_cpus(s);
+ 
+-	return s->cpu_slab != NULL;
++	return 1;
+ }
+ 
+ static struct kmem_cache *kmem_cache_node;
 
