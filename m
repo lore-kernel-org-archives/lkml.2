@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab0LBACE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 19:02:04 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:40408 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755321Ab0LBACD (ORCPT
+	id S1755506Ab0LBAHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 19:07:08 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:33388 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab0LBAHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 19:02:03 -0500
-Message-ID: <4CF6E1C2.1090101@euromail.se>
-Date: Thu, 02 Dec 2010 01:01:06 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Kevin McNeely <Kevin.McNeely@cypress.com>
-CC: Trilok Soni <tsoni@codeaurora.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Luotao Fu <l.fu@pengutronix.de>, linux-input@vger.kernel.org,
+	Wed, 1 Dec 2010 19:07:06 -0500
+Date: Wed, 1 Dec 2010 16:11:44 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: Greg KH <greg@kroah.com>
+cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-References: <Kevin McNeely <kev@cypress.com> <1289327120-2612-1-git-send-email-kev@cypress.com> <4CE163CC.1060202@euromail.se> <FB9C2CB29A07AB45B575A4E8D2AABC090119784D@labamba.mis.cypress.com> <4CF5F7BA.7070909@codeaurora.org> <4CF65DF8.2010806@euromail.se> <FB9C2CB29A07AB45B575A4E8D2AABC0901231946@labamba.mis.cypress.com>
-In-Reply-To: <FB9C2CB29A07AB45B575A4E8D2AABC0901231946@labamba.mis.cypress.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PNwc8-0000nN-6S.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PNwc8-0000nN-6S 11591a6132030255000e496f110406ae
+Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
+In-Reply-To: <20101201202350.GA1717@kroah.com>
+Message-ID: <Pine.LNX.4.64.1012011601440.8183@cobra.newdream.net>
+References: <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
+ <20101119020820.GB18767@kroah.com> <AANLkTim4p=tpaQG_XDE5Vk0YAypYCegAguYNKRg-LeDF@mail.gmail.com>
+ <20101123001410.GA31294@kroah.com> <AANLkTi=n9aJ_8VAcyOXQxxeprWzerZLf0H+ryHZs7O04@mail.gmail.com>
+ <20101123005838.GB29289@kroah.com> <1290558233.1792.73.camel@yehudasa-desktop>
+ <Pine.LNX.4.64.1012011117460.8183@cobra.newdream.net> <20101201194751.GA1171@kroah.com>
+ <Pine.LNX.4.64.1012011203290.8183@cobra.newdream.net> <20101201202350.GA1717@kroah.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2010 12:59 AM, Kevin McNeely wrote:
-
-> Hello Henrik,
+On Wed, 1 Dec 2010, Greg KH wrote:
+> On Wed, Dec 01, 2010 at 12:08:15PM -0800, Sage Weil wrote:
+> > On Wed, 1 Dec 2010, Greg KH wrote:
+> > > >  /sys/bus/rbd/{add,remove}
+> > > >  /sys/bus/rbd/devices/<devid>/                 <-- struct device
+> > > >  /sys/bus/rbd/devices/<devid>/{some dev attrs}
+> > > >  /sys/bus/rbd/devices/<devid>/snap_<snapid>/   <-- struct device
+> > > >  /sys/bus/rbd/devices/<devid>/snap_<snapid>/{some snap attrs}
+> > > > 
+> > > > This works, and I is (I hope) using struct device properly.  The only 
+> > > > problem, purely from a user interface standpoint, is that the snaps are 
+> > > > mixed in with attributes, so anybody wanting to iterate over snaps needs 
+> > > > to do something crufty like
+> > > > 
+> > > >  $ for snap in `ls /sys/bus/rbd/devices/$id | grep ^snap_ | cut -c 6-`; do ...
+> > > 
+> > > What's wrong with:
+> > > 	for snap in `ls /sys/bus/rbd/devices/$id/snap_*`; do ...
+> > > instead?
+> > 
+> > Yeah, it's really the 'cut -c 6-' bit that I was hoping to avoid.  But it 
+> > snaps/ simply doesn't map onto the sysfs paradigm cleanly, that's fine.
+> > 
+> > That being the case, can we get an Acked-by on the current approach/patch?  
 > 
-> Cypress would like to submit as Protocol A now and provide a Protocol B
-> update later.
+> Yes, please feel free to add:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de> to the patch.
+
+Great.  Thanks for all your time and help!
+ 
+> > Then I can send something Linus and let him decide what to do for .37.
 > 
-> May I submit the updated Core Driver with the Protocol A only (tracking
-> ID's removed)? The updated Core Driver also includes other changes as
-> you recommended.
+> It's pretty late for .37.  Why not disable the option for now, and then
+> get this patch in for .38 as it's quite a big change?  I'd recommend
+> doing that.
 
+Yeah, it's late, but it would be nice to get RBD out there for people to 
+try sooner rather than later (it's already been a couple kernel cycles out 
+of tree).  But I suspect Linus will agree with you... :)
 
-Absolutely, you are welcome.
-
-Henrik
+Anyway, thanks again!
+sage
