@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab0LBWGu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 17:06:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42762 "EHLO mga11.intel.com"
+	id S1758030Ab0LBWIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 17:08:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757269Ab0LBWGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 17:06:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,289,1288594800"; 
-   d="scan'208";a="863787403"
-Date: Thu, 2 Dec 2010 14:06:50 -0800
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Paul Menage <menage@google.com>
-Cc: container cgroup <containers@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [RFC PATCH 1/2] cgroup: add per cgroup timer_slack_ns
-Message-ID: <20101202140650.1bc71e53@jacob-laptop>
-In-Reply-To: <AANLkTimRrSjJDAxS2Pe5bfMbR=nuV6WQiJdnawSb_kZd@mail.gmail.com>
-References: <1291230012-9536-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1291230012-9536-2-git-send-email-jacob.jun.pan@linux.intel.com>
-	<AANLkTi=1uv-+Y5t85tyHKk91nJyAKNg5V4Fk2HTJ+ASS@mail.gmail.com>
-	<20101202124559.0a7128de@jacob-laptop>
-	<AANLkTimRrSjJDAxS2Pe5bfMbR=nuV6WQiJdnawSb_kZd@mail.gmail.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756091Ab0LBWIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 17:08:20 -0500
+Date: Thu, 2 Dec 2010 17:08:05 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: LVM general discussion and development <linux-lvm@redhat.com>
+Cc: Spelic <spelic@shiftmail.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, npiggin@kernel.dk, dm-devel@redhat.com, tytso@mit.edu
+Subject: Re: Bugs in mkfs.xfs, device mapper, xfs, and /dev/ram
+Message-ID: <20101202220805.GA23388@redhat.com>
+References: <4CF7A539.1050206@shiftmail.org>
+ <20101202141134.GA22012@infradead.org>
+ <4CF7A9C4.2040607@shiftmail.org>
+ <20101202141737.GA29799@infradead.org>
+ <20101202212227.GA22703@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202212227.GA22703@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Dec 2010 12:52:36 -0800
-Paul Menage <menage@google.com> wrote:
+On Thu, Dec 02 2010 at  4:22pm -0500,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
-> On Thu, Dec 2, 2010 at 12:45 PM, jacob pan
-> <jacob.jun.pan@linux.intel.com> wrote:
-> >
-> > I guess timer_slack_ns alone cannot qualify for a new subsystem,
+> On Thu, Dec 02 2010 at  9:17am -0500,
+> Christoph Hellwig <hch@infradead.org> wrote:
 > 
-> I think that it's providing a sufficiently different control from
-> existing subsystems that making it a separate subsystem is reasonable.
-> The cpuset subsystem definitely doesn't sound like the right place,
-> since it's more dealing with numa isolation/policy. The cpu subsystem
-> could be, since it also deals with scheduling stuff.
+> > On Thu, Dec 02, 2010 at 03:14:28PM +0100, Spelic wrote:
+> > > On 12/02/2010 03:11 PM, Christoph Hellwig wrote:
+> > > >I'm pretty sure you have CONFIG_DEBUG_BLOCK_EXT_DEVT enabled.  This
+> > > >option must never be enabled, as it causes block devices to be
+> > > >randomly renumered.  Together with the ramdisk driver overloading
+> > > >the BLKFLSBUF ioctl to discard all data it guarantees you to get
+> > > >data loss like yours.
+> > > 
+> > > Nope...
+> > > 
+> > > # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+> > 
+> > Hmm, I suspect dm-linear's dumb forwarding of ioctls has the same
+> > effect.
 > 
-> Paul
-thanks for the pointer. let me try to add a new subsystem. call
-it timer? perhaps will have future expansion.
+> For the benefit of others:
+> - mkfs.xfs will avoid sending BLKFLSBUF to any device whose major is
+>   ramdisk's major, this dates back to 2004:
+>   http://oss.sgi.com/archives/xfs/2004-08/msg00463.html
+> - but because a kpartx partition overlay (linear DM mapping) is used for
+>   the /dev/ram0p1 device, mkfs.xfs only sees a device with DM's major 
+> - so mkfs.xfs sends BLKFLSBUF to the DM device blissfully unaware that
+>   the backing device (behind the DM linear target) is a brd device
+> - DM will forward the BLKFLSBUF ioctl to brd, which triggers
+>   drivers/block/brd.c:brd_ioctl (nuking the entire ramdisk in the
+>   process)
+> 
+> So coming full circle this is what hch was referring to when he
+> mentioned:
+> 1) "ramdisk driver overloading the BLKFLSBUF ioctl ..."
+> 2) "dm-linear's dumb forwarding of ioctls ..."
+> 
+> I really can't see DM adding a specific check for ramdisk's major when
+> forwarding the BLKFLSBUF ioctl.
+> 
+> brd has direct partition support (see commit d7853d1f8932c) so maybe
+> kpartx should just blacklist /dev/ram devices?
+> 
+> Alternatively, what about switching brd away from overloading BLKFLSBUF
+> to a real implementation of (overloaded) BLKDISCARD support in brd.c?
+> One that doesn't blindly nuke the entire device but that properly
+> processes the discard request.
+
+Hmm, any chance we could revisit this approach?
+
+http://lkml.indiana.edu/hypermail/linux/kernel/0405.3/0998.html
