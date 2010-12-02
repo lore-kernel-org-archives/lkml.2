@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab0LBSO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 13:14:57 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61720 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab0LBSOz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 13:14:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pWuSQU7zVzibzmyQgg8bZQD/3GWmmHufZtUk2xzJGa8QOiaGwnryk1Wr5mlsYHw8qy
-         ngbWrpBFXCFnXS+ph4m/4Trn9y7nISKvfwXgEIfkMl2jM0Ae0nmYdLtgwnZlFNzWWSId
-         Jd/4MvoyGUGAZU72qSZfcopwLPJ0PxVbo9s3s=
-Date: Thu, 2 Dec 2010 19:14:04 +0100
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Charles Manning <cdhmanning@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] Add yaffs2 file system: allocator, attribs, bitmap
- code
-Message-ID: <20101202181344.GA2853@joi.lan>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
- <1291154254-22533-2-git-send-email-cdhmanning@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291154254-22533-2-git-send-email-cdhmanning@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757292Ab0LBSPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 13:15:09 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:50422 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757144Ab0LBSPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 13:15:07 -0500
+Date: Thu, 2 Dec 2010 19:14:12 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Borislav Petkov <bp@amd64.org>
+Newsgroups: gmane.linux.kernel
+Cc: Tobias Karnat <tobias.karnat@googlemail.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: edac_core: crashes on shutdown
+Message-ID: <20101202191412.288b82f8@schatten.dmk.lab>
+In-Reply-To: <20101202170610.GE27263@aftab>
+References: <1291201307.3029.21.camel@Tobias-Karnat>
+	<20101201123921.GA15530@a1.tnic>
+	<1291209888.12511.11.camel@Tobias-Karnat>
+	<20101201143329.GB18074@a1.tnic>
+	<1291225614.8646.4.camel@Tobias-Karnat>
+	<20101201193508.GA4916@liondog.tnic>
+	<1291280613.10626.22.camel@Tobias-Karnat>
+	<20101202152106.GA29301@a1.tnic>
+	<1291306872.3898.7.camel@Tobias-Karnat>
+	<20101202170610.GE27263@aftab>
+X-Newsreader: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 10:57:27AM +1300, Charles Manning wrote:
-> +void yaffs_load_current_time(struct yaffs_obj *obj, int do_a, int do_c)
-> +{
-> +	obj->yst_mtime = Y_CURRENT_TIME;
-                 ^
-> +	if (do_a)
-> +		obj->yst_atime = obj->yst_atime;
-                         ^                ^
-> +	if (do_c)
-> +		obj->yst_ctime = obj->yst_atime;
-                         ^                ^
-> +}
-> +
+On Thu, 2 Dec 2010 18:06:10 +0100
+Borislav Petkov <bp@amd64.org> wrote:
 
-Funny bug.
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> Date: Thu, 2 Dec 2010 17:48:35 +0100
+> Subject: [PATCH] EDAC: Fix workqueue-related crashes
+> 
+> 00740c58541b6087d78418cebca1fcb86dc6077d changed edac_core to
+> un-/register a workqueue item only if a lowlevel driver supplies a
+> polling routine. Normally, when we remove a polling low-level driver,
+> we go and teardown the workqueue and cancel all the queued work.
+> However, the workqueue unreg happens based on the ->op_state setting,
+> and edac_mc_del_mc() sets this to OP_OFFLINE _before_ we cancel the work
+> item, leading to NULL ptr oops on the workqueue list.
+> 
+> Fix it by putting the unreg stuff in proper order.
 
-Marcin
+Yes. That should work. Once we stopped the workqueue and removed it
+from the global list, do we actually need to set it to OP_OFFLINE?
+
+Also 00740c585 did fix a hang in edac_mc.c... could this also
+happen in the edac_device_del_device/edac_pci_del_device functions? 
+
+Regards,
+Flo
 
