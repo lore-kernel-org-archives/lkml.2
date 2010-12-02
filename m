@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768Ab0LBORj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 09:17:39 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:50523 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757716Ab0LBORi (ORCPT
+	id S1757726Ab0LBOkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 09:40:00 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:42011 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757445Ab0LBOj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 09:17:38 -0500
-Date: Thu, 2 Dec 2010 09:17:37 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Spelic <spelic@shiftmail.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com, linux-lvm@redhat.com
-Subject: Re: Bugs in mkfs.xfs, device mapper, xfs, and /dev/ram
-Message-ID: <20101202141737.GA29799@infradead.org>
-References: <4CF7A539.1050206@shiftmail.org>
- <20101202141134.GA22012@infradead.org>
- <4CF7A9C4.2040607@shiftmail.org>
+	Thu, 2 Dec 2010 09:39:59 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Yn1bH8kVM1k9gnTDlXUTI8aHHfR7BRrPg7GpKbl9fTkIDgG
+ fsCnfXscfovIfEjXvNnzRaUcAb.D0wn_KXjDMYAgfROet61BTXtfoxEYvKaY
+ sk6Ddlz0o6wWTqoPpZjGpL5ts35mPfskSpiSYqas3bvhnDW2CQVyvjToaPuI
+ Un1yIROpEE21AVZqsX7fpK8rVT_ZdqLBpnWlR7HJ7qd3DYlIz17ktRTG3ivP
+ TU_uLULiXGPxREgmfG4lRkgohDAbmm1lUy9Qic4E-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 2 Dec 2010 08:39:55 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Simon Kirby <sim@hostway.ca>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Free memory never fully used, swapping
+In-Reply-To: <20101202093337.1573.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1012020836590.27798@router.home>
+References: <20101201114226.ABAB.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1012010910450.2989@router.home> <20101202093337.1573.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF7A9C4.2040607@shiftmail.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 03:14:28PM +0100, Spelic wrote:
-> On 12/02/2010 03:11 PM, Christoph Hellwig wrote:
-> >I'm pretty sure you have CONFIG_DEBUG_BLOCK_EXT_DEVT enabled.  This
-> >option must never be enabled, as it causes block devices to be
-> >randomly renumered.  Together with the ramdisk driver overloading
-> >the BLKFLSBUF ioctl to discard all data it guarantees you to get
-> >data loss like yours.
-> 
-> Nope...
-> 
-> # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+On Thu, 2 Dec 2010, KOSAKI Motohiro wrote:
 
-Hmm, I suspect dm-linear's dumb forwarding of ioctls has the same
-effect.
+> So I think we have multiple option
+>
+> 1) reduce slub_max_order and slub only use safely order
+> 2) slub don't invoke reclaim when high order tryal allocation
+>    (ie turn off GFP_WAIT and turn on GFP_NOKSWAPD)
+> 3) slub pass new hint to reclaim and reclaim don't work so aggressively if
+>    such hint is passwd.
+>
+>
+> So I have one question. I thought (2) is most nature. but now slub doesn't.
+
+2) so far has not been available. GFP_NOKSWAPD does not exist upstream.
 
