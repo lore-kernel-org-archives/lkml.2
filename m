@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0LBAAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 19:00:24 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:59734 "EHLO ns2.cypress.com"
+	id S1755619Ab0LBAB1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 19:01:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46333 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752093Ab0LBAAX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 19:00:23 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1751475Ab0LBAB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 19:01:26 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: 2.6.35.5: hibernation broken... AGAIN
+Date: Thu, 2 Dec 2010 01:00:39 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Hugh Dickins <hughd@google.com>, Ondrej Zary <linux@rainbow-software.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>
+References: <201011171139.33398.linux@rainbow-software.org> <201012012323.31311.rjw@sisk.pl> <20101202083753.eaed2963.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101202083753.eaed2963.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-Date: Wed, 1 Dec 2010 15:59:46 -0800
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901231946@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-Thread-Index: AcuRZZgD1AP6S14iSdKZ9JCt854AAQATRy2Q
-References: <Kevin McNeely <kev@cypress.com> <1289327120-2612-1-git-send-email-kev@cypress.com> <4CE163CC.1060202@euromail.se> <FB9C2CB29A07AB45B575A4E8D2AABC090119784D@labamba.mis.cypress.com> <4CF5F7BA.7070909@codeaurora.org> <4CF65DF8.2010806@euromail.se>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Henrik Rydberg" <rydberg@euromail.se>,
-        "Trilok Soni" <tsoni@codeaurora.org>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>,
-        "Simtec Linux Team" <linux@simtec.co.uk>,
-        "Luotao Fu" <l.fu@pengutronix.de>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 01 Dec 2010 23:59:47.0494 (UTC) FILETIME=[D55BFC60:01CB91B3]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012020100.39574.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Henrik,
-
-Cypress would like to submit as Protocol A now and provide a Protocol B
-update later.
-
-May I submit the updated Core Driver with the Protocol A only (tracking
-ID's removed)? The updated Core Driver also includes other changes as
-you recommended.
-
-Thank you,
-Kevin
-
-> -----Original Message-----
-> From: Henrik Rydberg [mailto:rydberg@euromail.se]
-> Sent: Wednesday, December 01, 2010 6:39 AM
-> To: Trilok Soni
-> Cc: Kevin McNeely; Dmitry Torokhov; David Brown; Samuel Ortiz; Eric
-> Miao; Simtec Linux Team; Luotao Fu; linux-input@vger.kernel.org;
-linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
+On Thursday, December 02, 2010, KAMEZAWA Hiroyuki wrote:
+> On Wed, 1 Dec 2010 23:23:31 +0100
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> >>>
+> > On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
+> > > On Wednesday, December 01, 2010, KAMEZAWA Hiroyuki wrote:
+> > > > On Wed, 1 Dec 2010 01:38:53 +0100
+> > > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > > 
+> > > > > On Wednesday, December 01, 2010, Rafael J. Wysocki wrote:
+> > > > > > On Tuesday, November 30, 2010, Hugh Dickins wrote:
+> > > > > > > On Sat, 27 Nov 2010, Rafael J. Wysocki wrote:
+> > > > > > > > On Saturday, November 27, 2010, Ondrej Zary wrote:
+> > > > > ...
+> > > > > > > 
+> > > > > > > Trivial point, I suppose, but it bothers me that PM is accumulating
+> > > > > > > wrappers around wrappers around gfp_allowed_mask.  Looks like
+> > > > > > > clear_gfp_allowed_mask and set_gfp_allowed_mask (oddly asymmetrical)
+> > > > > > > were not really what we need.  How about scrapping them, and putting
+> > > > > > > pm_restrict_gfp_mask() and pm_restore_gfp_mask() into page_alloc.c?
+> > > > > > 
+> > > > > > Sure, that sounds like a good idea indeed.
+> > > > > 
+> > > > > Below is an updated patch in which I tried to address your comments.
+> > > > > 
+> > > > > I didn't find it very useful to couple pm_restore_gfp_mask() with the thawing
+> > > > > of tasks, but nevertheless I think all of the spots where it's needed are
+> > > > > covered now.
+> > > > > 
+> > > > > The patch has only been compile-tested for now, so caveat emptor.
+> > > > > 
+> > > > 
+> > > > Hmm, can't we have some error check as 
+> > > > 
+> > > > > +static gfp_t saved_gfp_mask;
+> > > > 
+> > > > atomic_t gfp_mask_save_mode_counter;
+> > > > 
+> > > > > +
+> > > > > +void pm_restore_gfp_mask(void)
+> > > > >  {
+> > > > >  	WARN_ON(!mutex_is_locked(&pm_mutex));
+> > > > > -	gfp_allowed_mask = mask;
+> > > > 
+> > > > 	if (atomic_dec_return(&gfp_mask_save_mode_counter))
+> > > > 		WARN_ONCE()
+> > > > 
+> > > > > +	if (saved_gfp_mask) {
+> > > > > +		gfp_allowed_mask = saved_gfp_mask;
+> > > > > +		saved_gfp_mask = 0;
+> > > > > +	}
+> > > > >  }
+> > > > 
+> > > > > +void pm_restrict_gfp_mask(void)
+> > > > >  {
+> > > > > -	gfp_t ret = gfp_allowed_mask;
+> > > > > -
+> > > > >  	WARN_ON(!mutex_is_locked(&pm_mutex));
+> > > > > -	gfp_allowed_mask &= ~mask;
+> > > > > -	return ret;
+> > > > > +	saved_gfp_mask = gfp_allowed_mask;
+> > > > > +	gfp_allowed_mask &= ~GFP_IOFS;
+> > > > 
+> > > > 	if (atomic_inc_return(&gfp_mask_save_mode_counter) > 1)
+> > > > 		WARN_ONCE()
+> > > > 
+> > > > or some ?
+> > > 
+> > > What exactly would that be useful for?
+> > 
+> > Please note that pm_restore_gfp_mask() can be legitimately called before
+> > pm_restrict_gfp_mask() via the SNAPSHOT_CREATE_IMAGE hibernate ioctl, so the
+> > test you're suggesting wouldn't really work.
+> > 
 > 
-> >>> Thanks for your submission. Please find comments on MT inline. On
-a
-> >>> general
-> >>> note, it is strongly recommended that this driver be converted to
-> the
-> >>> MT slots
-> >>> (type B) protocol.
-> >>
-> >> I will resubmit with Protocol A only at this time.  I will remove
-> the
-> >> Tracking ID's.
-> >>
-> >
-> > Any comments on this?
-> 
-> 
-> It is not optimal, but it is not wrong. If the plan is to support
-> kernels 2.6.38
-> and later, I strongly recommend using the type B protocol, as already
-> stated.
-> 
-> Henrik
+> Hm, I just wonder some tests not for breaking gfp_allowed_mask by
+>  - double call
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+That's easy.  It's sufficient to do WARN_ON(saved_gfp_mask) at the beginning
+of pm_restrict_gfp_mask().  This also takes care of the "forget to restore"
+case to some extent, because pm_restrict_gfp_mask() will generally be only
+called twice in a row if there's a missing pm_restore_gfp_mask() in between.
 
+>  - forget to restore
+
+This is kind of difficult in general.  You can't detect a missing
+pm_restore_gfp_mask() other than by checking if pm_restrict_gfp_mask() is not
+called twice in a row IMHO.
+
+> That will be fatal.
+
+Yes, it will.
+
+> I'm not very interested in implementation detail
+
+Well ...
+
+Thanks,
+Rafael
