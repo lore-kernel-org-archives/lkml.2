@@ -1,195 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab0LBDIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 22:08:18 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:28482 "EHLO mx2.netapp.com"
+	id S1756943Ab0LBDJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 22:09:52 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57317 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756546Ab0LBDIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 22:08:15 -0500
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="489804694"
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v3 2/3] Call the filesystem back whenever a page is removed from the page cache
-Date: Wed,  1 Dec 2010 22:08:04 -0500
-Message-Id: <1291259285-26803-3-git-send-email-Trond.Myklebust@netapp.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1291259285-26803-2-git-send-email-Trond.Myklebust@netapp.com>
-References: <1291259285-26803-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291259285-26803-2-git-send-email-Trond.Myklebust@netapp.com>
-In-Reply-To: <AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
-References: <AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
+	id S1756802Ab0LBDJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 22:09:50 -0500
+Date: Thu, 2 Dec 2010 14:09:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for December 2
+Message-Id: <20101202140943.c9742beb.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__2_Dec_2010_14_09_43_+1100_Ke5e97n/XqAUomK3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+--Signature=_Thu__2_Dec_2010_14_09_43_+1100_Ke5e97n/XqAUomK3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-NFS needs to be able to release objects that are stored in the page
-cache once the page itself is no longer visible from the page cache.
+Hi all,
 
-This patch adds a callback to the address space operations that allows
-filesystems to perform page cleanups once the page has been removed
-from the page cache.
+Changes since 20101201:
 
-Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
-[trondmy: cover the cases of invalidate_inode_pages2() and
-          truncate_inode_pages()]
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- Documentation/filesystems/Locking |    7 ++++++-
- Documentation/filesystems/vfs.txt |    7 +++++++
- include/linux/fs.h                |    1 +
- mm/truncate.c                     |    8 ++++++++
- mm/vmscan.c                       |   11 +++++++++++
- 5 files changed, 33 insertions(+), 1 deletions(-)
+The v4l-dvb tree still has its build failure for which I applied a patch.
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index a91f308..b6426f1 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -173,12 +173,13 @@ prototypes:
- 	sector_t (*bmap)(struct address_space *, sector_t);
- 	int (*invalidatepage) (struct page *, unsigned long);
- 	int (*releasepage) (struct page *, int);
-+	void (*freepage)(struct page *);
- 	int (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
- 			loff_t offset, unsigned long nr_segs);
- 	int (*launder_page) (struct page *);
- 
- locking rules:
--	All except set_page_dirty may block
-+	All except set_page_dirty and freepage may block
- 
- 			BKL	PageLocked(page)	i_mutex
- writepage:		no	yes, unlocks (see below)
-@@ -193,6 +194,7 @@ perform_write:		no	n/a			yes
- bmap:			no
- invalidatepage:		no	yes
- releasepage:		no	yes
-+freepage:		no	yes
- direct_IO:		no
- launder_page:		no	yes
- 
-@@ -288,6 +290,9 @@ buffers from the page in preparation for freeing it.  It returns zero to
- indicate that the buffers are (or may be) freeable.  If ->releasepage is zero,
- the kernel assumes that the fs has no private interest in the buffers.
- 
-+	->freepage() is called when the kernel is done dropping the page
-+from the page cache.
-+
- 	->launder_page() may be called prior to releasing a page if
- it is still found to be dirty. It returns zero if the page was successfully
- cleaned, or an error value if not. Note that in order to prevent the page
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index ed7e5ef..3b14a55 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -534,6 +534,7 @@ struct address_space_operations {
- 	sector_t (*bmap)(struct address_space *, sector_t);
- 	int (*invalidatepage) (struct page *, unsigned long);
- 	int (*releasepage) (struct page *, int);
-+	void (*freepage)(struct page *);
- 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
- 			loff_t offset, unsigned long nr_segs);
- 	struct page* (*get_xip_page)(struct address_space *, sector_t,
-@@ -679,6 +680,12 @@ struct address_space_operations {
-         need to ensure this.  Possibly it can clear the PageUptodate
-         bit if it cannot free private data yet.
- 
-+  freepage: freepage is called once the page is no longer visible in
-+        the page cache in order to allow the cleanup of any private
-+	data. Since it may be called by the memory reclaimer, it
-+	should not assume that the original address_space mapping still
-+	exists, and it should not block.
-+
-   direct_IO: called by the generic read/write routines to perform
-         direct_IO - that is IO requests which bypass the page cache
-         and transfer data directly between the storage and the
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index c9e06cc..090f0ea 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -602,6 +602,7 @@ struct address_space_operations {
- 	sector_t (*bmap)(struct address_space *, sector_t);
- 	void (*invalidatepage) (struct page *, unsigned long);
- 	int (*releasepage) (struct page *, gfp_t);
-+	void (*freepage)(struct page *);
- 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
- 			loff_t offset, unsigned long nr_segs);
- 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
-diff --git a/mm/truncate.c b/mm/truncate.c
-index ba887bf..76ab2a8 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -108,6 +108,10 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
- 	clear_page_mlock(page);
- 	remove_from_page_cache(page);
- 	ClearPageMappedToDisk(page);
-+
-+	if (mapping->a_ops->freepage)
-+		mapping->a_ops->freepage(page);
-+
- 	page_cache_release(page);	/* pagecache ref */
- 	return 0;
- }
-@@ -390,6 +394,10 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
- 	__remove_from_page_cache(page);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
-+
-+	if (mapping->a_ops->freepage)
-+		mapping->a_ops->freepage(page);
-+
- 	page_cache_release(page);	/* pagecache ref */
- 	return 1;
- failed:
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d31d7ce..9e218e7 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -454,6 +454,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(mapping != page_mapping(page));
- 
-+	preempt_disable();
- 	spin_lock_irq(&mapping->tree_lock);
- 	/*
- 	 * The non racy check for a busy page.
-@@ -492,10 +493,19 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
- 		swp_entry_t swap = { .val = page_private(page) };
- 		__delete_from_swap_cache(page);
- 		spin_unlock_irq(&mapping->tree_lock);
-+		preempt_enable();
- 		swapcache_free(swap, page);
- 	} else {
-+		void (*freepage)(struct page *);
-+
-+		freepage = mapping->a_ops->freepage;
-+
- 		__remove_from_page_cache(page);
- 		spin_unlock_irq(&mapping->tree_lock);
-+		if (freepage != NULL)
-+			freepage(page);
-+		preempt_enable();
-+
- 		mem_cgroup_uncharge_cache_page(page);
- 	}
- 
-@@ -503,6 +513,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
- 
- cannot_free:
- 	spin_unlock_irq(&mapping->tree_lock);
-+	preempt_enable();
- 	return 0;
- }
- 
--- 
-1.7.3.2
+The acpi tree gained a build failure so I used the version from
+next-20101201.
 
+The sound-asoc tree lost its build failure.
+
+The tip tree still has its build failures so I have reverted 3 commits.
+
+The staging tree gained a conflict against the staging.current tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 181 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
+Applying: rmobile: merge fixup for clkdev changes
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
+Merging hid/for-next
+CONFLICT (content): Merge conflict in drivers/hid/hid-input.c
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Applying: media: const and __devinitdata do not mix
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+$ git reset --hard HEAD^
+Merging refs/next/20101201/acpi
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging tip/auto-latest
+[master 3cdecc6] Revert "x86, nmi_watchdog: Remove all stub function calls =
+from old nmi_watchdog"
+$ git commit -v -a[master 8c7c55b] Revert "x86, nmi_watchdog: Remove the ol=
+d nmi_watchdog"
+[master 704db18] Revert "perf, arch: Cleanup perf-pmu init vs lockup-detect=
+or"
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen/upstream/xen
+Merging swiotlb-xen/master
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
+face.c
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/soft-inter=
+face.c
+CONFLICT (delete/modify): drivers/staging/winbond/sysdef.h deleted in stagi=
+ng/staging-next and modified in HEAD. Version HEAD of drivers/staging/winbo=
+nd/sysdef.h left in tree.
+$ git rm -f drivers/staging/winbond/sysdef.h
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Thu__2_Dec_2010_14_09_43_+1100_Ke5e97n/XqAUomK3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM9w33AAoJEDMEi1NhKgbsnAwH/Reob0+nbT1vdu32VDTdhGEz
+qhFCys3bu5tvpEd4VMZConvOXxGjsPOdR2grrfAGebtTi/X2FNuh1I7UThqfIv4z
+11aTyhK8WMkbsSpIgkh4MK62HondrZIrwAZzMyPnN8Ay4t6+xG0QoLTdM9yGjE15
+xX+iUsqs/DZ5d9uh7volozm2lqNMeRy9fmz42/E79V9odVh3GuoJ8H6c1x7NFQLZ
++UENYlAnsQ50LAtQBfEjSaY+cH9G2wmByMcG4+EWsRD3+qRZaJ+U3W/H3Y56Bbyq
+OaUW71n5VsMU8SFrdhMpjiEJwZv9chzkeE0Aa/zyNCEABGYo5ppddjKHzw8CWc0=
+=QalC
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Dec_2010_14_09_43_+1100_Ke5e97n/XqAUomK3--
