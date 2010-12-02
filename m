@@ -1,65 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab0LBTy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 14:54:59 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:43527 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757845Ab0LBTy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 14:54:57 -0500
-Date: Thu, 2 Dec 2010 20:54:05 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Tobias Karnat <tobias.karnat@googlemail.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: edac_core: crashes on shutdown
-Message-ID: <20101202205405.7ff38b7f@schatten.dmk.lab>
-In-Reply-To: <20101202185123.GI27263@aftab>
-References: <20101201123921.GA15530@a1.tnic>
-	<1291209888.12511.11.camel@Tobias-Karnat>
-	<20101201143329.GB18074@a1.tnic>
-	<1291225614.8646.4.camel@Tobias-Karnat>
-	<20101201193508.GA4916@liondog.tnic>
-	<1291280613.10626.22.camel@Tobias-Karnat>
-	<20101202152106.GA29301@a1.tnic>
-	<1291306872.3898.7.camel@Tobias-Karnat>
-	<20101202170610.GE27263@aftab>
-	<20101202191412.288b82f8@schatten.dmk.lab>
-	<20101202185123.GI27263@aftab>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758086Ab0LBT65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 14:58:57 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:6004 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757709Ab0LBT64 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 14:58:56 -0500
+Message-ID: <4CF7FAD2.9050006@bluewatersys.com>
+Date: Fri, 03 Dec 2010 09:00:18 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Charles Manning <cdhmanning@gmail.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] Add yaffs2 file system: verification code and other
+ headers
+References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com> <1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
+In-Reply-To: <1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Dec 2010 19:51:23 +0100
-Borislav Petkov <bp@amd64.org> wrote:
+On 12/01/2010 10:57 AM, Charles Manning wrote:
+> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
+> ---
 
-> On Thu, Dec 02, 2010 at 01:14:12PM -0500, Florian Mickler wrote:
-> > Yes. That should work. Once we stopped the workqueue and removed it
-> > from the global list, do we actually need to set it to OP_OFFLINE?
-> 
-> I think yes, because we seem to protect ourselves in the actual
-> edac_mc_workq_function() on exit, if we overlap the work items
-> cancellation with the execution of the delayed work at the same time on
-> a different cpu. Besides, it is a single assignment and it does cost us
-> almost nothing.
+<snip>
 
-true. I wonder if the flush workqueue waits for the work-function
-to finish? 
+> diff --git a/fs/yaffs2/yportenv.h b/fs/yaffs2/yportenv.h
+> new file mode 100644
+> index 0000000..8fd0da5
+> --- /dev/null
+> +++ b/fs/yaffs2/yportenv.h
+> @@ -0,0 +1,91 @@
+> +/*
+> + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
+> + *
+> + * Copyright (C) 2002-2010 Aleph One Ltd.
+> + *   for Toby Churchill Ltd and Brightstar Engineering
+> + *
+> + * Created by Charles Manning <charles@aleph1.co.uk>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU Lesser General Public License version 2.1 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
+> + */
+> +
+> +#ifndef __YPORTENV_LINUX_H__
+> +#define __YPORTENV_LINUX_H__
+> +
+> +#include <linux/version.h>
+> +#include <linux/kernel.h>
+> +#include <linux/mm.h>
+> +#include <linux/sched.h>
+> +#include <linux/string.h>
+> +#include <linux/slab.h>
+> +#include <linux/vmalloc.h>
+> +#include <linux/xattr.h>
+> +#include <linux/list.h>
+> +#include <linux/types.h>
+> +#include <linux/fs.h>
+> +#include <linux/stat.h>
+> +#include <linux/sort.h>
+> +#include <linux/bitops.h>
+> +
+> +#define YCHAR char
+> +#define YUCHAR unsigned char
+> +#define _Y(x)     x
+> +#define yaffs_strcat(a, b)     strcat(a, b)
+> +#define yaffs_strcpy(a, b)     strcpy(a, b)
+> +#define yaffs_strncpy(a, b, c) strncpy(a, b, c)
+> +#define yaffs_strncmp(a, b, c) strncmp(a, b, c)
+> +#define yaffs_strnlen(s,m)	strnlen(s,m)
+> +#define yaffs_sprintf	       sprintf
+> +#define yaffs_toupper(a)       toupper(a)
+> +#define yaffs_sort(base, n, sz, cmp_fn)	sort(base, n, sz, cmp_fn, NULL)
+> +
+> +#define Y_INLINE __inline__
+> +
+> +#define YAFFS_LOSTNFOUND_NAME		"lost+found"
+> +#define YAFFS_LOSTNFOUND_PREFIX		"obj"
+> +
+> +#define YMALLOC(x) kmalloc(x, GFP_NOFS)
+> +#define YFREE(x)   kfree(x)
+> +#define YMALLOC_ALT(x) vmalloc(x)
+> +#define YFREE_ALT(x)   vfree(x)
+> +#define YMALLOC_DMA(x) YMALLOC(x)
+> +
+> +#define YYIELD() schedule()
+> +#define Y_DUMP_STACK() dump_stack()
+> +
+> +#define YAFFS_ROOT_MODE			0755
+> +#define YAFFS_LOSTNFOUND_MODE		0700
+> +
+> +#define Y_CURRENT_TIME CURRENT_TIME.tv_sec
+> +#define Y_TIME_CONVERT(x) (x).tv_sec
+> +
+> +#define yaffs_sum_cmp(x, y) ((x) == (y))
+> +#define yaffs_strcmp(a, b) strcmp(a, b)
 
-> 
-> > Also 00740c585 did fix a hang in edac_mc.c... could this also happen
-> > in the edac_device_del_device/edac_pci_del_device functions?
-> 
-> Nope, because there we don't check ->op_state when we cancel the work
-> items in the respective _teardown() functions - we simply cancel them
-> unconditionally.
-> 
+You should try and remove the wrappers for as many of these as possible.
+I know the wrappers are there for portability to other operating
+systems, but for mainlining in Linux it makes the code more complex.
 
-But shouldn't we check ->op_state for those as well? Why don't we hang
-for those functions in similar cases as your original patch fixed?
+> +#define TENDSTR "\n"
+> +#define TSTR(x) KERN_DEBUG x
+> +#define TCONT(x) x
+> +#define TOUT(p) printk p
+> +
+> +#define compile_time_assertion(assertion) \
+> +	({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
 
+Can you use BUILD_BUG_ON?
+
+> +#ifndef Y_DUMP_STACK
+> +#define Y_DUMP_STACK() do { } while (0)
+> +#endif
+
+Y_DUMP_STACK is defined above so this ifdef is useless?
+
+> +#ifndef YBUG
+> +#define YBUG() do {\
+> +	T(YAFFS_TRACE_BUG,\
+> +		(TSTR("==>> yaffs bug: " __FILE__ " %d" TENDSTR),\
+> +		__LINE__));\
+> +	Y_DUMP_STACK();\
+> +} while (0)
+
+This macro name should possibly be changed since its name implies that
+it does the same thing as BUG().
+
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
