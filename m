@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab0LBKRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 05:17:43 -0500
-Received: from hera.kernel.org ([140.211.167.34]:52058 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757183Ab0LBKRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 05:17:41 -0500
-Message-ID: <4CF77225.3040904@kernel.org>
-Date: Thu, 02 Dec 2010 11:17:09 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-References: <4CF506A6.4020200@kernel.org> <20101130153839.GM15818@bombadil.infradead.org> <4CF52652.4030802@kernel.org> <20101130163150.GA25668@bombadil.infradead.org> <20101130175317.GB25668@bombadil.infradead.org> <20101130210938.GF25668@bombadil.infradead.org> <4CF62EE0.7040607@kernel.org> <20101201124445.GG25668@bombadil.infradead.org> <4CF6595A.6010104@kernel.org> <20101201155026.GH25668@bombadil.infradead.org> <20101201200907.GI25668@bombadil.infradead.org>
-In-Reply-To: <20101201200907.GI25668@bombadil.infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757413Ab0LBKUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 05:20:44 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:51041 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab0LBKUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 05:20:41 -0500
+Subject: Re: [PATCH 2/3] lib: Improve EWMA efficiency by using bitshifts
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Bruno Randolf <br1@einfach.org>
+Cc: linville@tuxdriver.com, randy.dunlap@oracle.com, br1@thinktube.com,
+        peterz@infradead.org, blp@cs.stanford.edu,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars_Ericsson@telia.com, j@w1.fi, stefanr@s5r6.in-berlin.de,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        kevin.granade@gmail.com
+In-Reply-To: <20101202101236.22988.1691.stgit@localhost6.localdomain6>
+References: <20101202101231.22988.33396.stgit@localhost6.localdomain6>
+	 <20101202101236.22988.1691.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Dec 2010 11:20:22 +0100
+Message-ID: <1291285222.3481.45.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 02 Dec 2010 10:17:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2010 09:09 PM, Kyle McMartin wrote:
-> On Wed, Dec 01, 2010 at 10:50:26AM -0500, Kyle McMartin wrote:
->>> Nothing peculiar.  Hmm... okay, I think I've found what went wrong.
->>> Can you please try the following patch and see whether the problem
->>> goes away?
->>>
->>
->> Thanks, I'll let you know when/if it drops to 1.5gbps.
->>
-> 
-> Looks to stay at 3.0 Gbps now... but gives up on EH after 5 retries?
+On Thu, 2010-12-02 at 19:12 +0900, Bruno Randolf wrote:
 
-Hmmm... something is setting EH_PENDING while EH is in progress.
-Let's see what's doing it.  Can you please apply the following patch
-on top of the previous one and report the kernel log?
+> +	/* get bitshift for weight */
+> +	for (n = 0; !(weight & 1); n++)
+> +		weight = weight >> 1;
+> +	WARN_ON(weight > 1 || n < 1);
 
-Thanks.
+I'm sure there's something like log2() (and is_power_of_2() for the
+warning) in the kernel already -- no need to reimplement it...
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 5e59050..8f0d854 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -896,6 +896,10 @@ static void ata_eh_set_pending(struct ata_port *ap, int fastdrain)
-
- 	ap->pflags |= ATA_PFLAG_EH_PENDING;
-
-+	ata_port_printk(ap, KERN_WARNING, "XXX SET EH PENDING, fastdrain=%d\n",
-+			fastdrain);
-+	dump_stack();
-+
- 	if (!fastdrain)
- 		return;
+johannes
 
