@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab0LBXlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 18:41:36 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54671 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab0LBXlf (ORCPT
+	id S932202Ab0LBXlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 18:41:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49918 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758233Ab0LBXlp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 18:41:35 -0500
-Subject: Re: [PATCH 3/3] ideapad: add hotkey support
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
-References: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>
-	 <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 02 Dec 2010 15:41:27 -0800
-Message-ID: <1291333287.10586.4698.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Dec 2010 18:41:45 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, "Andrew" <atswartz@gmail.com>,
+        "Robert Richter" <robert.richter@amd.com>
+References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
+In-Reply-To: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <gUkHV_Vc3aE.A.F8H.JzC-MB@chimera>
+Subject: [Bug #22812] kernel oops on 2.6.37-rc1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri,  3 Dec 2010 00:41:42 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:00 +0800, Ike Panhc wrote:
-> +static void ideapad_input_report(unsigned long scancode)
-> +{
-> +       sparse_keymap_report_event(ideapad_priv->inputdev, scancode, 1, true);
-> +} 
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-I got a little build error about some unresolved symbols in the module
-while compiling:
-        
-        ERROR: "sparse_keymap_setup" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-        ERROR: "sparse_keymap_free" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-        ERROR: "sparse_keymap_report_event" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-        
-You can get it to go away by setting CONFIG_INPUT_SPARSEKMAP=m or =y
-in .config.  But, I think your patches need this:
+The following bug entry is on the current list of known regressions
+from 2.6.36.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index faec777..879d266 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -226,6 +226,7 @@ config IDEAPAD_LAPTOP
- 	tristate "Lenovo IdeaPad Laptop Extras"
- 	depends on ACPI
- 	depends on RFKILL
-+	select INPUT_SPARSEKMAP
- 	help
- 	  This is a driver for the rfkill switches on Lenovo IdeaPad netbooks.
- 
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22812
+Subject		: kernel oops on 2.6.37-rc1
+Submitter	: Andrew <atswartz@gmail.com>
+Date		: 2010-11-12 16:05 (21 days old)
+First-Bad-Commit: http://git.kernel.org/linus/a68c439b1966c91f0ef474e2bf275d6792312726
+
 
