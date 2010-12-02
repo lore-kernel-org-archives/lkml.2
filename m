@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0LBWsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 17:48:22 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64724 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab0LBWsT (ORCPT
+	id S1758061Ab0LBWsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 17:48:18 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43282 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab0LBWsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 17:48:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=p7ZLpq5YN7jc4CbnHPQl8Sdbe+X3ZzJJ5KEj8CF9TM9pT7rF7B/UNza++CG3zRg98M
-         V9jTtX4aPzK46ODGxfQ/fxEg3ubgqIBVxa+Rh4TMkaBcZm6TS9UWu3e9ADn5NQkQItRY
-         Yl2sYAeYDho8BLOXhCOr7fGh0gAgtIGMuna/4=
-Date: Fri, 3 Dec 2010 01:48:16 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC] perf: Prevent potential null dereference
-Message-ID: <20101202224816.GB6471@lenovo>
-References: <20101202222605.GA6471@lenovo> <20101202224104.GA1639@nowhere> <20101202224609.GA31473@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101202224609.GA31473@ghostprotocols.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 2 Dec 2010 17:48:17 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=mj4VcQyPWysA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=-IMD-OhX-f2QkI05OmwA:9 a=ugEEesLZa_FcQ_Nkldz_5fCH_UQA:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101202223654.596106888@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 02 Dec 2010 17:36:54 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Subject: [RFC][PATCH 0/2] tracing: Add conditional to tracepoints
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 08:46:10PM -0200, Arnaldo Carvalho de Melo wrote:
-...
-> > > It seems exit right here is more convenient than passing error
-> > > handling level up (which would have to exit anyway), thought
-> > > if handling it "upper" is preferred -- just say a word.
-> > > 
-> > 
-> > Good.
-> > 
-> > As a nit, not that it matters that much because we are very close to the starting code
-> > anyway, but it would be better to propagate the error to the callers.
-> 
-> I'm of the opinion that main() should be where exit() is allowed, and
-> even there... return would be better. 8-)
-> 
-> - Arnaldo
-> 
+This is an RFC that adds the TP_CONDITION() to the TRACE_EVENT()
+code.
 
-ok, i'll update tomorrow (almost off).
+There are certain cases that a tracepoint only makes sense if
+a specific condition is met. But because we do not want to dirty
+the fast path (the non tracing case) with if statements that are
+there only to avoid tracing, we just pass the condition variables
+to the tracepoint, and let the user filter them out if needed.
 
-  Cyrill
+A perfect example is the tracepoint sched_wakeup. It traces all
+calls to try_to_wake_up() even if it fails to wake up. But if we add:
+
+	if (success)
+		trace_sched_wakeup(p);
+
+We have that "if (success)" tested for every time we call try_to_wake_up().
+Even when tracing is not (or never will be) enabled.
+
+This patch set adds a variant TRACE_EVENT_CONDITIONAL()
+(and DECLARE_EVENT_CLASS_CONDITIONAL()) that has a "cond" argument.
+This argument is encapsulated with "TP_CONDITIONAL()" which turns into:
+
+	if (!cond)
+		return;
+
+This is placed inside the called tracepoint routine, and is only tested
+when the trace is enabled. Otherwise it is a nop as tracepoints normally
+are when disabled.
+
+Note, another variant of this, is to move the test directly into the
+_DO_TRACE() macro, and not call any registered event callbacks. This would
+even speed it up faster when tracing is enabled. I did not do this
+orginially because I just thought of it now as I wrote this change log ;-)
+I'm posting this version now just in case people prefer it instead.
+
+The following patches are in:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+
+    branch: rfc/trace-conditional
+
+
+Steven Rostedt (2):
+      tracing: Add TRACE_EVENT_CONDITIONAL()
+      tracing: Only trace sched_wakeup if it actually work something up
+
+----
+ include/linux/tracepoint.h   |    3 ++
+ include/trace/define_trace.h |    6 +++
+ include/trace/events/sched.h |   12 +++---
+ include/trace/ftrace.h       |   70 +++++++++++++++++++++++++++++++----------
+ 4 files changed, 68 insertions(+), 23 deletions(-)
