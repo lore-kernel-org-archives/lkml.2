@@ -1,156 +1,638 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab0LBVYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:24:16 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:46580 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180Ab0LBVYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:24:15 -0500
-Date: Thu, 2 Dec 2010 16:23:46 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-Message-ID: <20101202212346.GK25668@bombadil.infradead.org>
-References: <4CF52652.4030802@kernel.org>
- <20101130163150.GA25668@bombadil.infradead.org>
- <20101130175317.GB25668@bombadil.infradead.org>
- <20101130210938.GF25668@bombadil.infradead.org>
- <4CF62EE0.7040607@kernel.org>
- <20101201124445.GG25668@bombadil.infradead.org>
- <4CF6595A.6010104@kernel.org>
- <20101201155026.GH25668@bombadil.infradead.org>
- <20101201200907.GI25668@bombadil.infradead.org>
- <4CF77225.3040904@kernel.org>
+	id S1758152Ab0LBVY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:24:29 -0500
+Received: from tundra.namei.org ([65.99.196.166]:42600 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758032Ab0LBVY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 16:24:27 -0500
+Date: Fri, 3 Dec 2010 08:24:16 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+cc: Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Smack: label for task objects (retry 2)
+In-Reply-To: <4CF7D16D.4060009@schaufler-ca.com>
+Message-ID: <alpine.LRH.2.00.1012030823150.25347@tundra.namei.org>
+References: <4CEE4D6E.4030204@nokia.com> <4CF7D16D.4060009@schaufler-ca.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF77225.3040904@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 11:17:09AM +0100, Tejun Heo wrote:
-> Hmmm... something is setting EH_PENDING while EH is in progress.
-> Let's see what's doing it.  Can you please apply the following patch
-> on top of the previous one and report the kernel log?
+On Thu, 2 Dec 2010, Casey Schaufler wrote:
+
+> After patch clean-up applied to:
+> 
+>   git://gitorious.org/smack-next/kernel.git
+> 
+> James, would you be so kind as to pull for security-testing#next?
+> I think that I have the git tree set up properly, but I'm sure
+> you'll let me know if I've missed something.
+
+This appears to have worked -- by default I'm pulling the 'master' branch 
+in your tree.  Is that correct?
+
+
+> 
+> Thank you.
+> 
+> > ---
+> >  include/linux/xattr.h         |    2 +
+> >  security/smack/smack.h        |   30 +++++++
+> >  security/smack/smack_access.c |    4 +-
+> >  security/smack/smack_lsm.c    |  192 ++++++++++++++++++++++++++++++-----------
+> >  security/smack/smackfs.c      |    4 +-
+> >  5 files changed, 178 insertions(+), 54 deletions(-)
+> >
+> > diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+> > index f1e5bde..351c790 100644
+> > --- a/include/linux/xattr.h
+> > +++ b/include/linux/xattr.h
+> > @@ -40,9 +40,11 @@
+> >  #define XATTR_SMACK_SUFFIX "SMACK64"
+> >  #define XATTR_SMACK_IPIN "SMACK64IPIN"
+> >  #define XATTR_SMACK_IPOUT "SMACK64IPOUT"
+> > +#define XATTR_SMACK_EXEC "SMACK64EXEC"
+> >  #define XATTR_NAME_SMACK XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
+> >  #define XATTR_NAME_SMACKIPIN    XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
+> >  #define XATTR_NAME_SMACKIPOUT    XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
+> > +#define XATTR_NAME_SMACKEXEC    XATTR_SECURITY_PREFIX XATTR_SMACK_EXEC
+> >   #define XATTR_CAPS_SUFFIX "capability"
+> >  #define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
+> > diff --git a/security/smack/smack.h b/security/smack/smack.h
+> > index 43ae747..a2e2cdf 100644
+> > --- a/security/smack/smack.h
+> > +++ b/security/smack/smack.h
+> > @@ -51,10 +51,16 @@ struct socket_smack {
+> >   */
+> >  struct inode_smack {
+> >      char        *smk_inode;    /* label of the fso */
+> > +    char        *smk_task;    /* label of the task */
+> >      struct mutex    smk_lock;    /* initialization lock */
+> >      int        smk_flags;    /* smack inode flags */
+> >  };
+> >  +struct task_smack {
+> > +    char        *smk_task;    /* label used for access control */
+> > +    char        *smk_forked;    /* label when forked */
+> > +};
+> > +
+> >  #define    SMK_INODE_INSTANT    0x01    /* inode is instantiated */
+> >   /*
+> > @@ -243,6 +249,30 @@ static inline char *smk_of_inode(const struct inode *isp)
+> >  }
+> >   /*
+> > + * Present a pointer to the smack label in an task blob.
+> > + */
+> > +static inline char *smk_of_task(const struct task_smack *tsp)
+> > +{
+> > +    return tsp->smk_task;
+> > +}
+> > +
+> > +/*
+> > + * Present a pointer to the forked smack label in an task blob.
+> > + */
+> > +static inline char *smk_of_forked(const struct task_smack *tsp)
+> > +{
+> > +    return tsp->smk_forked;
+> > +}
+> > +
+> > +/*
+> > + * Present a pointer to the smack label in the curren task blob.
+> > + */
+> > +static inline char *smk_of_current(void)
+> > +{
+> > +    return smk_of_task(current_security());
+> > +}
+> > +
+> > +/*
+> >   * logging functions
+> >   */
+> >  #define SMACK_AUDIT_DENIED 0x1
+> > diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+> > index f4fac64..42becbc 100644
+> > --- a/security/smack/smack_access.c
+> > +++ b/security/smack/smack_access.c
+> > @@ -185,7 +185,7 @@ out_audit:
+> >  int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
+> >  {
+> >      int rc;
+> > -    char *sp = current_security();
+> > +    char *sp = smk_of_current();
+> >       rc = smk_access(sp, obj_label, mode, NULL);
+> >      if (rc == 0)
+> > @@ -196,7 +196,7 @@ int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
+> >       * only one that gets privilege and current does not
+> >       * have that label.
+> >       */
+> > -    if (smack_onlycap != NULL && smack_onlycap != current->cred->security)
+> > +    if (smack_onlycap != NULL && smack_onlycap != sp)
+> >          goto out_audit;
+> >       if (capable(CAP_MAC_OVERRIDE))
+> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> > index 04a98c3..7e19afe 100644
+> > --- a/security/smack/smack_lsm.c
+> > +++ b/security/smack/smack_lsm.c
+> > @@ -43,7 +43,7 @@
+> >   * Returns a pointer to the master list entry for the Smack label
+> >   * or NULL if there was no label to fetch.
+> >   */
+> > -static char *smk_fetch(struct inode *ip, struct dentry *dp)
+> > +static char *smk_fetch(const char *name, struct inode *ip, struct dentry *dp)
+> >  {
+> >      int rc;
+> >      char in[SMK_LABELLEN];
+> > @@ -51,7 +51,7 @@ static char *smk_fetch(struct inode *ip, struct dentry *dp)
+> >      if (ip->i_op->getxattr == NULL)
+> >          return NULL;
+> >  -    rc = ip->i_op->getxattr(dp, XATTR_NAME_SMACK, in, SMK_LABELLEN);
+> > +    rc = ip->i_op->getxattr(dp, name, in, SMK_LABELLEN);
+> >      if (rc < 0)
+> >          return NULL;
+> >  @@ -103,8 +103,8 @@ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
+> >      if (rc != 0)
+> >          return rc;
+> >  -    sp = current_security();
+> > -    tsp = task_security(ctp);
+> > +    sp = smk_of_current();
+> > +    tsp = smk_of_task(task_security(ctp));
+> >      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+> >      smk_ad_setfield_u_tsk(&ad, ctp);
+> >  @@ -138,8 +138,8 @@ static int smack_ptrace_traceme(struct task_struct *ptp)
+> >      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+> >      smk_ad_setfield_u_tsk(&ad, ptp);
+> >  -    sp = current_security();
+> > -    tsp = task_security(ptp);
+> > +    sp = smk_of_current();
+> > +    tsp = smk_of_task(task_security(ptp));
+> >      /* we won't log here, because rc can be overriden */
+> >      rc = smk_access(tsp, sp, MAY_READWRITE, NULL);
+> >      if (rc != 0 && has_capability(ptp, CAP_MAC_OVERRIDE))
+> > @@ -160,7 +160,7 @@ static int smack_ptrace_traceme(struct task_struct *ptp)
+> >  static int smack_syslog(int typefrom_file)
+> >  {
+> >      int rc = 0;
+> > -    char *sp = current_security();
+> > +    char *sp = smk_of_current();
+> >       if (capable(CAP_MAC_OVERRIDE))
+> >          return 0;
+> > @@ -391,6 +391,40 @@ static int smack_sb_umount(struct vfsmount *mnt, int flags)
+> >  }
+> >   /*
+> > + * BPRM hooks
+> > + */
+> > +
+> > +static int smack_bprm_set_creds(struct linux_binprm *bprm)
+> > +{
+> > +    struct task_smack *tsp = bprm->cred->security;
+> > +    struct inode_smack *isp;
+> > +    struct dentry *dp;
+> > +    int rc;
+> > +
+> > +    rc = cap_bprm_set_creds(bprm);
+> > +    if (rc != 0)
+> > +        return rc;
+> > +
+> > +    if (bprm->cred_prepared)
+> > +        return 0;
+> > +
+> > +    if (bprm->file == NULL || bprm->file->f_dentry == NULL)
+> > +        return 0;
+> > +
+> > +    dp = bprm->file->f_dentry;
+> > +
+> > +    if (dp->d_inode == NULL)
+> > +        return 0;
+> > +
+> > +    isp = dp->d_inode->i_security;
+> > +
+> > +    if (isp->smk_task != NULL)
+> > +        tsp->smk_task = isp->smk_task;
+> > +
+> > +    return 0;
+> > +}
+> > +
+> > +/*
+> >   * Inode hooks
+> >   */
+> >  @@ -402,7 +436,7 @@ static int smack_sb_umount(struct vfsmount *mnt, int flags)
+> >   */
+> >  static int smack_inode_alloc_security(struct inode *inode)
+> >  {
+> > -    inode->i_security = new_inode_smack(current_security());
+> > +    inode->i_security = new_inode_smack(smk_of_current());
+> >      if (inode->i_security == NULL)
+> >          return -ENOMEM;
+> >      return 0;
+> > @@ -664,7 +698,8 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
+> >       if (strcmp(name, XATTR_NAME_SMACK) == 0 ||
+> >          strcmp(name, XATTR_NAME_SMACKIPIN) == 0 ||
+> > -        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0) {
+> > +        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
+> > +        strcmp(name, XATTR_NAME_SMACKEXEC) == 0) {
+> >          if (!capable(CAP_MAC_ADMIN))
+> >              rc = -EPERM;
+> >          /*
+> > @@ -704,9 +739,10 @@ static void smack_inode_post_setxattr(struct dentry *dentry, const char *name,
+> >      char *nsp;
+> >       /*
+> > -     * Not SMACK
+> > +     * Not SMACK or SMACKEXEC
+> >       */
+> > -    if (strcmp(name, XATTR_NAME_SMACK))
+> > +    if (strcmp(name, XATTR_NAME_SMACK) &&
+> > +        strcmp(name, XATTR_NAME_SMACKEXEC))
+> >          return;
+> >       isp = dentry->d_inode->i_security;
+> > @@ -716,10 +752,18 @@ static void smack_inode_post_setxattr(struct dentry *dentry, const char *name,
+> >       * assignment.
+> >       */
+> >      nsp = smk_import(value, size);
+> > -    if (nsp != NULL)
+> > -        isp->smk_inode = nsp;
+> > -    else
+> > -        isp->smk_inode = smack_known_invalid.smk_known;
+> > +
+> > +    if (strcmp(name, XATTR_NAME_SMACK) == 0) {
+> > +        if (nsp != NULL)
+> > +            isp->smk_inode = nsp;
+> > +        else
+> > +            isp->smk_inode = smack_known_invalid.smk_known;
+> > +    } else {
+> > +        if (nsp != NULL)
+> > +            isp->smk_task = nsp;
+> > +        else
+> > +            isp->smk_task = smack_known_invalid.smk_known;
+> > +    }
+> >       return;
+> >  }
+> > @@ -752,12 +796,14 @@ static int smack_inode_getxattr(struct dentry *dentry, const char *name)
+> >   */
+> >  static int smack_inode_removexattr(struct dentry *dentry, const char *name)
+> >  {
+> > +    struct inode_smack *isp;
+> >      struct smk_audit_info ad;
+> >      int rc = 0;
+> >       if (strcmp(name, XATTR_NAME_SMACK) == 0 ||
+> >          strcmp(name, XATTR_NAME_SMACKIPIN) == 0 ||
+> > -        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0) {
+> > +        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
+> > +        strcmp(name, XATTR_NAME_SMACKEXEC) == 0) {
+> >          if (!capable(CAP_MAC_ADMIN))
+> >              rc = -EPERM;
+> >      } else
+> > @@ -768,6 +814,11 @@ static int smack_inode_removexattr(struct dentry *dentry, const char *name)
+> >      if (rc == 0)
+> >          rc = smk_curacc(smk_of_inode(dentry->d_inode), MAY_WRITE, &ad);
+> >  +    if (rc == 0) {
+> > +        isp = dentry->d_inode->i_security;
+> > +        isp->smk_task = NULL;
+> > +    }
+> > +
+> >      return rc;
+> >  }
+> >  @@ -895,7 +946,7 @@ static int smack_file_permission(struct file *file, int mask)
+> >   */
+> >  static int smack_file_alloc_security(struct file *file)
+> >  {
+> > -    file->f_security = current_security();
+> > +    file->f_security = smk_of_current();
+> >      return 0;
+> >  }
+> >  @@ -1005,7 +1056,7 @@ static int smack_file_fcntl(struct file *file, unsigned int cmd,
+> >   */
+> >  static int smack_file_set_fowner(struct file *file)
+> >  {
+> > -    file->f_security = current_security();
+> > +    file->f_security = smk_of_current();
+> >      return 0;
+> >  }
+> >  @@ -1025,7 +1076,7 @@ static int smack_file_send_sigiotask(struct task_struct *tsk,
+> >  {
+> >      struct file *file;
+> >      int rc;
+> > -    char *tsp = tsk->cred->security;
+> > +    char *tsp = smk_of_task(tsk->cred->security);
+> >      struct smk_audit_info ad;
+> >       /*
+> > @@ -1082,7 +1133,9 @@ static int smack_file_receive(struct file *file)
+> >   */
+> >  static int smack_cred_alloc_blank(struct cred *cred, gfp_t gfp)
+> >  {
+> > -    cred->security = NULL;
+> > +    cred->security = kzalloc(sizeof(struct task_smack), gfp);
+> > +    if (cred->security == NULL)
+> > +        return -ENOMEM;
+> >      return 0;
+> >  }
+> >  @@ -1097,7 +1150,7 @@ static int smack_cred_alloc_blank(struct cred *cred, gfp_t gfp)
+> >   */
+> >  static void smack_cred_free(struct cred *cred)
+> >  {
+> > -    cred->security = NULL;
+> > +    kfree(cred->security);
+> >  }
+> >   /**
+> > @@ -1111,7 +1164,16 @@ static void smack_cred_free(struct cred *cred)
+> >  static int smack_cred_prepare(struct cred *new, const struct cred *old,
+> >                    gfp_t gfp)
+> >  {
+> > -    new->security = old->security;
+> > +    struct task_smack *old_tsp = old->security;
+> > +    struct task_smack *new_tsp;
+> > +
+> > +    new_tsp = kzalloc(sizeof(struct task_smack), gfp);
+> > +    if (new_tsp == NULL)
+> > +        return -ENOMEM;
+> > +
+> > +    new_tsp->smk_task = old_tsp->smk_task;
+> > +    new_tsp->smk_forked = old_tsp->smk_task;
+> > +    new->security = new_tsp;
+> >      return 0;
+> >  }
+> >  @@ -1124,7 +1186,11 @@ static int smack_cred_prepare(struct cred *new, const struct cred *old,
+> >   */
+> >  static void smack_cred_transfer(struct cred *new, const struct cred *old)
+> >  {
+> > -    new->security = old->security;
+> > +    struct task_smack *old_tsp = old->security;
+> > +    struct task_smack *new_tsp = new->security;
+> > +
+> > +    new_tsp->smk_task = old_tsp->smk_task;
+> > +    new_tsp->smk_forked = old_tsp->smk_task;
+> >  }
+> >   /**
+> > @@ -1136,12 +1202,13 @@ static void smack_cred_transfer(struct cred *new, const struct cred *old)
+> >   */
+> >  static int smack_kernel_act_as(struct cred *new, u32 secid)
+> >  {
+> > +    struct task_smack *new_tsp = new->security;
+> >      char *smack = smack_from_secid(secid);
+> >       if (smack == NULL)
+> >          return -EINVAL;
+> >  -    new->security = smack;
+> > +    new_tsp->smk_task = smack;
+> >      return 0;
+> >  }
+> >  @@ -1157,8 +1224,10 @@ static int smack_kernel_create_files_as(struct cred *new,
+> >                      struct inode *inode)
+> >  {
+> >      struct inode_smack *isp = inode->i_security;
+> > +    struct task_smack *tsp = new->security;
+> >  -    new->security = isp->smk_inode;
+> > +    tsp->smk_forked = isp->smk_inode;
+> > +    tsp->smk_task = isp->smk_inode;
+> >      return 0;
+> >  }
+> >  @@ -1175,7 +1244,7 @@ static int smk_curacc_on_task(struct task_struct *p, int access)
+> >       smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+> >      smk_ad_setfield_u_tsk(&ad, p);
+> > -    return smk_curacc(task_security(p), access, &ad);
+> > +    return smk_curacc(smk_of_task(task_security(p)), access, &ad);
+> >  }
+> >   /**
+> > @@ -1221,7 +1290,7 @@ static int smack_task_getsid(struct task_struct *p)
+> >   */
+> >  static void smack_task_getsecid(struct task_struct *p, u32 *secid)
+> >  {
+> > -    *secid = smack_to_secid(task_security(p));
+> > +    *secid = smack_to_secid(smk_of_task(task_security(p)));
+> >  }
+> >   /**
+> > @@ -1333,14 +1402,15 @@ static int smack_task_kill(struct task_struct *p, struct siginfo *info,
+> >       * can write the receiver.
+> >       */
+> >      if (secid == 0)
+> > -        return smk_curacc(task_security(p), MAY_WRITE, &ad);
+> > +        return smk_curacc(smk_of_task(task_security(p)), MAY_WRITE,
+> > +                  &ad);
+> >      /*
+> >       * If the secid isn't 0 we're dealing with some USB IO
+> >       * specific behavior. This is not clean. For one thing
+> >       * we can't take privilege into account.
+> >       */
+> > -    return smk_access(smack_from_secid(secid), task_security(p),
+> > -              MAY_WRITE, &ad);
+> > +    return smk_access(smack_from_secid(secid),
+> > +              smk_of_task(task_security(p)), MAY_WRITE, &ad);
+> >  }
+> >   /**
+> > @@ -1352,12 +1422,12 @@ static int smack_task_kill(struct task_struct *p, struct siginfo *info,
+> >  static int smack_task_wait(struct task_struct *p)
+> >  {
+> >      struct smk_audit_info ad;
+> > -    char *sp = current_security();
+> > -    char *tsp = task_security(p);
+> > +    char *sp = smk_of_current();
+> > +    char *tsp = smk_of_forked(task_security(p));
+> >      int rc;
+> >       /* we don't log here, we can be overriden */
+> > -    rc = smk_access(sp, tsp, MAY_WRITE, NULL);
+> > +    rc = smk_access(tsp, sp, MAY_WRITE, NULL);
+> >      if (rc == 0)
+> >          goto out_log;
+> >  @@ -1378,7 +1448,7 @@ static int smack_task_wait(struct task_struct *p)
+> >   out_log:
+> >      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+> >      smk_ad_setfield_u_tsk(&ad, p);
+> > -    smack_log(sp, tsp, MAY_WRITE, rc, &ad);
+> > +    smack_log(tsp, sp, MAY_WRITE, rc, &ad);
+> >      return rc;
+> >  }
+> >  @@ -1392,7 +1462,7 @@ static int smack_task_wait(struct task_struct *p)
+> >  static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
+> >  {
+> >      struct inode_smack *isp = inode->i_security;
+> > -    isp->smk_inode = task_security(p);
+> > +    isp->smk_inode = smk_of_task(task_security(p));
+> >  }
+> >   /*
+> > @@ -1411,7 +1481,7 @@ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
+> >   */
+> >  static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags)
+> >  {
+> > -    char *csp = current_security();
+> > +    char *csp = smk_of_current();
+> >      struct socket_smack *ssp;
+> >       ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
+> > @@ -1752,7 +1822,7 @@ static int smack_flags_to_may(int flags)
+> >   */
+> >  static int smack_msg_msg_alloc_security(struct msg_msg *msg)
+> >  {
+> > -    msg->security = current_security();
+> > +    msg->security = smk_of_current();
+> >      return 0;
+> >  }
+> >  @@ -1788,7 +1858,7 @@ static int smack_shm_alloc_security(struct shmid_kernel *shp)
+> >  {
+> >      struct kern_ipc_perm *isp = &shp->shm_perm;
+> >  -    isp->security = current_security();
+> > +    isp->security = smk_of_current();
+> >      return 0;
+> >  }
+> >  @@ -1911,7 +1981,7 @@ static int smack_sem_alloc_security(struct sem_array *sma)
+> >  {
+> >      struct kern_ipc_perm *isp = &sma->sem_perm;
+> >  -    isp->security = current_security();
+> > +    isp->security = smk_of_current();
+> >      return 0;
+> >  }
+> >  @@ -2029,7 +2099,7 @@ static int smack_msg_queue_alloc_security(struct msg_queue *msq)
+> >  {
+> >      struct kern_ipc_perm *kisp = &msq->q_perm;
+> >  -    kisp->security = current_security();
+> > +    kisp->security = smk_of_current();
+> >      return 0;
+> >  }
+> >  @@ -2201,7 +2271,7 @@ static void smack_d_instantiate(struct dentry *opt_dentry, struct inode *inode)
+> >      struct super_block *sbp;
+> >      struct superblock_smack *sbsp;
+> >      struct inode_smack *isp;
+> > -    char *csp = current_security();
+> > +    char *csp = smk_of_current();
+> >      char *fetched;
+> >      char *final;
+> >      struct dentry *dp;
+> > @@ -2321,9 +2391,12 @@ static void smack_d_instantiate(struct dentry *opt_dentry, struct inode *inode)
+> >           * Get the dentry for xattr.
+> >           */
+> >          dp = dget(opt_dentry);
+> > -        fetched = smk_fetch(inode, dp);
+> > +        fetched = smk_fetch(XATTR_NAME_SMACK, inode, dp);
+> >          if (fetched != NULL)
+> >              final = fetched;
+> > +        isp->smk_task = smk_fetch(XATTR_NAME_SMACKEXEC, inode,
+> > +                      dp);
+> > +
+> >          dput(dp);
+> >          break;
+> >      }
+> > @@ -2358,7 +2431,7 @@ static int smack_getprocattr(struct task_struct *p, char *name, char **value)
+> >      if (strcmp(name, "current") != 0)
+> >          return -EINVAL;
+> >  -    cp = kstrdup(task_security(p), GFP_KERNEL);
+> > +    cp = kstrdup(smk_of_task(task_security(p)), GFP_KERNEL);
+> >      if (cp == NULL)
+> >          return -ENOMEM;
+> >  @@ -2382,6 +2455,7 @@ static int smack_getprocattr(struct task_struct 
+> > *p, char *name, char **value)
+> >  static int smack_setprocattr(struct task_struct *p, char *name,
+> >                   void *value, size_t size)
+> >  {
+> > +    struct task_smack *tsp;
+> >      struct cred *new;
+> >      char *newsmack;
+> >  @@ -2414,7 +2488,13 @@ static int smack_setprocattr(struct task_struct *p, char *name,
+> >      new = prepare_creds();
+> >      if (new == NULL)
+> >          return -ENOMEM;
+> > -    new->security = newsmack;
+> > +    tsp = kzalloc(sizeof(struct task_smack), GFP_KERNEL);
+> > +    if (tsp == NULL) {
+> > +        kfree(new);
+> > +        return -ENOMEM;
+> > +    }
+> > +    tsp->smk_task = newsmack;
+> > +    new->security = tsp;
+> >      commit_creds(new);
+> >      return size;
+> >  }
+> > @@ -2715,7 +2795,7 @@ static void smack_sock_graft(struct sock *sk, struct socket *parent)
+> >          return;
+> >       ssp = sk->sk_security;
+> > -    ssp->smk_in = ssp->smk_out = current_security();
+> > +    ssp->smk_in = ssp->smk_out = smk_of_current();
+> >      /* cssp->smk_packet is already set in smack_inet_csk_clone() */
+> >  }
+> >  @@ -2836,7 +2916,7 @@ static void smack_inet_csk_clone(struct sock *sk,
+> >  static int smack_key_alloc(struct key *key, const struct cred *cred,
+> >                 unsigned long flags)
+> >  {
+> > -    key->security = cred->security;
+> > +    key->security = smk_of_task(cred->security);
+> >      return 0;
+> >  }
+> >  @@ -2865,6 +2945,7 @@ static int smack_key_permission(key_ref_t key_ref,
+> >  {
+> >      struct key *keyp;
+> >      struct smk_audit_info ad;
+> > +    char *tsp = smk_of_task(cred->security);
+> >       keyp = key_ref_to_ptr(key_ref);
+> >      if (keyp == NULL)
+> > @@ -2878,14 +2959,14 @@ static int smack_key_permission(key_ref_t key_ref,
+> >      /*
+> >       * This should not occur
+> >       */
+> > -    if (cred->security == NULL)
+> > +    if (tsp == NULL)
+> >          return -EACCES;
+> >  #ifdef CONFIG_AUDIT
+> >      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_KEY);
+> >      ad.a.u.key_struct.key = keyp->serial;
+> >      ad.a.u.key_struct.key_desc = keyp->description;
+> >  #endif
+> > -    return smk_access(cred->security, keyp->security,
+> > +    return smk_access(tsp, keyp->security,
+> >                   MAY_READWRITE, &ad);
+> >  }
+> >  #endif /* CONFIG_KEYS */
+> > @@ -3087,6 +3168,8 @@ struct security_operations smack_ops = {
+> >      .sb_mount =             smack_sb_mount,
+> >      .sb_umount =             smack_sb_umount,
+> >  +    .bprm_set_creds =        smack_bprm_set_creds,
+> > +
+> >      .inode_alloc_security =     smack_inode_alloc_security,
+> >      .inode_free_security =         smack_inode_free_security,
+> >      .inode_init_security =         smack_inode_init_security,
+> > @@ -3223,9 +3306,16 @@ static __init void init_smack_know_list(void)
+> >  static __init int smack_init(void)
+> >  {
+> >      struct cred *cred;
+> > +    struct task_smack *tsp;
+> >  -    if (!security_module_enable(&smack_ops))
+> > +    tsp = kzalloc(sizeof(struct task_smack), GFP_KERNEL);
+> > +    if (tsp == NULL)
+> > +        return -ENOMEM;
+> > +
+> > +    if (!security_module_enable(&smack_ops)) {
+> > +        kfree(tsp);
+> >          return 0;
+> > +    }
+> >       printk(KERN_INFO "Smack:  Initializing.\n");
+> >  @@ -3233,7 +3323,9 @@ static __init int smack_init(void)
+> >       * Set the security state for the initial task.
+> >       */
+> >      cred = (struct cred *) current->cred;
+> > -    cred->security = &smack_known_floor.smk_known;
+> > +    tsp->smk_forked = smack_known_floor.smk_known;
+> > +    tsp->smk_task = smack_known_floor.smk_known;
+> > +    cred->security = tsp;
+> >       /* initialize the smack_know_list */
+> >      init_smack_know_list();
+> > diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+> > index dc1fd62..01a0be9 100644
+> > --- a/security/smack/smackfs.c
+> > +++ b/security/smack/smackfs.c
+> > @@ -121,7 +121,7 @@ static void smk_netlabel_audit_set(struct netlbl_audit *nap)
+> >  {
+> >      nap->loginuid = audit_get_loginuid(current);
+> >      nap->sessionid = audit_get_sessionid(current);
+> > -    nap->secid = smack_to_secid(current_security());
+> > +    nap->secid = smack_to_secid(smk_of_current());
+> >  }
+> >   /*
+> > @@ -1160,7 +1160,7 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
+> >                   size_t count, loff_t *ppos)
+> >  {
+> >      char in[SMK_LABELLEN];
+> > -    char *sp = current->cred->security;
+> > +    char *sp = smk_of_task(current->cred->security);
+> >       if (!capable(CAP_MAC_ADMIN))
+> >          return -EPERM;
 > 
 
-This gets triggered a bunch on boot-up:
-
-[   36.981370] ata1: XXX SET EH PENDING, fastdrain=0
-[   36.981380] Pid: 0, comm: swapper Not tainted
-2.6.37-0.rc4.git1.2.fc15.x86_64 #1
-[   36.981386] Call Trace:
-[   36.981393]  <IRQ>  [<ffffffff8131d3df>] ata_eh_set_pending+0x3e/0x85
-[   36.981407]  [<ffffffff8131db36>] ata_do_link_abort+0x44/0x94
-[   36.981412]  [<ffffffff8131dbac>] ata_port_abort+0x10/0x12
-[   36.981421]  [<ffffffff8132b0ab>] ahci_interrupt+0x467/0x5a1
-[   36.981428]  [<ffffffff810afbc1>] ?
-check_for_new_grace_period.clone.21+0x8b/0x97
-[   36.981434]  [<ffffffff8106fb68>] ? sched_clock_cpu+0x42/0xc6
-[   36.981440]  [<ffffffff810abbfe>] handle_IRQ_event+0x58/0x122
-[   36.981447]  [<ffffffff81024d64>] ? apic_write+0x16/0x18
-[   36.981452]  [<ffffffff810adf27>] handle_edge_irq+0xfa/0x145
-[   36.981458]  [<ffffffff8100d2dd>] handle_irq+0x88/0x90
-[   36.981463]  [<ffffffff8147d508>] do_IRQ+0x58/0xb0
-[   36.981468]  [<ffffffff81477513>] ret_from_intr+0x0/0x11
-[   36.981470]  <EOI>  [<ffffffff81274eab>] ? intel_idle+0x115/0x13d
-[   36.981480]  [<ffffffff81274e8a>] ? intel_idle+0xf4/0x13d
-[   36.981485]  [<ffffffff8139f894>] cpuidle_idle_call+0x9e/0x104
-[   36.981489]  [<ffffffff8100932e>] cpu_idle+0xae/0x105
-[   36.981493]  [<ffffffff8145f2ce>] rest_init+0x72/0x74
-[   36.981498]  [<ffffffff81b53c31>] start_kernel+0x3e0/0x3eb
-[   36.981503]  [<ffffffff81b532cb>] x86_64_start_reservations+0xb6/0xba
-[   36.981507]  [<ffffffff81b533d5>] x86_64_start_kernel+0x106/0x115
-[   37.200683] ata1: XXX SET EH PENDING, fastdrain=1
-[   37.200692] Pid: 1465, comm: ck-history Not tainted
-2.6.37-0.rc4.git1.2.fc15.x86_64 #1
-[   37.200696] Call Trace:
-[   37.200699]  <IRQ>  [<ffffffff8131d3df>] ata_eh_set_pending+0x3e/0x85
-[   37.200715]  [<ffffffff8131dae5>] ata_port_schedule_eh+0x43/0x50
-[   37.200720]  [<ffffffff813150d7>] ata_qc_complete+0xd2/0x152
-[   37.200723]  [<ffffffff8131521d>] ata_qc_complete_multiple+0xc6/0xcb
-[   37.200727]  [<ffffffff8132b141>] ahci_interrupt+0x4fd/0x5a1
-[   37.200737]  [<ffffffff8105c784>] ? run_timer_softirq+0x28f/0x29e
-[   37.200742]  [<ffffffff810114bb>] ? native_sched_clock+0x35/0x37
-[   37.200747]  [<ffffffff8106fb68>] ? sched_clock_cpu+0x42/0xc6
-[   37.200752]  [<ffffffff810abbfe>] handle_IRQ_event+0x58/0x122
-[   37.200758]  [<ffffffff81024d64>] ? apic_write+0x16/0x18
-[   37.200761]  [<ffffffff810adf27>] handle_edge_irq+0xfa/0x145
-[   37.200766]  [<ffffffff8100d2dd>] handle_irq+0x88/0x90
-[   37.200769]  [<ffffffff8147d508>] do_IRQ+0x58/0xb0
-[   37.200774]  [<ffffffff81477513>] ret_from_intr+0x0/0x11
-[   37.200775]  <EOI>  [<ffffffff81117bd1>] ? lock_page_cgroup+0x19/0x21
-[   37.200783]  [<ffffffff811198c2>]
-__mem_cgroup_commit_charge+0x28/0x97
-[   37.200786]  [<ffffffff8111b961>] mem_cgroup_charge_common+0x66/0x76
-[   37.200789]  [<ffffffff8111bc89>] mem_cgroup_cache_charge+0xe4/0xf9
-[   37.200794]  [<ffffffff810d8cf3>] add_to_page_cache_locked+0x42/0x113
-[   37.200797]  [<ffffffff810d8dee>] add_to_page_cache_lru+0x2a/0x58
-[   37.200802]  [<ffffffff8114a883>] mpage_readpages+0xa3/0x113
-[   37.200805]  [<ffffffff81199b1a>] ? ext4_get_block+0x0/0x18
-[   37.200808]  [<ffffffff81199b1a>] ? ext4_get_block+0x0/0x18
-[   37.200811]  [<ffffffff810ee22b>] ? zone_statistics+0x65/0x6a
-[   37.200816]  [<ffffffff8110991a>] ? alloc_pages_current+0xb2/0xc3
-[   37.200821]  [<ffffffff811965ec>] ext4_readpages+0x1d/0x1f
-[   37.200826]  [<ffffffff810e1145>]
-__do_page_cache_readahead+0x105/0x176
-[   37.200829]  [<ffffffff810e141b>] ra_submit+0x21/0x25
-[   37.200831]  [<ffffffff810e15db>] ondemand_readahead+0x1bc/0x1cb
-[   37.200834]  [<ffffffff810e1665>]
-page_cache_async_readahead+0x7b/0xa3
-[   37.200837]  [<ffffffff810d9bbc>] generic_file_aio_read+0x2a5/0x5b6
-[   37.200840]  [<ffffffff810e1c10>] ? __lru_cache_add+0x34/0x5b
-[   37.200844]  [<ffffffff8111f602>] do_sync_read+0xcb/0x108
-[   37.200848]  [<ffffffff811ebbdb>] ? fsnotify_perm+0x64/0x70
-[   37.200852]  [<ffffffff811ec327>] ?
-security_file_permission+0x2e/0x33
-[   37.200855]  [<ffffffff8111fce5>] vfs_read+0xa9/0xfc
-[   37.200857]  [<ffffffff8111fd82>] sys_read+0x4a/0x6e
-[   37.200860]  [<ffffffff8100acc2>] system_call_fastpath+0x16/0x1b
-[   37.203575] ata1.00: configured for UDMA/100
-[   37.203582] ata1: EH complete
-[   37.239419] sd 0:0:0:0: [sda] Write cache: disabled, read cache:
-enabled, doesn't support DPO or FUA
-[   38.145358] ata1: XXX SET EH PENDING, fastdrain=1
-[   38.145367] Pid: 1489, comm: sata_alpm Not tainted
-2.6.37-0.rc4.git1.2.fc15.x86_64 #1
-[   38.145371] Call Trace:
-[   38.145384]  [<ffffffff8131d3df>] ata_eh_set_pending+0x3e/0x85
-[   38.145391]  [<ffffffff8131dae5>] ata_port_schedule_eh+0x43/0x50
-[   38.145400]  [<ffffffff81476f5a>] ? _raw_spin_lock_irqsave+0x12/0x2f
-[   38.145406]  [<ffffffff8131993b>] ata_scsi_lpm_store+0x89/0xa5
-[   38.145413]  [<ffffffff812e3912>] dev_attr_store+0x20/0x22
-[   38.145422]  [<ffffffff811798df>] sysfs_write_file+0x114/0x150
-[   38.145430]  [<ffffffff8111fbe9>] vfs_write+0xac/0xff
-[   38.145436]  [<ffffffff8111fdf0>] sys_write+0x4a/0x6e
-[   38.145444]  [<ffffffff8100acc2>] system_call_fastpath+0x16/0x1b
-[   38.145710] ata2: XXX SET EH PENDING, fastdrain=1
-[   38.145718] Pid: 1489, comm: sata_alpm Not tainted
-2.6.37-0.rc4.git1.2.fc15.x86_64 #1
-[   38.145723] Call Trace:
-[   38.145730]  [<ffffffff8131d3df>] ata_eh_set_pending+0x3e/0x85
-[   38.145737]  [<ffffffff8131dae5>] ata_port_schedule_eh+0x43/0x50
-[   38.145743]  [<ffffffff81476f5a>] ? _raw_spin_lock_irqsave+0x12/0x2f
-[   38.145748]  [<ffffffff8131993b>] ata_scsi_lpm_store+0x89/0xa5
-[   38.145754]  [<ffffffff812e3912>] dev_attr_store+0x20/0x22
-[   38.145760]  [<ffffffff811798df>] sysfs_write_file+0x114/0x150
-[   38.145767]  [<ffffffff8111fbe9>] vfs_write+0xac/0xff
-[   38.145773]  [<ffffffff8111fdf0>] sys_write+0x4a/0x6e
-[   38.145779]  [<ffffffff8100acc2>] system_call_fastpath+0x16/0x1b
-
-
-My whole dmesg from bootup is available at:
-http://kyle.fedorapeople.org/dmesg
-
-There's nothing interesting in my kernel wrt ATA (no patches at all
-touching it aside from the two from this thread.) Maybe systemd or
-something during boot-up is poking sysfs, I'll take a look.
-
---Kyle
+-- 
+James Morris
+<jmorris@namei.org>
