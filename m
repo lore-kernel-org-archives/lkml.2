@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab0LBDzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 22:55:16 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:55628 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756606Ab0LBDzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 22:55:15 -0500
-Date: Wed, 1 Dec 2010 19:55:10 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
-        cjb@laptop.org, dsd@laptop.org
-Subject: [PATCH] mfd/gpio/misc: add MODULE_ALIAS entries for CS5535
- functions
-Message-ID: <20101201195510.3a50d8b6@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756986Ab0LBEAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 23:00:04 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37878 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756498Ab0LBEAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 23:00:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <1291262016.6609.115.camel@heimdal.trondhjem.org>
+References: <1291259285-26803-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291259285-26803-2-git-send-email-Trond.Myklebust@netapp.com>
+ <1291259285-26803-3-git-send-email-Trond.Myklebust@netapp.com>
+ <alpine.LSU.2.00.1012011925580.25894@tigran.mtv.corp.google.com> <1291262016.6609.115.camel@heimdal.trondhjem.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 19:58:18 -0800
+Message-ID: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] Call the filesystem back whenever a page is
+ removed from the page cache
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Hugh Dickins <hughd@google.com>, Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 1, 2010 at 7:53 PM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+>
+> Again, I was being cautious (I freely admit to not having studied
+> stop_machine()). If nobody disagrees with your interpretation, then I'm
+> very happy to drop the preempt disable/enable crud.
 
-This adds MODULE_ALIAS entries to the various cs5535 subdevice modules; this
-allows the modules to automatically be loaded when cs5535-mfd loads.
+Just remove it. It won't matter for the stop_machine case, and the
+other case that Andrew pointed out (just unmap with memory pressure)
+is an independent thing that doesn't do stop_machine anyway.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/gpio/cs5535-gpio.c  |    1 +
- drivers/misc/cs5535-mfgpt.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+In the next merge window we'll see the whole RCU name lookup (let's
+see if people can agree on it, or whether I'll just have to do an
+executive decision and push it through even without consensus), which
+then rcu-delays inode freeing, and that will fix it for real. When
+that happens, doing a "rcu_read_lock()" in vmscan.c before the removal
+of the page from the mapping, and then unlocking after the callback
+will be a real fix, but it will require the rcu release to be that
+real fix anyway, so doing something else now will just confuse things.
 
-diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
-index cc49687..90df6c5 100644
---- a/drivers/gpio/cs5535-gpio.c
-+++ b/drivers/gpio/cs5535-gpio.c
-@@ -388,3 +388,4 @@ module_exit(cs5535_gpio_exit);
- MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
- MODULE_DESCRIPTION("AMD CS5535/CS5536 GPIO driver");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRV_NAME);
-diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
-index 499bd64..2669306 100644
---- a/drivers/misc/cs5535-mfgpt.c
-+++ b/drivers/misc/cs5535-mfgpt.c
-@@ -349,3 +349,4 @@ module_init(cs5535_mfgpt_init);
- MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
- MODULE_DESCRIPTION("CS5535/CS5536 MFGPT timer driver");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRV_NAME);
--- 
-1.7.2.3
-
+                       Linus
