@@ -1,45 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab0LBHhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 02:37:04 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47592 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab0LBHhC convert rfc822-to-8bit (ORCPT
+	id S1752812Ab0LBHl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 02:41:27 -0500
+Received: from mtaout23.012.net.il ([80.179.55.175]:43128 "EHLO
+	mtaout23.012.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab0LBHl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 02:37:02 -0500
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-From: Peter Zijlstra <peterz@infradead.org>
-To: frank.rowand@am.sony.com
-Cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        tglx <tglx@linutronix.de>
-In-Reply-To: <4CF6D694.4030003@am.sony.com>
-References: <20100520204810.GA19188@think>
-	 <1277114522.1875.469.camel@laptop> <1277117647.1875.503.camel@laptop>
-	 <1277125479.1875.510.camel@laptop> <1277213586.1875.704.camel@laptop>
-	 <20100622211141.GC21149@elte.hu> <1277284257.1875.820.camel@laptop>
-	 <4CF6D694.4030003@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 02 Dec 2010 08:36:49 +0100
-Message-ID: <1291275409.4023.21.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 2 Dec 2010 02:41:26 -0500
+Date: Wed, 01 Dec 2010 17:31:58 -0800
+From: Amber Juliana <a.juliana.yahoo.com@[61.144.230.195]>
+Subject: RE
+X-012-Sender: vadim_f@012.net.il
+To: Undisclosed recipients:;
+Reply-to: fedex001@gala.net
+Message-id: <0LCS004CLIMQJP10@a-mtaout23.012.net.il>
+MIME-version: 1.0
+X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+Content-type: text/plain; charset=Windows-1250
+Content-transfer-encoding: 7bit
+X-Priority: 3
+X-MSMail-priority: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 15:13 -0800, Frank Rowand wrote:
-> 
->   If the task to be woken is on a run queue on a different cpu then use
->   cmpxchg() to put it onto a pending try_to_wake_up list on the different
->   cpu.  Then send an interrupt to the different cpu to cause that cpu to
->   call try_to_wake_up() for each process on the try_to_wake_up list. 
-
-Without having looked at the actual code, the described thing cannot
-work, try_to_wake_up() has a return value that needs to be passed back.
-
-Also, try_to_wake_up() does load-balancing, you really want to do that
-before queueing it on a remote cpu.
+contact fedex Confirmable Bank-draft of $750.000.00
