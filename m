@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab0LBB4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:56:12 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48777 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab0LBB4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:56:10 -0500
-Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for
- clock changes
-From: john stultz <johnstul@us.ibm.com>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Valdis.Kletnieks@vt.edu, Lennart Poettering <mzxreary@0pointer.de>,
-        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <20101202011832.GO22787@shareable.org>
-References: <1290532938-7332-1-git-send-email-virtuoso@slind.org>
-	 <20101123224346.GA19350@tango.0pointer.de>
-	 <20101201104359.GJ22787@shareable.org> <20180.1291243569@localhost>
-	 <20101202011832.GO22787@shareable.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 17:55:57 -0800
-Message-ID: <1291254957.2846.47.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756255Ab0LBB4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:56:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:28442 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754711Ab0LBB4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 20:56:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
+   d="scan'208";a="863369716"
+Date: Thu, 2 Dec 2010 09:56:46 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/13] writeback: IO-less balance_dirty_pages()
+Message-ID: <20101202015646.GA6629@localhost>
+References: <20101117042720.033773013@intel.com>
+ <20101117042849.410279291@intel.com>
+ <1290085474.2109.1480.camel@laptop>
+ <20101129151719.GA30590@localhost>
+ <1291064013.32004.393.camel@laptop>
+ <20101130043735.GA22947@localhost>
+ <1291156522.32004.1359.camel@laptop>
+ <1291156765.32004.1365.camel@laptop>
+ <20101201133818.GA13377@localhost>
+ <20101201150333.fa4b8955.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201150333.fa4b8955.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-02 at 01:18 +0000, Jamie Lokier wrote:
-> Valdis.Kletnieks@vt.edu wrote:
-> > On Wed, 01 Dec 2010 10:43:59 GMT, Jamie Lokier said:
-> > 
-> > > So maybe CLOCK_MONOTONIC should be changed to include elapsed time
-> > > during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
-> > > for programs that want that?
-> > 
-> > Wouldn't that be an API break for programs that are expecting the current
-> > behavior of CLOCK_MONOTONIC?  Yes, there should be a way to request either of
-> > them - but if there's only one way now, it should continue to act the current
-> > way, and the added way is the second option.
+On Thu, Dec 02, 2010 at 07:03:33AM +0800, Andrew Morton wrote:
+> On Wed, 1 Dec 2010 21:38:18 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
 > 
-> I don't know.  Can you think of any program which would break if
-> suspend/resume's clocks behaved like ordinary task scheduling - when a
-> task doesn't run for a long time because of scheduling decisions?
-> Hmm, I guess some realtime apps might like to know.
+> > It shows that
+> > 
+> > 1) io_schedule_timeout(200ms) always return immediately for iostat,
+> >    forming a busy loop.  How can this happen? When iostat received
+> >    some signal? Then we may have to break out of the loop on catching
+> >    signals. Note that I already have
+> >                 if (fatal_signal_pending(current))
+> >                         break;
+> >    in the balance_dirty_pages() loop. Obviously that's not enough.
+> 
+> Presumably the calling task has singal_pending().
+> 
+> Using TASK_INTERRUPTIBLE in balance_dirty_pages() seems wrong.  If it's
+> going to do that then it must break out if signal_pending(), otherwise
+> it's pretty much guaranteed to degenerate into a busywait loop.
 
-Like I mentioned earlier, CLOCK_MONOTONIC_RAW and CLOCK_MONOTONIC are
-tightly tied, so anything using CLOCK_MONOTONIC_RAW would break.
+Right. It seems not rewarding enough to check signal_pending().  We've
+already been able to response to signals much faster than before
+(which takes more time to block in get_request_wait()).
 
-It might be possible to change both, but I still think such a change
-would be bad.
+> Plus we *do* want these processes to appear in D state and to
+> contribute to load average.
+> 
+> So it should be TASK_UNINTERRUPTIBLE.
 
-> Currently CLOCK_MONOTONIC jumps forwards by 4 seconds on
-> suspend/resume anyway (as seen by userspace), on my x86 laptop running
-> 2.6.37-rc3.  So it does already jump a bit...
+Fair enough. I do missed the D state (without the long wait :).
+Here is the patch.
 
-So just to clarify here, by this do you mean that there's ~4 seconds
-delay between the resume event and when userland apps start to run (or
-possibly some of that accumulating between the app freeze and the
-timekeeping suspend) ?
+Thanks,
+Fengguang
+---
+Subject: writeback: do uninterruptible sleep in balance_dirty_pages()
+Date: Thu Dec 02 09:31:19 CST 2010
 
-Or are you seeing CLOCK_MONOTONIC jump 4 seconds out of sync with
-CLOCK_REALTIME? 
+Using TASK_INTERRUPTIBLE in balance_dirty_pages() seems wrong.  If it's
+going to do that then it must break out if signal_pending(), otherwise
+it's pretty much guaranteed to degenerate into a busywait loop.  Plus
+we *do* want these processes to appear in D state and to contribute to
+load average.
 
-It should be the delta between CLOCK_MONOTONIC and CLOCK_REALTIME prior
-to suspend should be that same delta + suspend time after resume. If
-that's not the case, something may be broken.
+So it should be TASK_UNINTERRUPTIBLE.                 -- Andrew Morton
 
-thanks
--john
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+--- linux-next.orig/mm/page-writeback.c	2010-12-02 09:30:29.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-02 09:30:34.000000000 +0800
+@@ -636,7 +636,7 @@ pause:
+ 					  pages_dirtied,
+ 					  pause);
+ 		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
+-		__set_current_state(TASK_INTERRUPTIBLE);
++		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+ 		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
+ 
