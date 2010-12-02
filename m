@@ -1,52 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab0LBKMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 05:12:17 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:59502 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751434Ab0LBKMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 05:12:16 -0500
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX1/3OMBDdZP39C0J/wQXGl7J2VOnrvv8kOTqjzyooY
-	Y+ky76XbVQIeh5
-Date: Thu, 2 Dec 2010 11:10:06 +0100
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 6/6] fanotify: remove obsolete flag FAN_MARK_ONDIR
-Message-ID: <20101202101006.GG5196@lsanfilippo.unix.rd.tt.avira.com>
+	id S1757419Ab0LBKNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 05:13:24 -0500
+Received: from mail30f.wh2.ocn.ne.jp ([220.111.41.203]:44328 "HELO
+	mail30f.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757408Ab0LBKNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 05:13:23 -0500
+Subject: [PATCH 3/3] nl80211/mac80211: Report signal average
+To: linville@tuxdriver.com
+From: Bruno Randolf <br1@einfach.org>
+Cc: randy.dunlap@oracle.com, br1@thinktube.com, peterz@infradead.org,
+        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com, j@w1.fi,
+        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org, kevin.granade@gmail.com,
+        johannes@sipsolutions.net
+Date: Thu, 02 Dec 2010 19:12:43 +0900
+Message-ID: <20101202101242.22988.56087.stgit@localhost6.localdomain6>
+In-Reply-To: <20101202101231.22988.33396.stgit@localhost6.localdomain6>
+References: <20101202101231.22988.33396.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Extend nl80211 to report an exponential weighted moving average (EWMA) of the
+signal value. Since the signal value usually fluctuates between different
+packets, an average can be more useful than the value of the last packet.
 
-The FAN_MARK_ONDIR flag is not longer needed, so we can remove it.
+This uses the recently added generic EWMA library function.
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+--
+v2:	fix ABI breakage and change factor to be a power of 2.
+
+Signed-off-by: Bruno Randolf <br1@einfach.org>
 ---
- include/linux/fanotify.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ include/linux/nl80211.h |    2 ++
+ include/net/cfg80211.h  |    4 ++++
+ net/mac80211/Kconfig    |    1 +
+ net/mac80211/cfg.c      |    3 ++-
+ net/mac80211/rx.c       |    1 +
+ net/mac80211/sta_info.c |    2 ++
+ net/mac80211/sta_info.h |    3 +++
+ net/wireless/nl80211.c  |    3 +++
+ 8 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-index d6ec57a..8533799 100644
---- a/include/linux/fanotify.h
-+++ b/include/linux/fanotify.h
-@@ -52,10 +52,6 @@
- #define FAN_MARK_IGNORED_MASK	0x00000020
- #define FAN_MARK_IGNORED_SURV_MODIFY	0x00000040
- #define FAN_MARK_FLUSH		0x00000080
--#ifdef __KERNEL__
--/* not valid from userspace, only kernel internal */
--#define FAN_MARK_ONDIR		0x00000100
--#endif
+diff --git a/include/linux/nl80211.h b/include/linux/nl80211.h
+index 5cfa579..68fc25f 100644
+--- a/include/linux/nl80211.h
++++ b/include/linux/nl80211.h
+@@ -1183,6 +1183,7 @@ enum nl80211_rate_info {
+  *	station)
+  * @NL80211_STA_INFO_TX_RETRIES: total retries (u32, to this station)
+  * @NL80211_STA_INFO_TX_FAILED: total failed packets (u32, to this station)
++ * @NL80211_STA_INFO_SIGNAL_AVG: signal strength average (u8, dBm)
+  */
+ enum nl80211_sta_info {
+ 	__NL80211_STA_INFO_INVALID,
+@@ -1198,6 +1199,7 @@ enum nl80211_sta_info {
+ 	NL80211_STA_INFO_TX_PACKETS,
+ 	NL80211_STA_INFO_TX_RETRIES,
+ 	NL80211_STA_INFO_TX_FAILED,
++	NL80211_STA_INFO_SIGNAL_AVG,
  
- #define FAN_ALL_MARK_FLAGS	(FAN_MARK_ADD |\
- 				 FAN_MARK_REMOVE |\
--- 
-1.5.6.5
+ 	/* keep last */
+ 	__NL80211_STA_INFO_AFTER_LAST,
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index 6b2af7a..589c4b1 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -424,6 +424,7 @@ struct station_parameters {
+  * @STATION_INFO_TX_RETRIES: @tx_retries filled
+  * @STATION_INFO_TX_FAILED: @tx_failed filled
+  * @STATION_INFO_RX_DROP_MISC: @rx_dropped_misc filled
++ * @STATION_INFO_SIGNAL_AVG: @signal_avg filled
+  */
+ enum station_info_flags {
+ 	STATION_INFO_INACTIVE_TIME	= 1<<0,
+@@ -439,6 +440,7 @@ enum station_info_flags {
+ 	STATION_INFO_TX_RETRIES		= 1<<10,
+ 	STATION_INFO_TX_FAILED		= 1<<11,
+ 	STATION_INFO_RX_DROP_MISC	= 1<<12,
++	STATION_INFO_SIGNAL_AVG		= 1<<13,
+ };
+ 
+ /**
+@@ -485,6 +487,7 @@ struct rate_info {
+  * @plid: mesh peer link id
+  * @plink_state: mesh peer link state
+  * @signal: signal strength of last received packet in dBm
++ * @signal_avg: signal strength average in dBm
+  * @txrate: current unicast bitrate to this station
+  * @rx_packets: packets received from this station
+  * @tx_packets: packets transmitted to this station
+@@ -505,6 +508,7 @@ struct station_info {
+ 	u16 plid;
+ 	u8 plink_state;
+ 	s8 signal;
++	s8 signal_avg;
+ 	struct rate_info txrate;
+ 	u32 rx_packets;
+ 	u32 tx_packets;
+diff --git a/net/mac80211/Kconfig b/net/mac80211/Kconfig
+index 4d6f865..798d9b9 100644
+--- a/net/mac80211/Kconfig
++++ b/net/mac80211/Kconfig
+@@ -6,6 +6,7 @@ config MAC80211
+ 	select CRYPTO_ARC4
+ 	select CRYPTO_AES
+ 	select CRC32
++	select AVERAGE
+ 	---help---
+ 	  This option enables the hardware independent IEEE 802.11
+ 	  networking stack.
+diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
+index db134b5..b0e0f6c 100644
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -343,8 +343,9 @@ static void sta_set_sinfo(struct sta_info *sta, struct station_info *sinfo)
+ 
+ 	if ((sta->local->hw.flags & IEEE80211_HW_SIGNAL_DBM) ||
+ 	    (sta->local->hw.flags & IEEE80211_HW_SIGNAL_UNSPEC)) {
+-		sinfo->filled |= STATION_INFO_SIGNAL;
++		sinfo->filled |= STATION_INFO_SIGNAL | STATION_INFO_SIGNAL_AVG;
+ 		sinfo->signal = (s8)sta->last_signal;
++		sinfo->signal_avg = (s8) -ewma_read(&sta->avg_signal);
+ 	}
+ 
+ 	sinfo->txrate.flags = 0;
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 6289525..2fe8f5f 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1163,6 +1163,7 @@ ieee80211_rx_h_sta_process(struct ieee80211_rx_data *rx)
+ 	sta->rx_fragments++;
+ 	sta->rx_bytes += rx->skb->len;
+ 	sta->last_signal = status->signal;
++	ewma_add(&sta->avg_signal, -status->signal);
+ 
+ 	/*
+ 	 * Change STA power saving mode only at the end of a frame
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index eff5857..c426504 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -244,6 +244,8 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
+ 	sta->local = local;
+ 	sta->sdata = sdata;
+ 
++	ewma_init(&sta->avg_signal, 1024, 8);
++
+ 	if (sta_prepare_rate_control(local, sta, gfp)) {
+ 		kfree(sta);
+ 		return NULL;
+diff --git a/net/mac80211/sta_info.h b/net/mac80211/sta_info.h
+index 05f1130..fdca52c 100644
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@ -13,6 +13,7 @@
+ #include <linux/types.h>
+ #include <linux/if_ether.h>
+ #include <linux/workqueue.h>
++#include <linux/average.h>
+ #include "key.h"
+ 
+ /**
+@@ -223,6 +224,7 @@ enum plink_state {
+  * @rx_fragments: number of received MPDUs
+  * @rx_dropped: number of dropped MPDUs from this STA
+  * @last_signal: signal of last received frame from this STA
++ * @avg_signal: moving average of signal of received frames from this STA
+  * @last_seq_ctrl: last received seq/frag number from this STA (per RX queue)
+  * @tx_filtered_count: number of frames the hardware filtered for this STA
+  * @tx_retry_failed: number of frames that failed retry
+@@ -291,6 +293,7 @@ struct sta_info {
+ 	unsigned long rx_fragments;
+ 	unsigned long rx_dropped;
+ 	int last_signal;
++	struct ewma avg_signal;
+ 	__le16 last_seq_ctrl[NUM_RX_DATA_QUEUES];
+ 
+ 	/* Updated from TX status path only, no locking requirements */
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index 960be4e..45fe06d 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -1874,6 +1874,9 @@ static int nl80211_send_station(struct sk_buff *msg, u32 pid, u32 seq,
+ 	if (sinfo->filled & STATION_INFO_SIGNAL)
+ 		NLA_PUT_U8(msg, NL80211_STA_INFO_SIGNAL,
+ 			   sinfo->signal);
++	if (sinfo->filled & STATION_INFO_SIGNAL_AVG)
++		NLA_PUT_U8(msg, NL80211_STA_INFO_SIGNAL_AVG,
++			   sinfo->signal_avg);
+ 	if (sinfo->filled & STATION_INFO_TX_BITRATE) {
+ 		txrate = nla_nest_start(msg, NL80211_STA_INFO_TX_BITRATE);
+ 		if (!txrate)
 
