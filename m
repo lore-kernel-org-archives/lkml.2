@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab0LBAOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 19:14:38 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:42194 "EHLO e1.ny.us.ibm.com"
+	id S1754743Ab0LBAWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 19:22:52 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:39567 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab0LBAOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 19:14:37 -0500
-Subject: Re: [PATCH] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
- changes
-From: john stultz <johnstul@us.ibm.com>
-To: Alexander Shishkin <virtuoso@slind.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Lennart Poettering <mzxreary@0pointer.de>, linux-api@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <1291167587-16695-1-git-send-email-virtuoso@slind.org>
-References: <1291167587-16695-1-git-send-email-virtuoso@slind.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Dec 2010 16:14:27 -0800
-Message-ID: <1291248867.2846.37.camel@work-vm>
+	id S1752373Ab0LBAWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 19:22:50 -0500
+Date: Thu, 2 Dec 2010 11:22:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the acpi tree
+Message-Id: <20101202112239.c7d05518.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 03:39 +0200, Alexander Shishkin wrote:
-> To use this notification functionality, user has to call timerfd_settime()
-> with TFD_NOTIFY_CLOCK_SET flag. After this CLOCK_REALTIME timers will
-> read as the number of times the wall clock has been set since last read
-> and poll every time the wall clock is set; CLOCK_MONOTONIC timers will
-> behave likewise, but in the event of the clock being updated upon resuming
-> from suspend. For both CLOCK_REALTIME and CLOCK_MONOTONIC timers with
-> TFD_NOTIFY_CLOCK_SET flag set, a call to timerfd_gettime() will return
-> current wall clock in it_value.
+--Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The CLOCK_MONOTONIC flag on resume worries me a bit (since
-CLOCK_MONOTONIC isn't adjusted on resume).
+Hi Len,
 
-What is the use case there?
+After merging the acpi tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-thanks
--john
+In file included from drivers/video/output.c:25:
+include/linux/video_output.h: In function 'video_output_register':
+include/linux/video_output.h:49: error: implicit declaration of function 'E=
+RR_PTR'
+include/linux/video_output.h:49: warning: return makes pointer from integer=
+ without a cast
+In file included from drivers/video/output.c:27:
+include/linux/err.h: At top level:
+include/linux/err.h:22: error: conflicting types for 'ERR_PTR'
+include/linux/video_output.h:49: note: previous implicit declaration of 'ER=
+R_PTR' was here
+drivers/video/output.c:84: error: redefinition of 'video_output_register'
+include/linux/video_output.h:44: note: previous definition of 'video_output=
+_register' was here
+drivers/video/output.c:114: error: redefinition of 'video_output_unregister'
+include/linux/video_output.h:51: note: previous definition of 'video_output=
+_unregister' was here
 
+Caused by commit 16d21716c8849c3283d1b9e590e6fe8d1966f4b7 ("ACPI: video:
+fix build for VIDEO_OUTPUT_CONTROL=3Dn").  See Rule 1 in
+Documentation/SubmitChecklist.
 
+I have used the version of the acpi tree from next-20101201 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM9ubPAAoJEDMEi1NhKgbsUjsH/j1wWa6bzSoEgkEj+acbmXyE
+IXEnOfDMbhZRpl4v1gROrRq/jaFEX2c46PNHKEpBB8tP4YUTjIwE3pgnRFcTaDsm
+tOVCRenw8OCHd/sYUDQRVQx+W7UwrtoubaAGVzIgE9txooFP6O/QEWRr/haSi2dH
+IuAPmMDvaxYqL2sVTdLtbjapVBxcC/iIQVphYNhEaNR2rcoENZ0o5+XeJ+GzqOP2
+XdlxAJycWo5SjFyOv0BvcyYW89nebKnf+jiMyFwfy5FbESUVMKVkzeTCGki5Ixv9
+9AZ1guhzT07C2flWQckEF4sVCUK94LUYED4Rk4hEYvxZvAG/r0G1Tsy3EdmxhQ8=
+=r1LO
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK--
