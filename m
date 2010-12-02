@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab0LBFRC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 00:17:02 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:56239 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751680Ab0LBFRA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 00:17:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik1o4Ka_UnwWvmjVhQGrPwrOpPGG4mmu4zSiH+U@mail.gmail.com>
-References: <1291147139-23472-1-git-send-email-davidsin@ti.com>
- <1291147139-23472-2-git-send-email-davidsin@ti.com> <AANLkTi=q1HzYBpMH_pP+S5BtBQpHs62+zNfd_MtWHFuu@mail.gmail.com>
- <AANLkTi=YUYuxQE8pDZrN5-PJq1Q3jw7cP2yZKCXNAvPP@mail.gmail.com> <AANLkTik1o4Ka_UnwWvmjVhQGrPwrOpPGG4mmu4zSiH+U@mail.gmail.com>
-From: "Varadarajan, Charulatha" <charu@ti.com>
-Date: Thu, 2 Dec 2010 10:46:20 +0530
-Message-ID: <AANLkTikEY+0gGB9dbVFZvhwWbd5jGEGo7oDNs_y5xL=s@mail.gmail.com>
-Subject: Re: [RFC v2 1/8] TILER-DMM: DMM-PAT driver for TI TILER
-To: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-Cc: David Sin <davidsin@ti.com>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lajos Molnar <molnar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755453Ab0LBFRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 00:17:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:18850 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab0LBFRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 00:17:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,286,1288594800"; 
+   d="scan'208";a="355904368"
+Subject: [RFC PATCH 0/3 v3] perf: Add Intel Nehalem uncore pmu support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Dec 2010 13:19:38 +0800
+Message-ID: <1291267178.2405.311.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 2, 2010 at 07:57, Kanigeri, Hari <h-kanigeri2@ti.com> wrote:
-> On Wed, Dec 1, 2010 at 8:10 PM, Kanigeri, Hari <h-kanigeri2@ti.com> wrote:
->> On Wed, Dec 1, 2010 at 12:04 AM, Varadarajan, Charulatha <charu@ti.com> wrote:
->>> David,
->>
->>>
->>>> +               if (!oh)
->>>> +                       goto error;
->>>> +
->>>> +               data->base = oh->_mpu_rt_va;
->>>
->>> not required. Make use of platform_get APIs in probe to extract the
->>> base, dma and irq info using pdev.
->>
->> Not sure about using platform_get APIs. I think one has to use
->> omap_hwmod_get_mpu_rt_va to get the address, which internally returns
->> oh-<_mpu_rt_va.
-> small correction... omap_device_get_rt_va and not omap_hwmod_get_mpu_rt_va.
+Hi, all
 
-To get the base address & irq, you need not have to use
-omap_device_get_rt_va and pass it as
-pdata and then use it during probe. Instead in probe, you may do
-something like the following:
+Here are the v3 patches to add uncore pmu support to perf, applied on
+top of current tip/master(74f6deb).
 
-static int __devinit  dev_probe (*pdev) {
-   struct resource *res;
-   void __iomem *base;
-   u16 irq;
-   ....
-   ....
-   res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-   if (unlikely(!res)) {
-              ....
-              return -ENODEV;
-   }
+Changelogs of v3:
 
-   base = ioremap(res->start, resource_size(res));
-   if (base) {
-               ....
-               return -ENOMEM;
-   }
+- Allocate uncore data with kmalloc_node, like AMD NB stuff. (Peter
+Zijlstra)
 
-   res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-   if (unlikely(!res)) {
-               ....
-               return -ENODEV;
-   }
-   irq = res->start;
-   ....
-   ....
-}
+- per-task uncore event is not allowed. Simply set pmu::task_ctx_nr =
+perf_invalid_context. (Peter Zijlstra)
 
--V Charulatha
+- Route interrupts to the first core that accesses uncore pmu. (Stephane
+Eranian)
+
+- Check CPUID signatures with boot_cpu_data. (Andi Kleen)
+
+- Remove unneeded include files. (Andi Kleen)
+
+Changelogs of v2:
+
+- modify the NMI handling code to handle all counters enabled by all 4
+cores.
+
+- allocate uncore_events[] table dynamically using kmalloc_node() to
+avoid unnecessary remote memory accesses. (Stephane Eranian)
+
+- add support for the fixed uncore counter. (Stephane Eranian)
+
+- Handling of exclude_* bits. Uncore PMU measures at all privilege level
+all the time. So it doesn't make sense to specify any exclude bits.
+(Stephane Eranian)
+
+- let uncore code be more self contained, that is, not include it in
+arch/x86/kernel/cpu/perf_event.c (Peter Zijlstra)
+
+- uncore pmu interrupt have its own NMI_DIE notifier entry. (Peter
+Zijlstra)
+
+Known bugs:
+
+- When hyper thread is enabled, both HTs will receive the NMI. In this
+case, the overflow status bits are not acked correctly.
+
+TODO:
+
+- Add support for uncore address/opcode match thing
+
+- Add a new sub-command for uncore events statistics.
+For example, perf package -p <package-id> -e <event>
+
+As usual, any comment is very appreciated.
+
+Lin Ming 
+
