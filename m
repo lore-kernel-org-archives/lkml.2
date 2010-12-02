@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab0LBRIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:08:16 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55557 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab0LBRIP (ORCPT
+	id S1757186Ab0LBRUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:20:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28158 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab0LBRUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:08:15 -0500
-Date: Thu, 2 Dec 2010 18:07:56 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Florian Mickler <florian@mickler.org>
-Cc: Tobias Karnat <tobias.karnat@googlemail.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: edac_core: crashes on shutdown
-Message-ID: <20101202170756.GF27263@aftab>
-References: <1291201307.3029.21.camel@Tobias-Karnat>
- <20101201123921.GA15530@a1.tnic>
- <1291209888.12511.11.camel@Tobias-Karnat>
- <20101201143329.GB18074@a1.tnic>
- <1291225614.8646.4.camel@Tobias-Karnat>
- <20101201193508.GA4916@liondog.tnic>
- <1291280613.10626.22.camel@Tobias-Karnat>
- <20101202152106.GA29301@a1.tnic>
- <1291306872.3898.7.camel@Tobias-Karnat>
- <20101202180252.05080815@schatten.dmk.lab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101202180252.05080815@schatten.dmk.lab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 2 Dec 2010 12:20:48 -0500
+Date: Thu, 2 Dec 2010 09:19:48 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Zimny Lech <napohybelskurwysynom2010@gmail.com>, gregkh@suse.de,
+        akpm <akpm@linux-foundation.org>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH -next] serial: fix pch_uart kconfig & build
+Message-Id: <20101202091948.2142bb5c.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTi=aZ3Gm5rkqAh8j-bOvvKULge6Hm5cN_mEovVdq@mail.gmail.com>
+References: <20101202140943.c9742beb.sfr@canb.auug.org.au>
+	<AANLkTi=aZ3Gm5rkqAh8j-bOvvKULge6Hm5cN_mEovVdq@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 12:02:52PM -0500, Florian Mickler wrote:
-> On Thu, 02 Dec 2010 17:21:12 +0100
-> Tobias Karnat <tobias.karnat@googlemail.com> wrote:
-> 
-> > Am Donnerstag, den 02.12.2010, 16:21 +0100 schrieb Borislav Petkov:
-> > > Well, thanks for the photos. I don't have an idea what might cause this
-> > > workqueue corruption I'm seeing, all reg/unreg paths look ok. The only
-> > > change that came in between .35 and .36.1 I can think of being relevant
-> > > is 00740c58541b6087d78418cebca1fcb86dc6077d. You could try backing that
-> > > one out to see whether it fixes the issue.
-> > 
-> > Yes, reverting this fixed the issue!
-> > 
-> > But why?
-> > 
-> > -Tobias
-> > 
-> > 
-> 
-> It doesnt work because op_state is set to OP_OFFLINE in edac_mc_del_mc
-> before calling edac_mc_workq_teardown. Or am I seeing things?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Good observation Florian, see my other mail I just sent.
+The dma_request_channel/dma_release_channel interfaces are not
+built when DMADEVICES is not enabled, so make the driver depend on
+DMADEVICES.  Also, the help text says that the driver enables & uses
+PCH_DMA, which is not enabled, so select that.
 
--- 
-Regards/Gruss,
-Boris.
+ERROR: "__dma_request_channel" [drivers/serial/pch_uart.ko] undefined!
+ERROR: "dma_release_channel" [drivers/serial/pch_uart.ko] undefined!
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+---
+ drivers/serial/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+This driver seems to have some other issues:
+
+drivers/serial/pch_uart.c: In function 'dma_handle_rx':
+drivers/serial/pch_uart.c:685: warning: cast from pointer to integer of different size
+drivers/serial/pch_uart.c: In function 'dma_handle_tx':
+drivers/serial/pch_uart.c:778: warning: cast from pointer to integer of different size
+drivers/serial/pch_uart.c: In function 'pch_uart_init_port':
+drivers/serial/pch_uart.c:1289: warning: cast to pointer from integer of different size
+drivers/serial/pch_uart.c: In function 'pch_uart_exit_port':
+drivers/serial/pch_uart.c:1328: warning: cast from pointer to integer of different size
+
+--- linux-next-20101202.orig/drivers/serial/Kconfig
++++ linux-next-20101202/drivers/serial/Kconfig
+@@ -1650,8 +1650,9 @@ config SERIAL_IFX6X60
+ 
+ config SERIAL_PCH_UART
+ 	tristate "Intel EG20T PCH UART"
++	depends on PCI && DMADEVICES
+ 	select SERIAL_CORE
+-	depends on PCI
++	select PCH_DMA
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) UART of Intel EG20T
+ 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
