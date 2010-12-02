@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab0LBVRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:17:03 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51503
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757599Ab0LBVRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:17:02 -0500
-Date: Thu, 02 Dec 2010 13:17:28 -0800 (PST)
-Message-Id: <20101202.131728.245392719.davem@davemloft.net>
-To: tomoya-linux@dsn.okisemi.com
-Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
-        21cnbao@gmail.com, sameo@linux.intel.com,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: Re: [PATCH net-next-2.6 v6 06/20] can: EG20T PCH: Fix endianness
- issue
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101202.131551.179934201.davem@davemloft.net>
-References: <4CF47BAA.2090209@dsn.okisemi.com>
-	<20101202.131551.179934201.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1758098Ab0LBVWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:22:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9728 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757180Ab0LBVWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 16:22:48 -0500
+Date: Thu, 2 Dec 2010 16:22:27 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: LVM general discussion and development <linux-lvm@redhat.com>
+Cc: Spelic <spelic@shiftmail.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, npiggin@kernel.dk, dm-devel@redhat.com
+Subject: Re: Bugs in mkfs.xfs, device mapper, xfs, and /dev/ram
+Message-ID: <20101202212227.GA22703@redhat.com>
+References: <4CF7A539.1050206@shiftmail.org>
+ <20101202141134.GA22012@infradead.org>
+ <4CF7A9C4.2040607@shiftmail.org>
+ <20101202141737.GA29799@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202141737.GA29799@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Thu, 02 Dec 2010 13:15:51 -0800 (PST)
+On Thu, Dec 02 2010 at  9:17am -0500,
+Christoph Hellwig <hch@infradead.org> wrote:
 
+> On Thu, Dec 02, 2010 at 03:14:28PM +0100, Spelic wrote:
+> > On 12/02/2010 03:11 PM, Christoph Hellwig wrote:
+> > >I'm pretty sure you have CONFIG_DEBUG_BLOCK_EXT_DEVT enabled.  This
+> > >option must never be enabled, as it causes block devices to be
+> > >randomly renumered.  Together with the ramdisk driver overloading
+> > >the BLKFLSBUF ioctl to discard all data it guarantees you to get
+> > >data loss like yours.
+> > 
+> > Nope...
+> > 
+> > # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
 > 
-> This patch and the rest I cannot apply because they have
-> dependencies upon patch #4 which I've stated is not
-> implemented correctly.
+> Hmm, I suspect dm-linear's dumb forwarding of ioctls has the same
+> effect.
 
-Also please make sure that you add proper CONFIG_PM checks to your
-driver in order to fix these warnings:
+For the benefit of others:
+- mkfs.xfs will avoid sending BLKFLSBUF to any device whose major is
+  ramdisk's major, this dates back to 2004:
+  http://oss.sgi.com/archives/xfs/2004-08/msg00463.html
+- but because a kpartx partition overlay (linear DM mapping) is used for
+  the /dev/ram0p1 device, mkfs.xfs only sees a device with DM's major 
+- so mkfs.xfs sends BLKFLSBUF to the DM device blissfully unaware that
+  the backing device (behind the DM linear target) is a brd device
+- DM will forward the BLKFLSBUF ioctl to brd, which triggers
+  drivers/block/brd.c:brd_ioctl (nuking the entire ramdisk in the
+  process)
 
-drivers/net/can/pch_can.c:249:13: warning: 'pch_can_set_int_custom' defined but not used
-drivers/net/can/pch_can.c:260:13: warning: 'pch_can_get_int_enables' defined but not used
-drivers/net/can/pch_can.c:363:12: warning: 'pch_can_get_rxtx_ir' defined but not used
-drivers/net/can/pch_can.c:393:13: warning: 'pch_can_set_rx_buffer_link' defined but not used
-drivers/net/can/pch_can.c:413:13: warning: 'pch_can_get_rx_buffer_link' defined but not used
+So coming full circle this is what hch was referring to when he
+mentioned:
+1) "ramdisk driver overloading the BLKFLSBUF ioctl ..."
+2) "dm-linear's dumb forwarding of ioctls ..."
 
-Thanks.
-d
+I really can't see DM adding a specific check for ramdisk's major when
+forwarding the BLKFLSBUF ioctl.
+
+brd has direct partition support (see commit d7853d1f8932c) so maybe
+kpartx should just blacklist /dev/ram devices?
+
+Alternatively, what about switching brd away from overloading BLKFLSBUF
+to a real implementation of (overloaded) BLKDISCARD support in brd.c?
+One that doesn't blindly nuke the entire device but that properly
+processes the discard request.
+
+Mike
