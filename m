@@ -1,120 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab0LBBMk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:12:40 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41865 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755890Ab0LBBMi (ORCPT
+	id S1756111Ab0LBBNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:13:09 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:46195 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab0LBBNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:12:38 -0500
-Date: Wed, 1 Dec 2010 17:12:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nelson Elhage <nelhage@ksplice.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH v2] do_exit(): Make sure we run with get_fs() ==
- USER_DS.
-Message-Id: <20101201171205.f49f537a.akpm@linux-foundation.org>
-In-Reply-To: <1291170456-22580-1-git-send-email-nelhage@ksplice.com>
-References: <20101130174947.5ccc3778.akpm@linux-foundation.org>
-	<1291170456-22580-1-git-send-email-nelhage@ksplice.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Dec 2010 20:13:07 -0500
+Date: Thu, 2 Dec 2010 01:12:11 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
+Message-ID: <20101202011211.GN22787@shareable.org>
+References: <1290532938-7332-1-git-send-email-virtuoso@slind.org> <20101123224346.GA19350@tango.0pointer.de> <20101201104359.GJ22787@shareable.org> <1291248647.2846.34.camel@work-vm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291248647.2846.34.camel@work-vm>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010 21:27:36 -0500
-Nelson Elhage <nelhage@ksplice.com> wrote:
-
-> If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
-> otherwise reset before do_exit(). do_exit may later (via mm_release in fork.c)
-> do a put_user to a user-controlled address, potentially allowing a user to
-> leverage an oops into a controlled write into kernel memory.
+john stultz wrote:
+> > CLOCK_MONOTONIC is unsuitable because it stops at suspend.  Maybe it
+> > should stay that way.  But maybe not - programs using CLOCK_MONOTONIC
+> > usually want to trigger timeouts etc. based on real elapsed time, and
+> > after suspend/resume, it's quite reasonable to want to trigger all of
+> > a program's short timeouts immediately.  Indeed some network protocol
+> > userspace may currently behave *incorrectly* over suspend/resume,
+> > especially those using clock times to validate their caches,
+> > *because* CLOCK_MONOTONIC doesn't count it.
 > 
-> A more logical place to put this might be when we know an oops has occurred,
-> before we call do_exit(), but that would involve changing every architecture, in
-> multiple places. Let's just stick it in do_exit instead.
+> Is there a specific example of this occurring that you have in mind?
+
+Yes, it's a correctness issue in network protocols using
+lease/oplock/MESI-style cache coherency.  (E.g. NFSv4, CIFS, whatever
+you like in userspace.)
+
+By this, I mean anything with this sort of pattern:
+
+   1. Receive message "you may cache thing X for up to 20 seconds *without
+      checking if it changed* during that time; afterwards, check".
+
+      (If the other end need to change X within the 20 second
+      interval, the other end will send a request to break the lease;
+      if the other end doesn't get a response, then it waits until the
+      20 second expires, and then it's safe to assume the lease expired.)
+
+   2. Local request for value of X.
+
+      => If less than 20 seconds has passed, the local cache responds
+         with X *without any network confirmation*.  I.e. it's instant.
+      => If more than 20 seconds has passed, it has to talk to the
+         other end.  I.e. a network round trip.
+
+The algorithm is coherent even if the network is unreliable and goes
+down sometimes.  When that happens, local requests are stalled, rather
+than returning values incoherent with other machines.
+
+This algorithm breaks if the local application depends on
+CLOCK_MONOTONIC to confirm that less than 20 seconds has passed
+and CLOCK_MONOTONIC is lying.
+
+CLOCK_MONOTONIC lies when you've done suspend+resume while this
+program was running, so it's 20 seconds test gives the wrong result.
+
+You can imagine there are quite a few applications that use this
+technique because it's quite fundamental to efficient coherency
+protocols.  (Although I'm unable to name any off the top of my head!).
+
+There are generalisations for more interesting distributed systems.
+The thing they all have in common is the ability to locally
+query "has time T elapsed, in terms that would be recognised as T by
+the remote machines".  In reality clocks have tolerances etc. so you
+fudge by some percentage, and you are more careful about the order of
+events than I have shown (it's more like "you may assume Y for up to
+time T since you sent the request which initiated this response".)
+
+clearly this wouldn't be expected to go wrong *often*, but it's good
+if distributed systems correctness remains assured over
+suspend/resume, so it's no different from slowing/descheduling.
+
+For this sort of thing, it's enough to have a vague guaranteed
+notification from the system: "There has been some kind of
+CLOCK_MONOTONIC discrepancy", and algorithms should assume everything
+might have elapsed.
+
+> > So maybe CLOCK_MONOTONIC should be changed to include elapsed time
+> > during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
+> > for programs that want that?
 > 
-> Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-> ---
->  kernel/exit.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
+> No. Lets not change it. CLOCK_MONOTONIC and CLOCK_MONOTONIC_RAW's
+> relationship is tightly coupled, and applications that are tracking the
+> amount of clock adjustment being done to the system require they keep
+> their semantics.
 > 
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 21aa7b3..68899b3 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -914,6 +914,14 @@ NORET_TYPE void do_exit(long code)
->  	if (unlikely(!tsk->pid))
->  		panic("Attempted to kill the idle task!");
->  
-> +	/*
-> +	 * If do_exit is called because this processes oopsed, it's possible
-> +	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
-> +	 * continuing. This is relevant at least for clearing clear_child_tid in
-> +	 * mm_release.
-> +	 */
-> +	set_fs(USER_DS);
-> +
->  	tracehook_report_exit(&code);
->  
->  	validate_creds_for_do_exit(tsk);
+> As I said earlier, adding a new clockid to represent the MONOTONIC
+> +SUSPEND time wouldn't be difficult, we just need to be clear about why
+> it should be exposed, and have it also be easy to describe to developers
+> which clockid would suit their needs best.
 
-I think that the potential of escalating an oops or a BUG into a local
-root hole is pretty serious so I'll send this fix along for 2.6.37 and
-I tagged it for -stable backporting, along with a sterner-sounding
-changelog.
+What I've described above doesn't actually need a new clock.  It's
+enough if you guarantee some kind of notification when there's been an
+unknown jump in CLOCK_MONOTONIC's relationship to real time.
 
+That's just as well, as I doubt you could guarantee MONOTONIC+SUSPEND
+accuracy on all hardware.
 
+For correct behaviour, the notification must be guaranteed to be seen
+by any program when it queries CLOCK_MONOTONIC or queries expiry of a
+timer based on that.  It's insufficient to queue a notification which
+might take program execution time to be delivered (that includes
+signals).  In other words, the clock-jump flag must be flagged by
+suspend/resume before the program execution itself is resumed (and
+after it's suspended of course), and seen synchronously when the
+program calls a system call to check the clock/timer.
 
-From: Nelson Elhage <nelhage@ksplice.com>
-
-If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
-otherwise reset before do_exit().  do_exit may later (via mm_release in
-fork.c) do a put_user to a user-controlled address, potentially allowing a
-user to leverage an oops into a controlled write into kernel memory.
-
-This is only triggerable in the presence of another bug, but this
-potentially turns a lot of DoS bugs into privilege escalations, so it's
-worth fixing.  I have proof-of-concept code which uses this bug along with
-CVE-2010-3849 to write a zero to an arbitrary kernel address, so I've
-tested that this is not theoretical.
-
-
-A more logical place to put this fix might be when we know an oops has
-occurred, before we call do_exit(), but that would involve changing every
-architecture, in multiple places.  Let's just stick it in do_exit instead.
-
-[akpm@linux-foundation.org: update code comment]
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: <stable@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- kernel/exit.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff -puN kernel/exit.c~do_exit-make-sure-we-run-with-get_fs-==-user_ds kernel/exit.c
---- a/kernel/exit.c~do_exit-make-sure-we-run-with-get_fs-==-user_ds
-+++ a/kernel/exit.c
-@@ -914,6 +914,15 @@ NORET_TYPE void do_exit(long code)
- 	if (unlikely(!tsk->pid))
- 		panic("Attempted to kill the idle task!");
- 
-+	/*
-+	 * If do_exit is called because this processes oopsed, it's possible
-+	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
-+	 * continuing. Amongst other possible reasons, this is to prevent
-+	 * mm_release()->clear_child_tid() from writing to a user-controlled
-+	 * kernel address.
-+	 */
-+	set_fs(USER_DS);
-+
- 	tracehook_report_exit(&code);
- 
- 	validate_creds_for_do_exit(tsk);
-_
-
+-- Jamie
