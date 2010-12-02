@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab0LBWzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 17:55:19 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:57182 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab0LBWzR (ORCPT
+	id S1757792Ab0LBW6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 17:58:52 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:13950 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab0LBW6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 17:55:17 -0500
-Date: Thu, 2 Dec 2010 22:55:11 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org
-Subject: Re: [PATCH] PCI: Disable ASPM if BIOS asks us to
-Message-ID: <20101202225511.GA13040@srcf.ucam.org>
-References: <1291326904-14822-1-git-send-email-mjg@redhat.com> <201012022324.31760.rjw@sisk.pl> <20101202223135.GA12652@srcf.ucam.org> <201012022351.39815.rjw@sisk.pl>
+	Thu, 2 Dec 2010 17:58:50 -0500
+Message-ID: <4CF824A8.2070807@caviumnetworks.com>
+Date: Thu, 02 Dec 2010 14:58:48 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012022351.39815.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Subject: Re: [RFC][PATCH 1/2] [PATCH 1/2] tracing: Add TRACE_EVENT_CONDITIONAL()
+References: <20101202223654.596106888@goodmis.org> <20101202224814.667536793@goodmis.org>
+In-Reply-To: <20101202224814.667536793@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Dec 2010 22:59:52.0705 (UTC) FILETIME=[A11C7710:01CB9274]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 11:51:39PM +0100, Rafael J. Wysocki wrote:
-> On Thursday, December 02, 2010, Matthew Garrett wrote:
-> > On Thu, Dec 02, 2010 at 11:24:31PM +0100, Rafael J. Wysocki wrote:
-> > > > +	if (!aspm_force) {
-> > > >  		aspm_disabled = 1;
-> > > > +		if (clear)
-> > > > +			aspm_clear_state = clear;
-> > > 
-> > > Well, is the if(clear) really necessary?
-> > 
-> > If the FADT disables ASPM, and then we fail to get the control bits, 
-> > we'd call this twice and turn off aspm_clear_state.
-> 
-> Ah, thanks.  So if you used a separate function for handling the "BIOS tells
-> us there's no ASPM" case, that wouldn't be necessary? ;-)
+On 12/02/2010 02:36 PM, Steven Rostedt wrote:
+> From: Steven Rostedt<srostedt@redhat.com>
+>
+> There are instances in the kernel that we only want to trace
+> a tracepoint when a certain condition is set. But we do not
+> want to test for that condition in the core kernel.
+> If we test for that condition before calling the tracepoin, then
+> we will be performing that test even when tracing is not enabled.
+> This is 99.99% of the time.
+>
+> We currently can just filter out on that condition, but that happens
+> after we write to the trace buffer. We just wasted time writing to
+> the ring buffer for an event we never cared about.
+>
+> This patch adds:
+>
+>     TRACE_EVENT_CONDITION() and DECLARE_TRACE_CLASS_CONDITION()
+>
+> These have a new TP_CONDITION() argument that comes right after
+> the TP_ARGS().  This condition can use the parameters of the
+> TRACE_EVENT() to determine if the tracepoint should be traced
+> or not. The TP_CONDITION() will be placed in a if (cond) trace;
+>
+> For example, for the tracepoint sched_wakeup, it is useless to
+> trace an wakeup event where the caller never actually work
+> anything up (success = 0). So adding:
+                       ^^^
+                    s/=/==/
 
-Yeah. I'll rework and resend - I've also figured out that we need to 
-clear the common PM bit.
+As much as I hate to be a pedant, I would suggest changing this change 
+log for the sake of clarity.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+David Daney
