@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab0LBPBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 10:01:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63241 "EHLO mx1.redhat.com"
+	id S1757825Ab0LBPEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 10:04:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59067 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757399Ab0LBPBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 10:01:19 -0500
-Date: Thu, 2 Dec 2010 10:00:45 -0500
-From: Jarod Wilson <jarod@redhat.com>
-To: Dan Carpenter <error27@gmail.com>, Vasiliy Kulikov <segoon@openwall.com>,
-        kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] media: rc: ir-lirc-codec: fix potential integer overflow
-Message-ID: <20101202150045.GA32168@redhat.com>
-References: <20101202045126.GA1784@bicker>
+	id S1757399Ab0LBPEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 10:04:37 -0500
+Date: Thu, 2 Dec 2010 16:04:35 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <greg@kroah.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>, erazor_de@users.sourceforge.net,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 3/5] HID: roccat: declaring meaning of pack pragma usage
+ in driver headers
+In-Reply-To: <20101130174052.GA19977@kroah.com>
+Message-ID: <alpine.LNX.2.00.1012021604110.14806@pobox.suse.cz>
+References: <1290801456.18750.164.camel@neuromancer> <1290804616.3051.52.camel@localhost> <20101130174052.GA19977@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101202045126.GA1784@bicker>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 07:51:26AM +0300, Dan Carpenter wrote:
-> On Fri, Nov 26, 2010 at 08:06:35PM +0300, Vasiliy Kulikov wrote:
-> >  	count = n / sizeof(int);
-> > -	if (count > LIRCBUF_SIZE || count % 2 == 0)
-> > +	if (count > LIRCBUF_SIZE || count % 2 == 0 || n % sizeof(int) != 0)
->                                                       ^^^^^^^^^^^^^^^^^^^^
+On Tue, 30 Nov 2010, Greg KH wrote:
+
+> > > Using pack pragma to prevent padding bytes in binary data structures
+> > > used for hardware communication. Explanation of these pragmas was requested.
+> > [...]
+> > 
+> > It would be clearer to use the '__packed' macro after each structure
+> > definition instead of using this awful Microsoft extension.
 > 
-> Wait, what?  We just checked this a couple lines before.
+> I agree, that's the "normal" Linux way of doing things.
+> 
+> Other than that, this patch set looks good to me.  Jiri, if the packed
+> change is made, do you want me to take these through my tree, or do you
+> want to take them through yours?  Whatever is easier for you is fine
+> with me.
 
-Bah. I'd only looked at the diff, which didn't have enough context. I
-thought that looked familiar. Indeed, this part seems to be unnecessary.
+Hi Greg,
 
-> The rest of the patch is right and a clever catch.  It would affect 
-> x86_64 systems and not i386.  This doesn't have security implications
-> does it?  You'd just catch the kmalloc() stack trace for insanely large
-> allocations.
+as this is part of larger roccat patchset, I will be processing it through 
+my tree once completely reviewed.
 
-Even on x86_64, it looks to my (relatively untrained) eye like you'd
-actually be fine. n is a size_t (so, 64-bit on x86_64). count is an int
-(so 32-bit on x86_64). We initialize count to some 64-bit value / 4, so
-at most, 16 bits, which always fits just fine in the 32-bit int, no?
+Thanks,
 
 -- 
-Jarod Wilson
-jarod@redhat.com
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
