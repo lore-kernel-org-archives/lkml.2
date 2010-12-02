@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338Ab0LBXnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 18:43:01 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50015 "EHLO ogre.sisk.pl"
+	id S1758379Ab0LBXnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 18:43:05 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50028 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758309Ab0LBXm7 convert rfc822-to-8bit (ORCPT
+	id S1758348Ab0LBXnC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 18:42:59 -0500
+	Thu, 2 Dec 2010 18:43:02 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Christian Casteyde" <casteyde.christian@free.fr>
+        "Giacomo Catenazzi" <cate@cateee.net>, "Neil Brown" <neilb@suse.de>
 References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
 In-Reply-To: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <gUkHV_Vc3aE.A.BZG.0xC-MB@chimera>
-Subject: [Bug #24142] No more bt848 driver in 2.6.37-rc*
+Message-ID: <gUkHV_Vc3aE.A.KdG.5xC-MB@chimera>
+Subject: [Bug #24012] Commit g18733b0 hangs my LVM+raid10 system
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Fri,  3 Dec 2010 00:41:47 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,9 +34,11 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24142
-Subject		: No more bt848 driver in 2.6.37-rc*
-Submitter	: Christian Casteyde <casteyde.christian@free.fr>
-Date		: 2010-11-30 20:50 (3 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24012
+Subject		: Commit g18733b0 hangs my LVM+raid10 system
+Submitter	: Giacomo Catenazzi <cate@cateee.net>
+Date		: 2010-11-29 19:48 (4 days old)
+Handled-By	: Neil Brown <neilb@suse.de>
+Patch		: https://bugzilla.kernel.org/show_bug.cgi?id=24012#c16
 
 
