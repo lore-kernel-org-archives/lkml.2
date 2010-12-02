@@ -1,188 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab0LBVzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:55:19 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32081 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758038Ab0LBVyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:54:04 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Djv_Sx8VM1k35V8I5J0tWBh.Y.ltMP1AZF81sxIqr2onX6C
- rpqQW5ADbofJsbH5L.XS6kHqwRsfqr8GljUnomhFxcZiJfaURJXmNP9N.WjU
- MCJIOUMQo2QT0SDKYWKmaBiF72VkguyDl9eJqD6ybpENvJRucerKz._kBEkC
- uNciwvv8rmmZ49BAT91a_1jdFUo.wXr_uj48mXnYNoDksZo9C1racbfCpTPK
- GNyHqsT3p.VI5uCJoULZQW9sqT6YjKv4ja5nunOvKFr94zrWbDPeg53QjiqQ
- ckj1tsnEij09km_gtT.zD
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101202215401.808262317@linux.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 02 Dec 2010 15:53:45 -0600
-From: Christoph Lameter <cl@linux.com>
-To: akpm@linux-foundation.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [rfc: cpuops adv V1 5/8] vmstat: User per cpu atomics to avoid interrupt disable / enable
-References: <20101202215340.562309713@linux.com>
-Content-Disposition: inline; filename=vmstat_group
+	id S1758191Ab0LBVzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:55:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758104Ab0LBVzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 16:55:20 -0500
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] PCI: Disable ASPM if BIOS asks us to
+Date: Thu,  2 Dec 2010 16:55:04 -0500
+Message-Id: <1291326904-14822-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the operations to increment vm counters must disable interrupts
-in order to not mess up their housekeeping of counters.
+We currently refuse to touch the ASPM registers if the BIOS tells us that
+ASPM isn't supported. This can cause problems if the BIOS has (for any
+reason) enabled ASPM on some devices anyway. Change the code such that we
+explicitly clear ASPM if the FADT indicates that ASPM isn't supported,
+and make sure we tidy up appropriately on device removal in order to deal
+with the hotplug case. If ASPM is disabled because the BIOS doesn't hand
+over control then we won't touch the registers.
 
-So use this_cpu_cmpxchg() to avoid the overhead. Since we can no longer
-count on preremption being disabled  we still have some minor issues.
-The fetching of the counter thresholds is racy.
-A threshold from another cpu may be applied if we happen to be
-rescheduled on another cpu.  However, the following vmstat operation
-will then bring the counter again under the threshold limit.
-
-The operations for __xxx_zone_state are not changed since the caller
-has taken care of the synchronization needs (and therefore the cycle
-count is even less than the optimized version for the irq disable case
-provided here).
-
-The optimization using this_cpu_cmpxchg will only be used if the arch
-supports efficient this_cpu_ops (must have CONFIG_CMPXCHG_LOCAL set!)
-
-The use of this_cpu_cmpxchg reduces the cycle count for the counter
-operations by %80 (inc_zone_page_state goes from 170 cycles to 32).
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- mm/vmstat.c |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 87 insertions(+), 14 deletions(-)
+ drivers/pci/pci-acpi.c          |    2 +-
+ drivers/pci/pcie/aspm.c         |   20 +++++++++++++++-----
+ drivers/pci/pcie/portdrv_core.c |    2 +-
+ drivers/pci/pcie/portdrv_pci.c  |    2 +-
+ include/linux/pci-aspm.h        |    4 ++--
+ 5 files changed, 20 insertions(+), 10 deletions(-)
 
-Index: linux-2.6/mm/vmstat.c
-===================================================================
---- linux-2.6.orig/mm/vmstat.c	2010-12-01 10:04:19.000000000 -0600
-+++ linux-2.6/mm/vmstat.c	2010-12-01 10:09:06.000000000 -0600
-@@ -185,20 +185,6 @@ void __mod_zone_page_state(struct zone *
- EXPORT_SYMBOL(__mod_zone_page_state);
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 24e19c5..e2c47cb 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -399,7 +399,7 @@ static int __init acpi_pci_init(void)
  
- /*
-- * For an unknown interrupt state
-- */
--void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
--					int delta)
--{
--	unsigned long flags;
--
--	local_irq_save(flags);
--	__mod_zone_page_state(zone, item, delta);
--	local_irq_restore(flags);
--}
--EXPORT_SYMBOL(mod_zone_page_state);
--
--/*
-  * Optimized increment and decrement functions.
-  *
-  * These are only for a single page and therefore can take a struct page *
-@@ -265,6 +251,92 @@ void __dec_zone_page_state(struct page *
- }
- EXPORT_SYMBOL(__dec_zone_page_state);
+ 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
+ 		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
+-		pcie_no_aspm();
++		pcie_no_aspm(true);
+ 	}
  
-+#ifdef CONFIG_CMPXCHG_LOCAL
-+/*
-+ * If we have cmpxchg_local support then we do not need to incur the overhead
-+ * that comes with local_irq_save/restore if we use this_cpu_cmpxchg.
-+ *
-+ * mod_state() modifies the zone counter state through atomic per cpu
-+ * operations.
-+ *
-+ * Overstep mode specifies how overstep should handled:
-+ *     0       No overstepping
-+ *     1       Overstepping half of threshold
-+ *     -1      Overstepping minus half of threshold
-+*/
-+static inline void mod_state(struct zone *zone,
-+       enum zone_stat_item item, int delta, int overstep_mode)
-+{
-+	struct per_cpu_pageset __percpu *pcp = zone->pageset;
-+	s8 __percpu *p = pcp->vm_stat_diff + item;
-+	long o, n, t, z;
+ 	ret = register_acpi_bus_type(&acpi_pci_bus);
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 7122281..08a2232 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -68,7 +68,7 @@ struct pcie_link_state {
+ 	struct aspm_latency acceptable[8];
+ };
+ 
+-static int aspm_disabled, aspm_force;
++static int aspm_disabled, aspm_force, aspm_clear_state;
+ static DEFINE_MUTEX(aspm_lock);
+ static LIST_HEAD(link_list);
+ 
+@@ -498,6 +498,10 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
+ 	struct pci_dev *child;
+ 	int pos;
+ 	u32 reg32;
 +
-+	do {
-+		z = 0;  /* overflow to zone counters */
++	if (aspm_clear_state)
++		return -EINVAL;
 +
-+		/*
-+		 * The fetching of the stat_threshold is racy. We may apply
-+		 * a counter threshold to the wrong the cpu if we get
-+		 * rescheduled while executing here. However, the following
-+		 * will apply the threshold again and therefore bring the
-+		 * counter under the threshold.
-+		 */
-+		t = this_cpu_read(pcp->stat_threshold);
+ 	/*
+ 	 * Some functions in a slot might not all be PCIe functions,
+ 	 * very strange. Disable ASPM for the whole slot
+@@ -563,12 +567,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ 	struct pcie_link_state *link;
+ 	int blacklist = !!pcie_aspm_sanity_check(pdev);
+ 
+-	if (aspm_disabled || !pci_is_pcie(pdev) || pdev->link_state)
++	if (!pci_is_pcie(pdev) || pdev->link_state)
+ 		return;
+ 	if (pdev->pcie_type != PCI_EXP_TYPE_ROOT_PORT &&
+ 	    pdev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)
+ 		return;
+ 
++	if (aspm_disabled && !aspm_clear_state)
++		return;
 +
-+		o = this_cpu_read(*p);
-+		n = delta + o;
-+
-+		if (n > t || n < -t) {
-+			int os = overstep_mode * (t >> 1) ;
-+
-+			/* Overflow must be added to zone counters */
-+			z = n + os;
-+			n = -os;
-+		}
-+	} while (this_cpu_cmpxchg(*p, o, n) != o);
-+
-+	if (z)
-+		zone_page_state_add(z, zone, item);
-+}
-+
-+void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
-+					int delta)
-+{
-+	mod_state(zone, item, delta, 0);
-+}
-+EXPORT_SYMBOL(mod_zone_page_state);
-+
-+void inc_zone_state(struct zone *zone, enum zone_stat_item item)
-+{
-+	mod_state(zone, item, 1, 1);
-+}
-+
-+void inc_zone_page_state(struct page *page, enum zone_stat_item item)
-+{
-+	mod_state(page_zone(page), item, 1, 1);
-+}
-+EXPORT_SYMBOL(inc_zone_page_state);
-+
-+void dec_zone_page_state(struct page *page, enum zone_stat_item item)
-+{
-+	mod_state(page_zone(page), item, -1, -1);
-+}
-+EXPORT_SYMBOL(dec_zone_page_state);
-+#else
-+/*
-+ * Use interrupt disable to serialize counter updates
-+ */
-+void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
-+					int delta)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	__mod_zone_page_state(zone, item, delta);
-+	local_irq_restore(flags);
-+}
-+EXPORT_SYMBOL(mod_zone_page_state);
-+
- void inc_zone_state(struct zone *zone, enum zone_stat_item item)
+ 	/* VIA has a strange chipset, root port is under a bridge */
+ 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT &&
+ 	    pdev->bus->self)
+@@ -641,7 +648,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
+ 	struct pci_dev *parent = pdev->bus->self;
+ 	struct pcie_link_state *link, *root, *parent_link;
+ 
+-	if (aspm_disabled || !pci_is_pcie(pdev) ||
++	if ((aspm_disabled && !aspm_clear_state) || !pci_is_pcie(pdev) ||
+ 	    !parent || !parent->link_state)
+ 		return;
+ 	if ((parent->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
+@@ -899,10 +906,13 @@ static int __init pcie_aspm_disable(char *str)
+ 
+ __setup("pcie_aspm=", pcie_aspm_disable);
+ 
+-void pcie_no_aspm(void)
++void pcie_no_aspm(bool clear)
  {
- 	unsigned long flags;
-@@ -295,6 +367,7 @@ void dec_zone_page_state(struct page *pa
- 	local_irq_restore(flags);
+-	if (!aspm_force)
++	if (!aspm_force) {
+ 		aspm_disabled = 1;
++		if (clear)
++			aspm_clear_state = clear;
++	}
  }
- EXPORT_SYMBOL(dec_zone_page_state);
-+#endif
  
- /*
-  * Update the zone counters for one cpu.
+ /**
+diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+index a9c222d..bb0fda1 100644
+--- a/drivers/pci/pcie/portdrv_core.c
++++ b/drivers/pci/pcie/portdrv_core.c
+@@ -244,7 +244,7 @@ static int get_port_device_capability(struct pci_dev *dev)
+ 	err = pcie_port_platform_notify(dev, &cap_mask);
+ 	if (pcie_ports_auto) {
+ 		if (err) {
+-			pcie_no_aspm();
++			pcie_no_aspm(false);
+ 			return 0;
+ 		}
+ 	} else {
+diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+index f9033e1..87f5343 100644
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -328,7 +328,7 @@ static int __init pcie_portdrv_init(void)
+ 	int retval;
+ 
+ 	if (pcie_ports_disabled) {
+-		pcie_no_aspm();
++		pcie_no_aspm(false);
+ 		return -EACCES;
+ 	}
+ 
+diff --git a/include/linux/pci-aspm.h b/include/linux/pci-aspm.h
+index 91ba0b3..c7176a6 100644
+--- a/include/linux/pci-aspm.h
++++ b/include/linux/pci-aspm.h
+@@ -27,7 +27,7 @@ extern void pcie_aspm_init_link_state(struct pci_dev *pdev);
+ extern void pcie_aspm_exit_link_state(struct pci_dev *pdev);
+ extern void pcie_aspm_pm_state_change(struct pci_dev *pdev);
+ extern void pci_disable_link_state(struct pci_dev *pdev, int state);
+-extern void pcie_no_aspm(void);
++extern void pcie_no_aspm(bool clear_state);
+ #else
+ static inline void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ {
+@@ -42,7 +42,7 @@ static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
+ {
+ }
+ 
+-static inline void pcie_no_aspm(void)
++static inline void pcie_no_aspm(bool clear_state)
+ {
+ }
+ #endif
+-- 
+1.7.3.2
 
