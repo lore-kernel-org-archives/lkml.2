@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab0LBEAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 23:00:04 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37878 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756498Ab0LBEAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 23:00:03 -0500
+	id S1757073Ab0LBEG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 23:06:27 -0500
+Received: from kroah.org ([198.145.64.141]:40885 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757039Ab0LBEG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 23:06:26 -0500
+Date: Wed, 1 Dec 2010 20:00:31 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-ID: <20101202040031.GA10016@kroah.com>
+References: <20101202132254.93e019c7.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1291262016.6609.115.camel@heimdal.trondhjem.org>
-References: <1291259285-26803-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291259285-26803-2-git-send-email-Trond.Myklebust@netapp.com>
- <1291259285-26803-3-git-send-email-Trond.Myklebust@netapp.com>
- <alpine.LSU.2.00.1012011925580.25894@tigran.mtv.corp.google.com> <1291262016.6609.115.camel@heimdal.trondhjem.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Dec 2010 19:58:18 -0800
-Message-ID: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] Call the filesystem back whenever a page is
- removed from the page cache
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Hugh Dickins <hughd@google.com>, Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202132254.93e019c7.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 7:53 PM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
->
-> Again, I was being cautious (I freely admit to not having studied
-> stop_machine()). If nobody disagrees with your interpretation, then I'm
-> very happy to drop the preempt disable/enable crud.
+On Thu, Dec 02, 2010 at 01:22:54PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/winbond/sysdef.h between commit
+> 412dc7f368bf10a8049a8a4c41abbfd0108742e7 ("staging: fix winbond build,
+> needs delay.h") from the staging.current tree and commit
+> ddee7e28e7d5e4ba2b8537c6a59b035745c250bb ("Staging: w35und: Remove empty
+> sysdef.h header") from the staging tree.
+> 
+> I removed the file.  I wonder if
+> drivers/staging/winbond/phy_calibration.c and
+> drivers/staging/winbond/reg.c now need their own includes of
+> linux/delay.h ...
 
-Just remove it. It won't matter for the stop_machine case, and the
-other case that Andrew pointed out (just unmap with memory pressure)
-is an independent thing that doesn't do stop_machine anyway.
+Heh, probably.  I'll handle this merge when thes staging.current code
+goes to Linus this week.
 
-In the next merge window we'll see the whole RCU name lookup (let's
-see if people can agree on it, or whether I'll just have to do an
-executive decision and push it through even without consensus), which
-then rcu-delays inode freeing, and that will fix it for real. When
-that happens, doing a "rcu_read_lock()" in vmscan.c before the removal
-of the page from the mapping, and then unlocking after the callback
-will be a real fix, but it will require the rcu release to be that
-real fix anyway, so doing something else now will just confuse things.
+thanks,
 
-                       Linus
+greg k-h
