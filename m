@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757570Ab0LBNgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 08:36:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22859 "EHLO mx1.redhat.com"
+	id S1757575Ab0LBNjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 08:39:18 -0500
+Received: from www.tglx.de ([62.245.132.106]:45425 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757431Ab0LBNgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 08:36:14 -0500
-Date: Thu, 2 Dec 2010 08:35:55 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Pirko <jpirko@redhat.com>, Neil Horman <nhorman@redhat.com>,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Amerigo Wang <amwang@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Message-Id: <20101202134054.6073.77242.sendpatchset@localhost.localdomain>
-In-Reply-To: <20101202134041.6073.5201.sendpatchset@localhost.localdomain>
-References: <20101202134041.6073.5201.sendpatchset@localhost.localdomain>
-Subject: [v2 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
+	id S1757539Ab0LBNjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 08:39:16 -0500
+Date: Thu, 2 Dec 2010 14:38:50 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, sodaville@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org, rtc-linux@googlegroups.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/rtc: don't register rtc if we have an OF node for it
+Message-ID: <20101202133850.GB10365@www.tglx.de>
+References: <20101201101756.GA31624@www.tglx.de> <AANLkTinF8GVv-HwKWCRx2jJoCZVWwNzBou3shi8OJj3S@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <AANLkTinF8GVv-HwKWCRx2jJoCZVWwNzBou3shi8OJj3S@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amerigo Wang <amwang@redhat.com>
-Date: Thu, 2 Dec 2010 21:34:44 +0800
-Subject: [v2 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
+or the rtc driver will probe for two devices: the static platform device
+the OF device.
 
-This patch removes the flag IFF_IN_NETPOLL, we don't need it any more since
-we have netpoll_tx_running() now.
-
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Neil Horman <nhorman@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Jiri Pirko <jpirko@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/net/bonding/bond_main.c |    6 ++----
- drivers/net/bonding/bonding.h   |    2 +-
- include/linux/if.h              |    9 ++++-----
- net/core/netpoll.c              |    2 --
- 4 files changed, 7 insertions(+), 12 deletions(-)
+ arch/x86/kernel/rtc.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 2addafc..6ca374c 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -449,11 +449,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index 1cfbbfc..382c6cb 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -6,6 +6,7 @@
+ #include <linux/acpi.h>
+ #include <linux/bcd.h>
+ #include <linux/pnp.h>
++#include <linux/of.h>
  
- 	skb->priority = 1;
- #ifdef CONFIG_NET_POLL_CONTROLLER
--	if (unlikely(netpoll_tx_running(slave_dev))) {
--		slave_dev->priv_flags |= IFF_IN_NETPOLL;
-+	if (unlikely(netpoll_tx_running(slave_dev)))
- 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
--		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
--	} else
-+	else
- #endif
- 		dev_queue_xmit(skb);
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+@@ -218,6 +219,25 @@ static struct platform_device rtc_device = {
+ 	.num_resources	= ARRAY_SIZE(rtc_resources),
+ };
  
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index d3f3563..6a5abf0 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -138,7 +138,7 @@ static inline void unblock_netpoll_tx(void)
- 
- static inline int is_netpoll_tx_blocked(struct net_device *dev)
++#ifdef CONFIG_OF
++static __init int have_rtc_of_node(void)
++{
++	struct device_node *n;
++
++	n = of_find_compatible_node(NULL, NULL, "motorola,mc146818");
++	if (n) {
++		of_node_put(n);
++		return 1;
++	}
++	return 0;
++}
++#else
++static inline int have_rtc_of_node(void)
++{
++	return 0;
++}
++#endif
++
+ static __init int add_rtc_cmos(void)
  {
--	if (unlikely(dev->priv_flags & IFF_IN_NETPOLL))
-+	if (unlikely(netpoll_tx_running(dev)))
- 		return cpumask_test_cpu(smp_processor_id(), netpoll_block_tx);
- 	return 0;
- }
-diff --git a/include/linux/if.h b/include/linux/if.h
-index 1239599..3bc63e6 100644
---- a/include/linux/if.h
-+++ b/include/linux/if.h
-@@ -71,11 +71,10 @@
- 					 * release skb->dst
- 					 */
- #define IFF_DONT_BRIDGE 0x800		/* disallow bridging this ether dev */
--#define IFF_IN_NETPOLL	0x1000		/* whether we are processing netpoll */
--#define IFF_DISABLE_NETPOLL	0x2000	/* disable netpoll at run-time */
--#define IFF_MACVLAN_PORT	0x4000	/* device used as macvlan port */
--#define IFF_BRIDGE_PORT	0x8000		/* device used as bridge port */
--#define IFF_OVS_DATAPATH	0x10000	/* device used as Open vSwitch
-+#define IFF_DISABLE_NETPOLL	0x1000	/* disable netpoll at run-time */
-+#define IFF_MACVLAN_PORT	0x2000	/* device used as macvlan port */
-+#define IFF_BRIDGE_PORT	0x4000		/* device used as bridge port */
-+#define IFF_OVS_DATAPATH	0x8000	/* device used as Open vSwitch
- 					 * datapath port */
+ #ifdef CONFIG_PNP
+@@ -237,6 +257,9 @@ static __init int add_rtc_cmos(void)
+ 	}
+ #endif
  
- #define IF_GET_IFACE	0x0001		/* for querying only */
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index ee38acb..8a5c1c9 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -314,9 +314,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
- 		     tries > 0; --tries) {
- 			if (__netif_tx_trylock(txq)) {
- 				if (!netif_tx_queue_stopped(txq)) {
--					dev->priv_flags |= IFF_IN_NETPOLL;
- 					status = ops->ndo_start_xmit(skb, dev);
--					dev->priv_flags &= ~IFF_IN_NETPOLL;
- 					if (status == NETDEV_TX_OK)
- 						txq_trans_update(txq);
- 				}
++	if (have_rtc_of_node())
++		return 0;
++
+ 	platform_device_register(&rtc_device);
+ 	dev_info(&rtc_device.dev,
+ 		 "registered platform RTC device (no PNP device found)\n");
 -- 
-1.7.1
+1.7.3.2
 
