@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab0LBGAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 01:00:18 -0500
-Received: from mga14.intel.com ([143.182.124.37]:43738 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756291Ab0LBGAP convert rfc822-to-8bit (ORCPT
+	id S1757243Ab0LBGZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 01:25:16 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:42991 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753596Ab0LBGZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 01:00:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,286,1288594800"; 
-   d="scan'208";a="355916288"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
-        "Huang, Ying" <ying.huang@intel.com>, Borislav Petkov <bp@alien8.de>,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Wed, 1 Dec 2010 22:00:12 -0800
-Subject: RE: [RFC] persistent store (version 2) (part 1 of 2)
-Thread-Topic: [RFC] persistent store (version 2) (part 1 of 2)
-Thread-Index: AcuRuy/7hczW6DC1QA2wfxKzLjpmXAAKfAzw
-Message-ID: <987664A83D2D224EAE907B061CE93D530191F27E0E@orsmsx505.amr.corp.intel.com>
-References: <4cf594e21679631af0@agluck-desktop.sc.intel.com>
- <20101201165139.a3bb2199.akpm@linux-foundation.org>
-In-Reply-To: <20101201165139.a3bb2199.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Dec 2010 01:25:14 -0500
+Date: Thu, 2 Dec 2010 11:55:40 +0530
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+To: srinath@mistralsolutions.com
+Cc: linux-omap@vger.kernel.org, jdk@ti.com, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, khilman@deeprootsystems.com,
+        nm@ti.com, nagendra@mistralsolutions.com, umeshk@mistralsolutions.com
+Subject: Re: [Patch v3] AM35xx: Craneboard: Add USB EHCI support
+Message-ID: <20101202062539.GB5645@GLPP-machine>
+References: <1291222730-17614-1-git-send-email-srinath@mistralsolutions.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291222730-17614-1-git-send-email-srinath@mistralsolutions.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> filenames refer to files!  And lo, that's what we have here.  A
-> filesystem!  The files are created by the kernel and are read and
-> unlinked by userspace.
->
-> So why not implement this whole thing as a proper filesystem?
-...
-> Wait.  It *is* a filesystem.
-...
-> So why can't I remove these "records" with rm?
+* srinath@mistralsolutions.com <srinath@mistralsolutions.com> [2010-12-01 22:28:50 +0530]:
 
-Because I tried to use /sys for this and couldn't find a
-way to get notified about "unlink".  Alan Cox called this
-bit "daft" in v1 (and I agreed with him). Peter Anvin gave
-me some pointers on how easy this would be to do as a real
-filesystem ... so v3 will be out in a little while with
-this insanity removed.
+> From: Srinath <srinath@mistralsolutions.com>
+> 
+> AM3517/05 Craneboard has one EHCI interface on board using port1.
+> 
+> GPIO35 is used as power enable.
+> GPIO38 is used as port1 PHY reset.
+> 
+> History:
+> http://marc.info/?l=linux-omap&w=2&r=1&s=Craneboard%3A+Add+USB+EHCI+support&q=t
+> 
+> Signed-off-by: Srinath <srinath@mistralsolutions.com>
+> ---
+>  arch/arm/mach-omap2/board-am3517crane.c |   40 +++++++++++++++++++++++++++++++
+>  1 files changed, 40 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+> index 13ead33..6fd5dfe 100644
+> --- a/arch/arm/mach-omap2/board-am3517crane.c
+> +++ b/arch/arm/mach-omap2/board-am3517crane.c
+> @@ -28,8 +28,13 @@
+>  
+[...]
+>  static void __init am3517_crane_init(void)
+>  {
+> +	int ret;
+> +
+>  	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+>  	omap_serial_init();
+> +
+> +	/* Configure GPIO for EHCI port */
+> +	omap_mux_init_gpio(GPIO_USB_POWER, OMAP_PIN_OUTPUT);
 
-I'll roll in fixes to address your other comments too.
+This is non void function. You can consider return value for further
+processing.
 
-Thanks for the review.
+> +
+> +	ret = gpio_request(GPIO_USB_POWER, "usb_ehci_enable");
+> +	if (ret < 0) {
+> +		pr_err("Cannot request GPIO %d\n", GPIO_USB_POWER);
+> +		return;
+> +	}
+> +
+> +	ret = gpio_direction_output(GPIO_USB_POWER, 1);
+> +	if (ret < 0)
+> +		goto err;
+> +
+> +	omap_mux_init_gpio(GPIO_USB_NRESET, OMAP_PIN_OUTPUT);
 
--Tony
+-Ditto-
+
+Also, why there is no gpio_request for "GPIO_USB_NRESET"
+
+-Manjunath
+
+[...]
