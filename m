@@ -1,134 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab0LBBNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:13:09 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:46195 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab0LBBNH (ORCPT
+	id S1756062Ab0LBBQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:16:13 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:49447 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab0LBBQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:13:07 -0500
-Date: Thu, 2 Dec 2010 01:12:11 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-Message-ID: <20101202011211.GN22787@shareable.org>
-References: <1290532938-7332-1-git-send-email-virtuoso@slind.org> <20101123224346.GA19350@tango.0pointer.de> <20101201104359.GJ22787@shareable.org> <1291248647.2846.34.camel@work-vm>
+	Wed, 1 Dec 2010 20:16:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=WpyARDTeQt3oUaeeCvjPW7/MovED6dMQkoNqAf0pm8RTqUM54PtiMFFZU1rfm6egYw
+         33OFoJlZFAGbFM2UQH6g==
+Date: Wed, 1 Dec 2010 17:16:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Bennee <kernel-hacker@bennee.com>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [patch] flex_array: export symbols to modules
+In-Reply-To: <AANLkTik_TQfQDERdRQaQek3S7280sQBmHGKOnhJwU5EE@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1012011714510.22420@chino.kir.corp.google.com>
+References: <AANLkTik_TQfQDERdRQaQek3S7280sQBmHGKOnhJwU5EE@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291248647.2846.34.camel@work-vm>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-john stultz wrote:
-> > CLOCK_MONOTONIC is unsuitable because it stops at suspend.  Maybe it
-> > should stay that way.  But maybe not - programs using CLOCK_MONOTONIC
-> > usually want to trigger timeouts etc. based on real elapsed time, and
-> > after suspend/resume, it's quite reasonable to want to trigger all of
-> > a program's short timeouts immediately.  Indeed some network protocol
-> > userspace may currently behave *incorrectly* over suspend/resume,
-> > especially those using clock times to validate their caches,
-> > *because* CLOCK_MONOTONIC doesn't count it.
+On Wed, 1 Dec 2010, Alex Bennee wrote:
+
+> Hi,
 > 
-> Is there a specific example of this occurring that you have in mind?
-
-Yes, it's a correctness issue in network protocols using
-lease/oplock/MESI-style cache coherency.  (E.g. NFSv4, CIFS, whatever
-you like in userspace.)
-
-By this, I mean anything with this sort of pattern:
-
-   1. Receive message "you may cache thing X for up to 20 seconds *without
-      checking if it changed* during that time; afterwards, check".
-
-      (If the other end need to change X within the 20 second
-      interval, the other end will send a request to break the lease;
-      if the other end doesn't get a response, then it waits until the
-      20 second expires, and then it's safe to assume the lease expired.)
-
-   2. Local request for value of X.
-
-      => If less than 20 seconds has passed, the local cache responds
-         with X *without any network confirmation*.  I.e. it's instant.
-      => If more than 20 seconds has passed, it has to talk to the
-         other end.  I.e. a network round trip.
-
-The algorithm is coherent even if the network is unreliable and goes
-down sometimes.  When that happens, local requests are stalled, rather
-than returning values incoherent with other machines.
-
-This algorithm breaks if the local application depends on
-CLOCK_MONOTONIC to confirm that less than 20 seconds has passed
-and CLOCK_MONOTONIC is lying.
-
-CLOCK_MONOTONIC lies when you've done suspend+resume while this
-program was running, so it's 20 seconds test gives the wrong result.
-
-You can imagine there are quite a few applications that use this
-technique because it's quite fundamental to efficient coherency
-protocols.  (Although I'm unable to name any off the top of my head!).
-
-There are generalisations for more interesting distributed systems.
-The thing they all have in common is the ability to locally
-query "has time T elapsed, in terms that would be recognised as T by
-the remote machines".  In reality clocks have tolerances etc. so you
-fudge by some percentage, and you are more careful about the order of
-events than I have shown (it's more like "you may assume Y for up to
-time T since you sent the request which initiated this response".)
-
-clearly this wouldn't be expected to go wrong *often*, but it's good
-if distributed systems correctness remains assured over
-suspend/resume, so it's no different from slowing/descheduling.
-
-For this sort of thing, it's enough to have a vague guaranteed
-notification from the system: "There has been some kind of
-CLOCK_MONOTONIC discrepancy", and algorithms should assume everything
-might have elapsed.
-
-> > So maybe CLOCK_MONOTONIC should be changed to include elapsed time
-> > during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
-> > for programs that want that?
+> I want to be able to use the flex_array functions in my module so I
+> wanted to EXPORT_SYMBOL the API.
 > 
-> No. Lets not change it. CLOCK_MONOTONIC and CLOCK_MONOTONIC_RAW's
-> relationship is tightly coupled, and applications that are tracking the
-> amount of clock adjustment being done to the system require they keep
-> their semantics.
+> I added the appropriate EXPORT_SYMBOL runes into lib/flex_array.c and
+> added externs in the header files but after re-building there is still
+> no sign of them in Module.symvers.
 > 
-> As I said earlier, adding a new clockid to represent the MONOTONIC
-> +SUSPEND time wouldn't be difficult, we just need to be clear about why
-> it should be exposed, and have it also be easy to describe to developers
-> which clockid would suit their needs best.
 
-What I've described above doesn't actually need a new clock.  It's
-enough if you guarantee some kind of notification when there's been an
-unknown jump in CLOCK_MONOTONIC's relationship to real time.
+You shouldn't need to add any externs in include/linux/flex_array.h, they 
+should already be publically declared.
 
-That's just as well, as I doubt you could guarantee MONOTONIC+SUSPEND
-accuracy on all hardware.
+Perhaps you forgot to include linux/module.h in lib/flex_array.c?
 
-For correct behaviour, the notification must be guaranteed to be seen
-by any program when it queries CLOCK_MONOTONIC or queries expiry of a
-timer based on that.  It's insufficient to queue a notification which
-might take program execution time to be delivered (that includes
-signals).  In other words, the clock-jump flag must be flagged by
-suspend/resume before the program execution itself is resumed (and
-after it's suspended of course), and seen synchronously when the
-program calls a system call to check the clock/timer.
 
--- Jamie
+
+flex_array: export symbols to modules
+
+Add EXPORT_SYMBOL() for all publically accessible flex array functions.
+
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ lib/flex_array.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/lib/flex_array.c b/lib/flex_array.c
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -23,6 +23,7 @@
+ #include <linux/flex_array.h>
+ #include <linux/slab.h>
+ #include <linux/stddef.h>
++#include <linux/module.h>
+ 
+ struct flex_array_part {
+ 	char elements[FLEX_ARRAY_PART_SIZE];
+@@ -103,6 +104,7 @@ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
+ 						FLEX_ARRAY_BASE_BYTES_LEFT);
+ 	return ret;
+ }
++EXPORT_SYMBOL(flex_array_alloc);
+ 
+ static int fa_element_to_part_nr(struct flex_array *fa,
+ 					unsigned int element_nr)
+@@ -126,12 +128,14 @@ void flex_array_free_parts(struct flex_array *fa)
+ 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++)
+ 		kfree(fa->parts[part_nr]);
+ }
++EXPORT_SYMBOL(flex_array_free_parts);
+ 
+ void flex_array_free(struct flex_array *fa)
+ {
+ 	flex_array_free_parts(fa);
+ 	kfree(fa);
+ }
++EXPORT_SYMBOL(flex_array_free);
+ 
+ static unsigned int index_inside_part(struct flex_array *fa,
+ 					unsigned int element_nr)
+@@ -196,6 +200,7 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+ 	memcpy(dst, src, fa->element_size);
+ 	return 0;
+ }
++EXPORT_SYMBOL(flex_array_put);
+ 
+ /**
+  * flex_array_clear - clear element in array at @element_nr
+@@ -223,6 +228,7 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
+ 	memset(dst, FLEX_ARRAY_FREE, fa->element_size);
+ 	return 0;
+ }
++EXPORT_SYMBOL(flex_array_clear);
+ 
+ /**
+  * flex_array_prealloc - guarantee that array space exists
+@@ -259,6 +265,7 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+ 	}
+ 	return 0;
+ }
++EXPORT_SYMBOL(flex_array_prealloc);
+ 
+ /**
+  * flex_array_get - pull data back out of the array
+@@ -288,6 +295,7 @@ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
+ 	}
+ 	return &part->elements[index_inside_part(fa, element_nr)];
+ }
++EXPORT_SYMBOL(flex_array_get);
+ 
+ /**
+  * flex_array_get_ptr - pull a ptr back out of the array
+@@ -308,6 +316,7 @@ void *flex_array_get_ptr(struct flex_array *fa, unsigned int element_nr)
+ 
+ 	return *tmp;
+ }
++EXPORT_SYMBOL(flex_array_get_ptr);
+ 
+ static int part_is_free(struct flex_array_part *part)
+ {
+@@ -348,3 +357,4 @@ int flex_array_shrink(struct flex_array *fa)
+ 	}
+ 	return ret;
+ }
++EXPORT_SYMBOL(flex_array_shrink);
