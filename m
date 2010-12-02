@@ -1,429 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab0LBTsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 14:48:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757986Ab0LBTsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 14:48:03 -0500
-Date: Thu, 2 Dec 2010 21:47:09 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] vhost test module
-Message-ID: <20101202194709.GA9081@redhat.com>
-References: <20101129170431.GA4027@redhat.com>
- <20101129170901.GB4027@redhat.com>
- <20101202190037.GH2085@linux.vnet.ibm.com>
- <20101202191130.GA8092@redhat.com>
- <20101202192616.GL2085@linux.vnet.ibm.com>
+	id S1758022Ab0LBTtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 14:49:10 -0500
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:31383 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757253Ab0LBTtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 14:49:09 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJOF90xR8igG/2dsb2JhbACjJ3LDFA2FOgQ
+Date: Thu, 2 Dec 2010 20:49:06 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Martyn Welch <martyn.welch@ge.com>,
+        Seth Heasley <seth.heasley@intel.com>
+Subject: [GIT PULL REQUEST] watchdog - v2.6.37-rc5
+Message-ID: <20101202194906.GB4007@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101202192616.GL2085@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 11:26:16AM -0800, Paul E. McKenney wrote:
-> On Thu, Dec 02, 2010 at 09:11:30PM +0200, Michael S. Tsirkin wrote:
-> > On Thu, Dec 02, 2010 at 11:00:37AM -0800, Paul E. McKenney wrote:
-> > > On Mon, Nov 29, 2010 at 07:09:01PM +0200, Michael S. Tsirkin wrote:
-> > > > This adds a test module for vhost infrastructure.
-> > > > Intentionally not tied to kbuild to prevent people
-> > > > from installing and loading it accidentally.
-> > > > 
-> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > 
-> > > On question below.
-> > > 
-> > > > ---
-> > > > 
-> > > > diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
-> > > > new file mode 100644
-> > > > index 0000000..099f302
-> > > > --- /dev/null
-> > > > +++ b/drivers/vhost/test.c
-> > > > @@ -0,0 +1,320 @@
-> > > > +/* Copyright (C) 2009 Red Hat, Inc.
-> > > > + * Author: Michael S. Tsirkin <mst@redhat.com>
-> > > > + *
-> > > > + * This work is licensed under the terms of the GNU GPL, version 2.
-> > > > + *
-> > > > + * test virtio server in host kernel.
-> > > > + */
-> > > > +
-> > > > +#include <linux/compat.h>
-> > > > +#include <linux/eventfd.h>
-> > > > +#include <linux/vhost.h>
-> > > > +#include <linux/miscdevice.h>
-> > > > +#include <linux/module.h>
-> > > > +#include <linux/mutex.h>
-> > > > +#include <linux/workqueue.h>
-> > > > +#include <linux/rcupdate.h>
-> > > > +#include <linux/file.h>
-> > > > +#include <linux/slab.h>
-> > > > +
-> > > > +#include "test.h"
-> > > > +#include "vhost.c"
-> > > > +
-> > > > +/* Max number of bytes transferred before requeueing the job.
-> > > > + * Using this limit prevents one virtqueue from starving others. */
-> > > > +#define VHOST_TEST_WEIGHT 0x80000
-> > > > +
-> > > > +enum {
-> > > > +	VHOST_TEST_VQ = 0,
-> > > > +	VHOST_TEST_VQ_MAX = 1,
-> > > > +};
-> > > > +
-> > > > +struct vhost_test {
-> > > > +	struct vhost_dev dev;
-> > > > +	struct vhost_virtqueue vqs[VHOST_TEST_VQ_MAX];
-> > > > +};
-> > > > +
-> > > > +/* Expects to be always run from workqueue - which acts as
-> > > > + * read-size critical section for our kind of RCU. */
-> > > > +static void handle_vq(struct vhost_test *n)
-> > > > +{
-> > > > +	struct vhost_virtqueue *vq = &n->dev.vqs[VHOST_TEST_VQ];
-> > > > +	unsigned out, in;
-> > > > +	int head;
-> > > > +	size_t len, total_len = 0;
-> > > > +	void *private;
-> > > > +
-> > > > +	private = rcu_dereference_check(vq->private_data, 1);
-> > > 
-> > > Any chance of a check for running in a workqueue?  If I remember correctly,
-> > > the ->lockdep_map field in the work_struct structure allows you to create
-> > > the required lockdep expression.
-> > 
-> > We moved away from using the workqueue to a custom kernel thread
-> > implementation though.
-> 
-> OK, then could you please add a check for "current == custom_kernel_thread"
-> or some such?
-> 
-> 							Thanx, Paul
+Hi Linus,
 
-It's a bit tricky. The way we flush out things is by an analog of
-flush_work. So just checking that we run from workqueue isn't
-right need to check that we are running from one of the specific work
-structures that we are careful to flush.
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-I can do this by passing the work structure pointer on to relevant
-functions but I think this will add (very minor) overhead even when rcu
-checks are disabled. Does it matter? Thoughts?
+This will update the following files:
 
-> > > > +	if (!private)
-> > > > +		return;
-> > > > +
-> > > > +	mutex_lock(&vq->mutex);
-> > > > +	vhost_disable_notify(vq);
-> > > > +
-> > > > +	for (;;) {
-> > > > +		head = vhost_get_vq_desc(&n->dev, vq, vq->iov,
-> > > > +					 ARRAY_SIZE(vq->iov),
-> > > > +					 &out, &in,
-> > > > +					 NULL, NULL);
-> > > > +		/* On error, stop handling until the next kick. */
-> > > > +		if (unlikely(head < 0))
-> > > > +			break;
-> > > > +		/* Nothing new?  Wait for eventfd to tell us they refilled. */
-> > > > +		if (head == vq->num) {
-> > > > +			if (unlikely(vhost_enable_notify(vq))) {
-> > > > +				vhost_disable_notify(vq);
-> > > > +				continue;
-> > > > +			}
-> > > > +			break;
-> > > > +		}
-> > > > +		if (in) {
-> > > > +			vq_err(vq, "Unexpected descriptor format for TX: "
-> > > > +			       "out %d, int %d\n", out, in);
-> > > > +			break;
-> > > > +		}
-> > > > +		len = iov_length(vq->iov, out);
-> > > > +		/* Sanity check */
-> > > > +		if (!len) {
-> > > > +			vq_err(vq, "Unexpected 0 len for TX\n");
-> > > > +			break;
-> > > > +		}
-> > > > +		vhost_add_used_and_signal(&n->dev, vq, head, 0);
-> > > > +		total_len += len;
-> > > > +		if (unlikely(total_len >= VHOST_TEST_WEIGHT)) {
-> > > > +			vhost_poll_queue(&vq->poll);
-> > > > +			break;
-> > > > +		}
-> > > > +	}
-> > > > +
-> > > > +	mutex_unlock(&vq->mutex);
-> > > > +}
-> > > > +
-> > > > +static void handle_vq_kick(struct vhost_work *work)
-> > > > +{
-> > > > +	struct vhost_virtqueue *vq = container_of(work, struct vhost_virtqueue,
-> > > > +						  poll.work);
-> > > > +	struct vhost_test *n = container_of(vq->dev, struct vhost_test, dev);
-> > > > +
-> > > > +	handle_vq(n);
-> > > > +}
-> > > > +
-> > > > +static int vhost_test_open(struct inode *inode, struct file *f)
-> > > > +{
-> > > > +	struct vhost_test *n = kmalloc(sizeof *n, GFP_KERNEL);
-> > > > +	struct vhost_dev *dev;
-> > > > +	int r;
-> > > > +
-> > > > +	if (!n)
-> > > > +		return -ENOMEM;
-> > > > +
-> > > > +	dev = &n->dev;
-> > > > +	n->vqs[VHOST_TEST_VQ].handle_kick = handle_vq_kick;
-> > > > +	r = vhost_dev_init(dev, n->vqs, VHOST_TEST_VQ_MAX);
-> > > > +	if (r < 0) {
-> > > > +		kfree(n);
-> > > > +		return r;
-> > > > +	}
-> > > > +
-> > > > +	f->private_data = n;
-> > > > +
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static void *vhost_test_stop_vq(struct vhost_test *n,
-> > > > +				struct vhost_virtqueue *vq)
-> > > > +{
-> > > > +	void *private;
-> > > > +
-> > > > +	mutex_lock(&vq->mutex);
-> > > > +	private = rcu_dereference_protected(vq->private_data,
-> > > > +					 lockdep_is_held(&vq->mutex));
-> > > > +	rcu_assign_pointer(vq->private_data, NULL);
-> > > > +	mutex_unlock(&vq->mutex);
-> > > > +	return private;
-> > > > +}
-> > > > +
-> > > > +static void vhost_test_stop(struct vhost_test *n, void **privatep)
-> > > > +{
-> > > > +	*privatep = vhost_test_stop_vq(n, n->vqs + VHOST_TEST_VQ);
-> > > > +}
-> > > > +
-> > > > +static void vhost_test_flush_vq(struct vhost_test *n, int index)
-> > > > +{
-> > > > +	vhost_poll_flush(&n->dev.vqs[index].poll);
-> > > > +}
-> > > > +
-> > > > +static void vhost_test_flush(struct vhost_test *n)
-> > > > +{
-> > > > +	vhost_test_flush_vq(n, VHOST_TEST_VQ);
-> > > > +}
-> > > > +
-> > > > +static int vhost_test_release(struct inode *inode, struct file *f)
-> > > > +{
-> > > > +	struct vhost_test *n = f->private_data;
-> > > > +	void  *private;
-> > > > +
-> > > > +	vhost_test_stop(n, &private);
-> > > > +	vhost_test_flush(n);
-> > > > +	vhost_dev_cleanup(&n->dev);
-> > > > +	/* We do an extra flush before freeing memory,
-> > > > +	 * since jobs can re-queue themselves. */
-> > > > +	vhost_test_flush(n);
-> > > > +	kfree(n);
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static long vhost_test_run(struct vhost_test *n, int test)
-> > > > +{
-> > > > +	void *priv, *oldpriv;
-> > > > +	struct vhost_virtqueue *vq;
-> > > > +	int r, index;
-> > > > +
-> > > > +	if (test < 0 || test > 1)
-> > > > +		return -EINVAL;
-> > > > +
-> > > > +	mutex_lock(&n->dev.mutex);
-> > > > +	r = vhost_dev_check_owner(&n->dev);
-> > > > +	if (r)
-> > > > +		goto err;
-> > > > +
-> > > > +	for (index = 0; index < n->dev.nvqs; ++index) {
-> > > > +		/* Verify that ring has been setup correctly. */
-> > > > +		if (!vhost_vq_access_ok(&n->vqs[index])) {
-> > > > +			r = -EFAULT;
-> > > > +			goto err;
-> > > > +		}
-> > > > +	}
-> > > > +
-> > > > +	for (index = 0; index < n->dev.nvqs; ++index) {
-> > > > +		vq = n->vqs + index;
-> > > > +		mutex_lock(&vq->mutex);
-> > > > +		priv = test ? n : NULL;
-> > > > +
-> > > > +		/* start polling new socket */
-> > > > +		oldpriv = rcu_dereference_protected(vq->private_data,
-> > > > +						    lockdep_is_held(&vq->mutex));
-> > > > +		rcu_assign_pointer(vq->private_data, priv);
-> > > > +
-> > > > +		mutex_unlock(&vq->mutex);
-> > > > +
-> > > > +		if (oldpriv) {
-> > > > +			vhost_test_flush_vq(n, index);
-> > > > +		}
-> > > > +	}
-> > > > +
-> > > > +	mutex_unlock(&n->dev.mutex);
-> > > > +	return 0;
-> > > > +
-> > > > +err:
-> > > > +	mutex_unlock(&n->dev.mutex);
-> > > > +	return r;
-> > > > +}
-> > > > +
-> > > > +static long vhost_test_reset_owner(struct vhost_test *n)
-> > > > +{
-> > > > +	void *priv = NULL;
-> > > > +	long err;
-> > > > +	mutex_lock(&n->dev.mutex);
-> > > > +	err = vhost_dev_check_owner(&n->dev);
-> > > > +	if (err)
-> > > > +		goto done;
-> > > > +	vhost_test_stop(n, &priv);
-> > > > +	vhost_test_flush(n);
-> > > > +	err = vhost_dev_reset_owner(&n->dev);
-> > > > +done:
-> > > > +	mutex_unlock(&n->dev.mutex);
-> > > > +	return err;
-> > > > +}
-> > > > +
-> > > > +static int vhost_test_set_features(struct vhost_test *n, u64 features)
-> > > > +{
-> > > > +	mutex_lock(&n->dev.mutex);
-> > > > +	if ((features & (1 << VHOST_F_LOG_ALL)) &&
-> > > > +	    !vhost_log_access_ok(&n->dev)) {
-> > > > +		mutex_unlock(&n->dev.mutex);
-> > > > +		return -EFAULT;
-> > > > +	}
-> > > > +	n->dev.acked_features = features;
-> > > > +	smp_wmb();
-> > > > +	vhost_test_flush(n);
-> > > > +	mutex_unlock(&n->dev.mutex);
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static long vhost_test_ioctl(struct file *f, unsigned int ioctl,
-> > > > +			     unsigned long arg)
-> > > > +{
-> > > > +	struct vhost_test *n = f->private_data;
-> > > > +	void __user *argp = (void __user *)arg;
-> > > > +	u64 __user *featurep = argp;
-> > > > +	int test;
-> > > > +	u64 features;
-> > > > +	int r;
-> > > > +	switch (ioctl) {
-> > > > +	case VHOST_TEST_RUN:
-> > > > +		if (copy_from_user(&test, argp, sizeof test))
-> > > > +			return -EFAULT;
-> > > > +		return vhost_test_run(n, test);
-> > > > +	case VHOST_GET_FEATURES:
-> > > > +		features = VHOST_FEATURES;
-> > > > +		if (copy_to_user(featurep, &features, sizeof features))
-> > > > +			return -EFAULT;
-> > > > +		return 0;
-> > > > +	case VHOST_SET_FEATURES:
-> > > > +		if (copy_from_user(&features, featurep, sizeof features))
-> > > > +			return -EFAULT;
-> > > > +		if (features & ~VHOST_FEATURES)
-> > > > +			return -EOPNOTSUPP;
-> > > > +		return vhost_test_set_features(n, features);
-> > > > +	case VHOST_RESET_OWNER:
-> > > > +		return vhost_test_reset_owner(n);
-> > > > +	default:
-> > > > +		mutex_lock(&n->dev.mutex);
-> > > > +		r = vhost_dev_ioctl(&n->dev, ioctl, arg);
-> > > > +		vhost_test_flush(n);
-> > > > +		mutex_unlock(&n->dev.mutex);
-> > > > +		return r;
-> > > > +	}
-> > > > +}
-> > > > +
-> > > > +#ifdef CONFIG_COMPAT
-> > > > +static long vhost_test_compat_ioctl(struct file *f, unsigned int ioctl,
-> > > > +				   unsigned long arg)
-> > > > +{
-> > > > +	return vhost_test_ioctl(f, ioctl, (unsigned long)compat_ptr(arg));
-> > > > +}
-> > > > +#endif
-> > > > +
-> > > > +static const struct file_operations vhost_test_fops = {
-> > > > +	.owner          = THIS_MODULE,
-> > > > +	.release        = vhost_test_release,
-> > > > +	.unlocked_ioctl = vhost_test_ioctl,
-> > > > +#ifdef CONFIG_COMPAT
-> > > > +	.compat_ioctl   = vhost_test_compat_ioctl,
-> > > > +#endif
-> > > > +	.open           = vhost_test_open,
-> > > > +	.llseek		= noop_llseek,
-> > > > +};
-> > > > +
-> > > > +static struct miscdevice vhost_test_misc = {
-> > > > +	MISC_DYNAMIC_MINOR,
-> > > > +	"vhost-test",
-> > > > +	&vhost_test_fops,
-> > > > +};
-> > > > +
-> > > > +static int vhost_test_init(void)
-> > > > +{
-> > > > +	return misc_register(&vhost_test_misc);
-> > > > +}
-> > > > +module_init(vhost_test_init);
-> > > > +
-> > > > +static void vhost_test_exit(void)
-> > > > +{
-> > > > +	misc_deregister(&vhost_test_misc);
-> > > > +}
-> > > > +module_exit(vhost_test_exit);
-> > > > +
-> > > > +MODULE_VERSION("0.0.1");
-> > > > +MODULE_LICENSE("GPL v2");
-> > > > +MODULE_AUTHOR("Michael S. Tsirkin");
-> > > > +MODULE_DESCRIPTION("Host kernel side for virtio simulator");
-> > > > diff --git a/drivers/vhost/test.h b/drivers/vhost/test.h
-> > > > new file mode 100644
-> > > > index 0000000..1fef5df
-> > > > --- /dev/null
-> > > > +++ b/drivers/vhost/test.h
-> > > > @@ -0,0 +1,7 @@
-> > > > +#ifndef LINUX_VHOST_TEST_H
-> > > > +#define LINUX_VHOST_TEST_H
-> > > > +
-> > > > +/* Start a given test on the virtio null device. 0 stops all tests. */
-> > > > +#define VHOST_TEST_RUN _IOW(VHOST_VIRTIO, 0x31, int)
-> > > > +
-> > > > +#endif
-> > > > diff --git a/tools/virtio/vhost_test/Makefile b/tools/virtio/vhost_test/Makefile
-> > > > new file mode 100644
-> > > > index 0000000..a1d35b8
-> > > > --- /dev/null
-> > > > +++ b/tools/virtio/vhost_test/Makefile
-> > > > @@ -0,0 +1,2 @@
-> > > > +obj-m += vhost_test.o
-> > > > +EXTRA_CFLAGS += -Idrivers/vhost
-> > > > diff --git a/tools/virtio/vhost_test/vhost_test.c b/tools/virtio/vhost_test/vhost_test.c
-> > > > new file mode 100644
-> > > > index 0000000..1873518
-> > > > --- /dev/null
-> > > > +++ b/tools/virtio/vhost_test/vhost_test.c
-> > > > @@ -0,0 +1 @@
-> > > > +#include "test.c"
-> > > > --
-> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > > the body of a message to majordomo@vger.kernel.org
-> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > Please read the FAQ at  http://www.tux.org/lkml/
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+ drivers/watchdog/Kconfig       |    3 ++
+ drivers/watchdog/bcm63xx_wdt.c |   42 +++++++++++------------------------------
+ drivers/watchdog/gef_wdt.c     |    1 
+ drivers/watchdog/iTCO_wdt.c    |    8 +++++--
+ 4 files changed, 22 insertions(+), 32 deletions(-)
+
+with these Changes:
+
+Author: Wim Van Sebroeck <wim@iguana.be>
+Date:   Thu Dec 2 14:03:29 2010 +0000
+
+    watchdog: it8712f_wdt: add note to Kconfig
+    
+    On some motherboards the it8712f watchdog does not work unless
+    the game port was enabled. see Bug 13140. We therefor add a note
+    to Kconfig.
+    
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+Author: Wolfram Sang & Martyn Welch <w.sang@pengutronix.de, martyn.welch@ge.com>
+Date:   Thu Dec 2 00:11:16 2010 +0100
+
+    watchdog: gef_wdt: include fs.h
+    
+    Add missing include "linux/fs.h".
+    This fixes compile failure.
+    
+    Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+    Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+Author: Wim Van Sebroeck <wim@iguana.be>
+Date:   Sat Oct 23 20:59:42 2010 +0000
+
+    watchdog: bcm63xx_wdt: improve platform part.
+    
+    * fix devinit and devexit sections
+    * fix platform removal code so that the iounmap happens after the removal of the timer.
+    * changes the reboot_notifier by a platform shutdown method.
+    
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+Author: Seth Heasley <seth.heasley@intel.com>
+Date:   Wed Nov 17 12:15:08 2010 -0700
+
+    watchdog: iTCO_wdt: TCO Watchdog patch for Intel Patsburg PCH
+    
+    This patch adds an additional LPC Controller DeviceID for the Intel Patsburg PCH for TCO Watchdog.
+    
+    Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 4a29104..a5ad77e 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -558,6 +558,9 @@ config IT8712F_WDT
+ 	  This is the driver for the built-in watchdog timer on the IT8712F
+ 	  Super I/0 chipset used on many motherboards.
+ 
++	  If the driver does not work, then make sure that the game port in
++	  the BIOS is enabled.
++
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called it8712f_wdt.
+ 
+diff --git a/drivers/watchdog/bcm63xx_wdt.c b/drivers/watchdog/bcm63xx_wdt.c
+index a1debc8..3c5045a 100644
+--- a/drivers/watchdog/bcm63xx_wdt.c
++++ b/drivers/watchdog/bcm63xx_wdt.c
+@@ -18,7 +18,6 @@
+ #include <linux/miscdevice.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/reboot.h>
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
+ #include <linux/watchdog.h>
+@@ -220,14 +219,6 @@ static long bcm63xx_wdt_ioctl(struct file *file, unsigned int cmd,
+ 	}
+ }
+ 
+-static int bcm63xx_wdt_notify_sys(struct notifier_block *this,
+-				unsigned long code, void *unused)
+-{
+-	if (code == SYS_DOWN || code == SYS_HALT)
+-		bcm63xx_wdt_pause();
+-	return NOTIFY_DONE;
+-}
+-
+ static const struct file_operations bcm63xx_wdt_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.llseek		= no_llseek,
+@@ -243,12 +234,8 @@ static struct miscdevice bcm63xx_wdt_miscdev = {
+ 	.fops	= &bcm63xx_wdt_fops,
+ };
+ 
+-static struct notifier_block bcm63xx_wdt_notifier = {
+-	.notifier_call = bcm63xx_wdt_notify_sys,
+-};
+ 
+-
+-static int bcm63xx_wdt_probe(struct platform_device *pdev)
++static int __devinit bcm63xx_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+ 	struct resource *r;
+@@ -280,16 +267,10 @@ static int bcm63xx_wdt_probe(struct platform_device *pdev)
+ 			wdt_time);
+ 	}
+ 
+-	ret = register_reboot_notifier(&bcm63xx_wdt_notifier);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to register reboot_notifier\n");
+-		goto unregister_timer;
+-	}
+-
+ 	ret = misc_register(&bcm63xx_wdt_miscdev);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to register watchdog device\n");
+-		goto unregister_reboot_notifier;
++		goto unregister_timer;
+ 	}
+ 
+ 	dev_info(&pdev->dev, " started, timer margin: %d sec\n",
+@@ -297,8 +278,6 @@ static int bcm63xx_wdt_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-unregister_reboot_notifier:
+-	unregister_reboot_notifier(&bcm63xx_wdt_notifier);
+ unregister_timer:
+ 	bcm63xx_timer_unregister(TIMER_WDT_ID);
+ unmap:
+@@ -306,25 +285,28 @@ unmap:
+ 	return ret;
+ }
+ 
+-static int bcm63xx_wdt_remove(struct platform_device *pdev)
++static int __devexit bcm63xx_wdt_remove(struct platform_device *pdev)
+ {
+ 	if (!nowayout)
+ 		bcm63xx_wdt_pause();
+ 
+ 	misc_deregister(&bcm63xx_wdt_miscdev);
+-
+-	iounmap(bcm63xx_wdt_device.regs);
+-
+-	unregister_reboot_notifier(&bcm63xx_wdt_notifier);
+ 	bcm63xx_timer_unregister(TIMER_WDT_ID);
+-
++	iounmap(bcm63xx_wdt_device.regs);
+ 	return 0;
+ }
+ 
++static void bcm63xx_wdt_shutdown(struct platform_device *pdev)
++{
++	bcm63xx_wdt_pause();
++}
++
+ static struct platform_driver bcm63xx_wdt = {
+ 	.probe	= bcm63xx_wdt_probe,
+-	.remove = bcm63xx_wdt_remove,
++	.remove = __devexit_p(bcm63xx_wdt_remove),
++	.shutdown = bcm63xx_wdt_shutdown,
+ 	.driver = {
++		.owner = THIS_MODULE,
+ 		.name = "bcm63xx-wdt",
+ 	}
+ };
+diff --git a/drivers/watchdog/gef_wdt.c b/drivers/watchdog/gef_wdt.c
+index 9c21d19..f6bd6f1 100644
+--- a/drivers/watchdog/gef_wdt.c
++++ b/drivers/watchdog/gef_wdt.c
+@@ -30,6 +30,7 @@
+ #include <linux/module.h>
+ #include <linux/miscdevice.h>
+ #include <linux/watchdog.h>
++#include <linux/fs.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/io.h>
+diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
+index f7e90fe..b8838d2 100644
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -32,6 +32,7 @@
+  *	document number 322169-001, 322170-003: 5 Series, 3400 Series (PCH)
+  *	document number 320066-003, 320257-008: EP80597 (IICH)
+  *	document number TBD                   : Cougar Point (CPT)
++ *	document number TBD                   : Patsburg (PBG)
+  */
+ 
+ /*
+@@ -146,7 +147,8 @@ enum iTCO_chipsets {
+ 	TCO_CPT29,	/* Cougar Point */
+ 	TCO_CPT30,	/* Cougar Point */
+ 	TCO_CPT31,	/* Cougar Point */
+-	TCO_PBG,	/* Patsburg */
++	TCO_PBG1,	/* Patsburg */
++	TCO_PBG2,	/* Patsburg */
+ };
+ 
+ static struct {
+@@ -235,6 +237,7 @@ static struct {
+ 	{"Cougar Point", 2},
+ 	{"Cougar Point", 2},
+ 	{"Patsburg", 2},
++	{"Patsburg", 2},
+ 	{NULL, 0}
+ };
+ 
+@@ -350,7 +353,8 @@ static struct pci_device_id iTCO_wdt_pci_tbl[] = {
+ 	{ ITCO_PCI_DEVICE(0x1c5d,				TCO_CPT29)},
+ 	{ ITCO_PCI_DEVICE(0x1c5e,				TCO_CPT30)},
+ 	{ ITCO_PCI_DEVICE(0x1c5f,				TCO_CPT31)},
+-	{ ITCO_PCI_DEVICE(0x1d40,				TCO_PBG)},
++	{ ITCO_PCI_DEVICE(0x1d40,				TCO_PBG1)},
++	{ ITCO_PCI_DEVICE(0x1d41,				TCO_PBG2)},
+ 	{ 0, },			/* End of list */
+ };
+ MODULE_DEVICE_TABLE(pci, iTCO_wdt_pci_tbl);
