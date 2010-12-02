@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab0LBErQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 23:47:16 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:31863 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756852Ab0LBErP (ORCPT
+	id S1757058Ab0LBEvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 23:51:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33853 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756804Ab0LBEvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 23:47:15 -0500
-Message-ID: <00a201cb91db$fd36e650$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
-        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
-References: <4CF47BAA.2090209@dsn.okisemi.com> <4CF4E897.7090702@pengutronix.de> <001101cb90e8$e60c76a0$66f8800a@maildom.okisemi.com>
-Subject: Re: [PATCH net-next-2.6 v6 06/20] can: EG20T PCH: Fix endianness issue
-Date: Thu, 2 Dec 2010 13:47:10 +0900
+	Wed, 1 Dec 2010 23:51:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=c35fHa57hsFzJhUyKKJS3Kk2sR8eUmg490pgjH8WDq48R0gjBOYgeTEWeTi6LNElQy
+         qxXQvvtwQRGH2PD4Y1omvVOhG8MkuB+4HQLf3rKmSR/uoUUKbJXATQzlA8Gpe8d1sVe7
+         4U8ajAgIkW9ZWBd6R+Z4Ai9yc+ZXRLw1gUukc=
+Date: Thu, 2 Dec 2010 07:51:26 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>,
+        Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] media: rc: ir-lirc-codec: fix potential integer
+ overflow
+Message-ID: <20101202045126.GA1784@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Vasiliy Kulikov <segoon@openwall.com>,
+	kernel-janitors@vger.kernel.org,
+	Mauro Carvalho Chehab <mchehab@infradead.org>,
+	David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>,
+	Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+On Fri, Nov 26, 2010 at 08:06:35PM +0300, Vasiliy Kulikov wrote:
+>  	count = n / sizeof(int);
+> -	if (count > LIRCBUF_SIZE || count % 2 == 0)
+> +	if (count > LIRCBUF_SIZE || count % 2 == 0 || n % sizeof(int) != 0)
+                                                      ^^^^^^^^^^^^^^^^^^^^
 
-Again, do you have any comments for v6 other patches ?
-If you don't have, please give us your "Acked" for each patch.
+Wait, what?  We just checked this a couple lines before.
 
-==Current status of v6 series==
-01/20: Acked
-02/20:
-03/20:
-04/20:
-05/20: Acked
-06/20: I got your comments. Now modifying
-07/20:
-08/20:
-09/20:
-10/20:
-11/20: Acked
-12/20:
-13/20: Acked
-14/20:
-15/20:
-16/20:
-17/20:
-18/20:
-19/20:
-20/20:
+The rest of the patch is right and a clever catch.  It would affect 
+x86_64 systems and not i386.  This doesn't have security implications
+does it?  You'd just catch the kmalloc() stack trace for insanely large
+allocations.
 
-Thanks,
--------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+regards,
+dan carpenter
+
