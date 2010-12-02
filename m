@@ -1,123 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab0LBDx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 22:53:58 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:26796 "EHLO mx2.netapp.com"
+	id S1756941Ab0LBDzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 22:55:16 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:55628 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756863Ab0LBDx4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 22:53:56 -0500
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="489813199"
-Subject: Re: [PATCH v3 2/3] Call the filesystem back whenever a page is
- removed from the page cache
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <alpine.LSU.2.00.1012011925580.25894@tigran.mtv.corp.google.com>
-References: <1291259285-26803-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291259285-26803-2-git-send-email-Trond.Myklebust@netapp.com>
-	 <1291259285-26803-3-git-send-email-Trond.Myklebust@netapp.com>
-	 <alpine.LSU.2.00.1012011925580.25894@tigran.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 01 Dec 2010 22:53:36 -0500
-Message-ID: <1291262016.6609.115.camel@heimdal.trondhjem.org>
+	id S1756606Ab0LBDzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 22:55:15 -0500
+Date: Wed, 1 Dec 2010 19:55:10 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
+        cjb@laptop.org, dsd@laptop.org
+Subject: [PATCH] mfd/gpio/misc: add MODULE_ALIAS entries for CS5535
+ functions
+Message-ID: <20101201195510.3a50d8b6@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 02 Dec 2010 03:53:37.0747 (UTC) FILETIME=[800AB230:01CB91D4]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-01 at 19:34 -0800, Hugh Dickins wrote:
-> On Wed, 1 Dec 2010, Trond Myklebust wrote:
-> > 
-> > --- a/mm/truncate.c
-> > +++ b/mm/truncate.c
-> > @@ -108,6 +108,10 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
-> >  	clear_page_mlock(page);
-> >  	remove_from_page_cache(page);
-> >  	ClearPageMappedToDisk(page);
-> > +
-> > +	if (mapping->a_ops->freepage)
-> > +		mapping->a_ops->freepage(page);
-> > +
-> >  	page_cache_release(page);	/* pagecache ref */
-> >  	return 0;
-> >  }
-> 
-> I think Linus recommended that one be done in remove_from_page_cache()
-> to catch all instances: did that get overruled later for some reason?
 
-I'm fine with doing that as long as everyone is happy that there is no
-chance of races. I was a bit nervous given the discussion that ensued
-from the vmscan case.
+This adds MODULE_ALIAS entries to the various cs5535 subdevice modules; this
+allows the modules to automatically be loaded when cs5535-mfd loads.
 
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -454,6 +454,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
-> >  	BUG_ON(!PageLocked(page));
-> >  	BUG_ON(mapping != page_mapping(page));
-> >  
-> > +	preempt_disable();
-> >  	spin_lock_irq(&mapping->tree_lock);
-> >  	/*
-> >  	 * The non racy check for a busy page.
-> > @@ -492,10 +493,19 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
-> >  		swp_entry_t swap = { .val = page_private(page) };
-> >  		__delete_from_swap_cache(page);
-> >  		spin_unlock_irq(&mapping->tree_lock);
-> > +		preempt_enable();
-> >  		swapcache_free(swap, page);
-> >  	} else {
-> > +		void (*freepage)(struct page *);
-> > +
-> > +		freepage = mapping->a_ops->freepage;
-> > +
-> >  		__remove_from_page_cache(page);
-> >  		spin_unlock_irq(&mapping->tree_lock);
-> > +		if (freepage != NULL)
-> > +			freepage(page);
-> > +		preempt_enable();
-> > +
-> >  		mem_cgroup_uncharge_cache_page(page);
-> >  	}
-> >  
-> > @@ -503,6 +513,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
-> >  
-> >  cannot_free:
-> >  	spin_unlock_irq(&mapping->tree_lock);
-> > +	preempt_enable();
-> >  	return 0;
-> >  }
-> 
-> I took his "stop_machine()" explanation ("an idle period for everything.
-> And just a preemption reschedule isn't enough for that") to imply that
-> there's no need for your preempt_disable/preempt_enable there: they
-> don't add anything to the module unload case, and they don't help the
-> spin_unlock_irq issue (and you're already being rightly careful to note
-> freepage in advance).
-> 
-> But maybe I misunderstood.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/gpio/cs5535-gpio.c  |    1 +
+ drivers/misc/cs5535-mfgpt.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Again, I was being cautious (I freely admit to not having studied
-stop_machine()). If nobody disagrees with your interpretation, then I'm
-very happy to drop the preempt disable/enable crud.
-
-Cheers
-  Trond
+diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
+index cc49687..90df6c5 100644
+--- a/drivers/gpio/cs5535-gpio.c
++++ b/drivers/gpio/cs5535-gpio.c
+@@ -388,3 +388,4 @@ module_exit(cs5535_gpio_exit);
+ MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
+ MODULE_DESCRIPTION("AMD CS5535/CS5536 GPIO driver");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRV_NAME);
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index 499bd64..2669306 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -349,3 +349,4 @@ module_init(cs5535_mfgpt_init);
+ MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
+ MODULE_DESCRIPTION("CS5535/CS5536 MFGPT timer driver");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRV_NAME);
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.2.3
 
