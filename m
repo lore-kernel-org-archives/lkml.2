@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab0LBHUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 02:20:31 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57370 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab0LBHUa (ORCPT
+	id S1757281Ab0LBHeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 02:34:44 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:50863 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab0LBHen convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 02:20:30 -0500
-From: "Srinath R" <srinath@mistralsolutions.com>
-To: "'G, Manjunath Kondaiah'" <manjugk@ti.com>
-Cc: <linux-omap@vger.kernel.org>, <jdk@ti.com>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <khilman@deeprootsystems.com>,
-        <nm@ti.com>, <nagendra@mistralsolutions.com>,
-        <umeshk@mistralsolutions.com>
-References: <1291222730-17614-1-git-send-email-srinath@mistralsolutions.com> <20101202062539.GB5645@GLPP-machine>
-In-Reply-To: <20101202062539.GB5645@GLPP-machine>
-Subject: RE: [Patch v3] AM35xx: Craneboard: Add USB EHCI support
-Date: Thu, 2 Dec 2010 12:51:16 +0530
-Message-ID: <001b01cb91f1$865da120$9318e360$@com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcuR6a8FUTNl2Z1bTCarINS85Uks7wABvMmQ
-Content-Language: en-us
+	Thu, 2 Dec 2010 02:34:43 -0500
+Subject: Re: perf hw  in kexeced kernel broken in tip
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+In-Reply-To: <20101202052321.GH18100@redhat.com>
+References: <1291202867.4023.3.camel@twins>
+	 <20101201160640.GA2511@redhat.com> <1291219906.32004.1671.camel@laptop>
+	 <20101201162335.GB2511@redhat.com> <1291232292.32004.1969.camel@laptop>
+	 <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop>
+	 <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop>
+	 <m162vdp3l4.fsf@fess.ebiederm.org>  <20101202052321.GH18100@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 02 Dec 2010 08:34:30 +0100
+Message-ID: <1291275270.4023.20.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manjunath, 
-
-Thanks for the review, Please find my response inline.
-
-With Regards
-Srinath
-
------Original Message-----
-From: G, Manjunath Kondaiah [mailto:manjugk@ti.com] 
-Sent: Thursday, December 02, 2010 11:56 AM
-To: srinath@mistralsolutions.com
-Cc: linux-omap@vger.kernel.org; jdk@ti.com; tony@atomide.com;
-linux-kernel@vger.kernel.org; linux@arm.linux.org.uk;
-linux-arm-kernel@lists.infradead.org; khilman@deeprootsystems.com;
-nm@ti.com; nagendra@mistralsolutions.com; umeshk@mistralsolutions.com
-Subject: Re: [Patch v3] AM35xx: Craneboard: Add USB EHCI support
-
-* srinath@mistralsolutions.com <srinath@mistralsolutions.com> [2010-12-01
-22:28:50 +0530]:
-
-> From: Srinath <srinath@mistralsolutions.com>
+On Thu, 2010-12-02 at 00:23 -0500, Don Zickus wrote:
+> On Wed, Dec 01, 2010 at 01:48:07PM -0800, Eric W. Biederman wrote:
+> > >
+> > > Oh, but I'm not a device or sysdev thing, I'll never get something like
+> > > that.
+> > 
+> > There is also the reboot notifier, if the NMI needs to be controlled
+> > outside of device model.  Sigh. The NMI handling is such a special case.
 > 
-> AM3517/05 Craneboard has one EHCI interface on board using port1.
+> I tried reboot notifiers with the nmi_watchdog and acheived some success
+> (on a Westmere box, a P4 still failed).  Kdump is still screwed, but maybe
+> we don't care for now.
 > 
-> GPIO35 is used as power enable.
-> GPIO38 is used as port1 PHY reset.
-> 
-> History:
->
-http://marc.info/?l=linux-omap&w=2&r=1&s=Craneboard%3A+Add+USB+EHCI+support&
-q=t
-> 
-> Signed-off-by: Srinath <srinath@mistralsolutions.com>
-> ---
->  arch/arm/mach-omap2/board-am3517crane.c |   40
-+++++++++++++++++++++++++++++++
->  1 files changed, 40 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-am3517crane.c
-b/arch/arm/mach-omap2/board-am3517crane.c
-> index 13ead33..6fd5dfe 100644
-> --- a/arch/arm/mach-omap2/board-am3517crane.c
-> +++ b/arch/arm/mach-omap2/board-am3517crane.c
-> @@ -28,8 +28,13 @@
+> Here is the quick and dirty patch I used.
+
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 792a4ed..3455cf9 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/notifier.h>
+>  #include <linux/module.h>
+>  #include <linux/sysctl.h>
+> +#include <linux/reboot.h>
 >  
-[...]
->  static void __init am3517_crane_init(void)
+>  #include <asm/irq_regs.h>
+>  #include <linux/perf_event.h>
+> @@ -550,6 +551,18 @@ static struct notifier_block __cpuinitdata cpu_nfb = {
+>  	.notifier_call = cpu_callback
+>  };
+>  
+> +static int __cpuinit
+> +reboot_callback(struct notifier_block *nfb, unsigned long action, void *unused)
+> +{
+> +	watchdog_disable_all_cpus();
+> +
+> +	return notifier_from_errno(0);
+> +}
+> +
+> +static struct notifier_block __cpuinitdata reboot_nfb = {
+> +	.notifier_call = reboot_callback
+> +};
+> +
+>  void __init lockup_detector_init(void)
 >  {
-> +	int ret;
-> +
->  	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
->  	omap_serial_init();
-> +
-> +	/* Configure GPIO for EHCI port */
-> +	omap_mux_init_gpio(GPIO_USB_POWER, OMAP_PIN_OUTPUT);
+>  	void *cpu = (void *)(long)smp_processor_id();
+> @@ -563,6 +576,7 @@ void __init lockup_detector_init(void)
+>  
+>  	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+>  	register_cpu_notifier(&cpu_nfb);
+> +	register_reboot_notifier(&reboot_nfb);
+>  
+>  	return;
+>  }
 
-This is non void function. You can consider return value for further
-processing.
+We'd really want a perf_event.c callback there to do as the hot-unplug
+code does and detach all running counters from the cpu.
 
-<Srinath> Sure, I will put check and resend patch 
-> +
-> +	ret = gpio_request(GPIO_USB_POWER, "usb_ehci_enable");
-> +	if (ret < 0) {
-> +		pr_err("Cannot request GPIO %d\n", GPIO_USB_POWER);
-> +		return;
-> +	}
-> +
-> +	ret = gpio_direction_output(GPIO_USB_POWER, 1);
-> +	if (ret < 0)
-> +		goto err;
-> +
-> +	omap_mux_init_gpio(GPIO_USB_NRESET, OMAP_PIN_OUTPUT);
-
--Ditto-
-<Srinath> Sure, I will put check and resend patch
-
-Also, why there is no gpio_request for "GPIO_USB_NRESET"
-
-<Srinath> This is taken care by USB driver in drivers/usb/host/ehci-omap.c
-
--Manjunath
-
-[...]
 
