@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab0LBCuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:50:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756308Ab0LBCuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:50:01 -0500
-Date: Thu, 2 Dec 2010 00:42:18 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] KVM: Introduce VCPU-wide notion of guest-mode V2
-Message-ID: <20101202024218.GC24787@amt.cnet>
-References: <4CF3D093.40604@redhat.com>
- <1291049509-3430-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291049509-3430-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756757Ab0LBC40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:56:26 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40122 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755487Ab0LBC4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:56:25 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 2 Dec 2010 11:50:36 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] Provide control over unmapped pages
+Message-Id: <20101202115036.1a4a42b5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101202102110.157F.A69D9226@jp.fujitsu.com>
+References: <20101130142509.4f49d452.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1012010859020.2849@router.home>
+	<20101202102110.157F.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 05:51:46PM +0100, Joerg Roedel wrote:
-> Hi Avi, Hi Marcelo,
-> 
-> here is the re-spin I promised. The change to V1 are essentially the
-> renames:
-> 
-> 	kvm_vcpu_enter_gm -> enter_guest_mode
-> 	kvm_vcpu_leave_gm -> leave_guest_mode
-> 	kvm_vcpu_is_gm    -> is_guest_mode
-> 
-> No other changes are in this patch-set compared to V1.
-> 
-> Regards,
-> 	Joerg
-> 
->  arch/x86/include/asm/kvm_host.h |    1 +
->  arch/x86/kvm/kvm_cache_regs.h   |   15 +++++++++++++
->  arch/x86/kvm/svm.c              |   44 ++++++++++++++++++--------------------
->  arch/x86/kvm/x86.c              |   14 ++++++++---
->  4 files changed, 47 insertions(+), 27 deletions(-)
-> 
-> Joerg Roedel (3):
->       KVM: X86: Introduce generic guest-mode representation
->       KVM: SVM: Make Use of the generic guest-mode functions
->       KVM: X86: Don't report L2 emulation failures to user-space
+On Thu,  2 Dec 2010 10:22:16 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Applied, thanks.
+> > On Tue, 30 Nov 2010, Andrew Morton wrote:
+> > 
+> > > > +#define UNMAPPED_PAGE_RATIO 16
+> > >
+> > > Well.  Giving 16 a name didn't really clarify anything.  Attentive
+> > > readers will want to know what this does, why 16 was chosen and what
+> > > the effects of changing it will be.
+> > 
+> > The meaning is analoguous to the other zone reclaim ratio. But yes it
+> > should be justified and defined.
+> > 
+> > > > Reviewed-by: Christoph Lameter <cl@linux.com>
+> > >
+> > > So you're OK with shoving all this flotsam into 100,000,000 cellphones?
+> > > This was a pretty outrageous patchset!
+> > 
+> > This is a feature that has been requested over and over for years. Using
+> > /proc/vm/drop_caches for fixing situations where one simply has too many
+> > page cache pages is not so much fun in the long run.
+> 
+> I'm not against page cache limitation feature at all. But, this is
+> too ugly and too destructive fast path. I hope this patch reduce negative
+> impact more.
+> 
+
+And I think min_mapped_unmapped_pages is ugly. It should be
+"unmapped_pagecache_limit" or some because it's for limitation feature.
+
+Thanks,
+-Kame
 
