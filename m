@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab0LBIF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 03:05:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:47984 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab0LBIFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 03:05:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,287,1288594800"; 
-   d="scan'208";a="632307494"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -v3 1/4] printk, Add pr_pfx for library functions
-Date: Thu,  2 Dec 2010 16:05:02 +0800
-Message-Id: <1291277105-31758-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1291277105-31758-1-git-send-email-ying.huang@intel.com>
-References: <1291277105-31758-1-git-send-email-ying.huang@intel.com>
+	id S1757307Ab0LBIN3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 03:13:29 -0500
+Received: from mail30t.wh2.ocn.ne.jp ([125.206.180.136]:9877 "HELO
+	mail30t.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754956Ab0LBIN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 03:13:28 -0500
+From: Bruno Randolf <br1@einfach.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
+Date: Thu, 2 Dec 2010 17:12:49 +0900
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
+Cc: Bob Copeland <me@bobcopeland.com>,
+        Johannes Berg <johannes@sipsolutions.net>, Jouni Malinen <j@w1.fi>,
+        linville@tuxdriver.com, randy.dunlap@oracle.com, blp@cs.stanford.edu,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars_Ericsson@telia.com, stefanr@s5r6.in-berlin.de,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        kevin.granade@gmail.com
+References: <20101112024901.28522.21895.stgit@localhost6.localdomain6> <20101119222846.GA26592@hash.localnet> <1290207715.2114.10.camel@laptop>
+In-Reply-To: <1290207715.2114.10.camel@laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012021712.49377.br1@einfach.org>
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For library functions doing printk, the log level and line prefix
-usually need to be specified by the caller. So this patch adds
-"pr_pfx" to make the life of these library functions easier.
+On Sat November 20 2010 08:01:55 Peter Zijlstra wrote:
+> On Fri, 2010-11-19 at 17:28 -0500, Bob Copeland wrote:
+> > On Fri, Nov 19, 2010 at 06:07:05PM +0900, Bruno Randolf wrote:
+> > > Hmm, maybe I suck in mathemathics, but I don't see a way to do that
+> > > given the formula:
+> > > 
+> > > (((internal * (weight - 1)) + (val * factor)) / weight
+> > 
+> > I was thinking something along the lines of:
+> > 
+> > round = (1 << n) - 1;
+> > (((internal * (weight - 1) + round) >> n) + val) * ((1 << n) / weight)
+> > 
+> > where (1 << n) is the factor and ((1 << n) / weight) can be precomputed.
+> > If you think about it, this is just reciprocal multiplication in fixed-
+> > point math with n bits of decimal resolution.
+> > 
+> > The problem is the shift of the older terms introduces roundoff error,
+> > but there are some tricks you can do to maintain bounded error, e.g.
+> > shifting by some smaller factor of n and scaling other terms -- in the
+> > limit you reinvent floating point and then it's slower than division :)
+> 
+> Sure, x/y := x/z * z/y, and by picking z := 2^n, we can pre-compute z/y
+> and write x/z using a shift. The problem however is always range vs
+> granularity, you chose to first /z and then *z/y, this avoids some
+> overflow issues but truncates the lower n bits of x.
+> 
+> If you first *z/y and then /z you keep your low bits but risk loosing
+> the top bits to an overflow.
+> 
+> I guess the question is do we really need weights outside of 2^n? If
+> not, you can use the weight := 2^n version. If you do, you get to pick
+> either of the previously mentioned options.
+> 
+> Sadly gcc doesn't sanely support a u128 type, which would be very useful
+> to avoid some of these overflow issues (like we used to use u64 mults
+> for u32 fixed points mults).
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- include/linux/printk.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+Thank you all for your help and sorry for following up so late!
 
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -202,6 +202,13 @@ extern void print_hex_dump_bytes(const c
- #endif
- 
- /*
-+ * Used by library functions, where log level and line prefix need to
-+ * be specifieded by the caller.
-+ */
-+#define pr_pfx(pfx, fmt, ...) \
-+	printk("%s" fmt, pfx, ##__VA_ARGS__)
-+
-+/*
-  * ratelimited messages with local ratelimit_state,
-  * no local ratelimit_state used in the !PRINTK case
-  */
+I think we don't really need weights outside of 2^n and i'm going to post a 
+patch based on Peter Zijlstra's formula. Thanks again! Would it make sense to 
+have the factor 2^n too, so we can bitshift there too?
+
+bruno
