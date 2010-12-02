@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab0LBVJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:09:59 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:9766 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932079Ab0LBVJ6 (ORCPT
+	id S1758114Ab0LBVMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:12:12 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50108
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757967Ab0LBVMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:09:58 -0500
-Date: Thu, 02 Dec 2010 16:08:55 -0500
-Subject: Re: [PATCH] media: rc: ir-lirc-codec: fix potential integer
- overflow
-Message-ID: <5riroj2l9iwsfksrf7xjglim.1291324135751@email.android.com>
-From: Andy Walls <awalls@md.metrocast.net>
-To: Jarod Wilson <jarod@redhat.com>, Dan Carpenter <error27@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        =?ISO-8859-1?Q?David_H=E4rdeman?= <david@hardeman.nu>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=utf-8
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-12-02_10:2010-12-02,2010-12-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=8
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1010190000 definitions=main-1012020128
+	Thu, 2 Dec 2010 16:12:10 -0500
+Date: Thu, 02 Dec 2010 13:12:36 -0800 (PST)
+Message-Id: <20101202.131236.28815617.davem@davemloft.net>
+To: tomoya-linux@dsn.okisemi.com
+Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: Re: [PATCH net-next-2.6 v6 04/20] can: EG20T PCH: Add Tx Flow
+ Control
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CF47B2C.4010507@dsn.okisemi.com>
+References: <4CF47B2C.4010507@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB2LAMTP028659
 
-64 bit value / 4 = 62 bit value, right?
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Date: Tue, 30 Nov 2010 13:18:52 +0900
 
+> Currently, there is no flow control processing.
+> Thus, Add flow control processing as
+> when there is no empty of tx buffer,
+> netif_stop_queue is called.
+> When there is empty buffer, netif_wake_queue is called.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-Jarod Wilson <jarod@redhat.com> wrote:
+When implementing functionality like this it is better to use other
+existing well tested network drivers as a guide rather then trying
+to be unique and clever, as you are doing here.
 
->On Thu, Dec 02, 2010 at 07:51:26AM +0300, Dan Carpenter wrote:
->> On Fri, Nov 26, 2010 at 08:06:35PM +0300, Vasiliy Kulikov wrote:
->> >  	count = n / sizeof(int);
->> > -	if (count > LIRCBUF_SIZE || count % 2 == 0)
->> > +	if (count > LIRCBUF_SIZE || count % 2 == 0 || n % sizeof(int) != 0)
->>                                                       ^^^^^^^^^^^^^^^^^^^^
->> 
->> Wait, what?  We just checked this a couple lines before.
->
->Bah. I'd only looked at the diff, which didn't have enough context. I
->thought that looked familiar. Indeed, this part seems to be unnecessary.
->
->> The rest of the patch is right and a clever catch.  It would affect 
->> x86_64 systems and not i386.  This doesn't have security implications
->> does it?  You'd just catch the kmalloc() stack trace for insanely large
->> allocations.
->
->Even on x86_64, it looks to my (relatively untrained) eye like you'd
->actually be fine. n is a size_t (so, 64-bit on x86_64). count is an int
->(so 32-bit on x86_64). We initialize count to some 64-bit value / 4, so
->at most, 16 bits, which always fits just fine in the 32-bit int, no?
->
->-- 
->Jarod Wilson
->jarod@redhat.com
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-media" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+First of all, your netif_wake_queue() call is racy.  Because another
+thread can be queueing up packets, fill the queue, and execute a
+stop queue right when you have made the decision to invoke
+netif_wake_queue().
+
+Second of all, checking the state of the device to determine if a
+stop queue should be performed has two problems:
+
+1) The test uses a magic constant mask, which is undocumented.
+
+2) It causes the race you have on the wake queue side
+
+Use pure software state to guide your actions, and let the hardware
+interrupt trigger the wake queue.
+
+Also, you don't implement this as a true ring buffer, you only
+consider to stop the queue when you hit the last TX object entry.  But
+all the previous slots could be available.
+
+Your head and tail pointer need to be maintained by advancing the
+head pointer only during pch_xmit(), and advancing the tail pointer
+only in the NAPI code as you get indications from the hardware.
+
+Then, after the NAPI TX code advances the tail pointer, you see if
+1) the queue is stopped and 2) TX space is now available.  If both
+are true you wake the queue.
+
+Use a well tested and mature driver like drivers/net/tg3.c as a
+guide.  Search for netif_tx_{stop,wake}_queue().
+
