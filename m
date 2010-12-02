@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab0LBBRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:17:51 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:5194 "EHLO
-	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755449Ab0LBBRu (ORCPT
+	id S1756044Ab0LBBTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:19:05 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:44514 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab0LBBTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:17:50 -0500
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2dK1432N98dNzz1202hzzz2fh2a8h691h637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4CF6F39D.5090202@am.sony.com>
-Date: Wed, 1 Dec 2010 17:17:17 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Wed, 1 Dec 2010 20:19:04 -0500
+Date: Thu, 2 Dec 2010 01:18:33 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
+Message-ID: <20101202011832.GO22787@shareable.org>
+References: <1290532938-7332-1-git-send-email-virtuoso@slind.org> <20101123224346.GA19350@tango.0pointer.de> <20101201104359.GJ22787@shareable.org> <20180.1291243569@localhost>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        tglx <tglx@linutronix.de>
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-References: <20100520204810.GA19188@think>	 <1277114522.1875.469.camel@laptop> <1277117647.1875.503.camel@laptop>	 <1277125479.1875.510.camel@laptop> <1277213586.1875.704.camel@laptop>	 <20100622211141.GC21149@elte.hu> <1277284257.1875.820.camel@laptop> <4CF6D694.4030003@am.sony.com>
-In-Reply-To: <4CF6D694.4030003@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20180.1291243569@localhost>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/10 15:13, Frank Rowand wrote:
+Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 01 Dec 2010 10:43:59 GMT, Jamie Lokier said:
+> 
+> > So maybe CLOCK_MONOTONIC should be changed to include elapsed time
+> > during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
+> > for programs that want that?
+> 
+> Wouldn't that be an API break for programs that are expecting the current
+> behavior of CLOCK_MONOTONIC?  Yes, there should be a way to request either of
+> them - but if there's only one way now, it should continue to act the current
+> way, and the added way is the second option.
 
-< snip >
+I don't know.  Can you think of any program which would break if
+suspend/resume's clocks behaved like ordinary task scheduling - when a
+task doesn't run for a long time because of scheduling decisions?
+Hmm, I guess some realtime apps might like to know.
 
->   The patch was created on the -top tree.
+Currently CLOCK_MONOTONIC jumps forwards by 4 seconds on
+suspend/resume anyway (as seen by userspace), on my x86 laptop running
+2.6.37-rc3.  So it does already jump a bit...
 
-Fat-fingered typing.  That should be the -tip tree....
+But see my other reply; maybe there's no need to change it.  A
+reliable, immediate notification that CLOCK_MONOTONIC's relationship
+to real time has been disrupted by an unknown amount would be
+sufficient for the problems I have in mind.
 
--Frank
+-- Jamie
 
