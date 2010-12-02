@@ -1,108 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab0LBR5A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:57:00 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:51511 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757942Ab0LBR47 (ORCPT
+	id S1757992Ab0LBR5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:57:17 -0500
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:59161 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757966Ab0LBR5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:56:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ribj5FC4+/SoGrdMFThuotvlLBRNCsY1fZFJW1ieQhHlnBFpKXmibSZkPxFweiGDYC
-         dwZpJgoz7iVGNTfxURV/jQ4c9HIu0W7ORKJfINprG6t2Qkz/bixZDZD/I9Ud21jYFZB4
-         umG9ACgw3tnGAbMd2Grcdn0nziAvjSrtaYeCI=
-Date: Thu, 2 Dec 2010 18:56:53 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG(?)] perf_events: combining multiple tracepoint events
- into a group produces no counts on member events
-Message-ID: <20101202175647.GB1750@nowhere>
-References: <4CF59E20.1040301@linux.vnet.ibm.com>
- <1291203990.4023.16.camel@twins>
- <1291205078.32004.1381.camel@laptop>
- <20101201180237.GB3438@nowhere>
- <1291229526.32004.1882.camel@laptop>
+	Thu, 2 Dec 2010 12:57:14 -0500
+X-Greylist: delayed 1235 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Dec 2010 12:57:12 EST
+From: Matteo DAMENO <matteo.dameno@st.com>
+To: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: mems applications <mems.applications@st.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Carmine IASCONE <carmine.iascone@st.com>, Greg KH <gregkh@suse.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Date: Thu, 2 Dec 2010 18:35:59 +0100
+Subject: RE: [PATCH] input: misc: add lps001wp_prs driver
+Thread-Topic: [PATCH] input: misc: add lps001wp_prs driver
+Thread-Index: AcuQektbgEEa7KuzRNW5XQnNsTuPBgByNP8A
+Message-ID: <9BF90A6D61BF154E973D03082989295CA22B3F7E95@SAFEX1MAIL3.st.com>
+References: <matteo.dameno@st.com>
+ <1291049009-32597-1-git-send-email-matteo.dameno@st.com>
+ <20101130060926.GA31838@core.coreip.homeip.net>
+ <AANLkTikpVtq2cQVhhcsJhZwGFW74mTqo=-vVK1e50AC2@mail.gmail.com>
+In-Reply-To: <AANLkTikpVtq2cQVhhcsJhZwGFW74mTqo=-vVK1e50AC2@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291229526.32004.1882.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Wed, Dec 01, 2010 at 07:52:06PM +0100, Peter Zijlstra wrote:
-> On Wed, 2010-12-01 at 19:02 +0100, Frederic Weisbecker wrote:
-> 
-> > >  struct task_struct {
-> > >  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
-> > >  	void *stack;
-> > > @@ -1452,6 +1458,9 @@ struct task_struct {
-> > >  	struct perf_event_context *perf_event_ctxp[perf_nr_task_contexts];
-> > >  	struct mutex perf_event_mutex;
-> > >  	struct list_head perf_event_list;
-> > > +#ifdef CONFIG_EVENT_TRACING
-> > > +	struct perf_tp_idr *perf_tp_idr;
-> > 
-> > Why not attaching this to the ctx eventually? This makes one pointer less
-> > in task_struct.
-> 
-> What context? :-) There's now two context's (with the possibility of
-> even more), which one will hold the tracepoint stuff?
-> 
-> Also, since we only need one such structure, adding it to the context
-> doesn't make sense.
-
-Oh you're right, I forgot the per pmu context thing :)
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB2Hvc3C027716
 
 
-> 
-> > > @@ -370,6 +372,7 @@ list_del_event(struct perf_event *event,
-> > >  	 */
-> > >  	if (event->state > PERF_EVENT_STATE_OFF)
-> > >  		event->state = PERF_EVENT_STATE_OFF;
-> > > +	++ctx->generation;
-> > 
-> > What's the role of the ctx->generation? It seems to be incremented two times
-> > but doesn't appear to have any purpose.
-> 
-> You didn't look hard enough, its a sequence stamp on the context for
-> inheritance, then later, when we want to compare inherited contexts we
-> can simply compare generation numbers, if they're the same the contexts
-> are the same.
 
-Ah right.
-
-> > >  }
-> > >  
-> > >  static void perf_group_detach(struct perf_event *event)
-> > > @@ -1228,6 +1231,12 @@ void perf_event_context_sched_out(struct
-> > >  	if (!cpuctx->task_ctx)
-> > >  		return;
-> > >  
-> > > +#if 0
-> > > +	/*
-> > > +	 * Need to sort out how to make task_struct::perf_tp_idr
-> > > +	 * work with this fancy switching stuff.. tracepoints could be
-> > > +	 * in multiple contexts due to the software event muck.
-> > > +	 */
-> > 
-> > Not sure what's the issue here. Each ctx have the perf_tp_idr matching
-> > active tracepoints, isn't it?
+> -----Original Message-----
+> From: Mohamed Ikbel Boulabiar [mailto:boulabiar@gmail.com]
+> Sent: Tuesday, November 30, 2010 11:35 AM
+> To: Dmitry Torokhov
+> Cc: mems applications; linux-input@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Matteo DAMENO; Carmine IASCONE; mems
+> Subject: Re: [PATCH] input: misc: add lps001wp_prs driver
 > 
-> No, there's only 1 idr per task. Having one per context means we have to
-> iterate all contexts when a tracepoint triggers and it adds yet another
-> pointer chase. It also means we have to manage more stuff when
-> tracepoints change context etc..
+> On Tue, Nov 30, 2010 at 7:09 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> >> + Â  Â  Â If you say yes here you get support for the
+> >> + Â  Â  Â STM LPS001D Barometer/Termometer on I2C bus.
+> >
+> > This does not belong to input subsystem, IIO is a better fit.
 > 
-> But yes, it would make this part easier, I just don't like the added
-> fast path overhead.
+> According to this site:
+> http://www.cnbc.com/id/40413317
+> and its datasheet:
+> http://www.findmems.com/wp-content/uploads/2010/11/LPS001WP-
+> DATASHEET.pdf
+> 
+> This sensors applications are:
+> â–  Altimeter and barometer for portable devices
+> â–  Smartphones
+> â–  Indoor navigation
+> â–  GPS applications
+> â–  Weather station equipment
+> â–  Sports watches
+> 
+> "the same devices would be able to identify the precise location in
+> all three dimensions, allowing, for example, a mobile phone to send a
+> call to an emergency fire, medical or police service that identified
+> not only the location of the building but also the particular floor."
+> Identifying 3d location is similar to what many joystick are doing.
+> 
+> Specially the indoor navigation information means an information about
+> the user. And the information is very tied to the user.
+> I don't know whether this can be used to map with virtual reality in a
+> game, or where you use sensors data to give user informations when
+> visiting a museum.
+> 
+> 
+> Dmitry, is it possible to start putting similar drivers in a new
+> drivers/input/sensors directory but which belongs to the input
+> subsystem ? What do you think ?
+> 
 
-Ok.
+We agree with you.
+It would be a good idea.
+We are working on many device drivers that are matching your description and
+we are ready to submit them.
+
+We are disoriented because every maintainer seems to bounce our submissions
+because of inappropriate position for the device.
+
+IIO, input/misc, I2C (we didn't submit here because of deprecation stated in
+Documentation). Some one is also submitting our drivers with modifications 
+under Hwmon...
+
+What to do?
+
+Matteo Dameno
+
+> 
+> i
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
