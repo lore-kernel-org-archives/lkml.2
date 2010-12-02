@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab0LBXeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 18:34:09 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:17125 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab0LBXeI (ORCPT
+	id S1758185Ab0LBXe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 18:34:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44347 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758166Ab0LBXe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 18:34:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=tbKuraTfcTTPRJNn+jZM8QfF8B5SIlo104vZ/tFhx+T6xn/7nqZbesWtR3DJMXhl4W
-         CoCmLJi3xxsFMwyaBgWg==
-Date: Thu, 2 Dec 2010 15:34:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Zheng, Shaohui" <shaohui.zheng@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Greg KH <gregkh@suse.de>, "Li, Haicheng" <haicheng.li@intel.com>
-Subject: RE: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
- for memory probe
-In-Reply-To: <A24AE1FFE7AEC5489F83450EE98351BF288D88D2B8@shsmsx502.ccr.corp.intel.com>
-Message-ID: <alpine.DEB.2.00.1012021528170.6878@chino.kir.corp.google.com>
-References: <A24AE1FFE7AEC5489F83450EE98351BF288D88D224@shsmsx502.ccr.corp.intel.com> <20101202002716.GA13693@shaohui> <alpine.DEB.2.00.1012011807190.13942@chino.kir.corp.google.com> <A24AE1FFE7AEC5489F83450EE98351BF288D88D2B8@shsmsx502.ccr.corp.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Thu, 2 Dec 2010 18:34:28 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=0jA3ngOw4AsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ayQCLtDfg3Zue7cRFYQA:9 a=ZNF5ZBpe4N_mLL6IpUnO2faQ_XEA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 1/2] [PATCH 1/2] tracing: Add
+ TRACE_EVENT_CONDITIONAL()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+In-Reply-To: <4CF824A8.2070807@caviumnetworks.com>
+References: <20101202223654.596106888@goodmis.org>
+	 <20101202224814.667536793@goodmis.org>
+	 <4CF824A8.2070807@caviumnetworks.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 02 Dec 2010 18:34:26 -0500
+Message-ID: <1291332866.3228.0.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Dec 2010, Zheng, Shaohui wrote:
+On Thu, 2010-12-02 at 14:58 -0800, David Daney wrote:
+> On 12/02/2010 02:36 PM, Steven Rostedt wrote:
 
-> Why should we add so many interfaces for memory hotplug emulation?
-
-Because they are functionally different from real memory hotplug and we 
-want to support different configurations such as mapping memory to a 
-different node id or onlining physical nodes that don't exist.
-
-They are in debugfs because the emulation, unlike real memory hotplug, is 
-used only for testing and debugging.
-
-> If so, we should create both sysfs and debugfs 
-> entries for an online node, we are trying to add redundant code logic.
+> > For example, for the tracepoint sched_wakeup, it is useless to
+> > trace an wakeup event where the caller never actually work
+> > anything up (success = 0). So adding:
+>                        ^^^
+>                     s/=/==/
 > 
+> As much as I hate to be a pedant, I would suggest changing this change 
+> log for the sake of clarity.
 
-We do not need sysfs triggers for onlining a node, that already happens 
-automatically if the memory that is being onlined has a hotpluggable node 
-entry in the SRAT that has an offline node id.
+Eek! Yeah I'll fix that, along with s/work anything/woke anything/.
 
-> We need not make a simple thing such complicated, Simple is beautiful, I'd prefer to rename the mem_hotplug/probe 
-> interface as mem_hotplug/add_memory.
-> 
-> 	/sys/kernel/debug/mem_hotplug/add_node (already exists)
-> 	/sys/kernel/debug/mem_hotplug/add_memory (rename probe as add_memory)
-> 
+Thanks,
 
-No, add_memory would then require these bizarre lines that you've been 
-parsing like
+-- Steve
 
-	echo 'physical_addr=0x80000000 node_id=3' > /sys/kernel/debug/mem_hotplug/add_memory
 
-which is unnecessary if you introduce my proposal for per-node debugfs 
-directories similar to that under /sys/devices/system/node that is 
-extendable later if we add additional per-node triggers under 
-CONFIG_DEBUG_FS.
-
-Adding /sys/kernel/debug/mem_hotplug/node2/add_memory that you write a 
-physical address to is a much more robust, simple, and extendable 
-interface.
