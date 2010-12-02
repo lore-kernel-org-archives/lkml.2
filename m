@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab0LBRz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:55:29 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:39495 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757939Ab0LBRz1 convert rfc822-to-8bit (ORCPT
+	id S1757978Ab0LBR5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:57:00 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:51511 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab0LBR47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:55:27 -0500
-Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU
- bootup
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Anton Vorontsov <avorontsov@mvista.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>, Jamie Iles <jamie.iles@picochip.com>,
-        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-tegra@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20101202173824.GE10461@n2100.arm.linux.org.uk>
-References: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
-	 <20101130171658.GA24034@oksana.dev.rtsoft.ru>
-	 <20101130233204.GB14383@n2100.arm.linux.org.uk>
-	 <20101201002527.GC14383@n2100.arm.linux.org.uk>
-	 <AANLkTikpjq-8BVanF5W76j0ZdDBur8DyHWSH8GGgJBQs@mail.gmail.com>
-	 <20101202152428.GD10461@n2100.arm.linux.org.uk>
-	 <1291307320.11271.51.camel@e102109-lin.cambridge.arm.com>
-	 <20101202173824.GE10461@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Thu, 02 Dec 2010 17:55:15 +0000
-Message-ID: <1291312515.25722.8.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 02 Dec 2010 17:55:16.0488 (UTC) FILETIME=[13A31080:01CB924A]
-X-MC-Unique: 110120217552000501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Dec 2010 12:56:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ribj5FC4+/SoGrdMFThuotvlLBRNCsY1fZFJW1ieQhHlnBFpKXmibSZkPxFweiGDYC
+         dwZpJgoz7iVGNTfxURV/jQ4c9HIu0W7ORKJfINprG6t2Qkz/bixZDZD/I9Ud21jYFZB4
+         umG9ACgw3tnGAbMd2Grcdn0nziAvjSrtaYeCI=
+Date: Thu, 2 Dec 2010 18:56:53 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG(?)] perf_events: combining multiple tracepoint events
+ into a group produces no counts on member events
+Message-ID: <20101202175647.GB1750@nowhere>
+References: <4CF59E20.1040301@linux.vnet.ibm.com>
+ <1291203990.4023.16.camel@twins>
+ <1291205078.32004.1381.camel@laptop>
+ <20101201180237.GB3438@nowhere>
+ <1291229526.32004.1882.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291229526.32004.1882.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-02 at 17:38 +0000, Russell King - ARM Linux wrote:
-> On Thu, Dec 02, 2010 at 04:28:40PM +0000, Catalin Marinas wrote:
-> > The SCU is part of the core TRM, so I don't expect it to be the same
-> > across various MP cores (and A15 is an example).
-> >
-> > You may want to consolidate functions like scu_prepare_cpus (maybe call
-> > it smp_prepare_cpus)
+On Wed, Dec 01, 2010 at 07:52:06PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-12-01 at 19:02 +0100, Frederic Weisbecker wrote:
 > 
-> You do realise the function called from architecture independent code is
-> called 'smp_prepare_cpus' ?
+> > >  struct task_struct {
+> > >  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+> > >  	void *stack;
+> > > @@ -1452,6 +1458,9 @@ struct task_struct {
+> > >  	struct perf_event_context *perf_event_ctxp[perf_nr_task_contexts];
+> > >  	struct mutex perf_event_mutex;
+> > >  	struct list_head perf_event_list;
+> > > +#ifdef CONFIG_EVENT_TRACING
+> > > +	struct perf_tp_idr *perf_tp_idr;
+> > 
+> > Why not attaching this to the ctx eventually? This makes one pointer less
+> > in task_struct.
+> 
+> What context? :-) There's now two context's (with the possibility of
+> even more), which one will hold the tracepoint stuff?
+> 
+> Also, since we only need one such structure, adding it to the context
+> doesn't make sense.
 
-It indeed looked familiar when I wrote it down :)
-
-> BTW, is it worth making sure that the IC and SCU standby mode bits
-> are set for A9 MPCore ?
-
-IMHO I would leave such default settings to the boot monitor as it knows
-better whether such feature works or has any benefits. If you want to
-always set the bits, it may need trying on a few A9 platforms to make
-sure they still work.
-
--- 
-Catalin
+Oh you're right, I forgot the per pmu context thing :)
 
 
+> 
+> > > @@ -370,6 +372,7 @@ list_del_event(struct perf_event *event,
+> > >  	 */
+> > >  	if (event->state > PERF_EVENT_STATE_OFF)
+> > >  		event->state = PERF_EVENT_STATE_OFF;
+> > > +	++ctx->generation;
+> > 
+> > What's the role of the ctx->generation? It seems to be incremented two times
+> > but doesn't appear to have any purpose.
+> 
+> You didn't look hard enough, its a sequence stamp on the context for
+> inheritance, then later, when we want to compare inherited contexts we
+> can simply compare generation numbers, if they're the same the contexts
+> are the same.
+
+Ah right.
+
+> > >  }
+> > >  
+> > >  static void perf_group_detach(struct perf_event *event)
+> > > @@ -1228,6 +1231,12 @@ void perf_event_context_sched_out(struct
+> > >  	if (!cpuctx->task_ctx)
+> > >  		return;
+> > >  
+> > > +#if 0
+> > > +	/*
+> > > +	 * Need to sort out how to make task_struct::perf_tp_idr
+> > > +	 * work with this fancy switching stuff.. tracepoints could be
+> > > +	 * in multiple contexts due to the software event muck.
+> > > +	 */
+> > 
+> > Not sure what's the issue here. Each ctx have the perf_tp_idr matching
+> > active tracepoints, isn't it?
+> 
+> No, there's only 1 idr per task. Having one per context means we have to
+> iterate all contexts when a tracepoint triggers and it adds yet another
+> pointer chase. It also means we have to manage more stuff when
+> tracepoints change context etc..
+> 
+> But yes, it would make this part easier, I just don't like the added
+> fast path overhead.
+
+Ok.
