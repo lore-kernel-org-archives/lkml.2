@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab0LBMpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 07:45:49 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49731 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757513Ab0LBMpj (ORCPT
+	id S1757552Ab0LBM43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 07:56:29 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58320 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755394Ab0LBM41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 07:45:39 -0500
+	Thu, 2 Dec 2010 07:56:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=r12YXofPKR1s7nkjHQRr+DlmekTYDqJGv/lCK9qLM2WSmC3fM0WCmW7dmzlJaFXik3
-         u6XFYQ/Y4btAYnRhUN35/OsCcJH1U7vqfGAW5bBjD5RjpzG8T6G6SelVO7R1w9MjZ6HP
-         EDgbYRwSOKadZvuyTrasG1SJmKjiyBAwoboIU=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Chas Williams <chas@cmf.nrl.navy.mil>,
-        linux-atm-general@lists.sourceforge.net
-Subject: [PATCH 2/2] atm: lanai: use kernel's '%pM' format option to print MAC
-Date: Thu,  2 Dec 2010 14:45:08 +0200
-Message-Id: <1291293908-29180-2-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1291293908-29180-1-git-send-email-andy.shevchenko@gmail.com>
-References: <1291293908-29180-1-git-send-email-andy.shevchenko@gmail.com>
+        h=from:to:references:in-reply-to:subject:date:message-id:mime-version
+         :content-type:content-transfer-encoding:x-mailer:thread-index
+         :content-language:x-cr-hashedpuzzle:x-cr-puzzleid;
+        b=Bz8hQ2cTF2S8js7z214zGnsfhatX2LCKVmLWRXWEEKGhKFAQPXxdaANypSYg3o/EJZ
+         afQN9UDy5dxVcLYlLAtqUzLfHPA2rrD80eVX8eMc/pQiKxdgXpUmHxTglWRmEr+5kAsu
+         8wKxj6F02brVH0CPUB6zL8mToly7NOlg+EmbY=
+From: "Stanley Gan" <stanley.ganyezu@gmail.com>
+To: "'LKML'" <linux-kernel@vger.kernel.org>
+References: <20101129180755.GK15818@bombadil.infradead.org> <4CF506A6.4020200@kernel.org> <20101130153839.GM15818@bombadil.infradead.org> <4CF52652.4030802@kernel.org> <20101130163150.GA25668@bombadil.infradead.org> <20101130175317.GB25668@bombadil.infradead.org> <20101130210938.GF25668@bombadil.infradead.org> <4CF62EE0.7040607@kernel.org> <20101201124445.GG25668@bombadil.infradead.org> <4CF6595A.6010104@kernel.org> <20101201155026.GH25668@bombadil.infradead.org>
+In-Reply-To: <20101201155026.GH25668@bombadil.infradead.org>
+Subject: debug kernel using two laptops without serial port
+Date: Thu, 2 Dec 2010 20:56:19 +0800
+Message-ID: <4cf79779.2b3bec0a.5180.1bb9@mx.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcuRb4gKJ/6TQ7DETEuWwIZA771h7wAAyjDw
+Content-Language: zh-cn
+x-cr-hashedpuzzle: AIEI BCWA Bq/u CV0B CkRZ CrXW DBg3 DWo8 DthI FEGN Fa5y H9JV JEBY JRfQ MC8k MFGA;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{7C141677-FC6A-4CFB-B413-23348A590BBE};cwB0AGEAbgBsAGUAeQAuAGcAYQBuAHkAZQB6AHUAQABnAG0AYQBpAGwALgBjAG8AbQA=;Wed, 01 Dec 2010 18:45:04 GMT;ZABlAGIAdQBnACAAawBlAHIAbgBlAGwAIAB1AHMAaQBuAGcAIAB0AHcAbwAgAGwAYQBwAHQAbwBwAHMAIAB3AGkAdABoAG8AdQB0ACAAcwBlAHIAaQBhAGwAIABwAG8AcgB0AA==
+x-cr-puzzleid: {7C141677-FC6A-4CFB-B413-23348A590BBE}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: linux-atm-general@lists.sourceforge.net
----
- drivers/atm/lanai.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+Hi All,
+	I have two dell laptops 1015. For studying Linux kernel, I want to
+let one run debugging Linux as client, the other as host. The two laptops
+don't have serial port, just have LAN and usb ports. How can I configure
+them to get early kernel print message? I ever asked a lot of people, but
+don't get answers. Please give me some practical advices, thanks in advance.
 
-diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
-index cbe15a8..930051d 100644
---- a/drivers/atm/lanai.c
-+++ b/drivers/atm/lanai.c
-@@ -2241,11 +2241,8 @@ static int __devinit lanai_dev_open(struct atm_dev *atmdev)
- 	memcpy(atmdev->esi, eeprom_mac(lanai), ESI_LEN);
- 	lanai_timed_poll_start(lanai);
- 	printk(KERN_NOTICE DEV_LABEL "(itf %d): rev.%d, base=0x%lx, irq=%u "
--	    "(%02X-%02X-%02X-%02X-%02X-%02X)\n", lanai->number,
--	    (int) lanai->pci->revision, (unsigned long) lanai->base,
--	    lanai->pci->irq,
--	    atmdev->esi[0], atmdev->esi[1], atmdev->esi[2],
--	    atmdev->esi[3], atmdev->esi[4], atmdev->esi[5]);
-+		"(%pMF)\n", lanai->number, (int) lanai->pci->revision,
-+		(unsigned long) lanai->base, lanai->pci->irq, atmdev->esi);
- 	printk(KERN_NOTICE DEV_LABEL "(itf %d): LANAI%s, serialno=%u(0x%X), "
- 	    "board_rev=%d\n", lanai->number,
- 	    lanai->type==lanai2 ? "2" : "HB", (unsigned int) lanai->serialno,
--- 
-1.7.2.3
+
+stanley
 
