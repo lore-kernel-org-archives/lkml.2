@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab0LBKFu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 05:05:50 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:48850 "HELO mail.gmx.net"
+	id S1756710Ab0LBKH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 05:07:28 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49272 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752838Ab0LBKFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 05:05:48 -0500
+	id S1751434Ab0LBKH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 05:07:27 -0500
 X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX19lctY6IZFlNo4Rw5fq4CsWHVz4SsLREjGxW1mmRu
-	1BBvLOritZFTVG
-Date: Thu, 2 Dec 2010 11:03:43 +0100
+X-Provags-ID: V01U2FsdGVkX18F9+k1IIsF54MOgm26VUveD1tPoBNUdsMudZounC
+	Y797AW4s375a8p
+Date: Thu, 2 Dec 2010 11:05:22 +0100
 From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 To: eparis@redhat.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 2/6] fanotify: synchronize adding/removing a mark by means
-	of group mutex
-Message-ID: <20101202100343.GC5196@lsanfilippo.unix.rd.tt.avira.com>
+Subject: [PATCH 3/6] dnotify: replace dnotify_mark_mutex with dnotify_group
+	mutex
+Message-ID: <20101202100522.GD5196@lsanfilippo.unix.rd.tt.avira.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,154 +26,79 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-When removing flags from the mask of a mark the mask may go to 0 and the mark should
-be destroyed. But right before we destroy it there is a race which allows a
-concurrent process to add flags to the mask of the same marks that we are going to destroy.
-Thus we might end up destroying a mark that has not all flags cleared in its mask.
-
-This patch uses the group mutex to serialize the access to a mark, so that a concurrent
-concurrent process can no longer access it if it is going to be destroyed.
+Since we introduced a new mutex for fsnotify groups we dont need an extra
+dnotify_mark_mutex any more.
+This patch replaces the dnotify_mark_mutex with the dnotify_group mutex.
 
 Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 ---
- fs/notify/fanotify/fanotify_user.c |   60 ++++++++++++++++++++++++++---------
- 1 files changed, 44 insertions(+), 16 deletions(-)
+ fs/notify/dnotify/dnotify.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 5d2e683..c9cd1b9 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -540,15 +540,21 @@ static int fanotify_remove_vfsmount_mark(struct fsnotify_group *group,
- {
- 	struct fsnotify_mark *fsn_mark = NULL;
- 	__u32 removed;
-+	int ret = 0;
+diff --git a/fs/notify/dnotify/dnotify.c b/fs/notify/dnotify/dnotify.c
+index 3344bdd..89ec7e0 100644
+--- a/fs/notify/dnotify/dnotify.c
++++ b/fs/notify/dnotify/dnotify.c
+@@ -31,7 +31,6 @@ int dir_notify_enable __read_mostly = 1;
+ static struct kmem_cache *dnotify_struct_cache __read_mostly;
+ static struct kmem_cache *dnotify_mark_cache __read_mostly;
+ static struct fsnotify_group *dnotify_group __read_mostly;
+-static DEFINE_MUTEX(dnotify_mark_mutex);
  
-+	mutex_lock(&group->mutex);
- 	fsn_mark = fsnotify_find_vfsmount_mark(group, mnt);
--	if (!fsn_mark)
--		return -ENOENT;
-+	if (!fsn_mark) {
-+		ret = -ENOENT;
-+		goto err;
-+	}
+ /*
+  * dnotify will attach one of these to each inode (i_fsnotify_marks) which
+@@ -183,7 +182,7 @@ void dnotify_flush(struct file *filp, fl_owner_t id)
+ 		return;
+ 	dn_mark = container_of(fsn_mark, struct dnotify_mark, fsn_mark);
  
- 	removed = fanotify_mark_remove_from_mask(fsn_mark, mask, flags);
+-	mutex_lock(&dnotify_mark_mutex);
++	mutex_lock(&dnotify_group->mutex);
+ 
+ 	spin_lock(&fsn_mark->lock);
+ 	prev = &dn_mark->dn;
+@@ -199,11 +198,11 @@ void dnotify_flush(struct file *filp, fl_owner_t id)
+ 
+ 	spin_unlock(&fsn_mark->lock);
+ 
+-	/* nothing else could have found us thanks to the dnotify_mark_mutex */
++	/* nothing else could have found us thanks to the dnotify_group mutex */
+ 	if (dn_mark->dn == NULL)
+ 		fsnotify_destroy_mark(fsn_mark);
+ 
+-	mutex_unlock(&dnotify_mark_mutex);
++	mutex_unlock(&dnotify_group->mutex);
+ 
  	fsnotify_put_mark(fsn_mark);
- 	if (removed & mnt->mnt_fsnotify_mask)
- 		fsnotify_recalc_vfsmount_mask(mnt);
-+err:
-+	mutex_unlock(&group->mutex);
- 
- 	return 0;
  }
-@@ -559,16 +565,22 @@ static int fanotify_remove_inode_mark(struct fsnotify_group *group,
- {
- 	struct fsnotify_mark *fsn_mark = NULL;
- 	__u32 removed;
-+	int ret = 0;
+@@ -326,7 +325,7 @@ int fcntl_dirnotify(int fd, struct file *filp, unsigned long arg)
+ 	new_dn_mark->dn = NULL;
  
-+	mutex_lock(&group->mutex);
- 	fsn_mark = fsnotify_find_inode_mark(group, inode);
--	if (!fsn_mark)
--		return -ENOENT;
-+	if (!fsn_mark) {
-+		ret = -ENOENT;
-+		goto err;
-+	}
+ 	/* this is needed to prevent the fcntl/close race described below */
+-	mutex_lock(&dnotify_mark_mutex);
++	mutex_lock(&dnotify_group->mutex);
  
- 	removed = fanotify_mark_remove_from_mask(fsn_mark, mask, flags);
- 	/* matches the fsnotify_find_inode_mark() */
+ 	/* add the new_fsn_mark or find an old one. */
+ 	fsn_mark = fsnotify_find_inode_mark(dnotify_group, inode);
+@@ -348,8 +347,8 @@ int fcntl_dirnotify(int fd, struct file *filp, unsigned long arg)
+ 
+ 	/* if (f != filp) means that we lost a race and another task/thread
+ 	 * actually closed the fd we are still playing with before we grabbed
+-	 * the dnotify_mark_mutex and fsn_mark->lock.  Since closing the fd is the
+-	 * only time we clean up the marks we need to get our mark off
++	 * the dnotify_group mutex and fsn_mark->lock. Since closing the fd is
++	 * the only time we clean up the marks we need to get our mark off
+ 	 * the list. */
+ 	if (f != filp) {
+ 		/* if we added ourselves, shoot ourselves, it's possible that
+@@ -387,7 +386,7 @@ out:
+ 	if (destroy)
+ 		fsnotify_destroy_mark(fsn_mark);
+ 
+-	mutex_unlock(&dnotify_mark_mutex);
++	mutex_unlock(&dnotify_group->mutex);
  	fsnotify_put_mark(fsn_mark);
- 	if (removed & inode->i_fsnotify_mask)
- 		fsnotify_recalc_inode_mask(inode);
-+err:
-+	mutex_unlock(&group->mutex);
- 
- 	return 0;
- }
-@@ -608,26 +620,34 @@ static int fanotify_add_vfsmount_mark(struct fsnotify_group *group,
- 	__u32 added;
- 	int ret = 0;
- 
-+	mutex_lock(&group->mutex);
- 	fsn_mark = fsnotify_find_vfsmount_mark(group, mnt);
- 	if (!fsn_mark) {
--		if (atomic_read(&group->num_marks) > group->fanotify_data.max_marks)
--			return -ENOSPC;
-+		if (atomic_read(&group->num_marks) >
-+		    group->fanotify_data.max_marks) {
-+			ret = -ENOSPC;
-+			goto err;
-+		}
- 
- 		fsn_mark = kmem_cache_alloc(fanotify_mark_cache, GFP_KERNEL);
--		if (!fsn_mark)
--			return -ENOMEM;
-+		if (!fsn_mark) {
-+			ret = -ENOMEM;
-+			goto err;
-+		}
- 
- 		fsnotify_init_mark(fsn_mark, fanotify_free_mark);
- 		ret = fsnotify_add_mark(fsn_mark, group, NULL, mnt, 0);
- 		if (ret)
--			goto err;
-+			goto err2;
- 	}
- 	added = fanotify_mark_add_to_mask(fsn_mark, mask, flags);
- 
- 	if (added & ~mnt->mnt_fsnotify_mask)
- 		fsnotify_recalc_vfsmount_mask(mnt);
--err:
-+err2:
- 	fsnotify_put_mark(fsn_mark);
-+err:
-+	mutex_unlock(&group->mutex);
- 	return ret;
- }
- 
-@@ -651,26 +671,34 @@ static int fanotify_add_inode_mark(struct fsnotify_group *group,
- 	    (atomic_read(&inode->i_writecount) > 0))
- 		return 0;
- 
-+	mutex_lock(&group->mutex);
- 	fsn_mark = fsnotify_find_inode_mark(group, inode);
- 	if (!fsn_mark) {
--		if (atomic_read(&group->num_marks) > group->fanotify_data.max_marks)
--			return -ENOSPC;
-+		if (atomic_read(&group->num_marks) >
-+		    group->fanotify_data.max_marks) {
-+			ret = -ENOSPC;
-+			goto err;
-+		}
- 
- 		fsn_mark = kmem_cache_alloc(fanotify_mark_cache, GFP_KERNEL);
--		if (!fsn_mark)
--			return -ENOMEM;
-+		if (!fsn_mark) {
-+			ret = -ENOMEM;
-+			goto err;
-+		}
- 
- 		fsnotify_init_mark(fsn_mark, fanotify_free_mark);
- 		ret = fsnotify_add_mark(fsn_mark, group, inode, NULL, 0);
- 		if (ret)
--			goto err;
-+			goto err2;
- 	}
- 	added = fanotify_mark_add_to_mask(fsn_mark, mask, flags);
- 
- 	if (added & ~inode->i_fsnotify_mask)
- 		fsnotify_recalc_inode_mask(inode);
--err:
-+err2:
- 	fsnotify_put_mark(fsn_mark);
-+err:
-+	mutex_unlock(&group->mutex);
- 	return ret;
- }
- 
+ out_err:
+ 	if (new_fsn_mark)
 -- 
 1.5.6.5
 
