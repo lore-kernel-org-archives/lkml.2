@@ -1,62 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab0LBLPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 06:15:25 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58642 "EHLO
+	id S1757399Ab0LBLSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 06:18:55 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33916 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab0LBLPY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751633Ab0LBLSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 06:15:24 -0500
+	Thu, 2 Dec 2010 06:18:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20101202105701.GB26555@pengutronix.de>
-References: <AANLkTi=E8etAOPTCBw8ccTZ9LMU-Yf=wELn+VQkg2eom@mail.gmail.com>
-	<AANLkTim4TURXFb3g_L1jzU9S+Jic6OZp48uvAoZOh4+w@mail.gmail.com>
-	<20101202105701.GB26555@pengutronix.de>
-Date: Thu, 2 Dec 2010 19:15:23 +0800
-Message-ID: <AANLkTinqk5U3HJX6BoceXH=QG2QtW8oVUkdPoVZdcQ4m@mail.gmail.com>
-Subject: Re: [PATCH 2/2] make mc13783 regulator code generic
+Date: Thu, 2 Dec 2010 19:18:53 +0800
+Message-ID: <AANLkTinA-rNzSjGZQSmGUdOt8j0RWddfNo5m=fP2oQx8@mail.gmail.com>
+Subject: [PATCH 1/2] Change the register name definitions for mc13783
 From: Yong Shen <yong.shen@linaro.org>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, lrg@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=000e0cd4d8f43cc15b04966b96fe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I will resend them.
+--000e0cd4d8f43cc15b04966b96fe
+Content-Type: text/plain; charset=ISO-8859-1
 
-2010/12/2 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> On Thu, Dec 02, 2010 at 06:45:32PM +0800, Yong Shen wrote:
->> Hi there,
->>
->> Please give comments inline and use attached patch for testing.
->>
->> Thanks
->> Yong
->>
->>
->> From 377c680c35089aea7697397c42349189843eeaff Mon Sep 17 00:00:00 2001
->> From: Yong Shen <yong.shen@linaro.org>
->> Date: Thu, 2 Dec 2010 14:59:00 +0800
->> Subject: [PATCH 2/2] make mc13783 regulator code generic
->>
->> move some common functions and micros of mc13783 regulaor driver to
-> s/micros/macros/ s/regulaor/regulator/
->
->> a seperate file, which makes it possible for mc13892 to share code.
-> s/seperate/separate/
->
-> (Note I havn't looked at the patch)
->
-> Best regards
-> Uwe
->
-> --
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->
+Hi there,
+
+Please comment inline and use attached file for patch or test.
+
+Thanks
+Yong
+
+>From e112153c6f03b49c229a8e3913a0c0459245df20 Mon Sep 17 00:00:00 2001
+From: Yong Shen <yong.shen@linaro.org>
+Date: Thu, 2 Dec 2010 14:17:02 +0800
+Subject: [PATCH 1/2] Change the register name definitions for mc13783
+
+To make mc13783 and mc13892 share code, the register names should be
+changed to fit the new macro definitions in the comming patch.
+
+Signed-off-by: Yong Shen <yong.shen@linaro.org>
+---
+ arch/arm/mach-imx/mach-pcm038.c       |    4 +-
+ arch/arm/mach-mx3/mach-mx31_3ds.c     |    4 +-
+ arch/arm/mach-mx3/mach-mx31moboard.c  |    4 +-
+ drivers/regulator/mc13783-regulator.c |   30 +++++++-------
+ include/linux/mfd/mc13783.h           |   67 +++++++++++++++++----------------
+ 5 files changed, 55 insertions(+), 54 deletions(-)
+
+diff --git a/arch/arm/mach-imx/mach-pcm038.c b/arch/arm/mach-imx/mach-pcm038.c
+index f667a26..5056148 100644
+--- a/arch/arm/mach-imx/mach-pcm038.c
++++ b/arch/arm/mach-imx/mach-pcm038.c
+@@ -254,10 +254,10 @@ static struct regulator_init_data cam_data = {
+
+ static struct mc13783_regulator_init_data pcm038_regulators[] = {
+ 	{
+-		.id = MC13783_REGU_VCAM,
++		.id = MC13783_REG_VCAM,
+ 		.init_data = &cam_data,
+ 	}, {
+-		.id = MC13783_REGU_VMMC1,
++		.id = MC13783_REG_VMMC1,
+ 		.init_data = &sdhc1_data,
+ 	},
+ };
+diff --git a/arch/arm/mach-mx3/mach-mx31_3ds.c
+b/arch/arm/mach-mx3/mach-mx31_3ds.c
+index e4efbfe..ed2db94 100644
+--- a/arch/arm/mach-mx3/mach-mx31_3ds.c
++++ b/arch/arm/mach-mx3/mach-mx31_3ds.c
+@@ -115,10 +115,10 @@ static struct regulator_init_data pwgtx_init = {
+
+ static struct mc13783_regulator_init_data mx31_3ds_regulators[] = {
+ 	{
+-		.id = MC13783_REGU_PWGT1SPI, /* Power Gate for ARM core. */
++		.id = MC13783_REG_PWGT1SPI, /* Power Gate for ARM core. */
+ 		.init_data = &pwgtx_init,
+ 	}, {
+-		.id = MC13783_REGU_PWGT2SPI, /* Power Gate for L2 Cache. */
++		.id = MC13783_REG_PWGT2SPI, /* Power Gate for L2 Cache. */
+ 		.init_data = &pwgtx_init,
+ 	},
+ };
+diff --git a/arch/arm/mach-mx3/mach-mx31moboard.c
+b/arch/arm/mach-mx3/mach-mx31moboard.c
+index 203d21a..1aa8d65 100644
+--- a/arch/arm/mach-mx3/mach-mx31moboard.c
++++ b/arch/arm/mach-mx3/mach-mx31moboard.c
+@@ -216,11 +216,11 @@ static struct regulator_init_data cam_vreg_data = {
+
+ static struct mc13783_regulator_init_data moboard_regulators[] = {
+ 	{
+-		.id = MC13783_REGU_VMMC1,
++		.id = MC13783_REG_VMMC1,
+ 		.init_data = &sdhc_vreg_data,
+ 	},
+ 	{
+-		.id = MC13783_REGU_VCAM,
++		.id = MC13783_REG_VCAM,
+ 		.init_data = &cam_vreg_data,
+ 	},
+ };
+diff --git a/drivers/regulator/mc13783-regulator.c
+b/drivers/regulator/mc13783-regulator.c
+index 4597d50..e4f2787 100644
+--- a/drivers/regulator/mc13783-regulator.c
++++ b/drivers/regulator/mc13783-regulator.c
+@@ -228,15 +228,15 @@ static struct regulator_ops mc13783_gpo_regulator_ops;
+ 	}
+
+ #define MC13783_DEFINE_SW(_name, _reg, _vsel_reg, _voltages)		\
+-	MC13783_DEFINE(SW, _name, _reg, _vsel_reg, _voltages)
++	MC13783_DEFINE(REG, _name, _reg, _vsel_reg, _voltages)
+ #define MC13783_DEFINE_REGU(_name, _reg, _vsel_reg, _voltages)		\
+-	MC13783_DEFINE(REGU, _name, _reg, _vsel_reg, _voltages)
++	MC13783_DEFINE(REG, _name, _reg, _vsel_reg, _voltages)
+
+ static struct mc13783_regulator mc13783_regulators[] = {
+ 	MC13783_DEFINE_SW(SW3, SWITCHERS5, SWITCHERS5, mc13783_sw3_val),
+
+-	MC13783_FIXED_DEFINE(REGU, VAUDIO, REGULATORMODE0, mc13783_vaudio_val),
+-	MC13783_FIXED_DEFINE(REGU, VIOHI, REGULATORMODE0, mc13783_viohi_val),
++	MC13783_FIXED_DEFINE(REG, VAUDIO, REGULATORMODE0, mc13783_vaudio_val),
++	MC13783_FIXED_DEFINE(REG, VIOHI, REGULATORMODE0, mc13783_viohi_val),
+ 	MC13783_DEFINE_REGU(VIOLO, REGULATORMODE0, REGULATORSETTING0,	\
+ 			    mc13783_violo_val),
+ 	MC13783_DEFINE_REGU(VDIG, REGULATORMODE0, REGULATORSETTING0,	\
+@@ -255,7 +255,7 @@ static struct mc13783_regulator mc13783_regulators[] = {
+ 			    mc13783_vesim_val),
+ 	MC13783_DEFINE_REGU(VCAM, REGULATORMODE1, REGULATORSETTING0,	\
+ 			    mc13783_vcam_val),
+-	MC13783_FIXED_DEFINE(REGU, VRFBG, REGULATORMODE1, mc13783_vrfbg_val),
++	MC13783_FIXED_DEFINE(REG, VRFBG, REGULATORMODE1, mc13783_vrfbg_val),
+ 	MC13783_DEFINE_REGU(VVIB, REGULATORMODE1, REGULATORSETTING1,	\
+ 			    mc13783_vvib_val),
+ 	MC13783_DEFINE_REGU(VRF1, REGULATORMODE1, REGULATORSETTING1,	\
+@@ -266,12 +266,12 @@ static struct mc13783_regulator mc13783_regulators[] = {
+ 			    mc13783_vmmc_val),
+ 	MC13783_DEFINE_REGU(VMMC2, REGULATORMODE1, REGULATORSETTING1,	\
+ 			    mc13783_vmmc_val),
+-	MC13783_GPO_DEFINE(REGU, GPO1, POWERMISC, mc13783_gpo_val),
+-	MC13783_GPO_DEFINE(REGU, GPO2, POWERMISC, mc13783_gpo_val),
+-	MC13783_GPO_DEFINE(REGU, GPO3, POWERMISC, mc13783_gpo_val),
+-	MC13783_GPO_DEFINE(REGU, GPO4, POWERMISC, mc13783_gpo_val),
+-	MC13783_GPO_DEFINE(REGU, PWGT1SPI, POWERMISC, mc13783_pwgtdrv_val),
+-	MC13783_GPO_DEFINE(REGU, PWGT2SPI, POWERMISC, mc13783_pwgtdrv_val),
++	MC13783_GPO_DEFINE(REG, GPO1, POWERMISC, mc13783_gpo_val),
++	MC13783_GPO_DEFINE(REG, GPO2, POWERMISC, mc13783_gpo_val),
++	MC13783_GPO_DEFINE(REG, GPO3, POWERMISC, mc13783_gpo_val),
++	MC13783_GPO_DEFINE(REG, GPO4, POWERMISC, mc13783_gpo_val),
++	MC13783_GPO_DEFINE(REG, PWGT1SPI, POWERMISC, mc13783_pwgtdrv_val),
++	MC13783_GPO_DEFINE(REG, PWGT2SPI, POWERMISC, mc13783_pwgtdrv_val),
+ };
+
+ struct mc13783_regulator_priv {
+@@ -502,8 +502,8 @@ static int mc13783_gpo_regulator_enable(struct
+regulator_dev *rdev)
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+
+ 	/* Power Gate enable value is 0 */
+-	if (id == MC13783_REGU_PWGT1SPI ||
+-	    id == MC13783_REGU_PWGT2SPI)
++	if (id == MC13783_REG_PWGT1SPI ||
++	    id == MC13783_REG_PWGT2SPI)
+ 		en_val = 0;
+
+ 	mc13783_lock(priv->mc13783);
+@@ -524,8 +524,8 @@ static int mc13783_gpo_regulator_disable(struct
+regulator_dev *rdev)
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+
+ 	/* Power Gate disable value is 1 */
+-	if (id == MC13783_REGU_PWGT1SPI ||
+-	    id == MC13783_REGU_PWGT2SPI)
++	if (id == MC13783_REG_PWGT1SPI ||
++	    id == MC13783_REG_PWGT2SPI)
+ 		dis_val = mc13783_regulators[id].enable_bit;
+
+ 	mc13783_lock(priv->mc13783);
+diff --git a/include/linux/mfd/mc13783.h b/include/linux/mfd/mc13783.h
+index b4c741e..7d0f3d6 100644
+--- a/include/linux/mfd/mc13783.h
++++ b/include/linux/mfd/mc13783.h
+@@ -1,4 +1,5 @@
+ /*
++ * Copyright 2010 Yong Shen <yong.shen@linaro.org>
+  * Copyright 2009-2010 Pengutronix
+  * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+  *
+@@ -122,39 +123,39 @@ int mc13783_adc_do_conversion(struct mc13783
+*mc13783, unsigned int mode,
+ 		unsigned int channel, unsigned int *sample);
+
+
+-#define	MC13783_SW_SW1A		0
+-#define	MC13783_SW_SW1B		1
+-#define	MC13783_SW_SW2A		2
+-#define	MC13783_SW_SW2B		3
+-#define	MC13783_SW_SW3		4
+-#define	MC13783_SW_PLL		5
+-#define	MC13783_REGU_VAUDIO	6
+-#define	MC13783_REGU_VIOHI	7
+-#define	MC13783_REGU_VIOLO	8
+-#define	MC13783_REGU_VDIG	9
+-#define	MC13783_REGU_VGEN	10
+-#define	MC13783_REGU_VRFDIG	11
+-#define	MC13783_REGU_VRFREF	12
+-#define	MC13783_REGU_VRFCP	13
+-#define	MC13783_REGU_VSIM	14
+-#define	MC13783_REGU_VESIM	15
+-#define	MC13783_REGU_VCAM	16
+-#define	MC13783_REGU_VRFBG	17
+-#define	MC13783_REGU_VVIB	18
+-#define	MC13783_REGU_VRF1	19
+-#define	MC13783_REGU_VRF2	20
+-#define	MC13783_REGU_VMMC1	21
+-#define	MC13783_REGU_VMMC2	22
+-#define	MC13783_REGU_GPO1	23
+-#define	MC13783_REGU_GPO2	24
+-#define	MC13783_REGU_GPO3	25
+-#define	MC13783_REGU_GPO4	26
+-#define	MC13783_REGU_V1		27
+-#define	MC13783_REGU_V2		28
+-#define	MC13783_REGU_V3		29
+-#define	MC13783_REGU_V4		30
+-#define	MC13783_REGU_PWGT1SPI	31
+-#define	MC13783_REGU_PWGT2SPI	32
++#define	MC13783_REG_SW1A		0
++#define	MC13783_REG_SW1B		1
++#define	MC13783_REG_SW2A		2
++#define	MC13783_REG_SW2B		3
++#define	MC13783_REG_SW3		4
++#define	MC13783_REG_PLL		5
++#define	MC13783_REG_VAUDIO	6
++#define	MC13783_REG_VIOHI	7
++#define	MC13783_REG_VIOLO	8
++#define	MC13783_REG_VDIG	9
++#define	MC13783_REG_VGEN	10
++#define	MC13783_REG_VRFDIG	11
++#define	MC13783_REG_VRFREF	12
++#define	MC13783_REG_VRFCP	13
++#define	MC13783_REG_VSIM	14
++#define	MC13783_REG_VESIM	15
++#define	MC13783_REG_VCAM	16
++#define	MC13783_REG_VRFBG	17
++#define	MC13783_REG_VVIB	18
++#define	MC13783_REG_VRF1	19
++#define	MC13783_REG_VRF2	20
++#define	MC13783_REG_VMMC1	21
++#define	MC13783_REG_VMMC2	22
++#define	MC13783_REG_GPO1	23
++#define	MC13783_REG_GPO2	24
++#define	MC13783_REG_GPO3	25
++#define	MC13783_REG_GPO4	26
++#define	MC13783_REG_V1		27
++#define	MC13783_REG_V2		28
++#define	MC13783_REG_V3		29
++#define	MC13783_REG_V4		30
++#define	MC13783_REG_PWGT1SPI	31
++#define	MC13783_REG_PWGT2SPI	32
+
+ #define MC13783_IRQ_ADCDONE	MC13XXX_IRQ_ADCDONE
+ #define MC13783_IRQ_ADCBISDONE	MC13XXX_IRQ_ADCBISDONE
+-- 
+1.7.0.4
+
+--000e0cd4d8f43cc15b04966b96fe
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-Change-the-register-name-definitions-for-mc13783.patch"
+Content-Disposition: attachment; 
+	filename="0001-Change-the-register-name-definitions-for-mc13783.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gh7k05n10
+
+RnJvbSBlMTEyMTUzYzZmMDNiNDljMjI5YThlMzkxM2EwYzA0NTkyNDVkZjIwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBZb25nIFNoZW4gPHlvbmcuc2hlbkBsaW5hcm8ub3JnPgpEYXRl
+OiBUaHUsIDIgRGVjIDIwMTAgMTQ6MTc6MDIgKzA4MDAKU3ViamVjdDogW1BBVENIIDEvMl0gQ2hh
+bmdlIHRoZSByZWdpc3RlciBuYW1lIGRlZmluaXRpb25zIGZvciBtYzEzNzgzCgpUbyBtYWtlIG1j
+MTM3ODMgYW5kIG1jMTM4OTIgc2hhcmUgY29kZSwgdGhlIHJlZ2lzdGVyIG5hbWVzIHNob3VsZCBi
+ZQpjaGFuZ2VkIHRvIGZpdCB0aGUgbmV3IG1hY3JvIGRlZmluaXRpb25zIGluIHRoZSBjb21taW5n
+IHBhdGNoLgoKU2lnbmVkLW9mZi1ieTogWW9uZyBTaGVuIDx5b25nLnNoZW5AbGluYXJvLm9yZz4K
+LS0tCiBhcmNoL2FybS9tYWNoLWlteC9tYWNoLXBjbTAzOC5jICAgICAgIHwgICAgNCArLQogYXJj
+aC9hcm0vbWFjaC1teDMvbWFjaC1teDMxXzNkcy5jICAgICB8ICAgIDQgKy0KIGFyY2gvYXJtL21h
+Y2gtbXgzL21hY2gtbXgzMW1vYm9hcmQuYyAgfCAgICA0ICstCiBkcml2ZXJzL3JlZ3VsYXRvci9t
+YzEzNzgzLXJlZ3VsYXRvci5jIHwgICAzMCArKysrKysrLS0tLS0tLQogaW5jbHVkZS9saW51eC9t
+ZmQvbWMxMzc4My5oICAgICAgICAgICB8ICAgNjcgKysrKysrKysrKysrKysrKystLS0tLS0tLS0t
+LS0tLS0tCiA1IGZpbGVzIGNoYW5nZWQsIDU1IGluc2VydGlvbnMoKyksIDU0IGRlbGV0aW9ucygt
+KQoKZGlmZiAtLWdpdCBhL2FyY2gvYXJtL21hY2gtaW14L21hY2gtcGNtMDM4LmMgYi9hcmNoL2Fy
+bS9tYWNoLWlteC9tYWNoLXBjbTAzOC5jCmluZGV4IGY2NjdhMjYuLjUwNTYxNDggMTAwNjQ0Ci0t
+LSBhL2FyY2gvYXJtL21hY2gtaW14L21hY2gtcGNtMDM4LmMKKysrIGIvYXJjaC9hcm0vbWFjaC1p
+bXgvbWFjaC1wY20wMzguYwpAQCAtMjU0LDEwICsyNTQsMTAgQEAgc3RhdGljIHN0cnVjdCByZWd1
+bGF0b3JfaW5pdF9kYXRhIGNhbV9kYXRhID0gewogCiBzdGF0aWMgc3RydWN0IG1jMTM3ODNfcmVn
+dWxhdG9yX2luaXRfZGF0YSBwY20wMzhfcmVndWxhdG9yc1tdID0gewogCXsKLQkJLmlkID0gTUMx
+Mzc4M19SRUdVX1ZDQU0sCisJCS5pZCA9IE1DMTM3ODNfUkVHX1ZDQU0sCiAJCS5pbml0X2RhdGEg
+PSAmY2FtX2RhdGEsCiAJfSwgewotCQkuaWQgPSBNQzEzNzgzX1JFR1VfVk1NQzEsCisJCS5pZCA9
+IE1DMTM3ODNfUkVHX1ZNTUMxLAogCQkuaW5pdF9kYXRhID0gJnNkaGMxX2RhdGEsCiAJfSwKIH07
+CmRpZmYgLS1naXQgYS9hcmNoL2FybS9tYWNoLW14My9tYWNoLW14MzFfM2RzLmMgYi9hcmNoL2Fy
+bS9tYWNoLW14My9tYWNoLW14MzFfM2RzLmMKaW5kZXggZTRlZmJmZS4uZWQyZGI5NCAxMDA2NDQK
+LS0tIGEvYXJjaC9hcm0vbWFjaC1teDMvbWFjaC1teDMxXzNkcy5jCisrKyBiL2FyY2gvYXJtL21h
+Y2gtbXgzL21hY2gtbXgzMV8zZHMuYwpAQCAtMTE1LDEwICsxMTUsMTAgQEAgc3RhdGljIHN0cnVj
+dCByZWd1bGF0b3JfaW5pdF9kYXRhIHB3Z3R4X2luaXQgPSB7CiAKIHN0YXRpYyBzdHJ1Y3QgbWMx
+Mzc4M19yZWd1bGF0b3JfaW5pdF9kYXRhIG14MzFfM2RzX3JlZ3VsYXRvcnNbXSA9IHsKIAl7Ci0J
+CS5pZCA9IE1DMTM3ODNfUkVHVV9QV0dUMVNQSSwgLyogUG93ZXIgR2F0ZSBmb3IgQVJNIGNvcmUu
+ICovCisJCS5pZCA9IE1DMTM3ODNfUkVHX1BXR1QxU1BJLCAvKiBQb3dlciBHYXRlIGZvciBBUk0g
+Y29yZS4gKi8KIAkJLmluaXRfZGF0YSA9ICZwd2d0eF9pbml0LAogCX0sIHsKLQkJLmlkID0gTUMx
+Mzc4M19SRUdVX1BXR1QyU1BJLCAvKiBQb3dlciBHYXRlIGZvciBMMiBDYWNoZS4gKi8KKwkJLmlk
+ID0gTUMxMzc4M19SRUdfUFdHVDJTUEksIC8qIFBvd2VyIEdhdGUgZm9yIEwyIENhY2hlLiAqLwog
+CQkuaW5pdF9kYXRhID0gJnB3Z3R4X2luaXQsCiAJfSwKIH07CmRpZmYgLS1naXQgYS9hcmNoL2Fy
+bS9tYWNoLW14My9tYWNoLW14MzFtb2JvYXJkLmMgYi9hcmNoL2FybS9tYWNoLW14My9tYWNoLW14
+MzFtb2JvYXJkLmMKaW5kZXggMjAzZDIxYS4uMWFhOGQ2NSAxMDA2NDQKLS0tIGEvYXJjaC9hcm0v
+bWFjaC1teDMvbWFjaC1teDMxbW9ib2FyZC5jCisrKyBiL2FyY2gvYXJtL21hY2gtbXgzL21hY2gt
+bXgzMW1vYm9hcmQuYwpAQCAtMjE2LDExICsyMTYsMTEgQEAgc3RhdGljIHN0cnVjdCByZWd1bGF0
+b3JfaW5pdF9kYXRhIGNhbV92cmVnX2RhdGEgPSB7CiAKIHN0YXRpYyBzdHJ1Y3QgbWMxMzc4M19y
+ZWd1bGF0b3JfaW5pdF9kYXRhIG1vYm9hcmRfcmVndWxhdG9yc1tdID0gewogCXsKLQkJLmlkID0g
+TUMxMzc4M19SRUdVX1ZNTUMxLAorCQkuaWQgPSBNQzEzNzgzX1JFR19WTU1DMSwKIAkJLmluaXRf
+ZGF0YSA9ICZzZGhjX3ZyZWdfZGF0YSwKIAl9LAogCXsKLQkJLmlkID0gTUMxMzc4M19SRUdVX1ZD
+QU0sCisJCS5pZCA9IE1DMTM3ODNfUkVHX1ZDQU0sCiAJCS5pbml0X2RhdGEgPSAmY2FtX3ZyZWdf
+ZGF0YSwKIAl9LAogfTsKZGlmZiAtLWdpdCBhL2RyaXZlcnMvcmVndWxhdG9yL21jMTM3ODMtcmVn
+dWxhdG9yLmMgYi9kcml2ZXJzL3JlZ3VsYXRvci9tYzEzNzgzLXJlZ3VsYXRvci5jCmluZGV4IDQ1
+OTdkNTAuLmU0ZjI3ODcgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvcmVndWxhdG9yL21jMTM3ODMtcmVn
+dWxhdG9yLmMKKysrIGIvZHJpdmVycy9yZWd1bGF0b3IvbWMxMzc4My1yZWd1bGF0b3IuYwpAQCAt
+MjI4LDE1ICsyMjgsMTUgQEAgc3RhdGljIHN0cnVjdCByZWd1bGF0b3Jfb3BzIG1jMTM3ODNfZ3Bv
+X3JlZ3VsYXRvcl9vcHM7CiAJfQogCiAjZGVmaW5lIE1DMTM3ODNfREVGSU5FX1NXKF9uYW1lLCBf
+cmVnLCBfdnNlbF9yZWcsIF92b2x0YWdlcykJCVwKLQlNQzEzNzgzX0RFRklORShTVywgX25hbWUs
+IF9yZWcsIF92c2VsX3JlZywgX3ZvbHRhZ2VzKQorCU1DMTM3ODNfREVGSU5FKFJFRywgX25hbWUs
+IF9yZWcsIF92c2VsX3JlZywgX3ZvbHRhZ2VzKQogI2RlZmluZSBNQzEzNzgzX0RFRklORV9SRUdV
+KF9uYW1lLCBfcmVnLCBfdnNlbF9yZWcsIF92b2x0YWdlcykJCVwKLQlNQzEzNzgzX0RFRklORShS
+RUdVLCBfbmFtZSwgX3JlZywgX3ZzZWxfcmVnLCBfdm9sdGFnZXMpCisJTUMxMzc4M19ERUZJTkUo
+UkVHLCBfbmFtZSwgX3JlZywgX3ZzZWxfcmVnLCBfdm9sdGFnZXMpCiAKIHN0YXRpYyBzdHJ1Y3Qg
+bWMxMzc4M19yZWd1bGF0b3IgbWMxMzc4M19yZWd1bGF0b3JzW10gPSB7CiAJTUMxMzc4M19ERUZJ
+TkVfU1coU1czLCBTV0lUQ0hFUlM1LCBTV0lUQ0hFUlM1LCBtYzEzNzgzX3N3M192YWwpLAogCi0J
+TUMxMzc4M19GSVhFRF9ERUZJTkUoUkVHVSwgVkFVRElPLCBSRUdVTEFUT1JNT0RFMCwgbWMxMzc4
+M192YXVkaW9fdmFsKSwKLQlNQzEzNzgzX0ZJWEVEX0RFRklORShSRUdVLCBWSU9ISSwgUkVHVUxB
+VE9STU9ERTAsIG1jMTM3ODNfdmlvaGlfdmFsKSwKKwlNQzEzNzgzX0ZJWEVEX0RFRklORShSRUcs
+IFZBVURJTywgUkVHVUxBVE9STU9ERTAsIG1jMTM3ODNfdmF1ZGlvX3ZhbCksCisJTUMxMzc4M19G
+SVhFRF9ERUZJTkUoUkVHLCBWSU9ISSwgUkVHVUxBVE9STU9ERTAsIG1jMTM3ODNfdmlvaGlfdmFs
+KSwKIAlNQzEzNzgzX0RFRklORV9SRUdVKFZJT0xPLCBSRUdVTEFUT1JNT0RFMCwgUkVHVUxBVE9S
+U0VUVElORzAsCVwKIAkJCSAgICBtYzEzNzgzX3Zpb2xvX3ZhbCksCiAJTUMxMzc4M19ERUZJTkVf
+UkVHVShWRElHLCBSRUdVTEFUT1JNT0RFMCwgUkVHVUxBVE9SU0VUVElORzAsCVwKQEAgLTI1NSw3
+ICsyNTUsNyBAQCBzdGF0aWMgc3RydWN0IG1jMTM3ODNfcmVndWxhdG9yIG1jMTM3ODNfcmVndWxh
+dG9yc1tdID0gewogCQkJICAgIG1jMTM3ODNfdmVzaW1fdmFsKSwKIAlNQzEzNzgzX0RFRklORV9S
+RUdVKFZDQU0sIFJFR1VMQVRPUk1PREUxLCBSRUdVTEFUT1JTRVRUSU5HMCwJXAogCQkJICAgIG1j
+MTM3ODNfdmNhbV92YWwpLAotCU1DMTM3ODNfRklYRURfREVGSU5FKFJFR1UsIFZSRkJHLCBSRUdV
+TEFUT1JNT0RFMSwgbWMxMzc4M192cmZiZ192YWwpLAorCU1DMTM3ODNfRklYRURfREVGSU5FKFJF
+RywgVlJGQkcsIFJFR1VMQVRPUk1PREUxLCBtYzEzNzgzX3ZyZmJnX3ZhbCksCiAJTUMxMzc4M19E
+RUZJTkVfUkVHVShWVklCLCBSRUdVTEFUT1JNT0RFMSwgUkVHVUxBVE9SU0VUVElORzEsCVwKIAkJ
+CSAgICBtYzEzNzgzX3Z2aWJfdmFsKSwKIAlNQzEzNzgzX0RFRklORV9SRUdVKFZSRjEsIFJFR1VM
+QVRPUk1PREUxLCBSRUdVTEFUT1JTRVRUSU5HMSwJXApAQCAtMjY2LDEyICsyNjYsMTIgQEAgc3Rh
+dGljIHN0cnVjdCBtYzEzNzgzX3JlZ3VsYXRvciBtYzEzNzgzX3JlZ3VsYXRvcnNbXSA9IHsKIAkJ
+CSAgICBtYzEzNzgzX3ZtbWNfdmFsKSwKIAlNQzEzNzgzX0RFRklORV9SRUdVKFZNTUMyLCBSRUdV
+TEFUT1JNT0RFMSwgUkVHVUxBVE9SU0VUVElORzEsCVwKIAkJCSAgICBtYzEzNzgzX3ZtbWNfdmFs
+KSwKLQlNQzEzNzgzX0dQT19ERUZJTkUoUkVHVSwgR1BPMSwgUE9XRVJNSVNDLCBtYzEzNzgzX2dw
+b192YWwpLAotCU1DMTM3ODNfR1BPX0RFRklORShSRUdVLCBHUE8yLCBQT1dFUk1JU0MsIG1jMTM3
+ODNfZ3BvX3ZhbCksCi0JTUMxMzc4M19HUE9fREVGSU5FKFJFR1UsIEdQTzMsIFBPV0VSTUlTQywg
+bWMxMzc4M19ncG9fdmFsKSwKLQlNQzEzNzgzX0dQT19ERUZJTkUoUkVHVSwgR1BPNCwgUE9XRVJN
+SVNDLCBtYzEzNzgzX2dwb192YWwpLAotCU1DMTM3ODNfR1BPX0RFRklORShSRUdVLCBQV0dUMVNQ
+SSwgUE9XRVJNSVNDLCBtYzEzNzgzX3B3Z3RkcnZfdmFsKSwKLQlNQzEzNzgzX0dQT19ERUZJTkUo
+UkVHVSwgUFdHVDJTUEksIFBPV0VSTUlTQywgbWMxMzc4M19wd2d0ZHJ2X3ZhbCksCisJTUMxMzc4
+M19HUE9fREVGSU5FKFJFRywgR1BPMSwgUE9XRVJNSVNDLCBtYzEzNzgzX2dwb192YWwpLAorCU1D
+MTM3ODNfR1BPX0RFRklORShSRUcsIEdQTzIsIFBPV0VSTUlTQywgbWMxMzc4M19ncG9fdmFsKSwK
+KwlNQzEzNzgzX0dQT19ERUZJTkUoUkVHLCBHUE8zLCBQT1dFUk1JU0MsIG1jMTM3ODNfZ3BvX3Zh
+bCksCisJTUMxMzc4M19HUE9fREVGSU5FKFJFRywgR1BPNCwgUE9XRVJNSVNDLCBtYzEzNzgzX2dw
+b192YWwpLAorCU1DMTM3ODNfR1BPX0RFRklORShSRUcsIFBXR1QxU1BJLCBQT1dFUk1JU0MsIG1j
+MTM3ODNfcHdndGRydl92YWwpLAorCU1DMTM3ODNfR1BPX0RFRklORShSRUcsIFBXR1QyU1BJLCBQ
+T1dFUk1JU0MsIG1jMTM3ODNfcHdndGRydl92YWwpLAogfTsKIAogc3RydWN0IG1jMTM3ODNfcmVn
+dWxhdG9yX3ByaXYgewpAQCAtNTAyLDggKzUwMiw4IEBAIHN0YXRpYyBpbnQgbWMxMzc4M19ncG9f
+cmVndWxhdG9yX2VuYWJsZShzdHJ1Y3QgcmVndWxhdG9yX2RldiAqcmRldikKIAlkZXZfZGJnKHJk
+ZXZfZ2V0X2RldihyZGV2KSwgIiVzIGlkOiAlZFxuIiwgX19mdW5jX18sIGlkKTsKIAogCS8qIFBv
+d2VyIEdhdGUgZW5hYmxlIHZhbHVlIGlzIDAgKi8KLQlpZiAoaWQgPT0gTUMxMzc4M19SRUdVX1BX
+R1QxU1BJIHx8Ci0JICAgIGlkID09IE1DMTM3ODNfUkVHVV9QV0dUMlNQSSkKKwlpZiAoaWQgPT0g
+TUMxMzc4M19SRUdfUFdHVDFTUEkgfHwKKwkgICAgaWQgPT0gTUMxMzc4M19SRUdfUFdHVDJTUEkp
+CiAJCWVuX3ZhbCA9IDA7CiAKIAltYzEzNzgzX2xvY2socHJpdi0+bWMxMzc4Myk7CkBAIC01MjQs
+OCArNTI0LDggQEAgc3RhdGljIGludCBtYzEzNzgzX2dwb19yZWd1bGF0b3JfZGlzYWJsZShzdHJ1
+Y3QgcmVndWxhdG9yX2RldiAqcmRldikKIAlkZXZfZGJnKHJkZXZfZ2V0X2RldihyZGV2KSwgIiVz
+IGlkOiAlZFxuIiwgX19mdW5jX18sIGlkKTsKIAogCS8qIFBvd2VyIEdhdGUgZGlzYWJsZSB2YWx1
+ZSBpcyAxICovCi0JaWYgKGlkID09IE1DMTM3ODNfUkVHVV9QV0dUMVNQSSB8fAotCSAgICBpZCA9
+PSBNQzEzNzgzX1JFR1VfUFdHVDJTUEkpCisJaWYgKGlkID09IE1DMTM3ODNfUkVHX1BXR1QxU1BJ
+IHx8CisJICAgIGlkID09IE1DMTM3ODNfUkVHX1BXR1QyU1BJKQogCQlkaXNfdmFsID0gbWMxMzc4
+M19yZWd1bGF0b3JzW2lkXS5lbmFibGVfYml0OwogCiAJbWMxMzc4M19sb2NrKHByaXYtPm1jMTM3
+ODMpOwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tZmQvbWMxMzc4My5oIGIvaW5jbHVkZS9s
+aW51eC9tZmQvbWMxMzc4My5oCmluZGV4IGI0Yzc0MWUuLjdkMGYzZDYgMTAwNjQ0Ci0tLSBhL2lu
+Y2x1ZGUvbGludXgvbWZkL21jMTM3ODMuaAorKysgYi9pbmNsdWRlL2xpbnV4L21mZC9tYzEzNzgz
+LmgKQEAgLTEsNCArMSw1IEBACiAvKgorICogQ29weXJpZ2h0IDIwMTAgWW9uZyBTaGVuIDx5b25n
+LnNoZW5AbGluYXJvLm9yZz4KICAqIENvcHlyaWdodCAyMDA5LTIwMTAgUGVuZ3V0cm9uaXgKICAq
+IFV3ZSBLbGVpbmUtS29lbmlnIDx1LmtsZWluZS1rb2VuaWdAcGVuZ3V0cm9uaXguZGU+CiAgKgpA
+QCAtMTIyLDM5ICsxMjMsMzkgQEAgaW50IG1jMTM3ODNfYWRjX2RvX2NvbnZlcnNpb24oc3RydWN0
+IG1jMTM3ODMgKm1jMTM3ODMsIHVuc2lnbmVkIGludCBtb2RlLAogCQl1bnNpZ25lZCBpbnQgY2hh
+bm5lbCwgdW5zaWduZWQgaW50ICpzYW1wbGUpOwogCiAKLSNkZWZpbmUJTUMxMzc4M19TV19TVzFB
+CQkwCi0jZGVmaW5lCU1DMTM3ODNfU1dfU1cxQgkJMQotI2RlZmluZQlNQzEzNzgzX1NXX1NXMkEJ
+CTIKLSNkZWZpbmUJTUMxMzc4M19TV19TVzJCCQkzCi0jZGVmaW5lCU1DMTM3ODNfU1dfU1czCQk0
+Ci0jZGVmaW5lCU1DMTM3ODNfU1dfUExMCQk1Ci0jZGVmaW5lCU1DMTM3ODNfUkVHVV9WQVVESU8J
+NgotI2RlZmluZQlNQzEzNzgzX1JFR1VfVklPSEkJNwotI2RlZmluZQlNQzEzNzgzX1JFR1VfVklP
+TE8JOAotI2RlZmluZQlNQzEzNzgzX1JFR1VfVkRJRwk5Ci0jZGVmaW5lCU1DMTM3ODNfUkVHVV9W
+R0VOCTEwCi0jZGVmaW5lCU1DMTM3ODNfUkVHVV9WUkZESUcJMTEKLSNkZWZpbmUJTUMxMzc4M19S
+RUdVX1ZSRlJFRgkxMgotI2RlZmluZQlNQzEzNzgzX1JFR1VfVlJGQ1AJMTMKLSNkZWZpbmUJTUMx
+Mzc4M19SRUdVX1ZTSU0JMTQKLSNkZWZpbmUJTUMxMzc4M19SRUdVX1ZFU0lNCTE1Ci0jZGVmaW5l
+CU1DMTM3ODNfUkVHVV9WQ0FNCTE2Ci0jZGVmaW5lCU1DMTM3ODNfUkVHVV9WUkZCRwkxNwotI2Rl
+ZmluZQlNQzEzNzgzX1JFR1VfVlZJQgkxOAotI2RlZmluZQlNQzEzNzgzX1JFR1VfVlJGMQkxOQot
+I2RlZmluZQlNQzEzNzgzX1JFR1VfVlJGMgkyMAotI2RlZmluZQlNQzEzNzgzX1JFR1VfVk1NQzEJ
+MjEKLSNkZWZpbmUJTUMxMzc4M19SRUdVX1ZNTUMyCTIyCi0jZGVmaW5lCU1DMTM3ODNfUkVHVV9H
+UE8xCTIzCi0jZGVmaW5lCU1DMTM3ODNfUkVHVV9HUE8yCTI0Ci0jZGVmaW5lCU1DMTM3ODNfUkVH
+VV9HUE8zCTI1Ci0jZGVmaW5lCU1DMTM3ODNfUkVHVV9HUE80CTI2Ci0jZGVmaW5lCU1DMTM3ODNf
+UkVHVV9WMQkJMjcKLSNkZWZpbmUJTUMxMzc4M19SRUdVX1YyCQkyOAotI2RlZmluZQlNQzEzNzgz
+X1JFR1VfVjMJCTI5Ci0jZGVmaW5lCU1DMTM3ODNfUkVHVV9WNAkJMzAKLSNkZWZpbmUJTUMxMzc4
+M19SRUdVX1BXR1QxU1BJCTMxCi0jZGVmaW5lCU1DMTM3ODNfUkVHVV9QV0dUMlNQSQkzMgorI2Rl
+ZmluZQlNQzEzNzgzX1JFR19TVzFBCQkwCisjZGVmaW5lCU1DMTM3ODNfUkVHX1NXMUIJCTEKKyNk
+ZWZpbmUJTUMxMzc4M19SRUdfU1cyQQkJMgorI2RlZmluZQlNQzEzNzgzX1JFR19TVzJCCQkzCisj
+ZGVmaW5lCU1DMTM3ODNfUkVHX1NXMwkJNAorI2RlZmluZQlNQzEzNzgzX1JFR19QTEwJCTUKKyNk
+ZWZpbmUJTUMxMzc4M19SRUdfVkFVRElPCTYKKyNkZWZpbmUJTUMxMzc4M19SRUdfVklPSEkJNwor
+I2RlZmluZQlNQzEzNzgzX1JFR19WSU9MTwk4CisjZGVmaW5lCU1DMTM3ODNfUkVHX1ZESUcJOQor
+I2RlZmluZQlNQzEzNzgzX1JFR19WR0VOCTEwCisjZGVmaW5lCU1DMTM3ODNfUkVHX1ZSRkRJRwkx
+MQorI2RlZmluZQlNQzEzNzgzX1JFR19WUkZSRUYJMTIKKyNkZWZpbmUJTUMxMzc4M19SRUdfVlJG
+Q1AJMTMKKyNkZWZpbmUJTUMxMzc4M19SRUdfVlNJTQkxNAorI2RlZmluZQlNQzEzNzgzX1JFR19W
+RVNJTQkxNQorI2RlZmluZQlNQzEzNzgzX1JFR19WQ0FNCTE2CisjZGVmaW5lCU1DMTM3ODNfUkVH
+X1ZSRkJHCTE3CisjZGVmaW5lCU1DMTM3ODNfUkVHX1ZWSUIJMTgKKyNkZWZpbmUJTUMxMzc4M19S
+RUdfVlJGMQkxOQorI2RlZmluZQlNQzEzNzgzX1JFR19WUkYyCTIwCisjZGVmaW5lCU1DMTM3ODNf
+UkVHX1ZNTUMxCTIxCisjZGVmaW5lCU1DMTM3ODNfUkVHX1ZNTUMyCTIyCisjZGVmaW5lCU1DMTM3
+ODNfUkVHX0dQTzEJMjMKKyNkZWZpbmUJTUMxMzc4M19SRUdfR1BPMgkyNAorI2RlZmluZQlNQzEz
+NzgzX1JFR19HUE8zCTI1CisjZGVmaW5lCU1DMTM3ODNfUkVHX0dQTzQJMjYKKyNkZWZpbmUJTUMx
+Mzc4M19SRUdfVjEJCTI3CisjZGVmaW5lCU1DMTM3ODNfUkVHX1YyCQkyOAorI2RlZmluZQlNQzEz
+NzgzX1JFR19WMwkJMjkKKyNkZWZpbmUJTUMxMzc4M19SRUdfVjQJCTMwCisjZGVmaW5lCU1DMTM3
+ODNfUkVHX1BXR1QxU1BJCTMxCisjZGVmaW5lCU1DMTM3ODNfUkVHX1BXR1QyU1BJCTMyCiAKICNk
+ZWZpbmUgTUMxMzc4M19JUlFfQURDRE9ORQlNQzEzWFhYX0lSUV9BRENET05FCiAjZGVmaW5lIE1D
+MTM3ODNfSVJRX0FEQ0JJU0RPTkUJTUMxM1hYWF9JUlFfQURDQklTRE9ORQotLSAKMS43LjAuNAoK
+--000e0cd4d8f43cc15b04966b96fe--
