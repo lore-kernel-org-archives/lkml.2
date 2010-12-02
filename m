@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab0LBS5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 13:57:46 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:17140 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757701Ab0LBS5p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 13:57:45 -0500
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAEN790yrRN+J/2dsb2JhbACjJHGneJsdhUcEhF6GCQ
-X-IronPort-AV: E=Sophos;i="4.59,289,1288569600"; 
-   d="scan'208";a="226684635"
-From: Roland Dreier <rdreier@cisco.com>
-To: torvalds@linux-foundation.org, akpm@linux-foundation.org
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 02 Dec 2010 10:57:40 -0800
-Message-ID: <aday688knob.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1758017Ab0LBTCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 14:02:44 -0500
+Received: from mail.atheros.com ([12.19.149.2]:32544 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757199Ab0LBTCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 14:02:43 -0500
+Date: Thu, 2 Dec 2010 11:02:39 -0800
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Joe Perches <joe@perches.com>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ath: Fix ath_dbg uses missing newlines and access
+ beyond array bound
+Message-ID: <20101202190239.GE7399@tux>
+References: <276469c602c402565b49f99521ea19757429e81e.1291266731.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <276469c602c402565b49f99521ea19757429e81e.1291266731.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+On Wed, Dec 01, 2010 at 09:13:32PM -0800, Joe Perches wrote:
+> Add missing newlines to ath_dbg uses
+> ar9300RateSize is not a power of 4, fix to print array line by line.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   29 ++---------------------
+>  drivers/net/wireless/ath/ath9k/calib.c         |    4 +-
+>  drivers/net/wireless/ath/ath9k/gpio.c          |    6 ++--
+>  drivers/net/wireless/ath/ath9k/htc_drv_gpio.c  |    7 ++---
+>  drivers/net/wireless/ath/ath9k/htc_drv_main.c  |    2 +-
+>  5 files changed, 12 insertions(+), 36 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+> index e6ae62b..beb3e87 100644
+> --- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+> +++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+> @@ -3342,7 +3342,7 @@ static int ar9300_eeprom_restore_internal(struct ath_hw *ah,
+>  	goto fail;
+>  
+>  found:
+> -	ath_dbg(common, ATH_DBG_EEPROM, "Found valid EEPROM data");
+> +	ath_dbg(common, ATH_DBG_EEPROM, "Found valid EEPROM data\n");
+>  
+>  	for (it = 0; it < MSTATE; it++) {
+>  		if (!read(ah, cptr, word, COMP_HDR_LEN))
+> @@ -4084,22 +4084,9 @@ static void ar9003_hw_set_target_power_eeprom(struct ath_hw *ah, u16 freq,
+>  	    ar9003_hw_eeprom_get_ht40_tgt_pwr(ah, HT_TARGET_RATE_23, freq,
+>  					      is2GHz) + ht40PowerIncForPdadc;
+>  
+> -	while (i < ar9300RateSize) {
+> -		ath_dbg(common, ATH_DBG_EEPROM,
+> -			"TPC[%02d] 0x%08x ", i, targetPowerValT2[i]);
+> -		i++;
+> -
+> -		ath_dbg(common, ATH_DBG_EEPROM,
+> -			"TPC[%02d] 0x%08x ", i, targetPowerValT2[i]);
+> -		i++;
+> -
+> -		ath_dbg(common, ATH_DBG_EEPROM,
+> -			"TPC[%02d] 0x%08x ", i, targetPowerValT2[i]);
+> -		i++;
+> -
+> +	for (i = 0; i < ar9300RateSize; i++) {
+>  		ath_dbg(common, ATH_DBG_EEPROM,
+>  			"TPC[%02d] 0x%08x\n", i, targetPowerValT2[i]);
+> -		i++;
+>  	}
+>  }
 
-    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+Please send this hunk on a separate patch.
 
-This tree is also available from kernel.org mirrors at:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
-
-Just a few small things here:
-
- - Fix a minor leak of a few bytes of kernel stack
- - MAINTAINERS update
- - Fix a few small issues introduced with the merge of IBoE support in 2.6.37-rc1
-
-Chien Tung (1):
-      MAINTAINERS: Update NetEffect entry
-
-Eli Cohen (4):
-      IB/mlx4: Fix memory ordering of VLAN insertion control bits
-      mlx4_core: Workaround firmware bug in query dev cap
-      IB/mlx4: Fix IBoE reported link rate
-      IB/mlx4: Fix IBoE link state
-
-Or Gerlitz (1):
-      IB/pack: Remove some unused code added by the IBoE patches
-
-Roland Dreier (1):
-      Merge branches 'misc', 'mlx4' and 'nes' into for-next
-
-Vasiliy Kulikov (1):
-      IB: Fix information leak in marshalling code
-
- MAINTAINERS                               |    3 +-
- drivers/infiniband/core/ud_header.c       |   30 -----------------------------
- drivers/infiniband/core/uverbs_marshall.c |    4 +++
- drivers/infiniband/hw/mlx4/main.c         |    4 +-
- drivers/infiniband/hw/mlx4/qp.c           |   10 ++++----
- drivers/net/mlx4/fw.c                     |    4 +++
- 6 files changed, 16 insertions(+), 39 deletions(-)
+  Luis
+ 
