@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab0LBWeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 17:34:22 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40595 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab0LBWeU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 17:34:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=KUmFFYorI2t4q43xkje6PARkhgew+iX7AFTNHzEFIgET0ny8f+w6pgpTgyDNhGUTph
-         W4nZOhmzrPHP8MilTENedm1D2yT8AasrGMl6mWwx6R7sB0iqeQ2w6B7V1W73Q3k5SuFA
-         nuK3+tbuSg849WPQjTkNtEy4EP6krHx2Aa8qc=
-Subject: Re: edac_core: crashes on shutdown
-From: Tobias Karnat <tobias.karnat@googlemail.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-In-Reply-To: <20101202183724.GH27263@aftab>
-References: <20101201123921.GA15530@a1.tnic>
-	 <1291209888.12511.11.camel@Tobias-Karnat> <20101201143329.GB18074@a1.tnic>
-	 <1291225614.8646.4.camel@Tobias-Karnat>
-	 <20101201193508.GA4916@liondog.tnic>
-	 <1291280613.10626.22.camel@Tobias-Karnat> <20101202152106.GA29301@a1.tnic>
-	 <1291306872.3898.7.camel@Tobias-Karnat> <20101202170610.GE27263@aftab>
-	 <1291313101.5563.13.camel@Tobias-Karnat>  <20101202183724.GH27263@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Dec 2010 23:34:14 +0100
-Message-ID: <1291329254.8869.66.camel@Tobias-Karnat>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
-Content-Transfer-Encoding: 7bit
+	id S1758166Ab0LBWiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 17:38:18 -0500
+Received: from rere.qmqm.pl ([89.167.52.164]:50417 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753566Ab0LBWiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 17:38:16 -0500
+Date: Thu, 2 Dec 2010 23:38:12 +0100
+From: Michal Miroslaw <mirq-linux@rere.qmqm.pl>
+To: Hein_Tibosch <hein_tibosch@yahoo.es>,
+        Sahitya Tummala <stummala@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pierre Ossman <pierre@ossman.eu>, Chris Ball <cjb@laptop.org>,
+        Ben Nizette <bn@niasdigital.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Adrian Hunter <adrian.hunter@nokia.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>
+Subject: Re: [PATCH v4] mmc: Make ID freq configurable
+Message-ID: <20101202223812.GA2685@rere.qmqm.pl>
+References: <4C80187D.9000304@yahoo.es> <1291288582.15187.91.camel@stummala-linux.in.qualcomm.com> <4CF80DC6.1020801@yahoo.es>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CF80DC6.1020801@yahoo.es>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 02.12.2010, 19:37 +0100 schrieb Borislav Petkov:
-> On Thu, Dec 02, 2010 at 01:05:01PM -0500, Tobias Karnat wrote:
-> > Btw, are there any information available regarding the NMI option?
-> > 
-> > parm:	edac_op_state:EDAC Error Reporting state: 0=Poll,1=NMI (int)
-> > 
-> > In edac.txt NMI is listed under FUTURE HARDWARE SCANNING.
+On Fri, Dec 03, 2010 at 05:21:10AM +0800, Hein_Tibosch wrote:
+> Hi Sahitya,
+> On 2-12-2010 19:16, Sahitya Tummala wrote:
+> > Hi Hein Tibosch,
+> >
+> > On Fri, 2010-09-03 at 05:34 +0800, Hein_Tibosch wrote:
+> >> In the latest releases of the mmc driver, the freq during initialization
+> >> is set to a fixed 400 Khz. This was reportedly too fast for several
+> >> users. As there doesn't seem to be an ideal frequency which-works-for-all,
+> >> Pierre suggested to let the driver try several frequencies.
+> >> <cut>
+> >> +		/*
+> >> +		 * First we search for SDIO...
+> >> +		 */
+> >> +		err = mmc_send_io_op_cond(host, 0, &ocr);
+> >> +		if (!err) {
+> >> +			if (mmc_attach_sdio(host, ocr)) {
+> >> +				mmc_claim_host(host);
+> >> +				/* try SDMEM (but not MMC) even if SDIO is broken */
+> >> +				if (mmc_send_app_op_cond(host, 0, &ocr))
+> > In case of SDIO error, mmc_power_off() is getting called as part of
+> > mmc_detach_bus().  Shouldn't we power up the host before checking for
+> > SDMEM? Any comments?
+> I think you should ask Michal Miroslaw, as he wrote the patch for the
+> SD-combo (IO + mem)*
 > 
-> Well, looking at <arch/x86/kernel/traps.c:mem_parity_error()> this
-> should already work. But it is kinda of a hack, if I'm reading Doug
-> correctly: http://lkml.org/lkml/2010/9/21/144
+> But yes, in case of a failure, mmc_attach_sdio() will call mmc_detach_bus()
+> which in turn will call mmc_power_off()
+> 
+> And so it should be mmc_power_up() again before trying to detect SD memory.
 
-This thread has many unknown abbreviations for me,
+Yes, you are right!  This explains some things...
 
-I thought as you wrote later, that this would be an option to use an
-interrupt instead of polling for edac in general.
+Please try attached patch. (Not tested, but obvious enough.)
 
-But as far as I understand this, it is used for PCI bus errors?
+Best Regards,
+Micha³ Miros³aw
 
-And should be replaced for detection of PCI SERR and/or PCIE AER,
-are these the same as PCI bus errors?
+---
 
-> And yes, using some kind of an interrupt is much better than polling but
-> I don't know whether there's a single interrupt source for the error
-> types all edac drivers can decode and report. In the amd64_edac case,
-> we're piggybacking on MCE, for example. This was actually the initial
-> reason for 00740c58541b6087d78418cebca1fcb86dc6077d and dropping polling
-> from that driver.
+mmc: fix detection of memory part of SD-combo card with broken SDIO
 
->From Intel Architectures Software Developer's Manual Part 3A:
+In case of failure, mmc_attach_sdio() will power off the SD bus.
+Power it up and reinitialize before trying SD memory detection.
 
-"Starting with 45nm Intel 64 processor with CPUID signature
-DisplayFamily_DisplayModel encoding of 06H_1AH (...), the processor can
-report information on corrected machine-check errors and deliver a
-programmable interrupt for software to respond to MC errors, referred to
-as corrected machine-check error interrupt (CMCI)."
+Reported-by: Sahitya Tummala <stummala@codeaurora.org>
+Signed-off-by: Micha³ Miros³aw <mirq-linux@rere.qmqm.pl>
+---
+ drivers/mmc/core/core.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Seems to be unlikely for me on an Intel 975X Mainboard.
-
--Tobias
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 6286898..32a4798 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1564,6 +1564,11 @@ void mmc_rescan(struct work_struct *work)
+ 				 * Try SDMEM (but not MMC) even if SDIO
+ 				 * is broken.
+ 				 */
++				mmc_power_up(host);
++				sdio_reset(host);
++				mmc_go_idle(host);
++				mmc_send_if_cond(host, host->ocr_avail);
++
+ 				if (mmc_send_app_op_cond(host, 0, &ocr))
+ 					goto out_fail;
+ 
+-- 
+1.7.2.3
 
