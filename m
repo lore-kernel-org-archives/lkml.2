@@ -1,96 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0LBJtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 04:49:12 -0500
-Received: from tomasu.net ([64.85.170.234]:42145 "EHLO mail.tomasu.net"
+	id S1757260Ab0LBJuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 04:50:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50827 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab0LBJtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 04:49:10 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Andre Tomt <andre@tomt.net>
-Subject: Re: mvsas errors in 2.6.36
-Date: Thu, 2 Dec 2010 02:48:59 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org
-References: <201010290650.32892.thomas@fjellstrom.ca> <4CE3912E.6060904@tomt.net> <201012012329.54944.thomas@fjellstrom.ca>
-In-Reply-To: <201012012329.54944.thomas@fjellstrom.ca>
+	id S1755850Ab0LBJuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 04:50:13 -0500
+Date: Thu, 2 Dec 2010 10:49:32 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
+        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
+        Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH 1/4] block: Measure flush round-trip times and report
+ average value
+In-Reply-To: <20101129220543.12401.69279.stgit@elm3b57.beaverton.ibm.com>
+Message-ID: <alpine.LFD.2.00.1012021045470.2874@dhcp-lab-213.englab.brq.redhat.com>
+References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com> <20101129220543.12401.69279.stgit@elm3b57.beaverton.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012020249.00367.thomas@fjellstrom.ca>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 1, 2010, Thomas Fjellstrom wrote:
-> On November 17, 2010, you wrote:
-> > On 11/17/2010 08:53 AM, Thomas Fjellstrom wrote:
-> > [snip]
-> > 
-> > > Still no fatal errors, but the problem is still happening regularly. It
-> > > causes a pause in disk io of a couple seconds at least. Really quite
-> > > annoying.
-> > > 
-> > > One thing thats got me wondering, is could this be a power issue?
-> > > It almost seems like (from the messages) that a single drive (any
-> > > drive) is freaking out, and returning an error that probably shouldn't
-> > > happen (no CHS 0?), which could mean the drive is underpowered and the
-> > > firmware is flipping out. I'm not entirely sure. The system has a 750w
-> > > decent quality Antec power supply. The total power use of the system
-> > > shouldn't come over half that (phenom II x4 810 cpu, gigabyte
-> > > ma790fxtud5p mb, low profile nvidia 9400GS gpu, 8 sata hdds, 3 fans,
-> > > etc). I'm mostly sure the 12v rails are spread out evenly, but I have
-> > > yet to make absolutely sure.
+On Mon, 29 Nov 2010, Darrick J. Wong wrote:
+
+> This patch adds to the block layer the ability to intercept flush requests for
+> the purpose of measuring the round-trip times of the write-cache flush command
+> on whatever hardware sits underneath the block layer.  The eventual intent of
+> this patch is for higher-level clients (filesystems) to be able to measure
+> flush times to tune their use of them.
 > 
-> Made absolute sure. I had been worrying that I was overloading one of the
-> rails on the PSU, but it turns out that it isn't a multi 12v rail PSU after
-> all. The box and advertising says it is, but the electronics inside all say
-> its a single 12v rail device.
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> ---
+>  block/blk-core.c          |   13 +++++++++++++
+>  block/genhd.c             |   39 +++++++++++++++++++++++++++++++++++++++
+>  fs/bio.c                  |   11 +++++++++++
+>  include/linux/blk_types.h |    2 ++
+>  include/linux/blkdev.h    |    2 ++
+>  include/linux/genhd.h     |   23 +++++++++++++++++++++++
+>  6 files changed, 90 insertions(+), 0 deletions(-)
 > 
-> > [snip]
-> > 
-> > After the mvsas update in 2.6.35 this started happening to me as well;
-> > at least its better than the previous state - not working.. ;-) However,
-> > after rolling a new 2.6.35 with the following fix that is queued up for
-> > the upcoming 2.6.35 and 2.6.36 stable releases, they seem to have
-> > dissapeared - 3 days and counting.
-> > 
-> > http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob_
-> > pl
-> > ain;f=queue-2.6.33/libsas-fix-ncq-mixing-with-non-ncq.patch;h=b6d7c92094
-> > d95 ad67a3b23c2e09c25d4fbd0f46b;hb=HEAD
-> > 
-> > The fix is queued up for the next 2.6.36 and 2.6.35 stable
-> > point-releases.
 > 
-> Ahah. I wonder how I missed that when I first read it. I'll have to give
-> the stable .36 kernel a try. Thanks!
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 4ce953f..233573a 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1540,6 +1540,9 @@ static inline void __generic_make_request(struct bio *bio)
+>  
+>  		trace_block_bio_queue(q, bio);
+>  
+> +		if (bio->bi_rw & REQ_FLUSH)
+> +			bio->flush_start_time_ns = ktime_to_ns(ktime_get());
+> +
+>  		ret = q->make_request_fn(q, bio);
+>  	} while (ret);
+>  
+> @@ -1954,6 +1957,9 @@ void blk_start_request(struct request *req)
+>  		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
+>  
+>  	blk_add_timer(req);
+> +
+> +	if (req->cmd_flags & REQ_FLUSH)
+> +		req->flush_start_time_ns = ktime_to_ns(ktime_get());
+>  }
+>  EXPORT_SYMBOL(blk_start_request);
+>  
+> @@ -2182,6 +2188,13 @@ EXPORT_SYMBOL_GPL(blk_unprep_request);
+>   */
+>  static void blk_finish_request(struct request *req, int error)
+>  {
+> +	if (!error && req->cmd_flags & REQ_FLUSH) {
+> +		u64 delta;
+> +
+> +		delta = ktime_to_ns(ktime_get()) - req->flush_start_time_ns;
+> +		update_flush_times(req->rq_disk, delta);
+> +	}
+> +
+>  	if (blk_rq_tagged(req))
+>  		blk_queue_end_tag(req->q, req);
+>  
+> diff --git a/block/genhd.c b/block/genhd.c
+> index 5fa2b44..465bd00 100644
+> --- a/block/genhd.c
+> +++ b/block/genhd.c
+> @@ -538,6 +538,9 @@ void add_disk(struct gendisk *disk)
+>  	 */
+>  	disk->major = MAJOR(devt);
+>  	disk->first_minor = MINOR(devt);
+> +	spin_lock_init(&disk->flush_time_lock);
+> +	disk->avg_flush_time_ns = 0;
+> +	disk->flush_samples = 0;
+>  
+>  	/* Register BDI before referencing it from bdev */ 
+>  	bdi = &disk->queue->backing_dev_info;
+> @@ -824,6 +827,37 @@ static ssize_t disk_range_show(struct device *dev,
+>  	return sprintf(buf, "%d\n", disk->minors);
+>  }
+>  
+> +static ssize_t disk_flush_samples_show(struct device *dev,
+> +				   struct device_attribute *attr, char *buf)
+> +{
+> +	struct gendisk *disk = dev_to_disk(dev);
+> +
+> +	return sprintf(buf, "%llu\n", disk->flush_samples);
+> +}
+> +
+> +static ssize_t disk_avg_flush_time_ns_show(struct device *dev,
+> +				   struct device_attribute *attr, char *buf)
+> +{
+> +	struct gendisk *disk = dev_to_disk(dev);
+> +
+> +	return sprintf(buf, "%llu\n", disk->avg_flush_time_ns);
+> +}
+> +
+> +static ssize_t disk_avg_flush_time_ns_store(struct device *dev,
+> +					    struct device_attribute *attr,
+> +					    const char *buf, size_t count)
 
-No fix so far:
+Hi,
 
-[ 2539.040104] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880222f00000 task=ffff88018b3e2980 slot=ffff880222f265d0 slot_idx=x2
-[ 2539.040118] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
-[ 2539.040154] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x89800.
-[ 2539.040163] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001001
-[ 2539.040176] drivers/scsi/mvsas/mv_sas.c 2111:phy7 Unplug Notice
-[ 2539.050220] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
-[ 2539.050229] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001081
-[ 2539.071157] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
-[ 2539.071165] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x10000
-[ 2539.071173] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[7]
-[ 2539.081142] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach dev info is 5000002
-[ 2539.081142] drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7
-[ 2539.081142] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
-[ 2541.270047] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[5]:rc= 0
-[ 2541.270066] ata14: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-[ 2541.270926] ata14: status=0x01 { Error }
-[ 2541.271747] ata14: error=0x04 { DriveStatusError }
+This is not exactly helpful name for the function since it does not
+store anything, but rather clear the counters. Would not be
+disk_avg_flush_time_ns_clear a better name ?
 
-That appeared after about 42 minutes of uptime.
+Thanks!
 
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+-Lukas
+
+> +{
+> +	struct gendisk *disk = dev_to_disk(dev);
+> +
+> +	spin_lock(&disk->flush_time_lock);
+> +	disk->avg_flush_time_ns = 0;
+> +	disk->flush_samples = 0;
+> +	spin_unlock(&disk->flush_time_lock);
+> +
+> +	return count;
+> +}
+> +
+> +
+>  static ssize_t disk_ext_range_show(struct device *dev,
+>  				   struct device_attribute *attr, char *buf)
+>  {
+> @@ -876,6 +910,9 @@ static ssize_t disk_discard_alignment_show(struct device *dev,
+>  }
+>  
+>  static DEVICE_ATTR(range, S_IRUGO, disk_range_show, NULL);
+> +static DEVICE_ATTR(avg_flush_time_ns, S_IRUGO | S_IWUSR,
+> +		   disk_avg_flush_time_ns_show, disk_avg_flush_time_ns_store);
+> +static DEVICE_ATTR(flush_samples, S_IRUGO, disk_flush_samples_show, NULL);
+>  static DEVICE_ATTR(ext_range, S_IRUGO, disk_ext_range_show, NULL);
+>  static DEVICE_ATTR(removable, S_IRUGO, disk_removable_show, NULL);
+>  static DEVICE_ATTR(ro, S_IRUGO, disk_ro_show, NULL);
+> @@ -898,6 +935,8 @@ static struct device_attribute dev_attr_fail_timeout =
+>  
+>  static struct attribute *disk_attrs[] = {
+>  	&dev_attr_range.attr,
+> +	&dev_attr_avg_flush_time_ns.attr,
+> +	&dev_attr_flush_samples.attr,
+>  	&dev_attr_ext_range.attr,
+>  	&dev_attr_removable.attr,
+>  	&dev_attr_ro.attr,
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 4bd454f..aab5f27 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -1442,11 +1442,22 @@ EXPORT_SYMBOL(bio_flush_dcache_pages);
+>   **/
+>  void bio_endio(struct bio *bio, int error)
+>  {
+> +	struct request_queue *q = NULL;
+> +
+>  	if (error)
+>  		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+>  	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+>  		error = -EIO;
+>  
+> +	if (bio->bi_bdev)
+> +		q = bdev_get_queue(bio->bi_bdev);
+> +	if (!(q && q->prep_rq_fn) && !error && bio->bi_rw & REQ_FLUSH) {
+> +		u64 delta;
+> +
+> +		delta = ktime_to_ns(ktime_get()) - bio->flush_start_time_ns;
+> +		update_flush_times(bio->bi_bdev->bd_disk, delta);
+> +	}
+> +
+>  	if (bio->bi_end_io)
+>  		bio->bi_end_io(bio, error);
+>  }
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 46ad519..e8c29b9 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -74,6 +74,8 @@ struct bio {
+>  
+>  	bio_destructor_t	*bi_destructor;	/* destructor */
+>  
+> +	u64			flush_start_time_ns;
+> +
+>  	/*
+>  	 * We can inline a number of vecs at the end of the bio, to avoid
+>  	 * double allocations for a small number of bio_vecs. This member
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index aae86fd..357d669 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -163,6 +163,8 @@ struct request {
+>  
+>  	/* for bidi */
+>  	struct request *next_rq;
+> +
+> +	u64 flush_start_time_ns;
+>  };
+>  
+>  static inline unsigned short req_get_ioprio(struct request *req)
+> diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+> index 7a7b9c1..7097396 100644
+> --- a/include/linux/genhd.h
+> +++ b/include/linux/genhd.h
+> @@ -178,8 +178,31 @@ struct gendisk {
+>  	struct blk_integrity *integrity;
+>  #endif
+>  	int node_id;
+> +
+> +	spinlock_t flush_time_lock;
+> +	u64 avg_flush_time_ns;
+> +	u64 flush_samples;
+>  };
+>  
+> +static inline void update_flush_times(struct gendisk *disk, u64 delta)
+> +{
+> +	u64 data;
+> +
+> +	spin_lock(&disk->flush_time_lock);
+> +	if (disk->flush_samples < 256)
+> +		disk->flush_samples++;
+> +	if (!disk->avg_flush_time_ns)
+> +		disk->avg_flush_time_ns = delta;
+> +	else {
+> +		data = disk->avg_flush_time_ns;
+> +		data *= 255;
+> +		data += delta;
+> +		data /= 256;
+> +		disk->avg_flush_time_ns = data;
+> +	}
+> +	spin_unlock(&disk->flush_time_lock);
+> +}
+> +
+>  static inline struct gendisk *part_to_disk(struct hd_struct *part)
+>  {
+>  	if (likely(part)) {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
