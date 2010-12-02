@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab0LBQMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 11:12:45 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:13923
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757243Ab0LBQMo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 11:12:44 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h691h637h668h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
-Message-ID: <4CF7C56F.7040001@freescale.com>
-Date: Thu, 2 Dec 2010 10:12:31 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
+	id S1757589Ab0LBQPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 11:15:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757073Ab0LBQPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 11:15:15 -0500
+Date: Thu, 2 Dec 2010 11:15:02 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+Subject: Re: perf hw  in kexeced kernel broken in tip
+Message-ID: <20101202161502.GL18100@redhat.com>
+References: <1291219906.32004.1671.camel@laptop>
+ <20101201162335.GB2511@redhat.com>
+ <1291232292.32004.1969.camel@laptop>
+ <20101201194644.GD2511@redhat.com>
+ <1291232989.32004.1987.camel@laptop>
+ <20101201195835.GE2511@redhat.com>
+ <1291234036.32004.2008.camel@laptop>
+ <m162vdp3l4.fsf@fess.ebiederm.org>
+ <20101202052321.GH18100@redhat.com>
+ <1291275270.4023.20.camel@twins>
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Greg KH <greg@kroah.com>, Michael Ellerman <michael@ellerman.id.au>,
-        Greg KH <gregkh@suse.de>, Wood Scott-B07421 <scottwood@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yoder Stuart-B08248 <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-References: <1290594227.4446.12.camel@concordia> <20101124120818.7951bcb4@udp111988uds.am.freescale.net> <20101124182353.GA10589@suse.de> <1290638647.14502.10.camel@concordia> <20101129214439.GA9830@kroah.com> <4CF42053.8060801@freescale.com> <20101129223030.GA14663@kroah.com> <4CF42B02.1030009@freescale.com> <20101130032915.GA13386@kroah.com> <4CF551A0.7030200@freescale.com> <20101201010011.GB31571@kroah.com> <AANLkTi=foTZsnNBgYYAZySPWuwueEraeXGTQz+1aefKm@mail.gmail.com>
-In-Reply-To: <AANLkTi=foTZsnNBgYYAZySPWuwueEraeXGTQz+1aefKm@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Dec 2010 16:13:54.0652 (UTC) FILETIME=[EA9489C0:01CB923B]
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291275270.4023.20.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kay Sievers wrote:
+On Thu, Dec 02, 2010 at 08:34:30AM +0100, Peter Zijlstra wrote:
+> On Thu, 2010-12-02 at 00:23 -0500, Don Zickus wrote:
+> > On Wed, Dec 01, 2010 at 01:48:07PM -0800, Eric W. Biederman wrote:
+> > > >
+> > > > Oh, but I'm not a device or sysdev thing, I'll never get something like
+> > > > that.
+> > > 
+> > > There is also the reboot notifier, if the NMI needs to be controlled
+> > > outside of device model.  Sigh. The NMI handling is such a special case.
+> > 
+> > I tried reboot notifiers with the nmi_watchdog and acheived some success
+> > (on a Westmere box, a P4 still failed).  Kdump is still screwed, but maybe
+> > we don't care for now.
+> > 
+> > Here is the quick and dirty patch I used.
 > 
-> It's racy at many levels, symlinks and other stuff are not replaced
-> atomically, you get a "move" uevent", but it's not easy to connect the
-> event to the old and new device. Device nodes are not renamed at all,
-> there isn't even support for that in the kernel now.
+> 
+> We'd really want a perf_event.c callback there to do as the hot-unplug
+> code does and detach all running counters from the cpu.
 
-Kay, thank you so much for this explanation.  I wish every function in the
-kernel were described so thoroughly!  My life would be so much easier.
+Ok, I moved the reboot notifier stuff from kernel/watchdog.c to
+kernel/perf_event.c.  Things still worked fine from a kexec perspective.
 
-I put your text into a patch and posted it for review.
+Vivek suggested to me this morning that I should just blantantly disable the
+perf counter during init when running my test.  Looking through the code I
+don't think I can do this using disable_all because some routines look for
+the active bit to be set and some arches have different disable registers
+than others.  Thoughts?
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+Cheers,
+Don
