@@ -1,2342 +1,730 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab0LBR6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:58:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57500 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757879Ab0LBR6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:58:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,289,1288594800"; 
-   d="log'?scan'208";a="579945202"
-Date: Thu, 2 Dec 2010 09:57:55 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "VanCutsem, Geoffroy" <geoffroy.vancutsem@intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: RE: Problem with USB on Lenovo W510
-Message-ID: <20101202175755.GA2119@xanatos>
+	id S1758049Ab0LBSC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 13:02:26 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34891 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab0LBSCZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 13:02:25 -0500
+Date: Thu, 2 Dec 2010 18:01:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, Jamie Iles <jamie.iles@picochip.com>,
+        Anton Vorontsov <avorontsov@mvista.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Colin Cross <ccross@android.com>,
+        linux-tegra@vger.kernel.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU
+	bootup
+Message-ID: <20101202180150.GF10461@n2100.arm.linux.org.uk>
+References: <20101130171626.GA6165@oksana.dev.rtsoft.ru> <20101130171658.GA24034@oksana.dev.rtsoft.ru> <20101130233204.GB14383@n2100.arm.linux.org.uk> <20101201002527.GC14383@n2100.arm.linux.org.uk> <AANLkTikpjq-8BVanF5W76j0ZdDBur8DyHWSH8GGgJBQs@mail.gmail.com> <20101202152428.GD10461@n2100.arm.linux.org.uk> <1291307320.11271.51.camel@e102109-lin.cambridge.arm.com> <20101202173824.GE10461@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="gatW/ieO32f1wygP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101202173824.GE10461@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---gatW/ieO32f1wygP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Geoffroy,
-
-None of the logs you forwarded seem to show a full kernel crash.  Is
-there anyway you can use netconsole to capture the dmesg during a crash?
-I have a tutorial here if you need guidance:
-
-http://sarah.thesharps.us/2010-03-26-09-41
-
-I'm especially interested in the case where you said you plugged in a
-bus-powered hub and the machine crashed.
-
-
-I do see a "hung process" message in one of the files.  I'm not a block
-layer expert, so I'm forwarding it onto lkml and linux-fsdevel.
-
-Background: Geoffroy is running 2.6.35.8 and trying to dd a file to a
-USB flash drive.  The drive occasionally disconnects, and sometimes that
-causes a "hung process" warning.  E.g.
-
-[ 3600.458402] INFO: task udisks-daemon:1854 blocked for more than 120 seconds.
-[ 3600.458409] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3600.458414] udisks-daemon D 000000010004ce77     0  1854   1845 0x00000000
-[ 3600.458423]  ffff88022dec7bb8 0000000000000086 ffff880200000000 00000000000158c0
-[ 3600.458432]  ffff88022dec7fd8 00000000000158c0 ffff88022dec7fd8 ffff88021d5f5b80
-[ 3600.458442]  00000000000158c0 00000000000158c0 ffff88022dec7fd8 00000000000158c0
-[ 3600.458449] Call Trace:
-[ 3600.458460]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3600.458470]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3600.458477]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3600.458484]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3600.458490]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3600.458495]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3600.458500]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3600.458505]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3600.458512]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3600.458519]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3600.458525]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3600.458531]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3600.458537]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3600.458545]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3600.458552]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3600.458557]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3600.458563]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3600.458571]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-
-Is this a known bug?
-
-Geoffroy, the other thing you can try is upgrading to 2.6.35.9 or
-2.6.36.1.  That probably won't cause the disconnects to go away, but it
-might cause the crashes to stop.  If you continue to see disconnects,
-it's probably something electrically wrong with your USB hosts.  You
-might want to talk with your hardware vendor and/or get the laptop
-replaced.
-
-Sarah Sharp
-
------ Forwarded message from "VanCutsem, Geoffroy" <geoffroy.vancutsem@intel.com> -----
-
-Date: Fri, 5 Nov 2010 04:38:09 -0700
-From: "VanCutsem, Geoffroy" <geoffroy.vancutsem@intel.com>
-To: "Sharp, Sarah A" <sarah.a.sharp@intel.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: Problem with USB on Lenovo W510
-
-Hi Sarah,
-
-I have ran more tests today (with debugging turned on) -- log files attached. The results are not always 100% consistent but at least I have seen the crash occuring on multiple occasions and with both the USB 2.0 and USB 3.0 ports. I am always testing with the exact same iso (to take that one variable out of the equation) but working with 2 different USB sticks. Here are the two models I am using (just in case it could be relevant):
-- Kingston DataTraveler 1GB (DTI/1GB) -- log files which pertain to this key have the '-wk' extension because it's a white key.
-- PQI Cool Drive U339 1GB -- log files which pertain to this key have the '-bk' extension because it's a blue key.
-
-The blue key (PQI) was the one that seemed to trigger the crashes most frequently.
-
-Just to clarify how I am running these tests:
-- Using a 2.6.35.8 kernel from kernel.org with the standard 2.5.35 Ubuntu config file + USB debugging turned on (as per your request)
-- I always reboot the machine before the next experiment if I see a crash.
-- I always unmount the USB stick before attempting 'dd' (using 'sudo umount /media/my_usb_stick_name')
-- I have not yet tried to physically unplug the drive in the middle of a 'dd' session but that's an easy experiment to do if it makes sense.
-
-I hope these logs will help you understand what is going on on my system.
-
-Thanks!
-Geoffroy
-
-> -----Original Message-----
-> From: Sharp, Sarah A
-> Sent: Thursday, November 04, 2010 7:40 PM
-> To: VanCutsem, Geoffroy
-> Cc: linux-usb@vger.kernel.org
-> Subject: Re: Problem with USB on Lenovo W510
+On Thu, Dec 02, 2010 at 05:38:24PM +0000, Russell King - ARM Linux wrote:
+> What if a platform, for what ever reason, wants to have 3 CPUs,
+> numbered 0, 2, 3 ?  That's the reason why the code which sets the
+> possible and present maps isn't in the ARM core code - Eg, we don't
+> know if a platform wants to keep CPU 1 in AMP mode to run some
+> special software on it.
 > 
-> On Thu, Nov 04, 2010 at 09:32:07AM -0700, VanCutsem, Geoffroy wrote:
-> > Hi Sarah,
-> >
-> > > -----Original Message-----
-> > > From: Sharp, Sarah A
-> > >
-> > > There may be both EHCI and xHCI host controllers in the same
-> system.
-> > > xHCI handles all speeds of USB devices plugged into it.  The odd
-> thing
-> > > is your dmesg on the bug report you linked to shows that the xHCI
-> > > driver
-> > > is handling your storage device, but your lspci output doesn't show
-> it!
-> >
-> > Wasn't it reflected by this entry:
-> > 0f:00.0 USB Controller: NEC Corporation Device 0194 (rev 03) (prog-if
-> 30)
-> 
-> Oh, sorry, I guess I missed that.
-> 
-> > I have done this today and the interesting thing is that with this
-> vanilla 2.6.35.8 kernel (from kernel.org) and debugging turned on, the
-> problem seems to have gone away. I have been able to 'dd' the exact
-> same image onto a USB stick (tried twice, once from a USB3 port and
-> once from the 'normal' port)... so perhaps this is a bug in
-> Ubuntu/Canonical variant of 2.6.35?? I have attahched the relevant
-> dmesg / lspci output to this email.
-> 
-> Well, I'm not so sure you actually triggered the bug.  The previous log
-> showed the crash after the USB device disconnected in the middle of the
-> dd transfer.  This log doesn't show a disconnect during a transfer
-> under
-> the USB 3.0 port; it only shows a disconnect when you switched the
-> device over to the USB 2.0 port.
-> 
-> You can probably trigger the bug if you physically pull out the device
-> while you're in the middle of the dd.  Can you try that with the
-> 2.6.35.8 kernel?
-> 
-> Another possibility is the USB core and xHCI debugging is causing a
-> delay that's hiding the bug.  You can also try turning off debugging on
-> the 2.6.35.8 kernel and dding a iso over, if yanking out the device
-> doesn't cause the bug.
-> 
-> Sarah Sharp
+> I don't think it's worth it because I think trying to considate this
+> is going to cripple the code structure in the future.
 
+I don't think this is particularly worth it either:
 
+8e511800fe64114d00b6a22c6e37a510b208785e
+ arch/arm/include/asm/smp.h       |   14 ++++++-
+ arch/arm/kernel/smp.c            |   71 ++++++++++++++++++++++++++++++++------
+ arch/arm/kernel/smp_scu.c        |    2 +-
+ arch/arm/mach-omap2/omap-smp.c   |   67 +++---------------------------------
+ arch/arm/mach-realview/platsmp.c |   71 ++++---------------------------------
+ arch/arm/mach-s5pv310/platsmp.c  |   63 ++++-----------------------------
+ arch/arm/mach-tegra/platsmp.c    |   39 ++-------------------
+ arch/arm/mach-ux500/platsmp.c    |   55 +++--------------------------
+ arch/arm/mach-vexpress/platsmp.c |   69 +++++-------------------------------
+ 9 files changed, 113 insertions(+), 338 deletions(-)
 
+diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+index f93d0a6..99dd48b 100644
+--- a/arch/arm/include/asm/smp.h
++++ b/arch/arm/include/asm/smp.h
+@@ -46,9 +46,14 @@ asmlinkage void do_IPI(int ipinr, struct pt_regs *regs);
+ extern void smp_init_cpus(void);
+ 
+ /*
+- * Move global data into per-processor storage.
++ * Initialize cpu_possible map for 0 .. CPUs.
+  */
+-extern void smp_store_cpu_info(unsigned int cpuid);
++void smp_init_cpu_possible(unsigned int);
++
++/*
++ * Initialize cpu_present map for 0 .. CPUs.
++ */
++void smp_init_cpu_present(unsigned int);
+ 
+ /*
+  * Raise an IPI cross call on CPUs in callmap.
+@@ -73,6 +78,11 @@ asmlinkage void secondary_start_kernel(void);
+ extern void platform_secondary_init(unsigned int cpu);
+ 
+ /*
++ * Initialize cpu_possible map, and enable coherency
++ */
++extern void platform_smp_prepare_cpus(unsigned int);
++
++/*
+  * Initial data for bringing up a secondary CPU.
+  */
+ struct secondary_data {
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 4c3ed4f..46af08f 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -296,6 +296,17 @@ void __ref cpu_die(void)
+ #endif /* CONFIG_HOTPLUG_CPU */
+ 
+ /*
++ * Called by both boot and secondaries to move global data into
++ * per-processor storage.
++ */
++static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
++{
++	struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
++
++	cpu_info->loops_per_jiffy = loops_per_jiffy;
++}
++
++/*
+  * This is the secondary CPU boot entry.  We're using this CPUs
+  * idle thread stack, but a set of temporary page tables.
+  */
+@@ -353,17 +364,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
+ 	cpu_idle();
+ }
+ 
+-/*
+- * Called by both boot and secondaries to move global data into
+- * per-processor storage.
+- */
+-void __cpuinit smp_store_cpu_info(unsigned int cpuid)
+-{
+-	struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
+-
+-	cpu_info->loops_per_jiffy = loops_per_jiffy;
+-}
+-
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+ 	int cpu;
+@@ -386,6 +386,55 @@ void __init smp_prepare_boot_cpu(void)
+ 	per_cpu(cpu_data, cpu).idle = current;
+ }
+ 
++void __init smp_init_cpu_possible(unsigned int ncores)
++{
++	unsigned int i;
++
++	if (ncores > NR_CPUS) {
++		pr_warning("SMP: no. of cores (%u) greater than configured maximum of %u - clipping\n",
++		       ncores, NR_CPUS);
++		ncores = NR_CPUS;
++	}
++
++	for (i = 0; i < ncores; i++)
++		set_cpu_possible(i, true);
++}
++
++void __init smp_init_cpu_present(unsigned int ncores)
++{
++	unsigned int i;
++
++	for (i = 0; i < ncores; i++)
++		set_cpu_present(i, true);
++}
++
++void __init smp_prepare_cpus(unsigned int max_cpus)
++{
++	unsigned int ncores = num_possible_cpus();
++
++	smp_store_cpu_info(smp_processor_id());
++
++	/*
++	 * are we trying to boot more cores than exist?
++	 */
++	if (max_cpus > ncores)
++		max_cpus = ncores;
++
++	if (max_cpus > 1) {
++		/*
++		 * Enable the local timer or broadcast device for the
++		 * boot CPU, but only if we have more than one CPU.
++		 */
++		percpu_timer_setup();
++
++		/*
++		 * Initialise the SCU if there are more than one CPU
++		 * and let them know where to start.
++		 */
++		platform_smp_prepare_cpus(max_cpus);
++	}
++}
++
+ static void send_ipi_message(const struct cpumask *mask, enum ipi_msg_type msg)
+ {
+ 	unsigned long flags;
+diff --git a/arch/arm/kernel/smp_scu.c b/arch/arm/kernel/smp_scu.c
+index 9ab4149..904b77b 100644
+--- a/arch/arm/kernel/smp_scu.c
++++ b/arch/arm/kernel/smp_scu.c
+@@ -11,8 +11,8 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ 
+-#include <asm/smp_scu.h>
+ #include <asm/cacheflush.h>
++#include <asm/smp_scu.h>
+ 
+ #define SCU_CTRL		0x00
+ #define SCU_CONFIG		0x04
+diff --git a/arch/arm/mach-omap2/omap-smp.c b/arch/arm/mach-omap2/omap-smp.c
+index 56a8bce..a123edf 100644
+--- a/arch/arm/mach-omap2/omap-smp.c
++++ b/arch/arm/mach-omap2/omap-smp.c
+@@ -21,7 +21,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
+-#include <asm/localtimer.h>
+ #include <asm/smp_scu.h>
+ #include <mach/hardware.h>
+ #include <mach/omap4-common.h>
+@@ -29,16 +28,6 @@
+ /* SCU base address */
+ static void __iomem *scu_base;
+ 
+-/*
+- * Use SCU config register to count number of cores
+- */
+-static inline unsigned int get_core_count(void)
+-{
+-	if (scu_base)
+-		return scu_get_core_count(scu_base);
+-	return 1;
+-}
+-
+ static DEFINE_SPINLOCK(boot_lock);
+ 
+ void __cpuinit platform_secondary_init(unsigned int cpu)
+@@ -112,65 +101,19 @@ static void __init wakeup_secondary(void)
+  */
+ void __init smp_init_cpus(void)
+ {
+-	unsigned int i, ncores;
+-
+ 	/* Never released */
+ 	scu_base = ioremap(OMAP44XX_SCU_BASE, SZ_256);
+ 	BUG_ON(!scu_base);
+ 
+-	ncores = get_core_count();
+-
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
++	smp_init_cpu_possible(scu_get_core_count(scu_base));
+ }
+ 
+-void __init smp_prepare_cpus(unsigned int max_cpus)
++void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = get_core_count();
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	/* sanity check */
+-	if (ncores == 0) {
+-		printk(KERN_ERR
+-		       "OMAP4: strange core count of 0? Default to 1\n");
+-		ncores = 1;
+-	}
+-
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "OMAP4: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
+-	}
+-	smp_store_cpu_info(cpu);
+-
+-	/*
+-	 * are we trying to boot more cores than exist?
+-	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
++	smp_init_cpu_present(max_cpus);
+ 
+ 	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
++	 * Wake up the secondary core using wakeup_secondary().
+ 	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	if (max_cpus > 1) {
+-		/*
+-		 * Enable the local timer or broadcast device for the
+-		 * boot CPU, but only if we have more than one CPU.
+-		 */
+-		percpu_timer_setup();
+-
+-		/*
+-		 * Initialise the SCU and wake up the secondary core using
+-		 * wakeup_secondary().
+-		 */
+-		scu_enable(scu_base);
+-		wakeup_secondary();
+-	}
++	wakeup_secondary();
+ }
+diff --git a/arch/arm/mach-realview/platsmp.c b/arch/arm/mach-realview/platsmp.c
+index af3d909..b9908e4 100644
+--- a/arch/arm/mach-realview/platsmp.c
++++ b/arch/arm/mach-realview/platsmp.c
+@@ -19,7 +19,6 @@
+ #include <asm/cacheflush.h>
+ #include <mach/hardware.h>
+ #include <asm/mach-types.h>
+-#include <asm/localtimer.h>
+ #include <asm/unified.h>
+ 
+ #include <mach/board-eb.h>
+@@ -50,14 +49,6 @@ static void __iomem *scu_base_addr(void)
+ 		return (void __iomem *)0;
+ }
+ 
+-static inline unsigned int get_core_count(void)
+-{
+-	void __iomem *scu_base = scu_base_addr();
+-	if (scu_base)
+-		return scu_get_core_count(scu_base);
+-	return 1;
+-}
+-
+ static DEFINE_SPINLOCK(boot_lock);
+ 
+ void __cpuinit platform_secondary_init(unsigned int cpu)
+@@ -158,64 +149,18 @@ static void __init poke_milo(void)
+  */
+ void __init smp_init_cpus(void)
+ {
+-	unsigned int i, ncores = get_core_count();
++	void __iomem *scu_base = scu_base_addr();
++	unsigned int ncores;
++
++	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+ 
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
++	smp_init_cpu_possible(ncores);
+ }
+ 
+-void __init smp_prepare_cpus(unsigned int max_cpus)
++void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = get_core_count();
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	/* sanity check */
+-	if (ncores == 0) {
+-		printk(KERN_ERR
+-		       "Realview: strange CM count of 0? Default to 1\n");
+-
+-		ncores = 1;
+-	}
+-
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "Realview: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
+-	}
++	smp_init_cpu_present(max_cpus);
+ 
+-	smp_store_cpu_info(cpu);
+-
+-	/*
+-	 * are we trying to boot more cores than exist?
+-	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	/*
+-	 * Initialise the SCU if there are more than one CPU and let
+-	 * them know where to start. Note that, on modern versions of
+-	 * MILO, the "poke" doesn't actually do anything until each
+-	 * individual core is sent a soft interrupt to get it out of
+-	 * WFI
+-	 */
+-	if (max_cpus > 1) {
+-		/*
+-		 * Enable the local timer or broadcast device for the
+-		 * boot CPU, but only if we have more than one CPU.
+-		 */
+-		percpu_timer_setup();
+-
+-		scu_enable(scu_base_addr());
++	if (num_present_cpus() > 1)
+ 		poke_milo();
+-	}
+ }
+diff --git a/arch/arm/mach-s5pv310/platsmp.c b/arch/arm/mach-s5pv310/platsmp.c
+index d474426..407c825 100644
+--- a/arch/arm/mach-s5pv310/platsmp.c
++++ b/arch/arm/mach-s5pv310/platsmp.c
+@@ -22,7 +22,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
+-#include <asm/localtimer.h>
+ #include <asm/smp_scu.h>
+ #include <asm/unified.h>
+ 
+@@ -125,68 +124,22 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+ void __init smp_init_cpus(void)
+ {
+ 	void __iomem *scu_base = scu_base_addr();
+-	unsigned int i, ncores;
++	unsigned int ncores;
+ 
+ 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+ 
+-	/* sanity check */
+-	if (ncores == 0) {
+-		printk(KERN_ERR
+-		       "S5PV310: strange CM count of 0? Default to 1\n");
+-
+-		ncores = 1;
+-	}
+-
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "S5PV310: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
+-	}
+-
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
++	smp_init_cpu_possible(ncores);
+ }
+ 
+-void __init smp_prepare_cpus(unsigned int max_cpus)
++void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = num_possible_cpus();
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	smp_store_cpu_info(cpu);
+-
+-	/* are we trying to boot more cores than exist? */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
++	smp_init_cpu_present(max_cpus);
+ 
+ 	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
++	 * Write the address of secondary startup into the
++	 * system-wide flags register. The boot monitor waits
++	 * until it receives a soft interrupt, and then the
++	 * secondary CPU branches to this address.
+ 	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	/*
+-	 * Initialise the SCU if there are more than one CPU and let
+-	 * them know where to start.
+-	 */
+-	if (max_cpus > 1) {
+-		/*
+-		 * Enable the local timer or broadcast device for the
+-		 * boot CPU, but only if we have more than one CPU.
+-		 */
+-		percpu_timer_setup();
+-
+-		scu_enable(scu_base_addr());
+-
+-		/*
+-		 * Write the address of secondary startup into the
+-		 * system-wide flags register. The boot monitor waits
+-		 * until it receives a soft interrupt, and then the
+-		 * secondary CPU branches to this address.
+-		 */
+ 	__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)), S5P_VA_SYSRAM);
+-	}
+ }
+diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+index 1c0fd92..abbb97b 100644
+--- a/arch/arm/mach-tegra/platsmp.c
++++ b/arch/arm/mach-tegra/platsmp.c
+@@ -22,7 +22,6 @@
+ #include <asm/cacheflush.h>
+ #include <mach/hardware.h>
+ #include <asm/mach-types.h>
+-#include <asm/localtimer.h>
+ #include <asm/smp_scu.h>
+ 
+ #include <mach/iomap.h>
+@@ -115,42 +114,10 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+  */
+ void __init smp_init_cpus(void)
+ {
+-	unsigned int i, ncores = scu_get_core_count(scu_base);
+-
+-	for (i = 0; i < ncores; i++)
+-		cpu_set(i, cpu_possible_map);
++	smp_init_cpu_possible(scu_get_core_count(scu_base));
+ }
+ 
+-void __init smp_prepare_cpus(unsigned int max_cpus)
++void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = scu_get_core_count(scu_base);
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	smp_store_cpu_info(cpu);
+-
+-	/*
+-	 * are we trying to boot more cores than exist?
+-	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	/*
+-	 * Initialise the SCU if there are more than one CPU and let
+-	 * them know where to start. Note that, on modern versions of
+-	 * MILO, the "poke" doesn't actually do anything until each
+-	 * individual core is sent a soft interrupt to get it out of
+-	 * WFI
+-	 */
+-	if (max_cpus > 1) {
+-		percpu_timer_setup();
+-		scu_enable(scu_base);
+-	}
++	smp_init_cpu_present(max_cpus);
+ }
+diff --git a/arch/arm/mach-ux500/platsmp.c b/arch/arm/mach-ux500/platsmp.c
+index b8987bd..e03a5d0 100644
+--- a/arch/arm/mach-ux500/platsmp.c
++++ b/arch/arm/mach-ux500/platsmp.c
+@@ -18,7 +18,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
+-#include <asm/localtimer.h>
+ #include <asm/smp_scu.h>
+ #include <mach/hardware.h>
+ 
+@@ -28,11 +27,6 @@
+  */
+ volatile int __cpuinitdata pen_release = -1;
+ 
+-static unsigned int __init get_core_count(void)
+-{
+-	return scu_get_core_count(__io_address(UX500_SCU_BASE));
+-}
+-
+ static DEFINE_SPINLOCK(boot_lock);
+ 
+ void __cpuinit platform_secondary_init(unsigned int cpu)
+@@ -126,55 +120,18 @@ static void __init wakeup_secondary(void)
+  */
+ void __init smp_init_cpus(void)
+ {
+-	unsigned int i, ncores = get_core_count();
++	unsigned int ncores = scu_get_core_count(__io_address(UX500_SCU_BASE));
+ 
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
++	smp_init_cpu_possible(ncores);
+ }
+ 
+ void __init smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = get_core_count();
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	/* sanity check */
+-	if (ncores == 0) {
+-		printk(KERN_ERR
+-		       "U8500: strange CM count of 0? Default to 1\n");
+-		ncores = 1;
+-	}
+-
+-	if (ncores > num_possible_cpus())	{
+-		printk(KERN_WARNING
+-		       "U8500: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, num_possible_cpus());
+-		ncores = num_possible_cpus();
+-	}
+-
+-	smp_store_cpu_info(cpu);
++	smp_init_cpu_present(max_cpus);
+ 
+ 	/*
+-	 * are we trying to boot more cores than exist?
++	 * Enable the local timer or broadcast device for the
++	 * boot CPU, but only if we have more than one CPU.
+ 	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	if (max_cpus > 1) {
+-		/*
+-		 * Enable the local timer or broadcast device for the
+-		 * boot CPU, but only if we have more than one CPU.
+-		 */
+-		percpu_timer_setup();
+-		scu_enable(__io_address(UX500_SCU_BASE));
+-		wakeup_secondary();
+-	}
++	wakeup_secondary();
+ }
+diff --git a/arch/arm/mach-vexpress/platsmp.c b/arch/arm/mach-vexpress/platsmp.c
+index 276f916..92ef7cb 100644
+--- a/arch/arm/mach-vexpress/platsmp.c
++++ b/arch/arm/mach-vexpress/platsmp.c
+@@ -17,7 +17,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
+-#include <asm/localtimer.h>
+ #include <asm/smp_scu.h>
+ #include <asm/unified.h>
+ 
+@@ -119,72 +118,24 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+ void __init smp_init_cpus(void)
+ {
+ 	void __iomem *scu_base = scu_base_addr();
+-	unsigned int i, ncores;
++	unsigned int ncores;
+ 
+ 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+ 
+-	/* sanity check */
+-	if (ncores == 0) {
+-		printk(KERN_ERR
+-		       "vexpress: strange CM count of 0? Default to 1\n");
+-
+-		ncores = 1;
+-	}
+-
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "vexpress: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
+-	}
+-
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
++	smp_init_cpu_possible(ncores);
+ }
+ 
+ void __init smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	unsigned int ncores = num_possible_cpus();
+-	unsigned int cpu = smp_processor_id();
+-	int i;
+-
+-	smp_store_cpu_info(cpu);
++	smp_init_cpu_present(max_cpus);
+ 
+ 	/*
+-	 * are we trying to boot more cores than exist?
++	 * Write the address of secondary startup into the
++	 * system-wide flags register. The boot monitor waits
++	 * until it receives a soft interrupt, and then the
++	 * secondary CPU branches to this address.
+ 	 */
+-	if (max_cpus > ncores)
+-		max_cpus = ncores;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+-	/*
+-	 * Initialise the SCU if there are more than one CPU and let
+-	 * them know where to start.
+-	 */
+-	if (max_cpus > 1) {
+-		/*
+-		 * Enable the local timer or broadcast device for the
+-		 * boot CPU, but only if we have more than one CPU.
+-		 */
+-		percpu_timer_setup();
+-
+-		scu_enable(scu_base_addr());
+-
+-		/*
+-		 * Write the address of secondary startup into the
+-		 * system-wide flags register. The boot monitor waits
+-		 * until it receives a soft interrupt, and then the
+-		 * secondary CPU branches to this address.
+-		 */
+-		writel(~0, MMIO_P2V(V2M_SYS_FLAGSCLR));
+-		writel(BSYM(virt_to_phys(vexpress_secondary_startup)),
+-			MMIO_P2V(V2M_SYS_FLAGSSET));
+-	}
++	writel(~0, MMIO_P2V(V2M_SYS_FLAGSCLR));
++	writel(BSYM(virt_to_phys(vexpress_secondary_startup)),
++		MMIO_P2V(V2M_SYS_FLAGSSET));
+ }
 
-
------ End forwarded message -----
-
---gatW/ieO32f1wygP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="dmesg.USB2.log"
-
-[ 3422.384289] hub 1-1:1.0: state 7 ports 6 chg 0000 evt 0004
-[ 3422.384513] hub 1-1:1.0: port 2, status 0100, change 0001, 12 Mb/s
-[ 3422.384688] usb 1-1.2: USB disconnect, address 8
-[ 3422.384694] usb 1-1.2: unregistering device
-[ 3422.384698] usb 1-1.2: usb_disable_device nuking all URBs
-[ 3422.384708] usb 1-1.2: unregistering interface 1-1.2:1.0
-[ 3422.577593] hub 1-1:1.0: debounce: port 2: total 100ms stable 100ms status 0x100
-[ 3424.686126] hub 1-1:1.0: state 7 ports 6 chg 0000 evt 0004
-[ 3424.686388] hub 1-1:1.0: port 2, status 0101, change 0001, 12 Mb/s
-[ 3424.845346] hub 1-1:1.0: debounce: port 2: total 100ms stable 100ms status 0x101
-[ 3424.925506] usb 1-1.2: new high speed USB device using ehci_hcd and address 9
-[ 3425.036479] usb 1-1.2: default language 0x0409
-[ 3425.038530] usb 1-1.2: udev 9, busnum 1, minor = 8
-[ 3425.038536] usb 1-1.2: New USB device found, idVendor=3538, idProduct=0054
-[ 3425.038541] usb 1-1.2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[ 3425.038547] usb 1-1.2: Product: USB Flash Drive
-[ 3425.038550] usb 1-1.2: Manufacturer: PQI
-[ 3425.038554] usb 1-1.2: SerialNumber: 00000000000009
-[ 3425.038699] usb 1-1.2: usb_probe_device
-[ 3425.038706] usb 1-1.2: configuration #1 chosen from 1 choice
-[ 3425.038878] usb 1-1.2: adding 1-1.2:1.0 (config #1, interface 0)
-[ 3425.038969] usbserial_generic 1-1.2:1.0: usb_probe_interface
-[ 3425.038977] usbserial_generic 1-1.2:1.0: usb_probe_interface - got id
-[ 3425.039012] usb-storage 1-1.2:1.0: usb_probe_interface
-[ 3425.039030] usb-storage 1-1.2:1.0: usb_probe_interface - got id
-[ 3425.039466] scsi10 : usb-storage 1-1.2:1.0
-[ 3425.039698] hub 1-1:1.0: state 7 ports 6 chg 0000 evt 0004
-[ 3426.037078] scsi 10:0:0:0: Direct-Access     Generic  USB Flash Disk   0.00 PQ: 0 ANSI: 2
-[ 3426.039079] sd 10:0:0:0: Attached scsi generic sg2 type 0
-[ 3426.040295] sd 10:0:0:0: [sdb] 1974271 512-byte logical blocks: (1.01 GB/963 MiB)
-[ 3426.041196] sd 10:0:0:0: [sdb] Write Protect is off
-[ 3426.041205] sd 10:0:0:0: [sdb] Mode Sense: 00 00 00 00
-[ 3426.041212] sd 10:0:0:0: [sdb] Assuming drive cache: write through
-[ 3426.045175] sd 10:0:0:0: [sdb] Assuming drive cache: write through
-[ 3426.045184]  sdb: sdb1
-[ 3426.153104] sd 10:0:0:0: [sdb] Assuming drive cache: write through
-[ 3426.153112] sd 10:0:0:0: [sdb] Attached SCSI removable disk
-[ 3426.588961] ISO 9660 Extensions: Microsoft Joliet Level 3
-[ 3432.338203] xhci_hcd 0000:0f:00.0: Poll event ring: 4295280832
-[ 3432.338215] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3432.338223] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3432.338227] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3432.338231] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3432.338234] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3432.338240] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3432.338246] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3432.338251] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3432.338256] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3432.338262] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3432.338267] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3432.338272] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3432.338278] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3432.338283] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3432.338288] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3432.338294] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3432.338299] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3432.338304] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3432.338310] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3432.338315] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3432.338320] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3432.338326] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3432.338331] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3432.338336] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3432.338342] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3432.338347] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3432.338352] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3432.338358] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3432.338363] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3432.338368] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3432.338374] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3432.338379] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3432.338384] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3432.338390] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3432.338395] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3432.338400] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3432.338406] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3432.338411] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3432.338416] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3432.338422] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3432.338427] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3432.338432] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3432.338438] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3432.338443] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3432.338448] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3432.338454] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3432.338459] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3432.338464] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3432.338470] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3432.338475] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3432.338480] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3432.338486] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3432.338491] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3432.338496] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3432.338502] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3432.338507] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3432.338512] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3432.338518] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3432.338523] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3432.338528] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3432.338534] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3432.338539] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3432.338544] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3432.338549] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3432.338555] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3432.338560] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3432.338565] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3432.338571] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3432.338576] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3432.338582] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3432.338588] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3432.338592] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3432.338597] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3432.338610] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3432.338613] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3432.338618] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3432.338623] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3432.338629] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3432.338634] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3432.338639] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3432.338645] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3432.338650] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3432.338655] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3432.338660] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3432.338665] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3432.338670] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3432.338675] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3432.338681] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3432.338686] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3432.338691] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3432.338696] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3432.338701] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3432.338706] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3432.338711] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3432.338717] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3432.338722] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3432.338727] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3432.338732] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3432.338737] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3432.338742] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3432.338748] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3432.338753] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3432.338758] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3432.338763] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3432.338768] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3432.338773] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3432.338778] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3432.338784] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3432.338789] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3432.338794] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3432.338799] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3432.338804] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3432.338809] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3432.338814] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3432.338820] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3432.338825] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3432.338830] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3432.338835] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3432.338840] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3432.338845] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3432.338851] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3432.338856] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3432.338861] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3432.338866] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3432.338871] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3432.338876] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3432.338881] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3432.338887] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3432.338892] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3432.338897] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3432.338902] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3432.338907] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3432.338912] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3432.338917] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3432.338923] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3432.338928] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3432.338933] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3432.338938] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3432.338943] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3432.338948] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3432.338953] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3432.338957] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3432.338962] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3432.338975] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3432.338979] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3492.441068] xhci_hcd 0000:0f:00.0: Poll event ring: 4295286848
-[ 3492.441080] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3492.441088] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3492.441092] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3492.441096] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3492.441100] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3492.441105] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3492.441111] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3492.441117] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3492.441122] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3492.441127] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3492.441133] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3492.441138] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3492.441143] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3492.441149] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3492.441154] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3492.441159] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3492.441165] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3492.441170] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3492.441175] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3492.441181] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3492.441186] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3492.441191] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3492.441196] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3492.441202] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3492.441207] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3492.441212] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3492.441218] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3492.441223] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3492.441228] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3492.441234] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3492.441239] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3492.441244] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3492.441250] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3492.441255] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3492.441260] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3492.441266] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3492.441271] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3492.441276] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3492.441282] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3492.441287] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3492.441292] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3492.441298] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3492.441303] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3492.441308] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3492.441314] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3492.441319] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3492.441324] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3492.441330] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3492.441335] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3492.441340] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3492.441346] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3492.441351] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3492.441356] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3492.441362] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3492.441367] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3492.441372] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3492.441378] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3492.441383] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3492.441388] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3492.441394] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3492.441399] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3492.441404] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3492.441410] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3492.441415] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3492.441420] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3492.441426] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3492.441431] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3492.441436] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3492.441441] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3492.441448] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3492.441453] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3492.441458] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3492.441462] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3492.441475] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3492.441479] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3492.441484] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3492.441489] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3492.441494] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3492.441499] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3492.441505] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3492.441510] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3492.441515] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3492.441520] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3492.441525] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3492.441531] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3492.441536] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3492.441541] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3492.441546] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3492.441551] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3492.441556] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3492.441562] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3492.441567] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3492.441572] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3492.441577] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3492.441582] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3492.441587] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3492.441592] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3492.441598] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3492.441603] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3492.441608] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3492.441613] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3492.441618] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3492.441623] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3492.441628] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3492.441634] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3492.441639] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3492.441644] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3492.441649] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3492.441654] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3492.441659] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3492.441665] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3492.441670] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3492.441675] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3492.441680] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3492.441685] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3492.441690] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3492.441695] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3492.441701] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3492.441706] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3492.441711] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3492.441716] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3492.441721] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3492.441726] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3492.441731] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3492.441737] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3492.441742] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3492.441747] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3492.441752] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3492.441757] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3492.441762] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3492.441768] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3492.441773] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3492.441778] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3492.441783] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3492.441788] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3492.441793] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3492.441798] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3492.441804] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3492.441809] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3492.441814] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3492.441819] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3492.441823] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3492.441828] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3492.441840] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3492.441845] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3552.543992] xhci_hcd 0000:0f:00.0: Poll event ring: 4295292864
-[ 3552.544004] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3552.544011] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3552.544015] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3552.544018] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3552.544021] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3552.544030] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3552.544036] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3552.544041] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3552.544047] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3552.544052] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3552.544058] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3552.544063] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3552.544068] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3552.544074] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3552.544079] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3552.544084] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3552.544090] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3552.544095] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3552.544100] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3552.544106] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3552.544111] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3552.544116] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3552.544122] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3552.544127] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3552.544132] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3552.544138] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3552.544143] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3552.544148] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3552.544154] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3552.544159] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3552.544164] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3552.544170] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3552.544175] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3552.544180] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3552.544186] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3552.544191] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3552.544196] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3552.544202] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3552.544207] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3552.544212] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3552.544218] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3552.544223] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3552.544228] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3552.544234] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3552.544239] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3552.544244] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3552.544250] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3552.544255] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3552.544260] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3552.544266] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3552.544271] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3552.544276] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3552.544282] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3552.544287] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3552.544292] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3552.544298] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3552.544303] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3552.544308] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3552.544314] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3552.544319] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3552.544324] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3552.544329] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3552.544335] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3552.544340] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3552.544345] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3552.544351] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3552.544356] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3552.544361] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3552.544367] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3552.544373] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3552.544378] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3552.544383] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3552.544388] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3552.544401] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3552.544404] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3552.544409] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3552.544414] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3552.544419] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3552.544425] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3552.544430] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3552.544435] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3552.544440] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3552.544446] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3552.544451] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3552.544456] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3552.544461] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3552.544466] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3552.544471] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3552.544476] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3552.544482] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3552.544487] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3552.544492] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3552.544497] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3552.544502] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3552.544507] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3552.544513] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3552.544518] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3552.544523] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3552.544528] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3552.544533] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3552.544538] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3552.544543] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3552.544549] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3552.544554] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3552.544559] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3552.544564] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3552.544569] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3552.544574] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3552.544580] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3552.544585] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3552.544590] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3552.544595] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3552.544600] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3552.544605] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3552.544610] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3552.544616] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3552.544621] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3552.544626] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3552.544631] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3552.544636] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3552.544641] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3552.544646] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3552.544652] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3552.544657] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3552.544662] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3552.544667] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3552.544672] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3552.544677] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3552.544682] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3552.544688] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3552.544693] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3552.544698] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3552.544703] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3552.544708] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3552.544713] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3552.544718] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3552.544724] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3552.544729] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3552.544734] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3552.544739] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3552.544744] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3552.544748] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3552.544753] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3552.544765] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3552.544770] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3600.458402] INFO: task udisks-daemon:1854 blocked for more than 120 seconds.
-[ 3600.458409] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3600.458414] udisks-daemon D 000000010004ce77     0  1854   1845 0x00000000
-[ 3600.458423]  ffff88022dec7bb8 0000000000000086 ffff880200000000 00000000000158c0
-[ 3600.458432]  ffff88022dec7fd8 00000000000158c0 ffff88022dec7fd8 ffff88021d5f5b80
-[ 3600.458442]  00000000000158c0 00000000000158c0 ffff88022dec7fd8 00000000000158c0
-[ 3600.458449] Call Trace:
-[ 3600.458460]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3600.458470]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3600.458477]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3600.458484]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3600.458490]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3600.458495]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3600.458500]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3600.458505]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3600.458512]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3600.458519]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3600.458525]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3600.458531]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3600.458537]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3600.458545]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3600.458552]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3600.458557]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3600.458563]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3600.458571]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3600.458580] INFO: task hald-addon-stor:2761 blocked for more than 120 seconds.
-[ 3600.458584] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3600.458587] hald-addon-st D 0000000000000000     0  2761   1600 0x00000000
-[ 3600.458594]  ffff8801a5579bb8 0000000000000082 ffff8801a5579f38 00000000000158c0
-[ 3600.458601]  ffff8801a5579fd8 00000000000158c0 ffff8801a5579fd8 ffff88021e3f96e0
-[ 3600.458607]  00000000000158c0 00000000000158c0 ffff8801a5579fd8 00000000000158c0
-[ 3600.458613] Call Trace:
-[ 3600.458619]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3600.458626]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3600.458631]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3600.458637]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3600.458642]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3600.458647]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3600.458652]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3600.458657]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3600.458663]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3600.458669]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3600.458675]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3600.458680]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3600.458686]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3600.458691]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3600.458698]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3600.458703]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3600.458709]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3600.458715]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3600.458720] INFO: task blkid:2822 blocked for more than 120 seconds.
-[ 3600.458723] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3600.458727] blkid         D 000000010004ce4d     0  2822   2738 0x00000000
-[ 3600.458733]  ffff8800aef45bb8 0000000000000086 0000000000000000 00000000000158c0
-[ 3600.458740]  ffff8800aef45fd8 00000000000158c0 ffff8800aef45fd8 ffff88022edac4a0
-[ 3600.458746]  00000000000158c0 00000000000158c0 ffff8800aef45fd8 00000000000158c0
-[ 3600.458752] Call Trace:
-[ 3600.458758]  [<ffffffff8100aa0e>] ? apic_timer_interrupt+0xe/0x20
-[ 3600.458764]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3600.458770]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3600.458776]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3600.458781]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3600.458787]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3600.458791]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3600.458796]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3600.458802]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3600.458808]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3600.458814]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3600.458819]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3600.458825]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3600.458831]  [<ffffffff81121299>] ? do_brk+0x2b9/0x350
-[ 3600.458836]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3600.458842]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3600.458847]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3600.458853]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3612.646900] xhci_hcd 0000:0f:00.0: Poll event ring: 4295298880
-[ 3612.646912] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3612.646920] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3612.646924] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3612.646928] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3612.646932] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3612.646937] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3612.646943] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3612.646948] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3612.646954] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3612.646959] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3612.646964] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3612.646970] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3612.646975] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3612.646980] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3612.646986] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3612.646991] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3612.646996] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3612.647002] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3612.647007] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3612.647012] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3612.647018] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3612.647023] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3612.647028] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3612.647034] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3612.647039] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3612.647044] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3612.647050] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3612.647055] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3612.647060] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3612.647066] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3612.647071] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3612.647076] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3612.647082] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3612.647087] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3612.647092] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3612.647098] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3612.647103] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3612.647108] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3612.647114] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3612.647119] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3612.647124] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3612.647130] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3612.647135] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3612.647140] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3612.647146] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3612.647151] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3612.647156] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3612.647162] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3612.647167] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3612.647172] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3612.647177] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3612.647183] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3612.647188] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3612.647193] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3612.647199] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3612.647204] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3612.647210] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3612.647215] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3612.647220] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3612.647225] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3612.647231] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3612.647236] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3612.647241] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3612.647247] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3612.647252] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3612.647257] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3612.647263] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3612.647268] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3612.647273] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3612.647280] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3612.647285] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3612.647290] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3612.647294] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3612.647307] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3612.647311] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3612.647315] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3612.647321] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3612.647326] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3612.647331] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3612.647337] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3612.647342] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3612.647347] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3612.647352] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3612.647357] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3612.647363] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3612.647368] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3612.647373] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3612.647378] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3612.647383] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3612.647388] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3612.647393] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3612.647399] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3612.647404] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3612.647409] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3612.647414] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3612.647419] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3612.647424] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3612.647429] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3612.647435] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3612.647440] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3612.647445] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3612.647450] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3612.647455] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3612.647460] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3612.647465] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3612.647471] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3612.647476] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3612.647481] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3612.647486] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3612.647491] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3612.647496] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3612.647501] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3612.647507] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3612.647512] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3612.647517] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3612.647522] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3612.647527] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3612.647532] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3612.647537] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3612.647543] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3612.647548] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3612.647553] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3612.647558] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3612.647563] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3612.647568] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3612.647574] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3612.647579] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3612.647584] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3612.647589] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3612.647594] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3612.647599] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3612.647604] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3612.647610] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3612.647615] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3612.647620] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3612.647625] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3612.647630] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3612.647635] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3612.647641] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3612.647646] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3612.647650] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3612.647655] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3612.647659] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3612.647672] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3612.647676] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3672.749786] xhci_hcd 0000:0f:00.0: Poll event ring: 4295304896
-[ 3672.749803] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3672.749818] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3672.749822] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3672.749826] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3672.749830] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3672.749835] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3672.749841] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3672.749846] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3672.749852] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3672.749857] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3672.749862] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3672.749868] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3672.749873] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3672.749878] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3672.749884] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3672.749889] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3672.749894] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3672.749900] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3672.749905] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3672.749910] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3672.749916] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3672.749921] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3672.749926] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3672.749932] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3672.749937] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3672.749942] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3672.749948] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3672.749953] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3672.749958] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3672.749964] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3672.749969] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3672.749974] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3672.749980] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3672.749985] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3672.749990] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3672.749996] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3672.750001] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3672.750006] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3672.750012] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3672.750017] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3672.750022] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3672.750028] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3672.750033] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3672.750038] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3672.750044] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3672.750049] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3672.750054] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3672.750060] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3672.750065] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3672.750070] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3672.750076] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3672.750081] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3672.750086] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3672.750092] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3672.750097] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3672.750102] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3672.750108] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3672.750113] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3672.750118] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3672.750123] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3672.750129] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3672.750134] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3672.750139] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3672.750145] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3672.750150] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3672.750155] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3672.750161] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3672.750166] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3672.750171] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3672.750178] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3672.750183] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3672.750188] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3672.750192] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3672.750206] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3672.750209] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3672.750214] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3672.750219] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3672.750224] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3672.750230] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3672.750235] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3672.750240] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3672.750245] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3672.750251] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3672.750256] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3672.750261] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3672.750266] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3672.750271] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3672.750276] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3672.750281] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3672.750287] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3672.750292] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3672.750297] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3672.750302] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3672.750307] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3672.750312] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3672.750317] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3672.750323] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3672.750328] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3672.750333] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3672.750338] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3672.750343] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3672.750348] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3672.750354] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3672.750359] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3672.750364] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3672.750369] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3672.750374] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3672.750379] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3672.750384] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3672.750390] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3672.750395] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3672.750400] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3672.750405] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3672.750410] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3672.750415] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3672.750420] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3672.750426] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3672.750431] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3672.750436] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3672.750441] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3672.750446] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3672.750451] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3672.750457] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3672.750462] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3672.750467] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3672.750472] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3672.750477] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3672.750482] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3672.750487] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3672.750493] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3672.750498] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3672.750503] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3672.750508] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3672.750513] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3672.750518] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3672.750523] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3672.750529] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3672.750534] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3672.750539] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3672.750544] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3672.750549] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3672.750553] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3672.750558] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3672.750570] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3672.750575] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3720.344548] INFO: task udisks-daemon:1854 blocked for more than 120 seconds.
-[ 3720.344555] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3720.344561] udisks-daemon D 000000010004ce77     0  1854   1845 0x00000000
-[ 3720.344569]  ffff88022dec7bb8 0000000000000086 ffff880200000000 00000000000158c0
-[ 3720.344578]  ffff88022dec7fd8 00000000000158c0 ffff88022dec7fd8 ffff88021d5f5b80
-[ 3720.344588]  00000000000158c0 00000000000158c0 ffff88022dec7fd8 00000000000158c0
-[ 3720.344595] Call Trace:
-[ 3720.344607]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3720.344616]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3720.344624]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3720.344630]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3720.344637]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3720.344642]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3720.344647]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3720.344652]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3720.344659]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3720.344666]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3720.344672]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3720.344678]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3720.344684]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3720.344692]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3720.344699]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3720.344705]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3720.344710]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3720.344718]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3720.344727] INFO: task hald-addon-stor:2761 blocked for more than 120 seconds.
-[ 3720.344731] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3720.344734] hald-addon-st D 0000000000000000     0  2761   1600 0x00000000
-[ 3720.344741]  ffff8801a5579bb8 0000000000000082 ffff8801a5579f38 00000000000158c0
-[ 3720.344748]  ffff8801a5579fd8 00000000000158c0 ffff8801a5579fd8 ffff88021e3f96e0
-[ 3720.344754]  00000000000158c0 00000000000158c0 ffff8801a5579fd8 00000000000158c0
-[ 3720.344760] Call Trace:
-[ 3720.344766]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3720.344773]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3720.344778]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3720.344785]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3720.344790]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3720.344795]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3720.344800]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3720.344805]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3720.344810]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3720.344816]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3720.344822]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3720.344827]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3720.344833]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3720.344838]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3720.344845]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3720.344850]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3720.344856]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3720.344862]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3720.344867] INFO: task blkid:2822 blocked for more than 120 seconds.
-[ 3720.344870] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3720.344874] blkid         D 000000010004ce4d     0  2822      1 0x00000000
-[ 3720.344880]  ffff8800aef45bb8 0000000000000086 0000000000000000 00000000000158c0
-[ 3720.344887]  ffff8800aef45fd8 00000000000158c0 ffff8800aef45fd8 ffff88022edac4a0
-[ 3720.344893]  00000000000158c0 00000000000158c0 ffff8800aef45fd8 00000000000158c0
-[ 3720.344899] Call Trace:
-[ 3720.344905]  [<ffffffff8100aa0e>] ? apic_timer_interrupt+0xe/0x20
-[ 3720.344912]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3720.344917]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3720.344924]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3720.344928]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3720.344934]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3720.344939]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3720.344944]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3720.344949]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3720.344955]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3720.344961]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3720.344966]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3720.344972]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3720.344978]  [<ffffffff81121299>] ? do_brk+0x2b9/0x350
-[ 3720.344983]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3720.344989]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3720.344994]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3720.345000]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3732.852745] xhci_hcd 0000:0f:00.0: Poll event ring: 4295310912
-[ 3732.852829] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3732.852844] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3732.852847] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3732.852849] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3732.852851] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3732.852854] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3732.852857] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3732.852860] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3732.852863] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3732.852866] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3732.852869] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3732.852872] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3732.852875] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3732.852878] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3732.852880] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3732.852883] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3732.852886] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3732.852889] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3732.852892] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3732.852900] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3732.852905] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3732.852910] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3732.852916] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3732.852921] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3732.852926] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3732.852932] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3732.852937] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3732.852942] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3732.852948] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3732.852953] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3732.852958] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3732.852964] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3732.852969] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3732.852974] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3732.852980] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3732.852985] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3732.852990] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3732.852996] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3732.853001] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3732.853006] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3732.853012] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3732.853017] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3732.853022] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3732.853027] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3732.853033] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3732.853038] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3732.853043] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3732.853049] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3732.853054] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3732.853059] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3732.853065] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3732.853070] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3732.853075] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3732.853081] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3732.853086] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3732.853091] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3732.853097] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3732.853102] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3732.853107] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3732.853113] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3732.853118] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3732.853123] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3732.853129] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3732.853134] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3732.853139] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3732.853145] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3732.853150] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3732.853155] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3732.853160] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3732.853167] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3732.853172] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3732.853177] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3732.853181] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3732.853194] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3732.853198] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3732.853203] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3732.853208] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3732.853213] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3732.853218] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3732.853224] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3732.853229] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3732.853234] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3732.853239] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3732.853244] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3732.853250] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3732.853255] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3732.853260] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3732.853265] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3732.853270] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3732.853275] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3732.853280] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3732.853286] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3732.853291] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3732.853296] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3732.853301] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3732.853306] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3732.853311] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3732.853316] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3732.853322] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3732.853327] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3732.853332] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3732.853337] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3732.853342] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3732.853347] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3732.853352] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3732.853358] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3732.853363] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3732.853368] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3732.853373] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3732.853378] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3732.853383] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3732.853389] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3732.853394] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3732.853399] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3732.853404] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3732.853409] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3732.853414] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3732.853419] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3732.853425] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3732.853430] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3732.853435] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3732.853440] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3732.853445] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3732.853450] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3732.853455] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3732.853461] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3732.853466] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3732.853471] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3732.853476] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3732.853481] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3732.853486] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3732.853491] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3732.853497] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3732.853502] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3732.853507] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3732.853512] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3732.853517] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3732.853522] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3732.853528] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3732.853533] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3732.853537] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3732.853542] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3732.853546] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3732.853559] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3732.853563] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3792.955590] xhci_hcd 0000:0f:00.0: Poll event ring: 4295316928
-[ 3792.955603] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3792.955610] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3792.955615] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3792.955619] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3792.955622] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3792.955628] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3792.955634] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3792.955639] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3792.955644] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3792.955650] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3792.955655] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3792.955660] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3792.955666] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3792.955671] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3792.955676] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3792.955682] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3792.955687] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3792.955692] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3792.955698] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3792.955703] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3792.955708] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3792.955714] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3792.955719] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3792.955724] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3792.955730] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3792.955735] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3792.955740] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3792.955746] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3792.955751] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3792.955756] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3792.955762] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3792.955767] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3792.955772] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3792.955778] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3792.955783] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3792.955788] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3792.955794] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3792.955799] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3792.955804] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3792.955810] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3792.955815] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3792.955820] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3792.955826] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3792.955831] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3792.955836] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3792.955842] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3792.955847] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3792.955852] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3792.955857] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3792.955863] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3792.955868] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3792.955873] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3792.955879] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3792.955884] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3792.955889] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3792.955895] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3792.955900] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3792.955905] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3792.955911] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3792.955916] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3792.955921] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3792.955927] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3792.955932] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3792.955937] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3792.955943] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3792.955948] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3792.955953] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3792.955958] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3792.955964] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3792.955970] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3792.955975] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3792.955980] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3792.955985] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3792.955998] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3792.956001] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3792.956006] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3792.956011] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3792.956017] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3792.956022] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3792.956027] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3792.956033] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3792.956038] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3792.956043] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3792.956048] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3792.956053] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3792.956058] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3792.956063] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3792.956069] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3792.956074] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3792.956079] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3792.956084] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3792.956089] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3792.956094] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3792.956099] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3792.956105] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3792.956110] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3792.956115] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3792.956120] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3792.956125] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3792.956130] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3792.956136] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3792.956141] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3792.956146] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3792.956151] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3792.956156] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3792.956161] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3792.956166] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3792.956172] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3792.956177] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3792.956182] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3792.956187] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3792.956192] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3792.956197] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3792.956202] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3792.956208] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3792.956213] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3792.956218] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3792.956223] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3792.956228] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3792.956233] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3792.956238] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3792.956244] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3792.956249] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3792.956254] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3792.956259] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3792.956264] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3792.956269] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3792.956274] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3792.956280] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3792.956285] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3792.956290] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3792.956295] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3792.956300] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3792.956305] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3792.956311] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3792.956316] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3792.956321] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3792.956326] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3792.956331] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3792.956336] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3792.956341] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3792.956345] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3792.956350] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3792.956362] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3792.956367] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3840.230642] INFO: task udisks-daemon:1854 blocked for more than 120 seconds.
-[ 3840.230647] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3840.230650] udisks-daemon D 000000010004ce77     0  1854   1845 0x00000000
-[ 3840.230655]  ffff88022dec7bb8 0000000000000086 ffff880200000000 00000000000158c0
-[ 3840.230660]  ffff88022dec7fd8 00000000000158c0 ffff88022dec7fd8 ffff88021d5f5b80
-[ 3840.230664]  00000000000158c0 00000000000158c0 ffff88022dec7fd8 00000000000158c0
-[ 3840.230668] Call Trace:
-[ 3840.230676]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3840.230683]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3840.230688]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3840.230692]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3840.230696]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3840.230699]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3840.230702]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3840.230706]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3840.230710]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3840.230715]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3840.230719]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3840.230725]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3840.230727]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3840.230732]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3840.230735]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3840.230738]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3840.230740]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3840.230745]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3840.230750] INFO: task hald-addon-stor:2761 blocked for more than 120 seconds.
-[ 3840.230751] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3840.230753] hald-addon-st D 0000000000000000     0  2761   1600 0x00000000
-[ 3840.230756]  ffff8801a5579bb8 0000000000000082 ffff8801a5579f38 00000000000158c0
-[ 3840.230759]  ffff8801a5579fd8 00000000000158c0 ffff8801a5579fd8 ffff88021e3f96e0
-[ 3840.230762]  00000000000158c0 00000000000158c0 ffff8801a5579fd8 00000000000158c0
-[ 3840.230765] Call Trace:
-[ 3840.230767]  [<ffffffff8115e510>] ? __pollwait+0x0/0xf0
-[ 3840.230770]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3840.230773]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3840.230775]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3840.230778]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3840.230780]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3840.230782]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3840.230784]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3840.230787]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3840.230789]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3840.230792]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3840.230794]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3840.230797]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3840.230800]  [<ffffffff813a8386>] ? scsi_disk_put+0x46/0x60
-[ 3840.230802]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3840.230805]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3840.230807]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3840.230810]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3840.230812] INFO: task blkid:2822 blocked for more than 120 seconds.
-[ 3840.230814] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3840.230815] blkid         D 000000010004ce4d     0  2822      1 0x00000000
-[ 3840.230818]  ffff8800aef45bb8 0000000000000086 0000000000000000 00000000000158c0
-[ 3840.230821]  ffff8800aef45fd8 00000000000158c0 ffff8800aef45fd8 ffff88022edac4a0
-[ 3840.230824]  00000000000158c0 00000000000158c0 ffff8800aef45fd8 00000000000158c0
-[ 3840.230827] Call Trace:
-[ 3840.230829]  [<ffffffff8100aa0e>] ? apic_timer_interrupt+0xe/0x20
-[ 3840.230833]  [<ffffffff8157a6d7>] __mutex_lock_slowpath+0xf7/0x180
-[ 3840.230835]  [<ffffffff8129a3f0>] ? exact_match+0x0/0x10
-[ 3840.230838]  [<ffffffff8157a5bb>] mutex_lock+0x2b/0x50
-[ 3840.230840]  [<ffffffff8117d3a8>] __blkdev_get+0x78/0x410
-[ 3840.230842]  [<ffffffff8117d750>] blkdev_get+0x10/0x20
-[ 3840.230845]  [<ffffffff8117d85a>] blkdev_open+0xfa/0x130
-[ 3840.230847]  [<ffffffff8117d760>] ? blkdev_open+0x0/0x130
-[ 3840.230849]  [<ffffffff8114b0f5>] __dentry_open+0xe5/0x330
-[ 3840.230852]  [<ffffffff81258ebf>] ? security_inode_permission+0x1f/0x30
-[ 3840.230854]  [<ffffffff8114b454>] nameidata_to_filp+0x54/0x70
-[ 3840.230857]  [<ffffffff81159100>] do_last+0x3b0/0x6a0
-[ 3840.230859]  [<ffffffff8115b39b>] do_filp_open+0x21b/0x660
-[ 3840.230862]  [<ffffffff81121299>] ? do_brk+0x2b9/0x350
-[ 3840.230865]  [<ffffffff8116640a>] ? alloc_fd+0x10a/0x150
-[ 3840.230867]  [<ffffffff8114aec9>] do_sys_open+0x69/0x140
-[ 3840.230870]  [<ffffffff8114afe0>] sys_open+0x20/0x30
-[ 3840.230872]  [<ffffffff8100a072>] system_call_fastpath+0x16/0x1b
-[ 3853.058522] xhci_hcd 0000:0f:00.0: Poll event ring: 4295322944
-[ 3853.058534] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3853.058541] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3853.058545] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3853.058549] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3853.058553] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3853.058558] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3853.058564] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3853.058569] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3853.058575] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3853.058580] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3853.058585] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3853.058590] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3853.058596] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3853.058601] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3853.058606] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3853.058612] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3853.058617] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3853.058622] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3853.058628] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3853.058633] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3853.058638] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3853.058643] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3853.058649] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3853.058654] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3853.058659] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3853.058665] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3853.058670] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3853.058675] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3853.058680] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3853.058686] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3853.058691] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3853.058696] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3853.058702] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3853.058707] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3853.058712] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3853.058717] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3853.058723] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3853.058728] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3853.058733] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3853.058739] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3853.058744] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3853.058749] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3853.058755] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3853.058760] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3853.058765] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3853.058770] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3853.058776] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3853.058781] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3853.058786] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3853.058792] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3853.058797] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3853.058802] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3853.058807] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3853.058813] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3853.058818] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3853.058823] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3853.058829] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3853.058834] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3853.058839] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3853.058845] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3853.058850] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3853.058855] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3853.058860] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3853.058866] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3853.058871] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3853.058876] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3853.058881] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3853.058887] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3853.058892] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3853.058898] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3853.058904] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3853.058908] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3853.058913] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3853.058926] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3853.058929] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3853.058934] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3853.058939] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3853.058945] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3853.058950] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3853.058955] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3853.058960] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3853.058965] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3853.058971] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3853.058976] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3853.058981] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3853.058986] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3853.058991] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3853.058996] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3853.059001] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3853.059006] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3853.059011] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3853.059017] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3853.059022] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3853.059027] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3853.059032] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3853.059037] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3853.059042] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3853.059047] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3853.059052] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3853.059057] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3853.059063] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3853.059068] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3853.059073] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3853.059078] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3853.059083] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3853.059088] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3853.059093] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3853.059098] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3853.059103] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3853.059109] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3853.059114] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3853.059119] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3853.059124] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3853.059129] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3853.059134] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3853.059139] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3853.059144] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3853.059150] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3853.059155] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3853.059160] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3853.059165] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3853.059170] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3853.059175] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3853.059180] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3853.059185] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3853.059190] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3853.059196] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3853.059201] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3853.059206] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3853.059211] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3853.059216] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3853.059221] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3853.059226] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3853.059231] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3853.059236] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3853.059242] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3853.059247] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3853.059252] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3853.059257] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3853.059262] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3853.059267] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3853.059271] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3853.059276] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3853.059288] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3853.059293] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3913.161452] xhci_hcd 0000:0f:00.0: Poll event ring: 4295328960
-[ 3913.161464] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3913.161471] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3913.161475] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3913.161479] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3913.161483] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3913.161489] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3913.161494] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3913.161500] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3913.161505] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3913.161511] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3913.161516] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3913.161521] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3913.161527] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3913.161532] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3913.161537] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3913.161543] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3913.161548] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3913.161553] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3913.161559] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3913.161564] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3913.161569] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3913.161575] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3913.161580] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3913.161585] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3913.161591] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3913.161596] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3913.161601] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3913.161606] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3913.161612] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3913.161617] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3913.161622] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3913.161628] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3913.161633] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3913.161638] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3913.161644] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3913.161649] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3913.161654] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3913.161660] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3913.161665] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3913.161670] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3913.161676] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3913.161681] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3913.161686] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3913.161692] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3913.161697] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3913.161702] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3913.161708] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3913.161713] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3913.161718] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3913.161724] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3913.161729] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3913.161734] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3913.161740] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3913.161745] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3913.161750] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3913.161756] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3913.161761] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3913.161766] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3913.161772] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3913.161777] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3913.161782] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3913.161788] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3913.161793] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3913.161798] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3913.161803] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3913.161809] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3913.161814] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3913.161819] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3913.161825] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3913.161831] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3913.161836] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3913.161841] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3913.161846] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3913.161858] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3913.161862] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3913.161867] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3913.161872] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3913.161877] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3913.161883] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3913.161888] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3913.161893] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3913.161898] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3913.161903] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3913.161909] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3913.161914] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3913.161919] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3913.161924] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3913.161929] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3913.161934] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3913.161939] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3913.161945] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3913.161950] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3913.161955] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3913.161960] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3913.161965] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3913.161970] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3913.161976] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3913.161981] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3913.161986] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3913.161991] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3913.161996] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3913.162001] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3913.162006] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3913.162012] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3913.162017] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3913.162022] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3913.162027] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3913.162032] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3913.162037] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3913.162042] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3913.162048] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3913.162053] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3913.162058] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3913.162063] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3913.162068] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3913.162073] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3913.162078] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3913.162084] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3913.162089] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3913.162094] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3913.162099] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3913.162104] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3913.162109] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3913.162114] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3913.162120] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3913.162125] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3913.162130] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3913.162135] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3913.162140] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3913.162145] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3913.162150] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3913.162156] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3913.162161] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3913.162166] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3913.162171] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3913.162176] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3913.162181] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3913.162187] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3913.162192] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3913.162197] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3913.162202] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3913.162206] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3913.162210] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3913.162223] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3913.162227] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 3973.264360] xhci_hcd 0000:0f:00.0: Poll event ring: 4295334976
-[ 3973.264373] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 3973.264384] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 3973.264388] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 3973.264392] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 3973.264396] xhci_hcd 0000:0f:00.0: Event ring:
-[ 3973.264402] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 3973.264407] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 3973.264413] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 3973.264418] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 3973.264424] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 3973.264429] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 3973.264434] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 3973.264439] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 3973.264445] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 3973.264450] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 3973.264455] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 3973.264461] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 3973.264466] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 3973.264472] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 3973.264477] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 3973.264482] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 3973.264487] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 3973.264493] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 3973.264498] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 3973.264503] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 3973.264509] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 3973.264514] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 3973.264519] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 3973.264525] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 3973.264530] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 3973.264535] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 3973.264541] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 3973.264546] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 3973.264551] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 3973.264557] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 3973.264562] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 3973.264567] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 3973.264573] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 3973.264578] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 3973.264583] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 3973.264589] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 3973.264594] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 3973.264599] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 3973.264605] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 3973.264610] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 3973.264615] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 3973.264621] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 3973.264626] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 3973.264631] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 3973.264637] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 3973.264642] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 3973.264647] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 3973.264653] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 3973.264658] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 3973.264663] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 3973.264669] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 3973.264674] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 3973.264679] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 3973.264685] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 3973.264690] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 3973.264695] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 3973.264700] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 3973.264706] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 3973.264711] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 3973.264716] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 3973.264722] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 3973.264727] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 3973.264732] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 3973.264738] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 3973.264744] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 3973.264749] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 3973.264754] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 3973.264759] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 3973.264772] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 3973.264775] xhci_hcd 0000:0f:00.0: Command ring:
-[ 3973.264780] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 3973.264785] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 3973.264791] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 3973.264796] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 3973.264801] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 3973.264806] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 3973.264811] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 3973.264817] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 3973.264822] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 3973.264827] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 3973.264832] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 3973.264837] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 3973.264842] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 3973.264848] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 3973.264853] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 3973.264858] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 3973.264863] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 3973.264868] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 3973.264873] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 3973.264878] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 3973.264884] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 3973.264889] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 3973.264894] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 3973.264899] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 3973.264904] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 3973.264909] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 3973.264914] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 3973.264920] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 3973.264925] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 3973.264930] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 3973.264935] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 3973.264940] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 3973.264945] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 3973.264950] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 3973.264956] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 3973.264961] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 3973.264966] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 3973.264971] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 3973.264976] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 3973.264981] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 3973.264987] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 3973.264992] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 3973.264997] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 3973.265002] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 3973.265007] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 3973.265012] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 3973.265017] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 3973.265023] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 3973.265028] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 3973.265033] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 3973.265038] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 3973.265043] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 3973.265048] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 3973.265053] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 3973.265059] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 3973.265064] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 3973.265069] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 3973.265074] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 3973.265079] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 3973.265084] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 3973.265089] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 3973.265095] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 3973.265100] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 3973.265105] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 3973.265110] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3973.265115] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 3973.265119] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 3973.265124] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 3973.265137] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 3973.265142] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 4033.367273] xhci_hcd 0000:0f:00.0: Poll event ring: 4295340992
-[ 4033.367285] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 4033.367292] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 4033.367296] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 4033.367300] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 4033.367304] xhci_hcd 0000:0f:00.0: Event ring:
-[ 4033.367310] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 4033.367315] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 4033.367321] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 4033.367326] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 4033.367331] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 4033.367337] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 4033.367342] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 4033.367347] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 4033.367353] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 4033.367358] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 4033.367363] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 4033.367369] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 4033.367374] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 4033.367379] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 4033.367385] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 4033.367390] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 4033.367395] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 4033.367401] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 4033.367406] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 4033.367411] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 4033.367417] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 4033.367422] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 4033.367427] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 4033.367433] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 4033.367438] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 4033.367443] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 4033.367448] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 4033.367454] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 4033.367459] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 4033.367464] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 4033.367470] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 4033.367475] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 4033.367480] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 4033.367486] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 4033.367491] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 4033.367496] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 4033.367502] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 4033.367507] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 4033.367512] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 4033.367518] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 4033.367523] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 4033.367528] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 4033.367534] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 4033.367539] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 4033.367544] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 4033.367550] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 4033.367555] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 4033.367560] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 4033.367566] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 4033.367571] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 4033.367576] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 4033.367582] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 4033.367587] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 4033.367592] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 4033.367598] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 4033.367603] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 4033.367608] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 4033.367614] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 4033.367619] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 4033.367624] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 4033.367630] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 4033.367635] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 4033.367640] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 4033.367645] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 4033.367652] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 4033.367657] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 4033.367662] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 4033.367666] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 4033.367679] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 4033.367683] xhci_hcd 0000:0f:00.0: Command ring:
-[ 4033.367688] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 4033.367693] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 4033.367698] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 4033.367703] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 4033.367709] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 4033.367714] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 4033.367719] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 4033.367724] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 4033.367729] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 4033.367735] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 4033.367740] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 4033.367745] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 4033.367750] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 4033.367755] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 4033.367760] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 4033.367765] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 4033.367771] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 4033.367776] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 4033.367781] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 4033.367786] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 4033.367791] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 4033.367796] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 4033.367802] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 4033.367807] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 4033.367812] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 4033.367817] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 4033.367822] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 4033.367827] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 4033.367832] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 4033.367838] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 4033.367843] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 4033.367848] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 4033.367853] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 4033.367858] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 4033.367863] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 4033.367868] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 4033.367874] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 4033.367879] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 4033.367884] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 4033.367889] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 4033.367894] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 4033.367899] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 4033.367904] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 4033.367910] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 4033.367915] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 4033.367920] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 4033.367925] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 4033.367930] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 4033.367935] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 4033.367940] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 4033.367946] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 4033.367951] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 4033.367956] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 4033.367961] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 4033.367966] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 4033.367971] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 4033.367976] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 4033.367982] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 4033.367987] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 4033.367992] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 4033.367997] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 4033.368002] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 4033.368007] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 4033.368013] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 4033.368018] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 4033.368022] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 4033.368027] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 4033.368031] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 4033.368044] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 4033.368049] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 4093.470180] xhci_hcd 0000:0f:00.0: Poll event ring: 4295347008
-[ 4093.470192] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 4093.470199] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 4093.470203] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 4093.470207] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 4093.470211] xhci_hcd 0000:0f:00.0: Event ring:
-[ 4093.470216] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 4093.470222] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 4093.470227] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 4093.470233] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 4093.470238] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 4093.470243] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 4093.470249] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 4093.470254] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 4093.470259] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 4093.470265] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 4093.470270] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 4093.470275] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 4093.470281] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 4093.470286] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 4093.470291] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 4093.470297] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 4093.470302] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 4093.470307] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 4093.470313] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 4093.470318] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 4093.470323] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 4093.470329] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 4093.470334] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 4093.470339] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 4093.470345] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 4093.470350] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 4093.470355] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 4093.470361] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 4093.470366] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 4093.470371] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 4093.470377] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 4093.470382] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 4093.470387] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 4093.470393] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 4093.470398] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 4093.470403] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 4093.470409] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 4093.470414] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 4093.470419] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 4093.470425] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 4093.470430] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 4093.470435] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 4093.470441] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 4093.470446] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 4093.470451] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 4093.470457] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 4093.470462] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 4093.470467] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 4093.470473] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 4093.470478] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 4093.470483] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 4093.470489] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 4093.470494] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 4093.470499] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 4093.470505] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 4093.470510] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 4093.470515] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 4093.470520] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 4093.470526] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 4093.470531] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 4093.470536] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 4093.470542] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 4093.470547] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 4093.470552] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 4093.470559] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 4093.470564] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 4093.470568] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 4093.470573] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 4093.470586] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 4093.470589] xhci_hcd 0000:0f:00.0: Command ring:
-[ 4093.470594] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 4093.470600] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 4093.470605] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 4093.470610] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 4093.470615] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 4093.470621] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 4093.470626] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 4093.470631] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 4093.470636] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 4093.470641] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 4093.470646] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 4093.470652] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 4093.470657] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 4093.470662] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 4093.470667] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 4093.470672] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 4093.470677] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 4093.470682] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 4093.470688] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 4093.470693] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 4093.470698] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 4093.470703] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 4093.470708] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 4093.470713] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 4093.470719] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 4093.470724] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 4093.470729] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 4093.470734] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 4093.470739] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 4093.470744] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 4093.470749] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 4093.470755] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 4093.470760] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 4093.470765] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 4093.470770] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 4093.470775] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 4093.470780] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 4093.470785] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 4093.470791] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 4093.470796] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 4093.470801] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 4093.470806] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 4093.470811] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 4093.470816] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 4093.470821] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 4093.470827] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 4093.470832] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 4093.470837] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 4093.470842] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 4093.470847] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 4093.470852] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 4093.470857] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 4093.470863] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 4093.470868] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 4093.470873] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 4093.470878] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 4093.470883] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 4093.470888] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 4093.470894] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 4093.470899] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 4093.470904] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 4093.470909] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 4093.470914] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 4093.470919] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 4093.470924] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 4093.470929] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 4093.470933] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 4093.470938] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 4093.470950] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 4093.470955] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-[ 4153.573082] xhci_hcd 0000:0f:00.0: Poll event ring: 4295353024
-[ 4153.573095] xhci_hcd 0000:0f:00.0: op reg status = 0x0
-[ 4153.573106] xhci_hcd 0000:0f:00.0: ir_set 0 pending = 0x2
-[ 4153.573111] xhci_hcd 0000:0f:00.0: No-op commands handled = 0
-[ 4153.573115] xhci_hcd 0000:0f:00.0: HC error bitmask = 0x0
-[ 4153.573118] xhci_hcd 0000:0f:00.0: Event ring:
-[ 4153.573124] xhci_hcd 0000:0f:00.0: @37828400 3782c6b0 00000000 01000000 01048000
-[ 4153.573130] xhci_hcd 0000:0f:00.0: @37828410 3782c290 00000000 01000000 01038000
-[ 4153.573135] xhci_hcd 0000:0f:00.0: @37828420 3782c6c0 00000000 01000000 01048000
-[ 4153.573140] xhci_hcd 0000:0f:00.0: @37828430 3782c2a0 00000000 01000000 01038000
-[ 4153.573146] xhci_hcd 0000:0f:00.0: @37828440 3782c6d0 00000000 01000000 01048000
-[ 4153.573151] xhci_hcd 0000:0f:00.0: @37828450 3782c2b0 00000000 01000000 01038000
-[ 4153.573156] xhci_hcd 0000:0f:00.0: @37828460 3782c6e0 00000000 01000000 01048000
-[ 4153.573162] xhci_hcd 0000:0f:00.0: @37828470 3782c2c0 00000000 01000000 01038000
-[ 4153.573167] xhci_hcd 0000:0f:00.0: @37828480 3782c6f0 00000000 01000000 01048000
-[ 4153.573172] xhci_hcd 0000:0f:00.0: @37828490 3782c2d0 00000000 01000000 01038000
-[ 4153.573178] xhci_hcd 0000:0f:00.0: @378284a0 3782c700 00000000 01000000 01048000
-[ 4153.573183] xhci_hcd 0000:0f:00.0: @378284b0 3782c2e0 00000000 01000000 01038000
-[ 4153.573188] xhci_hcd 0000:0f:00.0: @378284c0 3782c710 00000000 01000000 01048000
-[ 4153.573194] xhci_hcd 0000:0f:00.0: @378284d0 3782c2f0 00000000 01000000 01038000
-[ 4153.573199] xhci_hcd 0000:0f:00.0: @378284e0 3782c720 00000000 01000000 01048000
-[ 4153.573204] xhci_hcd 0000:0f:00.0: @378284f0 3782c300 00000000 01000000 01038000
-[ 4153.573210] xhci_hcd 0000:0f:00.0: @37828500 3782c730 00000000 01000000 01048000
-[ 4153.573215] xhci_hcd 0000:0f:00.0: @37828510 3782c310 00000000 01000000 01038000
-[ 4153.573220] xhci_hcd 0000:0f:00.0: @37828520 3782c740 00000000 01000000 01048000
-[ 4153.573226] xhci_hcd 0000:0f:00.0: @37828530 3782c320 00000000 01000000 01038000
-[ 4153.573231] xhci_hcd 0000:0f:00.0: @37828540 3782c750 00000000 01000000 01048000
-[ 4153.573236] xhci_hcd 0000:0f:00.0: @37828550 3782c330 00000000 01000000 01038000
-[ 4153.573242] xhci_hcd 0000:0f:00.0: @37828560 3782c760 00000000 01000000 01048000
-[ 4153.573247] xhci_hcd 0000:0f:00.0: @37828570 3782c340 00000000 01000000 01038000
-[ 4153.573252] xhci_hcd 0000:0f:00.0: @37828580 3782c770 00000000 01000000 01048000
-[ 4153.573258] xhci_hcd 0000:0f:00.0: @37828590 3782c350 00000000 01000000 01038000
-[ 4153.573263] xhci_hcd 0000:0f:00.0: @378285a0 3782c780 00000000 01000000 01048000
-[ 4153.573268] xhci_hcd 0000:0f:00.0: @378285b0 3782c360 00000000 01000000 01038000
-[ 4153.573274] xhci_hcd 0000:0f:00.0: @378285c0 3782c790 00000000 01000000 01048000
-[ 4153.573279] xhci_hcd 0000:0f:00.0: @378285d0 3782c370 00000000 01000000 01038000
-[ 4153.573284] xhci_hcd 0000:0f:00.0: @378285e0 3782c7a0 00000000 01000000 01048000
-[ 4153.573290] xhci_hcd 0000:0f:00.0: @378285f0 3782c380 00000000 01000000 01038000
-[ 4153.573295] xhci_hcd 0000:0f:00.0: @37828600 3782c7b0 00000000 01000000 01048000
-[ 4153.573300] xhci_hcd 0000:0f:00.0: @37828610 3782c390 00000000 01000000 01038000
-[ 4153.573306] xhci_hcd 0000:0f:00.0: @37828620 3782c7c0 00000000 01000000 01048000
-[ 4153.573311] xhci_hcd 0000:0f:00.0: @37828630 3782c3a0 00000000 01000000 01038000
-[ 4153.573316] xhci_hcd 0000:0f:00.0: @37828640 3782c7d0 00000000 01000000 01048000
-[ 4153.573322] xhci_hcd 0000:0f:00.0: @37828650 3782c3b0 00000000 01000000 01038000
-[ 4153.573327] xhci_hcd 0000:0f:00.0: @37828660 3782c7e0 00000000 01000000 01048000
-[ 4153.573332] xhci_hcd 0000:0f:00.0: @37828670 3782c3c0 00000000 01000000 01038000
-[ 4153.573338] xhci_hcd 0000:0f:00.0: @37828680 3782c400 00000000 01000000 01048000
-[ 4153.573343] xhci_hcd 0000:0f:00.0: @37828690 3782c3d0 00000000 01000000 01038000
-[ 4153.573348] xhci_hcd 0000:0f:00.0: @378286a0 3782c410 00000000 01000000 01048000
-[ 4153.573354] xhci_hcd 0000:0f:00.0: @378286b0 3782c3e0 00000000 01000000 01038000
-[ 4153.573359] xhci_hcd 0000:0f:00.0: @378286c0 3782c420 00000000 01000000 01048000
-[ 4153.573364] xhci_hcd 0000:0f:00.0: @378286d0 3782c000 00000000 01000000 01038000
-[ 4153.573370] xhci_hcd 0000:0f:00.0: @378286e0 3782c430 00000000 01000000 01048000
-[ 4153.573375] xhci_hcd 0000:0f:00.0: @378286f0 3782c010 00000000 01000000 01038000
-[ 4153.573380] xhci_hcd 0000:0f:00.0: @37828700 3782c440 00000000 01000000 01048000
-[ 4153.573386] xhci_hcd 0000:0f:00.0: @37828710 3782c020 00000000 01000000 01038000
-[ 4153.573391] xhci_hcd 0000:0f:00.0: @37828720 04000000 00000000 01000000 00008800
-[ 4153.573396] xhci_hcd 0000:0f:00.0: @37828730 37828050 00000000 01000000 01008400
-[ 4153.573402] xhci_hcd 0000:0f:00.0: @37828740 3782c650 00000000 01000000 01048001
-[ 4153.573407] xhci_hcd 0000:0f:00.0: @37828750 3782c230 00000000 01000000 01038001
-[ 4153.573412] xhci_hcd 0000:0f:00.0: @37828760 3782c660 00000000 01000000 01048001
-[ 4153.573417] xhci_hcd 0000:0f:00.0: @37828770 3782c240 00000000 01000000 01038001
-[ 4153.573423] xhci_hcd 0000:0f:00.0: @37828780 3782c670 00000000 01000000 01048001
-[ 4153.573428] xhci_hcd 0000:0f:00.0: @37828790 3782c250 00000000 01000000 01038001
-[ 4153.573433] xhci_hcd 0000:0f:00.0: @378287a0 3782c680 00000000 01000000 01048001
-[ 4153.573439] xhci_hcd 0000:0f:00.0: @378287b0 3782c260 00000000 01000000 01038001
-[ 4153.573444] xhci_hcd 0000:0f:00.0: @378287c0 3782c690 00000000 01000000 01048001
-[ 4153.573449] xhci_hcd 0000:0f:00.0: @378287d0 3782c270 00000000 01000000 01038001
-[ 4153.573455] xhci_hcd 0000:0f:00.0: @378287e0 3782c6a0 00000000 01000000 01048001
-[ 4153.573460] xhci_hcd 0000:0f:00.0: @378287f0 3782c280 00000000 01000000 01038001
-[ 4153.573466] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828740 (virt), 0x37828740 (dma)
-[ 4153.573471] xhci_hcd 0000:0f:00.0: Ring deq updated 617204 times
-[ 4153.573476] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828400 (virt), 0x37828400 (dma)
-[ 4153.573481] xhci_hcd 0000:0f:00.0: Ring enq updated 0 times
-[ 4153.573494] xhci_hcd 0000:0f:00.0: ERST deq = 64'h37828740
-[ 4153.573497] xhci_hcd 0000:0f:00.0: Command ring:
-[ 4153.573502] xhci_hcd 0000:0f:00.0: @37828000 00000000 00000000 00000000 0000c401
-[ 4153.573507] xhci_hcd 0000:0f:00.0: @37828010 00000000 00000000 00000000 00002401
-[ 4153.573512] xhci_hcd 0000:0f:00.0: @37828020 00000000 00000000 00000000 01004401
-[ 4153.573518] xhci_hcd 0000:0f:00.0: @37828030 3782b000 00000000 00000000 01002c01
-[ 4153.573523] xhci_hcd 0000:0f:00.0: @37828040 3782b000 00000000 00000000 01003001
-[ 4153.573528] xhci_hcd 0000:0f:00.0: @37828050 00000000 00000000 00000000 01002801
-[ 4153.573533] xhci_hcd 0000:0f:00.0: @37828060 00000000 00000000 00000000 00000000
-[ 4153.573539] xhci_hcd 0000:0f:00.0: @37828070 00000000 00000000 00000000 00000000
-[ 4153.573544] xhci_hcd 0000:0f:00.0: @37828080 00000000 00000000 00000000 00000000
-[ 4153.573549] xhci_hcd 0000:0f:00.0: @37828090 00000000 00000000 00000000 00000000
-[ 4153.573554] xhci_hcd 0000:0f:00.0: @378280a0 00000000 00000000 00000000 00000000
-[ 4153.573559] xhci_hcd 0000:0f:00.0: @378280b0 00000000 00000000 00000000 00000000
-[ 4153.573564] xhci_hcd 0000:0f:00.0: @378280c0 00000000 00000000 00000000 00000000
-[ 4153.573569] xhci_hcd 0000:0f:00.0: @378280d0 00000000 00000000 00000000 00000000
-[ 4153.573575] xhci_hcd 0000:0f:00.0: @378280e0 00000000 00000000 00000000 00000000
-[ 4153.573580] xhci_hcd 0000:0f:00.0: @378280f0 00000000 00000000 00000000 00000000
-[ 4153.573585] xhci_hcd 0000:0f:00.0: @37828100 00000000 00000000 00000000 00000000
-[ 4153.573590] xhci_hcd 0000:0f:00.0: @37828110 00000000 00000000 00000000 00000000
-[ 4153.573595] xhci_hcd 0000:0f:00.0: @37828120 00000000 00000000 00000000 00000000
-[ 4153.573600] xhci_hcd 0000:0f:00.0: @37828130 00000000 00000000 00000000 00000000
-[ 4153.573606] xhci_hcd 0000:0f:00.0: @37828140 00000000 00000000 00000000 00000000
-[ 4153.573611] xhci_hcd 0000:0f:00.0: @37828150 00000000 00000000 00000000 00000000
-[ 4153.573616] xhci_hcd 0000:0f:00.0: @37828160 00000000 00000000 00000000 00000000
-[ 4153.573621] xhci_hcd 0000:0f:00.0: @37828170 00000000 00000000 00000000 00000000
-[ 4153.573626] xhci_hcd 0000:0f:00.0: @37828180 00000000 00000000 00000000 00000000
-[ 4153.573631] xhci_hcd 0000:0f:00.0: @37828190 00000000 00000000 00000000 00000000
-[ 4153.573636] xhci_hcd 0000:0f:00.0: @378281a0 00000000 00000000 00000000 00000000
-[ 4153.573642] xhci_hcd 0000:0f:00.0: @378281b0 00000000 00000000 00000000 00000000
-[ 4153.573647] xhci_hcd 0000:0f:00.0: @378281c0 00000000 00000000 00000000 00000000
-[ 4153.573652] xhci_hcd 0000:0f:00.0: @378281d0 00000000 00000000 00000000 00000000
-[ 4153.573657] xhci_hcd 0000:0f:00.0: @378281e0 00000000 00000000 00000000 00000000
-[ 4153.573662] xhci_hcd 0000:0f:00.0: @378281f0 00000000 00000000 00000000 00000000
-[ 4153.573667] xhci_hcd 0000:0f:00.0: @37828200 00000000 00000000 00000000 00000000
-[ 4153.573672] xhci_hcd 0000:0f:00.0: @37828210 00000000 00000000 00000000 00000000
-[ 4153.573678] xhci_hcd 0000:0f:00.0: @37828220 00000000 00000000 00000000 00000000
-[ 4153.573683] xhci_hcd 0000:0f:00.0: @37828230 00000000 00000000 00000000 00000000
-[ 4153.573688] xhci_hcd 0000:0f:00.0: @37828240 00000000 00000000 00000000 00000000
-[ 4153.573693] xhci_hcd 0000:0f:00.0: @37828250 00000000 00000000 00000000 00000000
-[ 4153.573698] xhci_hcd 0000:0f:00.0: @37828260 00000000 00000000 00000000 00000000
-[ 4153.573703] xhci_hcd 0000:0f:00.0: @37828270 00000000 00000000 00000000 00000000
-[ 4153.573708] xhci_hcd 0000:0f:00.0: @37828280 00000000 00000000 00000000 00000000
-[ 4153.573714] xhci_hcd 0000:0f:00.0: @37828290 00000000 00000000 00000000 00000000
-[ 4153.573719] xhci_hcd 0000:0f:00.0: @378282a0 00000000 00000000 00000000 00000000
-[ 4153.573724] xhci_hcd 0000:0f:00.0: @378282b0 00000000 00000000 00000000 00000000
-[ 4153.573729] xhci_hcd 0000:0f:00.0: @378282c0 00000000 00000000 00000000 00000000
-[ 4153.573734] xhci_hcd 0000:0f:00.0: @378282d0 00000000 00000000 00000000 00000000
-[ 4153.573739] xhci_hcd 0000:0f:00.0: @378282e0 00000000 00000000 00000000 00000000
-[ 4153.573744] xhci_hcd 0000:0f:00.0: @378282f0 00000000 00000000 00000000 00000000
-[ 4153.573750] xhci_hcd 0000:0f:00.0: @37828300 00000000 00000000 00000000 00000000
-[ 4153.573755] xhci_hcd 0000:0f:00.0: @37828310 00000000 00000000 00000000 00000000
-[ 4153.573760] xhci_hcd 0000:0f:00.0: @37828320 00000000 00000000 00000000 00000000
-[ 4153.573765] xhci_hcd 0000:0f:00.0: @37828330 00000000 00000000 00000000 00000000
-[ 4153.573770] xhci_hcd 0000:0f:00.0: @37828340 00000000 00000000 00000000 00000000
-[ 4153.573775] xhci_hcd 0000:0f:00.0: @37828350 00000000 00000000 00000000 00000000
-[ 4153.573780] xhci_hcd 0000:0f:00.0: @37828360 00000000 00000000 00000000 00000000
-[ 4153.573786] xhci_hcd 0000:0f:00.0: @37828370 00000000 00000000 00000000 00000000
-[ 4153.573791] xhci_hcd 0000:0f:00.0: @37828380 00000000 00000000 00000000 00000000
-[ 4153.573796] xhci_hcd 0000:0f:00.0: @37828390 00000000 00000000 00000000 00000000
-[ 4153.573801] xhci_hcd 0000:0f:00.0: @378283a0 00000000 00000000 00000000 00000000
-[ 4153.573806] xhci_hcd 0000:0f:00.0: @378283b0 00000000 00000000 00000000 00000000
-[ 4153.573811] xhci_hcd 0000:0f:00.0: @378283c0 00000000 00000000 00000000 00000000
-[ 4153.573816] xhci_hcd 0000:0f:00.0: @378283d0 00000000 00000000 00000000 00000000
-[ 4153.573822] xhci_hcd 0000:0f:00.0: @378283e0 00000000 00000000 00000000 00000000
-[ 4153.573827] xhci_hcd 0000:0f:00.0: @378283f0 37828000 00000000 00000000 00001802
-[ 4153.573832] xhci_hcd 0000:0f:00.0: Ring deq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 4153.573837] xhci_hcd 0000:0f:00.0: Ring deq updated 6 times
-[ 4153.573841] xhci_hcd 0000:0f:00.0: Ring enq = ffff880037828060 (virt), 0x37828060 (dma)
-[ 4153.573845] xhci_hcd 0000:0f:00.0: Ring enq updated 6 times
-[ 4153.573858] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr low bits + flags = @00000008
-[ 4153.573862] xhci_hcd 0000:0f:00.0: // xHC command ring deq ptr high bits = @00000000
-
---gatW/ieO32f1wygP--
