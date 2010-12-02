@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0LBQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 11:08:56 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48496 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756829Ab0LBQIz (ORCPT
+	id S1757481Ab0LBQMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 11:12:45 -0500
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:13923
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757243Ab0LBQMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 11:08:55 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] clocksource: really use a margin of 12.5% to limit deferment
-Date: Thu,  2 Dec 2010 17:08:46 +0100
-Message-Id: <1291306126-16990-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
+	Thu, 2 Dec 2010 11:12:44 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h691h637h668h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+Message-ID: <4CF7C56F.7040001@freescale.com>
+Date: Thu, 2 Dec 2010 10:12:31 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Greg KH <greg@kroah.com>, Michael Ellerman <michael@ellerman.id.au>,
+        Greg KH <gregkh@suse.de>, Wood Scott-B07421 <scottwood@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yoder Stuart-B08248 <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+References: <1290594227.4446.12.camel@concordia> <20101124120818.7951bcb4@udp111988uds.am.freescale.net> <20101124182353.GA10589@suse.de> <1290638647.14502.10.camel@concordia> <20101129214439.GA9830@kroah.com> <4CF42053.8060801@freescale.com> <20101129223030.GA14663@kroah.com> <4CF42B02.1030009@freescale.com> <20101130032915.GA13386@kroah.com> <4CF551A0.7030200@freescale.com> <20101201010011.GB31571@kroah.com> <AANLkTi=foTZsnNBgYYAZySPWuwueEraeXGTQz+1aefKm@mail.gmail.com>
+In-Reply-To: <AANLkTi=foTZsnNBgYYAZySPWuwueEraeXGTQz+1aefKm@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Dec 2010 16:13:54.0652 (UTC) FILETIME=[EA9489C0:01CB923B]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-< ukleinek> tglx: the last comment in clocksource_max_deferment is wrong I
-            think.  Unless I'm mistaken the margin is only 2^-5, not 2^-3
-< ukleinek> i.e. 3.125%, not 12.5%
-...
-< tglx> crap, the 3.125% is a bit narrow
+Kay Sievers wrote:
+> 
+> It's racy at many levels, symlinks and other stuff are not replaced
+> atomically, you get a "move" uevent", but it's not easy to connect the
+> event to the old and new device. Device nodes are not renamed at all,
+> there isn't even support for that in the kernel now.
 
-So fix the code to really do what the comment specifies.
+Kay, thank you so much for this explanation.  I wish every function in the
+kernel were described so thoroughly!  My life would be so much easier.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- kernel/time/clocksource.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I put your text into a patch and posted it for review.
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c18d7ef..0ddf372 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -528,7 +528,7 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
- 	 * note a margin of 12.5% is used because this can be computed with
- 	 * a shift, versus say 10% which would require division.
- 	 */
--	return max_nsecs - (max_nsecs >> 5);
-+	return max_nsecs - (max_nsecs >> 3);
- }
- 
- #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
 -- 
-1.7.2.3
+Timur Tabi
+Linux kernel developer at Freescale
 
