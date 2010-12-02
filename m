@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab0LBNRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 08:17:06 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41263 "EHLO mail.skyhub.de"
+	id S1757539Ab0LBNaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 08:30:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55161 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757358Ab0LBNRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 08:17:05 -0500
-Date: Thu, 2 Dec 2010 14:17:00 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stanley Gan <stanley.ganyezu@gmail.com>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: debug kernel using two laptops without serial port
-Message-ID: <20101202131700.GA28343@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Stanley Gan <stanley.ganyezu@gmail.com>,
-	'LKML' <linux-kernel@vger.kernel.org>
-References: <20101130153839.GM15818@bombadil.infradead.org>
- <4CF52652.4030802@kernel.org>
- <20101130163150.GA25668@bombadil.infradead.org>
- <20101130175317.GB25668@bombadil.infradead.org>
- <20101130210938.GF25668@bombadil.infradead.org>
- <4CF62EE0.7040607@kernel.org>
- <20101201124445.GG25668@bombadil.infradead.org>
- <4CF6595A.6010104@kernel.org>
- <20101201155026.GH25668@bombadil.infradead.org>
- <4cf79779.2b3bec0a.5180.1bb9@mx.google.com>
+	id S1757419Ab0LBNaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 08:30:07 -0500
+Date: Thu, 2 Dec 2010 14:30:03 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw
+Subject: Re: [PATCH] gen_init_cpio: remove leading `/' from file names
+Message-ID: <20101202133002.GC18216@sepie.suse.cz>
+References: <1286349233-31721-1-git-send-email-thomas@wytron.com.tw>
+ <AANLkTikN_B-xq=Ge1gx-T5356K5ULd7u11y-mmS=BXMO@mail.gmail.com>
+ <4CE49503.90607@wytron.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4cf79779.2b3bec0a.5180.1bb9@mx.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CE49503.90607@wytron.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 08:56:19PM +0800, Stanley Gan wrote:
-> Hi All,
-> 	I have two dell laptops 1015. For studying Linux kernel, I want to
-> let one run debugging Linux as client, the other as host. The two laptops
-> don't have serial port, just have LAN and usb ports. How can I configure
-> them to get early kernel print message? I ever asked a lot of people, but
-> don't get answers. Please give me some practical advices, thanks in advance.
+On Thu, Nov 18, 2010 at 10:52:51AM +0800, Thomas Chou wrote:
+> Hi Andrew and Michal,
+> 
+> On 10/06/2010 10:51 PM, Mike Frysinger wrote:
+> >On Wed, Oct 6, 2010 at 03:13, Thomas Chou wrote:
+> >>When we extracted the generated cpio archive using "cpio -id" command,
+> >>it complained,
+> >>
+> >>cpio: Removing leading `/' from member names
+> >>var/run
+> >>cpio: Removing leading `/' from member names
+> >>var/lib
+> >>cpio: Removing leading `/' from member names
+> >>var/lib/misc
+> >>
+> >>It is worse with the latest "cpio" or "pax", which tries to overwrite
+> >>the host file system with the leading '/'.
+> >
+> >seems to work as intended on Blackfin systems, and i cant see any
+> >reason to require the leading slash, so:
+> >Acked-by: Mike Frysinger<vapier@gentoo.org>
+> >-mike
+> >
+> >
+> 
+> Would you please review this patch? It is not clear as who should
+> handle this with the MAINTAINERS.
 
-Take a look at <Documentation/networking/netconsole.txt> in the kernel
-sources.
+Applied to kbuild-2.6.git#kbuild, thanks a lot.
 
--- 
-Regards/Gruss,
-Boris.
+Michal
