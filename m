@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab0LBRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:21:58 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:9096 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab0LBRV5 (ORCPT
+	id S1757305Ab0LBR2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:28:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43182 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752830Ab0LBR17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:21:57 -0500
-X-IronPort-AV: E=Sophos;i="4.59,289,1288569600"; 
-   d="scan'208";a="3160213"
-Date: Thu, 2 Dec 2010 17:21:49 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 0/2] Xen PV on HVM multiple PV consoles
-In-Reply-To: <1291236234.22027.0.camel@mobile>
-Message-ID: <alpine.DEB.2.00.1012021720170.14723@kaball-desktop>
-References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop> <1291236234.22027.0.camel@mobile>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 2 Dec 2010 12:27:59 -0500
+Date: Thu, 2 Dec 2010 17:27:57 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yong Shen <yong.shen@linaro.org>
+Cc: List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Change the register name definitions for mc13783
+Message-ID: <20101202172757.GM859@rakim.wolfsonmicro.main>
+References: <AANLkTinA-rNzSjGZQSmGUdOt8j0RWddfNo5m=fP2oQx8@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinA-rNzSjGZQSmGUdOt8j0RWddfNo5m=fP2oQx8@mail.gmail.com>
+X-Cookie: Shading within a garment may occur.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, Vasiliy G Tolstov wrote:
-> On Wed, 2010-12-01 at 18:25 +0000, Stefano Stabellini wrote:
-> > Hi all,
-> > this small patch series achieves two goals:
-> > 
-> > - make PV consoles work for PV on HVM guests;
-> > 
-> > - implement support for multiple PV consoles for PV and PV on HVM guests.
-> > 
-> > Stefano Stabellini (2):
-> >       hvc_xen: support PV on HVM consoles
-> >       hvc_xen: implement multiconsole support
-> > 
-> >  drivers/char/hvc_xen.c             |  479 ++++++++++++++++++++++++++++++++----
-> >  include/xen/interface/hvm/params.h |    6 +-
-> >  2 files changed, 441 insertions(+), 44 deletions(-)
-> > 
-> > A branch with these patches on 2.6.37-rc4 is available here:
-> > 
-> > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc4-pvhvm-pvconsole
-> > 
-> > Cheers,
-> 
-> Does it possible to apply only this 2 patches on stable-2.6.32.x and get
-> working serial consoles?
-> 
+On Thu, Dec 02, 2010 at 07:18:53PM +0800, Yong Shen wrote:
 
-I backported the two patches to stable-2.6.32 and created a new branch
-that is stable-2.6.32.x + support PV on HVM consoles + implement
-multiconsole support:
+> Please comment inline and use attached file for patch or test.
 
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git stable-2.6.32-pvconsole
-
-I still haven't tested it with xend though.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
