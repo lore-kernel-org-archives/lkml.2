@@ -1,209 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab0LBJrU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 04:47:20 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56615 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756971Ab0LBJrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 04:47:19 -0500
-Message-ID: <4CF76C28.8090106@cn.fujitsu.com>
-Date: Thu, 02 Dec 2010 17:51:36 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1755440Ab0LBJtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 04:49:12 -0500
+Received: from tomasu.net ([64.85.170.234]:42145 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751434Ab0LBJtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 04:49:10 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Andre Tomt <andre@tomt.net>
+Subject: Re: mvsas errors in 2.6.36
+Date: Thu, 2 Dec 2010 02:48:59 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+References: <201010290650.32892.thomas@fjellstrom.ca> <4CE3912E.6060904@tomt.net> <201012012329.54944.thomas@fjellstrom.ca>
+In-Reply-To: <201012012329.54944.thomas@fjellstrom.ca>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 3/3] KVM: MMU: retry #PF for softmmu
-References: <4CF76A8B.2040102@cn.fujitsu.com>
-In-Reply-To: <4CF76A8B.2040102@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-02 17:47:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-02 17:47:27,
-	Serialize complete at 2010-12-02 17:47:27
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201012020249.00367.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Retry #PF for softmmu only when the current vcpu has the same cr3 as the time
-when #PF occurs
+On December 1, 2010, Thomas Fjellstrom wrote:
+> On November 17, 2010, you wrote:
+> > On 11/17/2010 08:53 AM, Thomas Fjellstrom wrote:
+> > [snip]
+> > 
+> > > Still no fatal errors, but the problem is still happening regularly. It
+> > > causes a pause in disk io of a couple seconds at least. Really quite
+> > > annoying.
+> > > 
+> > > One thing thats got me wondering, is could this be a power issue?
+> > > It almost seems like (from the messages) that a single drive (any
+> > > drive) is freaking out, and returning an error that probably shouldn't
+> > > happen (no CHS 0?), which could mean the drive is underpowered and the
+> > > firmware is flipping out. I'm not entirely sure. The system has a 750w
+> > > decent quality Antec power supply. The total power use of the system
+> > > shouldn't come over half that (phenom II x4 810 cpu, gigabyte
+> > > ma790fxtud5p mb, low profile nvidia 9400GS gpu, 8 sata hdds, 3 fans,
+> > > etc). I'm mostly sure the 12v rails are spread out evenly, but I have
+> > > yet to make absolutely sure.
+> 
+> Made absolute sure. I had been worrying that I was overloading one of the
+> rails on the PSU, but it turns out that it isn't a multi 12v rail PSU after
+> all. The box and advertising says it is, but the electronics inside all say
+> its a single 12v rail device.
+> 
+> > [snip]
+> > 
+> > After the mvsas update in 2.6.35 this started happening to me as well;
+> > at least its better than the previous state - not working.. ;-) However,
+> > after rolling a new 2.6.35 with the following fix that is queued up for
+> > the upcoming 2.6.35 and 2.6.36 stable releases, they seem to have
+> > dissapeared - 3 days and counting.
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob_
+> > pl
+> > ain;f=queue-2.6.33/libsas-fix-ncq-mixing-with-non-ncq.patch;h=b6d7c92094
+> > d95 ad67a3b23c2e09c25d4fbd0f46b;hb=HEAD
+> > 
+> > The fix is queued up for the next 2.6.36 and 2.6.35 stable
+> > point-releases.
+> 
+> Ahah. I wonder how I missed that when I first read it. I'll have to give
+> the stable .36 kernel a try. Thanks!
 
-Changelog:
-  Just compare cr3 value since It's harmless to instantiate an spte for an
-  unused translation from Marcelo's comment
+No fix so far:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    2 ++
- arch/x86/kvm/paging_tmpl.h      |   34 +++++++++++++++++++++++-----------
- arch/x86/kvm/x86.c              |    6 +++++-
- 4 files changed, 31 insertions(+), 12 deletions(-)
+[ 2539.040104] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880222f00000 task=ffff88018b3e2980 slot=ffff880222f265d0 slot_idx=x2
+[ 2539.040118] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 2539.040154] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x89800.
+[ 2539.040163] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001001
+[ 2539.040176] drivers/scsi/mvsas/mv_sas.c 2111:phy7 Unplug Notice
+[ 2539.050220] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
+[ 2539.050229] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001081
+[ 2539.071157] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
+[ 2539.071165] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x10000
+[ 2539.071173] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[7]
+[ 2539.081142] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach dev info is 5000002
+[ 2539.081142] drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7
+[ 2539.081142] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
+[ 2541.270047] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[5]:rc= 0
+[ 2541.270066] ata14: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 2541.270926] ata14: status=0x01 { Error }
+[ 2541.271747] ata14: error=0x04 { DriveStatusError }
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index a0c066e..1e876e5 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -602,6 +602,7 @@ struct kvm_x86_ops {
- struct kvm_arch_async_pf {
- 	u32 token;
- 	gfn_t gfn;
-+	unsigned long cr3;
- 	bool direct_map;
- };
- 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c6bb449..3f0d9a0 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2607,9 +2607,11 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
- static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
- {
- 	struct kvm_arch_async_pf arch;
-+
- 	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
- 	arch.gfn = gfn;
- 	arch.direct_map = vcpu->arch.mmu.direct_map;
-+	arch.cr3 = vcpu->arch.mmu.get_cr3(vcpu);
- 
- 	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
- }
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 23275d0..437e11a 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -116,7 +116,7 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
-  */
- static int FNAME(walk_addr_generic)(struct guest_walker *walker,
- 				    struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
--				    gva_t addr, u32 access)
-+				    gva_t addr, u32 access, bool prefault)
- {
- 	pt_element_t pte;
- 	gfn_t table_gfn;
-@@ -194,6 +194,13 @@ walk:
- #endif
- 
- 		if (!eperm && !rsvd_fault && !(pte & PT_ACCESSED_MASK)) {
-+			/*
-+			 * Don't set gpte accessed bit if it's on
-+			 * speculative path.
-+			 */
-+			if (prefault)
-+				goto error;
-+
- 			trace_kvm_mmu_set_accessed_bit(table_gfn, index,
- 						       sizeof(pte));
- 			if (FNAME(cmpxchg_gpte)(vcpu->kvm, table_gfn,
-@@ -287,10 +294,11 @@ error:
- }
- 
- static int FNAME(walk_addr)(struct guest_walker *walker,
--			    struct kvm_vcpu *vcpu, gva_t addr, u32 access)
-+			    struct kvm_vcpu *vcpu, gva_t addr,
-+			    u32 access, bool prefault)
- {
- 	return FNAME(walk_addr_generic)(walker, vcpu, &vcpu->arch.mmu, addr,
--					access);
-+					access, prefault);
- }
- 
- static int FNAME(walk_addr_nested)(struct guest_walker *walker,
-@@ -298,7 +306,7 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
- 				   u32 access)
- {
- 	return FNAME(walk_addr_generic)(walker, vcpu, &vcpu->arch.nested_mmu,
--					addr, access);
-+					addr, access, false);
- }
- 
- static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
-@@ -438,7 +446,8 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			 struct guest_walker *gw,
- 			 int user_fault, int write_fault, int hlevel,
--			 int *ptwrite, pfn_t pfn, bool map_writable)
-+			 int *ptwrite, pfn_t pfn, bool map_writable,
-+			 bool prefault)
- {
- 	unsigned access = gw->pt_access;
- 	struct kvm_mmu_page *sp = NULL;
-@@ -512,7 +521,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 
- 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access & access,
- 		     user_fault, write_fault, dirty, ptwrite, it.level,
--		     gw->gfn, pfn, false, map_writable);
-+		     gw->gfn, pfn, prefault, map_writable);
- 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
- 
- 	return it.sptep;
-@@ -561,15 +570,18 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	/*
- 	 * Look up the guest pte for the faulting address.
- 	 */
--	r = FNAME(walk_addr)(&walker, vcpu, addr, error_code);
-+	r = FNAME(walk_addr)(&walker, vcpu, addr, error_code, prefault);
- 
- 	/*
- 	 * The page is not mapped by the guest.  Let the guest handle it.
- 	 */
- 	if (!r) {
- 		pgprintk("%s: guest page fault\n", __func__);
--		inject_page_fault(vcpu);
--		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
-+		if (!prefault) {
-+			inject_page_fault(vcpu);
-+			/* reset fork detector */
-+			vcpu->arch.last_pt_write_count = 0;
-+		}
- 		return 0;
- 	}
- 
-@@ -599,7 +611,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PAGE_FAULT);
- 	kvm_mmu_free_some_pages(vcpu);
- 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
--			     level, &write_pt, pfn, map_writable);
-+			     level, &write_pt, pfn, map_writable, prefault);
- 	(void)sptep;
- 	pgprintk("%s: shadow pte %p %llx ptwrite %d\n", __func__,
- 		 sptep, *sptep, write_pt);
-@@ -685,7 +697,7 @@ static gpa_t FNAME(gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t vaddr, u32 access,
- 	gpa_t gpa = UNMAPPED_GVA;
- 	int r;
- 
--	r = FNAME(walk_addr)(&walker, vcpu, vaddr, access);
-+	r = FNAME(walk_addr)(&walker, vcpu, vaddr, access, false);
- 
- 	if (r) {
- 		gpa = gfn_to_gpa(walker.gfn);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bfd2878..de5e57b 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6183,7 +6183,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
- {
- 	int r;
- 
--	if (!vcpu->arch.mmu.direct_map || !work->arch.direct_map ||
-+	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
- 	      is_error_page(work->page))
- 		return;
- 
-@@ -6191,6 +6191,10 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
- 	if (unlikely(r))
- 		return;
- 
-+	if (!vcpu->arch.mmu.direct_map &&
-+	      work->arch.cr3 != vcpu->arch.mmu.get_cr3(vcpu))
-+		return;
-+
- 	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
- }
- 
+That appeared after about 42 minutes of uptime.
+
 -- 
-1.7.0.4
-
+Thomas Fjellstrom
+thomas@fjellstrom.ca
