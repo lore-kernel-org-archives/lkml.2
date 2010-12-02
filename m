@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab0LBBgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:36:37 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54270 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756408Ab0LBBgf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:36:35 -0500
+	id S1755928Ab0LBBnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:43:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37310 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751475Ab0LBBnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 20:43:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <1291231567-notmuch-felipe.contreras@nokia.com>
-References: <1288033806-1496-1-git-send-email-x0095840@ti.com>
-	<20101129.104729.97149649.Hiroshi.DOYU@nokia.com>
-	<1291231567-notmuch-felipe.contreras@nokia.com>
-Date: Wed, 1 Dec 2010 19:36:34 -0600
-Message-ID: <AANLkTimQcXrgxGjZonSUSkXqoHfAVVhXuHnGKBkMKc9X@mail.gmail.com>
-Subject: Re: [PATCHv5 0/4] omap: iovmm - fixes for iovmm module
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: Hiroshi.DOYU@nokia.com, x0095840@ti.com, h-kanigeri2@ti.com,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        andy.shevchenko@gmail.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20101201172224.b8a25bdf.akpm@linux-foundation.org>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+ <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+ <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+ <1291234251.6609.39.camel@heimdal.trondhjem.org> <20101201123341.d12ef362.akpm@linux-foundation.org>
+ <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+ <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+ <20101201133831.ea6ba10a.akpm@linux-foundation.org> <1291240272.6609.50.camel@heimdal.trondhjem.org>
+ <20101201141351.8609140b.akpm@linux-foundation.org> <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+ <20101201143856.51f4f9d9.akpm@linux-foundation.org> <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
+ <20101201153608.78b331f9.akpm@linux-foundation.org> <AANLkTinbuRRpg7Y8Zu=PD36BO11+qdjZ9uT=u9gCTpDw@mail.gmail.com>
+ <20101201172224.b8a25bdf.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 17:42:08 -0800
+Message-ID: <AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 1:27 PM, Felipe Contreras
-<felipe.contreras@nokia.com> wrote:
-> Hiroshi.DOYU@nokia.com wrote:
->> From: ext Fernando Guzman Lugo <x0095840@ti.com>
->> Subject: [PATCHv5 0/4] omap: iovmm - fixes for iovmm module
->> Date: Mon, 25 Oct 2010 21:10:02 +0200
->>
->> > Version 5:
->> > * Changes in "iommu: create new api to set valid da range"
->> >   - Change range variables to platform data structure.
->>
->> Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+On Wed, Dec 1, 2010 at 5:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
 >
-> Does that means you are going to send a pull request with these for .38?
->
-> Fernando, is there a branch where you have all the changes needed in
-> tidspbridge?
+> What we're talking about is races against memory reclaim, unmount, etc.
 
-No, I dont have that branch.
+Ahh. Those I can believe in. Although I think they'd almost
+incidentally be fixed by making inode freeing (which is where the
+'struct address_space' is embedded) RCU-safe, which we're going to do
+anyway in 38. Then we could make the vmscan code just be a rcu-read
+section.
 
->
-> I guess the only patch missing would be the one for linux-arm.
+Of course,  I do think the race is basically impossible to hit in
+practice regardless.
 
-Yes, after merging them, the only missing is the SG chain patch.
-
-Regards,
-Fernando.
-
->
-> Cheers.
->
-> --
-> Felipe Contreras
->
+                            Linus
