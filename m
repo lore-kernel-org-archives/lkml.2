@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab0LBVJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:09:22 -0500
-Received: from kroah.org ([198.145.64.141]:54235 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758114Ab0LBVI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:08:26 -0500
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        stable <stable@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 2/6] TTY: ldisc, fix open flag handling
-Date: Thu,  2 Dec 2010 13:08:19 -0800
-Message-Id: <1291324103-7054-2-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101202204827.GB5927@kroah.com>
-References: <20101202204827.GB5927@kroah.com>
+	id S932203Ab0LBVJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:09:59 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:9766 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932079Ab0LBVJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 16:09:58 -0500
+Date: Thu, 02 Dec 2010 16:08:55 -0500
+Subject: Re: [PATCH] media: rc: ir-lirc-codec: fix potential integer
+ overflow
+Message-ID: <5riroj2l9iwsfksrf7xjglim.1291324135751@email.android.com>
+From: Andy Walls <awalls@md.metrocast.net>
+To: Jarod Wilson <jarod@redhat.com>, Dan Carpenter <error27@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        =?ISO-8859-1?Q?David_H=E4rdeman?= <david@hardeman.nu>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-12-02_10:2010-12-02,2010-12-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=8
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1012020128
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB2LAMTP028659
 
-From: Jiri Slaby <jslaby@suse.cz>
+64 bit value / 4 = 62 bit value, right?
 
-When a concrete ldisc open fails in tty_ldisc_open, we forget to clear
-TTY_LDISC_OPEN. This causes a false warning on the next ldisc open:
-WARNING: at drivers/char/tty_ldisc.c:445 tty_ldisc_open+0x26/0x38()
-Hardware name: System Product Name
-Modules linked in: ...
-Pid: 5251, comm: a.out Tainted: G        W  2.6.32-5-686 #1
-Call Trace:
- [<c1030321>] ? warn_slowpath_common+0x5e/0x8a
- [<c1030357>] ? warn_slowpath_null+0xa/0xc
- [<c119311c>] ? tty_ldisc_open+0x26/0x38
- [<c11936c5>] ? tty_set_ldisc+0x218/0x304
-...
 
-So clear the bit when failing...
+Jarod Wilson <jarod@redhat.com> wrote:
 
-Introduced in c65c9bc3efa (tty: rewrite the ldisc locking) back in
-2.6.31-rc1.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
-Reported-by: Sergey Lapin <slapin@ossfans.org>
-Tested-by: Sergey Lapin <slapin@ossfans.org>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/tty/tty_ldisc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index d8e96b0..4214d58 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -454,6 +454,8 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
-                 /* BTM here locks versus a hangup event */
- 		WARN_ON(!tty_locked());
- 		ret = ld->ops->open(tty);
-+		if (ret)
-+			clear_bit(TTY_LDISC_OPEN, &tty->flags);
- 		return ret;
- 	}
- 	return 0;
--- 
-1.7.1
-
+>On Thu, Dec 02, 2010 at 07:51:26AM +0300, Dan Carpenter wrote:
+>> On Fri, Nov 26, 2010 at 08:06:35PM +0300, Vasiliy Kulikov wrote:
+>> >  	count = n / sizeof(int);
+>> > -	if (count > LIRCBUF_SIZE || count % 2 == 0)
+>> > +	if (count > LIRCBUF_SIZE || count % 2 == 0 || n % sizeof(int) != 0)
+>>                                                       ^^^^^^^^^^^^^^^^^^^^
+>> 
+>> Wait, what?  We just checked this a couple lines before.
+>
+>Bah. I'd only looked at the diff, which didn't have enough context. I
+>thought that looked familiar. Indeed, this part seems to be unnecessary.
+>
+>> The rest of the patch is right and a clever catch.  It would affect 
+>> x86_64 systems and not i386.  This doesn't have security implications
+>> does it?  You'd just catch the kmalloc() stack trace for insanely large
+>> allocations.
+>
+>Even on x86_64, it looks to my (relatively untrained) eye like you'd
+>actually be fine. n is a size_t (so, 64-bit on x86_64). count is an int
+>(so 32-bit on x86_64). We initialize count to some 64-bit value / 4, so
+>at most, 16 bits, which always fits just fine in the 32-bit int, no?
+>
+>-- 
+>Jarod Wilson
+>jarod@redhat.com
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-media" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
