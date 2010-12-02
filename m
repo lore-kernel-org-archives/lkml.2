@@ -1,145 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab0LBG2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 01:28:19 -0500
-Received: from claw.goop.org ([74.207.240.146]:59702 "EHLO claw.goop.org"
+	id S1757253Ab0LBGa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 01:30:26 -0500
+Received: from tomasu.net ([64.85.170.234]:49428 "EHLO mail.tomasu.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab0LBG2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 01:28:18 -0500
-Message-ID: <4CF73C80.4000101@goop.org>
-Date: Wed, 01 Dec 2010 22:28:16 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1753903Ab0LBGaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 01:30:25 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Andre Tomt <andre@tomt.net>
+Subject: Re: mvsas errors in 2.6.36
+Date: Wed, 1 Dec 2010 23:29:54 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+References: <201010290650.32892.thomas@fjellstrom.ca> <201011170053.31174.thomas@fjellstrom.ca> <4CE3912E.6060904@tomt.net>
+In-Reply-To: <4CE3912E.6060904@tomt.net>
 MIME-Version: 1.0
-To: Sheng Yang <sheng@linux.intel.com>
-CC: Keir Fraser <keir.fraser@eu.citrix.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH] xen: HVM X2APIC support
-References: <1291258990-16080-1-git-send-email-sheng@linux.intel.com>
-In-Reply-To: <1291258990-16080-1-git-send-email-sheng@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012012329.54944.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2010 07:03 PM, Sheng Yang wrote:
-> This patch is similiar to Gleb Natapov's patch for KVM, which enable the
-> hypervisor to emulate x2apic feature for the guest. By this way, the emulation
-> of lapic would be simpler with x2apic interface(MSR), and faster.
+On November 17, 2010, you wrote:
+> On 11/17/2010 08:53 AM, Thomas Fjellstrom wrote:
+> [snip]
+> 
+> > Still no fatal errors, but the problem is still happening regularly. It
+> > causes a pause in disk io of a couple seconds at least. Really quite
+> > annoying.
+> >
+> > One thing thats got me wondering, is could this be a power issue?
+> > It almost seems like (from the messages) that a single drive (any drive)
+> > is freaking out, and returning an error that probably shouldn't happen (no 
+> > CHS 0?), which could mean the drive is underpowered and the firmware is 
+> > flipping out. I'm not entirely sure. The system has a 750w decent quality
+> > Antec power supply. The total power use of the system shouldn't come over 
+> > half that (phenom II x4 810 cpu, gigabyte ma790fxtud5p mb, low profile 
+> > nvidia 9400GS gpu, 8 sata hdds, 3 fans, etc). I'm mostly sure the 12v 
+> > rails are spread out evenly, but I have yet to make absolutely sure.
 
-We have a set of patches to directly use event channels from within hvm
-domains, completely bypassing the apic altogether.  Do we need this as well?
+Made absolute sure. I had been worrying that I was overloading one of the 
+rails on the PSU, but it turns out that it isn't a multi 12v rail PSU after 
+all. The box and advertising says it is, but the electronics inside all say 
+its a single 12v rail device.
 
-> Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-> ---
->  arch/x86/include/asm/xen/hypervisor.h |   33 +++++++++++++++++++++++++++++++++
->  arch/x86/kernel/apic/apic.c           |    4 +++-
->  arch/x86/xen/enlighten.c              |   19 -------------------
->  3 files changed, 36 insertions(+), 20 deletions(-)
->
-> diff --git a/arch/x86/include/asm/xen/hypervisor.h b/arch/x86/include/asm/xen/hypervisor.h
-> index 396ff4c..e862874 100644
-> --- a/arch/x86/include/asm/xen/hypervisor.h
-> +++ b/arch/x86/include/asm/xen/hypervisor.h
-> @@ -37,4 +37,37 @@
->  extern struct shared_info *HYPERVISOR_shared_info;
->  extern struct start_info *xen_start_info;
->  
-> +#include <asm/processor.h>
-> +
-> +static inline uint32_t xen_cpuid_base(void)
-> +{
-> +	uint32_t base, eax, ebx, ecx, edx;
-> +	char signature[13];
-> +
-> +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-> +		cpuid(base, &eax, &ebx, &ecx, &edx);
-> +		*(uint32_t *)(signature + 0) = ebx;
-> +		*(uint32_t *)(signature + 4) = ecx;
-> +		*(uint32_t *)(signature + 8) = edx;
-> +		signature[12] = 0;
-> +
-> +		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
-> +			return base;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_XEN
-> +static inline bool xen_para_available(void)
-> +{
-> +	return 0;
-> +}
-> +#else
-> +static inline bool xen_para_available(void)
-> +{
-> +	return (xen_cpuid_base() != 0);
-> +}
-> +#endif
+> [snip]
+> 
+> After the mvsas update in 2.6.35 this started happening to me as well;
+> at least its better than the previous state - not working.. ;-) However,
+> after rolling a new 2.6.35 with the following fix that is queued up for
+> the upcoming 2.6.35 and 2.6.36 stable releases, they seem to have
+> dissapeared - 3 days and counting.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob_pl
+> ain;f=queue-2.6.33/libsas-fix-ncq-mixing-with-non-ncq.patch;h=b6d7c92094d95
+> ad67a3b23c2e09c25d4fbd0f46b;hb=HEAD
+> 
+> The fix is queued up for the next 2.6.36 and 2.6.35 stable point-releases.
 
-So this returns true if you're running a kernel without CONFIG_XEN under
-Xen?  Does that assume that all versions of Xen implement x2apic
-emulation?  Why wouldn't we also want this for CONFIG_XEN kernels?
-
-    J
+Ahah. I wonder how I missed that when I first read it. I'll have to give the 
+stable .36 kernel a try. Thanks!
 
 
-> +
->  #endif /* _ASM_X86_XEN_HYPERVISOR_H */
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 3f838d5..1b68221 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -52,6 +52,7 @@
->  #include <asm/mce.h>
->  #include <asm/kvm_para.h>
->  #include <asm/tsc.h>
-> +#include <asm/xen/hypervisor.h>
->  
->  unsigned int num_processors;
->  
-> @@ -1476,7 +1477,8 @@ void __init enable_IR_x2apic(void)
->  		/* IR is required if there is APIC ID > 255 even when running
->  		 * under KVM
->  		 */
-> -		if (max_physical_apicid > 255 || !kvm_para_available())
-> +		if (max_physical_apicid > 255 ||
-> +		    (!kvm_para_available() && !xen_para_available()))
->  			goto nox2apic;
->  		/*
->  		 * without IR all CPUs can be addressed by IOAPIC/MSI
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 235c0f4..819c365 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1245,25 +1245,6 @@ asmlinkage void __init xen_start_kernel(void)
->  #endif
->  }
->  
-> -static uint32_t xen_cpuid_base(void)
-> -{
-> -	uint32_t base, eax, ebx, ecx, edx;
-> -	char signature[13];
-> -
-> -	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-> -		cpuid(base, &eax, &ebx, &ecx, &edx);
-> -		*(uint32_t *)(signature + 0) = ebx;
-> -		*(uint32_t *)(signature + 4) = ecx;
-> -		*(uint32_t *)(signature + 8) = edx;
-> -		signature[12] = 0;
-> -
-> -		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
-> -			return base;
-> -	}
-> -
-> -	return 0;
-> -}
-> -
->  static int init_hvm_pv_info(int *major, int *minor)
->  {
->  	uint32_t eax, ebx, ecx, edx, pages, msr, base;
-
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
