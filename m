@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0LBAWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 19:22:52 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:39567 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab0LBAWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 19:22:50 -0500
-Date: Thu, 2 Dec 2010 11:22:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the acpi tree
-Message-Id: <20101202112239.c7d05518.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754124Ab0LBAaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 19:30:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44385 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751475Ab0LBAaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 19:30:08 -0500
+Date: Wed, 1 Dec 2010 16:30:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nelson Elhage <nelhage@ksplice.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] do_exit(): Make sure we run with get_fs() ==
+ USER_DS.
+Message-Id: <20101201163001.fa185a50.akpm@linux-foundation.org>
+In-Reply-To: <20101201115018.ABAE.A69D9226@jp.fujitsu.com>
+References: <20101130174947.5ccc3778.akpm@linux-foundation.org>
+	<1291170456-22580-1-git-send-email-nelhage@ksplice.com>
+	<20101201115018.ABAE.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed,  1 Dec 2010 11:50:32 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Hi Len,
+> > If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
+> > otherwise reset before do_exit(). do_exit may later (via mm_release in fork.c)
+> > do a put_user to a user-controlled address, potentially allowing a user to
+> > leverage an oops into a controlled write into kernel memory.
+> > 
+> > A more logical place to put this might be when we know an oops has occurred,
+> > before we call do_exit(), but that would involve changing every architecture, in
+> > multiple places. Let's just stick it in do_exit instead.
+> > 
+> > Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+> > ---
+> >  kernel/exit.c |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/exit.c b/kernel/exit.c
+> > index 21aa7b3..68899b3 100644
+> > --- a/kernel/exit.c
+> > +++ b/kernel/exit.c
+> > @@ -914,6 +914,14 @@ NORET_TYPE void do_exit(long code)
+> >  	if (unlikely(!tsk->pid))
+> >  		panic("Attempted to kill the idle task!");
+> >  
+> > +	/*
+> > +	 * If do_exit is called because this processes oopsed, it's possible
+> > +	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
+> > +	 * continuing. This is relevant at least for clearing clear_child_tid in
+> > +	 * mm_release.
+> > +	 */
+> > +	set_fs(USER_DS);
+> 
+> "This is relevant" is no good explanation ;)
+> Please recognize this is tricky code and Please consider to write more 
+> careful and looooong comments.
 
-After merging the acpi tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+I've seen worse comments.  And occasionally none at all :)
 
-In file included from drivers/video/output.c:25:
-include/linux/video_output.h: In function 'video_output_register':
-include/linux/video_output.h:49: error: implicit declaration of function 'E=
-RR_PTR'
-include/linux/video_output.h:49: warning: return makes pointer from integer=
- without a cast
-In file included from drivers/video/output.c:27:
-include/linux/err.h: At top level:
-include/linux/err.h:22: error: conflicting types for 'ERR_PTR'
-include/linux/video_output.h:49: note: previous implicit declaration of 'ER=
-R_PTR' was here
-drivers/video/output.c:84: error: redefinition of 'video_output_register'
-include/linux/video_output.h:44: note: previous definition of 'video_output=
-_register' was here
-drivers/video/output.c:114: error: redefinition of 'video_output_unregister'
-include/linux/video_output.h:51: note: previous definition of 'video_output=
-_unregister' was here
+Is this better?
 
-Caused by commit 16d21716c8849c3283d1b9e590e6fe8d1966f4b7 ("ACPI: video:
-fix build for VIDEO_OUTPUT_CONTROL=3Dn").  See Rule 1 in
-Documentation/SubmitChecklist.
+--- a/kernel/exit.c~do_exit-make-sure-we-run-with-get_fs-==-user_ds-fix
++++ a/kernel/exit.c
+@@ -917,8 +917,9 @@ NORET_TYPE void do_exit(long code)
+ 	/*
+ 	 * If do_exit is called because this processes oopsed, it's possible
+ 	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
+-	 * continuing. This is relevant at least for clearing clear_child_tid in
+-	 * mm_release.
++	 * continuing. Amongst other possible reasons, this is to prevent
++	 * mm_release()->clear_child_tid() from writing to a user-controlled
++	 * kernel address.
+ 	 */
+ 	set_fs(USER_DS);
+ 
+_
 
-I have used the version of the acpi tree from next-20101201 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM9ubPAAoJEDMEi1NhKgbsUjsH/j1wWa6bzSoEgkEj+acbmXyE
-IXEnOfDMbhZRpl4v1gROrRq/jaFEX2c46PNHKEpBB8tP4YUTjIwE3pgnRFcTaDsm
-tOVCRenw8OCHd/sYUDQRVQx+W7UwrtoubaAGVzIgE9txooFP6O/QEWRr/haSi2dH
-IuAPmMDvaxYqL2sVTdLtbjapVBxcC/iIQVphYNhEaNR2rcoENZ0o5+XeJ+GzqOP2
-XdlxAJycWo5SjFyOv0BvcyYW89nebKnf+jiMyFwfy5FbESUVMKVkzeTCGki5Ixv9
-9AZ1guhzT07C2flWQckEF4sVCUK94LUYED4Rk4hEYvxZvAG/r0G1Tsy3EdmxhQ8=
-=r1LO
------END PGP SIGNATURE-----
-
---Signature=_Thu__2_Dec_2010_11_22_39_+1100_5VO.exJxzIlcZ0QK--
