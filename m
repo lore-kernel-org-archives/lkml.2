@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab0LBCTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:19:12 -0500
-Received: from wdscspam3.wdc.com ([129.253.55.42]:5986 "EHLO wdscspam3.wdc.com"
+	id S1756336Ab0LBCXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:23:06 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:54922 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753502Ab0LBCTK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:19:10 -0500
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Dec 2010 21:19:10 EST
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="905328"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Change of Default kernel page size i.e 4KB
-Date: Wed, 1 Dec 2010 18:09:48 -0800
-Message-ID: <25B374CC0D9DFB4698BB331F82CD0CF20D606B@wdscexbe08.sc.wdc.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Change of Default kernel page size i.e 4KB
-Thread-Index: AcuReGPOm1q1/vChT56sfhGpdB2ijwATDBfA
-References: <AANLkTi=4gtEC9fZyvc9g6uHecvjPrr0dDc==KsDOvq2Q@mail.gmail.com><20101201132437.GA32555@linux-mips.org> <AANLkTimEb32MAC_KUm+ZjXntJqiE=_OPbO6C3Se4MFEN@mail.gmail.com>
-From: "Daniel Taylor" <Daniel.Taylor@wdc.com>
-To: "naveen yadav" <yad.naveen@gmail.com>, <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 02 Dec 2010 02:09:48.0750 (UTC) FILETIME=[FF452EE0:01CB91C5]
+	id S1755440Ab0LBCXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:23:04 -0500
+Date: Thu, 2 Dec 2010 13:22:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20101202132254.93e019c7.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__2_Dec_2010_13_22_54_+1100_GQNFI/pvFTSo5R5j"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+--Signature=_Thu__2_Dec_2010_13_22_54_+1100_GQNFI/pvFTSo5R5j
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org 
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of naveen yadav
-> Sent: Wednesday, December 01, 2010 8:53 AM
-> To: linux-kernel@vger.kernel.org
-> Subject: Change of Default kernel page size i.e 4KB
-> 
-> Hi all,
-> 
->  I have few drivers and very big application running on ARM 
-> and MIPS target.
->  I want to check the performance by changing the page size ie.
->  8K, 16K, 32K etc.
-> 
->  Is it possile, If yes then what all care i need to take .
-> 
-> thanks
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Hi Greg,
 
-For processor families that have Linux support for other-than-4K page
-sizes, you can use menuconfig to change the page size in "Kernel Options".
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/winbond/sysdef.h between commit
+412dc7f368bf10a8049a8a4c41abbfd0108742e7 ("staging: fix winbond build,
+needs delay.h") from the staging.current tree and commit
+ddee7e28e7d5e4ba2b8537c6a59b035745c250bb ("Staging: w35und: Remove empty
+sysdef.h header") from the staging tree.
 
-This changes the configuration items: PPC_*_PAGES, SPARC64_PAGE_SIZE_*,
-(MIPS) PAGE_SIZE_*, IA64_PAGE_SIZE_*.
+I removed the file.  I wonder if
+drivers/staging/winbond/phy_calibration.c and
+drivers/staging/winbond/reg.c now need their own includes of
+linux/delay.h ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__2_Dec_2010_13_22_54_+1100_GQNFI/pvFTSo5R5j
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM9wL+AAoJEDMEi1NhKgbs3QcH/2XTfShOmo0IAYhnX/xBrNG9
+j1oFeIUVy2rCuV+EhH+Odrv6EpNe0iItRXpQDpuZ5BjtWD8alZoehyiJnUbYbVWS
+60QPb4pVpuLulKRJnXUjbAZ3EKXV4NPmNPnez0R8BxQqHvqXoH0S8c2OHg+mDj7N
+YBJQ7V8QJYmC9IcenQOUdx/T8UE/LKD8yJVYVqooC5P+LXXj3lODtkcjlWJ4oGCZ
+Pb271UMu0YY4sGTFXGcn97FaiSIDt9gyeXSNJfXLpNYtu1Q/5Pgja6UnJuSdFH6I
+kVcVsVn7fyEHDyK1mKiH7AWmeqxG8dHDAZRsGpziyRkNdxgkX1qldtgL96Vk71w=
+=54LG
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Dec_2010_13_22_54_+1100_GQNFI/pvFTSo5R5j--
