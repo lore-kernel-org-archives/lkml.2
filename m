@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0LBCKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:10:04 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:56367 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755585Ab0LBCKB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:10:01 -0500
+	id S1756512Ab0LBCNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:13:25 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:14711 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819Ab0LBCNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:13:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=BsPkLIMrsckaEhjK3Gha1To2xWo16CncJL14tbgNz+XK84WlV7XlB6cWcidTP8htLq
+         p169/xC3XxNQxPKnC2Tg==
+Date: Wed, 1 Dec 2010 18:13:18 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, lethal@linux-sh.org,
+        Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Greg KH <gregkh@suse.de>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+In-Reply-To: <20101202002716.GA13693@shaohui>
+Message-ID: <alpine.DEB.2.00.1012011807190.13942@chino.kir.corp.google.com>
+References: <A24AE1FFE7AEC5489F83450EE98351BF288D88D224@shsmsx502.ccr.corp.intel.com> <20101202002716.GA13693@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=q1HzYBpMH_pP+S5BtBQpHs62+zNfd_MtWHFuu@mail.gmail.com>
-References: <1291147139-23472-1-git-send-email-davidsin@ti.com>
-	<1291147139-23472-2-git-send-email-davidsin@ti.com>
-	<AANLkTi=q1HzYBpMH_pP+S5BtBQpHs62+zNfd_MtWHFuu@mail.gmail.com>
-Date: Wed, 1 Dec 2010 20:10:00 -0600
-Message-ID: <AANLkTi=YUYuxQE8pDZrN5-PJq1Q3jw7cP2yZKCXNAvPP@mail.gmail.com>
-Subject: Re: [RFC v2 1/8] TILER-DMM: DMM-PAT driver for TI TILER
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: "Varadarajan, Charulatha" <charu@ti.com>
-Cc: David Sin <davidsin@ti.com>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lajos Molnar <molnar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 1, 2010 at 12:04 AM, Varadarajan, Charulatha <charu@ti.com> wrote:
-> David,
+On Thu, 2 Dec 2010, Shaohui Zheng wrote:
 
->
->> +               if (!oh)
->> +                       goto error;
->> +
->> +               data->base = oh->_mpu_rt_va;
->
-> not required. Make use of platform_get APIs in probe to extract the
-> base, dma and irq info using pdev.
+> so we should still keep the sysfs memory/probe interface without any modifications,
+> but for the debugfs mem_hotplug/probe interface, we can add the memory region 
+> to a desired node.
 
-Not sure about using platform_get APIs. I think one has to use
-omap_hwmod_get_mpu_rt_va to get the address, which internally returns
-oh-<_mpu_rt_va.
-omap_hwmod_get_mpu_rt_va was added so that the individual drivers can
-avoid doing the ioremap.
-check the discussion regarding this.
-http://www.spinics.net/lists/linux-omap/msg33048.html
+This feature would be distinct from the add_node interface already 
+provided: instead of hotplugging a new node to test the memory hotplug 
+callbacks, this new interface would only be hotadding new memory to a node 
+other than the one it has physical affinity with.  For that support, I'd 
+suggest new probe files in debugfs for each online node:
 
+	/sys/kernel/debug/mem_hotplug/add_node (already exists)
+	/sys/kernel/debug/mem_hotplug/node0/add_memory
+	/sys/kernel/debug/mem_hotplug/node1/add_memory
+	...
 
-Thank you,
-Best regards,
-Hari Kanigeri
+and then you can offline and remove that memory with the existing hotplug 
+support (CONFIG_MEMORY_HOTPLUG and CONFIG_MEMORY_HOTREMOVE, respectively).
