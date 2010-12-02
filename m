@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab0LBCpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:45:44 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35925 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab0LBCpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:45:43 -0500
-Subject: Re: [PATCH] media: rc: lirc_dev: check kobject_set_name() result
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Jarod Wilson <jarod@wilsonet.com>
-In-Reply-To: <1290791203-21448-1-git-send-email-segoon@openwall.com>
-Date: Wed, 1 Dec 2010 21:45:39 -0500
-Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1756804Ab0LBCqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:46:17 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:46035 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756480Ab0LBCqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:46:15 -0500
+Date: Wed, 1 Dec 2010 18:46:11 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: akpm@linux-foundation.org
+Cc: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org, cjb@laptop.org,
+        jon.nettleton@gmail.com, dsd@laptop.org, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org
+Subject: [PATCH] staging: olpc_dcon: drop CONFIG_BROKEN dependency
+Message-ID: <20101201184611.6e40d517@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <3F92DE6F-9421-4AE3-B5DB-C69567A95D09@wilsonet.com>
-References: <1290791203-21448-1-git-send-email-segoon@openwall.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 26, 2010, at 12:06 PM, Vasiliy Kulikov wrote:
 
-> kobject_set_name() may fail with -ENOMEM, check for it.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
-> Compile tested only.
+With the last few commits, the DCON will now properly build.  As such,
+drop the dep on CONFIG_BROKEN.
 
-Works for me.
+[Note: this is for the -mm tree, to be applied on top of the other DCON
+patches.]
 
-Acked-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/staging/olpc_dcon/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/staging/olpc_dcon/Kconfig b/drivers/staging/olpc_dcon/Kconfig
+index 8be8716..cfdec44 100644
+--- a/drivers/staging/olpc_dcon/Kconfig
++++ b/drivers/staging/olpc_dcon/Kconfig
+@@ -1,6 +1,6 @@
+ config FB_OLPC_DCON
+ 	tristate "One Laptop Per Child Display CONtroller support"
+-	depends on OLPC && BROKEN
++	depends on OLPC
+ 	select I2C
+ 	---help---
+ 	  Add support for the OLPC XO DCON controller.  This controller is
 -- 
-Jarod Wilson
-jarod@wilsonet.com
-
-
+1.7.2.3
 
