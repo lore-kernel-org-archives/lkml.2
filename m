@@ -1,70 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab0LBNw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 08:52:59 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62211 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757552Ab0LBNw5 (ORCPT
+	id S1757621Ab0LBNzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 08:55:05 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:43834 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565Ab0LBNzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 08:52:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=RTc8tMzZxCxwwBgyRqsqjPhlsXl5GBjEIwJn/iBlZTJuNQNO/uvJeH4b2nRGghvKKd
-         wDQ2j3xs6VqiYRSjnrbAkdERXDFoPSVPF3u7xyWoTvdjEETT70e/3Qx9pnDEYqj3YgJd
-         ZmtPOPI3iqc+zOQvLSaaAPeyp48OV9epqtWSw=
+	Thu, 2 Dec 2010 08:55:04 -0500
+X-IronPort-AV: E=Sophos;i="4.59,288,1288569600"; 
+   d="scan'208";a="3154671"
+Date: Thu, 2 Dec 2010 13:54:55 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Sheng Yang <sheng@linux.intel.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Keir Fraser <Keir.Fraser@eu.citrix.com>,
+        xen-devel <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH] xen: HVM X2APIC support
+In-Reply-To: <201012021433.46976.sheng@linux.intel.com>
+Message-ID: <alpine.DEB.2.00.1012021319240.14723@kaball-desktop>
+References: <1291258990-16080-1-git-send-email-sheng@linux.intel.com> <4CF73C80.4000101@goop.org> <201012021433.46976.sheng@linux.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101202140943.c9742beb.sfr@canb.auug.org.au>
-References: <20101202140943.c9742beb.sfr@canb.auug.org.au>
-Date: Thu, 2 Dec 2010 14:52:56 +0100
-Message-ID: <AANLkTi=aZ3Gm5rkqAh8j-bOvvKULge6Hm5cN_mEovVdq@mail.gmail.com>
-Subject: Re: linux-next: Tree for December 2
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ave
+On Thu, 2 Dec 2010, Sheng Yang wrote:
+> On Thursday 02 December 2010 14:28:16 Jeremy Fitzhardinge wrote:
+> > On 12/01/2010 07:03 PM, Sheng Yang wrote:
+> > > This patch is similiar to Gleb Natapov's patch for KVM, which enable the
+> > > hypervisor to emulate x2apic feature for the guest. By this way, the
+> > > emulation of lapic would be simpler with x2apic interface(MSR), and
+> > > faster.
+> > 
+> > We have a set of patches to directly use event channels from within hvm
+> > domains, completely bypassing the apic altogether.  Do we need this as
+> > well?
+> 
+> This is for other HVMs. And the pvhvm still have limitation like it can't use 
+> MSI/MSI-X assigned device.
 
-2010/12/2 Stephen Rothwell <sfr@canb.auug.org.au>:
-> Hi all,
->
-> Changes since 20101201:
->
+That is not true: upstream Linux kernels can remap MSI/MSI-X into pirqs,
+if it doesn't work is a bug :)
+If you are interested give a look at arch/x86/pci/xen.c:xen_hvm_setup_msi_irqs.
 
-WARNING: modpost: Found 4 section mismatch(es).
-To see full details build your kernel with:
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-drivers/built-in.o: In function `pch_request_dma':
-/home/test/linux-2.6/drivers/serial/pch_uart.c:565: undefined
-reference to `__dma_request_channel'
-/home/test/linux-2.6/drivers/serial/pch_uart.c:577: undefined
-reference to `__dma_request_channel'
-/home/test/linux-2.6/drivers/serial/pch_uart.c:580: undefined
-reference to `dma_release_channel'
-drivers/built-in.o: In function `pch_free_dma':
-/home/test/linux-2.6/drivers/serial/pch_uart.c:519: undefined
-reference to `dma_release_channel'
-/home/test/linux-2.6/drivers/serial/pch_uart.c:523: undefined
-reference to `dma_release_channel'
-make[1]: *** [.tmp_vmlinux1] Error 1
-make: *** [sub-make] Error 2
+> 
+> > 
+> > > Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+> > > ---
+> > > 
+> > >  arch/x86/include/asm/xen/hypervisor.h |   33
+> > >  +++++++++++++++++++++++++++++++++ arch/x86/kernel/apic/apic.c          
+> > >  |    4 +++-
+> > >  arch/x86/xen/enlighten.c              |   19 -------------------
+> > >  3 files changed, 36 insertions(+), 20 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/include/asm/xen/hypervisor.h
+> > > b/arch/x86/include/asm/xen/hypervisor.h index 396ff4c..e862874 100644
+> > > --- a/arch/x86/include/asm/xen/hypervisor.h
+> > > +++ b/arch/x86/include/asm/xen/hypervisor.h
+> > > @@ -37,4 +37,37 @@
+> > > 
+> > >  extern struct shared_info *HYPERVISOR_shared_info;
+> > >  extern struct start_info *xen_start_info;
+> > > 
+> > > +#include <asm/processor.h>
+> > > +
+> > > +static inline uint32_t xen_cpuid_base(void)
+> > > +{
+> > > +	uint32_t base, eax, ebx, ecx, edx;
+> > > +	char signature[13];
+> > > +
+> > > +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+> > > +		cpuid(base, &eax, &ebx, &ecx, &edx);
+> > > +		*(uint32_t *)(signature + 0) = ebx;
+> > > +		*(uint32_t *)(signature + 4) = ecx;
+> > > +		*(uint32_t *)(signature + 8) = edx;
+> > > +		signature[12] = 0;
+> > > +
+> > > +		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
+> > > +			return base;
+> > > +	}
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +#ifdef CONFIG_XEN
+> > > +static inline bool xen_para_available(void)
+> > > +{
+> > > +	return 0;
+> > > +}
+> > > +#else
+> > > +static inline bool xen_para_available(void)
+> > > +{
+> > > +	return (xen_cpuid_base() != 0);
+> > > +}
+> > > +#endif
+> > 
+> > So this returns true if you're running a kernel without CONFIG_XEN under
+> > Xen?  Does that assume that all versions of Xen implement x2apic
+> > emulation?  Why wouldn't we also want this for CONFIG_XEN kernels?
+> 
+> Because only the ones that implement the feature would expose x2apic CPUID.
+> 
+> For CONFIG_XEN(pv or pvhvm), they both use evtchn, so no need for x2apic.
+
+In that case you need to check for CONFIG_XEN_PVHVM and the presence of
+xen_feature(XENFEAT_hvm_pirqs) because only in this case a PV on HVM
+guests are able to remap both GSIs and MSIs into evtchns.
+So I would do something like this:
 
 
--- 
-Slawa!
-Zimny "Spie dziadu!" Lech z Wawelu
+#ifdef CONFIG_XEN_PVHVM
+static inline bool xen_para_available(void)
+{
+    if (xen_cpuid_base() != 0 && xen_feature(XENFEAT_hvm_pirqs))
+    	return 0;
+    else
+        return 1;
+}
+#else
+static inline bool xen_para_available(void)
+{
+	return (xen_cpuid_base() != 0);
+}
+#endif
 
-That is not dead which can eternal lie.
-And with strange aeons even death may die.
+
+This is assuming that enabling x2apic doesn't prevent Linux from
+receiving evtchns either using the callback vector mechanism or the
+legacy platform-pci interrupt.
+Finally when running as dom0 would this feature create problems in the
+presence of a real x2apic?
+
