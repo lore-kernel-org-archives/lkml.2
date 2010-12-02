@@ -1,63 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab0LBNe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 08:34:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50980 "EHLO arroyo.ext.ti.com"
+	id S1757586Ab0LBNgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 08:36:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757253Ab0LBNeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 08:34:24 -0500
-Date: Thu, 2 Dec 2010 07:46:57 -0600
-From: David Sin <davidsin@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lajos Molnar <molnar@ti.com>
-Subject: Re: [RFC v2 8/8] TILER-DMM: Linking TILER driver into the Linux
- kernel build
-Message-ID: <20101202134656.GC22875@lba0869738>
-References: <1291147139-23472-1-git-send-email-davidsin@ti.com>
- <1291147139-23472-9-git-send-email-davidsin@ti.com>
- <20101201005647.GC29171@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101201005647.GC29171@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757431Ab0LBNgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 08:36:16 -0500
+Date: Thu, 2 Dec 2010 08:35:42 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Pirko <jpirko@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Message-Id: <20101202134041.6073.5201.sendpatchset@localhost.localdomain>
+Subject: [v2 PATCH 1/2] bonding: sync netpoll code with bridge
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 04:56:47PM -0800, Greg KH wrote:
-> On Tue, Nov 30, 2010 at 01:58:59PM -0600, David Sin wrote:
-> > From: Lajos Molnar <molnar@ti.com>
-> > 
-> > This patch links the TILER driver into the Linux kernel build
-> > and config system.
-> > 
-> > Signed-off-by: Lajos Molnar <molnar@ti.com>
-> > Signed-off-by: David Sin <davidsin@ti.com>
-> > ---
-> >  drivers/misc/Kconfig  |    5 +++++
-> >  drivers/misc/Makefile |    1 +
-> >  2 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> > index ac6d6ac..fff7927 100644
-> > --- a/drivers/misc/Kconfig
-> > +++ b/drivers/misc/Kconfig
-> > @@ -378,4 +378,9 @@ source "drivers/misc/eeprom/Kconfig"
-> >  source "drivers/misc/cb710/Kconfig"
-> >  source "drivers/misc/iwmc3200top/Kconfig"
-> >  
-> > +#
-> > +# TI TILER driver support
-> > +#
-> 
-> Comments not needed.
-> 
-> thanks,
-> 
-> greg k-h
-thanks, Greg, for the comments.  I will make all of these changes 
-in the next revision.
+From: Amerigo Wang <amwang@redhat.com>
+Date: Thu, 2 Dec 2010 21:31:19 +0800
+Subject: [v2 PATCH 1/2] bonding: sync netpoll code with bridge
+
+This patch unifies the netpoll code in bonding with netpoll code in bridge,
+thanks to Herbert that code is much cleaner now.
+
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Neil Horman <nhorman@redhat.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+
+
+---
+ drivers/net/bonding/bond_main.c |  153 +++++++++++++++++++++++++--------------
+ drivers/net/bonding/bonding.h   |   21 ++++++
+ 2 files changed, 119 insertions(+), 55 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 0273ad0..2addafc 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -59,7 +59,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/errno.h>
+ #include <linux/netdevice.h>
+-#include <linux/netpoll.h>
+ #include <linux/inetdevice.h>
+ #include <linux/igmp.h>
+ #include <linux/etherdevice.h>
+@@ -450,11 +449,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
+ 
+ 	skb->priority = 1;
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+-	if (unlikely(bond->dev->priv_flags & IFF_IN_NETPOLL)) {
+-		struct netpoll *np = bond->dev->npinfo->netpoll;
+-		slave_dev->npinfo = bond->dev->npinfo;
++	if (unlikely(netpoll_tx_running(slave_dev))) {
+ 		slave_dev->priv_flags |= IFF_IN_NETPOLL;
+-		netpoll_send_skb_on_dev(np, skb, slave_dev);
++		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
+ 		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
+ 	} else
+ #endif
+@@ -1310,63 +1307,113 @@ static void bond_detach_slave(struct bonding *bond, struct slave *slave)
+ }
+ 
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+-/*
+- * You must hold read lock on bond->lock before calling this.
+- */
+-static bool slaves_support_netpoll(struct net_device *bond_dev)
++static inline int slave_enable_netpoll(struct slave *slave)
+ {
+-	struct bonding *bond = netdev_priv(bond_dev);
+-	struct slave *slave;
+-	int i = 0;
+-	bool ret = true;
++	struct netpoll *np;
++	int err = 0;
+ 
+-	bond_for_each_slave(bond, slave, i) {
+-		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL) ||
+-		    !slave->dev->netdev_ops->ndo_poll_controller)
+-			ret = false;
++	np = kmalloc(sizeof(*np), GFP_KERNEL);
++	err = -ENOMEM;
++	if (!np)
++		goto out;
++
++	np->dev = slave->dev;
++	err = __netpoll_setup(np);
++	if (err) {
++		kfree(np);
++		goto out;
+ 	}
+-	return i != 0 && ret;
++	slave->np = np;
++out:
++	return err;
++}
++static inline void slave_disable_netpoll(struct slave *slave)
++{
++	struct netpoll *np = slave->np;
++
++	if (!np)
++		return;
++
++	slave->np = NULL;
++	synchronize_rcu_bh();
++	__netpoll_cleanup(np);
++	kfree(np);
++}
++static inline bool slave_dev_support_netpoll(struct net_device *slave_dev)
++{
++	if (slave_dev->priv_flags & IFF_DISABLE_NETPOLL)
++		return false;
++	if (!slave_dev->netdev_ops->ndo_poll_controller)
++		return false;
++	return true;
+ }
+ 
+ static void bond_poll_controller(struct net_device *bond_dev)
+ {
+-	struct bonding *bond = netdev_priv(bond_dev);
++}
++
++static void __bond_netpoll_cleanup(struct bonding *bond)
++{
+ 	struct slave *slave;
+ 	int i;
+ 
+-	bond_for_each_slave(bond, slave, i) {
+-		if (slave->dev && IS_UP(slave->dev))
+-			netpoll_poll_dev(slave->dev);
+-	}
++	bond_for_each_slave(bond, slave, i)
++		if (slave->dev)
++			slave_disable_netpoll(slave);
+ }
+-
+ static void bond_netpoll_cleanup(struct net_device *bond_dev)
+ {
+ 	struct bonding *bond = netdev_priv(bond_dev);
++
++	read_lock(&bond->lock);
++	__bond_netpoll_cleanup(bond);
++	read_unlock(&bond->lock);
++}
++
++static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
++{
++	struct bonding *bond = netdev_priv(dev);
+ 	struct slave *slave;
+-	const struct net_device_ops *ops;
+-	int i;
++	int i, err = 0;
+ 
+ 	read_lock(&bond->lock);
+-	bond_dev->npinfo = NULL;
+ 	bond_for_each_slave(bond, slave, i) {
+-		if (slave->dev) {
+-			ops = slave->dev->netdev_ops;
+-			if (ops->ndo_netpoll_cleanup)
+-				ops->ndo_netpoll_cleanup(slave->dev);
+-			else
+-				slave->dev->npinfo = NULL;
++		if (!slave->dev)
++			continue;
++		err = slave_enable_netpoll(slave);
++		if (err) {
++			__bond_netpoll_cleanup(bond);
++			break;
+ 		}
+ 	}
+ 	read_unlock(&bond->lock);
++	return err;
+ }
+ 
+-#else
++static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
++{
++	return bond->dev->npinfo;
++}
+ 
++#else
++static inline int slave_enable_netpoll(struct slave *slave)
++{
++	return 0;
++}
++static inline void slave_disable_netpoll(struct slave *slave)
++{
++}
+ static void bond_netpoll_cleanup(struct net_device *bond_dev)
+ {
+ }
+-
++static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
++{
++	return 0;
++}
++static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
++{
++	return NULL;
++}
+ #endif
+ 
+ /*---------------------------------- IOCTL ----------------------------------*/
+@@ -1804,17 +1851,19 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+ 	bond_set_carrier(bond);
+ 
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+-	if (slaves_support_netpoll(bond_dev)) {
+-		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
+-		if (bond_dev->npinfo)
+-			slave_dev->npinfo = bond_dev->npinfo;
+-	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
+-		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
+-		pr_info("New slave device %s does not support netpoll\n",
+-			slave_dev->name);
+-		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
++	slave_dev->npinfo = bond_netpoll_info(bond);
++	if (slave_dev->npinfo) {
++		if (slave_enable_netpoll(new_slave)) {
++			read_unlock(&bond->lock);
++			pr_info("Error, %s: master_dev is using netpoll, "
++				 "but new slave device does not support netpoll.\n",
++				 bond_dev->name);
++			res = -EBUSY;
++			goto err_close;
++		}
+ 	}
+ #endif
++
+ 	read_unlock(&bond->lock);
+ 
+ 	res = bond_create_slave_symlinks(bond_dev, slave_dev);
+@@ -2016,17 +2065,7 @@ int bond_release(struct net_device *bond_dev, struct net_device *slave_dev)
+ 
+ 	netdev_set_master(slave_dev, NULL);
+ 
+-#ifdef CONFIG_NET_POLL_CONTROLLER
+-	read_lock_bh(&bond->lock);
+-
+-	if (slaves_support_netpoll(bond_dev))
+-		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
+-	read_unlock_bh(&bond->lock);
+-	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
+-		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
+-	else
+-		slave_dev->npinfo = NULL;
+-#endif
++	slave_disable_netpoll(slave);
+ 
+ 	/* close slave before restoring its mac address */
+ 	dev_close(slave_dev);
+@@ -2061,6 +2100,7 @@ static int  bond_release_and_destroy(struct net_device *bond_dev,
+ 
+ 	ret = bond_release(bond_dev, slave_dev);
+ 	if ((ret == 0) && (bond->slave_cnt == 0)) {
++		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
+ 		pr_info("%s: destroying bond %s.\n",
+ 			bond_dev->name, bond_dev->name);
+ 		unregister_netdevice(bond_dev);
+@@ -2138,6 +2178,8 @@ static int bond_release_all(struct net_device *bond_dev)
+ 
+ 		netdev_set_master(slave_dev, NULL);
+ 
++		slave_disable_netpoll(slave);
++
+ 		/* close slave before restoring its mac address */
+ 		dev_close(slave_dev);
+ 
+@@ -4670,6 +4712,7 @@ static const struct net_device_ops bond_netdev_ops = {
+ 	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
+ 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
+ #ifdef CONFIG_NET_POLL_CONTROLLER
++	.ndo_netpoll_setup	= bond_netpoll_setup,
+ 	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
+ 	.ndo_poll_controller	= bond_poll_controller,
+ #endif
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index ad3ae46..d3f3563 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -21,6 +21,7 @@
+ #include <linux/kobject.h>
+ #include <linux/cpumask.h>
+ #include <linux/in6.h>
++#include <linux/netpoll.h>
+ #include "bond_3ad.h"
+ #include "bond_alb.h"
+ 
+@@ -203,6 +204,9 @@ struct slave {
+ 	u16    queue_id;
+ 	struct ad_slave_info ad_info; /* HUGE - better to dynamically alloc */
+ 	struct tlb_slave_info tlb_info;
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	struct netpoll *np;
++#endif
+ };
+ 
+ /*
+@@ -324,6 +328,23 @@ static inline unsigned long slave_last_rx(struct bonding *bond,
+ 	return slave->dev->last_rx;
+ }
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++static inline void bond_netpoll_send_skb(const struct slave *slave,
++					 struct sk_buff *skb)
++{
++	struct netpoll *np = slave->np;
++	struct net_device *slave_dev = slave->dev;
++
++	if (np)
++		netpoll_send_skb(np, skb);
++}
++#else
++static inline void bond_netpoll_send_skb(const struct slave *slave,
++					 struct sk_buff *skb)
++{
++}
++#endif
++
+ static inline void bond_set_slave_inactive_flags(struct slave *slave)
+ {
+ 	struct bonding *bond = netdev_priv(slave->dev->master);
 -- 
-David Sin
+1.7.1
+
