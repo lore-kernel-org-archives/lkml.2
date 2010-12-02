@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab0LBQ2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 11:28:55 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:42475 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752744Ab0LBQ2y convert rfc822-to-8bit (ORCPT
+	id S1757647Ab0LBQcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 11:32:13 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45612 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757185Ab0LBQcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 11:28:54 -0500
-Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU
- bootup
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Anton Vorontsov <avorontsov@mvista.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>, Jamie Iles <jamie.iles@picochip.com>,
-        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-tegra@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20101202152428.GD10461@n2100.arm.linux.org.uk>
-References: <20101130171626.GA6165@oksana.dev.rtsoft.ru>
-	 <20101130171658.GA24034@oksana.dev.rtsoft.ru>
-	 <20101130233204.GB14383@n2100.arm.linux.org.uk>
-	 <20101201002527.GC14383@n2100.arm.linux.org.uk>
-	 <AANLkTikpjq-8BVanF5W76j0ZdDBur8DyHWSH8GGgJBQs@mail.gmail.com>
-	 <20101202152428.GD10461@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Thu, 02 Dec 2010 16:28:40 +0000
-Message-ID: <1291307320.11271.51.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 02 Dec 2010 16:28:41.0875 (UTC) FILETIME=[FB680630:01CB923D]
-X-MC-Unique: 110120216284606901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Dec 2010 11:32:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=OaHzwiimzUEhjWjp+sx4OiLqek84WGtxjFiaOx9pRCYJQs05MlpCXNylNOHsqA4MVC
+         +SGsXQIRVzgvkFjq7i/3dUKpPpTxM1MgXwf/fUZB5SZItooQwxdm4VBZ7FFdig24SC90
+         +N7L3aT78yuEQPrCUR57ad5tGgIJHOI/v6g3A=
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-arch@vger.kernel.org, mmarek@suse.cz,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 0/4] V2 Add ability to link device blob(s) into vmlinux
+Date: Thu,  2 Dec 2010 08:31:42 -0800
+Message-Id: <cover.1291231792.git.dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <cover.1289943240.git.dirk.brandewie@gmail.com>
+References: <cover.1289943240.git.dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-02 at 15:24 +0000, Russell King - ARM Linux wrote:
-> On Thu, Dec 02, 2010 at 03:19:05PM +0000, Catalin Marinas wrote:
-> > On 1 December 2010 00:25, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> > > On Tue, Nov 30, 2010 at 11:32:04PM +0000, Russell King - ARM Linux wrote:
-> > >> Note that I'll go with factoring this out into arch/arm/kernel/smp_scu.c
-> > >> for the time being, but I'm not convinced about the other parts yet.
-> > >
-> > > IOW, something like the attached.  I've gone a little further and removed
-> > > the now unnecessary scu_enable() and scu_get_core_count() global functions,
-> > > making scu_enable() static, and eliminating scu_get_core_count() entirely.
-> >
-> > There is some benefit in leaving get_core_count() in the platform
-> > code. For example, the SCU on Cortex-A15 doesn't expose the core count
-> > register and we have to get it from somewhere else (for now from some
-> > L2 cache controller register but in the future it may be hardcoded,
-> > passed via FDT or simply trying to boot maxcpus).
-> 
-> I notice that there's no way to tell what revision of SCU is implemented
-> on _any_ mpcore platform.
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-C-A15 doesn't have any SCU registers exposed (and it's enabled by
-default).
+Resending using the correct To: address sorry for the spam on the CC: lists
 
-> In light of that, I think there's no point what so ever trying to
-> consolidate this code - even the control register bits vary in
-> unpredictable ways between different MPcore implementations.
+This patch set adds the ability to link device tree blobs into
+vmlinux. 
 
-The SCU is part of the core TRM, so I don't expect it to be the same
-across various MP cores (and A15 is an example).
+Patch 1 implements the changes to include/asm-generic/vmlinux.lds.h and
+adds a generic rule for generating DTB objects to be linked vmlinux.
 
-You may want to consolidate functions like scu_prepare_cpus (maybe call
-it smp_prepare_cpus) and something that calls set_cpu_possible() but
-with platform callbacks for getting the number of calls and initialising
-the SMP (SCU for most platforms).
+Patch 2 implements linking a DTB into an x86 image.
 
-Whether this is worth, I don't know.
+Patch 3-4 move {powerpc,microblaze}/boot/Makefile to use the dtc rule
+in patch 1.
+
+This patch set has been tested on x86.
+
+Powerpc and Microblaze have been compile tested with and without patch
+3 and 4 applied.
+
+Changes from V1:
+
+Documentation added for dtc command in Makefile.lib to
+Documentation/kbuild/makefiles.txt
+Separate DTB_ALIGNMENT define removed.
+FORCE removed from dtc rule.
+Removed hardcoded path to dts files from dtc command.  
+Moved %.dtb: %.dts rule to arch specific makefiles. 
+ 
+Patch for adding kernel command line option to pass in dtb_compat
+string dropped from this set will be submitted seperately.
+
+Dirk Brandewie (4):
+  of: Add support for linking device tree blobs into vmlinux
+  x86/of: Add building device tree blob(s) into image.
+  of/powerpc: Use generic rule to build dtb's
+  microblaze/of: Use generic rule to build dtb's
+
+ Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
+ arch/microblaze/boot/Makefile      |   10 ++--------
+ arch/powerpc/boot/Makefile         |    8 +++-----
+ arch/x86/platform/ce4100/Makefile  |   10 ++++++++++
+ include/asm-generic/vmlinux.lds.h  |   15 ++++++++++++---
+ scripts/Makefile.lib               |   21 ++++++++++++++++++++-
+ 6 files changed, 62 insertions(+), 17 deletions(-)
 
 -- 
-Catalin
-
+1.7.2.3
 
