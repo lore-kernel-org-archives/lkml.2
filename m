@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab0LBCDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:03:30 -0500
-Received: from mga03.intel.com ([143.182.124.21]:47248 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756408Ab0LBCDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:03:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="355850356"
-Subject: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: "hpa@zytor.com" <hpa@zytor.com>, Andrew Morton <akpm@linux-foundation.org>,
-        sam@ravnborg.org, eric.dumazet@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Dec 2010 10:02:27 +0800
-Message-ID: <1291255347.12777.116.camel@sli10-conroe>
+	id S1756662Ab0LBCGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:06:55 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36376 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754664Ab0LBCGx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:06:53 -0500
+Date: Wed, 1 Dec 2010 18:05:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+Message-Id: <20101201180518.62f0915c.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+	<AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+	<1291234251.6609.39.camel@heimdal.trondhjem.org>
+	<20101201123341.d12ef362.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+	<alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+	<20101201133831.ea6ba10a.akpm@linux-foundation.org>
+	<1291240272.6609.50.camel@heimdal.trondhjem.org>
+	<20101201141351.8609140b.akpm@linux-foundation.org>
+	<AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+	<20101201143856.51f4f9d9.akpm@linux-foundation.org>
+	<AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
+	<20101201153608.78b331f9.akpm@linux-foundation.org>
+	<AANLkTinbuRRpg7Y8Zu=PD36BO11+qdjZ9uT=u9gCTpDw@mail.gmail.com>
+	<20101201172224.b8a25bdf.akpm@linux-foundation.org>
+	<AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu readmostly section should start and end at address cachline aligned.
-Idealy we should change PERCPU_VADDR/PERCPU, but I can't change all arch code, so
-I add new macros for x86.
+On Wed, 1 Dec 2010 17:42:08 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> On Wed, Dec 1, 2010 at 5:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> > What we're talking about is races against memory reclaim, unmount, etc.
+> 
+> Ahh. Those I can believe in. Although I think they'd almost
+> incidentally be fixed by making inode freeing (which is where the
+> 'struct address_space' is embedded) RCU-safe, which we're going to do
+> anyway in 38. Then we could make the vmscan code just be a rcu-read
+> section.
 
----
- include/asm-generic/vmlinux.lds.h |   66 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+I didn't know that aspect of it.  It will be nice to plug this race -
+it's been there for so long because nobody was able to think of an
+acceptable way of fixing it by direct means (synchronous locking,
+refcounting, etc).  Taking a ref on the inode doesn't work, because we
+can't run iput_final() in direct-reclaim contexts (lock ordering snafus).
 
-Index: linux/include/asm-generic/vmlinux.lds.h
-===================================================================
---- linux.orig/include/asm-generic/vmlinux.lds.h	2010-12-02 09:22:32.000000000 +0800
-+++ linux/include/asm-generic/vmlinux.lds.h	2010-12-02 09:32:42.000000000 +0800
-@@ -726,6 +726,72 @@
- 		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
- 	}
- 
-+/**
-+ * PERCPU_VADDR_CACHEALIGNED - define output section for percpu area
-+ * @vaddr: explicit base address (optional)
-+ * @phdr: destination PHDR (optional)
-+ * @cacheline: cachline size required by readmostly percpu data
-+ *
-+ * Macro which expands to output section for percpu area.  If @vaddr
-+ * is not blank, it specifies explicit base address and all percpu
-+ * symbols will be offset from the given address.  If blank, @vaddr
-+ * always equals @laddr + LOAD_OFFSET.
-+ *
-+ * @phdr defines the output PHDR to use if not blank.  Be warned that
-+ * output PHDR is sticky.  If @phdr is specified, the next output
-+ * section in the linker script will go there too.  @phdr should have
-+ * a leading colon.
-+ *
-+ * Note that this macros defines __per_cpu_load as an absolute symbol.
-+ * If there is no need to put the percpu section at a predetermined
-+ * address, use PERCPU_CACHEALIGNED().
-+ */
-+#define PERCPU_VADDR_CACHEALIGNED(vaddr, phdr, cacheline)		\
-+	VMLINUX_SYMBOL(__per_cpu_load) = .;				\
-+	.data..percpu vaddr : AT(VMLINUX_SYMBOL(__per_cpu_load)		\
-+				- LOAD_OFFSET) {			\
-+		VMLINUX_SYMBOL(__per_cpu_start) = .;			\
-+		*(.data..percpu..first)					\
-+		. = ALIGN(PAGE_SIZE);					\
-+		*(.data..percpu..page_aligned)				\
-+		. = ALIGN(cacheline);					\
-+		*(.data..percpu..readmostly)				\
-+		. = ALIGN(cacheline);					\
-+		*(.data..percpu)					\
-+		*(.data..percpu..shared_aligned)			\
-+		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
-+	} phdr								\
-+	. = VMLINUX_SYMBOL(__per_cpu_load) + SIZEOF(.data..percpu);
-+
-+/**
-+ * PERCPU_CACHEALIGNED - define output section for percpu area, simple version
-+ * @align: required alignment
-+ * @cacheline: cachline size required by readmostly percpu data
-+ *
-+ * Align to @align and outputs output section for percpu area.  This
-+ * macro doesn't maniuplate @vaddr or @phdr and __per_cpu_load and
-+ * __per_cpu_start will be identical.
-+ *
-+ * This macro is equivalent to ALIGN(align); PERCPU_VADDR_CACHEALIGNED( , ) except
-+ * that __per_cpu_load is defined as a relative symbol against
-+ * .data..percpu which is required for relocatable x86_32
-+ * configuration.
-+ */
-+#define PERCPU_CACHEALIGNED(align, cacheline)				\
-+	. = ALIGN(align);						\
-+	.data..percpu	: AT(ADDR(.data..percpu) - LOAD_OFFSET) {	\
-+		VMLINUX_SYMBOL(__per_cpu_load) = .;			\
-+		VMLINUX_SYMBOL(__per_cpu_start) = .;			\
-+		*(.data..percpu..first)					\
-+		. = ALIGN(PAGE_SIZE);					\
-+		*(.data..percpu..page_aligned)				\
-+		. = ALIGN(cacheline);					\
-+		*(.data..percpu..readmostly)				\
-+		. = ALIGN(cacheline);					\
-+		*(.data..percpu)					\
-+		*(.data..percpu..shared_aligned)			\
-+		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
-+	}
- 
- /*
-  * Definition of the high level *_SECTION macros
+vmscan is the problematic path - I _think_ all other code paths which
+remove pagecache have an inode ref.  But this assumes that
+inode->i_mapping points at inode->i_data!  Need to think about the
+situation where it points at a different inode's i_data - in that case
+these callers may have a ref on the wrong inode.
 
+> Of course,  I do think the race is basically impossible to hit in
+> practice regardless.
+
+Actually I was able to hit the race back in late 2.5 or thereabouts. 
+Really massive memory pressure caused vmscan->icache_shrinker to free
+the inode/address_space while another CPU in vmscan was playing with the
+address_space.  That was quite a debugging session ;)
 
