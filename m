@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab0LBShp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 13:37:45 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59176 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab0LBShn (ORCPT
+	id S1757821Ab0LBSp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 13:45:29 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33414 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab0LBSp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 13:37:43 -0500
-Date: Thu, 2 Dec 2010 19:37:24 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tobias Karnat <tobias.karnat@googlemail.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: edac_core: crashes on shutdown
-Message-ID: <20101202183724.GH27263@aftab>
-References: <20101201123921.GA15530@a1.tnic>
- <1291209888.12511.11.camel@Tobias-Karnat>
- <20101201143329.GB18074@a1.tnic>
- <1291225614.8646.4.camel@Tobias-Karnat>
- <20101201193508.GA4916@liondog.tnic>
- <1291280613.10626.22.camel@Tobias-Karnat>
- <20101202152106.GA29301@a1.tnic>
- <1291306872.3898.7.camel@Tobias-Karnat>
- <20101202170610.GE27263@aftab>
- <1291313101.5563.13.camel@Tobias-Karnat>
+	Thu, 2 Dec 2010 13:45:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=KFmzL+S2P5hgMKpFIsJziV/CblyoU1PzjzY1DSkJmcc5uEAP5zf1/5MyYnkgYf3fgM
+         khvBEkzuKEnw1/lfTMBpO97AJaDntqTp6smaw4LvyjG9MpumRmpi6U48rpCB920o8pU4
+         IlVmhy6xcZ/xQ3vNc3PSz0eNBgrtcsKXkBEIQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291313101.5563.13.camel@Tobias-Karnat>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimPpEyPMVry5jyhOUe=oByp20TGJHk9s0Kz_Pqf@mail.gmail.com>
+References: <4cf594e21679631af0@agluck-desktop.sc.intel.com>
+	<20101201165139.a3bb2199.akpm@linux-foundation.org>
+	<987664A83D2D224EAE907B061CE93D530191F27E0E@orsmsx505.amr.corp.intel.com>
+	<20101202021216.2d7c33f8.akpm@linux-foundation.org>
+	<AANLkTimPpEyPMVry5jyhOUe=oByp20TGJHk9s0Kz_Pqf@mail.gmail.com>
+Date: Thu, 2 Dec 2010 10:45:26 -0800
+Message-ID: <AANLkTinUY3f=ccaLfZB3rToxHaAKTtHK7W=zeWuGek_F@mail.gmail.com>
+Subject: Re: [RFC] persistent store (version 2) (part 1 of 2)
+From: Tony Luck <tony.luck@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
+        "Huang, Ying" <ying.huang@intel.com>, Borislav Petkov <bp@alien8.de>,
+        David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 01:05:01PM -0500, Tobias Karnat wrote:
-> This patch fixed it.
-> I have rebooted five times and it does not crash anymore.
-> 
-> Thank you.
+On Thu, Dec 2, 2010 at 8:19 AM, Tony Luck <tony.luck@intel.com> wrote:
+> was being used? But even then, the user interface wouldn't change
+> we could just have each device register a string to be included in
+> the filename. Users could look at it if they cared, or ignore it if
+> they don't care. The "type" of the data should stay at the front
+> of the name so userspace can do "for f in dmesg*" to look at
+> al the saved console logs, and it wouldn't matter if the files were
+> "dmesg-0", "dmesg-1" or "dmesg-erst-0", "dmesg-erst-1". I
+> can't quite see why anyone would care which device was used,
+> but the option to provide it would be there without breaking
+> apps that used the v1 interface.
 
-Thanks for testing and taking pictures :). I'll send it to Linus before
-.37 is out.
+Hmmm I may throw the devicename into the filename anyway ... I
+still can't see why anyone would care where it came from, but doing
+this would allow for consistent filenames across reboots.  My old
+code just stuck sequential numbers on the end of the filenames to
+make sure it didn't get collisions.  But this means that someone
+might be looking at /dev/pstore/dmesg-1 when the system panics.
+After the reboot they see two files: the old one and a new one. But
+the old code didn't guarantee that the old one would still be "dmesg-1",
+it might be "dmesg-2" and "dmesg-1" might now have the latest panic
+(ordering is at the whim of the underlying storage, and if it operates in
+a LIFO way this could happen).
 
-> Btw, are there any information available regarding the NMI option?
-> 
-> parm:	edac_op_state:EDAC Error Reporting state: 0=Poll,1=NMI (int)
-> 
-> In edac.txt NMI is listed under FUTURE HARDWARE SCANNING.
+If I name the file "dmesg-{storename}-{recordid}" then unerased
+entries will get the same name next time - which may avoid some
+confusion.
 
-Well, looking at <arch/x86/kernel/traps.c:mem_parity_error()> this
-should already work. But it is kinda of a hack, if I'm reading Doug
-correctly: http://lkml.org/lkml/2010/9/21/144
-
-And yes, using some kind of an interrupt is much better than polling but
-I don't know whether there's a single interrupt source for the error
-types all edac drivers can decode and report. In the amd64_edac case,
-we're piggybacking on MCE, for example. This was actually the initial
-reason for 00740c58541b6087d78418cebca1fcb86dc6077d and dropping polling
-from that driver.
-
-Doug, any additions?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+-Tony
