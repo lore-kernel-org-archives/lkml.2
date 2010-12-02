@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0LBGif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 01:38:35 -0500
-Received: from mga03.intel.com ([143.182.124.21]:20658 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757233Ab0LBGhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 01:37:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,286,1288594800"; 
-   d="scan'208";a="355926133"
-X-Mailbox-Line: From shaohui.zheng@intel.com Thu Dec  2 13:07:37 2010
-Message-Id: <20101202050737.135023811@intel.com>
-References: <20101202050518.819599911@intel.com>
-User-Agent: quilt/0.46-1
-Date: Thu, 02 Dec 2010 13:05:20 +0800
-From: shaohui.zheng@intel.com
-To: akpm@linux-foundation.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>,
-        Shaohui Zheng <shaohui.zheng@intel.com>
-Subject: [patch 2/7, v7] NUMA Hotplug Emulator: Add numa=possible option
-Content-Disposition: inline; filename=002-add-node-possible-option.patch
+	id S1757250Ab0LBGwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 01:52:49 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41120 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab0LBGws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 01:52:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AcTBi8ceabL79lrgst5If5A3nyRKE2qDIWLsYp6FTRKf/aFn5p7ii8P1lMfTuz3Xw3
+         d0PAQwaU1YAq/ANop7xDipFxaVAb68T1rs4hV41C9b32wHr+07K6zcyEeUpHv0GTWd8G
+         ETLyrPPlGhIN7sMe16ChahdNhl8aJJ2N1ZqCg=
+Date: Thu, 2 Dec 2010 14:57:35 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alex Bennee <kernel-hacker@bennee.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch] flex_array: export symbols to modules
+Message-ID: <20101202065735.GE5196@cr0.nay.redhat.com>
+References: <AANLkTik_TQfQDERdRQaQek3S7280sQBmHGKOnhJwU5EE@mail.gmail.com>
+ <alpine.DEB.2.00.1012011714510.22420@chino.kir.corp.google.com>
+ <20101202063054.GB3367@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202063054.GB3367@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:  David Rientjes <rientjes@google.com>
+On Thu, Dec 02, 2010 at 03:30:55PM +0900, Paul Mundt wrote:
+>On Wed, Dec 01, 2010 at 05:16:05PM -0800, David Rientjes wrote:
+>> On Wed, 1 Dec 2010, Alex Bennee wrote:
+>> > I want to be able to use the flex_array functions in my module so I
+>> > wanted to EXPORT_SYMBOL the API.
+>> > 
+>> > I added the appropriate EXPORT_SYMBOL runes into lib/flex_array.c and
+>> > added externs in the header files but after re-building there is still
+>> > no sign of them in Module.symvers.
+>> 
+>> You shouldn't need to add any externs in include/linux/flex_array.h, they 
+>> should already be publically declared.
+>> 
+>> Perhaps you forgot to include linux/module.h in lib/flex_array.c?
+>> 
+>> flex_array: export symbols to modules
+>> 
+>> Add EXPORT_SYMBOL() for all publically accessible flex array functions.
+>> 
+>> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+>> Signed-off-by: David Rientjes <rientjes@google.com>
+>> ---
+>>  lib/flex_array.c |   10 ++++++++++
+>>  1 files changed, 10 insertions(+), 0 deletions(-)
+>> 
+>This will be ineffective so long as flex_array.o remains lib-y. It will
+>need to be moved to obj-y if modules are to also make use of it.
 
-Adds a numa=possible=<N> command line option to set an additional N nodes
-as being possible for memory hotplug.  This set of possible nodes
-controls nr_node_ids and the sizes of several dynamically allocated node
-arrays.
-
-This allows memory hotplug to create new nodes for newly added memory
-rather than binding it to existing nodes.
-
-The first use-case for this will be node hotplug emulation which will use
-these possible nodes to create new nodes to test the memory hotplug
-callbacks and surrounding memory hotplug code.
-
-CC: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
----
- Documentation/x86/x86_64/boot-options.txt |    4 ++++
- arch/x86/mm/numa_64.c                     |   18 +++++++++++++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -174,6 +174,10 @@ NUMA
- 		If given as an integer, fills all system RAM with N fake nodes
- 		interleaved over physical nodes.
- 
-+  numa=possible=<N>
-+		Sets an additional N nodes as being possible for memory
-+		hotplug.
-+
- ACPI
- 
-   acpi=off	Don't enable ACPI
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -33,6 +33,7 @@ s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
- int numa_off __initdata;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
-+static unsigned long __initdata numa_possible_nodes;
- 
- /*
-  * Map cpu index to node index
-@@ -611,7 +612,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- 
- #ifdef CONFIG_NUMA_EMU
- 	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, k8))
--		return;
-+		goto out;
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
-@@ -619,14 +620,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- #ifdef CONFIG_ACPI_NUMA
- 	if (!numa_off && acpi && !acpi_scan_nodes(start_pfn << PAGE_SHIFT,
- 						  last_pfn << PAGE_SHIFT))
--		return;
-+		goto out;
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
- 
- #ifdef CONFIG_K8_NUMA
- 	if (!numa_off && k8 && !k8_scan_nodes())
--		return;
-+		goto out;
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
-@@ -646,6 +647,15 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- 		numa_set_node(i, 0);
- 	memblock_x86_register_active_regions(0, start_pfn, last_pfn);
- 	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
-+out: __maybe_unused
-+	for (i = 0; i < numa_possible_nodes; i++) {
-+		int nid;
-+
-+		nid = first_unset_node(node_possible_map);
-+		if (nid == MAX_NUMNODES)
-+			break;
-+		node_set(nid, node_possible_map);
-+	}
- }
- 
- unsigned long __init numa_free_all_bootmem(void)
-@@ -675,6 +685,8 @@ static __init int numa_setup(char *opt)
- 	if (!strncmp(opt, "noacpi", 6))
- 		acpi_numa = -1;
- #endif
-+	if (!strncmp(opt, "possible=", 9))
-+		numa_possible_nodes = simple_strtoul(opt + 9, NULL, 0);
- 	return 0;
- }
- early_param("numa", numa_setup);
-
--- 
-Thanks & Regards,
-Shaohui
-
-
+Not moved, it needs to be added to obj-y.
