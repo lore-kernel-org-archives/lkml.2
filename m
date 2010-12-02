@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0LBCuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:50:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31351 "EHLO mx1.redhat.com"
+	id S1756873Ab0LBCuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:50:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52557 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756480Ab0LBCuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:50:03 -0500
-Date: Wed, 1 Dec 2010 23:19:42 -0200
+	id S1756308Ab0LBCuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:50:01 -0500
+Date: Thu, 2 Dec 2010 00:42:18 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 3/3] KVM: MMU: retry #PF for softmmu
-Message-ID: <20101202011942.GA24787@amt.cnet>
-References: <4CF4C535.8080405@cn.fujitsu.com>
- <4CF4C5E0.2020301@cn.fujitsu.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] KVM: Introduce VCPU-wide notion of guest-mode V2
+Message-ID: <20101202024218.GC24787@amt.cnet>
+References: <4CF3D093.40604@redhat.com>
+ <1291049509-3430-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CF4C5E0.2020301@cn.fujitsu.com>
+In-Reply-To: <1291049509-3430-1-git-send-email-joerg.roedel@amd.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 05:37:36PM +0800, Xiao Guangrong wrote:
-> Retry #PF for softmmu only when the current vcpu has the same root shadow page
-> as the time when #PF occurs. it means they have same paging environment
+On Mon, Nov 29, 2010 at 05:51:46PM +0100, Joerg Roedel wrote:
+> Hi Avi, Hi Marcelo,
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    5 +++++
->  arch/x86/kvm/mmu.c              |   33 ++++++++++++++++++++++++++++++++-
->  arch/x86/kvm/paging_tmpl.h      |   34 +++++++++++++++++++++++-----------
->  arch/x86/kvm/x86.c              |   13 ++++++++++++-
->  virt/kvm/async_pf.c             |    1 +
->  5 files changed, 73 insertions(+), 13 deletions(-)
+> here is the re-spin I promised. The change to V1 are essentially the
+> renames:
 > 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 209da89..5acbcab 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -191,6 +191,7 @@ union kvm_mmu_page_role {
->  struct kvm_mmu_page {
->  	struct list_head link;
->  	struct hlist_node hash_link;
-> +	struct kref apfs_counter;
->  
->  	/*
->  	 * The following two entries are used to key the shadow page in the
-> @@ -602,6 +603,7 @@ struct kvm_x86_ops {
->  struct kvm_arch_async_pf {
->  	u32 token;
->  	gfn_t gfn;
-> +	struct kvm_mmu_page *root_sp;
->  	bool direct_map;
->  };
+> 	kvm_vcpu_enter_gm -> enter_guest_mode
+> 	kvm_vcpu_leave_gm -> leave_guest_mode
+> 	kvm_vcpu_is_gm    -> is_guest_mode
+> 
+> No other changes are in this patch-set compared to V1.
+> 
+> Regards,
+> 	Joerg
+> 
+>  arch/x86/include/asm/kvm_host.h |    1 +
+>  arch/x86/kvm/kvm_cache_regs.h   |   15 +++++++++++++
+>  arch/x86/kvm/svm.c              |   44 ++++++++++++++++++--------------------
+>  arch/x86/kvm/x86.c              |   14 ++++++++---
+>  4 files changed, 47 insertions(+), 27 deletions(-)
+> 
+> Joerg Roedel (3):
+>       KVM: X86: Introduce generic guest-mode representation
+>       KVM: SVM: Make Use of the generic guest-mode functions
+>       KVM: X86: Don't report L2 emulation failures to user-space
 
-Can't you just compare cr3 value? Its harmless to instantiate an spte
-for an unused translation.
-
+Applied, thanks.
 
