@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab0LBVI3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 16:08:29 -0500
-Received: from kroah.org ([198.145.64.141]:54241 "EHLO coco.kroah.org"
+	id S1758154Ab0LBVIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 16:08:42 -0500
+Received: from kroah.org ([198.145.64.141]:54252 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab0LBVI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 16:08:27 -0500
+	id S932187Ab0LBVI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 16:08:29 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>, linux-x25@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 3/6] NET: wan/x25, fix ldisc->open retval
-Date: Thu,  2 Dec 2010 13:08:20 -0800
-Message-Id: <1291324103-7054-3-git-send-email-gregkh@suse.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        stable <stable@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 5/6] TTY: open/hangup race fixup
+Date: Thu,  2 Dec 2010 13:08:22 -0800
+Message-Id: <1291324103-7054-5-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101202204827.GB5927@kroah.com>
 References: <20101202204827.GB5927@kroah.com>
@@ -23,35 +22,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Slaby <jslaby@suse.cz>
 
-We should never return positive values from ldisc->open, tty layer
-doesn't (and never did) expect that.
+Like in the "TTY: don't allow reopen when ldisc is changing" patch,
+this one fixes a TTY WARNING as described in the option 1) there:
+1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+section tty_lock is held. However tty_lock is temporarily dropped in
+the middle of the function by tty_ldisc_hangup.
 
-If we do that, weird things like warnings in tty_ldisc_close happen.
+The fix is to introduce a new flag which we set during the unlocked
+window and check it in tty_reopen too. The flag is TTY_HUPPING and is
+cleared after TTY_HUPPED is set.
 
-Not sure if dev->base_addr is used somehow now.
+While at it, remove duplicate TTY_HUPPED set_bit. The one after
+calling ops->hangup seems to be more correct. But anyway, we hold
+tty_lock, so there should be no difference.
+
+Also document the function it does that kind of crap.
+
+Nicely reproducible with two forked children:
+static void do_work(const char *tty)
+{
+	if (signal(SIGHUP, SIG_IGN) == SIG_ERR) exit(1);
+	setsid();
+	while (1) {
+		int fd = open(tty, O_RDWR|O_NOCTTY);
+		if (fd < 0) continue;
+		if (ioctl(fd, TIOCSCTTY)) continue;
+		if (vhangup()) continue;
+		close(fd);
+	}
+	exit(0);
+}
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
-Cc: linux-x25@vger.kernel.org
-Tested-by: Sergey Lapin <slapin@ossfans.org>
+Reported-by: <Valdis.Kletnieks@vt.edu>
+Reported-by: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: stable <stable@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/wan/x25_asy.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/tty/tty_io.c |   10 +++++++++-
+ include/linux/tty.h  |    1 +
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/wan/x25_asy.c b/drivers/net/wan/x25_asy.c
-index d81ad83..66cda25 100644
---- a/drivers/net/wan/x25_asy.c
-+++ b/drivers/net/wan/x25_asy.c
-@@ -582,7 +582,7 @@ static int x25_asy_open_tty(struct tty_struct *tty)
- 	if (err)
- 		return err;
- 	/* Done.  We have linked the TTY line to a channel. */
--	return sl->dev->base_addr;
-+	return 0;
- }
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 878f6d6..35480dd 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -559,6 +559,9 @@ void __tty_hangup(struct tty_struct *tty)
  
+ 	tty_lock();
+ 
++	/* some functions below drop BTM, so we need this bit */
++	set_bit(TTY_HUPPING, &tty->flags);
++
+ 	/* inuse_filps is protected by the single tty lock,
+ 	   this really needs to change if we want to flush the
+ 	   workqueue with the lock held */
+@@ -578,6 +581,10 @@ void __tty_hangup(struct tty_struct *tty)
+ 	}
+ 	spin_unlock(&tty_files_lock);
+ 
++	/*
++	 * it drops BTM and thus races with reopen
++	 * we protect the race by TTY_HUPPING
++	 */
+ 	tty_ldisc_hangup(tty);
+ 
+ 	read_lock(&tasklist_lock);
+@@ -615,7 +622,6 @@ void __tty_hangup(struct tty_struct *tty)
+ 	tty->session = NULL;
+ 	tty->pgrp = NULL;
+ 	tty->ctrl_status = 0;
+-	set_bit(TTY_HUPPED, &tty->flags);
+ 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+ 
+ 	/* Account for the p->signal references we killed */
+@@ -641,6 +647,7 @@ void __tty_hangup(struct tty_struct *tty)
+ 	 * can't yet guarantee all that.
+ 	 */
+ 	set_bit(TTY_HUPPED, &tty->flags);
++	clear_bit(TTY_HUPPING, &tty->flags);
+ 	tty_ldisc_enable(tty);
+ 
+ 	tty_unlock();
+@@ -1311,6 +1318,7 @@ static int tty_reopen(struct tty_struct *tty)
+ 	struct tty_driver *driver = tty->driver;
+ 
+ 	if (test_bit(TTY_CLOSING, &tty->flags) ||
++			test_bit(TTY_HUPPING, &tty->flags) ||
+ 			test_bit(TTY_LDISC_CHANGING, &tty->flags))
+ 		return -EIO;
+ 
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index c7ea9bc..021bfd2 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -367,6 +367,7 @@ struct tty_file_private {
+ #define TTY_HUPPED 		18	/* Post driver->hangup() */
+ #define TTY_FLUSHING		19	/* Flushing to ldisc in progress */
+ #define TTY_FLUSHPENDING	20	/* Queued buffer flush pending */
++#define TTY_HUPPING 		21	/* ->hangup() in progress */
+ 
+ #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
  
 -- 
 1.7.1
