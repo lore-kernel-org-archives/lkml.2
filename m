@@ -1,157 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab0LBTfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 14:35:06 -0500
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:48489 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756091Ab0LBTfE (ORCPT
+	id S1757699Ab0LBTjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 14:39:54 -0500
+Received: from casper.infradead.org ([85.118.1.10]:57653 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab0LBTjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 14:35:04 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CF7F66F.70808@cam.ac.uk>
-Date: Thu, 02 Dec 2010 19:41:35 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101123 Lightning/1.0b3pre Thunderbird/3.1.6
+	Thu, 2 Dec 2010 14:39:53 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/4] perf events: Separate the routines handling the PERF_SAMPLE_ identity fields
+Date: Thu,  2 Dec 2010 17:39:29 -0200
+Message-Id: <1291318772-30880-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1291318772-30880-1-git-send-email-acme@infradead.org>
+References: <1291318772-30880-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Matteo DAMENO <matteo.dameno@st.com>
-CC: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        mems applications <mems.applications@st.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Carmine IASCONE <carmine.iascone@st.com>, Greg KH <gregkh@suse.de>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] input: misc: add lps001wp_prs driver
-References: <matteo.dameno@st.com> <1291049009-32597-1-git-send-email-matteo.dameno@st.com> <20101130060926.GA31838@core.coreip.homeip.net> <AANLkTikpVtq2cQVhhcsJhZwGFW74mTqo=-vVK1e50AC2@mail.gmail.com> <9BF90A6D61BF154E973D03082989295CA22B3F7E95@SAFEX1MAIL3.st.com>
-In-Reply-To: <9BF90A6D61BF154E973D03082989295CA22B3F7E95@SAFEX1MAIL3.st.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for my lack of response earlier in this thread. Looks
-like my linux-input subscription has died for some reason so
-I hadn't seen it until someone kindly cc'd me.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
->> -----Original Message-----
->> From: Mohamed Ikbel Boulabiar [mailto:boulabiar@gmail.com]
->> Sent: Tuesday, November 30, 2010 11:35 AM
->> To: Dmitry Torokhov
->> Cc: mems applications; linux-input@vger.kernel.org; linux-
->> kernel@vger.kernel.org; Matteo DAMENO; Carmine IASCONE; mems
->> Subject: Re: [PATCH] input: misc: add lps001wp_prs driver
->>
->> On Tue, Nov 30, 2010 at 7:09 AM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->>>> +      If you say yes here you get support for the
->>>> +      STM LPS001D Barometer/Termometer on I2C bus.
->>>
->>> This does not belong to input subsystem, IIO is a better fit.
->>
->> According to this site:
->> http://www.cnbc.com/id/40413317
->> and its datasheet:
->> http://www.findmems.com/wp-content/uploads/2010/11/LPS001WP-
->> DATASHEET.pdf
->>
->> This sensors applications are:
->> ■ Altimeter and barometer for portable devices
->> ■ Smartphones
->> ■ Indoor navigation
->> ■ GPS applications
->> ■ Weather station equipment
->> ■ Sports watches
->>
->> "the same devices would be able to identify the precise location in
->> all three dimensions, allowing, for example, a mobile phone to send a
->> call to an emergency fire, medical or police service that identified
->> not only the location of the building but also the particular floor."
->> Identifying 3d location is similar to what many joystick are doing.
->>
->> Specially the indoor navigation information means an information about
->> the user. And the information is very tied to the user.
->> I don't know whether this can be used to map with virtual reality in a
->> game, or where you use sensors data to give user informations when
->> visiting a museum.
->>
->>
->> Dmitry, is it possible to start putting similar drivers in a new
->> drivers/input/sensors directory but which belongs to the input
->> subsystem ? What do you think ?
->>
-> 
-> We agree with you.
-> It would be a good idea.
-> We are working on many device drivers that are matching your description and
-> we are ready to submit them.
-> 
-> We are disoriented because every maintainer seems to bounce our submissions
-> because of inappropriate position for the device.
-> 
-> IIO, input/misc, I2C (we didn't submit here because of deprecation stated in
-> Documentation).
-> Some one is also submitting our drivers with modifications 
-> under Hwmon...
-If it's out of scope they are wasting their time so it will bounce anyway.
-Hwmon is now actively (very well) maintained so inappropriate drivers will
-get a reply quickly. (and if you are talking about the combined magnetometer
-and accelerometer driver submitted the other day, it already has!)
+Those will be made available in sample like events like MMAP, EXEC, etc in a
+followup patch. So precalculate the extra id header space and have a separate
+routine to fill them up.
 
-Note the big lis3* driver in there is getting kicked out to drivers/misc asap.
-No one seems quite sure why it went in there in the first place and it has been
-causing confusion ever since!  The presence of that driver is the main reason
-people new to these devices tend to think they should be in hwmon in the first
-place. (cc'd Guenter and Jean for their information) 
-> 
-> What to do?
-This is well within the scope of IIO, so we will be more than happy to take
-the driver and assist with any issues etc caused by the move. The other existing
-option is to put it in drivers/misc and wait for IIO to move out of staging
-or something else to come along. There are a few sensor drivers already there
-for exactly that reason.
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ include/linux/perf_event.h |    1 +
+ kernel/perf_event.c        |  128 +++++++++++++++++++++++++------------------
+ 2 files changed, 75 insertions(+), 54 deletions(-)
 
-Disadvantages of MISC:
-* Not a coherent location for drivers.  Whether things match in abi etc
-is more fluid and relies on a few people shouting when new drivers arrive.
-
-Disadvantages of IIO:
-* User space interfaces aren't guaranteed to be stable. However, if you notify
-us that they need to be for a particular device we will support the current ones
-for a suitable period (and provide any new ones alongside).  Basically, it's
-taking a while to get the interfaces right though (except for new stuff) I think
-we are pretty close.
-* Kernel abi's probably change more than in the majority of the kernel.
-This isn't a problem if you are in tree though as we will obviously update the
-driver in sync with the changes.
-* One or two core elements are in need of work (the buffering code needs an
-easier to review implementation and the input bridge, in userspace needs
-some actual work beyond a proof of concept).
-
-Conversely we have more flexibility to change things as and when we discover
-we got a decision wrong.  We have quite a lot of drivers so working
-on unifying interfaces is becoming easier all the time.  It's Direct
-Digital Synthesis (DDS) chips this week ;)  No merged altimeter drivers
-yet though so there will probably be some new abi elements to pin down.
-
-Personally I don't really mind where drivers are physically located, just that
-we use consistent interfaces to user space where ever possible.  The location
-is easy to change (as it's controlled more or less by kernel developers),
-the interfaces less so as userspace applications depend on them.
-
-Nice looking device by the way. I'll take a look at the driver shortly
-(can do a lot of review independent of the subsystem it is going in).
-
-Thanks,
-
-Jonathan
-> 
-> Matteo Dameno
-> 
->>
->> i
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index adf6d99..b9950b1 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -759,6 +759,7 @@ struct perf_event {
+ 
+ 	struct perf_event_attr		attr;
+ 	u16				header_size;
++	u16				id_header_size;
+ 	u16				read_size;
+ 	struct hw_perf_event		hw;
+ 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index aede712..3b847b3 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -133,6 +133,28 @@ static void unclone_ctx(struct perf_event_context *ctx)
+ 	}
+ }
+ 
++static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
++{
++	/*
++	 * only top level events have the pid namespace they were created in
++	 */
++	if (event->parent)
++		event = event->parent;
++
++	return task_tgid_nr_ns(p, event->ns);
++}
++
++static u32 perf_event_tid(struct perf_event *event, struct task_struct *p)
++{
++	/*
++	 * only top level events have the pid namespace they were created in
++	 */
++	if (event->parent)
++		event = event->parent;
++
++	return task_pid_nr_ns(p, event->ns);
++}
++
+ /*
+  * If we inherit events we want to return the parent event id
+  * to userspace.
+@@ -351,15 +373,30 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_IP)
+ 		size += sizeof(data->ip);
+ 
++	if (sample_type & PERF_SAMPLE_ADDR)
++		size += sizeof(data->addr);
++
++	if (sample_type & PERF_SAMPLE_PERIOD)
++		size += sizeof(data->period);
++
++	if (sample_type & PERF_SAMPLE_READ)
++		size += event->read_size;
++
++	event->header_size = size;
++}
++
++static void perf_event__id_header_size(struct perf_event *event)
++{
++	struct perf_sample_data *data;
++	u64 sample_type = event->attr.sample_type;
++	u16 size = 0;
++
+ 	if (sample_type & PERF_SAMPLE_TID)
+ 		size += sizeof(data->tid_entry);
+ 
+ 	if (sample_type & PERF_SAMPLE_TIME)
+ 		size += sizeof(data->time);
+ 
+-	if (sample_type & PERF_SAMPLE_ADDR)
+-		size += sizeof(data->addr);
+-
+ 	if (sample_type & PERF_SAMPLE_ID)
+ 		size += sizeof(data->id);
+ 
+@@ -369,13 +406,7 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		size += sizeof(data->cpu_entry);
+ 
+-	if (sample_type & PERF_SAMPLE_PERIOD)
+-		size += sizeof(data->period);
+-
+-	if (sample_type & PERF_SAMPLE_READ)
+-		size += event->read_size;
+-
+-	event->header_size = size;
++	event->id_header_size = size;
+ }
+ 
+ static void perf_group_attach(struct perf_event *event)
+@@ -3357,6 +3388,36 @@ __always_inline void perf_output_copy(struct perf_output_handle *handle,
+ 	} while (len);
+ }
+ 
++static void perf_event_header__init_id(struct perf_event_header *header,
++				       struct perf_sample_data *data,
++				       struct perf_event *event)
++{
++	u64 sample_type = event->attr.sample_type;
++
++	data->type = sample_type;
++	header->size += event->id_header_size;
++
++	if (sample_type & PERF_SAMPLE_TID) {
++		/* namespace issues */
++		data->tid_entry.pid = perf_event_pid(event, current);
++		data->tid_entry.tid = perf_event_tid(event, current);
++	}
++
++	if (sample_type & PERF_SAMPLE_TIME)
++		data->time = perf_clock();
++
++	if (sample_type & PERF_SAMPLE_ID)
++		data->id = primary_event_id(event);
++
++	if (sample_type & PERF_SAMPLE_STREAM_ID)
++		data->stream_id = event->id;
++
++	if (sample_type & PERF_SAMPLE_CPU) {
++		data->cpu_entry.cpu	 = raw_smp_processor_id();
++		data->cpu_entry.reserved = 0;
++	}
++}
++
+ int perf_output_begin(struct perf_output_handle *handle,
+ 		      struct perf_event *event, unsigned int size,
+ 		      int nmi, int sample)
+@@ -3459,28 +3520,6 @@ void perf_output_end(struct perf_output_handle *handle)
+ 	rcu_read_unlock();
+ }
+ 
+-static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
+-{
+-	/*
+-	 * only top level events have the pid namespace they were created in
+-	 */
+-	if (event->parent)
+-		event = event->parent;
+-
+-	return task_tgid_nr_ns(p, event->ns);
+-}
+-
+-static u32 perf_event_tid(struct perf_event *event, struct task_struct *p)
+-{
+-	/*
+-	 * only top level events have the pid namespace they were created in
+-	 */
+-	if (event->parent)
+-		event = event->parent;
+-
+-	return task_pid_nr_ns(p, event->ns);
+-}
+-
+ static void perf_output_read_one(struct perf_output_handle *handle,
+ 				 struct perf_event *event,
+ 				 u64 enabled, u64 running)
+@@ -3655,37 +3694,17 @@ void perf_prepare_sample(struct perf_event_header *header,
+ {
+ 	u64 sample_type = event->attr.sample_type;
+ 
+-	data->type = sample_type;
+-
+ 	header->type = PERF_RECORD_SAMPLE;
+ 	header->size = sizeof(*header) + event->header_size;
+ 
+ 	header->misc = 0;
+ 	header->misc |= perf_misc_flags(regs);
+ 
++	perf_event_header__init_id(header, data, event);
++
+ 	if (sample_type & PERF_SAMPLE_IP)
+ 		data->ip = perf_instruction_pointer(regs);
+ 
+-	if (sample_type & PERF_SAMPLE_TID) {
+-		/* namespace issues */
+-		data->tid_entry.pid = perf_event_pid(event, current);
+-		data->tid_entry.tid = perf_event_tid(event, current);
+-	}
+-
+-	if (sample_type & PERF_SAMPLE_TIME)
+-		data->time = perf_clock();
+-
+-	if (sample_type & PERF_SAMPLE_ID)
+-		data->id = primary_event_id(event);
+-
+-	if (sample_type & PERF_SAMPLE_STREAM_ID)
+-		data->stream_id = event->id;
+-
+-	if (sample_type & PERF_SAMPLE_CPU) {
+-		data->cpu_entry.cpu		= raw_smp_processor_id();
+-		data->cpu_entry.reserved	= 0;
+-	}
+-
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
+ 
+@@ -5745,6 +5764,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	 * Precalculate sample_data sizes
+ 	 */
+ 	perf_event__header_size(event);
++	perf_event__id_header_size(event);
+ 
+ 	/*
+ 	 * Drop the reference on the group_event after placing the
+-- 
+1.6.2.5
 
