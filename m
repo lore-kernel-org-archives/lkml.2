@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab0LBBgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:36:24 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:40541 "EHLO
+	id S1756255Ab0LBBg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:36:29 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:58237 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab0LBBgW (ORCPT
+	with ESMTP id S1756139Ab0LBBg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:36:22 -0500
+	Wed, 1 Dec 2010 20:36:26 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=WPTbmv4A0hyFVfJ0hbLLy5cPmX2sLI70cVUd9tO7qi2hoWQWQPpN/OzXrIIRBGaqf/
-         QrXyzjxqnn0KS1llCp4w==
-Date: Wed, 1 Dec 2010 17:36:14 -0800 (PST)
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=q8rKXgTu55oo0ne+Ynn6c7jpK2iQMgTanbSF0tpoZIJCZHVUgI0ZNx3Csq3d0FWq5/
+         PFpD6iHlW4kWC5FnbDsA==
+Date: Wed, 1 Dec 2010 17:36:20 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>
 cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 1/5] x86: reduce minimum fake node size to 32M
-Message-ID: <alpine.DEB.2.00.1012011734060.1040@chino.kir.corp.google.com>
+Subject: [patch 2/5] x86: avoid compiling NUMA emulation functions without
+ CONFIG_NUMA_EMU
+In-Reply-To: <alpine.DEB.2.00.1012011734060.1040@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1012011734380.1040@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1012011734060.1040@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,25 +32,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the minimum fake node size from 64MB to 32MB so it is
-possible to test NUMA code at a greater scale on smaller machines
-(64 nodes on a 2G machine, 1024 nodes on 32G machine with
-CONFIG_NODES_SHIFT=10).
+Both acpi_get_nodes() and k8_get_nodes() are only necessary when
+CONFIG_NUMA_EMU is enabled, so avoid compiling them when the option is
+disabled.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- arch/x86/include/asm/numa_64.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/acpi.h   |    5 ++++-
+ arch/x86/include/asm/amd_nb.h |    5 ++++-
+ arch/x86/mm/k8topology_64.c   |    2 ++
+ arch/x86/mm/srat_64.c         |    2 ++
+ 4 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -38,7 +38,7 @@ extern void __cpuinit numa_add_cpu(int cpu);
- extern void __cpuinit numa_remove_cpu(int cpu);
- 
- #ifdef CONFIG_NUMA_EMU
--#define FAKE_NODE_MIN_SIZE	((u64)64 << 20)
-+#define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
- #endif /* CONFIG_NUMA_EMU */
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -188,14 +188,17 @@ extern int acpi_numa;
+ extern int acpi_get_nodes(struct bootnode *physnodes);
+ extern int acpi_scan_nodes(unsigned long start, unsigned long end);
+ #define NR_NODE_MEMBLKS (MAX_NUMNODES*2)
++
++#ifdef CONFIG_NUMA_EMU
+ extern void acpi_fake_nodes(const struct bootnode *fake_nodes,
+ 				   int num_nodes);
++#endif
  #else
+ static inline void acpi_fake_nodes(const struct bootnode *fake_nodes,
+ 				   int num_nodes)
+ {
+ }
+-#endif
++#endif /* CONFIG_ACPI_NUMA */
+ 
+ #define acpi_unlazy_tlb(x)	leave_mm(x)
+ 
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -9,10 +9,13 @@ struct bootnode;
+ extern int early_is_k8_nb(u32 value);
+ extern int cache_k8_northbridges(void);
+ extern void k8_flush_garts(void);
+-extern int k8_get_nodes(struct bootnode *nodes);
+ extern int k8_numa_init(unsigned long start_pfn, unsigned long end_pfn);
+ extern int k8_scan_nodes(void);
+ 
++#ifdef CONFIG_NUMA_EMU
++extern int k8_get_nodes(struct bootnode *nodes);
++#endif
++
+ struct k8_northbridge_info {
+ 	u16 num;
+ 	u8 gart_supported;
+diff --git a/arch/x86/mm/k8topology_64.c b/arch/x86/mm/k8topology_64.c
+--- a/arch/x86/mm/k8topology_64.c
++++ b/arch/x86/mm/k8topology_64.c
+@@ -69,6 +69,7 @@ static __init void early_get_boot_cpu_id(void)
+ 	early_init_lapic_mapping();
+ }
+ 
++#ifdef CONFIG_NUMA_EMU
+ int __init k8_get_nodes(struct bootnode *physnodes)
+ {
+ 	int i;
+@@ -81,6 +82,7 @@ int __init k8_get_nodes(struct bootnode *physnodes)
+ 	}
+ 	return ret;
+ }
++#endif /* CONFIG_NUMA_EMU */
+ 
+ int __init k8_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+ {
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -339,6 +339,7 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
+ 
+ void __init acpi_numa_arch_fixup(void) {}
+ 
++#ifdef CONFIG_NUMA_EMU
+ int __init acpi_get_nodes(struct bootnode *physnodes)
+ {
+ 	int i;
+@@ -351,6 +352,7 @@ int __init acpi_get_nodes(struct bootnode *physnodes)
+ 	}
+ 	return ret;
+ }
++#endif /* CONFIG_NUMA_EMU */
+ 
+ /* Use the information discovered above to actually set up the nodes. */
+ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
