@@ -1,141 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab0LBLcC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 06:32:02 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11714 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757488Ab0LBLcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 06:32:00 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6184"; a="64970696"
-Subject: Re: [PATCH v4] mmc: Make ID freq configurable
-From: Sahitya Tummala <stummala@codeaurora.org>
-To: Hein_Tibosch <hein_tibosch@yahoo.es>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pierre Ossman <pierre@ossman.eu>, Chris Ball <cjb@laptop.org>,
-        Ben Nizette <bn@niasdigital.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Adrian Hunter <adrian.hunter@nokia.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>
-In-Reply-To: <4C80187D.9000304@yahoo.es>
-References: <4C80187D.9000304@yahoo.es>
-Content-Type: text/plain
-Date: Thu, 02 Dec 2010 16:46:22 +0530
-Message-Id: <1291288582.15187.91.camel@stummala-linux.in.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+	id S1757433Ab0LBLn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 06:43:27 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53507 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab0LBLnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 06:43:25 -0500
+Date: Thu, 2 Dec 2010 11:42:48 GMT
+From: tip-bot for Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        shawn.bohrer@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        shawn.bohrer@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1291168642-11402-2-git-send-email-shawn.bohrer@gmail.com>
+References: <1291168642-11402-2-git-send-email-shawn.bohrer@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate: Document missing options.
+Message-ID: <tip-1968ad911d0769e58a484bb721d275814baf9f2f@git.kernel.org>
+Git-Commit-ID: 1968ad911d0769e58a484bb721d275814baf9f2f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 02 Dec 2010 11:42:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hein Tibosch,
+Commit-ID:  1968ad911d0769e58a484bb721d275814baf9f2f
+Gitweb:     http://git.kernel.org/tip/1968ad911d0769e58a484bb721d275814baf9f2f
+Author:     Shawn Bohrer <shawn.bohrer@gmail.com>
+AuthorDate: Tue, 30 Nov 2010 19:57:09 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 1 Dec 2010 18:22:45 -0200
 
-On Fri, 2010-09-03 at 05:34 +0800, Hein_Tibosch wrote:
-> In the latest releases of the mmc driver, the freq during initialization
-> is set to a fixed 400 Khz. This was reportedly too fast for several
-> users. As there doesn't seem to be an ideal frequency which-works-for-all,
-> Pierre suggested to let the driver try several frequencies.
-> 
-> This patch implements that idea. It will try mmc-initialization using
-> several frequencies from an array 400, 300, 200 and 100.
-> I submitted it earlier but it's now adapted to and tested with kernel
-> 2.6.36-rc3.
-> 
-> In case SDIO is broken, it'll still try to detect SDMEM, also at different
-> freqs.
-> 
-> Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
-> 
-> ---
-> diff -Nurp a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> --- a/drivers/mmc/core/core.c	2010-08-29 23:36:04.000000000 +0800
-> +++ b/drivers/mmc/core/core.c	2010-09-03 04:28:52.000000000 +0800
-> @@ -907,12 +907,7 @@ static void mmc_power_up(struct mmc_host
->  	 */
->  	mmc_delay(10);
-> 
-> -	if (host->f_min > 400000) {
-> -		pr_warning("%s: Minimum clock frequency too high for "
-> -				"identification mode\n", mmc_hostname(host));
-> -		host->ios.clock = host->f_min;
-> -	} else
-> -		host->ios.clock = 400000;
-> +	host->ios.clock = host->f_init;
-> 
->  	host->ios.power_mode = MMC_POWER_ON;
->  	mmc_set_ios(host);
-> @@ -1404,6 +1399,8 @@ void mmc_rescan(struct work_struct *work
->  	u32 ocr;
->  	int err;
->  	unsigned long flags;
-> +	int i;
-> +	unsigned freqs[] = { 400000, 300000, 200000, 100000 };
-> 
->  	spin_lock_irqsave(&host->lock, flags);
-> 
-> @@ -1443,55 +1440,64 @@ void mmc_rescan(struct work_struct *work
->  	if (host->ops->get_cd && host->ops->get_cd(host) == 0)
->  		goto out;
-> 
-> -	mmc_claim_host(host);
-> +	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
-> +		mmc_claim_host(host);
-> 
-> -	mmc_power_up(host);
-> -	sdio_reset(host);
-> -	mmc_go_idle(host);
-> +		if (freqs[i] >= host->f_min)
-> +			host->f_init = freqs[i];
-> +		else if (i && freqs[i-1] <= host->f_min)
-> +			goto out;
-> +		else
-> +			host->f_init = host->f_min;
-> 
-> -	mmc_send_if_cond(host, host->ocr_avail);
-> +		printk ("mmc_rescan: trying %u Hz\n", host->f_init);
-> +		mmc_power_up(host);
-> +		sdio_reset(host);
-> +		mmc_go_idle(host);
-> 
-> -	/*
-> -	 * First we search for SDIO...
-> -	 */
-> -	err = mmc_send_io_op_cond(host, 0, &ocr);
-> -	if (!err) {
-> -		if (mmc_attach_sdio(host, ocr)) {
-> -			mmc_claim_host(host);
-> -			/* try SDMEM (but not MMC) even if SDIO is broken */
-> -			if (mmc_send_app_op_cond(host, 0, &ocr))
-> -				goto out_fail;
-> +		mmc_send_if_cond(host, host->ocr_avail);
-> +
-> +		/*
-> +		 * First we search for SDIO...
-> +		 */
-> +		err = mmc_send_io_op_cond(host, 0, &ocr);
-> +		if (!err) {
-> +			if (mmc_attach_sdio(host, ocr)) {
-> +				mmc_claim_host(host);
-> +				/* try SDMEM (but not MMC) even if SDIO is broken */
-> +				if (mmc_send_app_op_cond(host, 0, &ocr))
+perf annotate: Document missing options.
 
-In case of SDIO error, mmc_power_off() is getting called as part of
-mmc_detach_bus().  Shouldn't we power up the host before checking for
-SDMEM? Any comments?
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1291168642-11402-2-git-send-email-shawn.bohrer@gmail.com>
+Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-annotate.txt |   37 +++++++++++++++++++++++++++-
+ 1 files changed, 36 insertions(+), 1 deletions(-)
 
-> +					goto out_fail;
-> +
-> +				if (mmc_attach_sd(host, ocr))
-> +					mmc_power_off(host);
-> +			}
-> +			goto out;
-> +		}
-
-Thanks,
-Sahitya.
---
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index b2c6330..6f5a498 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -24,12 +24,47 @@ OPTIONS
+ --input=::
+         Input file name. (default: perf.data)
+ 
++-d::
++--dsos=<dso[,dso...]>::
++        Only consider symbols in these dsos.
++-s::
++--symbol=<symbol>::
++        Symbol to annotate.
++
++-f::
++--force::
++        Don't complain, do it.
++
++-v::
++--verbose::
++        Be more verbose. (Show symbol address, etc)
++
++-D::
++--dump-raw-trace::
++        Dump raw trace in ASCII.
++
++-k::
++--vmlinux=<file>::
++        vmlinux pathname.
++
++-m::
++--modules::
++        Load module symbols. WARNING: use only with -k and LIVE kernel.
++
++-l::
++--print-line::
++        Print matching source lines (may be slow).
++
++-P::
++--full-paths::
++        Don't shorten the displayed pathnames.
++
+ --stdio:: Use the stdio interface.
+ 
+ --tui:: Use the TUI interface Use of --tui requires a tty, if one is not
+ 	present, as when piping to other commands, the stdio interface is
+ 	used. This interfaces starts by centering on the line with more
+-	samples, TAB/UNTAB cycles thru the lines with more samples.
++	samples, TAB/UNTAB cycles through the lines with more samples.
+ 
+ SEE ALSO
+ --------
