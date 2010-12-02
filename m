@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab0LBWbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 17:31:43 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:38263 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757677Ab0LBWbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 17:31:42 -0500
-Date: Thu, 2 Dec 2010 22:31:35 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org
-Subject: Re: [PATCH] PCI: Disable ASPM if BIOS asks us to
-Message-ID: <20101202223135.GA12652@srcf.ucam.org>
-References: <1291326904-14822-1-git-send-email-mjg@redhat.com> <201012022324.31760.rjw@sisk.pl>
+	id S1758150Ab0LBWco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 17:32:44 -0500
+Received: from www.tglx.de ([62.245.132.106]:36028 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758069Ab0LBWcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 17:32:43 -0500
+Date: Thu, 2 Dec 2010 23:32:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf: Prevent buildid collection running forever
+In-Reply-To: <alpine.LFD.2.00.1012022208300.2653@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1012022323390.2653@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1012022208300.2653@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012022324.31760.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 11:24:31PM +0100, Rafael J. Wysocki wrote:
-> > +	if (!aspm_force) {
-> >  		aspm_disabled = 1;
-> > +		if (clear)
-> > +			aspm_clear_state = clear;
+On Thu, 2 Dec 2010, Thomas Gleixner wrote:
+
+> Collecting the buildids after a long perf run can result in running
+> forever.
 > 
-> Well, is the if(clear) really necessary?
+> The reason is that the perf_ops which buildids uses are not having the
+> .comm function set. Sounds weird, but the way how perf fork/mmap
+> handling works explains it:
+> 
+> On fork the new task in perf userspace inherits the registered memory
+> maps of the parent. This is almost correct (it's ignoring
+> MADV_DONTFORK) for threads and forks. For new processes the extra
+> "comm" event is generated which then removes the parent mappings from
+> the child. The buildid code ignores the comm event and therefor the
+> parents mappings are kept. When tracing e.g. a kernel compile then the
+> inherited process chain can be pretty long and every child gets the
+> old and partially replaced mappings of the various ancestors, which
+> leads to an endless shuffling in map_groups__fixup_overlappings()
+> 
+> Add the default comm event for now to "fix" this.
 
-If the FADT disables ASPM, and then we fail to get the control bits, 
-we'd call this twice and turn off aspm_clear_state.
+<REMOVE THIS>
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> The real fix is to transport this information at clone/fork time with
+> the event, which is easy as the kernel knows it already. That would
+> avoid that whole inherit/clone/remove heuristics in the postprocessing
+> tools.
+
+</REMOVE THIS>
+
+Gah. I confused myself. Grr. commit 4385d580f2 explains the magic, but
+we really should have done the explicit PERF_RECORD_EXEC or at least
+made the .comm thing mandatory.
+
+It's so fricking non obvious that the map flush happens in
+thread__set_comm(). 
+
+Yours grumpy
+
+      tglx
