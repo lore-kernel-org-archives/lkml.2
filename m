@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab0LBGBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 01:01:31 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43238 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab0LBGB3 convert rfc822-to-8bit (ORCPT
+	id S1757106Ab0LBGAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 01:00:18 -0500
+Received: from mga14.intel.com ([143.182.124.37]:43738 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756291Ab0LBGAP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 01:01:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mbB3GaBkevYwyu7S3Nplte3YHN1gQsR1+2uxlIxPyuTJ6Uu6I290RM0+eP7JXsiq5p
-         qk2wEvefrW2lmwqs797M3HXcmUoDfuITDbdGCs+sPfoTfRHgQQoPY4jHu250UHZMUnOk
-         FQP4CafZSXt6hMWCEL2DqD3oE1SRKjtEfnOj8=
-MIME-Version: 1.0
-In-Reply-To: <1291268087.1761.3.camel@Joe-Laptop>
-References: <276469c602c402565b49f99521ea19757429e81e.1291266731.git.joe@perches.com>
-	<a345e995a816576a4c2c39aec43716c18011475b.1291266731.git.joe@perches.com>
-	<20101202053055.19479.qmail@stuge.se>
-	<1291268087.1761.3.camel@Joe-Laptop>
-Date: Thu, 2 Dec 2010 08:01:26 +0200
-Message-ID: <AANLkTimimyhHT2=xT1T8vJ=3WZB4h85ur=yvEfT2Wv-p@mail.gmail.com>
-Subject: Re: [ath9k-devel] [PATCH 2/2] ath: Fix logging message typos
-From: Nick Kossifidis <mickflemm@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Stuge <peter@stuge.se>, Jiri Slaby <jirislaby@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        netdev@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, ath9k-devel@venema.h4ckr.net
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 Dec 2010 01:00:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,286,1288594800"; 
+   d="scan'208";a="355916288"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
+        "Huang, Ying" <ying.huang@intel.com>, Borislav Petkov <bp@alien8.de>,
+        David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 1 Dec 2010 22:00:12 -0800
+Subject: RE: [RFC] persistent store (version 2) (part 1 of 2)
+Thread-Topic: [RFC] persistent store (version 2) (part 1 of 2)
+Thread-Index: AcuRuy/7hczW6DC1QA2wfxKzLjpmXAAKfAzw
+Message-ID: <987664A83D2D224EAE907B061CE93D530191F27E0E@orsmsx505.amr.corp.intel.com>
+References: <4cf594e21679631af0@agluck-desktop.sc.intel.com>
+ <20101201165139.a3bb2199.akpm@linux-foundation.org>
+In-Reply-To: <20101201165139.a3bb2199.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/2 Joe Perches <joe@perches.com>:
-> On Thu, 2010-12-02 at 06:30 +0100, Peter Stuge wrote:
->> Joe Perches wrote:
->> > +++ b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
->> ..
->> > @@ -734,7 +734,7 @@ static bool ar9285_hw_cl_cal(struct ath_hw *ah, struct ath9k_channel *chan)
->> >     if (!ath9k_hw_wait(ah, AR_PHY_AGC_CONTROL, AR_PHY_AGC_CONTROL_CAL,
->> >                       0, AH_WAIT_TIMEOUT)) {
->> >             ath_dbg(common, ATH_DBG_CALIBRATE,
->> > -                   "offset calibration failed to complete in 1ms; noisy ??\n");
->> > +                   "offset calibration failed to complete in 1ms; noisy enfironment?\n");
->>
->> enfironment? :)
+> filenames refer to files!  And lo, that's what we have here.  A
+> filesystem!  The files are created by the kernel and are read and
+> unlinked by userspace.
 >
-> Umm, what's a typo fix patch without more typos?
-> Correct?  How dull...
->
->> >     ath_dbg(common, ATH_DBG_ANI,
->> > -           "Getting spur idx %d is2Ghz. %d val %x\n",
->> > +           "Getting spur idx:%d is2Ghz:%d val:%x\n",
->> >             i, is2GHz, ah->config.spurchans[i][is2GHz]);
->>
->> Is this short for "spurious" ?
->
-> Likely.  Anyone want to change it to a whole word?
->
->
+> So why not implement this whole thing as a proper filesystem?
+...
+> Wait.  It *is* a filesystem.
+...
+> So why can't I remove these "records" with rm?
 
-Nope it stands for spur noise (harmonics)
-http://www.patentgenius.com/patent/7835456.html
+Because I tried to use /sys for this and couldn't find a
+way to get notified about "unlink".  Alan Cox called this
+bit "daft" in v1 (and I agreed with him). Peter Anvin gave
+me some pointers on how easy this would be to do as a real
+filesystem ... so v3 will be out in a little while with
+this insanity removed.
 
-(I have to add that link to the comments, it's new ;-))
+I'll roll in fixes to address your other comments too.
 
--- 
-GPG ID: 0xD21DB2DB
-As you read this post global entropy rises. Have Fun ;-)
-Nick
+Thanks for the review.
+
+-Tony
