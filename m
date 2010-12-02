@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab0LBCnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:43:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60579 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754664Ab0LBCnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:43:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="863382133"
-Subject: Re: [patch 1/3]make readmostly section correctly align
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-In-Reply-To: <20101201182854.dd70bdf2.akpm@linux-foundation.org>
-References: <1291255341.12777.115.camel@sli10-conroe>
-	 <20101201182854.dd70bdf2.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Dec 2010 10:43:50 +0800
-Message-ID: <1291257830.12777.125.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756662Ab0LBCo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:44:58 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37436 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab0LBCo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:44:57 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Subject: Re: Free memory never fully used, swapping
+Cc: kosaki.motohiro@jp.fujitsu.com, Simon Kirby <sim@hostway.ca>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+In-Reply-To: <alpine.DEB.2.00.1012010910450.2989@router.home>
+References: <20101201114226.ABAB.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1012010910450.2989@router.home>
+Message-Id: <20101202093337.1573.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  2 Dec 2010 11:44:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-02 at 10:28 +0800, Andrew Morton wrote:
-> On Thu, 02 Dec 2010 10:02:21 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+> On Wed, 1 Dec 2010, KOSAKI Motohiro wrote:
 > 
-> > readmostly section should end at cache line aligned address, otherwise the last
-> > several data might share cachline with other data and make the readmostly data
-> > still have cache bounce.
-> > For example, in ia64, secpath_cachep is the last readmostly data, and it shares
-> > cacheline with init_uts_ns.
-> > a000000100e80480 d secpath_cachep
-> > a000000100e80488 D init_uts_ns
-> > 
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > 
-> > ---
-> >  include/asm-generic/vmlinux.lds.h |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux/include/asm-generic/vmlinux.lds.h
-> > ===================================================================
-> > --- linux.orig/include/asm-generic/vmlinux.lds.h	2010-12-01 16:49:48.000000000 +0800
-> > +++ linux/include/asm-generic/vmlinux.lds.h	2010-12-02 09:22:32.000000000 +0800
-> > @@ -192,7 +192,8 @@
-> >  
-> >  #define READ_MOSTLY_DATA(align)						\
-> >  	. = ALIGN(align);						\
-> > -	*(.data..read_mostly)
-> > +	*(.data..read_mostly)						\
-> > +	. = ALIGN(align);
-> >  
-> >  #define CACHELINE_ALIGNED_DATA(align)					\
-> >  	. = ALIGN(align);						\
-> > 
+> > > Specifying a parameter to temporarily override to see if this has the
+> > > effect is ok. But this has worked for years now. There must be something
+> > > else going with with reclaim that causes these issues now.
+> >
+> > I don't think this has worked. Simon have found the corner case recently,
+> > but it is not new.
 > 
-> Surely the sane way to do this is to ensure that each section *starts*
-> at an at-least-cacheline aligned address and then not worry about how
-> the section ends.  So shouldn't we be fixing DATA_DATA?
-Some archs don't use DATA_DATA but directly use READ_MOSTLY_DATA, so I
-change READ_MOSTLY_DATA.
-
-> With your approach, .data may end up sharing a cacheline with
-> some other section in some undesirable manner on a different arch.
+> What has worked? If the reduction of the maximum allocation order did not
+> have the expected effect of fixing things here then the issue is not
+> related to the higher allocations from slub.
 > 
-> "fixing" DATA_DATA would involve page-aligning it, which sucks a bit. 
-> Things would be better if include/asm-generic/vmlinux.lds.h had access
-> to a globally-agreed cacheline-size, as it does the page size.
-yes, there isn't a well defined cacheline-size for vmlinux.lds.h.
+> Higher order allocations are not only a slub issue but a general issue for
+> various subsystem that require higher order pages. This ranges from jumbo
+> frames, to particular needs for certain device drivers, to huge pages.
 
-> otoh, .data.read_mostly is "special", in that it wants the tail end of
-> its last cacheline not to share with any other section.  Most other
-> sections aren't like that.
-yes, other sections don't need to be so.
+Sure yes. However One big difference is there. Other user certinally need
+such high order, but slub are using high order for only performance. but its
+stragegy often shoot our own foot. It often makes worse than low order. IOW,
+slub isn't always win against slab. 
 
-Thanks,
-Shaohua
+
+> > So I hope you realize that high order allocation is no free lunch. __GFP_NORETRY
+> > makes no sense really. Even though we have compaction, high order reclaim is still
+> > costly operation.
+> 
+> Sure. There is a tradeoff between reclaim effort and the benefit of higher
+> allocations. The costliness of reclaim may have increased with the recent
+> changes to the reclaim logic. In fact reclaim gets more and more complex
+> over time and there may be subtle bugs in there given the recent flurry of
+> changes.
+
+I can't insist reclaim is really complex. So maybe one of problem is now
+reclaim can't know the request is must necessary or optimistic try. And,
+allocation failure often makes disaster then we were working on fixint it.
+But increasing high order allocation successful ratio sadly can makes slub
+unhappy. umm..
+
+So I think we have multiple option
+
+1) reduce slub_max_order and slub only use safely order
+2) slub don't invoke reclaim when high order tryal allocation 
+   (ie turn off GFP_WAIT and turn on GFP_NOKSWAPD)
+3) slub pass new hint to reclaim and reclaim don't work so aggressively if
+   such hint is passwd.
+
+
+So I have one question. I thought (2) is most nature. but now slub doesn't.
+Why don't you do that? As far as I know, reclaim haven't been lighweight 
+operation since linux was born. I'm curious your assumed cost threshold for
+slub high order allocation.
+
+
+
+> > I don't think SLUB's high order allocation trying is bad idea. but now It
+> > does more costly trying. that's bad. Also I'm worry about SLUB assume too
+> > higher end machine. Now Both SLES and RHEL decided to don't use SLUB,
+> > instead use SLAB. Now linux community is fragmented. If you are still
+> > interesting SL*B unification, can you please consider to join corner
+> > case smashing activity?
+> 
+> The problems with higher order reclaim get more difficult with small
+> memory sizes yes. We could reduce the maximum order automatically if memory
+> is too tight. There is nothing hindering us from tuning the max order
+> behavior of slub in a similar way that we now tune the thresholds of the
+> vm statistics.
+
+Sound like really good idea. :)
+
+
+
+> But for that to be done we first need to have some feedback if the changes
+> to max order have indeed the desired effect in this corner case.
+
+
+
+
 
