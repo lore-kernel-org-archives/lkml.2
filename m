@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0LBK7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 05:59:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43465 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab0LBK7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 05:59:17 -0500
-Subject: [GIT PULL] regulator fixes for 2.6.37-rc5
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Dec 2010 10:59:13 +0000
-Message-ID: <1291287553.3262.45.camel@odin>
+	id S1757422Ab0LBLDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 06:03:15 -0500
+Received: from serv04.lahn.de ([213.239.197.57]:37433 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756919Ab0LBLDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 06:03:14 -0500
+Date: Thu, 2 Dec 2010 11:57:22 +0100
+From: Michael Leun <lkml20101129@newton.leun.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: hughd@google.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: kernel BUG at mm/truncate.c:475!
+Message-ID: <20101202115722.1c00afd5@xenia.leun.net>
+In-Reply-To: <E1PO5gh-00079U-Ma@pomaz-ex.szeredi.hu>
+References: <20101130194945.58962c44@xenia.leun.net>
+	<alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com>
+	<E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu>
+	<20101201124528.6809c539@xenia.leun.net>
+	<E1PNqO1-0005px-9h@pomaz-ex.szeredi.hu>
+	<20101202084159.6bff7355@xenia.leun.net>
+	<20101202091552.4a63f717@xenia.leun.net>
+	<E1PO5gh-00079U-Ma@pomaz-ex.szeredi.hu>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 02 Dec 2010 10:42:51 +0100
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-Please pull the following regulator fixes for 2.6.37-rc5.
+> On Thu, 2 Dec 2010, Michael Leun wrote:
+> > > Kernel compile 2.6.36.1 with that .page_mkwrite commented out
+> > > running now, will reboot really soon now (TM).
+> > 
+> > OK - that happened very fast again in 2.6.36.1.
+> > 
+> > Sorry for that tainted kernel, but cannot afford to additionally
+> > have graphics lockups all the time - I've shown that it happens with
+> > untainted kernel also (long run without fault yesterday also was
+> > with nvidia.ko driver).
+> > 
+> > Until I've another suggestion what to try I'll swich back to 2.6.36
+> > to see if it really happens less frequent there.
+> 
+> Can you please describe in detail the workload that's causing this to
+> happen?
 
-Thanks
+Thats rather complicated, but I'll try. Basically it boils down to:
 
-Liam
+unshare -n -m /bin/bash
+unionfs -o cow,suid,allow_other,max_files=65536 /home/netenv/user1-union=RW:/=RO /home/netenv/user1
+mount -n -t proc none /home/netenv/user1/proc
+mount -n -t sysfs none /home/netenv/user1/sys
+mount -n -t devtmpfs devtmpfs /home/netenv/user1/dev
+mount -n -t devpts devpts /home/netenv/user1/dev/pts
+chroot /home/netenv/user1 /bin/su - user1
 
----
+Then run some shell-scripts in this shell running as user1.
 
-The following changes since commit e8a7e48bb248a1196484d3f8afa53bded2b24e71:
+Of course there is some more stuff as getting network connectivity in
+this new namespace and so on, but I guess thats not important for the
+fuse problem.
 
-  Linux 2.6.37-rc4 (2010-11-29 20:42:04 -0800)
+Then there are some (up to 6 at the moment) more setups like the above
+one with different users (user2, user3 and so on) running concurrent.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
+In some of this setups two or more environments share the same writable
+branch, so the files in this environments changed against real root of
+the machine are the same, e.g.:
 
-Axel Lin (4):
-      regulator: Remove a redundant device_remove_file call in create_regulator
-      regulator: Ensure enough delay time for enabling regulator
-      regulator: Return proper error for regulator_register()
-      regulator: twl-regulator - fix twlreg_set_mode
+[...]
+unionfs -o cow,suid,allow_other,max_files=65536 /home/netenv/commondir=RW:/=RO /home/netenv/user1
+[...]
 
-Bengt Jonsson (1):
-      regulator: enable supply regulator only when use count is zero
+and another one
 
-Mark Brown (1):
-      regulator: Staticise mc13783_powermisc_rmw()
+[...]
+unionfs -o cow,suid,allow_other,max_files=65536 /home/netenv/commondir=RW:/=RO /home/netenv/user2
+[...]
 
-Mattias Wallin (2):
-      regulator: regulator disable supply fix
-      regulator: lock supply in regulator enable
+I observed that unionfs process takes much more cpu power than usual
+before fault happens.
 
-Randy Dunlap (1):
-      regulator: fix kernel-doc for set_consumer_device_supply
+ elektra:~ # unionfs --version
+unionfs-fuse version: 0.24
+FUSE library version: 2.8.5
+fusermount version: 2.8.5
+using FUSE kernel interface version 7.12
 
- drivers/regulator/core.c              |   30 +++++++++++++++++++-----------
- drivers/regulator/mc13783-regulator.c |    4 ++--
- drivers/regulator/twl-regulator.c     |    6 +++---
- 3 files changed, 24 insertions(+), 16 deletions(-)
+-- 
+MfG,
 
+Michael Leun
 
