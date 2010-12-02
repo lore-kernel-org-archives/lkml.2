@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab0LBBTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:19:05 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:44514 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab0LBBTE (ORCPT
+	id S1755164Ab0LBBVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:21:55 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52185 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab0LBBVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:19:04 -0500
-Date: Thu, 2 Dec 2010 01:18:33 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-Message-ID: <20101202011832.GO22787@shareable.org>
-References: <1290532938-7332-1-git-send-email-virtuoso@slind.org> <20101123224346.GA19350@tango.0pointer.de> <20101201104359.GJ22787@shareable.org> <20180.1291243569@localhost>
+	Wed, 1 Dec 2010 20:21:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=SZfPYt2eUcA7LxiLmBXWuOkwz8lwAya/isnzvei8Ln7tJfzTgkZAl4RHj5T4FFzcqP
+         63kFmZOEZ8ZOKcTZdNGw==
+Date: Wed, 1 Dec 2010 17:21:48 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, lethal@linux-sh.org,
+        Andi Kleen <ak@linux.intel.com>, dave@linux.vnet.ibm.com,
+        Greg KH <gregkh@suse.de>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+In-Reply-To: <20101201234514.GA13509@shaohui>
+Message-ID: <alpine.DEB.2.00.1012011716550.22420@chino.kir.corp.google.com>
+References: <20101130071324.908098411@intel.com> <20101130071437.461969179@intel.com> <alpine.DEB.2.00.1012011656590.1896@chino.kir.corp.google.com> <20101201234514.GA13509@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20180.1291243569@localhost>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 01 Dec 2010 10:43:59 GMT, Jamie Lokier said:
+On Thu, 2 Dec 2010, Shaohui Zheng wrote:
+
+> > > From: Shaohui Zheng <shaohui.zheng@intel.com>
+> > > 
+> > > Implement a debugfs inteface /sys/kernel/debug/mem_hotplug/probe for meomory hotplug
+> > > emulation.  it accepts the same parameters like
+> > > /sys/devices/system/memory/probe.
+> > > 
+> > 
+> > NACK, we don't need two interfaces to do the same thing.  
 > 
-> > So maybe CLOCK_MONOTONIC should be changed to include elapsed time
-> > during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
-> > for programs that want that?
+> You may not know the background, the sysfs memory/probe interface is a general
+> interface.  Even through we have a debugfs interface, we should still keep it.
 > 
-> Wouldn't that be an API break for programs that are expecting the current
-> behavior of CLOCK_MONOTONIC?  Yes, there should be a way to request either of
-> them - but if there's only one way now, it should continue to act the current
-> way, and the added way is the second option.
+> For test purpose, the sysfs is enough, according to the comments from Greg & Dave,
+> we create the debugfs interface.
+> 
 
-I don't know.  Can you think of any program which would break if
-suspend/resume's clocks behaved like ordinary task scheduling - when a
-task doesn't run for a long time because of scheduling decisions?
-Hmm, I guess some realtime apps might like to know.
+I doubt either Greg or Dave suggested adding duplicate interfaces for the 
+same functionality.
 
-Currently CLOCK_MONOTONIC jumps forwards by 4 seconds on
-suspend/resume anyway (as seen by userspace), on my x86 laptop running
-2.6.37-rc3.  So it does already jump a bit...
+The difference is that we needed to add the add_node interface in a new 
+mem_hotplug debugfs directory because it's only useful for debugging 
+kernel code and, thus, doesn't really have an appropriate place in sysfs.  
+Nobody is going to use add_node unless they lack hotpluggable memory 
+sections in their SRAT and want to debug the memory hotplug callers.  For 
+example, I already wrote all of this node hotplug emulation stuff when I 
+wrote the node hotplug support for SLAB.
 
-But see my other reply; maybe there's no need to change it.  A
-reliable, immediate notification that CLOCK_MONOTONIC's relationship
-to real time has been disrupted by an unknown amount would be
-sufficient for the problems I have in mind.
-
--- Jamie
-
+Memory hotplug, however, does serve a non-debugging function and is 
+appropriate in sysfs since this is how people hotplug memory.  It's an ABI 
+that we can't simply remove without deprecation over a substantial period 
+of time and in this case it doesn't seem to have a clear advantage.  We 
+need not add special emulation support for something that is already 
+possible for real systems, so adding a duplicate interface in debugfs is 
+inappropriate.
