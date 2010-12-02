@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab0LBBGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:06:11 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:43375 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab0LBBGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:06:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=XnouoGT2HpMoH1rsGduJLri5pF4GJgTPE6xjVfgz4adzMWCqY9nmuzFgWHl3jjZekT
-         HHbd3Y+P2DS55YSNvnyQ==
-Date: Wed, 1 Dec 2010 17:06:02 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shaohui Zheng <shaohui.zheng@intel.com>
-cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [2/8, v6] NUMA Hotplug Emulator: Add numa=possible option
-In-Reply-To: <20101130071436.836186525@intel.com>
-Message-ID: <alpine.DEB.2.00.1012011705280.6088@chino.kir.corp.google.com>
-References: <20101130071324.908098411@intel.com> <20101130071436.836186525@intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755570Ab0LBBGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:06:39 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40764 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753389Ab0LBBGi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 20:06:38 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <20101201153608.78b331f9.akpm@linux-foundation.org>
+References: <1291217804-11257-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-3-git-send-email-Trond.Myklebust@netapp.com>
+ <1291217804-11257-4-git-send-email-Trond.Myklebust@netapp.com>
+ <AANLkTi=C8UtWwctEgBY2584d8fDV3OHpf+mGNnQO8ZJt@mail.gmail.com>
+ <1291229669.6609.24.camel@heimdal.trondhjem.org> <AANLkTinsEeKK9LykVAVq60Lsb3caLDJasnKH8kcgSFVp@mail.gmail.com>
+ <1291234251.6609.39.camel@heimdal.trondhjem.org> <20101201123341.d12ef362.akpm@linux-foundation.org>
+ <alpine.LSU.2.00.1012011258220.18662@tigran.mtv.corp.google.com>
+ <alpine.LSU.2.00.1012011311590.18920@tigran.mtv.corp.google.com>
+ <20101201133831.ea6ba10a.akpm@linux-foundation.org> <1291240272.6609.50.camel@heimdal.trondhjem.org>
+ <20101201141351.8609140b.akpm@linux-foundation.org> <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
+ <20101201143856.51f4f9d9.akpm@linux-foundation.org> <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
+ <20101201153608.78b331f9.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Dec 2010 17:05:43 -0800
+Message-ID: <AANLkTinbuRRpg7Y8Zu=PD36BO11+qdjZ9uT=u9gCTpDw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Nov 2010, shaohui.zheng@intel.com wrote:
+On Wed, Dec 1, 2010 at 3:36 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed, 1 Dec 2010 15:31:11 -0800
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>> Ergo: vmscan has a locked page leads to the filesystem being
+>> guaranteed to not be unmounted.  And that, in turn, guarantees that
+>> the module won't be unloaded until the machine has gone through an
+>> idle cycle.
+>
+> The page isn't attached to the address_space any more:
 
-> From:  David Rientjes <rientjes@google.com>
-> 
-> Adds a numa=possible=<N> command line option to set an additional N nodes
-> as being possible for memory hotplug.  This set of possible nodes
-> controls nr_node_ids and the sizes of several dynamically allocated node
-> arrays.
-> 
-> This allows memory hotplug to create new nodes for newly added memory
-> rather than binding it to existing nodes.
-> 
-> The first use-case for this will be node hotplug emulation which will use
-> these possible nodes to create new nodes to test the memory hotplug
-> callbacks and surrounding memory hotplug code.
-> 
-> CC: Shaohui Zheng <shaohui.zheng@intel.com>
-> CC: Haicheng Li <haicheng.li@intel.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Did you even read the email?
 
-You're going to need to add your Signed-off-by line immediately after mine 
-if you're pushing these to a maintainer, you're along the submission 
-chain.
+Here, let me quote the important parts:
+
+  "module won't be unloaded until the machine has gone through an idle cycle"
+
+  "This is pretty much how all the module races are handled. Doing module
+   ref-counts per page (or per packet in flight for things like
+   networking) would be prohibitively expensive."
+
+IOW, the whole "stop_machine()" part is fundamental. That whole
+"module unload won't happen until we've gone through an idle cycle" is
+EXACTLY why we don't need to have the page attached or ref-counted -
+we're still safe.
+
+                    Linus
