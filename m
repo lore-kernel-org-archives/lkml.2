@@ -1,659 +1,718 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab0LBRD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:03:58 -0500
-Received: from smtp101.prem.mail.sp1.yahoo.com ([98.136.44.56]:38951 "HELO
-	smtp101.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755045Ab0LBRDz (ORCPT
+	id S1755555Ab0LBRFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:05:45 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37830 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab0LBRFn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:03:55 -0500
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: uw7Ti1wVM1kfM9UQ1M_1fAWuaRbUwcmGAxvpmSY4k5fZsxQ
- 083v0R9DyGC9BFsEi194Rn3gUHMTeqJGaUffYehjZTgIKR2yX5GCDWEpRzGQ
- 0KUoFaZ8EEOsGcWb9AlgzTaUjF0cM3vrbrBEEnAa9W0Wn1WXs4rWcX4waEM7
- EY1.nHEFxTHr4YOR9kQ7CaEHS_jN7_wblCNflhzA48o8zlbgtjbI8aXFidTG
- 3I3VkdeYyxQ_0BG48JXXdiB_VIJo0YFlgCD_A05moPZap8bJDiW3.kA5APi0
- VZNPBvYmDJRGmMQIoq9iJpyDqKYBdT6J45xZtE3Q7
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4CF7D16D.4060009@schaufler-ca.com>
-Date: Thu, 02 Dec 2010 09:03:41 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 2 Dec 2010 12:05:43 -0500
+From: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+To: "michael.hennerich@analog.com" <michael.hennerich@analog.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "drivers@analog.com" <drivers@analog.com>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Date: Thu, 2 Dec 2010 22:35:06 +0530
+Subject: RE: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
+Thread-Topic: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
+Thread-Index: AcuSHNDjTuzI42DoRs2X9BqvrLAF2QAJXs3Q
+Message-ID: <0680EC522D0CC943BC586913CF3768C0041390DDE7@dbde02.ent.ti.com>
+References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com>
+ <1291292489-32362-4-git-send-email-michael.hennerich@analog.com>
+In-Reply-To: <1291292489-32362-4-git-send-email-michael.hennerich@analog.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        James Morris <jmorris@namei.org>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Smack: label for task objects (retry 2)
-References: <4CEE4D6E.4030204@nokia.com>
-In-Reply-To: <4CEE4D6E.4030204@nokia.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2010 3:50 AM, Jarkko Sakkinen wrote:
-> This patch adds a new security attribute to Smack called
-> SMACK64EXEC. It defines label that is used while task is
-> running.
+
+
+> -----Original Message-----
+> From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-
+> owner@vger.kernel.org] On Behalf Of michael.hennerich@analog.com
+> Sent: Thursday, December 02, 2010 5:51 PM
+> To: linux-iio@vger.kernel.org; linux-kernel@vger.kernel.org
+> Cc: drivers@analog.com; jic23@cam.ac.uk; device-drivers-
+> devel@blackfin.uclinux.org; Michael Hennerich
+> Subject: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
 >
-> Exception: in smack_task_wait() child task is checked
-> for write access to parent task using label inherited
-> from the task that forked it.
+> From: Michael Hennerich <michael.hennerich@analog.com>
 >
-> Fixed issues from previous submit:
-> - SMACK64EXEC was not read when SMACK64 was not set.
-> - inode security blob was not updated after setting
->   SMACK64EXEC
-> - inode security blob was not updated when removing
->   SMACK64EXEC
+> Example driver using the proposed ABI
 >
-> Thanks to Casey pointing out second and third issue and
-> helping out in testing.
->
-> Signed-off-by: Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>
-
-After patch clean-up applied to:
-
-  git://gitorious.org/smack-next/kernel.git
-
-James, would you be so kind as to pull for security-testing#next?
-I think that I have the git tree set up properly, but I'm sure
-you'll let me know if I've missed something.
-
-Thank you.
-
+> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
 > ---
->  include/linux/xattr.h         |    2 +
->  security/smack/smack.h        |   30 +++++++
->  security/smack/smack_access.c |    4 +-
->  security/smack/smack_lsm.c    |  192 ++++++++++++++++++++++++++++++-----------
->  security/smack/smackfs.c      |    4 +-
->  5 files changed, 178 insertions(+), 54 deletions(-)
+>  drivers/staging/iio/dds/Kconfig  |    7 +
+>  drivers/staging/iio/dds/Makefile |    1 +
+>  drivers/staging/iio/dds/ad9834.c |  483
+> ++++++++++++++++++++++++++++++++++++++
+>  drivers/staging/iio/dds/ad9834.h |  112 +++++++++
+>  4 files changed, 603 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/iio/dds/ad9834.c
+>  create mode 100644 drivers/staging/iio/dds/ad9834.h
 >
-> diff --git a/include/linux/xattr.h b/include/linux/xattr.h
-> index f1e5bde..351c790 100644
-> --- a/include/linux/xattr.h
-> +++ b/include/linux/xattr.h
-> @@ -40,9 +40,11 @@
->  #define XATTR_SMACK_SUFFIX "SMACK64"
->  #define XATTR_SMACK_IPIN "SMACK64IPIN"
->  #define XATTR_SMACK_IPOUT "SMACK64IPOUT"
-> +#define XATTR_SMACK_EXEC "SMACK64EXEC"
->  #define XATTR_NAME_SMACK XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
->  #define XATTR_NAME_SMACKIPIN    XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
->  #define XATTR_NAME_SMACKIPOUT    XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
-> +#define XATTR_NAME_SMACKEXEC    XATTR_SECURITY_PREFIX XATTR_SMACK_EXEC
->   #define XATTR_CAPS_SUFFIX "capability"
->  #define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
-> diff --git a/security/smack/smack.h b/security/smack/smack.h
-> index 43ae747..a2e2cdf 100644
-> --- a/security/smack/smack.h
-> +++ b/security/smack/smack.h
-> @@ -51,10 +51,16 @@ struct socket_smack {
->   */
->  struct inode_smack {
->      char        *smk_inode;    /* label of the fso */
-> +    char        *smk_task;    /* label of the task */
->      struct mutex    smk_lock;    /* initialization lock */
->      int        smk_flags;    /* smack inode flags */
->  };
->  +struct task_smack {
-> +    char        *smk_task;    /* label used for access control */
-> +    char        *smk_forked;    /* label when forked */
+> diff --git a/drivers/staging/iio/dds/Kconfig
+> b/drivers/staging/iio/dds/Kconfig
+> index 7969be2..4c9cce3 100644
+> --- a/drivers/staging/iio/dds/Kconfig
+> +++ b/drivers/staging/iio/dds/Kconfig
+> @@ -17,6 +17,13 @@ config AD9832
+>         Say yes here to build support for Analog Devices DDS chip
+>         ad9832 and ad9835, provides direct access via sysfs.
+>
+> +config AD9834
+> +     tristate "Analog Devices ad9833/4/ driver"
+> +     depends on SPI
+> +     help
+> +       Say yes here to build support for Analog Devices DDS chip
+> +       AD9833 and AD9834, provides direct access via sysfs.
+> +
+>  config AD9850
+>       tristate "Analog Devices ad9850/1 driver"
+>       depends on SPI
+> diff --git a/drivers/staging/iio/dds/Makefile
+> b/drivers/staging/iio/dds/Makefile
+> index 6f274ac..1477461 100644
+> --- a/drivers/staging/iio/dds/Makefile
+> +++ b/drivers/staging/iio/dds/Makefile
+> @@ -4,6 +4,7 @@
+>
+>  obj-$(CONFIG_AD5930) += ad5930.o
+>  obj-$(CONFIG_AD9832) += ad9832.o
+> +obj-$(CONFIG_AD9834) += ad9834.o
+>  obj-$(CONFIG_AD9850) += ad9850.o
+>  obj-$(CONFIG_AD9852) += ad9852.o
+>  obj-$(CONFIG_AD9910) += ad9910.o
+> diff --git a/drivers/staging/iio/dds/ad9834.c
+> b/drivers/staging/iio/dds/ad9834.c
+> new file mode 100644
+> index 0000000..eb1fabf
+> --- /dev/null
+> +++ b/drivers/staging/iio/dds/ad9834.c
+> @@ -0,0 +1,483 @@
+> +/*
+> + * AD9834 SPI DAC driver
+> + *
+> + * Copyright 2010 Analog Devices Inc.
+> + *
+> + * Licensed under the GPL-2 or later.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/device.h>
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/sysfs.h>
+> +#include <linux/list.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/err.h>
+> +#include <asm/div64.h>
+> +
+> +#include "../iio.h"
+> +#include "../sysfs.h"
+> +#include "dds.h"
+> +
+> +#include "ad9834.h"
+> +
+> +static unsigned int ad9834_calc_freqreg(unsigned long mclk, unsigned long
+> fout)
+> +{
+> +     unsigned long long freqreg = (u64) fout * (u64) (1 <<
+> AD9834_FREQ_BITS);
+> +     do_div(freqreg, mclk);
+> +     return freqreg;
+> +}
+> +
+> +static int ad9834_write_frequency(struct ad9834_state *st,
+> +                               unsigned long addr, unsigned long fout)
+> +{
+> +     unsigned long regval;
+> +
+> +     if (fout > (st->mclk / 2))
+> +             return -EINVAL;
+> +
+> +     regval = ad9834_calc_freqreg(st->mclk, fout);
+> +
+> +     st->freq_data[0] = cpu_to_be16(addr | (regval &
+> +                                    RES_MASK(AD9834_FREQ_BITS / 2)));
+> +     st->freq_data[1] = cpu_to_be16(addr | ((regval >>
+> +                                    (AD9834_FREQ_BITS / 2)) &
+> +                                    RES_MASK(AD9834_FREQ_BITS / 2)));
+> +
+> +     return spi_sync(st->spi, &st->freq_msg);;
+> +}
+> +
+> +static int ad9834_write_phase(struct ad9834_state *st,
+> +                               unsigned long addr, unsigned long phase)
+> +{
+> +     if (phase > (1 << AD9834_PHASE_BITS))
+> +             return -EINVAL;
+> +     st->data = cpu_to_be16(addr | phase);
+> +
+> +     return spi_sync(st->spi, &st->msg);
+> +}
+> +
+> +static ssize_t ad9834_write(struct device *dev,
+> +             struct device_attribute *attr,
+> +             const char *buf,
+> +             size_t len)
+> +{
+> +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> +     struct ad9834_state *st = dev_info->dev_data;
+> +     struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+> +     int ret;
+> +     long val;
+> +
+> +     ret = strict_strtol(buf, 10, &val);
+> +     if (ret)
+> +             goto error_ret;
+Could we do some bounds check.
+> +
+> +     mutex_lock(&dev_info->mlock);
+> +     switch (this_attr->address) {
+> +     case AD9834_REG_FREQ0:
+> +     case AD9834_REG_FREQ1:
+> +             ret = ad9834_write_frequency(st, this_attr->address, val);
+> +             break;
+> +     case AD9834_REG_PHASE0:
+> +     case AD9834_REG_PHASE1:
+> +             ret = ad9834_write_phase(st, this_attr->address, val);
+> +             break;
+> +
+> +     case AD9834_OPBITEN:
+> +             if (st->control & AD9834_MODE) {
+> +                     ret = -EINVAL;  /* AD9843 reserved mode */
+> +                     break;
+> +             }
+> +
+> +             if (val)
+> +                     st->control &= ~AD9834_OPBITEN;
+> +             else
+> +                     st->control |= AD9834_OPBITEN;
+> +             st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +             ret = spi_sync(st->spi, &st->msg);
+> +             break;
+> +
+> +     case AD9834_PIN_SW:
+> +             if (val)
+> +                     st->control |= AD9834_PIN_SW;
+> +             else
+> +                     st->control &= ~AD9834_PIN_SW;
+> +             st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +             ret = spi_sync(st->spi, &st->msg);
+> +             break;
+> +     case AD9834_FSEL:
+> +     case AD9834_PSEL:
+> +             if (val == 0)
+> +                     st->control &= ~(this_attr->address | AD9834_PIN_SW);
+> +             else if (val == 1) {
+> +                     st->control |= this_attr->address;
+> +                     st->control &= ~AD9834_PIN_SW;
+> +             } else {
+> +                     ret = -EINVAL;
+> +                     break;
+> +             }
+> +             st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +             ret = spi_sync(st->spi, &st->msg);
+> +             break;
+> +     case AD9834_RESET:
+> +             if (val)
+> +                     st->control |= AD9834_RESET;
+> +             else
+> +                     st->control &= ~AD9834_RESET;
+> +             st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +             ret = spi_sync(st->spi, &st->msg);
+> +             break;
+> +     default:
+> +             ret = -ENODEV;
+> +     }
+> +     mutex_unlock(&dev_info->mlock);
+> +
+> +error_ret:
+> +     return ret ? ret : len;
+> +}
+> +
+> +static ssize_t ad9834_store_wavetype(struct device *dev,
+> +                              struct device_attribute *attr,
+> +                              const char *buf,
+> +                              size_t len)
+> +{
+> +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> +     struct ad9834_state *st = dev_info->dev_data;
+> +     struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+> +     int ret = 0;
+> +     bool is_ad9833 = st->devid == ID_AD9833;
+> +
+> +     mutex_lock(&dev_info->mlock);
+> +
+> +     switch (this_attr->address) {
+> +     case 0:
+> +             if (sysfs_streq(buf, "sine")) {
+> +                     st->control &= ~AD9834_MODE;
+> +                     if (is_ad9833)
+> +                             st->control &= ~AD9834_OPBITEN;
+> +             } else if (sysfs_streq(buf, "triangle")) {
+> +                     if (is_ad9833) {
+> +                             st->control &= ~AD9834_OPBITEN;
+> +                             st->control |= AD9834_MODE;
+> +                     } else if (st->control & AD9834_OPBITEN) {
+> +                             ret = -EINVAL;  /* AD9843 reserved mode */
+> +                     } else {
+> +                             st->control |= AD9834_MODE;
+> +                     }
+> +             } else if (is_ad9833 && sysfs_streq(buf, "square")) {
+> +                     st->control &= ~AD9834_MODE;
+> +                     st->control |= AD9834_OPBITEN;
+> +             } else {
+> +                     ret = -EINVAL;
+> +             }
+> +
+> +             break;
+> +     case 1:
+> +             if (sysfs_streq(buf, "square") &&
+> +                     !(st->control & AD9834_MODE)) {
+> +                     st->control &= ~AD9834_MODE;
+> +                     st->control |= AD9834_OPBITEN;
+> +             } else {
+> +                     ret = -EINVAL;
+> +             }
+> +             break;
+> +     default:
+> +             ret = -EINVAL;
+> +             break;
+> +     }
+> +
+> +     if (!ret) {
+> +             st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +             ret = spi_sync(st->spi, &st->msg);
+> +     }
+> +             mutex_unlock(&dev_info->mlock);
+> +
+> +     return ret ? ret : len;
+> +}
+> +
+> +static ssize_t ad9834_show_name(struct device *dev,
+> +                              struct device_attribute *attr,
+> +                              char *buf)
+> +{
+> +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> +     struct ad9834_state *st = iio_dev_get_devdata(dev_info);
+> +
+> +     return sprintf(buf, "%s\n", spi_get_device_id(st->spi)->name);
+> +}
+> +static IIO_DEVICE_ATTR(name, S_IRUGO, ad9834_show_name, NULL, 0);
+> +
+> +static ssize_t ad9834_show_out0_available_wavetypes(struct device *dev,
+> +                                             struct device_attribute *attr,
+> +                                             char *buf)
+> +{
+> +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> +     struct ad9834_state *st = iio_dev_get_devdata(dev_info);
+> +     char *str;
+> +
+> +     if (st->devid == ID_AD9833)
+> +             str = "sine triangle square";
+> +     else if (st->control & AD9834_OPBITEN)
+> +             str = "sine";
+> +     else
+> +             str = "sine triangle";
+> +
+> +     return sprintf(buf, "%s\n", str);
+> +}
+> +
+> +
+> +static IIO_DEVICE_ATTR(dds0_out0_available_wavetypes, S_IRUGO,
+> +                    ad9834_show_out0_available_wavetypes, NULL, 0);
+> +
+> +static ssize_t ad9834_show_out1_available_wavetypes(struct device *dev,
+> +                                             struct device_attribute *attr,
+> +                                             char *buf)
+> +{
+> +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> +     struct ad9834_state *st = iio_dev_get_devdata(dev_info);
+> +     char *str;
+> +
+> +     if (st->control & AD9834_MODE)
+> +             str = "";
+> +     else
+> +             str = "square";
+> +
+> +     return sprintf(buf, "%s\n", str);
+> +}
+> +
+> +static IIO_DEVICE_ATTR(dds0_out1_available_wavetypes, S_IRUGO,
+> +                    ad9834_show_out1_available_wavetypes, NULL, 0);
+> +
+> +/**
+> + * see dds.h for further information
+> + */
+> +
+> +
+> +static IIO_DEV_ATTR_FREQ(0, 0, ad9834_write, AD9834_REG_FREQ0);
+> +static IIO_DEV_ATTR_FREQ(0, 1, ad9834_write, AD9834_REG_FREQ1);
+> +static IIO_DEV_ATTR_FREQSYMBOL(0, ad9834_write, AD9834_FSEL);
+> +static IIO_CONST_ATTR_FREQ_SCALE(0, "1"); /* 1Hz */
+> +
+> +static IIO_DEV_ATTR_PHASE(0, 0, ad9834_write, AD9834_REG_PHASE0);
+> +static IIO_DEV_ATTR_PHASE(0, 1, ad9834_write, AD9834_REG_PHASE1);
+> +static IIO_DEV_ATTR_PHASESYMBOL(0, ad9834_write, AD9834_PSEL);
+> +static IIO_CONST_ATTR_PHASE_SCALE(0, "0.0015339808"); /* 2PI/2^12 rad*/
+> +
+> +static IIO_DEV_ATTR_PINCONTROL_EN(0, ad9834_write, AD9834_PIN_SW);
+> +static IIO_DEV_ATTR_OUT_DISABLE(0, ad9834_write, AD9834_RESET);
+> +static IIO_DEV_ATTR_OUTY_DISABLE(0, 1, ad9834_write, AD9834_OPBITEN);
+> +static IIO_DEV_ATTR_OUT_WAVETYPE(0, 0, ad9834_store_wavetype, 0);
+> +static IIO_DEV_ATTR_OUT_WAVETYPE(0, 1, ad9834_store_wavetype, 1);
+> +
+> +static struct attribute *ad9834_attributes[] = {
+> +     &iio_dev_attr_dds0_freq0.dev_attr.attr,
+> +     &iio_dev_attr_dds0_freq1.dev_attr.attr,
+> +     &iio_const_attr_dds0_freq_scale.dev_attr.attr,
+> +     &iio_dev_attr_dds0_phase0.dev_attr.attr,
+> +     &iio_dev_attr_dds0_phase1.dev_attr.attr,
+> +     &iio_const_attr_dds0_phase_scale.dev_attr.attr,
+> +     &iio_dev_attr_dds0_pincontrol_en.dev_attr.attr,
+> +     &iio_dev_attr_dds0_freqsymbol.dev_attr.attr,
+> +     &iio_dev_attr_dds0_phasesymbol.dev_attr.attr,
+> +     &iio_dev_attr_dds0_out_disable.dev_attr.attr,
+> +     &iio_dev_attr_dds0_out1_disable.dev_attr.attr,
+> +     &iio_dev_attr_dds0_out0_wavetype.dev_attr.attr,
+> +     &iio_dev_attr_dds0_out1_wavetype.dev_attr.attr,
+> +     &iio_dev_attr_dds0_out0_available_wavetypes.dev_attr.attr,
+> +     &iio_dev_attr_dds0_out1_available_wavetypes.dev_attr.attr,
+> +     &iio_dev_attr_name.dev_attr.attr,
+> +     NULL,
 > +};
 > +
->  #define    SMK_INODE_INSTANT    0x01    /* inode is instantiated */
->   /*
-> @@ -243,6 +249,30 @@ static inline char *smk_of_inode(const struct inode *isp)
->  }
->   /*
-> + * Present a pointer to the smack label in an task blob.
-> + */
-> +static inline char *smk_of_task(const struct task_smack *tsp)
+> +static mode_t ad9834_attr_is_visible(struct kobject *kobj,
+> +                                  struct attribute *attr, int n)
 > +{
-> +    return tsp->smk_task;
+> +     struct device *dev = container_of(kobj, struct device, kobj);
+> +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> +     struct ad9834_state *st = iio_dev_get_devdata(dev_info);
+> +
+> +     mode_t mode = attr->mode;
+> +
+> +     if (st->devid == ID_AD9834)
+> +             return mode;
+> +
+> +     if ((attr == &iio_dev_attr_dds0_out1_disable.dev_attr.attr) ||
+> +             (attr == &iio_dev_attr_dds0_out1_wavetype.dev_attr.attr) ||
+> +             (attr ==
+> +             &iio_dev_attr_dds0_out1_available_wavetypes.dev_attr.attr))
+> +             mode = 0;
+> +
+> +     return mode;
 > +}
 > +
-> +/*
-> + * Present a pointer to the forked smack label in an task blob.
-> + */
-> +static inline char *smk_of_forked(const struct task_smack *tsp)
+> +static const struct attribute_group ad9834_attribute_group = {
+> +     .attrs = ad9834_attributes,
+> +     .is_visible = ad9834_attr_is_visible,
+> +};
+> +
+> +static int __devinit ad9834_probe(struct spi_device *spi)
 > +{
-> +    return tsp->smk_forked;
+> +     struct ad9834_platform_data *pdata = spi->dev.platform_data;
+> +     struct ad9834_state *st;
+> +     int ret;
+> +
+> +     if (!pdata) {
+> +             dev_dbg(&spi->dev, "no platform data?\n");
+> +             return -ENODEV;
+> +     }
+> +
+> +     st = kzalloc(sizeof(*st), GFP_KERNEL);
+> +     if (st == NULL) {
+> +             ret = -ENOMEM;
+> +             goto error_ret;
+> +     }
+> +
+> +     st->reg = regulator_get(&spi->dev, "vcc");
+> +     if (!IS_ERR(st->reg)) {
+> +             ret = regulator_enable(st->reg);
+> +             if (ret)
+> +                     goto error_put_reg;
+> +     }
+> +
+> +     st->mclk = pdata->mclk;
+> +
+> +     spi_set_drvdata(spi, st);
+> +
+> +     st->spi = spi;
+> +     st->devid = spi_get_device_id(spi)->driver_data;
+> +
+> +     st->indio_dev = iio_allocate_device();
+> +     if (st->indio_dev == NULL) {
+> +             ret = -ENOMEM;
+> +             goto error_disable_reg;
+> +     }
+> +
+> +     st->indio_dev->dev.parent = &spi->dev;
+> +     st->indio_dev->attrs = &ad9834_attribute_group;
+> +     st->indio_dev->dev_data = (void *)(st);
+> +     st->indio_dev->driver_module = THIS_MODULE;
+> +     st->indio_dev->modes = INDIO_DIRECT_MODE;
+> +
+> +     /* Setup default messages */
+> +
+> +     st->xfer.tx_buf = &st->data;
+> +     st->xfer.len = 2;
+> +
+> +     spi_message_init(&st->msg);
+> +     spi_message_add_tail(&st->xfer, &st->msg);
+> +
+> +     st->freq_xfer[0].tx_buf = &st->freq_data[0];
+> +     st->freq_xfer[0].len = 2;
+> +     st->freq_xfer[0].cs_change = 1;
+> +     st->freq_xfer[1].tx_buf = &st->freq_data[1];
+> +     st->freq_xfer[1].len = 2;
+> +
+> +     spi_message_init(&st->freq_msg);
+> +     spi_message_add_tail(&st->freq_xfer[0], &st->freq_msg);
+> +     spi_message_add_tail(&st->freq_xfer[1], &st->freq_msg);
+> +
+> +     st->control = AD9834_B28 | AD9834_RESET;
+> +
+> +     if (!pdata->en_div2)
+> +             st->control |= AD9834_DIV2;
+> +
+> +     if (!pdata->en_signbit_msb_out && (st->devid == ID_AD9834))
+> +             st->control |= AD9834_SIGN_PIB;
+> +
+> +     st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +     ret = spi_sync(st->spi, &st->msg);
+> +     if (ret) {
+> +             dev_err(&spi->dev, "device init failed\n");
+> +             goto error_free_device;
+> +     }
+> +
+> +     ret = ad9834_write_frequency(st, AD9834_REG_FREQ0, pdata->freq0);
+> +     if (ret)
+> +             goto error_free_device;
+> +
+> +     ret = ad9834_write_frequency(st, AD9834_REG_FREQ1, pdata->freq1);
+> +     if (ret)
+> +             goto error_free_device;
+> +
+> +     ret = ad9834_write_phase(st, AD9834_REG_PHASE0, pdata->phase0);
+> +     if (ret)
+> +             goto error_free_device;
+> +
+> +     ret = ad9834_write_phase(st, AD9834_REG_PHASE1, pdata->phase1);
+> +     if (ret)
+> +             goto error_free_device;
+> +
+> +     st->control &= ~AD9834_RESET;
+> +     st->data = cpu_to_be16(AD9834_REG_CMD | st->control);
+> +     ret = spi_sync(st->spi, &st->msg);
+> +     if (ret)
+> +             goto error_free_device;
+> +
+> +     ret = iio_device_register(st->indio_dev);
+> +     if (ret)
+> +             goto error_free_device;
+> +
+> +     return 0;
+> +
+> +error_free_device:
+> +     iio_free_device(st->indio_dev);
+> +error_disable_reg:
+> +     if (!IS_ERR(st->reg))
+> +             regulator_disable(st->reg);
+> +error_put_reg:
+> +     if (!IS_ERR(st->reg))
+> +             regulator_put(st->reg);
+> +     kfree(st);
+> +error_ret:
+> +     return ret;
 > +}
 > +
-> +/*
-> + * Present a pointer to the smack label in the curren task blob.
-> + */
-> +static inline char *smk_of_current(void)
+> +static int ad9834_remove(struct spi_device *spi)
+Could we consider __devexit here
 > +{
-> +    return smk_of_task(current_security());
+> +     struct ad9834_state *st = spi_get_drvdata(spi);
+> +     struct iio_dev *indio_dev = st->indio_dev;
+> +
+> +     iio_device_unregister(indio_dev);
+> +     if (!IS_ERR(st->reg)) {
+> +             regulator_disable(st->reg);
+> +             regulator_put(st->reg);
+> +     }
+> +     kfree(st);
+> +     return 0;
 > +}
 > +
+> +static const struct spi_device_id ad9834_id[] = {
+> +     {"ad9833", ID_AD9833},
+> +     {"ad9834", ID_AD9834},
+> +     {}
+> +};
+> +
+> +static struct spi_driver ad9834_driver = {
+> +     .driver = {
+> +             .name   = "ad9834",
+> +             .bus    = &spi_bus_type,
+> +             .owner  = THIS_MODULE,
+> +     },
+> +     .probe          = ad9834_probe,
+> +     .remove         = __devexit_p(ad9834_remove),
+> +     .id_table       = ad9834_id,
+> +};
+> +
+> +static int __init ad9834_init(void)
+> +{
+> +     return spi_register_driver(&ad9834_driver);
+> +}
+> +module_init(ad9834_init);
+> +
+> +static void __exit ad9834_exit(void)
+> +{
+> +     spi_unregister_driver(&ad9834_driver);
+> +}
+> +module_exit(ad9834_exit);
+> +
+> +MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+> +MODULE_DESCRIPTION("Analog Devices AD9833/AD9834 DDS");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("spi:ad9834");
+> diff --git a/drivers/staging/iio/dds/ad9834.h
+> b/drivers/staging/iio/dds/ad9834.h
+> new file mode 100644
+> index 0000000..0fc3b88
+> --- /dev/null
+> +++ b/drivers/staging/iio/dds/ad9834.h
+> @@ -0,0 +1,112 @@
 > +/*
->   * logging functions
->   */
->  #define SMACK_AUDIT_DENIED 0x1
-> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-> index f4fac64..42becbc 100644
-> --- a/security/smack/smack_access.c
-> +++ b/security/smack/smack_access.c
-> @@ -185,7 +185,7 @@ out_audit:
->  int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
->  {
->      int rc;
-> -    char *sp = current_security();
-> +    char *sp = smk_of_current();
->       rc = smk_access(sp, obj_label, mode, NULL);
->      if (rc == 0)
-> @@ -196,7 +196,7 @@ int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
->       * only one that gets privilege and current does not
->       * have that label.
->       */
-> -    if (smack_onlycap != NULL && smack_onlycap != current->cred->security)
-> +    if (smack_onlycap != NULL && smack_onlycap != sp)
->          goto out_audit;
->       if (capable(CAP_MAC_OVERRIDE))
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 04a98c3..7e19afe 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -43,7 +43,7 @@
->   * Returns a pointer to the master list entry for the Smack label
->   * or NULL if there was no label to fetch.
->   */
-> -static char *smk_fetch(struct inode *ip, struct dentry *dp)
-> +static char *smk_fetch(const char *name, struct inode *ip, struct dentry *dp)
->  {
->      int rc;
->      char in[SMK_LABELLEN];
-> @@ -51,7 +51,7 @@ static char *smk_fetch(struct inode *ip, struct dentry *dp)
->      if (ip->i_op->getxattr == NULL)
->          return NULL;
->  -    rc = ip->i_op->getxattr(dp, XATTR_NAME_SMACK, in, SMK_LABELLEN);
-> +    rc = ip->i_op->getxattr(dp, name, in, SMK_LABELLEN);
->      if (rc < 0)
->          return NULL;
->  @@ -103,8 +103,8 @@ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
->      if (rc != 0)
->          return rc;
->  -    sp = current_security();
-> -    tsp = task_security(ctp);
-> +    sp = smk_of_current();
-> +    tsp = smk_of_task(task_security(ctp));
->      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
->      smk_ad_setfield_u_tsk(&ad, ctp);
->  @@ -138,8 +138,8 @@ static int smack_ptrace_traceme(struct task_struct *ptp)
->      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
->      smk_ad_setfield_u_tsk(&ad, ptp);
->  -    sp = current_security();
-> -    tsp = task_security(ptp);
-> +    sp = smk_of_current();
-> +    tsp = smk_of_task(task_security(ptp));
->      /* we won't log here, because rc can be overriden */
->      rc = smk_access(tsp, sp, MAY_READWRITE, NULL);
->      if (rc != 0 && has_capability(ptp, CAP_MAC_OVERRIDE))
-> @@ -160,7 +160,7 @@ static int smack_ptrace_traceme(struct task_struct *ptp)
->  static int smack_syslog(int typefrom_file)
->  {
->      int rc = 0;
-> -    char *sp = current_security();
-> +    char *sp = smk_of_current();
->       if (capable(CAP_MAC_OVERRIDE))
->          return 0;
-> @@ -391,6 +391,40 @@ static int smack_sb_umount(struct vfsmount *mnt, int flags)
->  }
->   /*
-> + * BPRM hooks
+> + * AD9834 SPI DDS driver
+> + *
+> + * Copyright 2010 Analog Devices Inc.
+> + *
+> + * Licensed under the GPL-2 or later.
+> + */
+> +#ifndef IIO_DDS_AD9834_H_
+> +#define IIO_DDS_AD9834_H_
+> +
+> +/* Registers */
+> +
+> +#define AD9834_REG_CMD               (0 << 14)
+> +#define AD9834_REG_FREQ0     (1 << 14)
+> +#define AD9834_REG_FREQ1     (2 << 14)
+> +#define AD9834_REG_PHASE0    (6 << 13)
+> +#define AD9834_REG_PHASE1    (7 << 13)
+> +
+> +/* Command Control Bits */
+> +
+> +#define AD9834_B28           (1 << 13)
+> +#define AD9834_HLB           (1 << 12)
+> +#define AD9834_FSEL          (1 << 11)
+> +#define AD9834_PSEL          (1 << 10)
+> +#define AD9834_PIN_SW                (1 << 9)
+> +#define AD9834_RESET         (1 << 8)
+> +#define AD9834_SLEEP1                (1 << 7)
+> +#define AD9834_SLEEP12               (1 << 6)
+> +#define AD9834_OPBITEN               (1 << 5)
+> +#define AD9834_SIGN_PIB              (1 << 4)
+> +#define AD9834_DIV2          (1 << 3)
+> +#define AD9834_MODE          (1 << 1)
+> +
+> +#define AD9834_FREQ_BITS     28
+> +#define AD9834_PHASE_BITS    12
+> +
+> +#define RES_MASK(bits)       ((1 << (bits)) - 1)
+> +
+> +/**
+> + * struct ad9834_state - driver instance specific data
+> + * @indio_dev:               the industrial I/O device
+> + * @spi:             spi_device
+> + * @reg:             supply regulator
+> + * @mclk:            external master clock
+> + * @control:         cached control word
+> + * @xfer:            default spi transfer
+> + * @msg:             default spi message
+> + * @freq_xfer:               tuning word spi transfer
+> + * @freq_msg:                tuning word spi message
+> + * @data:            spi transmit buffer
+> + * @freq_data:               tuning word spi transmit buffer
 > + */
 > +
-> +static int smack_bprm_set_creds(struct linux_binprm *bprm)
-> +{
-> +    struct task_smack *tsp = bprm->cred->security;
-> +    struct inode_smack *isp;
-> +    struct dentry *dp;
-> +    int rc;
+> +struct ad9834_state {
+> +     struct iio_dev                  *indio_dev;
+> +     struct spi_device               *spi;
+> +     struct regulator                *reg;
+> +     unsigned int                    mclk;
+> +     unsigned short                  control;
+> +     unsigned short                  devid;
+> +     struct spi_transfer             xfer;
+> +     struct spi_message              msg;
+> +     struct spi_transfer             freq_xfer[2];
+> +     struct spi_message              freq_msg;
 > +
-> +    rc = cap_bprm_set_creds(bprm);
-> +    if (rc != 0)
-> +        return rc;
+> +     /*
+> +      * DMA (thus cache coherency maintenance) requires the
+> +      * transfer buffers to live in their own cache lines.
+> +      */
+> +     unsigned short                  data ____cacheline_aligned;
+> +     unsigned short                  freq_data[2] ;
+> +};
 > +
-> +    if (bprm->cred_prepared)
-> +        return 0;
-> +
-> +    if (bprm->file == NULL || bprm->file->f_dentry == NULL)
-> +        return 0;
-> +
-> +    dp = bprm->file->f_dentry;
-> +
-> +    if (dp->d_inode == NULL)
-> +        return 0;
-> +
-> +    isp = dp->d_inode->i_security;
-> +
-> +    if (isp->smk_task != NULL)
-> +        tsp->smk_task = isp->smk_task;
-> +
-> +    return 0;
-> +}
 > +
 > +/*
->   * Inode hooks
->   */
->  @@ -402,7 +436,7 @@ static int smack_sb_umount(struct vfsmount *mnt, int flags)
->   */
->  static int smack_inode_alloc_security(struct inode *inode)
->  {
-> -    inode->i_security = new_inode_smack(current_security());
-> +    inode->i_security = new_inode_smack(smk_of_current());
->      if (inode->i_security == NULL)
->          return -ENOMEM;
->      return 0;
-> @@ -664,7 +698,8 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
->       if (strcmp(name, XATTR_NAME_SMACK) == 0 ||
->          strcmp(name, XATTR_NAME_SMACKIPIN) == 0 ||
-> -        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0) {
-> +        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
-> +        strcmp(name, XATTR_NAME_SMACKEXEC) == 0) {
->          if (!capable(CAP_MAC_ADMIN))
->              rc = -EPERM;
->          /*
-> @@ -704,9 +739,10 @@ static void smack_inode_post_setxattr(struct dentry *dentry, const char *name,
->      char *nsp;
->       /*
-> -     * Not SMACK
-> +     * Not SMACK or SMACKEXEC
->       */
-> -    if (strcmp(name, XATTR_NAME_SMACK))
-> +    if (strcmp(name, XATTR_NAME_SMACK) &&
-> +        strcmp(name, XATTR_NAME_SMACKEXEC))
->          return;
->       isp = dentry->d_inode->i_security;
-> @@ -716,10 +752,18 @@ static void smack_inode_post_setxattr(struct dentry *dentry, const char *name,
->       * assignment.
->       */
->      nsp = smk_import(value, size);
-> -    if (nsp != NULL)
-> -        isp->smk_inode = nsp;
-> -    else
-> -        isp->smk_inode = smack_known_invalid.smk_known;
+> + * TODO: struct ad7887_platform_data needs to go into include/linux/iio
+> + */
 > +
-> +    if (strcmp(name, XATTR_NAME_SMACK) == 0) {
-> +        if (nsp != NULL)
-> +            isp->smk_inode = nsp;
-> +        else
-> +            isp->smk_inode = smack_known_invalid.smk_known;
-> +    } else {
-> +        if (nsp != NULL)
-> +            isp->smk_task = nsp;
-> +        else
-> +            isp->smk_task = smack_known_invalid.smk_known;
-> +    }
->       return;
->  }
-> @@ -752,12 +796,14 @@ static int smack_inode_getxattr(struct dentry *dentry, const char *name)
->   */
->  static int smack_inode_removexattr(struct dentry *dentry, const char *name)
->  {
-> +    struct inode_smack *isp;
->      struct smk_audit_info ad;
->      int rc = 0;
->       if (strcmp(name, XATTR_NAME_SMACK) == 0 ||
->          strcmp(name, XATTR_NAME_SMACKIPIN) == 0 ||
-> -        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0) {
-> +        strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
-> +        strcmp(name, XATTR_NAME_SMACKEXEC) == 0) {
->          if (!capable(CAP_MAC_ADMIN))
->              rc = -EPERM;
->      } else
-> @@ -768,6 +814,11 @@ static int smack_inode_removexattr(struct dentry *dentry, const char *name)
->      if (rc == 0)
->          rc = smk_curacc(smk_of_inode(dentry->d_inode), MAY_WRITE, &ad);
->  +    if (rc == 0) {
-> +        isp = dentry->d_inode->i_security;
-> +        isp->smk_task = NULL;
-> +    }
+> +/**
+> + * struct ad9834_platform_data - platform specific information
+> + * @mclk:            master clock in Hz
+> + * @freq0:           power up freq0 tuning word in Hz
+> + * @freq1:           power up freq1 tuning word in Hz
+> + * @phase0:          power up phase0 value [0..4095] correlates with
+> 0..2PI
+> + * @phase1:          power up phase1 value [0..4095] correlates with
+> 0..2PI
+> + * @en_div2:         digital output/2 is passed to the SIGN BIT OUT pin
+> + * @en_signbit_msb_out:      the MSB (or MSB/2) of the DAC data is
+> connected to the
+> + *                   SIGN BIT OUT pin. en_div2 controls whether it is the MSB
+> + *                   or MSB/2 that is output. if en_signbit_msb_out=false,
+> + *                   the on-board comparator is connected to SIGN BIT OUT
+> + */
 > +
->      return rc;
->  }
->  @@ -895,7 +946,7 @@ static int smack_file_permission(struct file *file, int mask)
->   */
->  static int smack_file_alloc_security(struct file *file)
->  {
-> -    file->f_security = current_security();
-> +    file->f_security = smk_of_current();
->      return 0;
->  }
->  @@ -1005,7 +1056,7 @@ static int smack_file_fcntl(struct file *file, unsigned int cmd,
->   */
->  static int smack_file_set_fowner(struct file *file)
->  {
-> -    file->f_security = current_security();
-> +    file->f_security = smk_of_current();
->      return 0;
->  }
->  @@ -1025,7 +1076,7 @@ static int smack_file_send_sigiotask(struct task_struct *tsk,
->  {
->      struct file *file;
->      int rc;
-> -    char *tsp = tsk->cred->security;
-> +    char *tsp = smk_of_task(tsk->cred->security);
->      struct smk_audit_info ad;
->       /*
-> @@ -1082,7 +1133,9 @@ static int smack_file_receive(struct file *file)
->   */
->  static int smack_cred_alloc_blank(struct cred *cred, gfp_t gfp)
->  {
-> -    cred->security = NULL;
-> +    cred->security = kzalloc(sizeof(struct task_smack), gfp);
-> +    if (cred->security == NULL)
-> +        return -ENOMEM;
->      return 0;
->  }
->  @@ -1097,7 +1150,7 @@ static int smack_cred_alloc_blank(struct cred *cred, gfp_t gfp)
->   */
->  static void smack_cred_free(struct cred *cred)
->  {
-> -    cred->security = NULL;
-> +    kfree(cred->security);
->  }
->   /**
-> @@ -1111,7 +1164,16 @@ static void smack_cred_free(struct cred *cred)
->  static int smack_cred_prepare(struct cred *new, const struct cred *old,
->                    gfp_t gfp)
->  {
-> -    new->security = old->security;
-> +    struct task_smack *old_tsp = old->security;
-> +    struct task_smack *new_tsp;
+> +struct ad9834_platform_data {
+> +     unsigned int            mclk;
+> +     unsigned int            freq0;
+> +     unsigned int            freq1;
+> +     unsigned short          phase0;
+> +     unsigned short          phase1;
+> +     bool                    en_div2;
+> +     bool                    en_signbit_msb_out;
+> +};
 > +
-> +    new_tsp = kzalloc(sizeof(struct task_smack), gfp);
-> +    if (new_tsp == NULL)
-> +        return -ENOMEM;
+> +/**
+> + * ad9834_supported_device_ids:
+> + */
 > +
-> +    new_tsp->smk_task = old_tsp->smk_task;
-> +    new_tsp->smk_forked = old_tsp->smk_task;
-> +    new->security = new_tsp;
->      return 0;
->  }
->  @@ -1124,7 +1186,11 @@ static int smack_cred_prepare(struct cred *new, const struct cred *old,
->   */
->  static void smack_cred_transfer(struct cred *new, const struct cred *old)
->  {
-> -    new->security = old->security;
-> +    struct task_smack *old_tsp = old->security;
-> +    struct task_smack *new_tsp = new->security;
+> +enum ad9834_supported_device_ids {
+> +     ID_AD9833,
+> +     ID_AD9834,
+> +};
 > +
-> +    new_tsp->smk_task = old_tsp->smk_task;
-> +    new_tsp->smk_forked = old_tsp->smk_task;
->  }
->   /**
-> @@ -1136,12 +1202,13 @@ static void smack_cred_transfer(struct cred *new, const struct cred *old)
->   */
->  static int smack_kernel_act_as(struct cred *new, u32 secid)
->  {
-> +    struct task_smack *new_tsp = new->security;
->      char *smack = smack_from_secid(secid);
->       if (smack == NULL)
->          return -EINVAL;
->  -    new->security = smack;
-> +    new_tsp->smk_task = smack;
->      return 0;
->  }
->  @@ -1157,8 +1224,10 @@ static int smack_kernel_create_files_as(struct cred *new,
->                      struct inode *inode)
->  {
->      struct inode_smack *isp = inode->i_security;
-> +    struct task_smack *tsp = new->security;
->  -    new->security = isp->smk_inode;
-> +    tsp->smk_forked = isp->smk_inode;
-> +    tsp->smk_task = isp->smk_inode;
->      return 0;
->  }
->  @@ -1175,7 +1244,7 @@ static int smk_curacc_on_task(struct task_struct *p, int access)
->       smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
->      smk_ad_setfield_u_tsk(&ad, p);
-> -    return smk_curacc(task_security(p), access, &ad);
-> +    return smk_curacc(smk_of_task(task_security(p)), access, &ad);
->  }
->   /**
-> @@ -1221,7 +1290,7 @@ static int smack_task_getsid(struct task_struct *p)
->   */
->  static void smack_task_getsecid(struct task_struct *p, u32 *secid)
->  {
-> -    *secid = smack_to_secid(task_security(p));
-> +    *secid = smack_to_secid(smk_of_task(task_security(p)));
->  }
->   /**
-> @@ -1333,14 +1402,15 @@ static int smack_task_kill(struct task_struct *p, struct siginfo *info,
->       * can write the receiver.
->       */
->      if (secid == 0)
-> -        return smk_curacc(task_security(p), MAY_WRITE, &ad);
-> +        return smk_curacc(smk_of_task(task_security(p)), MAY_WRITE,
-> +                  &ad);
->      /*
->       * If the secid isn't 0 we're dealing with some USB IO
->       * specific behavior. This is not clean. For one thing
->       * we can't take privilege into account.
->       */
-> -    return smk_access(smack_from_secid(secid), task_security(p),
-> -              MAY_WRITE, &ad);
-> +    return smk_access(smack_from_secid(secid),
-> +              smk_of_task(task_security(p)), MAY_WRITE, &ad);
->  }
->   /**
-> @@ -1352,12 +1422,12 @@ static int smack_task_kill(struct task_struct *p, struct siginfo *info,
->  static int smack_task_wait(struct task_struct *p)
->  {
->      struct smk_audit_info ad;
-> -    char *sp = current_security();
-> -    char *tsp = task_security(p);
-> +    char *sp = smk_of_current();
-> +    char *tsp = smk_of_forked(task_security(p));
->      int rc;
->       /* we don't log here, we can be overriden */
-> -    rc = smk_access(sp, tsp, MAY_WRITE, NULL);
-> +    rc = smk_access(tsp, sp, MAY_WRITE, NULL);
->      if (rc == 0)
->          goto out_log;
->  @@ -1378,7 +1448,7 @@ static int smack_task_wait(struct task_struct *p)
->   out_log:
->      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
->      smk_ad_setfield_u_tsk(&ad, p);
-> -    smack_log(sp, tsp, MAY_WRITE, rc, &ad);
-> +    smack_log(tsp, sp, MAY_WRITE, rc, &ad);
->      return rc;
->  }
->  @@ -1392,7 +1462,7 @@ static int smack_task_wait(struct task_struct *p)
->  static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
->  {
->      struct inode_smack *isp = inode->i_security;
-> -    isp->smk_inode = task_security(p);
-> +    isp->smk_inode = smk_of_task(task_security(p));
->  }
->   /*
-> @@ -1411,7 +1481,7 @@ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
->   */
->  static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags)
->  {
-> -    char *csp = current_security();
-> +    char *csp = smk_of_current();
->      struct socket_smack *ssp;
->       ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
-> @@ -1752,7 +1822,7 @@ static int smack_flags_to_may(int flags)
->   */
->  static int smack_msg_msg_alloc_security(struct msg_msg *msg)
->  {
-> -    msg->security = current_security();
-> +    msg->security = smk_of_current();
->      return 0;
->  }
->  @@ -1788,7 +1858,7 @@ static int smack_shm_alloc_security(struct shmid_kernel *shp)
->  {
->      struct kern_ipc_perm *isp = &shp->shm_perm;
->  -    isp->security = current_security();
-> +    isp->security = smk_of_current();
->      return 0;
->  }
->  @@ -1911,7 +1981,7 @@ static int smack_sem_alloc_security(struct sem_array *sma)
->  {
->      struct kern_ipc_perm *isp = &sma->sem_perm;
->  -    isp->security = current_security();
-> +    isp->security = smk_of_current();
->      return 0;
->  }
->  @@ -2029,7 +2099,7 @@ static int smack_msg_queue_alloc_security(struct msg_queue *msq)
->  {
->      struct kern_ipc_perm *kisp = &msq->q_perm;
->  -    kisp->security = current_security();
-> +    kisp->security = smk_of_current();
->      return 0;
->  }
->  @@ -2201,7 +2271,7 @@ static void smack_d_instantiate(struct dentry *opt_dentry, struct inode *inode)
->      struct super_block *sbp;
->      struct superblock_smack *sbsp;
->      struct inode_smack *isp;
-> -    char *csp = current_security();
-> +    char *csp = smk_of_current();
->      char *fetched;
->      char *final;
->      struct dentry *dp;
-> @@ -2321,9 +2391,12 @@ static void smack_d_instantiate(struct dentry *opt_dentry, struct inode *inode)
->           * Get the dentry for xattr.
->           */
->          dp = dget(opt_dentry);
-> -        fetched = smk_fetch(inode, dp);
-> +        fetched = smk_fetch(XATTR_NAME_SMACK, inode, dp);
->          if (fetched != NULL)
->              final = fetched;
-> +        isp->smk_task = smk_fetch(XATTR_NAME_SMACKEXEC, inode,
-> +                      dp);
-> +
->          dput(dp);
->          break;
->      }
-> @@ -2358,7 +2431,7 @@ static int smack_getprocattr(struct task_struct *p, char *name, char **value)
->      if (strcmp(name, "current") != 0)
->          return -EINVAL;
->  -    cp = kstrdup(task_security(p), GFP_KERNEL);
-> +    cp = kstrdup(smk_of_task(task_security(p)), GFP_KERNEL);
->      if (cp == NULL)
->          return -ENOMEM;
->  @@ -2382,6 +2455,7 @@ static int smack_getprocattr(struct task_struct 
-> *p, char *name, char **value)
->  static int smack_setprocattr(struct task_struct *p, char *name,
->                   void *value, size_t size)
->  {
-> +    struct task_smack *tsp;
->      struct cred *new;
->      char *newsmack;
->  @@ -2414,7 +2488,13 @@ static int smack_setprocattr(struct task_struct *p, char *name,
->      new = prepare_creds();
->      if (new == NULL)
->          return -ENOMEM;
-> -    new->security = newsmack;
-> +    tsp = kzalloc(sizeof(struct task_smack), GFP_KERNEL);
-> +    if (tsp == NULL) {
-> +        kfree(new);
-> +        return -ENOMEM;
-> +    }
-> +    tsp->smk_task = newsmack;
-> +    new->security = tsp;
->      commit_creds(new);
->      return size;
->  }
-> @@ -2715,7 +2795,7 @@ static void smack_sock_graft(struct sock *sk, struct socket *parent)
->          return;
->       ssp = sk->sk_security;
-> -    ssp->smk_in = ssp->smk_out = current_security();
-> +    ssp->smk_in = ssp->smk_out = smk_of_current();
->      /* cssp->smk_packet is already set in smack_inet_csk_clone() */
->  }
->  @@ -2836,7 +2916,7 @@ static void smack_inet_csk_clone(struct sock *sk,
->  static int smack_key_alloc(struct key *key, const struct cred *cred,
->                 unsigned long flags)
->  {
-> -    key->security = cred->security;
-> +    key->security = smk_of_task(cred->security);
->      return 0;
->  }
->  @@ -2865,6 +2945,7 @@ static int smack_key_permission(key_ref_t key_ref,
->  {
->      struct key *keyp;
->      struct smk_audit_info ad;
-> +    char *tsp = smk_of_task(cred->security);
->       keyp = key_ref_to_ptr(key_ref);
->      if (keyp == NULL)
-> @@ -2878,14 +2959,14 @@ static int smack_key_permission(key_ref_t key_ref,
->      /*
->       * This should not occur
->       */
-> -    if (cred->security == NULL)
-> +    if (tsp == NULL)
->          return -EACCES;
->  #ifdef CONFIG_AUDIT
->      smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_KEY);
->      ad.a.u.key_struct.key = keyp->serial;
->      ad.a.u.key_struct.key_desc = keyp->description;
->  #endif
-> -    return smk_access(cred->security, keyp->security,
-> +    return smk_access(tsp, keyp->security,
->                   MAY_READWRITE, &ad);
->  }
->  #endif /* CONFIG_KEYS */
-> @@ -3087,6 +3168,8 @@ struct security_operations smack_ops = {
->      .sb_mount =             smack_sb_mount,
->      .sb_umount =             smack_sb_umount,
->  +    .bprm_set_creds =        smack_bprm_set_creds,
-> +
->      .inode_alloc_security =     smack_inode_alloc_security,
->      .inode_free_security =         smack_inode_free_security,
->      .inode_init_security =         smack_inode_init_security,
-> @@ -3223,9 +3306,16 @@ static __init void init_smack_know_list(void)
->  static __init int smack_init(void)
->  {
->      struct cred *cred;
-> +    struct task_smack *tsp;
->  -    if (!security_module_enable(&smack_ops))
-> +    tsp = kzalloc(sizeof(struct task_smack), GFP_KERNEL);
-> +    if (tsp == NULL)
-> +        return -ENOMEM;
-> +
-> +    if (!security_module_enable(&smack_ops)) {
-> +        kfree(tsp);
->          return 0;
-> +    }
->       printk(KERN_INFO "Smack:  Initializing.\n");
->  @@ -3233,7 +3323,9 @@ static __init int smack_init(void)
->       * Set the security state for the initial task.
->       */
->      cred = (struct cred *) current->cred;
-> -    cred->security = &smack_known_floor.smk_known;
-> +    tsp->smk_forked = smack_known_floor.smk_known;
-> +    tsp->smk_task = smack_known_floor.smk_known;
-> +    cred->security = tsp;
->       /* initialize the smack_know_list */
->      init_smack_know_list();
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index dc1fd62..01a0be9 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -121,7 +121,7 @@ static void smk_netlabel_audit_set(struct netlbl_audit *nap)
->  {
->      nap->loginuid = audit_get_loginuid(current);
->      nap->sessionid = audit_get_sessionid(current);
-> -    nap->secid = smack_to_secid(current_security());
-> +    nap->secid = smack_to_secid(smk_of_current());
->  }
->   /*
-> @@ -1160,7 +1160,7 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
->                   size_t count, loff_t *ppos)
->  {
->      char in[SMK_LABELLEN];
-> -    char *sp = current->cred->security;
-> +    char *sp = smk_of_task(current->cred->security);
->       if (!capable(CAP_MAC_ADMIN))
->          return -EPERM;
-
+> +#endif /* IIO_DDS_AD9834_H_ */
+> --
+> 1.6.0.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
