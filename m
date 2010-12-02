@@ -1,90 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab0LBRnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:43:39 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38892 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab0LBRni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:43:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YoY7njYUQ4JXjBfljmmmC2VaGmI04iN078m7wPmstX6CKV3XUAH1ldjE14KGudoiDP
-         iG4V0IlxepG4aJNZypaXNtPCAOhXc3ub/zTjalYudRx+db3u6b7y5NXcIZnm2xOLtFrw
-         PGqE8tKMmM/0Fwn9YRbE/n22XP2DRklNi87pE=
-Date: Thu, 2 Dec 2010 18:43:32 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Reiserfs deadlock in  2.6.36
-Message-ID: <20101202174328.GA1750@nowhere>
-References: <201011181650.00152.roucaries.bastien@gmail.com>
- <20101118163048.GE5374@nowhere>
- <201011261757.08303.roucaries.bastien@gmail.com>
+	id S1757930Ab0LBRwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:52:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757879Ab0LBRwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 12:52:02 -0500
+Date: Thu, 2 Dec 2010 18:50:35 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 17 of 66] add pmd mangling generic functions
+Message-ID: <20101202175035.GT30389@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <6022613f956ee326d9b6.1288798072@v2.random>
+ <20101118125249.GN8135@csn.ul.ie>
+ <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
+ <20101125173518.GR6118@random.random>
+ <AANLkTinasCexaptMzKkY7CO3SAAUiVvp+W=FAYkk+6+q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201011261757.08303.roucaries.bastien@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinasCexaptMzKkY7CO3SAAUiVvp+W=FAYkk+6+q@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 26, 2010 at 05:57:05PM +0100, Bastien ROUCARIES wrote:
-> Dear frederic,
-> > Hi Bastien,
-> > 
-> > This really looks like a hung task detector report.
-> > Several tasks are stuck in queue_log_writer(), waiting
-> > to be woken up on the "journal->j_join_wait" event and
-> > that never happens because the waker is also stuck.
-> > The problem is your report doesn't show where the waker
-> > is stuck, but the hung task detector reports it, it just
-> > did before or after the chunk you've posted.
-> > 
-> > If you could provide me the entire report, I could fix this
-> > easily.
-> 
-> I have manged to reproduce it after six hour of stress. Unfornatly locked was 
-> disabled due to a known non bug, in the init sequence. I have used sysrq -t in 
-> order to get more information to you.
-> 
-> Do I need to try to reproduce it, with a newer kernel ? Or it is sufficient ?
+Hello,
 
-> Nov 26 16:27:56 portablebastien kernel: [27960.775903] kded4         D 00000001006907a6     0  2852      1 0x00000000
-> Nov 26 16:27:56 portablebastien kernel: [27960.777842]  ffff8800d8a97b28 0000000000000046 ffff880000000000 ffff880100000000
-> Nov 26 16:27:56 portablebastien kernel: [27960.779768]  ffff8800d8a96010 ffff8800d8a97fd8 ffff8800379f4f60 ffff8800379f5230
-> Nov 26 16:27:56 portablebastien kernel: [27960.781694]  ffff8800379f5228 0000000000014d80 0000000000014d80 ffff8800d8a97fd8
-> Nov 26 16:27:56 portablebastien kernel: [27960.783594] Call Trace:
-> Nov 26 16:27:56 portablebastien kernel: [27960.785483]  [<ffffffffa01b8454>] queue_log_writer+0x7e/0xaf [reiserfs]
-> Nov 26 16:27:56 portablebastien kernel: [27960.787344]  [<ffffffff81044423>] ? default_wake_function+0x0/0xf
-> Nov 26 16:27:56 portablebastien kernel: [27960.789253]  [<ffffffffa01bc402>] do_journal_begin_r+0x1ee/0x2d8 [reiserfs]
-> Nov 26 16:27:56 portablebastien kernel: [27960.791142]  [<ffffffffa01bc5ae>] journal_begin+0xc2/0x103 [reiserfs]
-> Nov 26 16:27:56 portablebastien kernel: [27960.793070]  [<ffffffffa019ebb6>] reiserfs_create+0x105/0x233 [reiserfs]
-> Nov 26 16:27:56 portablebastien kernel: [27960.794960]  [<ffffffff8110b57d>] ? generic_permission+0x17/0x9a
-> Nov 26 16:27:56 portablebastien kernel: [27960.796854]  [<ffffffff81171e65>] ? security_inode_permission+0x1c/0x1e
-> Nov 26 16:27:56 portablebastien kernel: [27960.798714]  [<ffffffff8110c423>] vfs_create+0x6b/0x8d
-> Nov 26 16:27:56 portablebastien kernel: [27960.800570]  [<ffffffff8110cdee>] do_last+0x26c/0x532
-> Nov 26 16:27:56 portablebastien kernel: [27960.802377]  [<ffffffff8110eb96>] do_filp_open+0x203/0x599
-> Nov 26 16:27:56 portablebastien kernel: [27960.804232]  [<ffffffff8134bd2b>] ? _raw_spin_unlock+0x26/0x2a
-> Nov 26 16:27:56 portablebastien kernel: [27960.806058]  [<ffffffff811184a0>] ? alloc_fd+0x170/0x182
-> Nov 26 16:27:56 portablebastien kernel: [27960.807911]  [<ffffffff81101366>] do_sys_open+0x5b/0xf7
-> Nov 26 16:27:56 portablebastien kernel: [27960.809790]  [<ffffffff8134b48e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> Nov 26 16:27:56 portablebastien kernel: [27960.811646]  [<ffffffff8110142b>] sys_open+0x1b/0x1d
-> Nov 26 16:27:56 portablebastien kernel: [27960.813506]  [<ffffffff81009ac2>] system_call_fastpath+0x16/0x1b
+On Sat, Nov 27, 2010 at 07:24:37AM +0900, Linus Torvalds wrote:
+> That may be, and you needn't necessarily clean up old use (although
+> that might be nice as a separate thing), but I wish we didn't make
+> what is already messy bigger and messier.
 
-Ok, this time I don't have the feeling that a deadlock between reiserfs lock and
-another lock is involved.
+Ok I cleaned up most of the old code in asm-generic/pgtable.h too. Let
+me know if you like further changes in this area. I embedded the
+cleanups of the pmd_trans_huge/pmd_trans_splitting inside the previous
+patch (16) too (not at the end anymore).
 
-We entered queue_log_writer() and then waited for someone to call do_journal_end()
-to testify he finished his job with the journal.
+Thanks,
+Andrea
 
-But somehow that didn't happen. Or may be we called queue_log_writer() but we shouldn't,
-thinking there was a writer already but there wasn't. Or there is a crazy race somewhere.
+=====
+Subject: add pmd mangling generic functions
 
-On which kernel do you see this? Do you know a kernel on which you've never seen it.
-Were you running something specific to trigger this deadlock?
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Thanks!
+Some are needed to build but not actually used on archs not supporting
+transparent hugepages. Others like pmdp_clear_flush are used by x86 too.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+---
+
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -5,67 +5,108 @@
+ #ifdef CONFIG_MMU
+ 
+ #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
+-/*
+- * Largely same as above, but only sets the access flags (dirty,
+- * accessed, and writable). Furthermore, we know it always gets set
+- * to a "more permissive" setting, which allows most architectures
+- * to optimize this. We return whether the PTE actually changed, which
+- * in turn instructs the caller to do things like update__mmu_cache.
+- * This used to be done in the caller, but sparc needs minor faults to
+- * force that call on sun4c so we changed this macro slightly
+- */
+-#define ptep_set_access_flags(__vma, __address, __ptep, __entry, __dirty) \
+-({									  \
+-	int __changed = !pte_same(*(__ptep), __entry);			  \
+-	if (__changed) {						  \
+-		set_pte_at((__vma)->vm_mm, (__address), __ptep, __entry); \
+-		flush_tlb_page(__vma, __address);			  \
+-	}								  \
+-	__changed;							  \
+-})
++extern int ptep_set_access_flags(struct vm_area_struct *vma,
++				 unsigned long address, pte_t *ptep,
++				 pte_t entry, int dirty);
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_SET_ACCESS_FLAGS
++extern int pmdp_set_access_flags(struct vm_area_struct *vma,
++				 unsigned long address, pmd_t *pmdp,
++				 pmd_t entry, int dirty);
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PTEP_TEST_AND_CLEAR_YOUNG
+-#define ptep_test_and_clear_young(__vma, __address, __ptep)		\
+-({									\
+-	pte_t __pte = *(__ptep);					\
+-	int r = 1;							\
+-	if (!pte_young(__pte))						\
+-		r = 0;							\
+-	else								\
+-		set_pte_at((__vma)->vm_mm, (__address),			\
+-			   (__ptep), pte_mkold(__pte));			\
+-	r;								\
+-})
++static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
++					    unsigned long address,
++					    pte_t *ptep)
++{
++	pte_t pte = *ptep;
++	int r = 1;
++	if (!pte_young(pte))
++		r = 0;
++	else
++		set_pte_at(vma->vm_mm, address, ptep, pte_mkold(pte));
++	return r;
++}
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
++					    unsigned long address,
++					    pmd_t *pmdp)
++{
++	pmd_t pmd = *pmdp;
++	int r = 1;
++	if (!pmd_young(pmd))
++		r = 0;
++	else
++		set_pmd_at(vma->vm_mm, address, pmdp, pmd_mkold(pmd));
++	return r;
++}
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
++					    unsigned long address,
++					    pmd_t *pmdp)
++{
++	BUG();
++	return 0;
++}
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PTEP_CLEAR_YOUNG_FLUSH
+-#define ptep_clear_flush_young(__vma, __address, __ptep)		\
+-({									\
+-	int __young;							\
+-	__young = ptep_test_and_clear_young(__vma, __address, __ptep);	\
+-	if (__young)							\
+-		flush_tlb_page(__vma, __address);			\
+-	__young;							\
+-})
++int ptep_clear_flush_young(struct vm_area_struct *vma,
++			   unsigned long address, pte_t *ptep);
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_CLEAR_YOUNG_FLUSH
++int pmdp_clear_flush_young(struct vm_area_struct *vma,
++			   unsigned long address, pmd_t *pmdp);
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PTEP_GET_AND_CLEAR
+-#define ptep_get_and_clear(__mm, __address, __ptep)			\
+-({									\
+-	pte_t __pte = *(__ptep);					\
+-	pte_clear((__mm), (__address), (__ptep));			\
+-	__pte;								\
++static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
++				       unsigned long address,
++				       pte_t *ptep)
++{
++	pte_t pte = *ptep;
++	pte_clear(mm, address, ptep);
++	return pte;
++)
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_GET_AND_CLEAR
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
++				       unsigned long address,
++				       pmd_t *pmdp)
++{
++	pmd_t pmd = *pmdp;
++	pmd_clear(mm, address, pmdp);
++	return pmd;
+ })
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
++				       unsigned long address,
++				       pmd_t *pmdp)
++{
++	BUG();
++	return 0;
++}
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PTEP_GET_AND_CLEAR_FULL
+-#define ptep_get_and_clear_full(__mm, __address, __ptep, __full)	\
+-({									\
+-	pte_t __pte;							\
+-	__pte = ptep_get_and_clear((__mm), (__address), (__ptep));	\
+-	__pte;								\
+-})
++static inline pte_t ptep_get_and_clear_full(struct mm_struct *mm,
++					    unsigned long address, pte_t *ptep,
++					    int full)
++{
++	pte_t pte;
++	pte = ptep_get_and_clear(mm, address, ptep);
++	return pte;
++}
+ #endif
+ 
+ /*
+@@ -74,20 +115,25 @@
+  * not present, or in the process of an address space destruction.
+  */
+ #ifndef __HAVE_ARCH_PTE_CLEAR_NOT_PRESENT_FULL
+-#define pte_clear_not_present_full(__mm, __address, __ptep, __full)	\
+-do {									\
+-	pte_clear((__mm), (__address), (__ptep));			\
+-} while (0)
++static inline void pte_clear_not_present_full(struct mm_struct *mm,
++					      unsigned long address,
++					      pte_t *ptep,
++					      int full)
++{
++	pte_clear(mm, address, ptep);
++}
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PTEP_CLEAR_FLUSH
+-#define ptep_clear_flush(__vma, __address, __ptep)			\
+-({									\
+-	pte_t __pte;							\
+-	__pte = ptep_get_and_clear((__vma)->vm_mm, __address, __ptep);	\
+-	flush_tlb_page(__vma, __address);				\
+-	__pte;								\
+-})
++extern pte_t ptep_clear_flush(struct vm_area_struct *vma,
++			      unsigned long address,
++			      pte_t *ptep);
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_CLEAR_FLUSH
++extern pmd_t pmdp_clear_flush(struct vm_area_struct *vma,
++			      unsigned long address,
++			      pmd_t *pmdp);
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PTEP_SET_WRPROTECT
+@@ -99,8 +145,49 @@ static inline void ptep_set_wrprotect(st
+ }
+ #endif
+ 
++#ifndef __HAVE_ARCH_PMDP_SET_WRPROTECT
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static inline void pmdp_set_wrprotect(struct mm_struct *mm,
++				      unsigned long address, pmd_t *pmdp)
++{
++	pmd_t old_pmd = *pmdp;
++	set_pmd_at(mm, address, pmdp, pmd_wrprotect(old_pmd));
++}
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++static inline void pmdp_set_wrprotect(struct mm_struct *mm,
++				      unsigned long address, pmd_t *pmdp)
++{
++	BUG();
++}
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_SPLITTING_FLUSH
++extern pmd_t pmdp_clear_flush(struct vm_area_struct *vma,
++			      unsigned long address,
++			      pmd_t *pmdp);
++#endif
++
+ #ifndef __HAVE_ARCH_PTE_SAME
+-#define pte_same(A,B)	(pte_val(A) == pte_val(B))
++static inline int pte_same(pte_t pte_a, pte_t pte_b)
++{
++	return pte_val(pte_a) == pte_val(pte_b);
++}
++#endif
++
++#ifndef __HAVE_ARCH_PMD_SAME
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
++{
++	return pmd_val(pmd_a) == pmd_val(pmd_b);
++}
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
++{
++	BUG();
++	return 0;
++}
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
+ 
+ #ifndef __HAVE_ARCH_PAGE_TEST_DIRTY
+@@ -357,6 +444,13 @@ static inline int pmd_trans_splitting(pm
+ {
+ 	return 0;
+ }
++#ifndef __HAVE_ARCH_PMD_WRITE
++static inline int pmd_write(pmd_t pmd)
++{
++	BUG();
++	return 0;
++}
++#endif /* __HAVE_ARCH_PMD_WRITE */
+ #endif
+ 
+ #endif /* !__ASSEMBLY__ */
+diff --git a/mm/Makefile b/mm/Makefile
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -5,7 +5,7 @@
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+-			   vmalloc.o pagewalk.o
++			   vmalloc.o pagewalk.o pgtable-generic.o
+ 
+ obj-y			:= bootmem.o filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   maccess.o page_alloc.o page-writeback.o \
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+new file mode 100644
+--- /dev/null
++++ b/mm/pgtable-generic.c
+@@ -0,0 +1,124 @@
++/*
++ *  mm/pgtable-generic.c
++ *
++ *  Generic pgtable methods declared in asm-generic/pgtable.h
++ *  Most arch won't need these.
++ *
++ *  Copyright (C) 2010  Linus Torvalds
++ */
++
++#include <asm/tlb.h>
++#include <asm-generic/pgtable.h>
++
++#ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
++/*
++ * Only sets the access flags (dirty, accessed, and
++ * writable). Furthermore, we know it always gets set to a "more
++ * permissive" setting, which allows most architectures to optimize
++ * this. We return whether the PTE actually changed, which in turn
++ * instructs the caller to do things like update__mmu_cache.  This
++ * used to be done in the caller, but sparc needs minor faults to
++ * force that call on sun4c so we changed this macro slightly
++ */
++int ptep_set_access_flags(struct vm_area_struct *vma,
++			  unsigned long address, pte_t *ptep,
++			  pte_t entry, int dirty)
++{
++	int changed = !pte_same(*ptep, entry);
++	if (changed) {
++		set_pte_at(vma->vm_mm, address, ptep, entry);
++		flush_tlb_page(vma, address);
++	}
++	return changed;
++})
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_SET_ACCESS_FLAGS
++int pmdp_set_access_flags(struct vm_area_struct *vma,
++			  unsigned long address, pmd_t *pmdp,
++			  pmd_t entry, int dirty)
++{
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	int changed = !pmd_same(*pmdp, entry);
++	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
++	if (changed) {
++		set_pmd_at(vma->vm_mm, address, pmdp, entry);
++		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++	}
++	return changed;
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++	BUG();
++	return 0;
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++}
++#endif
++
++#ifndef __HAVE_ARCH_PTEP_CLEAR_YOUNG_FLUSH
++int ptep_clear_flush_young(struct vm_area_struct *vma,
++			   unsigned long address, pte_t *ptep)
++{
++	int young;
++	young = ptep_test_and_clear_young(vma, address, ptep);
++	if (young)
++		flush_tlb_page(vma, address);
++	return young;
++}
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_CLEAR_YOUNG_FLUSH
++int pmdp_clear_flush_young(struct vm_area_struct *vma,
++			   unsigned long address, pmd_t *pmdp)
++{
++	int young;
++#ifndef CONFIG_TRANSPARENT_HUGEPAGE
++	BUG();
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
++	young = pmdp_test_and_clear_young(vma, address, pmdp);
++	if (young)
++		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++	return young;
++}
++#endif
++
++#ifndef __HAVE_ARCH_PTEP_CLEAR_FLUSH
++pte_t ptep_clear_flush(struct vm_area_struct *vma, unsigned long address,
++		       pte_t *ptep)
++{
++	pte_t pte;
++	pte = ptep_get_and_clear((vma)->vm_mm, address, ptep);
++	flush_tlb_page(vma, address);
++	return pte;
++}
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_CLEAR_FLUSH
++pmd_t pmdp_clear_flush(struct vm_area_struct *vma, unsigned long address,
++		       pmd_t *pmdp)
++{
++	pmd_t pmd;
++#ifndef CONFIG_TRANSPARENT_HUGEPAGE
++	BUG();
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
++	pmd = pmdp_get_and_clear(vma->vm_mm, address, pmdp);
++	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++	return pmd;
++}
++#endif
++
++#ifndef __HAVE_ARCH_PMDP_SPLITTING_FLUSH
++pmd_t pmdp_splitting_flush(struct vm_area_struct *vma, unsigned long address,
++			   pmd_t *pmdp)
++{
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	pmd_t pmd = pmd_mksplitting(*pmdp);
++	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
++	set_pmd_at(vma->vm_mm, address, pmdp, pmd);
++	/* tlb flush only to serialize against gup-fast */
++	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++	BUG();
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++}
++#endif
