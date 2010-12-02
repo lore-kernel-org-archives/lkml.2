@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab0LBQVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 11:21:09 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:54339 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757663Ab0LBQVH (ORCPT
+	id S1757896Ab0LBQVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 11:21:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58746 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757824Ab0LBQVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 11:21:07 -0500
+	Thu, 2 Dec 2010 11:21:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Sg4Bz06Sfs3i+MtWdMgNr+UmhOuPkYEA5oldtlax4qx/bmB8wq6q5M+kiXNblhZgDq
-         CMF+3bvW/sBRZIsI/ho3I9p9Nr7aHSgHM84ZgINbUXWgaHW3Y1UxNxjtmoiVCHGiHRTp
-         1Hvzhd5SuPQ6XNQFRKyy5NdztXUeMCVB07gE4=
-From: Sankar P <sankar.curiosity@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Sankar P <sankar.curiosity@gmail.com>
-Subject: [PATCH] fs: btrfs: Shuffle preprocessor macros
-Date: Thu,  2 Dec 2010 21:49:39 +0530
-Message-Id: <1291306779-16186-1-git-send-email-sankar.curiosity@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        d=googlemail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=TS7evgrQuoRW5Yzead13gXpOzsiirjAnAcU1wLND6HGTrx5epoA+cLsdBgd47O1xsT
+         7Wpitp9ZcdJP+WIN+4xNnZ0269xuXcWg29F8k20hiUmZqJ9ju6G0nY1BKzmpMuceASgX
+         tpJBJDE6fOF0EogqvatdhPY+hAgL+yI+rJoE8=
+Subject: Re: edac_core: crashes on shutdown
+From: Tobias Karnat <tobias.karnat@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101202152106.GA29301@a1.tnic>
+References: <1291201307.3029.21.camel@Tobias-Karnat>
+	 <20101201123921.GA15530@a1.tnic> <1291209888.12511.11.camel@Tobias-Karnat>
+	 <20101201143329.GB18074@a1.tnic> <1291225614.8646.4.camel@Tobias-Karnat>
+	 <20101201193508.GA4916@liondog.tnic>
+	 <1291280613.10626.22.camel@Tobias-Karnat>  <20101202152106.GA29301@a1.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Dec 2010 17:21:12 +0100
+Message-ID: <1291306872.3898.7.camel@Tobias-Karnat>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function btree_migratepage will be extended from the baseclass
-only when CONFIG_MIGRATION option is enabled. So, it's useful to
-define/build this function only when that config option is enabled.
+Am Donnerstag, den 02.12.2010, 16:21 +0100 schrieb Borislav Petkov:
+> Well, thanks for the photos. I don't have an idea what might cause this
+> workqueue corruption I'm seeing, all reg/unreg paths look ok. The only
+> change that came in between .35 and .36.1 I can think of being relevant
+> is 00740c58541b6087d78418cebca1fcb86dc6077d. You could try backing that
+> one out to see whether it fixes the issue.
 
-Fixes an "unused function"  compiler warning when CONFIG_MIGRATION
-is not enabled and also removes an return -ENOSYS statement,
-whose scenario will not happen.
+Yes, reverting this fixed the issue!
 
-Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
----
- fs/btrfs/disk-io.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+But why?
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index c547cca..7199239 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -696,6 +696,7 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
- 				   __btree_submit_bio_done);
- }
- 
-+#ifdef CONFIG_MIGRATION
- static int btree_migratepage(struct address_space *mapping,
- 			struct page *newpage, struct page *page)
- {
-@@ -712,12 +713,9 @@ static int btree_migratepage(struct address_space *mapping,
- 	if (page_has_private(page) &&
- 	    !try_to_release_page(page, GFP_KERNEL))
- 		return -EAGAIN;
--#ifdef CONFIG_MIGRATION
- 	return migrate_page(mapping, newpage, page);
--#else
--	return -ENOSYS;
--#endif
- }
-+#endif
- 
- static int btree_writepage(struct page *page, struct writeback_control *wbc)
- {
--- 
-1.7.1
+-Tobias
+
 
