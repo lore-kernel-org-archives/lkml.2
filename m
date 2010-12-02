@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757821Ab0LBSp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 13:45:29 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33414 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab0LBSp1 (ORCPT
+	id S1757972Ab0LBSqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 13:46:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50234 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757144Ab0LBSqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 13:45:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=KFmzL+S2P5hgMKpFIsJziV/CblyoU1PzjzY1DSkJmcc5uEAP5zf1/5MyYnkgYf3fgM
-         khvBEkzuKEnw1/lfTMBpO97AJaDntqTp6smaw4LvyjG9MpumRmpi6U48rpCB920o8pU4
-         IlVmhy6xcZ/xQ3vNc3PSz0eNBgrtcsKXkBEIQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimPpEyPMVry5jyhOUe=oByp20TGJHk9s0Kz_Pqf@mail.gmail.com>
-References: <4cf594e21679631af0@agluck-desktop.sc.intel.com>
-	<20101201165139.a3bb2199.akpm@linux-foundation.org>
-	<987664A83D2D224EAE907B061CE93D530191F27E0E@orsmsx505.amr.corp.intel.com>
-	<20101202021216.2d7c33f8.akpm@linux-foundation.org>
-	<AANLkTimPpEyPMVry5jyhOUe=oByp20TGJHk9s0Kz_Pqf@mail.gmail.com>
-Date: Thu, 2 Dec 2010 10:45:26 -0800
-Message-ID: <AANLkTinUY3f=ccaLfZB3rToxHaAKTtHK7W=zeWuGek_F@mail.gmail.com>
-Subject: Re: [RFC] persistent store (version 2) (part 1 of 2)
-From: Tony Luck <tony.luck@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
-        "Huang, Ying" <ying.huang@intel.com>, Borislav Petkov <bp@alien8.de>,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 Dec 2010 13:46:46 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=4TXF7EkG9GkA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=SyI_GHdlAAAA:8 a=pGLkceISAAAA:8 a=WPyIoOwQAAAA:8 a=meVymXHHAAAA:8 a=OhwXVeo9PEbk0twBTxoA:9 a=PyIjfU3lLpSvMXN2svgA:7 a=4oWWhmEg3zSfDN2USAAAiTjQzZoA:4 a=UQxMgyrMzRwA:10 a=MSl-tDqOz04A:10 a=1DbiqZag68YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101202184645.584297526@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 02 Dec 2010 13:46:15 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        Wu Zhangjin <wuzhangjin@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        John Reiser <jreiser@BitWagon.com>
+Subject: [PATCH 3/3] ftrace: Have recordmcount honor endianness in fn_ELF_R_INFO
+References: <20101202184612.129218522@goodmis.org>
+Content-Disposition: inline; filename=0003-ftrace-Have-recordmcount-honor-endianness-in-fn_ELF_.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 2, 2010 at 8:19 AM, Tony Luck <tony.luck@intel.com> wrote:
-> was being used? But even then, the user interface wouldn't change
-> we could just have each device register a string to be included in
-> the filename. Users could look at it if they cared, or ignore it if
-> they don't care. The "type" of the data should stay at the front
-> of the name so userspace can do "for f in dmesg*" to look at
-> al the saved console logs, and it wouldn't matter if the files were
-> "dmesg-0", "dmesg-1" or "dmesg-erst-0", "dmesg-erst-1". I
-> can't quite see why anyone would care which device was used,
-> but the option to provide it would be there without breaking
-> apps that used the v1 interface.
+From: John Reiser <jreiser@bitwagon.com>
 
-Hmmm I may throw the devicename into the filename anyway ... I
-still can't see why anyone would care where it came from, but doing
-this would allow for consistent filenames across reboots.  My old
-code just stuck sequential numbers on the end of the filenames to
-make sure it didn't get collisions.  But this means that someone
-might be looking at /dev/pstore/dmesg-1 when the system panics.
-After the reboot they see two files: the old one and a new one. But
-the old code didn't guarantee that the old one would still be "dmesg-1",
-it might be "dmesg-2" and "dmesg-1" might now have the latest panic
-(ordering is at the whim of the underlying storage, and if it operates in
-a LIFO way this could happen).
+It looks to me like the change which introduced "virtual functions"
+forgot about cross-platform endianness.
 
-If I name the file "dmesg-{storename}-{recordid}" then unerased
-entries will get the same name next time - which may avoid some
-confusion.
+Thank you to Arnaud for supplying before+after data files do_mounts*.o.
 
--Tony
+This fixes a MIPS build failure triggered by recordmcount.
+
+Reported-by: Arnaud Lacombe <lacombar@gmail.com>
+Tested-by: Arnaud Lacombe <lacombar@gmail.com>
+Acked-by: Wu Zhangjin <wuzhangjin@gmail.com>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: John Reiser <jreiser@BitWagon.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/recordmcount.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 58e933a..3966717 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -119,7 +119,7 @@ static uint_t (*Elf_r_sym)(Elf_Rel const *rp) = fn_ELF_R_SYM;
+ 
+ static void fn_ELF_R_INFO(Elf_Rel *const rp, unsigned sym, unsigned type)
+ {
+-	rp->r_info = ELF_R_INFO(sym, type);
++	rp->r_info = _w(ELF_R_INFO(sym, type));
+ }
+ static void (*Elf_r_info)(Elf_Rel *const rp, unsigned sym, unsigned type) = fn_ELF_R_INFO;
+ 
+-- 
+1.7.2.3
+
+
