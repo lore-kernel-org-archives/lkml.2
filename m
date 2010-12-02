@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab0LBBu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 20:50:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41179 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab0LBBu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 20:50:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
-   d="scan'208";a="632230554"
-Date: Thu, 2 Dec 2010 08:27:16 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>,
-        David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
- for memory probe
-Message-ID: <20101202002716.GA13693@shaohui>
-References: <A24AE1FFE7AEC5489F83450EE98351BF288D88D224@shsmsx502.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A24AE1FFE7AEC5489F83450EE98351BF288D88D224@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755819Ab0LBB4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 20:56:12 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:48777 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab0LBB4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 20:56:10 -0500
+Subject: Re: [PATCH] [RFC] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for
+ clock changes
+From: john stultz <johnstul@us.ibm.com>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Valdis.Kletnieks@vt.edu, Lennart Poettering <mzxreary@0pointer.de>,
+        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20101202011832.GO22787@shareable.org>
+References: <1290532938-7332-1-git-send-email-virtuoso@slind.org>
+	 <20101123224346.GA19350@tango.0pointer.de>
+	 <20101201104359.GJ22787@shareable.org> <20180.1291243569@localhost>
+	 <20101202011832.GO22787@shareable.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Dec 2010 17:55:57 -0800
+Message-ID: <1291254957.2846.47.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-12-02 at 01:18 +0000, Jamie Lokier wrote:
+> Valdis.Kletnieks@vt.edu wrote:
+> > On Wed, 01 Dec 2010 10:43:59 GMT, Jamie Lokier said:
+> > 
+> > > So maybe CLOCK_MONOTONIC should be changed to include elapsed time
+> > > during suspend/resume, and CLOCK_MONOTONIC_RAW could remain as it is,
+> > > for programs that want that?
+> > 
+> > Wouldn't that be an API break for programs that are expecting the current
+> > behavior of CLOCK_MONOTONIC?  Yes, there should be a way to request either of
+> > them - but if there's only one way now, it should continue to act the current
+> > way, and the added way is the second option.
 > 
-> I doubt either Greg or Dave suggested adding duplicate interfaces for the 
-> same functionality.
-> 
-> The difference is that we needed to add the add_node interface in a new 
-> mem_hotplug debugfs directory because it's only useful for debugging 
-> kernel code and, thus, doesn't really have an appropriate place in sysfs.  
-> Nobody is going to use add_node unless they lack hotpluggable memory 
-> sections in their SRAT and want to debug the memory hotplug callers.  For 
-> example, I already wrote all of this node hotplug emulation stuff when I 
-> wrote the node hotplug support for SLAB.
-> 
-> Memory hotplug, however, does serve a non-debugging function and is 
-> appropriate in sysfs since this is how people hotplug memory.  It's an ABI 
-> that we can't simply remove without deprecation over a substantial period 
-> of time and in this case it doesn't seem to have a clear advantage.  We 
-> need not add special emulation support for something that is already 
-> possible for real systems, so adding a duplicate interface in debugfs is 
-> inappropriate.
+> I don't know.  Can you think of any program which would break if
+> suspend/resume's clocks behaved like ordinary task scheduling - when a
+> task doesn't run for a long time because of scheduling decisions?
+> Hmm, I guess some realtime apps might like to know.
 
-so we should still keep the sysfs memory/probe interface without any modifications,
-but for the debugfs mem_hotplug/probe interface, we can add the memory region 
-to a desired node. It is an extention for the sysfs memory/probe interface, it can 
-be used for memory hotplug emulation. Do I understand it correctly?
+Like I mentioned earlier, CLOCK_MONOTONIC_RAW and CLOCK_MONOTONIC are
+tightly tied, so anything using CLOCK_MONOTONIC_RAW would break.
 
--- 
-Thanks & Regards,
-Shaohui
+It might be possible to change both, but I still think such a change
+would be bad.
+
+> Currently CLOCK_MONOTONIC jumps forwards by 4 seconds on
+> suspend/resume anyway (as seen by userspace), on my x86 laptop running
+> 2.6.37-rc3.  So it does already jump a bit...
+
+So just to clarify here, by this do you mean that there's ~4 seconds
+delay between the resume event and when userland apps start to run (or
+possibly some of that accumulating between the app freeze and the
+timekeeping suspend) ?
+
+Or are you seeing CLOCK_MONOTONIC jump 4 seconds out of sync with
+CLOCK_REALTIME? 
+
+It should be the delta between CLOCK_MONOTONIC and CLOCK_REALTIME prior
+to suspend should be that same delta + suspend time after resume. If
+that's not the case, something may be broken.
+
+thanks
+-john
 
