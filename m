@@ -1,122 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab0LBQBT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 11:01:19 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58837 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756829Ab0LBQBR (ORCPT
+	id S1757274Ab0LBQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 11:08:56 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48496 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756829Ab0LBQIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 11:01:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=fuSaX97Ra8JVD80ZLSOETuG+ZwBJm0if2inMAWZQpzV0zJQq2b5SzvHDKpELLJ0PeM
-         w30Sj2NyfI0SVA6UdyYIIlpt1XtOVnI0x3Z1pjsRo+Oeygp1yrvGH8kNdKTStkS5C+03
-         V3c57d16BVsoLzMwlmhQPTQwRE9xbB+Ux0I2A=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH] vmscan: make kswapd use a correct order
-Date: Fri,  3 Dec 2010 01:00:49 +0900
-Message-Id: <1291305649-2405-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 2 Dec 2010 11:08:55 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] clocksource: really use a margin of 12.5% to limit deferment
+Date: Thu,  2 Dec 2010 17:08:46 +0100
+Message-Id: <1291306126-16990-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we wake up prematurely, it means we should keep going on
-reclaiming not new order page but at old order page.
-Sometime new order can be smaller than old order by below
-race so it could make failure of old order page reclaiming.
+< ukleinek> tglx: the last comment in clocksource_max_deferment is wrong I
+            think.  Unless I'm mistaken the margin is only 2^-5, not 2^-3
+< ukleinek> i.e. 3.125%, not 12.5%
+...
+< tglx> crap, the 3.125% is a bit narrow
 
-T0: Task 1 wakes up kswapd with order-3
-T1: So, kswapd starts to reclaim pages using balance_pgdat
-T2: Task 2 wakes up kswapd with order-2 because pages reclaimed
-	by T1 are consumed quickly.
-T3: kswapd exits balance_pgdat and will do following:
-T4-1: In beginning of kswapd's loop, pgdat->kswapd_max_order will
-	be reset with zero.
-T4-2: 'order' will be set to pgdat->kswapd_max_order(0), since it
-        enters the false branch of 'if (order (3) < new_order (2))'
-T4-3: If previous balance_pgdat can't meet requirement of order-2
-	free pages by high watermark, it will start reclaiming again.
-        So balance_pgdat will use order-0 to do reclaim while it
-	really should use order-2 at the moment.
-T4-4: At last, Task 1 can't get the any page if it wanted with
-	GFP_ATOMIC.
+So fix the code to really do what the comment specifies.
 
-Reported-by: Shaohua Li <shaohua.li@intel.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Shaohua Li <shaohua.li@intel.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- mm/vmscan.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+ kernel/time/clocksource.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 42a4859..27d0839 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2447,13 +2447,18 @@ out:
- 	return sc.nr_reclaimed;
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index c18d7ef..0ddf372 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -528,7 +528,7 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
+ 	 * note a margin of 12.5% is used because this can be computed with
+ 	 * a shift, versus say 10% which would require division.
+ 	 */
+-	return max_nsecs - (max_nsecs >> 5);
++	return max_nsecs - (max_nsecs >> 3);
  }
  
--static void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
-+/*
-+ * Return true if we slept enough. Otherwise, return false
-+ */
-+static bool kswapd_try_to_sleep(pg_data_t *pgdat, int order)
- {
- 	long remaining = 0;
-+	bool slept = false;
-+
- 	DEFINE_WAIT(wait);
- 
- 	if (freezing(current) || kthread_should_stop())
--		return;
-+		return slept;
- 
- 	prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
- 
-@@ -2482,6 +2487,7 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
- 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
- 		schedule();
- 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
-+		slept = true;
- 	} else {
- 		if (remaining)
- 			count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
-@@ -2489,6 +2495,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
- 			count_vm_event(KSWAPD_HIGH_WMARK_HIT_QUICKLY);
- 	}
- 	finish_wait(&pgdat->kswapd_wait, &wait);
-+
-+	return slept;
- }
- 
- /*
-@@ -2550,8 +2558,15 @@ static int kswapd(void *p)
- 			 */
- 			order = new_order;
- 		} else {
--			kswapd_try_to_sleep(pgdat, order);
--			order = pgdat->kswapd_max_order;
-+			/*
-+			 * If we wake up after enough sleeping, it means
-+			 * we reclaimed enough pages at that order. so
-+			 * we starts reclaim new order in this time.
-+			 * Otherwise, it was a premature sleep so we should
-+			 * keep going on reclaiming at that order pages.
-+			 */
-+			if (kswapd_try_to_sleep(pgdat, order))
-+				order = pgdat->kswapd_max_order;
- 		}
- 
- 		ret = try_to_freeze();
+ #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
 -- 
-1.7.0.4
+1.7.2.3
 
