@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab0LBCqR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:46:17 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:46035 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756480Ab0LBCqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:46:15 -0500
-Date: Wed, 1 Dec 2010 18:46:11 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: akpm@linux-foundation.org
-Cc: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org, cjb@laptop.org,
-        jon.nettleton@gmail.com, dsd@laptop.org, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: [PATCH] staging: olpc_dcon: drop CONFIG_BROKEN dependency
-Message-ID: <20101201184611.6e40d517@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756841Ab0LBCrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:47:13 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33700 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab0LBCrL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Dec 2010 21:47:11 -0500
+Subject: Re: [PATCH] media: rc: ir-lirc-codec: fix potential integer overflow
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Jarod Wilson <jarod@wilsonet.com>
+In-Reply-To: <1290791197-21403-1-git-send-email-segoon@openwall.com>
+Date: Wed, 1 Dec 2010 21:47:08 -0500
+Cc: kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        =?iso-8859-1?Q?David_H=E4rdeman?= <david@hardeman.nu>,
+        Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7965B2E6-E741-4FDB-84C4-8F5FD3A130A6@wilsonet.com>
+References: <1290791197-21403-1-git-send-email-segoon@openwall.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Nov 26, 2010, at 12:06 PM, Vasiliy Kulikov wrote:
 
-With the last few commits, the DCON will now properly build.  As such,
-drop the dep on CONFIG_BROKEN.
+> 'n' may be bigger than MAX_INT*sizeof(int), if so checking of truncated
+> (int)(n/sizeof(int)) for LIRCBUF_SIZE overflow and then using nontruncated 'count'
+> doesn't make sense.  Also n may be up to sizeof(int)-1 bytes bigger than expected,
+> so check value of (n % sizeof(int)) too.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> ---
+> Compile tested only.
 
-[Note: this is for the -mm tree, to be applied on top of the other DCON
-patches.]
+Looks sane.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/staging/olpc_dcon/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Acked-by: Jarod Wilson <jarod@redhat.com>
 
-diff --git a/drivers/staging/olpc_dcon/Kconfig b/drivers/staging/olpc_dcon/Kconfig
-index 8be8716..cfdec44 100644
---- a/drivers/staging/olpc_dcon/Kconfig
-+++ b/drivers/staging/olpc_dcon/Kconfig
-@@ -1,6 +1,6 @@
- config FB_OLPC_DCON
- 	tristate "One Laptop Per Child Display CONtroller support"
--	depends on OLPC && BROKEN
-+	depends on OLPC
- 	select I2C
- 	---help---
- 	  Add support for the OLPC XO DCON controller.  This controller is
 -- 
-1.7.2.3
+Jarod Wilson
+jarod@wilsonet.com
+
+
 
