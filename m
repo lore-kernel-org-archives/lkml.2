@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab0LBTpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 14:45:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36430 "EHLO mx1.redhat.com"
+	id S1758061Ab0LBTps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 14:45:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758042Ab0LBTpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 14:45:46 -0500
-Date: Thu, 2 Dec 2010 14:41:29 -0500
+	id S1758041Ab0LBTpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 14:45:45 -0500
+Date: Thu, 2 Dec 2010 14:43:24 -0500
 From: Rik van Riel <riel@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
-Message-ID: <20101202144129.4357fe00@annuminas.surriel.com>
+Subject: [RFC PATCH 1/3] kvm: keep track of which task is running a KVM vcpu
+Message-ID: <20101202144324.4a79263b@annuminas.surriel.com>
+In-Reply-To: <20101202144129.4357fe00@annuminas.surriel.com>
+References: <20101202144129.4357fe00@annuminas.surriel.com>
 Organization: Red Hat, Inc.
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,31 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running SMP virtual machines, it is possible for one VCPU to be
-spinning on a spinlock, while the VCPU that holds the spinlock is not
-currently running, because the host scheduler preempted it to run
-something else.
+Keep track of which task is running a KVM vcpu.  This helps us
+figure out later what task to wake up if we want to boost a
+vcpu that got preempted.
 
-Both Intel and AMD CPUs have a feature that detects when a virtual
-CPU is spinning on a lock and will trap to the host.
+Unfortunately there are no guarantees that the same task
+always keeps the same vcpu, so we can only track the task
+across a single "run" of the vcpu.
 
-The current KVM code sleeps for a bit whenever that happens, which
-results in eg. a 64 VCPU Windows guest taking forever and a bit to
-boot up.  This is because the VCPU holding the lock is actually
-running and not sleeping, so the pause is counter-productive.
+Signed-off-by: Rik van Riel <riel@redhat.com>
 
-In other workloads a pause can also be counter-productive, with
-spinlock detection resulting in one guest giving up its CPU time
-to the others.  Instead of spinning, it ends up simply not running
-much at all.
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 5fbdb55..cb73a73 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -79,6 +79,7 @@ struct kvm_vcpu {
+ #endif
+ 	int vcpu_id;
+ 	struct mutex mutex;
++	struct task_struct *task;
+ 	int   cpu;
+ 	struct kvm_run *run;
+ 	unsigned long requests;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 050577a..2bffa47 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -741,6 +741,7 @@ void vcpu_load(struct kvm_vcpu *vcpu)
+ 	int cpu;
+ 
+ 	mutex_lock(&vcpu->mutex);
++	vcpu->task = current;
+ 	cpu = get_cpu();
+ 	preempt_notifier_register(&vcpu->preempt_notifier);
+ 	kvm_arch_vcpu_load(vcpu, cpu);
+@@ -749,6 +750,7 @@ void vcpu_load(struct kvm_vcpu *vcpu)
+ 
+ void vcpu_put(struct kvm_vcpu *vcpu)
+ {
++	vcpu->task = NULL;
+ 	preempt_disable();
+ 	kvm_arch_vcpu_put(vcpu);
+ 	preempt_notifier_unregister(&vcpu->preempt_notifier);
 
-This patch series aims to fix that, by having a VCPU that spins
-give the remainder of its timeslice to another VCPU in the same
-guest before yielding the CPU - one that is runnable but got 
-preempted, hopefully the lock holder.
 
-Scheduler people, please flame me with anything I may have done
-wrong, so I can do it right for a next version :)
 
 -- 
 All rights reversed.
