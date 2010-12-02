@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab0LBNue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 08:50:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59831 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab0LBNud (ORCPT
+	id S1757609Ab0LBNw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 08:52:59 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62211 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757552Ab0LBNw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 08:50:33 -0500
-Date: Thu, 2 Dec 2010 13:50:28 +0000 (GMT)
-From: James Simmons <jsimmons@infradead.org>
-To: Microcai <microcai@fedoraproject.org>
-cc: Vojtech Pavlik <vojtech@suse.cz>, linuxconsole@vger.kernel.org,
-        linuxconsole-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Kernel fbcon UNICODE font support
-In-Reply-To: <1290932981.710.2.camel@cai.gentoo>
-Message-ID: <alpine.LFD.2.00.1012020137320.28091@casper.infradead.org>
-References: <1290750825.2372.59.camel@cai.gentoo> <20101127125742.GD4865@const.famille.thibault.fr> <AANLkTikfS+c93skkUFNLVJNah0DsjAUPE2jFNAQCAnCg@mail.gmail.com> <20101128081528.GA20705@suse.cz> <1290932981.710.2.camel@cai.gentoo>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 2 Dec 2010 08:52:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RTc8tMzZxCxwwBgyRqsqjPhlsXl5GBjEIwJn/iBlZTJuNQNO/uvJeH4b2nRGghvKKd
+         wDQ2j3xs6VqiYRSjnrbAkdERXDFoPSVPF3u7xyWoTvdjEETT70e/3Qx9pnDEYqj3YgJd
+         ZmtPOPI3iqc+zOQvLSaaAPeyp48OV9epqtWSw=
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1985284609-287301345-1291255126=:28091"
-Content-ID: <alpine.LFD.2.00.1012021344090.19542@casper.infradead.org>
+In-Reply-To: <20101202140943.c9742beb.sfr@canb.auug.org.au>
+References: <20101202140943.c9742beb.sfr@canb.auug.org.au>
+Date: Thu, 2 Dec 2010 14:52:56 +0100
+Message-ID: <AANLkTi=aZ3Gm5rkqAh8j-bOvvKULge6Hm5cN_mEovVdq@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 2
+From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Ave
 
---1985284609-287301345-1291255126=:28091
-Content-Type: TEXT/PLAIN; CHARSET=ISO-2022-JP
-Content-ID: <alpine.LFD.2.00.1012021344091.19542@casper.infradead.org>
+2010/12/2 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Hi all,
+>
+> Changes since 20101201:
+>
+
+WARNING: modpost: Found 4 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+  LD      .tmp_vmlinux1
+drivers/built-in.o: In function `pch_request_dma':
+/home/test/linux-2.6/drivers/serial/pch_uart.c:565: undefined
+reference to `__dma_request_channel'
+/home/test/linux-2.6/drivers/serial/pch_uart.c:577: undefined
+reference to `__dma_request_channel'
+/home/test/linux-2.6/drivers/serial/pch_uart.c:580: undefined
+reference to `dma_release_channel'
+drivers/built-in.o: In function `pch_free_dma':
+/home/test/linux-2.6/drivers/serial/pch_uart.c:519: undefined
+reference to `dma_release_channel'
+/home/test/linux-2.6/drivers/serial/pch_uart.c:523: undefined
+reference to `dma_release_channel'
+make[1]: *** [.tmp_vmlinux1] Error 1
+make: *** [sub-make] Error 2
 
 
-> 在 2010-11-28日的 09:15 +0100，Vojtech Pavlik写道：
-> > 
-> > Well, on VGA you could use the 512 glyphs available (9 bit character, 7
-> > bit attribute) and dynamically change the font in the video memory to
-> > always contain the characters that you need on the screen. Chances are
-> > that you won't need all 512 at any single time. The screen isn't that
-> > large in classic VGA mode.
-> > 
-> > But since VGA is mostly dead these days anyway, it'd be a neat hack, but
-> > probably not worth the effort.
-> 
-> Can't do that. That's too tricky, and some times we *DO* need more than
-> 512 different glyphs.
+-- 
+Slawa!
+Zimny "Spie dziadu!" Lech z Wawelu
 
-BTW the console developement branch is at 
-
-git://git.infradead.org/~jsimmons/public_git/linuxconsole-2.6.git
-
-	I have managed to do massive cleanup to the console layer but its not 
-quite ready for general testing. Its mostly working but there are still 
-some major bugs. As for the VC screen buffers the issue is that the default
-screen buffers where based on the VGA text mode. In fact the visible VC for
-vgacon is the actually vga video buffer. When we do a VT switch it copys 
-the video buffer to a software buffer and then loads the vga video buffer 
-with the VCs software buffer we switched to. 
-	This is nice and neat for vgacon but it doesn't flow so nicely with 
-graphical consoles or text LCDs. What I like to see is the attribute 
-buffer be split from the vc_screenbuf. The bonus is in embbeded systems we 
-could arrange the code so we could have a light weight printk VT without 
-the extra junk of the VC. Do we really need a attribute buffer for printk?  
-I believe that would be the first step in the right direction.
---1985284609-287301345-1291255126=:28091--
+That is not dead which can eternal lie.
+And with strange aeons even death may die.
