@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab0LBRaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 12:30:30 -0500
-Received: from casper.infradead.org ([85.118.1.10]:48163 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab0LBRa2 (ORCPT
+	id S1757645Ab0LBRb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 12:31:26 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:8748 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253Ab0LBRbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 12:30:28 -0500
-Message-ID: <4CF7D7A0.7050607@infradead.org>
-Date: Thu, 02 Dec 2010 15:30:08 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	Thu, 2 Dec 2010 12:31:24 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH 2/8] cpuidle: Rename X86 specific idle poll state[0] from C0 to CPUIDLE
+Date: Thu, 2 Dec 2010 10:31:17 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: arjan@linux.intel.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+References: <1291308148-28628-1-git-send-email-trenn@suse.de> <1291308148-28628-2-git-send-email-trenn@suse.de> <1291308148-28628-3-git-send-email-trenn@suse.de>
+In-Reply-To: <1291308148-28628-3-git-send-email-trenn@suse.de>
 MIME-Version: 1.0
-To: James Hogan <james@albanarts.com>
-CC: Andy Walls <awalls@md.metrocast.net>,
-        =?UTF-8?B?RGF2aWQgSMOkcmRlbWFu?= <david@hardeman.nu>,
-        Jarod Wilson <jarod@redhat.com>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] ir-nec-decoder: fix extended NEC scancodes
-References: <7m5j914h31hev0dqkj085vd7.1290777731791@email.android.com> <20101126211213.GA21473@gandalf>
-In-Reply-To: <20101126211213.GA21473@gandalf>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201012021031.19779.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-11-2010 19:12, James Hogan escreveu:
-> (expanded cc list)
+On Thursday, December 02, 2010 09:42:22 am Thomas Renninger wrote:
+> C0 means and is well know as "not idle".
+> All documentation out there uses this term as "running"/"not idle"
+> state. Also Linux userspace tools (e.g. cpufreq-aperf and turbostat)
+> show C0 residency which there is correct, but means something totally
+> else than cpuidle "POLL" state.
 > 
-> On Fri, Nov 26, 2010 at 08:39:25AM -0500, Andy Walls wrote:
->> You might want to check the handling against this NEC datasheet
->>
->> http://www.datasheetcatalog.org/datasheet/nec/UPD6122G-002.pdf
->>
->> The datasheet calls the address bytes "custom code" (high byte apparently) and "custom code'" (low byte apparently) with both bytes sent lsb first.  It appears the high byte is sent first when using 16 bit codes.
 > 
-> Thanks for the link Andy. You appear to be correct, which suggests that
-> winbond-cir is the "wrong" one. Curiously there is a comment in
-> winbond-cir.c which explicitly mentions which byte is which:
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> CC: arjan@linux.intel.com
+> CC: lenb@kernel.org
+> CC: linux-acpi@vger.kernel.org
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  drivers/cpuidle/cpuidle.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> 854 * With NEC extended, Address1 is the LSB of the Address and
-> 855 * Address2 is the MSB, Command parsing remains unchanged.
-> 
-> but then it also says:
-> 
-> 25 *  To do:
-> 26 *    o Test NEC and RC5
-> 
-> I suppose its all a matter of convention, but I think they should at
-> least be consistent, so I'll go by the NEC datasheet and submit a patch
-> to winbond-cir instead.
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 08d5f05..99cc8fc 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -260,7 +260,7 @@ static void poll_idle_init(struct cpuidle_device *dev)
+>  
+>  	cpuidle_set_statedata(state, NULL);
+>  
+> -	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
+> +	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
 
-Yes, they should be consistent. I also think that RC core is right. So, the
-better is to change it at winbond-cir.
+The description says "rename C0 to CPUIDLE", but the patch looks like
+"rename C0 to POLL".
 
+>  	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+>  	state->exit_latency = 0;
+>  	state->target_residency = 0;
 > 
-> Cheers
-> James
-> 
->> James Hogan <james@albanarts.com> wrote:
->>
->>> Could somebody check this as I'm unable to test it.
->>>
->>> I'm also not entirely certain it isn't winbond-cir that is in error
->>> instead of ir-nec-decoder.
->>>
->>> Cheers
->>> James
->>> --
->>> After comparing the extended NEC scancode construction of the software
->>> decoder and winbond-cir it appears the software decoder is putting the
->>> two address bytes the wrong way around.
->>>
->>> Here's how the decoders currently generate scancodes:
->>> winbond-cir normal NEC:   msb [ 0x0,      0x0,     addr, cmd ] lsb
->>> soft normal NEC:          msb [ 0x0,      0x0,     addr, cmd ] lsb
->>> winbond-cir extended NEC: msb [ 0x0, not_addr,     addr, cmd ] lsb
->>> soft extended NEC:        msb [ 0x0,     addr, not_addr, cmd ] lsb
->>>
->>> The soft decider is not consistent with [1], assuming the "Address high"
->>> byte (not_addr) should be more significant than the "Address low" byte
->>> (addr) in the scancode.
->>>
->>> [1] http://www.sbprojects.com/knowledge/ir/nec.htm
->>>
->>> Signed-off-by: James Hogan <james@albanarts.com>
->>> ---
->>> drivers/media/IR/ir-nec-decoder.c |    4 ++--
->>> 1 files changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/media/IR/ir-nec-decoder.c
->>> b/drivers/media/IR/ir-nec-decoder.c
->>> index 70993f7..11d3e78 100644
->>> --- a/drivers/media/IR/ir-nec-decoder.c
->>> +++ b/drivers/media/IR/ir-nec-decoder.c
->>> @@ -166,8 +166,8 @@ static int ir_nec_decode(struct input_dev
->>> *input_dev, struct ir_raw_event ev)
->>>
->>> 		if ((address ^ not_address) != 0xff) {
->>> 			/* Extended NEC */
->>> -			scancode = address     << 16 |
->>> -				   not_address <<  8 |
->>> +			scancode = not_address << 16 |
->>> +				   address     <<  8 |
->>> 				   command;
->>> 			IR_dprintk(1, "NEC (Ext) scancode 0x%06x\n", scancode);
->>> 		} else {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
