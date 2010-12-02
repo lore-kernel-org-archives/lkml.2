@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab0LBJko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 04:40:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59115 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756971Ab0LBJkm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 04:40:42 -0500
-Date: Thu, 2 Dec 2010 09:40:39 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk, dahuang@nvidia.com,
-        olofj@chromium.org
-Subject: Re: [PATCH 0/4] Various tps6586x regulator fixes from ChromeOS
-Message-ID: <20101202094038.GA19267@rakim.wolfsonmicro.main>
-References: <1291235851-29523-1-git-send-email-swarren@nvidia.com>
+	id S1757328Ab0LBJlK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 04:41:10 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57226 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751434Ab0LBJlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 04:41:08 -0500
+Message-ID: <4CF76AB6.2040906@cn.fujitsu.com>
+Date: Thu, 02 Dec 2010 17:45:26 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291235851-29523-1-git-send-email-swarren@nvidia.com>
-X-Cookie: No directory.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v4 2/3] KVM: MMU: fix accessed bit set on prefault path
+References: <4CF76A8B.2040102@cn.fujitsu.com>
+In-Reply-To: <4CF76A8B.2040102@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-02 17:41:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-02 17:41:17,
+	Serialize complete at 2010-12-02 17:41:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 01:37:27PM -0700, Stephen Warren wrote:
-> Following are some patches for the tps6586x regulator driver that were
-> made in the ChromeOS repository.
-> 
-> A variety of people have built a kernel containing these patches, and
-> booted Tegra Seaboard with that kernel.
+Retry #PF is the speculative path, so don't set the accessed bit
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-In general please do try to provide a bit more detail in your changelogs
-- things like missing shifts are fairly obvious but...
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 010736e..c6bb449 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2214,7 +2214,8 @@ static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
+ }
+ 
+ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+-			int map_writable, int level, gfn_t gfn, pfn_t pfn)
++			int map_writable, int level, gfn_t gfn, pfn_t pfn,
++			bool prefault)
+ {
+ 	struct kvm_shadow_walk_iterator iterator;
+ 	struct kvm_mmu_page *sp;
+@@ -2229,7 +2230,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 				pte_access &= ~ACC_WRITE_MASK;
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
+ 				     0, write, 1, &pt_write,
+-				     level, gfn, pfn, false, map_writable);
++				     level, gfn, pfn, prefault, map_writable);
+ 			direct_pte_prefetch(vcpu, iterator.sptep);
+ 			++vcpu->stat.pf_fixed;
+ 			break;
+@@ -2321,7 +2322,8 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+ 		goto out_unlock;
+ 	kvm_mmu_free_some_pages(vcpu);
+-	r = __direct_map(vcpu, v, write, map_writable, level, gfn, pfn);
++	r = __direct_map(vcpu, v, write, map_writable, level, gfn, pfn,
++			 prefault);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 
+ 
+@@ -2684,7 +2686,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 		goto out_unlock;
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	r = __direct_map(vcpu, gpa, write, map_writable,
+-			 level, gfn, pfn);
++			 level, gfn, pfn, prefault);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 
+ 	return r;
+-- 
+1.7.0.4
 
->   regulator: tps6586x: Fix TPS6586X_DVM to store goreg/bit
->   regulator: tps6586x: Handle both enable reg/bits being the same
-
-...things like these aren't obvious.
-
-Please also note that the kernel does not use Gerritt.
