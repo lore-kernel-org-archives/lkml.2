@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab0LBC3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Dec 2010 21:29:50 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42761 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755928Ab0LBC3t (ORCPT
+	id S1756308Ab0LBCff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Dec 2010 21:35:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10828 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755701Ab0LBCfd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Dec 2010 21:29:49 -0500
-Date: Wed, 1 Dec 2010 18:28:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        sam@ravnborg.org, eric.dumazet@gmail.com
-Subject: Re: [patch 1/3]make readmostly section correctly align
-Message-Id: <20101201182854.dd70bdf2.akpm@linux-foundation.org>
-In-Reply-To: <1291255341.12777.115.camel@sli10-conroe>
-References: <1291255341.12777.115.camel@sli10-conroe>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Dec 2010 21:35:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,285,1288594800"; 
+   d="scan'208";a="683021883"
+From: "Zheng, Shaohui" <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Greg KH <gregkh@suse.de>, "Li, Haicheng" <haicheng.li@intel.com>,
+        "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>
+Date: Thu, 2 Dec 2010 10:35:00 +0800
+Subject: RE: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+Thread-Topic: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+Thread-Index: AcuRxoLH1inUi6J/RtqelRDAVluiNgAAP2tg
+Message-ID: <A24AE1FFE7AEC5489F83450EE98351BF288D88D2B8@shsmsx502.ccr.corp.intel.com>
+References: <A24AE1FFE7AEC5489F83450EE98351BF288D88D224@shsmsx502.ccr.corp.intel.com>
+ <20101202002716.GA13693@shaohui>
+ <alpine.DEB.2.00.1012011807190.13942@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1012011807190.13942@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Dec 2010 10:02:21 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+Why should we add so many interfaces for memory hotplug emulation? If so, we should create both sysfs and debugfs 
+entries for an online node, we are trying to add redundant code logic.
 
-> readmostly section should end at cache line aligned address, otherwise the last
-> several data might share cachline with other data and make the readmostly data
-> still have cache bounce.
-> For example, in ia64, secpath_cachep is the last readmostly data, and it shares
-> cacheline with init_uts_ns.
-> a000000100e80480 d secpath_cachep
-> a000000100e80488 D init_uts_ns
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> ---
->  include/asm-generic/vmlinux.lds.h |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> Index: linux/include/asm-generic/vmlinux.lds.h
-> ===================================================================
-> --- linux.orig/include/asm-generic/vmlinux.lds.h	2010-12-01 16:49:48.000000000 +0800
-> +++ linux/include/asm-generic/vmlinux.lds.h	2010-12-02 09:22:32.000000000 +0800
-> @@ -192,7 +192,8 @@
->  
->  #define READ_MOSTLY_DATA(align)						\
->  	. = ALIGN(align);						\
-> -	*(.data..read_mostly)
-> +	*(.data..read_mostly)						\
-> +	. = ALIGN(align);
->  
->  #define CACHELINE_ALIGNED_DATA(align)					\
->  	. = ALIGN(align);						\
-> 
+We need not make a simple thing such complicated, Simple is beautiful, I'd prefer to rename the mem_hotplug/probe 
+interface as mem_hotplug/add_memory.
 
-Surely the sane way to do this is to ensure that each section *starts*
-at an at-least-cacheline aligned address and then not worry about how
-the section ends.  So shouldn't we be fixing DATA_DATA?
+	/sys/kernel/debug/mem_hotplug/add_node (already exists)
+	/sys/kernel/debug/mem_hotplug/add_memory (rename probe as add_memory)
 
-With your approach, .data may end up sharing a cacheline with
-some other section in some undesirable manner on a different arch.
+Thanks & Regards,
+Shaohui
 
-"fixing" DATA_DATA would involve page-aligning it, which sucks a bit. 
-Things would be better if include/asm-generic/vmlinux.lds.h had access
-to a globally-agreed cacheline-size, as it does the page size.
 
-otoh, .data.read_mostly is "special", in that it wants the tail end of
-its last cacheline not to share with any other section.  Most other
-sections aren't like that.
+-----Original Message-----
+From: David Rientjes [mailto:rientjes@google.com] 
+Sent: Thursday, December 02, 2010 10:13 AM
+To: Zheng, Shaohui
+Cc: Andrew Morton; linux-mm@kvack.org; linux-kernel@vger.kernel.org; lethal@linux-sh.org; Andi Kleen; Dave Hansen; Greg KH; Li, Haicheng
+Subject: Re: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface for memory probe
 
+On Thu, 2 Dec 2010, Shaohui Zheng wrote:
+
+> so we should still keep the sysfs memory/probe interface without any modifications,
+> but for the debugfs mem_hotplug/probe interface, we can add the memory region 
+> to a desired node.
+
+This feature would be distinct from the add_node interface already 
+provided: instead of hotplugging a new node to test the memory hotplug 
+callbacks, this new interface would only be hotadding new memory to a node 
+other than the one it has physical affinity with.  For that support, I'd 
+suggest new probe files in debugfs for each online node:
+
+	/sys/kernel/debug/mem_hotplug/add_node (already exists)
+	/sys/kernel/debug/mem_hotplug/node0/add_memory
+	/sys/kernel/debug/mem_hotplug/node1/add_memory
+	...
+
+and then you can offline and remove that memory with the existing hotplug 
+support (CONFIG_MEMORY_HOTPLUG and CONFIG_MEMORY_HOTREMOVE, respectively).
