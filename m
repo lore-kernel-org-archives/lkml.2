@@ -1,409 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab0LBTL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 14:11:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752938Ab0LBTL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 14:11:57 -0500
-Date: Thu, 2 Dec 2010 21:11:30 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] vhost test module
-Message-ID: <20101202191130.GA8092@redhat.com>
-References: <20101129170431.GA4027@redhat.com>
- <20101129170901.GB4027@redhat.com>
- <20101202190037.GH2085@linux.vnet.ibm.com>
+	id S1758054Ab0LBTPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 14:15:01 -0500
+Received: from mailfw02.zoner.fi ([84.34.147.249]:65049 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758038Ab0LBTO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 14:14:59 -0500
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 RFC 3/3] x86: Support XZ-compressed kernel
+Cc: linux-embedded@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alain Knaff <alain@knaff.lu>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+From: Lasse Collin <lasse.collin@tukaani.org>
+Date: Thu, 2 Dec 2010 21:14:57 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101202190037.GH2085@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012022114.57173.lasse.collin@tukaani.org>
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 11:00:37AM -0800, Paul E. McKenney wrote:
-> On Mon, Nov 29, 2010 at 07:09:01PM +0200, Michael S. Tsirkin wrote:
-> > This adds a test module for vhost infrastructure.
-> > Intentionally not tied to kbuild to prevent people
-> > from installing and loading it accidentally.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> On question below.
-> 
-> > ---
-> > 
-> > diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
-> > new file mode 100644
-> > index 0000000..099f302
-> > --- /dev/null
-> > +++ b/drivers/vhost/test.c
-> > @@ -0,0 +1,320 @@
-> > +/* Copyright (C) 2009 Red Hat, Inc.
-> > + * Author: Michael S. Tsirkin <mst@redhat.com>
-> > + *
-> > + * This work is licensed under the terms of the GNU GPL, version 2.
-> > + *
-> > + * test virtio server in host kernel.
-> > + */
-> > +
-> > +#include <linux/compat.h>
-> > +#include <linux/eventfd.h>
-> > +#include <linux/vhost.h>
-> > +#include <linux/miscdevice.h>
-> > +#include <linux/module.h>
-> > +#include <linux/mutex.h>
-> > +#include <linux/workqueue.h>
-> > +#include <linux/rcupdate.h>
-> > +#include <linux/file.h>
-> > +#include <linux/slab.h>
-> > +
-> > +#include "test.h"
-> > +#include "vhost.c"
-> > +
-> > +/* Max number of bytes transferred before requeueing the job.
-> > + * Using this limit prevents one virtqueue from starving others. */
-> > +#define VHOST_TEST_WEIGHT 0x80000
-> > +
-> > +enum {
-> > +	VHOST_TEST_VQ = 0,
-> > +	VHOST_TEST_VQ_MAX = 1,
-> > +};
-> > +
-> > +struct vhost_test {
-> > +	struct vhost_dev dev;
-> > +	struct vhost_virtqueue vqs[VHOST_TEST_VQ_MAX];
-> > +};
-> > +
-> > +/* Expects to be always run from workqueue - which acts as
-> > + * read-size critical section for our kind of RCU. */
-> > +static void handle_vq(struct vhost_test *n)
-> > +{
-> > +	struct vhost_virtqueue *vq = &n->dev.vqs[VHOST_TEST_VQ];
-> > +	unsigned out, in;
-> > +	int head;
-> > +	size_t len, total_len = 0;
-> > +	void *private;
-> > +
-> > +	private = rcu_dereference_check(vq->private_data, 1);
-> 
-> Any chance of a check for running in a workqueue?  If I remember correctly,
-> the ->lockdep_map field in the work_struct structure allows you to create
-> the required lockdep expression.
-> 
-> 							Thanx, Paul
+From: Lasse Collin <lasse.collin@tukaani.org>
 
-We moved away from using the workqueue to a custom kernel thread
-implementation though.
+This integrates the XZ decompression code to the x86
+pre-boot code.
 
+mkpiggy.c is updated to reserve about 32 KiB more buffer safety
+margin for kernel decompression. It is done unconditionally for
+all decompressors to keep the code simpler.
 
-> > +	if (!private)
-> > +		return;
-> > +
-> > +	mutex_lock(&vq->mutex);
-> > +	vhost_disable_notify(vq);
-> > +
-> > +	for (;;) {
-> > +		head = vhost_get_vq_desc(&n->dev, vq, vq->iov,
-> > +					 ARRAY_SIZE(vq->iov),
-> > +					 &out, &in,
-> > +					 NULL, NULL);
-> > +		/* On error, stop handling until the next kick. */
-> > +		if (unlikely(head < 0))
-> > +			break;
-> > +		/* Nothing new?  Wait for eventfd to tell us they refilled. */
-> > +		if (head == vq->num) {
-> > +			if (unlikely(vhost_enable_notify(vq))) {
-> > +				vhost_disable_notify(vq);
-> > +				continue;
-> > +			}
-> > +			break;
-> > +		}
-> > +		if (in) {
-> > +			vq_err(vq, "Unexpected descriptor format for TX: "
-> > +			       "out %d, int %d\n", out, in);
-> > +			break;
-> > +		}
-> > +		len = iov_length(vq->iov, out);
-> > +		/* Sanity check */
-> > +		if (!len) {
-> > +			vq_err(vq, "Unexpected 0 len for TX\n");
-> > +			break;
-> > +		}
-> > +		vhost_add_used_and_signal(&n->dev, vq, head, 0);
-> > +		total_len += len;
-> > +		if (unlikely(total_len >= VHOST_TEST_WEIGHT)) {
-> > +			vhost_poll_queue(&vq->poll);
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> > +	mutex_unlock(&vq->mutex);
-> > +}
-> > +
-> > +static void handle_vq_kick(struct vhost_work *work)
-> > +{
-> > +	struct vhost_virtqueue *vq = container_of(work, struct vhost_virtqueue,
-> > +						  poll.work);
-> > +	struct vhost_test *n = container_of(vq->dev, struct vhost_test, dev);
-> > +
-> > +	handle_vq(n);
-> > +}
-> > +
-> > +static int vhost_test_open(struct inode *inode, struct file *f)
-> > +{
-> > +	struct vhost_test *n = kmalloc(sizeof *n, GFP_KERNEL);
-> > +	struct vhost_dev *dev;
-> > +	int r;
-> > +
-> > +	if (!n)
-> > +		return -ENOMEM;
-> > +
-> > +	dev = &n->dev;
-> > +	n->vqs[VHOST_TEST_VQ].handle_kick = handle_vq_kick;
-> > +	r = vhost_dev_init(dev, n->vqs, VHOST_TEST_VQ_MAX);
-> > +	if (r < 0) {
-> > +		kfree(n);
-> > +		return r;
-> > +	}
-> > +
-> > +	f->private_data = n;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void *vhost_test_stop_vq(struct vhost_test *n,
-> > +				struct vhost_virtqueue *vq)
-> > +{
-> > +	void *private;
-> > +
-> > +	mutex_lock(&vq->mutex);
-> > +	private = rcu_dereference_protected(vq->private_data,
-> > +					 lockdep_is_held(&vq->mutex));
-> > +	rcu_assign_pointer(vq->private_data, NULL);
-> > +	mutex_unlock(&vq->mutex);
-> > +	return private;
-> > +}
-> > +
-> > +static void vhost_test_stop(struct vhost_test *n, void **privatep)
-> > +{
-> > +	*privatep = vhost_test_stop_vq(n, n->vqs + VHOST_TEST_VQ);
-> > +}
-> > +
-> > +static void vhost_test_flush_vq(struct vhost_test *n, int index)
-> > +{
-> > +	vhost_poll_flush(&n->dev.vqs[index].poll);
-> > +}
-> > +
-> > +static void vhost_test_flush(struct vhost_test *n)
-> > +{
-> > +	vhost_test_flush_vq(n, VHOST_TEST_VQ);
-> > +}
-> > +
-> > +static int vhost_test_release(struct inode *inode, struct file *f)
-> > +{
-> > +	struct vhost_test *n = f->private_data;
-> > +	void  *private;
-> > +
-> > +	vhost_test_stop(n, &private);
-> > +	vhost_test_flush(n);
-> > +	vhost_dev_cleanup(&n->dev);
-> > +	/* We do an extra flush before freeing memory,
-> > +	 * since jobs can re-queue themselves. */
-> > +	vhost_test_flush(n);
-> > +	kfree(n);
-> > +	return 0;
-> > +}
-> > +
-> > +static long vhost_test_run(struct vhost_test *n, int test)
-> > +{
-> > +	void *priv, *oldpriv;
-> > +	struct vhost_virtqueue *vq;
-> > +	int r, index;
-> > +
-> > +	if (test < 0 || test > 1)
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&n->dev.mutex);
-> > +	r = vhost_dev_check_owner(&n->dev);
-> > +	if (r)
-> > +		goto err;
-> > +
-> > +	for (index = 0; index < n->dev.nvqs; ++index) {
-> > +		/* Verify that ring has been setup correctly. */
-> > +		if (!vhost_vq_access_ok(&n->vqs[index])) {
-> > +			r = -EFAULT;
-> > +			goto err;
-> > +		}
-> > +	}
-> > +
-> > +	for (index = 0; index < n->dev.nvqs; ++index) {
-> > +		vq = n->vqs + index;
-> > +		mutex_lock(&vq->mutex);
-> > +		priv = test ? n : NULL;
-> > +
-> > +		/* start polling new socket */
-> > +		oldpriv = rcu_dereference_protected(vq->private_data,
-> > +						    lockdep_is_held(&vq->mutex));
-> > +		rcu_assign_pointer(vq->private_data, priv);
-> > +
-> > +		mutex_unlock(&vq->mutex);
-> > +
-> > +		if (oldpriv) {
-> > +			vhost_test_flush_vq(n, index);
-> > +		}
-> > +	}
-> > +
-> > +	mutex_unlock(&n->dev.mutex);
-> > +	return 0;
-> > +
-> > +err:
-> > +	mutex_unlock(&n->dev.mutex);
-> > +	return r;
-> > +}
-> > +
-> > +static long vhost_test_reset_owner(struct vhost_test *n)
-> > +{
-> > +	void *priv = NULL;
-> > +	long err;
-> > +	mutex_lock(&n->dev.mutex);
-> > +	err = vhost_dev_check_owner(&n->dev);
-> > +	if (err)
-> > +		goto done;
-> > +	vhost_test_stop(n, &priv);
-> > +	vhost_test_flush(n);
-> > +	err = vhost_dev_reset_owner(&n->dev);
-> > +done:
-> > +	mutex_unlock(&n->dev.mutex);
-> > +	return err;
-> > +}
-> > +
-> > +static int vhost_test_set_features(struct vhost_test *n, u64 features)
-> > +{
-> > +	mutex_lock(&n->dev.mutex);
-> > +	if ((features & (1 << VHOST_F_LOG_ALL)) &&
-> > +	    !vhost_log_access_ok(&n->dev)) {
-> > +		mutex_unlock(&n->dev.mutex);
-> > +		return -EFAULT;
-> > +	}
-> > +	n->dev.acked_features = features;
-> > +	smp_wmb();
-> > +	vhost_test_flush(n);
-> > +	mutex_unlock(&n->dev.mutex);
-> > +	return 0;
-> > +}
-> > +
-> > +static long vhost_test_ioctl(struct file *f, unsigned int ioctl,
-> > +			     unsigned long arg)
-> > +{
-> > +	struct vhost_test *n = f->private_data;
-> > +	void __user *argp = (void __user *)arg;
-> > +	u64 __user *featurep = argp;
-> > +	int test;
-> > +	u64 features;
-> > +	int r;
-> > +	switch (ioctl) {
-> > +	case VHOST_TEST_RUN:
-> > +		if (copy_from_user(&test, argp, sizeof test))
-> > +			return -EFAULT;
-> > +		return vhost_test_run(n, test);
-> > +	case VHOST_GET_FEATURES:
-> > +		features = VHOST_FEATURES;
-> > +		if (copy_to_user(featurep, &features, sizeof features))
-> > +			return -EFAULT;
-> > +		return 0;
-> > +	case VHOST_SET_FEATURES:
-> > +		if (copy_from_user(&features, featurep, sizeof features))
-> > +			return -EFAULT;
-> > +		if (features & ~VHOST_FEATURES)
-> > +			return -EOPNOTSUPP;
-> > +		return vhost_test_set_features(n, features);
-> > +	case VHOST_RESET_OWNER:
-> > +		return vhost_test_reset_owner(n);
-> > +	default:
-> > +		mutex_lock(&n->dev.mutex);
-> > +		r = vhost_dev_ioctl(&n->dev, ioctl, arg);
-> > +		vhost_test_flush(n);
-> > +		mutex_unlock(&n->dev.mutex);
-> > +		return r;
-> > +	}
-> > +}
-> > +
-> > +#ifdef CONFIG_COMPAT
-> > +static long vhost_test_compat_ioctl(struct file *f, unsigned int ioctl,
-> > +				   unsigned long arg)
-> > +{
-> > +	return vhost_test_ioctl(f, ioctl, (unsigned long)compat_ptr(arg));
-> > +}
-> > +#endif
-> > +
-> > +static const struct file_operations vhost_test_fops = {
-> > +	.owner          = THIS_MODULE,
-> > +	.release        = vhost_test_release,
-> > +	.unlocked_ioctl = vhost_test_ioctl,
-> > +#ifdef CONFIG_COMPAT
-> > +	.compat_ioctl   = vhost_test_compat_ioctl,
-> > +#endif
-> > +	.open           = vhost_test_open,
-> > +	.llseek		= noop_llseek,
-> > +};
-> > +
-> > +static struct miscdevice vhost_test_misc = {
-> > +	MISC_DYNAMIC_MINOR,
-> > +	"vhost-test",
-> > +	&vhost_test_fops,
-> > +};
-> > +
-> > +static int vhost_test_init(void)
-> > +{
-> > +	return misc_register(&vhost_test_misc);
-> > +}
-> > +module_init(vhost_test_init);
-> > +
-> > +static void vhost_test_exit(void)
-> > +{
-> > +	misc_deregister(&vhost_test_misc);
-> > +}
-> > +module_exit(vhost_test_exit);
-> > +
-> > +MODULE_VERSION("0.0.1");
-> > +MODULE_LICENSE("GPL v2");
-> > +MODULE_AUTHOR("Michael S. Tsirkin");
-> > +MODULE_DESCRIPTION("Host kernel side for virtio simulator");
-> > diff --git a/drivers/vhost/test.h b/drivers/vhost/test.h
-> > new file mode 100644
-> > index 0000000..1fef5df
-> > --- /dev/null
-> > +++ b/drivers/vhost/test.h
-> > @@ -0,0 +1,7 @@
-> > +#ifndef LINUX_VHOST_TEST_H
-> > +#define LINUX_VHOST_TEST_H
-> > +
-> > +/* Start a given test on the virtio null device. 0 stops all tests. */
-> > +#define VHOST_TEST_RUN _IOW(VHOST_VIRTIO, 0x31, int)
-> > +
-> > +#endif
-> > diff --git a/tools/virtio/vhost_test/Makefile b/tools/virtio/vhost_test/Makefile
-> > new file mode 100644
-> > index 0000000..a1d35b8
-> > --- /dev/null
-> > +++ b/tools/virtio/vhost_test/Makefile
-> > @@ -0,0 +1,2 @@
-> > +obj-m += vhost_test.o
-> > +EXTRA_CFLAGS += -Idrivers/vhost
-> > diff --git a/tools/virtio/vhost_test/vhost_test.c b/tools/virtio/vhost_test/vhost_test.c
-> > new file mode 100644
-> > index 0000000..1873518
-> > --- /dev/null
-> > +++ b/tools/virtio/vhost_test/vhost_test.c
-> > @@ -0,0 +1 @@
-> > +#include "test.c"
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+The XZ decompressor needs around 30 KiB of heap, so the heap size
+is increased to 32 KiB on both x86-32 and x86-64.
+
+Documentation/x86/boot.txt is updated to list the XZ magic number.
+
+With the x86 BCJ filter in XZ, XZ-compressed x86 kernel tends to be
+a few percent smaller than the equivalent LZMA-compressed kernel.
+
+Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
+---
+
+Even though the buffer safety margin has been increased,
+the comments in misc.c about the safety margin calculation
+were not touched. This is because the misc.c comments describe
+the calculation of the margin for the .gz format.
+
+This is only a re-diff and has no changes compared to the first
+version; this is sent only for completeness.
+
+ Documentation/x86/boot.txt         |    6 +++---
+ arch/x86/Kconfig                   |    1 +
+ arch/x86/boot/compressed/Makefile  |    5 ++++-
+ arch/x86/boot/compressed/misc.c    |    4 ++++
+ arch/x86/boot/compressed/mkpiggy.c |    2 +-
+ arch/x86/include/asm/boot.h        |    6 +-----
+ 6 files changed, 14 insertions(+), 10 deletions(-)
+
+diff -uprN linux-2.6.37-rc4.orig/Documentation/x86/boot.txt linux-2.6.37-rc4/Documentation/x86/boot.txt
+--- linux-2.6.37-rc4.orig/Documentation/x86/boot.txt	2010-10-20 23:30:22.000000000 +0300
++++ linux-2.6.37-rc4/Documentation/x86/boot.txt	2010-11-18 19:58:57.000000000 +0200
+@@ -621,9 +621,9 @@ Protocol:	2.08+
+   The payload may be compressed. The format of both the compressed and
+   uncompressed data should be determined using the standard magic
+   numbers.  The currently supported compression formats are gzip
+-  (magic numbers 1F 8B or 1F 9E), bzip2 (magic number 42 5A) and LZMA
+-  (magic number 5D 00).  The uncompressed payload is currently always ELF
+-  (magic number 7F 45 4C 46).
++  (magic numbers 1F 8B or 1F 9E), bzip2 (magic number 42 5A), LZMA
++  (magic number 5D 00), and XZ (magic number FD 37).  The uncompressed
++  payload is currently always ELF (magic number 7F 45 4C 46).
+   
+ Field name:	payload_length
+ Type:		read
+diff -uprN linux-2.6.37-rc4.orig/arch/x86/Kconfig linux-2.6.37-rc4/arch/x86/Kconfig
+--- linux-2.6.37-rc4.orig/arch/x86/Kconfig	2010-11-30 19:49:44.000000000 +0200
++++ linux-2.6.37-rc4/arch/x86/Kconfig	2010-12-02 17:40:52.000000000 +0200
+@@ -51,6 +51,7 @@ config X86
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_LZMA
++	select HAVE_KERNEL_XZ
+ 	select HAVE_KERNEL_LZO
+ 	select HAVE_HW_BREAKPOINT
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+diff -uprN linux-2.6.37-rc4.orig/arch/x86/boot/compressed/Makefile linux-2.6.37-rc4/arch/x86/boot/compressed/Makefile
+--- linux-2.6.37-rc4.orig/arch/x86/boot/compressed/Makefile	2010-10-20 23:30:22.000000000 +0300
++++ linux-2.6.37-rc4/arch/x86/boot/compressed/Makefile	2010-11-16 20:36:23.000000000 +0200
+@@ -4,7 +4,7 @@
+ # create a compressed vmlinux image from the original vmlinux
+ #
+ 
+-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.lzo 
+head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
++targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz 
+vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
+ 
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+ KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+@@ -49,12 +49,15 @@ $(obj)/vmlinux.bin.bz2: $(vmlinux.bin.al
+ 	$(call if_changed,bzip2)
+ $(obj)/vmlinux.bin.lzma: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,lzma)
++$(obj)/vmlinux.bin.xz: $(vmlinux.bin.all-y) FORCE
++	$(call if_changed,xzkern)
+ $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,lzo)
+ 
+ suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+ suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+ suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
++suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+ 
+ quiet_cmd_mkpiggy = MKPIGGY $@
+diff -uprN linux-2.6.37-rc4.orig/arch/x86/boot/compressed/misc.c linux-2.6.37-rc4/arch/x86/boot/compressed/misc.c
+--- linux-2.6.37-rc4.orig/arch/x86/boot/compressed/misc.c	2010-11-30 19:49:44.000000000 +0200
++++ linux-2.6.37-rc4/arch/x86/boot/compressed/misc.c	2010-12-02 17:40:52.000000000 +0200
+@@ -139,6 +139,10 @@ static int lines, cols;
+ #include "../../../../lib/decompress_unlzma.c"
+ #endif
+ 
++#ifdef CONFIG_KERNEL_XZ
++#include "../../../../lib/decompress_unxz.c"
++#endif
++
+ #ifdef CONFIG_KERNEL_LZO
+ #include "../../../../lib/decompress_unlzo.c"
+ #endif
+diff -uprN linux-2.6.37-rc4.orig/arch/x86/boot/compressed/mkpiggy.c linux-2.6.37-rc4/arch/x86/boot/compressed/mkpiggy.c
+--- linux-2.6.37-rc4.orig/arch/x86/boot/compressed/mkpiggy.c	2010-10-20 23:30:22.000000000 +0300
++++ linux-2.6.37-rc4/arch/x86/boot/compressed/mkpiggy.c	2010-11-16 20:37:57.000000000 +0200
+@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
+ 
+ 	offs = (olen > ilen) ? olen - ilen : 0;
+ 	offs += olen >> 12;	/* Add 8 bytes for each 32K block */
+-	offs += 32*1024 + 18;	/* Add 32K + 18 bytes slack */
++	offs += 64*1024 + 128;	/* Add 64K + 128 bytes slack */
+ 	offs = (offs+4095) & ~4095; /* Round to a 4K boundary */
+ 
+ 	printf(".section \".rodata..compressed\",\"a\",@progbits\n");
+diff -uprN linux-2.6.37-rc4.orig/arch/x86/include/asm/boot.h linux-2.6.37-rc4/arch/x86/include/asm/boot.h
+--- linux-2.6.37-rc4.orig/arch/x86/include/asm/boot.h	2010-10-20 23:30:22.000000000 +0300
++++ linux-2.6.37-rc4/arch/x86/include/asm/boot.h	2010-11-16 20:39:57.000000000 +0200
+@@ -32,11 +32,7 @@
+ #define BOOT_HEAP_SIZE             0x400000
+ #else /* !CONFIG_KERNEL_BZIP2 */
+ 
+-#ifdef CONFIG_X86_64
+-#define BOOT_HEAP_SIZE	0x7000
+-#else
+-#define BOOT_HEAP_SIZE	0x4000
+-#endif
++#define BOOT_HEAP_SIZE	0x8000
+ 
+ #endif /* !CONFIG_KERNEL_BZIP2 */
+ 
