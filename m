@@ -1,71 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab0LBXzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 18:55:11 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51143 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757895Ab0LBXzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 18:55:10 -0500
-Date: Thu, 2 Dec 2010 15:54:53 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH] PM / Hibernate: Fix memory corruption related to swap
-Message-Id: <20101202155453.92e8ca57.akpm@linux-foundation.org>
-In-Reply-To: <201012030040.37273.rjw@sisk.pl>
-References: <201012030040.37273.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932174Ab0LBX5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 18:57:00 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60620 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757895Ab0LBX47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 18:56:59 -0500
+Date: Thu, 2 Dec 2010 15:56:56 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] vhost test module
+Message-ID: <20101202235656.GT2085@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101129170431.GA4027@redhat.com>
+ <20101129170901.GB4027@redhat.com>
+ <20101202190037.GH2085@linux.vnet.ibm.com>
+ <20101202191130.GA8092@redhat.com>
+ <20101202192616.GL2085@linux.vnet.ibm.com>
+ <20101202194709.GA9081@redhat.com>
+ <20101202231303.GS2085@linux.vnet.ibm.com>
+ <20101202231818.GA12362@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202231818.GA12362@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Dec 2010 00:40:36 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Fri, Dec 03, 2010 at 01:18:18AM +0200, Michael S. Tsirkin wrote:
+> On Thu, Dec 02, 2010 at 03:13:03PM -0800, Paul E. McKenney wrote:
+> > On Thu, Dec 02, 2010 at 09:47:09PM +0200, Michael S. Tsirkin wrote:
+> > > On Thu, Dec 02, 2010 at 11:26:16AM -0800, Paul E. McKenney wrote:
+> > > > On Thu, Dec 02, 2010 at 09:11:30PM +0200, Michael S. Tsirkin wrote:
+> > > > > On Thu, Dec 02, 2010 at 11:00:37AM -0800, Paul E. McKenney wrote:
+> > > > > > On Mon, Nov 29, 2010 at 07:09:01PM +0200, Michael S. Tsirkin wrote:
+> > > > > > > This adds a test module for vhost infrastructure.
+> > > > > > > Intentionally not tied to kbuild to prevent people
+> > > > > > > from installing and loading it accidentally.
+> > > > > > > 
+> > > > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > > 
+> > > > > > On question below.
+> > > > > > 
+> > > > > > > ---
+> > > > > > > 
+> > > > > > > diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
+> > > > > > > new file mode 100644
+> > > > > > > index 0000000..099f302
+> > > > > > > --- /dev/null
+> > > > > > > +++ b/drivers/vhost/test.c
+> > > > > > > @@ -0,0 +1,320 @@
+> > > > > > > +/* Copyright (C) 2009 Red Hat, Inc.
+> > > > > > > + * Author: Michael S. Tsirkin <mst@redhat.com>
+> > > > > > > + *
+> > > > > > > + * This work is licensed under the terms of the GNU GPL, version 2.
+> > > > > > > + *
+> > > > > > > + * test virtio server in host kernel.
+> > > > > > > + */
+> > > > > > > +
+> > > > > > > +#include <linux/compat.h>
+> > > > > > > +#include <linux/eventfd.h>
+> > > > > > > +#include <linux/vhost.h>
+> > > > > > > +#include <linux/miscdevice.h>
+> > > > > > > +#include <linux/module.h>
+> > > > > > > +#include <linux/mutex.h>
+> > > > > > > +#include <linux/workqueue.h>
+> > > > > > > +#include <linux/rcupdate.h>
+> > > > > > > +#include <linux/file.h>
+> > > > > > > +#include <linux/slab.h>
+> > > > > > > +
+> > > > > > > +#include "test.h"
+> > > > > > > +#include "vhost.c"
+> > > > > > > +
+> > > > > > > +/* Max number of bytes transferred before requeueing the job.
+> > > > > > > + * Using this limit prevents one virtqueue from starving others. */
+> > > > > > > +#define VHOST_TEST_WEIGHT 0x80000
+> > > > > > > +
+> > > > > > > +enum {
+> > > > > > > +	VHOST_TEST_VQ = 0,
+> > > > > > > +	VHOST_TEST_VQ_MAX = 1,
+> > > > > > > +};
+> > > > > > > +
+> > > > > > > +struct vhost_test {
+> > > > > > > +	struct vhost_dev dev;
+> > > > > > > +	struct vhost_virtqueue vqs[VHOST_TEST_VQ_MAX];
+> > > > > > > +};
+> > > > > > > +
+> > > > > > > +/* Expects to be always run from workqueue - which acts as
+> > > > > > > + * read-size critical section for our kind of RCU. */
+> > > > > > > +static void handle_vq(struct vhost_test *n)
+> > > > > > > +{
+> > > > > > > +	struct vhost_virtqueue *vq = &n->dev.vqs[VHOST_TEST_VQ];
+> > > > > > > +	unsigned out, in;
+> > > > > > > +	int head;
+> > > > > > > +	size_t len, total_len = 0;
+> > > > > > > +	void *private;
+> > > > > > > +
+> > > > > > > +	private = rcu_dereference_check(vq->private_data, 1);
+> > > > > > 
+> > > > > > Any chance of a check for running in a workqueue?  If I remember correctly,
+> > > > > > the ->lockdep_map field in the work_struct structure allows you to create
+> > > > > > the required lockdep expression.
+> > > > > 
+> > > > > We moved away from using the workqueue to a custom kernel thread
+> > > > > implementation though.
+> > > > 
+> > > > OK, then could you please add a check for "current == custom_kernel_thread"
+> > > > or some such?
+> > > > 
+> > > > 							Thanx, Paul
+> > > 
+> > > It's a bit tricky. The way we flush out things is by an analog of
+> > > flush_work. So just checking that we run from workqueue isn't
+> > > right need to check that we are running from one of the specific work
+> > > structures that we are careful to flush.
+> > > 
+> > > I can do this by passing the work structure pointer on to relevant
+> > > functions but I think this will add (very minor) overhead even when rcu
+> > > checks are disabled. Does it matter? Thoughts?
+> > 
+> > Would it be possible to set up separate lockdep maps, in effect passing
+> > the needed information via lockdep rather than via the function arguments?
+> 
+> Possibly, I don't know enough about this but will check.
+> Any examples to look at?
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> There is a problem that swap pages allocated before the creation of
-> a hibernation image can be released and used for storing the contents
-> of different memory pages while the image is being saved.  Since the
-> kernel stored in the image doesn't know of that, it causes memory
-> corruption to occur after resume from hibernation, especially on
-> systems with relatively small RAM that need to swap often.
-> 
-> This issue can be addressed by keeping the GFP_IOFS bits clear
-> in gfp_allowed_mask during the entire hibernation, including the
-> saving of the image, until the system is finally turned off or
-> the hibernation is aborted.  Unfortunately, for this purpose
-> it's necessary to rework the way in which the hibernate and
-> suspend code manipulates gfp_allowed_mask.
-> 
-> This change is based on an earlier patch from Hugh Dickins.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Reported-by: Ondrej Zary <linux@rainbow-software.org>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> ---
-> 
-> Hi,
-> 
-> This patch is a fix for a regression and nasty memory corruption, so I'd like
-> to push it to Linus for 2.6.37 if there are no objections.
-> 
+I would suggest the workqueue example in include/linux/workqueue.h and
+kernel/workqueue.c.  You will need a struct lockdep_map for each of the
+specific work structures, sort of like the one in struct workqueue_struct.
 
-It looks OK to me for 2.6.37 but for 2.6.38 please let's make
-everything here a 100% no-op for CONFIG_PM_SLEEP=n builds. 
-Specifically the slight overhead in __alloc_pages_nodemask.
+You can then use lock_map_acquire() and lock_map_release() to flag the
+fact that your kernel thread is running and not, and then you can pass
+lock_is_held() to rcu_dereference_check().  Each of lock_map_acquire(),
+lock_map_release(), and lock_is_held() takes a struct lockdep_map as
+sole argument.  The rcu_lock_map definition shows an example of a global
+lockdep_map variable.  If you need to do runtime initialization of your
+lockdep_map structure, you can use lockdep_init_map().
 
-Because given the global nature of saved_gfp_mask and the unlocked way
-in which it is accessed, this facility won't be at all useful for
-anything other than suspend.
+Seem reasonable?
 
-
+							Thanx, Paul
