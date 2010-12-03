@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab0LCAQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:16:59 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:42418 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758144Ab0LCAQ6 (ORCPT
+	id S1758235Ab0LCARR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 19:17:17 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:40373 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758215Ab0LCARO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:16:58 -0500
-Date: Thu, 2 Dec 2010 16:16:59 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: [PATCH] ext4: Set barrier=0 when block device does not advertise
-	flush support
-Message-ID: <20101203001659.GI18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Thu, 2 Dec 2010 19:17:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=X1XaVZlnuECA1GOLUkuIT3YWvaQmDqtHSfqaDATXKwE3a0j5ljrBkR0YdM+QmApm2W
+         OSIMSc83HrlLcO70xUJQ==
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 0/6] mlock: do not hold mmap_sem for extended periods of time
+Date: Thu,  2 Dec 2010 16:16:46 -0800
+Message-Id: <1291335412-16231-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the user tries to enable write flushes with "barrier=1" and the underlying
-block device does not support flushes, print a message and set barrier=0.
+Currently mlock() holds mmap_sem in exclusive mode while the pages get
+faulted in. In the case of a large mlock, this can potentially take a
+very long time, during which various commands such as 'ps auxw' will
+block. This makes sysadmins unhappy:
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
+real    14m36.232s
+user    0m0.003s
+sys     0m0.015s
+(output from 'time ps auxw' while a 20GB file was being mlocked without
+being previously preloaded into page cache)
 
- fs/ext4/super.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+I propose that mlock() could release mmap_sem after the VM_LOCKED bits
+have been set in all appropriate VMAs. Then a second pass could be done
+to actually mlock the pages, in small batches, releasing mmap_sem when
+we block on disk access or when we detect some contention.
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index e32195d..098dcf0 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3124,6 +3124,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			   &journal_ioprio, NULL, 0))
- 		goto failed_mount;
- 
-+	/* Catch barrier=1 and no flush support */
-+	if (test_opt(sb, BARRIER) &&
-+		     !(sb->s_bdev->bd_disk->queue->flush_flags & REQ_FLUSH)) {
-+		ext4_msg(sb, KERN_WARNING, "flush not supported; disabling.");
-+		clear_opt(sbi->s_mount_opt, BARRIER);
-+	}
-+
- 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
- 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
- 
-@@ -4198,6 +4205,13 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 		goto restore_opts;
- 	}
- 
-+	/* Catch barrier=1 and no flush support */
-+	if (test_opt(sb, BARRIER) &&
-+		     !(sb->s_bdev->bd_disk->queue->flush_flags & REQ_FLUSH)) {
-+		ext4_msg(sb, KERN_WARNING, "flush not supported; disabling.");
-+		clear_opt(sbi->s_mount_opt, BARRIER);
-+	}
-+
- 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
- 		ext4_abort(sb, "Abort forced by user");
- 
+Patches are against v2.6.37-rc4 plus my patches to avoid mlock dirtying
+(presently queued in -mm).
+
+Michel Lespinasse (6):
+  mlock: only hold mmap_sem in shared mode when faulting in pages
+  mm: add FOLL_MLOCK follow_page flag.
+  mm: move VM_LOCKED check to __mlock_vma_pages_range()
+  rwsem: implement rwsem_is_contended()
+  mlock: do not hold mmap_sem for extended periods of time
+  x86 rwsem: more precise rwsem_is_contended() implementation
+
+ arch/alpha/include/asm/rwsem.h   |    5 +
+ arch/ia64/include/asm/rwsem.h    |    5 +
+ arch/powerpc/include/asm/rwsem.h |    5 +
+ arch/s390/include/asm/rwsem.h    |    5 +
+ arch/sh/include/asm/rwsem.h      |    5 +
+ arch/sparc/include/asm/rwsem.h   |    5 +
+ arch/x86/include/asm/rwsem.h     |   35 ++++++---
+ arch/x86/lib/rwsem_64.S          |    4 +-
+ arch/x86/lib/semaphore_32.S      |    4 +-
+ arch/xtensa/include/asm/rwsem.h  |    5 +
+ include/linux/mm.h               |    1 +
+ include/linux/rwsem-spinlock.h   |    1 +
+ lib/rwsem-spinlock.c             |   12 +++
+ mm/internal.h                    |    3 +-
+ mm/memory.c                      |   54 ++++++++++++--
+ mm/mlock.c                       |  150 ++++++++++++++++++--------------------
+ mm/nommu.c                       |    6 +-
+ 17 files changed, 201 insertions(+), 104 deletions(-)
+
+-- 
+1.7.3.1
+
