@@ -1,146 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab0LCKtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 05:49:05 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:38838
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757614Ab0LCKqW (ORCPT
+	id S1758384Ab0LCKwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 05:52:18 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64900 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757129Ab0LCKwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 05:46:22 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i691h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCULWZ-01-H08-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 01/12] KVM: SVM: Add clean-bits infrastructure code
-Date: Fri, 3 Dec 2010 11:45:48 +0100
-Message-ID: <1291373159-4822-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291373159-4822-1-git-send-email-joerg.roedel@amd.com>
-References: <1291373159-4822-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Fri, 3 Dec 2010 05:52:16 -0500
+Subject: Re: [PATCH 1/2] Change the register name definitions for mc13783
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Yong Shen <yong.shen@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+In-Reply-To: <AANLkTinA-rNzSjGZQSmGUdOt8j0RWddfNo5m=fP2oQx8@mail.gmail.com>
+References: <AANLkTinA-rNzSjGZQSmGUdOt8j0RWddfNo5m=fP2oQx8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Dec 2010 10:52:11 +0000
+Message-ID: <1291373531.3271.8.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the infrastructure for the implementation of
-the individual clean-bits.
+On Thu, 2010-12-02 at 19:18 +0800, Yong Shen wrote:
+> Hi there,
+> 
+> Please comment inline and use attached file for patch or test.
+> 
+> Thanks
+> Yong
+> 
+> >From e112153c6f03b49c229a8e3913a0c0459245df20 Mon Sep 17 00:00:00 2001
+> From: Yong Shen <yong.shen@linaro.org>
+> Date: Thu, 2 Dec 2010 14:17:02 +0800
+> Subject: [PATCH 1/2] Change the register name definitions for mc13783
+> 
+> To make mc13783 and mc13892 share code, the register names should be
+> changed to fit the new macro definitions in the comming patch.
+> 
+> Signed-off-by: Yong Shen <yong.shen@linaro.org>
+> ---
+>  arch/arm/mach-imx/mach-pcm038.c       |    4 +-
+>  arch/arm/mach-mx3/mach-mx31_3ds.c     |    4 +-
+>  arch/arm/mach-mx3/mach-mx31moboard.c  |    4 +-
+>  drivers/regulator/mc13783-regulator.c |   30 +++++++-------
+>  include/linux/mfd/mc13783.h           |   67 +++++++++++++++++----------------
+>  5 files changed, 55 insertions(+), 54 deletions(-)
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/svm.h |    6 +++++-
- arch/x86/kvm/svm.c         |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 1 deletions(-)
+Sascha, Samuel, this series touches some of mach-imx and mfd. I can take
+via regulator if that's OK with you guys ?
 
-diff --git a/arch/x86/include/asm/svm.h b/arch/x86/include/asm/svm.h
-index 11dbca7..d786399 100644
---- a/arch/x86/include/asm/svm.h
-+++ b/arch/x86/include/asm/svm.h
-@@ -49,6 +49,9 @@ enum {
- 	INTERCEPT_MWAIT_COND,
- };
- 
-+enum {
-+	VMCB_CLEAN_MAX,
-+};
- 
- struct __attribute__ ((__packed__)) vmcb_control_area {
- 	u32 intercept_cr;
-@@ -79,7 +82,8 @@ struct __attribute__ ((__packed__)) vmcb_control_area {
- 	u32 event_inj_err;
- 	u64 nested_cr3;
- 	u64 lbr_ctl;
--	u64 reserved_5;
-+	u32 clean;
-+	u32 reserved_5;
- 	u64 next_rip;
- 	u8 reserved_6[816];
- };
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index c00ea90..3ee59b0 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -185,6 +185,28 @@ static int nested_svm_vmexit(struct vcpu_svm *svm);
- static int nested_svm_check_exception(struct vcpu_svm *svm, unsigned nr,
- 				      bool has_error_code, u32 error_code);
- 
-+enum {
-+	VMCB_DIRTY_MAX,
-+};
-+
-+#define VMCB_ALWAYS_DIRTY_MASK	0U
-+
-+static inline void mark_all_dirty(struct vmcb *vmcb)
-+{
-+	vmcb->control.clean = 0;
-+}
-+
-+static inline void mark_all_clean(struct vmcb *vmcb)
-+{
-+	vmcb->control.clean = ((1 << VMCB_DIRTY_MAX) - 1)
-+			       & ~VMCB_ALWAYS_DIRTY_MASK;
-+}
-+
-+static inline void mark_dirty(struct vmcb *vmcb, int bit)
-+{
-+	vmcb->control.clean &= ~(1 << bit);
-+}
-+
- static inline struct vcpu_svm *to_svm(struct kvm_vcpu *vcpu)
- {
- 	return container_of(vcpu, struct vcpu_svm, vcpu);
-@@ -973,6 +995,8 @@ static void init_vmcb(struct vcpu_svm *svm)
- 		set_intercept(svm, INTERCEPT_PAUSE);
- 	}
- 
-+	mark_all_dirty(svm->vmcb);
-+
- 	enable_gif(svm);
- }
- 
-@@ -1089,6 +1113,7 @@ static void svm_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 
- 	if (unlikely(cpu != vcpu->cpu)) {
- 		svm->asid_generation = 0;
-+		mark_all_dirty(svm->vmcb);
- 	}
- 
- #ifdef CONFIG_X86_64
-@@ -2139,6 +2164,8 @@ static int nested_svm_vmexit(struct vcpu_svm *svm)
- 	svm->vmcb->save.cpl = 0;
- 	svm->vmcb->control.exit_int_info = 0;
- 
-+	mark_all_dirty(svm->vmcb);
-+
- 	nested_svm_unmap(page);
- 
- 	nested_svm_uninit_mmu_context(&svm->vcpu);
-@@ -2350,6 +2377,8 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 
- 	enable_gif(svm);
- 
-+	mark_all_dirty(svm->vmcb);
-+
- 	return true;
- }
- 
-@@ -3487,6 +3516,8 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
- 	if (unlikely(svm->vmcb->control.exit_code ==
- 		     SVM_EXIT_EXCP_BASE + MC_VECTOR))
- 		svm_handle_mce(svm);
-+
-+	mark_all_clean(svm->vmcb);
- }
- 
- #undef R
+Thanks
+
+Liam
+
 -- 
-1.7.1
-
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
