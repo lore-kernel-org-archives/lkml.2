@@ -1,37 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab0LCMZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 07:25:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55518 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932292Ab0LCMZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 07:25:57 -0500
-Date: Fri, 3 Dec 2010 12:25:54 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: Fix inconsistent meaning of default case while
- checking alc5623->id
-Message-ID: <20101203122554.GT859@rakim.wolfsonmicro.main>
-References: <1291368357.20452.6.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291368357.20452.6.camel@mola>
-X-Cookie: Shading within a garment may occur.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932565Ab0LCMjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 07:39:08 -0500
+Received: from smtp-in.kfki.hu ([148.6.0.25]:46241 "EHLO smtp0.kfki.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758454Ab0LCMjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 07:39:04 -0500
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Subject: [PATCH 1/2] Remove calls to jhash internals
+Date: Fri,  3 Dec 2010 13:39:00 +0100
+Message-Id: <1291379941-31565-2-git-send-email-kadlec@blackhole.kfki.hu>
+X-Mailer: git-send-email 1.5.3.4
+In-Reply-To: <1291379941-31565-1-git-send-email-kadlec@blackhole.kfki.hu>
+References: <201011271401.22773.rusty@rustcorp.com.au>
+ <1291379941-31565-1-git-send-email-kadlec@blackhole.kfki.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 05:25:57PM +0800, Axel Lin wrote:
-> In alc5623_i2c_probe(),
-> the default case for checking alc5623->id behaves the same as case 0x23.
-> However, In alc5623_probe() the default case for checking alc5623->id
-> becomes to be the same as case 0x21.
-> This makes the meaning of default case inconsistent.
+Because the jhash implementation changes, replace the calls to the jhash
+internal macros with calls to the jhash functions.
+---
+ net/ipv6/inet6_connection_sock.c |   18 ++++++++----------
+ net/ipv6/reassembly.c            |   36 ++++++++++++++++--------------------
+ 2 files changed, 24 insertions(+), 30 deletions(-)
 
-Applied, thanks.
+diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
+index 8a16280..861d252 100644
+--- a/net/ipv6/inet6_connection_sock.c
++++ b/net/ipv6/inet6_connection_sock.c
+@@ -60,18 +60,16 @@ EXPORT_SYMBOL_GPL(inet6_csk_bind_conflict);
+ static u32 inet6_synq_hash(const struct in6_addr *raddr, const __be16 rport,
+ 			   const u32 rnd, const u16 synq_hsize)
+ {
+-	u32 a = (__force u32)raddr->s6_addr32[0];
+-	u32 b = (__force u32)raddr->s6_addr32[1];
+-	u32 c = (__force u32)raddr->s6_addr32[2];
+-
+-	a += JHASH_GOLDEN_RATIO;
+-	b += JHASH_GOLDEN_RATIO;
+-	c += rnd;
+-	__jhash_mix(a, b, c);
+-
+-	a += (__force u32)raddr->s6_addr32[3];
+-	b += (__force u32)rport;
+-	__jhash_mix(a, b, c);
++	u32 c;
++
++	c = jhash_3words((__force u32)raddr->s6_addr32[0],
++			 (__force u32)raddr->s6_addr32[1],
++			 (__force u32)raddr->s6_addr32[2],
++			 rnd);
++
++	c = jhash_2words((__force u32)raddr->s6_addr32[3],
++			 (__force u32)rport,
++			 c);
+ 
+ 	return c & (synq_hsize - 1);
+ }
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index c7ba314..5e57490 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -104,26 +104,22 @@ static int ip6_frag_reasm(struct frag_queue *fq, struct sk_buff *prev,
+ unsigned int inet6_hash_frag(__be32 id, const struct in6_addr *saddr,
+ 			     const struct in6_addr *daddr, u32 rnd)
+ {
+-	u32 a, b, c;
+-
+-	a = (__force u32)saddr->s6_addr32[0];
+-	b = (__force u32)saddr->s6_addr32[1];
+-	c = (__force u32)saddr->s6_addr32[2];
+-
+-	a += JHASH_GOLDEN_RATIO;
+-	b += JHASH_GOLDEN_RATIO;
+-	c += rnd;
+-	__jhash_mix(a, b, c);
+-
+-	a += (__force u32)saddr->s6_addr32[3];
+-	b += (__force u32)daddr->s6_addr32[0];
+-	c += (__force u32)daddr->s6_addr32[1];
+-	__jhash_mix(a, b, c);
+-
+-	a += (__force u32)daddr->s6_addr32[2];
+-	b += (__force u32)daddr->s6_addr32[3];
+-	c += (__force u32)id;
+-	__jhash_mix(a, b, c);
++	u32 c;
++
++	c = jhash_3words((__force u32)saddr->s6_addr32[0],
++			 (__force u32)saddr->s6_addr32[1],
++			 (__force u32)saddr->s6_addr32[2],
++			 rnd);
++
++	c = jhash_3words((__force u32)saddr->s6_addr32[3],
++			 (__force u32)daddr->s6_addr32[0],
++			 (__force u32)daddr->s6_addr32[1],
++			 c);
++
++	c =  jhash_3words((__force u32)daddr->s6_addr32[2],
++			  (__force u32)daddr->s6_addr32[3],
++			  (__force u32)id,
++			  c);
+ 
+ 	return c & (INETFRAGS_HASHSZ - 1);
+ }
+-- 
+1.7.0.4
+
