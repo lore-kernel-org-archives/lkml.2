@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab0LCAhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:37:34 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:56045 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758202Ab0LCAhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:37:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=jscUXD5x3P8D++NW7tb98tJsjzB8G/E1SltyvHpofYxxj+l2GhqdzERK6TqFMsRtMC
-         5gW7K/M4X/i8/LCkzsTg==
-Date: Thu, 2 Dec 2010 16:37:21 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH] PM / Hibernate: Fix memory corruption related to swap
-In-Reply-To: <20101202155453.92e8ca57.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1012021622370.26812@tigran.mtv.corp.google.com>
-References: <201012030040.37273.rjw@sisk.pl> <20101202155453.92e8ca57.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1758211Ab0LCAnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 19:43:14 -0500
+Received: from kroah.org ([198.145.64.141]:55833 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857Ab0LCAnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 19:43:13 -0500
+Date: Thu, 2 Dec 2010 16:42:47 -0800
+From: Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net, Andi Kleen <andi@firstfloor.org>, greg@kroah.com
+Subject: Linux stable kernel release procedure changes
+Message-ID: <20101203004247.GA21762@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Dec 2010, Andrew Morton wrote:
-> On Fri, 3 Dec 2010 00:40:36 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > 
-> > This patch is a fix for a regression and nasty memory corruption, so I'd like
-> > to push it to Linus for 2.6.37 if there are no objections.
+Hi all,
 
-(It will need backport to 2.6.35-stable and 2.6.36-stable:
-IIRC it doesn't quite apply cleanly to those, so we'll need
-to send a separate version.)
+Over 5 1/2 years ago we started the stable Linux kernel releases, and by
+all merits they seem to be pretty popular.
 
-> 
-> It looks OK to me for 2.6.37 but for 2.6.38 please let's make
-> everything here a 100% no-op for CONFIG_PM_SLEEP=n builds. 
-> Specifically the slight overhead in __alloc_pages_nodemask.
+The stable series started out as a "once the next release is out, drop
+the old one and move on" type of thing.  This worked really well until I
+decided to have the 2.6.16 be a "longterm" release.  Then I did the same
+thing for the 2.6.27 and later the 2.6.32 release.
 
-I expect you're right that the CONFIG_PM would better be CONFIG__PM_SLEEP;
-but I think you misunderstand gfp_allowed_mask in __alloc_pages_nodemask:
-it came from slab & slub, to fix some early bootup issues, and predates
-Rafael's recent use of it in suspend and hibernation.
+These longterm releases have become very popular for the distros to base
+their work on, and are getting so popular, people are now asking to do
+the same thing for almost all of the recent kernels.
 
-> 
-> Because given the global nature of saved_gfp_mask and the unlocked way
-> in which it is accessed, this facility won't be at all useful for
-> anything other than suspend.
+As this is way beyond the amount of time I have to spend on this, I've
+been discussing with some people how to handle this type of thing.  In
+working through the issues, I've decided that a change is due.
 
-... and bootup.
+So, it's "back to our roots" time, and I'm now only going to be doing
+-stable releases for the last kernel released, with the usual one or two
+release overlap with the latest release from Linus to give people a
+chance to move over and have the new release stabilize a bit.
 
-Hugh
+I'm doing this as it's just way too confusing to try to explain to
+people exactly what kernels are being maintained longer than others, and
+why they are being maintained.  Not to mention the confusion on the
+kernel.org web site where it's hard to tell what kernel release is
+currently being maintained or not.
+
+I think this is a good thing and will help both the community and
+developers get back on track and focusing on the latest releases and not
+needlessly waste their time on years old kernels that only distros care
+about.
+
+
+Oh, wait, what about those older kernels that I said I would maintain
+for a long time?  Don't worry, they are sticking around but they now
+have a new name "longterm" to better reflect what they are.  These
+kernels will have a specific maintainer, and we will show them on the
+kernel.org site in some way to show what exactly is going on with them.
+
+These longterm kernels will abide by the same stable_kernel_rules.txt
+that I've been using for the older stable rules.
+
+For now, I'll be continuing to maintain the .27 and .32 kernels as
+"longterm" kernels, but will probably be handing .27 off soon, as I'm
+getting tired of it and my resources are getting limited.
+
+I already have someone lined up who wants to maintain the .35 kernel in
+a longterm manner that I trust, Andi Kleen, and I'll let him write to
+explain his goals for this kernel and what he's going to do.
+
+
+Also, as many people have asked about this in the past, I'm now happy to
+announce that the stable@kernel.org email address is now a mailing list
+that anyone can subscribe to in order to see the patches that are sent
+to it, if they wish to comment or maintain their own kernel tree.  I
+will warn you, it's pretty boring, and high volume at times, but hey,
+it's better to work in the open as that's how we need to operate.
+
+You can subscribe to the list at the following link if you are so
+interested:
+	http://linux.kernel.org/mailman/listinfo/stable
+
+
+So, that's a lot of information, but if anyone has any questions about
+this please let me know.  We're still figuring out what git tree we are
+going to use for the longterm patch queue(s) and where to put the
+releases on the kernel.org site.  Hopefully all that will be hashed out
+in the next week or so.
+
+thanks,
+
+greg k-h
+
+
+tl;dr:
+	stable kernel releases only for the last kernel version,
+	longterm releases for older releases done by me and different
+	people but with stable_kernel_rules.txt rules, stable@kernel.org
+	mailing list is now open.
