@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758350Ab0LCBmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 20:42:42 -0500
-Received: from tomts16.bellnexxia.net ([209.226.175.4]:49065 "EHLO
-	tomts16-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758253Ab0LCBml (ORCPT
+	id S1758372Ab0LCB5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 20:57:06 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35491 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757150Ab0LCB5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 20:42:41 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFPU90xGNBQZ/2dsb2JhbACjLnLCboVHBIRejAw
-Date: Thu, 2 Dec 2010 20:42:39 -0500
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC][PATCH 0/2] tracing: Add conditional to tracepoints
-Message-ID: <20101203014239.GA14675@Krystal>
-References: <20101202223654.596106888@goodmis.org> <20101202231957.GB1639@nowhere>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20101202231957.GB1639@nowhere>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 20:36:58 up 239 days, 11:27,  3 users,  load average: 0.25, 0.21,
-	0.12
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 2 Dec 2010 20:57:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1012030210200.14806@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012030210200.14806@pobox.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 2 Dec 2010 17:56:16 -0800
+Message-ID: <AANLkTime_NVP5RmXvgigs8U6FODv7i8vD51+J4=HwVDh@mail.gmail.com>
+Subject: Re: [GIT] HID
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Thu, Dec 02, 2010 at 05:36:54PM -0500, Steven Rostedt wrote:
-> > 
-> > Note, another variant of this, is to move the test directly into the
-> > _DO_TRACE() macro, and not call any registered event callbacks. This would
-> > even speed it up faster when tracing is enabled. I did not do this
-> > orginially because I just thought of it now as I wrote this change log ;-)
-> 
-> Hehe :)
-> 
-> Yeah indeed. And that looks fairly possible.
+On Thu, Dec 2, 2010 at 5:24 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>
+> Note: you are going to get conflict in drivers/hid/hid-input.c. This is
+> caused by commit a0bf0ea8 ("Input: hid-input - switch to using new keycode
+> interface") which went through Dmitry's tree, as it was part of larger
+> rework. It's fine to just use the variant from that commit.
 
-I'd very much prefer if the test is performed before the call, within
-the block that contains the stack setup and the tracepoint function
-call. Having an utterly low performance impact for the events that are
-filtered out is very important for my client's use-cases. Also, moving
-it outside of the tracepoint probe function allows us to filter only
-once for all the registered handlers.
+Just taking Dmitry's version would have missed the removal of
+KERN_DEBUG that your branch did, so I did a proper merge resolution.
 
-All it would require is to skip over the function call rather than doing
-a "return".
+Or at least it looked proper to me, and compiles. Pushed out the result,
 
-For the rest, it looks nice. :-)
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+                    Linus
