@@ -1,215 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0LCECo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 23:02:44 -0500
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:53911 "EHLO
-	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab0LCECn (ORCPT
+	id S1758453Ab0LCEIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 23:08:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51150 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758410Ab0LCEIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 23:02:43 -0500
-X-AuditID: b753bd60-a7f15ba00000392d-71-4cf86b30d747
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip  6/7] perf bts trace: print function+offset
+	Thu, 2 Dec 2010 23:08:24 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=I6tHtAtiSkgA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=R05is4XlUSo2y7uVi0cA:9 a=7d66lCB-1X3P-1VXTOK_DBobTXMA:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101203040358.955427199@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 02 Dec 2010 23:03:58 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 03 Dec 2010 13:00:15 +0900
-Message-ID: <20101203040015.7827.38870.stgit@localhost6.localdomain6>
-In-Reply-To: <20101203035832.7827.16528.stgit@localhost6.localdomain6>
-References: <20101203035832.7827.16528.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Subject: [RFC][PATCH 0/2 v2] tracing: Add conditional to tracepoints
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the function to print function+offset.
-And, set it as the default behavior of 'perf bts trace'.
-To use this function, users can also specify the option '-s' or '--symbol'.
+This is an RFC that adds the TP_CONDITION() to the TRACE_EVENT()
+code.
 
-Example: 'perf bts -as trace'
-This command prints address and function+offset.
+There are certain cases that a tracepoint only makes sense if
+a specific condition is met. But because we do not want to dirty
+the fast path (the non tracing case) with if statements that are
+there only to avoid tracing, we just pass the condition variables
+to the tracepoint, and let the user filter them out if needed.
 
-Output sample:
-address            function+offset
-0xffffffff8146fe0e irq_return+0x0         => 0x00007fd4038e3b20 _start+0x0
-...
-0x000000380661ee79 __libc_start_main+0xf9 => 0x00000000004035c3 main+0x0
-0xffffffff8146ef4e irq_return+0x0         => 0x00000000004035c3 main+0x0
-0x00000000004035e8 main+0x25              => 0x000000000040bca0 set_program_name+0x0
-0xffffffff8146ef4e irq_return+0x0         => 0x000000000040bca0 set_program_name+0x0
-0x000000000040bcae set_program_name+0xe   => 0x00000000004023d0 strrchr@plt+0x0
-0x00000000004023d0 strrchr@plt+0x0        => 0x00000000004023d6 strrchr@plt+0x6
-...
-0x0000000000403e0c main+0x849             => 0x00000000004021f0 exit@plt+0x0
-0x00000000004021f0 exit@plt+0x0           => 0x00000000004021f6 exit@plt+0x6
-0x00000000004021fb exit@plt+0xb           => 0x00000000004020d0 _init+0x18
-0x00000000004020d6 _init+0x1e             => 0x00000038062149d0 _dl_runtime_resolve+0x0
-...
+A perfect example is the tracepoint sched_wakeup. It traces all
+calls to try_to_wake_up() even if it fails to wake up. But if we add:
 
-Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
----
+        if (success)
+                trace_sched_wakeup(p);
 
- tools/perf/Documentation/perf-bts.txt |    5 +++-
- tools/perf/builtin-bts.c              |   44 ++++++++++++++++++++++++++++++---
- 2 files changed, 44 insertions(+), 5 deletions(-)
+We have that "if (success)" tested for every time we call try_to_wake_up().
+Even when tracing is not (or never will be) enabled.
 
-diff --git a/tools/perf/Documentation/perf-bts.txt b/tools/perf/Documentation/perf-bts.txt
-index acabffc..13ee862 100644
---- a/tools/perf/Documentation/perf-bts.txt
-+++ b/tools/perf/Documentation/perf-bts.txt
-@@ -31,7 +31,7 @@ OPTIONS
-         Specify input file name to analyze.
- -a::
- --addr::
--	Print address. (default)
-+	Print address.
- -c::
- --comm::
- 	Print command name.
-@@ -41,6 +41,9 @@ OPTIONS
- -e::
- --elfpath::
- 	Print file path of executed elf.
-+-s::
-+--symbol::
-+	Print function name and offset. (default)
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-bts.c b/tools/perf/builtin-bts.c
-index 3b2a21e..71c7fbe 100644
---- a/tools/perf/builtin-bts.c
-+++ b/tools/perf/builtin-bts.c
-@@ -21,6 +21,8 @@ struct exec_info {
- 	pid_t		pid;		/* tracee process pid */
- 	const char	*comm;		/* command name */
- 	const char	*elfpath;	/* file path to elf */
-+	const char	*function;	/* function name */
-+	u64		offset;		/* offset from top of the function */
- };
- 
- #define EI_PID_UNSET	-1
-@@ -30,9 +32,10 @@ struct exec_info {
- #define EI_FLAG_PRINT_PID		(1 << 1)
- #define EI_FLAG_PRINT_COMM		(1 << 2)
- #define EI_FLAG_PRINT_ELFPATH		(1 << 3)
-+#define EI_FLAG_PRINT_SYMBOL		(1 << 4)
- 
- /* it's used when no print item specified */
--#define EI_FLAG_PRINT_DEFAULT		EI_FLAG_PRINT_ADDR
-+#define EI_FLAG_PRINT_DEFAULT		EI_FLAG_PRINT_SYMBOL
- 
- /* print item flags */
- static unsigned long print_flags;
-@@ -43,6 +46,9 @@ static unsigned long print_flags;
- #define EI_UNKNOWN_TEXT			"(unknown)"
- #define EI_UNKNOWN_TEXT_LEN		(sizeof(EI_UNKNOWN_TEXT))
- 
-+/* 'function+offset' lengh = function + '+' + %#18llx + '\0' */
-+#define symbol_buf_size(func_name)	(strlen(func_name) + 1 + 18 + 1)
-+
- /* default input file name to analyze */
- static const char *input_name = "perf.data";
- 
-@@ -71,7 +77,7 @@ static int set_print_flags(const struct option *opt, const char *str __unused,
- static const struct option bts_options[] = {
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_CALLBACK_DEFAULT_NOOPT('a', "addr", NULL, NULL,
--				   "print address (default)", set_print_flags,
-+				   "print address", set_print_flags,
- 				   (void *)EI_FLAG_PRINT_ADDR),
- 	OPT_CALLBACK_DEFAULT_NOOPT('p', "pid", NULL, NULL,
- 				   "print pid", set_print_flags,
-@@ -82,6 +88,10 @@ static const struct option bts_options[] = {
- 	OPT_CALLBACK_DEFAULT_NOOPT('e', "elfpath", NULL, NULL,
- 				   "print file path to elf", set_print_flags,
- 				   (void *)EI_FLAG_PRINT_ELFPATH),
-+	OPT_CALLBACK_DEFAULT_NOOPT('s', "symbol", NULL, NULL,
-+				   "print function+offset (default)",
-+				   set_print_flags,
-+				   (void *)EI_FLAG_PRINT_SYMBOL),
- 	OPT_END()
- };
- 
-@@ -106,7 +116,7 @@ static void fill_exec_info(struct exec_info *ei, struct perf_session *session,
- 		return;
- 	ei->comm = thread->comm;
- 
--	/* get file path to elf */
-+	/* get file path to elf, and symbol information */
- 	memset(&al, 0, sizeof(al));
- 	thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
- 			      MAP__FUNCTION, event->ip.pid, addr, &al);
-@@ -115,8 +125,14 @@ static void fill_exec_info(struct exec_info *ei, struct perf_session *session,
- 				      MAP__FUNCTION, event->ip.pid, addr, &al);
- 	if (!al.map)
- 		return;
--	map__load(al.map, NULL);
-+
-+	al.addr = al.map->map_ip(al.map, addr);
-+	al.sym = map__find_symbol(al.map, al.addr, NULL);
-+	if (!al.sym)
-+		return;
- 	ei->elfpath = al.map->dso->long_name;
-+	ei->function = al.sym->name;
-+	ei->offset = al.addr - al.sym->start;
- }
- 
- static void __print_exec_info(struct exec_info *ei)
-@@ -124,6 +140,8 @@ static void __print_exec_info(struct exec_info *ei)
- 	char pid[16];
- 	const char *comm;
- 	const char *elfpath;
-+	char *symbol;
-+	int symbol_len;
- 
- 	if (print_flags & EI_FLAG_PRINT_PID) {
- 		if (ei->pid == EI_PID_UNSET)
-@@ -138,6 +156,22 @@ static void __print_exec_info(struct exec_info *ei)
- 	}
- 	if (print_flags & EI_FLAG_PRINT_ADDR)
- 		printf(FMT_ADDR " ", ei->addr);
-+	if (print_flags & EI_FLAG_PRINT_SYMBOL) {
-+		if (!ei->function) {
-+			/* when function is unknown, offset must be unknown */
-+			printf("%-32s ", EI_UNKNOWN_TEXT);
-+			goto print_elfpath;
-+		}
-+
-+		symbol_len = symbol_buf_size(ei->function);
-+		symbol = malloc(symbol_len);
-+		snprintf(symbol, symbol_len, "%s+0x%llx",
-+			 ei->function, ei->offset);
-+		printf("%-32s ", symbol);
-+		free(symbol);
-+	}
-+
-+print_elfpath:
- 	if (print_flags & EI_FLAG_PRINT_ELFPATH) {
- 		elfpath = ei->elfpath ? : EI_UNKNOWN_TEXT;
- 		printf("%-32s ", elfpath);
-@@ -160,6 +194,8 @@ static void print_exec_info_header(void)
- 		printf("%-12s ", "command");
- 	if (print_flags & EI_FLAG_PRINT_ADDR)
- 		printf("%-" FMT_ADDR_WIDTH "s ", "address");
-+	if (print_flags & EI_FLAG_PRINT_SYMBOL)
-+		printf("%-32s ", "function+offset");
- 	if (print_flags & EI_FLAG_PRINT_ELFPATH)
- 		printf("%-32s ", "elf_filepath");
- 	printf("\n");
+This patch set adds a variant TRACE_EVENT_CONDITIONAL()
+(and DEFINE_EVENT_CONDITIONAL()) that has a "cond" argument.
+This argument is encapsulated with "TP_CONDITIONAL()" which turns into:
 
+        if (!cond)
+                return;
+
+What's new with this version?
+
+This version adds this if statement to __DO_TRACE(). As it is
+in a static inline function, the return still applies.
+
+Also, since the shortcut is made before the callbacks, the test
+is at the call site. This means that you can have a DECLARE_EVENT_CLASS()
+where one of its DEFINE_EVENTS() is normal and the other is a
+DEFINE_EVENT_CONDITION().
+
+The following patches are in:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+
+    branch: rfc/trace-conditional-v2
+
+
+Steven Rostedt (2):
+      tracing: Add TRACE_EVENT_CONDITIONAL()
+      tracing: Only trace sched_wakeup if it actually work something up
+
+----
+ include/linux/tracepoint.h   |   29 +++++++++++++++++++++++------
+ include/trace/define_trace.h |   15 +++++++++++++++
+ include/trace/events/sched.h |   16 ++++++++--------
+ 3 files changed, 46 insertions(+), 14 deletions(-)
