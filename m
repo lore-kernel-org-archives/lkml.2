@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379Ab0LCB0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 20:26:12 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49531 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758255Ab0LCB0K (ORCPT
+	id S1758373Ab0LCBaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 20:30:25 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:50869 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758225Ab0LCBaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 20:26:10 -0500
-Date: Thu, 2 Dec 2010 17:26:11 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Jan Kara <jack@suse.cz>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: [PATCH] ext3: Set barrier=0 when block device does not advertise
-	flush support
-Message-ID: <20101203012611.GJ18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
+	Thu, 2 Dec 2010 20:30:24 -0500
+Date: Fri, 3 Dec 2010 09:30:21 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Struk, Tadeusz" <tadeusz.struk@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
+        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>
+Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Message-ID: <20101203013021.GA304@gondor.apana.org.au>
+References: <4CC9946D.mailLH511GU0C@intel.com> <20101104190405.GA2501@gondor.apana.org.au> <20101117172331.3bbec734.akpm@linux-foundation.org> <20101118092640.GA9486@gondor.apana.org.au> <24483BA4C9F69C43A7379639D35543D7C3450A84@irsmsx502.ger.corp.intel.com> <20101202161403.74daae6f.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101202161403.74daae6f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the user tries to enable write flushes with "barrier=1" and the underlying
-block device does not support flushes, print a message and set barrier=0.
+On Thu, Dec 02, 2010 at 04:14:03PM -0800, Andrew Morton wrote:
+>
+> > > Tadeusz, could you please make an incremental patch that converts
+> > > all the pshufb instructions to macros?
+> > > 
+> >
+> > Will do.
+> > Tadeusz
+> > 
+> 
+> (top-posting repaired)
+> 
+> (busted attribution/quoting repaired)
+> 
+> Current mainline still has this failure.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
+Tadeusz, can you update us on your progress on this?
 
- fs/ext3/super.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+Andrew, I'll just back this out if it doesn't get resolved.
 
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index d15209e..75ca265 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -1691,6 +1691,13 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
- 			    NULL, 0))
- 		goto failed_mount;
- 
-+	/* Catch barrier=1 and no flush support */
-+	if (test_opt(sb, BARRIER) &&
-+		     !(sb->s_bdev->bd_disk->queue->flush_flags & REQ_FLUSH)) {
-+		ext3_msg(sb, KERN_WARNING, "flush not supported; disabling.");
-+		clear_opt(sbi->s_mount_opt, BARRIER);
-+	}
-+
- 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
- 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
- 
-@@ -2574,6 +2581,13 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
- 		goto restore_opts;
- 	}
- 
-+	/* Catch barrier=1 and no flush support */
-+	if (test_opt(sb, BARRIER) &&
-+		     !(sb->s_bdev->bd_disk->queue->flush_flags & REQ_FLUSH)) {
-+		ext3_msg(sb, KERN_WARNING, "flush not supported; disabling.");
-+		clear_opt(sbi->s_mount_opt, BARRIER);
-+	}
-+
- 	if (test_opt(sb, ABORT))
- 		ext3_abort(sb, __func__, "Abort forced by user");
- 
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
