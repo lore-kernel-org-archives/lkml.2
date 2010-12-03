@@ -1,55 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758497Ab0LCLpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 06:45:52 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:44326 "EHLO gir.skynet.ie"
+	id S1758523Ab0LCLsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 06:48:30 -0500
+Received: from cantor.suse.de ([195.135.220.2]:33345 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932492Ab0LCLpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 06:45:34 -0500
-From: Mel Gorman <mel@csn.ul.ie>
-To: Simon Kirby <sim@hostway.ca>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 4/5] mm: kswapd: Reset kswapd_max_order and classzone_idx after reading
-Date: Fri,  3 Dec 2010 11:45:33 +0000
-Message-Id: <1291376734-30202-5-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
+	id S1758485Ab0LCLs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 06:48:28 -0500
+Date: Fri, 3 Dec 2010 12:48:23 +0100
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Milton Miller <miltonm@bga.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101203114823.GA6841@boole.suse.de>
+Mail-Followup-To: Milton Miller <miltonm@bga.com>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20101201123222.GA15341@boole.suse.de>
+ <tiocgdev1@mdm.bga.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+In-Reply-To: <tiocgdev1@mdm.bga.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When kswapd wakes up, it reads its order and classzone from pgdat and
-calls balance_pgdat. While its awake, it potentially reclaimes as a high
-order and a low classzone index. This might have been a once-off that
-was not required by subsequent callers. However, because the pgdat
-values were not reset, they remain artifically high while
-balance_pgdat() is running and potentially kswapd enters a second
-unnecessary reclaim cycle. Reset the pgdat order and classzone index
-after reading.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/vmscan.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6ae1873..8295c50 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2508,6 +2508,8 @@ static int kswapd(void *p)
- 
- 			order = pgdat->kswapd_max_order;
- 			classzone_idx = pgdat->classzone_idx;
-+			pgdat->kswapd_max_order = 0;
-+			pgdat->classzone_idx = MAX_NR_ZONES - 1;
- 		}
- 		finish_wait(&pgdat->kswapd_wait, &wait);
- 
+On Wed, Dec 01, 2010 at 11:37:49AM -0600, Milton Miller wrote:
+> On Wed, 01 Dec 2010 about 12:32:22 -0000, Werner Fink wrote:
+> > 
+> > Just have dug out this one:
+> 
+> One question and two minor nits.
+> 
+> > 
+> > On Fri, Nov 19, 2010 at 06:07:36PM +0100, Werner Fink wrote:
+> > > On Fri, Nov 19, 2010 at 03:47:05PM +0000, Alan Cox wrote:
+> > > > > Currently the bootlogd(8) or blogd(8) parse the kernels command line
+> > > > > and if available do an ioctl TIOCGDEV (not supported by the upstream
+> > > > > kernel), then create a pty/tty pair, do an ioctl TIOCCONS to forward
+> > > >
+> > > > So perhaps the vendors using TIOCGDEV could get off their collective
+> > > > backsides and submit it upstream ?
+> > >
+> > > That I've tried 10 years before. If you think it's worth to retry
+> > > you may have a look on the attachment only for a short review
+> > 
+> > 
+> >   Werner
+> > 
+> > 
+> > >From 3ed084a05b7d28d65f6cc42c96696c7cb49c84a1 Mon Sep 17 00:00:00 2001
+> > In-Reply-To: <20101119154705.7829487a@lxorguk.ukuu.org.uk>
+> > References: <20101119154705.7829487a@lxorguk.ukuu.org.uk>
+> > From: Werner Fink <werner@suse.de>
+> > Date: Fri, 19 Nov 2010 17:54:44 +0100
+> > Subject: [PATCH] Add tty ioctl to figure device node of the system console.
+> > 
+> 
+> Please put a changelog here as per "15) The canonical patch format"
+> in Documentation/SubmittingPatches.
+> 
+> > 
+> > Signed-off-by: Werner Fink <werner@suse.de>
+> > 
+> > diff --git a/arch/alpha/include/asm/ioctls.h b/arch/alpha/include/asm/ioctls.h
+> > index 59617c3..034b6cf 100644
+> > --- a/arch/alpha/include/asm/ioctls.h
+> > +++ b/arch/alpha/include/asm/ioctls.h
+> > @@ -92,6 +92,7 @@
+> >  #define TIOCGSID	0x5429  /* Return the session ID of FD */
+> >  #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+> >  #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
+> > +#define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+> >  #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+> >  
+> >  #define TIOCSERCONFIG	0x5453
+> > diff --git a/arch/parisc/include/asm/ioctls.h b/arch/parisc/include/asm/ioctls.h
+> > index 4e06144..0a10575 100644
+> > --- a/arch/parisc/include/asm/ioctls.h
+> > +++ b/arch/parisc/include/asm/ioctls.h
+> > @@ -52,6 +52,7 @@
+> >  #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+> >  #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+> >  #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
+> > +#define TIOCGDEV	_IOW('T',0x32, int)  /* Get primary device node of /dev/console */
+> 
+> All of the other architetures add this as _IOR but here in parisc
+> it is _IOW.  Was this intentional or a typo?
+
+Thansk for spotting.
+
+Werner
 -- 
-1.7.1
+System V style init programs - http://savannah.nongnu.org/projects/sysvinit/
 
+--M9NhX3UHpAaciwkO
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="tiocgdev.2"
+
+>From ad0f6018a57ce3b706d2eec41a8b0892f0e03624 Mon Sep 17 00:00:00 2001
+From: Werner Fink <werner@suse.de>
+Date: Fri, 19 Nov 2010 17:54:44 +0100
+Subject: [PATCH] Add tty ioctl to figure device node of the system console.
+
+---
+ arch/alpha/include/asm/ioctls.h   |    1 +
+ arch/mips/include/asm/ioctls.h    |    1 +
+ arch/parisc/include/asm/ioctls.h  |    1 +
+ arch/powerpc/include/asm/ioctls.h |    1 +
+ arch/sh/include/asm/ioctls.h      |    1 +
+ arch/sparc/include/asm/ioctls.h   |    1 +
+ arch/xtensa/include/asm/ioctls.h  |    1 +
+ drivers/tty/tty_io.c              |    5 +++++
+ fs/compat_ioctl.c                 |    1 +
+ include/asm-generic/ioctls.h      |    1 +
+ 10 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/arch/alpha/include/asm/ioctls.h b/arch/alpha/include/asm/ioctls.h
+index 59617c3..034b6cf 100644
+--- a/arch/alpha/include/asm/ioctls.h
++++ b/arch/alpha/include/asm/ioctls.h
+@@ -92,6 +92,7 @@
+ #define TIOCGSID	0x5429  /* Return the session ID of FD */
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+ #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	0x5453
+diff --git a/arch/mips/include/asm/ioctls.h b/arch/mips/include/asm/ioctls.h
+index d87cb04..d967b89 100644
+--- a/arch/mips/include/asm/ioctls.h
++++ b/arch/mips/include/asm/ioctls.h
+@@ -83,6 +83,7 @@
+ #define TCSETSF2	_IOW('T', 0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T', 0x32, unsigned int) /* Get primary device node of /dev/console */
+ #define TIOCSIG		_IOW('T', 0x36, int)  /* Generate signal on Pty slave */
+ 
+ /* I hope the range from 0x5480 on is free ... */
+diff --git a/arch/parisc/include/asm/ioctls.h b/arch/parisc/include/asm/ioctls.h
+index 4e06144..6ba80d0 100644
+--- a/arch/parisc/include/asm/ioctls.h
++++ b/arch/parisc/include/asm/ioctls.h
+@@ -52,6 +52,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T',0x32, int)  /* Get primary device node of /dev/console */
+ #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+diff --git a/arch/powerpc/include/asm/ioctls.h b/arch/powerpc/include/asm/ioctls.h
+index 8519200..c7dc17c 100644
+--- a/arch/powerpc/include/asm/ioctls.h
++++ b/arch/powerpc/include/asm/ioctls.h
+@@ -94,6 +94,7 @@
+ #define TIOCSRS485	0x542f
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+ #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	0x5453
+diff --git a/arch/sh/include/asm/ioctls.h b/arch/sh/include/asm/ioctls.h
+index eb6c4c6..84e85a7 100644
+--- a/arch/sh/include/asm/ioctls.h
++++ b/arch/sh/include/asm/ioctls.h
+@@ -85,6 +85,7 @@
+ #define TCSETSF2	_IOW('T', 45, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+ #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	_IO('T', 83) /* 0x5453 */
+diff --git a/arch/sparc/include/asm/ioctls.h b/arch/sparc/include/asm/ioctls.h
+index 53f4ee0..ed3807b 100644
+--- a/arch/sparc/include/asm/ioctls.h
++++ b/arch/sparc/include/asm/ioctls.h
+@@ -19,6 +19,7 @@
+ #define TCSETS2		_IOW('T', 13, struct termios2)
+ #define TCSETSW2	_IOW('T', 14, struct termios2)
+ #define TCSETSF2	_IOW('T', 15, struct termios2)
++#define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+ 
+ /* Note that all the ioctls that are not available in Linux have a 
+  * double underscore on the front to: a) avoid some programs to
+diff --git a/arch/xtensa/include/asm/ioctls.h b/arch/xtensa/include/asm/ioctls.h
+index ab18000..ccf1800 100644
+--- a/arch/xtensa/include/asm/ioctls.h
++++ b/arch/xtensa/include/asm/ioctls.h
+@@ -98,6 +98,7 @@
+ #define TCSETSF2	_IOW('T', 45, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+ #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	_IO('T', 83)
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index c05c5af..0cf17e7 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2618,6 +2618,11 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		return put_user(tty->ldisc->ops->num, (int __user *)p);
+ 	case TIOCSETD:
+ 		return tiocsetd(tty, p);
++	case TIOCGDEV:
++	{
++		unsigned int ret = new_encode_dev(tty_devnum(real_tty));
++		return put_user(ret, (unsigned int __user *)p);
++	}
+ 	/*
+ 	 * Break handling
+ 	 */
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index 410ed18..a1a8f0c 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -837,6 +837,7 @@ COMPATIBLE_IOCTL(TCSETSW)
+ COMPATIBLE_IOCTL(TCSETSF)
+ COMPATIBLE_IOCTL(TIOCLINUX)
+ COMPATIBLE_IOCTL(TIOCSBRK)
++COMPATIBLE_IOCTL(TIOCGDEV)
+ COMPATIBLE_IOCTL(TIOCCBRK)
+ COMPATIBLE_IOCTL(TIOCGSID)
+ COMPATIBLE_IOCTL(TIOCGICOUNT)
+diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+index a321665..3f3f2d1 100644
+--- a/include/asm-generic/ioctls.h
++++ b/include/asm-generic/ioctls.h
+@@ -67,6 +67,7 @@
+ #endif
+ #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
++#define TIOCGDEV	_IOR('T', 0x32, unsigned int) /* Get primary device node of /dev/console */
+ #define TCGETX		0x5432 /* SYS5 TCGETX compatibility */
+ #define TCSETX		0x5433
+ #define TCSETXF		0x5434
+-- 
+1.6.0.2
+
+
+--M9NhX3UHpAaciwkO--
