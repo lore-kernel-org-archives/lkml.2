@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab0LCXRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 18:17:47 -0500
-Received: from kroah.org ([198.145.64.141]:41920 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab0LCXRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 18:17:46 -0500
-Date: Fri, 3 Dec 2010 14:52:17 -0800
-From: Greg KH <greg@kroah.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: stable@kernel.org, David Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [stable] [PATCH] [Stable] agp/intel: complete the enablement
- for B43.1
-Message-ID: <20101203225217.GB15457@kroah.com>
-References: <1289555843-6425-1-git-send-email-ike.pan@canonical.com>
+	id S1753671Ab0LCXUY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 18:20:24 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36418 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab0LCXUX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 18:20:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bXcR7OqAX+KBE/7Y+cLy2tEwGvjckUs0mrpeXdAjes3FYDVJtS1vy1dT82wuxJfJCw
+         uPP5NN+OFHbsuPP24d+7kHWzVlFJuDkRGZiLUhW/jtZBphnxHujDOgEasYFf9pWCj1Nn
+         9Xyk++s84nmpqe5LEahAM5X9H4FJH1U4ycmG4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289555843-6425-1-git-send-email-ike.pan@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290510371-23077-2-git-send-email-jamie@jamieiles.com>
+References: <1290510371-23077-1-git-send-email-jamie@jamieiles.com>
+	<1290510371-23077-2-git-send-email-jamie@jamieiles.com>
+Date: Fri, 3 Dec 2010 15:20:01 -0800
+X-Google-Sender-Auth: aziTMAnU5NLshIhxuzBB9p9vhtA
+Message-ID: <AANLkTi=jraL77=ix=y5QF9YVTVZ9XGF6AXKEx5yMJW3i@mail.gmail.com>
+Subject: Re: [PATCH 1/4] dmaengine/dw_dmac: don't scan descriptors if no xfers
+ in progress
+From: Dan Williams <dan.j.williams@intel.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Jamie Iles <jamie.iles@picochip.com>,
+        hskinnemoen@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 05:57:23PM +0800, Ike Panhc wrote:
-> This patch completes the missing part of commit 41a514 and 3dde04b and I think
-> commit 3dde04b is already in queue for next stable release.
-> 
-> Thanks Chris Wilson has the patch for enabling Intel B43.1 and backports it to
-> stable kernel. On mainline commit 210b23 and 1a997ff the way to detect gtt size
-> is changed, but these two commits landed on mainline kernel after .36 kernel
-> released. So that mainline kernel works fine on B43.1 machine but not stable
-> kernel.
-> 
-> Without this patch, X fails to start on 2.6.35.y kernel. After patched, X
-> starts.
-> 
-> This patch is made for 2.6.35.y and I believe it suits for 2.6.36.y.
-> 
-> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+[ copying Haavard's new address ]
 
-I don't understand, is this patch upstream already?  If so, what is git
-git commit id for it?  If not, why not?
-
-confused,
-
-greg k-h
-
+On Tue, Nov 23, 2010 at 3:06 AM, Jamie Iles <jamie@jamieiles.com> wrote:
+> Some hardware (picoChip picoXCell in particular) sometimes has
+> the block transfer complete bit being set for a channel after the
+> whole transfer has completed. If we don't have any transfers in the
+> active list then don't bother to scan the descriptors. This often
+> happens in normal operation and doesn't require the channel to be
+> reset.
+>
+> Cc: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Signed-off-by: Jamie Iles <jamie.iles@picochip.com>
 > ---
->  drivers/char/agp/intel-agp.h |    1 +
->  drivers/char/agp/intel-gtt.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
-> index bc9a4ad..cdefd47 100644
-> --- a/drivers/char/agp/intel-agp.h
-> +++ b/drivers/char/agp/intel-agp.h
-> @@ -241,6 +241,7 @@
->  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_GM45_HB || \
->  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_G41_HB || \
->  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_B43_HB || \
-> +		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_B43_1_HB || \
->  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB || \
->  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB || \
->  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB || \
-> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-> index ed11c77..c35361c 100644
-> --- a/drivers/char/agp/intel-gtt.c
-> +++ b/drivers/char/agp/intel-gtt.c
-> @@ -1338,6 +1338,7 @@ static void intel_i965_get_gtt_range(int *gtt_offset, int *gtt_size)
->  	case PCI_DEVICE_ID_INTEL_G45_HB:
->  	case PCI_DEVICE_ID_INTEL_G41_HB:
->  	case PCI_DEVICE_ID_INTEL_B43_HB:
-> +	case PCI_DEVICE_ID_INTEL_B43_1_HB:
->  	case PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB:
->  	case PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB:
->  	case PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB:
-> -- 
-> 1.7.1
-> 
-> _______________________________________________
-> stable mailing list
-> stable@linux.kernel.org
-> http://linux.kernel.org/mailman/listinfo/stable
+>  drivers/dma/dw_dmac.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index a3991ab..08c51d4 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -291,6 +291,9 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+>                return;
+>        }
+>
+> +        if (list_empty(&dwc->active_list))
+> +                return;
+> +
+>        dev_vdbg(chan2dev(&dwc->chan), "scan_descriptors: llp=0x%x\n", llp);
+>
+>        list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
+> --
+> 1.7.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
