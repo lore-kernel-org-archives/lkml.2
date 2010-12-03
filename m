@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab0LCOql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 09:46:41 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50814 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758556Ab0LCOqk (ORCPT
+	id S1758680Ab0LCOrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 09:47:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63923 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758556Ab0LCOrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 09:46:40 -0500
+	Fri, 3 Dec 2010 09:47:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=iEtBAcHmc2nSODX5jx1wlBzxNPlHyCcZ66jJLaTZ1zAKU0nTDqv1XMHIX3GlYGvEOC
-         i6I9eLjdkGSeFdZZ3BNYM5reDsMx85H5JF7kvPOhjvJjBAZPF36dz1Yu6OnpZk/Yhyw9
-         rPonBO4aS8TgRB5YhfyNRKIG9ggqMNDLd8Mfg=
-Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrej Ota <andrej@ota.si>
-Cc: linux-kernel@vger.kernel.org, gvs@zemos.net,
-        Rami Rosen <ramirose@gmail.com>, netdev <netdev@vger.kernel.org>
-In-Reply-To: <aa43945b38cee751a8231084866b074d@192.168.253.23>
-References: <0fe401cb92e7$85ba2260$912e6720$@si>
-	 <1291381791.2897.250.camel@edumazet-laptop>
-	 <aa43945b38cee751a8231084866b074d@192.168.253.23>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Dec 2010 15:46:35 +0100
-Message-ID: <1291387595.2897.350.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oDi+Y0kywdIqEyJHqTHcu+pzpmHKSrqupQBwNSeUb1vDXQ1uGVKRft6ok4Lg89rBkE
+         0NTSv2XmrcauvoblwXzYAuAno9qJk1F2NuRR0F5AN4blsoE9DuodNq/PJtCKxWp8bfke
+         nGCP1itImQra/BSR5BmGFHCKzAayB6bQYJIuk=
+Date: Fri, 3 Dec 2010 15:47:23 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Subject: Re: [RFC][PATCH 0/2 v2] tracing: Add conditional to tracepoints
+Message-ID: <20101203144720.GA1711@nowhere>
+References: <20101203040358.955427199@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101203040358.955427199@goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 03 décembre 2010 à 15:37 +0100, Andrej Ota a écrit :
-> >> Patch that works for me is below. Now I only hope I haven't
-> >> (re)introduced a memory leak...
+On Thu, Dec 02, 2010 at 11:03:58PM -0500, Steven Rostedt wrote:
+> This is an RFC that adds the TP_CONDITION() to the TRACE_EVENT()
+> code.
 > 
-> > Problem comes from commit 55c95e738da85 (fix return value of
-> > __pppoe_xmit() method)
-> > 
-> > I am not sure patch is OK
+> There are certain cases that a tracepoint only makes sense if
+> a specific condition is met. But because we do not want to dirty
+> the fast path (the non tracing case) with if statements that are
+> there only to avoid tracing, we just pass the condition variables
+> to the tracepoint, and let the user filter them out if needed.
+> 
+> A perfect example is the tracepoint sched_wakeup. It traces all
+> calls to try_to_wake_up() even if it fails to wake up. But if we add:
+> 
+>         if (success)
+>                 trace_sched_wakeup(p);
+> 
+> We have that "if (success)" tested for every time we call try_to_wake_up().
+> Even when tracing is not (or never will be) enabled.
+> 
+> This patch set adds a variant TRACE_EVENT_CONDITIONAL()
+> (and DEFINE_EVENT_CONDITIONAL()) that has a "cond" argument.
+> This argument is encapsulated with "TP_CONDITIONAL()" which turns into:
+> 
+>         if (!cond)
+>                 return;
+> 
+> What's new with this version?
+> 
+> This version adds this if statement to __DO_TRACE(). As it is
+> in a static inline function, the return still applies.
+> 
+> Also, since the shortcut is made before the callbacks, the test
+> is at the call site. This means that you can have a DECLARE_EVENT_CLASS()
+> where one of its DEFINE_EVENTS() is normal and the other is a
+> DEFINE_EVENT_CONDITION().
+> 
+> The following patches are in:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> 
+>     branch: rfc/trace-conditional-v2
 > 
 > 
-> Me neither. That's why I wrote "works for me". All I dare say is that it
-> works better than current code and is probably no worse than it was before
-> above mentioned commit. Apart from that, there is no point in having return
-> value for __pppoe_xmit if return value isn't needed.
+> Steven Rostedt (2):
+>       tracing: Add TRACE_EVENT_CONDITIONAL()
+>       tracing: Only trace sched_wakeup if it actually work something up
 > 
-> Easiest way of triggering this BUG is by terminating PPPoE on the server
-> side, which then hits "if (!dev) { goto abort; }". This in turn calls
-> "kfree_skb(skb); return 0;" which returns to pppoe_rcv_core which then
-> goto-s to "abort_put" which again calls "kfree_skb(skb)". Voila the bug.
-> 
-> I don't know how to trigger "if (skb_cow_head(skb, ..." to see if I have
-> just caused another BUG. However, if I read file comments at the top, I see
-> a comment from 19/07/01 stating that I have to delete original skb if code
-> succeeds and never delete it on failure. About the skb copy mentioned in
-> the same comment, I don't know. 2001 was many commits ago.
-
-Well, all I wanted to say was that _I_ was not sure, but probably other
-network guys have a better diagnostic.
-
-Rami, could you re-explain the rationale of your patch ?
-
-Thanks
+> ----
+>  include/linux/tracepoint.h   |   29 +++++++++++++++++++++++------
+>  include/trace/define_trace.h |   15 +++++++++++++++
+>  include/trace/events/sched.h |   16 ++++++++--------
+>  3 files changed, 46 insertions(+), 14 deletions(-)
 
 
+Looks good
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+I suspect we'll need to fix some scripts/subperf commands in perf. Those that do:
+
+	if (success)
+
+tests after reading a trace from a wakeup event.
