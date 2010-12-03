@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab0LCPJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:09:05 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58109 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab0LCPJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:09:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,293,1288594800"; 
-   d="scan'208";a="356658694"
-Date: Fri, 3 Dec 2010 16:08:59 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Yong Shen <yong.shen@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/2] Change the register name definitions for mc13783
-Message-ID: <20101203150858.GC28954@sortiz-mobl>
-References: <AANLkTinA-rNzSjGZQSmGUdOt8j0RWddfNo5m=fP2oQx8@mail.gmail.com>
- <1291373531.3271.8.camel@odin>
+	id S1751792Ab0LCPJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:09:36 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:47113 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751202Ab0LCPJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 10:09:35 -0500
+Date: Fri, 3 Dec 2010 09:09:29 -0600
+From: Robin Holt <holt@sgi.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Bunk <bunk@kernel.org>,
+        Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jack Steiner <steiner@sgi.com>
+Subject: Re: Do we need to call calibrate_delay() for all
+ cores/hyperthreads on a socket?
+Message-ID: <20101203150928.GG3344@sgi.com>
+References: <20101203065212.GQ6858@sgi.com>
+ <20101203093617.GB8800@basil.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291373531.3271.8.camel@odin>
+In-Reply-To: <20101203093617.GB8800@basil.fritz.box>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liam,
-
-On Fri, Dec 03, 2010 at 10:52:11AM +0000, Liam Girdwood wrote:
-> On Thu, 2010-12-02 at 19:18 +0800, Yong Shen wrote:
-> > Hi there,
+On Fri, Dec 03, 2010 at 10:36:18AM +0100, Andi Kleen wrote:
+> On Fri, Dec 03, 2010 at 12:52:12AM -0600, Robin Holt wrote:
 > > 
-> > Please comment inline and use attached file for patch or test.
+> > I do not know all the different combinations of sockets, cores, and
+> > hyperthreads out there, but it seems like all cores and their hyperthreads
+> > on a socket should compute the same value for their calculate_delay()
+> > function.
 > > 
-> > Thanks
-> > Yong
+> > When booting a 4096 cpu system without specifying lpj on the command line,
+> > we spend approximately 0.1 seconds per core/hyperthread calculating the
+> > lpj value for that cpu.
 > > 
-> > >From e112153c6f03b49c229a8e3913a0c0459245df20 Mon Sep 17 00:00:00 2001
-> > From: Yong Shen <yong.shen@linaro.org>
-> > Date: Thu, 2 Dec 2010 14:17:02 +0800
-> > Subject: [PATCH 1/2] Change the register name definitions for mc13783
-> > 
-> > To make mc13783 and mc13892 share code, the register names should be
-> > changed to fit the new macro definitions in the comming patch.
-> > 
-> > Signed-off-by: Yong Shen <yong.shen@linaro.org>
-> > ---
-> >  arch/arm/mach-imx/mach-pcm038.c       |    4 +-
-> >  arch/arm/mach-mx3/mach-mx31_3ds.c     |    4 +-
-> >  arch/arm/mach-mx3/mach-mx31moboard.c  |    4 +-
-> >  drivers/regulator/mc13783-regulator.c |   30 +++++++-------
-> >  include/linux/mfd/mc13783.h           |   67 +++++++++++++++++----------------
-> >  5 files changed, 55 insertions(+), 54 deletions(-)
+> > If we were to, on the other hand, only calculate the delay value for the
+> > first core on a socket, we would reduce the time spent booting a 4096 cpu
+> > (256 sockets, 8 cores per socket hyperthreaded) down from nearly seven
+> > minutes to approx 25 seconds.  This seems like a very safe optimization,
+> > but I repeat that I do not know all the different potential combinations
+> > of socket, core, hyperthread out that.  Please note these are just rough
+> > approximations taken from memory.  I am doing a couple of test boots
+> > now without and with lpj= specified on the command line to get a more
+> > accurate approximation.
 > 
-> Sascha, Samuel, this series touches some of mach-imx and mfd. I can take
-> via regulator if that's OK with you guys ?
-I'm fine with that, thanks a lot.
+> Hi Robin,
+> 
+> At least for SMT threads that seems like a fine idea: in general I think
+> we should be doing a lot more things "per core" instead of "per thread".
+> 
+> As for sharing calibration on whole sockets: on some systems individual 
+> cores on a socket can run with different frequencies (e.g. AMD Fam10h).
+> In theory the CPU should always run at P0 when coming out of boot,
+> but we've had cases in the past where it was running lower, e.g.
+> if the BIOS decided to cap power consumption. I guess in theory
+> those states could be different per core on those systems.
+> 
+> So I think it would be safer to still calibrate per core at least.
+> In theory one could try to check for the case described above,
+> and only do it then, but that may be fragile.
+> 
+> But maybe it's possible to calibrate different cores in a socket in 
+> parallel anyways?
 
-Cheers,
-Samuel.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Ok, more accurate timing information.
+
+Booted without lpj=:
+[   95.105108] Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
+...
+[  411.231708] Booting Node 255, Processors  #4088 #4089 #4090 #4091 #4092 #4093 #4094 #4095 Ok.
+
+Booted with lpj=:
+[   95.327867] Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
+...
+[  168.246617] Booting Node 255, Processors  #4088 #4089 #4090 #4091 #4092 #4093 #4094 #4095 Ok.
+
+That is not a fair comparison due to the lpj case, we did no calibrations,
+but it is illustrative.  In that time span, on the first boot we performed
+4095 calibrate_delay() calls which are not performed in the second boot.
+The difference is 243 seconds or 0.06 seconds per cpu.  As Jack likes
+to jokingly remind me, we have once again proved that if you multiply
+a small number by a large enough number, you will get a large number.
+
+If I am calculating this correctly, just doing the calibrate_delay on
+a per-socket basis should reduce boot time 228 seconds.
+
+If, on the other hand, we do it per core, it ends up only reducing boot
+time by 121 seconds.  An improvement for sure, but not good enough to
+make me really happy ;).
+
+
+Thanks,
+Robin
