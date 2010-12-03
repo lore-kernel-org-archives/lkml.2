@@ -1,199 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab0LCK6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 05:58:25 -0500
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:44867 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab0LCK6X (ORCPT
+	id S1758416Ab0LCLHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 06:07:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49669 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757235Ab0LCLHX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 05:58:23 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CF8CED9.9060306@cam.ac.uk>
-Date: Fri, 03 Dec 2010 11:04:57 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101123 Lightning/1.0b3pre Thunderbird/3.1.6
+	Fri, 3 Dec 2010 06:07:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,292,1288594800"; 
+   d="scan'208";a="683551600"
+From: "Struk, Tadeusz" <tadeusz.struk@intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
+        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>
+Date: Fri, 3 Dec 2010 11:05:56 +0000
+Subject: RE: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Thread-Topic: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Thread-Index: AcuSiaygPUX36LxyRMCGETsfs2tqhgAT55iQ
+Message-ID: <24483BA4C9F69C43A7379639D35543D7C3682C99@irsmsx502.ger.corp.intel.com>
+References: <4CC9946D.mailLH511GU0C@intel.com>
+ <20101104190405.GA2501@gondor.apana.org.au>
+ <20101117172331.3bbec734.akpm@linux-foundation.org>
+ <20101118092640.GA9486@gondor.apana.org.au>
+ <24483BA4C9F69C43A7379639D35543D7C3450A84@irsmsx502.ger.corp.intel.com>
+ <20101202161403.74daae6f.akpm@linux-foundation.org>
+ <20101203013021.GA304@gondor.apana.org.au>
+In-Reply-To: <20101203013021.GA304@gondor.apana.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-To: michael.hennerich@analog.com
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        drivers@analog.com, device-drivers-devel@blackfin.uclinux.org
-Subject: Re: [RFC 1/3] IIO: Direct digital synthesis abi documentation
-References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com> <1291292489-32362-2-git-send-email-michael.hennerich@analog.com>
-In-Reply-To: <1291292489-32362-2-git-send-email-michael.hennerich@analog.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/10 12:21, michael.hennerich@analog.com wrote:
-> From: Michael Hennerich <michael.hennerich@analog.com>
+Hi Herbert and Andrew,
+Sorry for delay. We have the patch almost ready. We just want to do some more testing before we send it.
+We should be ready to send it out next week. Next Friday (10 Dec) will be worst case date.
+Thanks,
+Tadeusz
+ 
+
+-----Original Message-----
+From: Herbert Xu [mailto:herbert@gondor.apana.org.au] 
+Sent: Friday, December 03, 2010 1:30 AM
+To: Andrew Morton
+Cc: Struk, Tadeusz; linux-kernel@vger.kernel.org; linux-crypto@vger.kernel.org; O Mahony, Aidan; Paoloni, Gabriele; Hoban, Adrian
+Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+
+On Thu, Dec 02, 2010 at 04:14:03PM -0800, Andrew Morton wrote:
+>
+> > > Tadeusz, could you please make an incremental patch that converts
+> > > all the pshufb instructions to macros?
+> > > 
+> >
+> > Will do.
+> > Tadeusz
+> > 
 > 
-> Proposed ABI documentation
+> (top-posting repaired)
 > 
-Hi Michael,
-
-Couple of comments inline.
-
-I've raised a few questions that I don't have a clear answer two.
-
-The other comments are nitpicks about exact ordering of the elements
-of the attribute names.
-
-> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
->  .../staging/iio/Documentation/sysfs-bus-iio-dds    |  103 ++++++++++++++++++++
->  1 files changed, 103 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-dds
+> (busted attribution/quoting repaired)
 > 
-> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> new file mode 100644
-> index 0000000..2c99889
-> --- /dev/null
-> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> @@ -0,0 +1,103 @@
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_freqY
-Here we deviate a little from what we did with input channels.
-In that case there was the existing interface (from hwmon) to match
-so we already had an _input designation to tell us that the number
-was in the relevant base units (here it would be Hz).  Hence we added
-a _raw label to say it wasn't and tell userspace to apply scale and offset.
-This is stretching a point somewhat, but looking at the hwmon docs, they
-have pwmX_freq as a value in Hz. That's obviously going to make consistency
-rather tricky to achieve!
+> Current mainline still has this failure.
 
-Do you think we should leave all _freq without modifier as being in Hz and
-have ddsX_freqY_raw. Or should we rely on userspace verifying if there are
-appropriate scale / offset parameters to be applied and hence working out
-for itself whether the value in ddsX_freqY is in Hz or not?
+Tadeusz, can you update us on your progress on this?
 
-I'm think I marginally favour leaving it as you have it here but others may
-have different opinions.
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Stores frequency into tuning word register Y.
-> +		There can be more than one ddsX_freqY file, which allows for
-> +		pin controlled FSK Frequency Shift Keying
-> +		(ddsX_pincontrol_freq_en is active) or the user can control
-> +		the desired active tuning word by writing Y to the
-> +		ddsX_freqsymbol file.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_freq_scaleY
-Would the association be clearer if we went with ddsX_freqY_scale?  I think
-that is more consistent with what we have elsewhere in IIO (though this particular
-double index case hasn't happened before)
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Scale to be applied to ddsX_freqY in order to obtain the
-> +		desired value in Hz. If shared across all frequency registers
-> +		Y is not present.
-Please add that it is also possible X is not present if shared across
-all channels.  In weird cases X might not be present whilst Y is...
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_freqsymbol
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the active output frequency tuning word. The value
-> +		corresponds to the Y in ddsX_freqY. To exit this mode the user
-> +		can write ddsX_pincontrol_freq_en or ddsX_out_disable file.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_phaseY
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Stores phase into phase register Y.
-> +		There can be more than one ddsX_phaseY file, which allows for
-> +		pin controlled PSK Phase Shift Keying
-> +		(ddsX_pincontrol_phase_en is active) or the user can
-> +		control the desired phase Y which is added to the phase
-> +		accumulator output by writing Y to the en_phase file.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_phase_scaleY
-Same reordering suggestion as per the frequency one above.
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Scale to be applied to ddsX_phaseY in order to obtain the
-> +		desired value in rad. If shared across all phase registers
-> +		Y is not present.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_phasesymbol
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the active phase Y which is added to the phase
-> +		accumulator output. The value corresponds to the Y in
-> +		ddsX_phaseY. To exit this mode the user can write
-> +		ddsX_pincontrol_phase_en or disable file.
-> +
+Andrew, I'll just back this out if it doesn't get resolved.
 
-It might make sense to group the next three by having multiple What lines
-and then an explanation covering all three.  
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Both, the active frequency and phase is controlled by the
-> +		respective phase and frequency control inputs.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		The active frequency is controlled by the respective
-> +		frequency control/select inputs.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		The active phase is controlled by the respective
-> +		phase control/select inputs.
-> +
-Could group the next two sections of documentation into one and describe
-both versions together.  See how it's done in the latest main IIO docs.
-I think it tends to make it apparent when there are multiple very similar
-attributes that may affect the same signals.
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_out_disable
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Disables any signal generation on all outputs.
-With the X in there you need to say for dds X.
-On everything else so far we have tended to go with enable attributes rather than
-this way around.  Why do it as disable here?
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_outY_disable
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Disables any signal generation on output Y.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the output waveform.
-> +		(sine, triangle, ramp, square, ...)
-> +		For a list of available output waveform options read
-> +		available_output_modes.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/ddsX_outY_available_wavetypes
-Convention so far in IIO (because it's easy to handle in code) would make this
-ddsX_outY_wavetype_available. 
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Lists all available output waveform options.
-> --
-> 1.6.0.2
-Thanks
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
 
-Jonathan
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
+
 
