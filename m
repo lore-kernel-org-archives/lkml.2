@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab0LCV0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 16:26:15 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:43477 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab0LCV0M convert rfc822-to-8bit (ORCPT
+	id S1754012Ab0LCV1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 16:27:32 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43009 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab0LCV1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 16:26:12 -0500
-Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: vatsa@linux.vnet.ibm.com
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-In-Reply-To: <20101203141037.GE16411@linux.vnet.ibm.com>
-References: <20101202144129.4357fe00@annuminas.surriel.com>
-	 <20101202144423.3ad1908d@annuminas.surriel.com>
-	 <1291382619.32004.2124.camel@laptop>
-	 <20101203133056.GF27994@linux.vnet.ibm.com>
-	 <1291385010.32004.2165.camel@laptop>
-	 <20101203140607.GA9800@linux.vnet.ibm.com>
-	 <20101203141037.GE16411@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 03 Dec 2010 22:23:11 +0100
-Message-ID: <1291411391.2032.4.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 3 Dec 2010 16:27:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vU4IiJ/sDHfIq0m+3qpcv7haJ/xg5GEKTuZjbrKu338qksJFoMqKPhzfmm7+I5eUlw
+         g8rNCT94e/gYduHJ4vN+05TdKrItk4aijTO3uuCddUbFr46Pdf1BWlKzYlrH4C7QiCHI
+         hky6bGqFehjSPQAjBQgP6d3XHrkmIRIFyYqrM=
+From: Xenofon Foukas <foukas.xenofon@gmail.com>
+To: gregh@suse.de
+Cc: linux-kernel@vger.kernel.org, devel@drivedev.osuosl.org,
+        Xenofon Foukas <foukas.xenofon@gmail.com>
+Subject: [PATCH] Fix coding style issues in drivers.c
+Date: Fri,  3 Dec 2010 23:27:19 +0200
+Message-Id: <1291411639-15526-1-git-send-email-foukas.xenofon@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 19:40 +0530, Srivatsa Vaddagiri wrote:
-> On Fri, Dec 03, 2010 at 07:36:07PM +0530, Srivatsa Vaddagiri wrote:
-> > On Fri, Dec 03, 2010 at 03:03:30PM +0100, Peter Zijlstra wrote:
-> > > No, because they do receive service (they spend some time spinning
-> > > before being interrupted), so the respective vruntimes will increase, at
-> > > some point they'll pass B0 and it'll get scheduled.
-> > 
-> > Is that sufficient to ensure that B0 receives its fair share (1/3 cpu in this
-> > case)?
-> 
-> Hmm perhaps yes, althought at cost of tons of context switches, which would be
-> nice to minimize on?
+This patch fixes line over 80 characters warning issues found
+in file drivers.c
+Signed-off-by: Xenofon Foukas <foukas.xenofon@gmail.com>
+---
+ drivers/staging/comedi/drivers.c |   26 ++++++++++++++++++--------
+ 1 files changed, 18 insertions(+), 8 deletions(-)
 
-Don't care, as long as the guys calling yield_to() pay for that time its
-their problem.
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 4a29ed7..840b7e0 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -118,7 +118,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	for (driv = comedi_drivers; driv; driv = driv->next) {
+ 		if (!try_module_get(driv->module)) {
+ 			printk
+-			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
++			     (KERN_INFO "comedi: failed to increment "
++						"module count, skipping\n");
+ 			continue;
+ 		}
+ 		if (driv->num_names) {
+@@ -206,8 +207,9 @@ int comedi_driver_unregister(struct comedi_driver *driver)
+ 		if (dev->attached && dev->driver == driver) {
+ 			if (dev->use_count)
+ 				printk
+-				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
+-				     dev->use_count);
++				    (KERN_WARNING "BUG! detaching device "
++						"with use_count=%d\n",
++						dev->use_count);
+ 			comedi_device_detach(dev);
+ 		}
+ 		mutex_unlock(&dev->mutex);
+@@ -442,7 +444,9 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		unsigned i;
+ 		for (i = 0; i < async->n_buf_pages; ++i) {
+ 			if (async->buf_page_list[i].virt_addr) {
+-				clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
++				clear_bit(PG_reserved,
++					&(virt_to_page(async->buf_page_list[i].
++							virt_addr)->flags));
+ 				if (s->async_dma_dir != DMA_NONE) {
+ 					dma_free_coherent(dev->hw_dev,
+ 							  PAGE_SIZE,
+@@ -496,8 +500,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 					break;
+ 
+ 				set_bit(PG_reserved,
+-					&(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
+-				pages[i] = virt_to_page(async->buf_page_list[i].virt_addr);
++					&(virt_to_page(async->buf_page_list[i].
++							virt_addr)->flags));
++				pages[i] = virt_to_page(async->buf_page_list[i].
++								virt_addr);
+ 			}
+ 		}
+ 		if (i == n_pages) {
+@@ -514,7 +520,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 					    NULL) {
+ 						break;
+ 					}
+-					clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
++					clear_bit(PG_reserved,
++						&(virt_to_page(async->
++							buf_page_list[i].
++							virt_addr)->flags));
+ 					if (s->async_dma_dir != DMA_NONE) {
+ 						dma_free_coherent(dev->hw_dev,
+ 								  PAGE_SIZE,
+@@ -647,7 +656,8 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
+ 	if ((int)(async->buf_write_count + nbytes -
+ 		  async->buf_write_alloc_count) > 0) {
+ 		printk
+-		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
++		    (KERN_INFO "comedi: attempted to write-free more bytes "
++					"than have been write-allocated.\n");
+ 		nbytes = async->buf_write_alloc_count - async->buf_write_count;
+ 	}
+ 	async->buf_write_count += nbytes;
+-- 
+1.7.3.2
+
