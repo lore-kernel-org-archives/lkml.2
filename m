@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619Ab0LCLoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 06:44:07 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53137 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932404Ab0LCLmu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 06:42:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ov8YBBxAYSQzL+vM88e8y5nM6EVHm3dtwKpHOArZmNC4ONP9U72kpOBem5Go78yzj3
-         B8EUt4MPZ3iet8hUrGqDWxoqiFs7IngQaq1zs1h/eYVqjixJqzMHZFGjUI6qxqo4ATzw
-         dNPUD3p1CdlnJSKrsgIoqr11zsmhAARejt7/c=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimiyxiKzT=9pKXLFACkc6C=nTD2dtBR7PcgjhOL@mail.gmail.com>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
-	<AANLkTinj93zAXJAipB3HjE62Xa1Z=9k9gPBxaT=+MLtg@mail.gmail.com>
-	<20101029172443.61f7b067@pyx>
-	<AANLkTimiyxiKzT=9pKXLFACkc6C=nTD2dtBR7PcgjhOL@mail.gmail.com>
-Date: Fri, 3 Dec 2010 12:42:49 +0100
-Message-ID: <AANLkTim7brB0JecKXDNddt0am=Um457Kfbm6bRG_yzFM@mail.gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Marcel Holtmann <marcel@holtmann.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932599Ab0LCLnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 06:43:23 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33806 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932543Ab0LCLnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 06:43:20 -0500
+From: manjunatha_halli@ti.com
+To: mchehab@infradead.org, hverkuil@xs4all.nl
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Manjunatha Halli <manjunatha_halli@ti.com>
+Subject: [RFC v6 1/9] include:linux: videodev2.h: FM Rx control class
+Date: Fri,  3 Dec 2010 07:50:23 -0500
+Message-Id: <1291380631-25993-2-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1291380631-25993-1-git-send-email-manjunatha_halli@ti.com>
+References: <1291380631-25993-1-git-send-email-manjunatha_halli@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Par,
+From: Manjunatha Halli <manjunatha_halli@ti.com>
 
-On Fri, Dec 3, 2010 at 10:16 AM, Par-Gunnar Hjalmdahl
-<pghatwork@gmail.com> wrote:
-> 2010/10/29 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+Introduce V4L2_CTRL_CLASS_FM_RX for FM receivers similar to
+V4L2_CTRL_CLASS_FM_TX.
+Few controls such as RSSI threshold, Alternate Frequency are for
+now under this class.
 
-> By the way, I will soon release a new patch set for CG2900 (hopefully
-> next week), which contains major rework. It's hard to explain
-> everything here and now but changes include:
->  - Reuse of existing HCI line discipline under /drivers/bluetooth/.
-> Line discipline has been modified so it is selectable from protocol if
-> line discipline should register to Bluetooth stack or not.
+Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+---
+ include/linux/videodev2.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-So is it true that if there's the other chip with similar
-functionality I have to implement support for, I'll have to pretty
-much duplicate your line discipline driver?
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 5f6f470..5ab66a9 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -932,6 +932,7 @@ struct v4l2_ext_controls {
+ #define V4L2_CTRL_CLASS_MPEG 0x00990000	/* MPEG-compression controls */
+ #define V4L2_CTRL_CLASS_CAMERA 0x009a0000	/* Camera class controls */
+ #define V4L2_CTRL_CLASS_FM_TX 0x009b0000	/* FM Modulator control class */
++#define V4L2_CTRL_CLASS_FM_RX 0x009c0000	/* FM Tuner control class */
+ 
+ #define V4L2_CTRL_ID_MASK      	  (0x0fffffff)
+ #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
+@@ -1304,6 +1305,10 @@ enum  v4l2_exposure_auto_type {
+ #define V4L2_CID_FM_TX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_TX | 0x900)
+ #define V4L2_CID_FM_TX_CLASS			(V4L2_CTRL_CLASS_FM_TX | 1)
+ 
++/* FM Tuner class control IDs */
++#define V4L2_CID_FM_RX_CLASS_BASE            (V4L2_CTRL_CLASS_FM_RX | 0x900)
++#define V4L2_CID_FM_RX_CLASS                 (V4L2_CTRL_CLASS_FM_RX | 1)
++
+ #define V4L2_CID_RDS_TX_DEVIATION		(V4L2_CID_FM_TX_CLASS_BASE + 1)
+ #define V4L2_CID_RDS_TX_PI			(V4L2_CID_FM_TX_CLASS_BASE + 2)
+ #define V4L2_CID_RDS_TX_PTY			(V4L2_CID_FM_TX_CLASS_BASE + 3)
+@@ -1333,6 +1338,9 @@ enum v4l2_preemphasis {
+ #define V4L2_CID_TUNE_POWER_LEVEL		(V4L2_CID_FM_TX_CLASS_BASE + 113)
+ #define V4L2_CID_TUNE_ANTENNA_CAPACITOR		(V4L2_CID_FM_TX_CLASS_BASE + 114)
+ 
++#define V4L2_CID_RSSI_THRESHOLD		(V4L2_CID_FM_RX_CLASS_BASE + 2)
++#define V4L2_CID_TUNE_AF                       (V4L2_CID_FM_RX_CLASS_BASE + 3)
++
+ /*
+  *	T U N I N G
+  */
+-- 
+1.5.6.3
 
-Isn't it better to have a new line discipline that the standard
-drivers (H4, LL, ...) will be applicable to?
-
-~Vitaly
