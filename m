@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0LCRur (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 12:50:47 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56214 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab0LCRup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 12:50:45 -0500
-Date: Fri, 3 Dec 2010 09:48:44 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Steve French <sfrench@samba.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: linux-next: Tree for December 3 (cifs)
-Message-Id: <20101203094844.68f2bc40.randy.dunlap@oracle.com>
-In-Reply-To: <20101203130440.9f89dd31.sfr@canb.auug.org.au>
-References: <20101203130440.9f89dd31.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753690Ab0LCRyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 12:54:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751550Ab0LCRyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 12:54:09 -0500
+Date: Fri, 3 Dec 2010 12:54:01 -0500
+From: Neil Horman <nhorman@redhat.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Maxim Uvarov <muvarov@gmail.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kdump broken on 2.6.37-rc4
+Message-ID: <20101203175401.GE28603@hmsreliant.think-freely.org>
+References: <20101203111623.GA2741@redhat.com>
+ <AANLkTi=Xvbi5M_cNRL=wC+uwksG08SiCyWcqdmwB_5TU@mail.gmail.com>
+ <20101203171147.GA2299@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101203171147.GA2299@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Dec 2010 13:04:40 +1100 Stephen Rothwell wrote:
-
-> Hi all,
+On Fri, Dec 03, 2010 at 06:11:48PM +0100, Stanislaw Gruszka wrote:
+> On Fri, Dec 03, 2010 at 06:46:09PM +0300, Maxim Uvarov wrote:
+> > 2010/12/3 Stanislaw Gruszka <sgruszka@redhat.com>:
+> > > On my T-60 laptop, i686 system with 2.6.37-rc4 kernel,
+> > > "echo c > /proc/sysrq-trigger" just hung the system. Kdump
+> > > works on 2.6.36. Is this known issue? If not, what info
+> > > I should provide to solve it (I think the easiest way
+> > > to solve the problem would be bisect) ?
+> > >
+> > > Stanislaw
+> > >
+> > 
+> > I tested x86 QEMU yesterday with the latest git. It worked.
+> > Might be something target specific.., What does console print?
 > 
-> Changes since 20101202:
+> Here is the photo 
+> http://people.redhat.com/sgruszka/20101203_005.jpg
+> 
+> There are two BUGs, first "sleeping function called from invalid
+> context" and then "unable to handle null pointer dereference".
+> 
+The warning about sleeping is an artifact of the fact that we panic the box with
+irqs disabled I think (although I would think the fault handler would have
+re-enabled them properly).  Not sure what the NULL pointer is from
+Neil
 
-
-When CIFS_EXPERIMENTAL is not enabled:
-
-(.text+0xdf6c9): undefined reference to `get_cifs_acl'
-
-from fs/cifs/xattr.c:cifs_getxattr()
-
-
-CONFIG_CIFS=y
-# CONFIG_CIFS_STATS is not set
-CONFIG_CIFS_WEAK_PW_HASH=y
-# CONFIG_CIFS_UPCALL is not set
-CONFIG_CIFS_XATTR=y
-CONFIG_CIFS_POSIX=y
-# CONFIG_CIFS_DEBUG2 is not set
-# CONFIG_CIFS_DFS_UPCALL is not set
-CONFIG_CIFS_FSCACHE=y
-CONFIG_CIFS_ACL=y
-# CONFIG_CIFS_EXPERIMENTAL is not set
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> Stanislaw
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
