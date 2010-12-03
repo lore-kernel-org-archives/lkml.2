@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab0LCXhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 18:37:40 -0500
-Received: from fmmailgate03.web.de ([217.72.192.234]:32792 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab0LCXhh (ORCPT
+	id S1754119Ab0LCXhj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 18:37:39 -0500
+Received: from fmmailgate02.web.de ([217.72.192.227]:44053 "EHLO
+	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab0LCXhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Dec 2010 18:37:37 -0500
 From: Jan Kiszka <jan.kiszka@web.de>
@@ -13,81 +13,48 @@ To: Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
 Cc: linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
         Tom Lyon <pugs@cisco.com>,
         Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [PATCH 1/5] genirq: Pass descriptor to __free_irq
-Date: Sat,  4 Dec 2010 00:37:27 +0100
-Message-Id: <26d120c867374ef2b16d2432ca9a77fed11c230b.1291419444.git.jan.kiszka@web.de>
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 0/5] KVM&genirq: Enable adaptive IRQ sharing for passed-through devices
+Date: Sat,  4 Dec 2010 00:37:26 +0100
+Message-Id: <cover.1291419444.git.jan.kiszka@web.de>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1291419444.git.jan.kiszka@web.de>
-References: <cover.1291419444.git.jan.kiszka@web.de>
-In-Reply-To: <cover.1291419444.git.jan.kiszka@web.de>
-References: <cover.1291419444.git.jan.kiszka@web.de>
-X-Provags-ID: V01U2FsdGVkX18OfzZcswQxRgK22V9cZYTIMhHfhpIylS25vn92
-	QYArKvCby/c0jHGIOtCcE2fKStFu/X6V4rYVfzXZxD930A4owF
-	fQNG8H2UE=
+X-Provags-ID: V01U2FsdGVkX19nXzKtwTs6FXNfRb+o0Enf5yqBm9Va6ISBe6fO
+	fPfjIsvz3e96TiAmTkDNqP55yfltAG6iMdsbPVFYuFRMYSHZd9
+	PfcF/ENHo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+Besides 3 cleanup patches, this series consists of two major changes.
+The first introduces an interrupt sharing notifier to the genirq
+subsystem. It fires when an interrupt line is about to be use by more
+than one driver or the last but one user called free_irq.
 
-One caller of __free_free already has to resolve and check the irq
-descriptor. So this small cleanup consistently pushes irq_to_desc and
-the NULL check to the call site to avoid redundant work.
+The second major change makes use of this interface in KVM's PCI pass-
+through subsystem. KVM has to keep the interrupt source disabled while
+calling into the guest to handle the event. This can be done at device
+or line level. The former is required to share the interrupt line, the
+latter is an order of magnitude faster (see patch 3 for details).
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- kernel/irq/manage.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+Beside pass-through support of KVM, further users of the IRQ notifier
+could become VFIO (not yet mainline) and uio_pci_generic which have to
+resolve the same conflict.
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 5f92acc..6341765 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -879,17 +879,14 @@ EXPORT_SYMBOL_GPL(setup_irq);
-  * Internal function to unregister an irqaction - used to free
-  * regular and special interrupts that are part of the architecture.
-  */
--static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
-+static struct irqaction *__free_irq(struct irq_desc *desc, void *dev_id)
- {
--	struct irq_desc *desc = irq_to_desc(irq);
- 	struct irqaction *action, **action_ptr;
-+	unsigned int irq = desc->irq_data.irq;
- 	unsigned long flags;
- 
- 	WARN(in_interrupt(), "Trying to free IRQ %d from IRQ context!\n", irq);
- 
--	if (!desc)
--		return NULL;
--
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 
- 	/*
-@@ -977,7 +974,12 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
-  */
- void remove_irq(unsigned int irq, struct irqaction *act)
- {
--	__free_irq(irq, act->dev_id);
-+	struct irq_desc *desc = irq_to_desc(irq);
-+
-+	if (!desc)
-+		return;
-+
-+	__free_irq(desc, act->dev_id);
- }
- EXPORT_SYMBOL_GPL(remove_irq);
- 
-@@ -1003,7 +1005,7 @@ void free_irq(unsigned int irq, void *dev_id)
- 		return;
- 
- 	chip_bus_lock(desc);
--	kfree(__free_irq(irq, dev_id));
-+	kfree(__free_irq(desc, dev_id));
- 	chip_bus_sync_unlock(desc);
- }
- EXPORT_SYMBOL(free_irq);
--- 
-1.7.1
+Jan Kiszka (5):
+  genirq: Pass descriptor to __free_irq
+  genirq: Introduce interrupt sharing notifier
+  KVM: Split up MSI-X assigned device IRQ handler
+  KVM: Clean up unneeded void pointer casts
+  KVM: Allow host IRQ sharing for passed-through PCI 2.3 devices
+
+ Documentation/kvm/api.txt |   25 +++
+ arch/x86/kvm/x86.c        |    1 +
+ include/linux/interrupt.h |   21 +++
+ include/linux/irqdesc.h   |    9 +
+ include/linux/kvm.h       |    6 +
+ include/linux/kvm_host.h  |    4 +
+ kernel/irq/irqdesc.c      |    6 +
+ kernel/irq/manage.c       |  174 ++++++++++++++++++--
+ virt/kvm/assigned-dev.c   |  420 +++++++++++++++++++++++++++++++++++++++------
+ 9 files changed, 606 insertions(+), 60 deletions(-)
 
