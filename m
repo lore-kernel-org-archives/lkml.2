@@ -1,193 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab0LCOdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 09:33:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758531Ab0LCOc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 09:32:59 -0500
-Date: Fri, 3 Dec 2010 09:32:57 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] maximize dispatching in block throttle
-Message-ID: <20101203143256.GA30407@redhat.com>
-References: <AANLkTi=aqMR0uNCgz40pdUG1288CMxLRnZdVxzZuBzGw@mail.gmail.com>
- <20101130145712.GD26758@redhat.com>
- <AANLkTik_x-SSU1aazJ3ZqJdsbq11vh3+=ikwbpxNcRYh@mail.gmail.com>
- <20101201144128.GC4672@redhat.com>
- <AANLkTinGChRaNUeH+AzS+6Y3Au+0BR1Mz97W8aDSoyQf@mail.gmail.com>
+	id S1758628Ab0LCOdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 09:33:21 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52544 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758617Ab0LCOdT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 09:33:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinGChRaNUeH+AzS+6Y3Au+0BR1Mz97W8aDSoyQf@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <E3D0B314C5E55043AC59C5FBDB298310EE11A5@008-AM1MPN1-005.mgdnok.nokia.com>
+References: <4CEE4D6E.4030204@nokia.com>
+	<4CF7D16D.4060009@schaufler-ca.com>
+	<alpine.LRH.2.00.1012030823150.25347@tundra.namei.org>
+	<alpine.LRH.2.00.1012030923560.26002@tundra.namei.org>
+	<E3D0B314C5E55043AC59C5FBDB298310EE11A5@008-AM1MPN1-005.mgdnok.nokia.com>
+Date: Fri, 3 Dec 2010 09:33:17 -0500
+Message-ID: <AANLkTikjQuwvD4A0do0RAYheDKFeeXndjtDQvQC2WXEw@mail.gmail.com>
+Subject: Re: VS: [PATCH] Smack: label for task objects (retry 2)
+From: Eric Paris <eparis@parisplace.org>
+To: ext-jarkko.2.sakkinen@nokia.com
+Cc: jmorris@namei.org, casey@schaufler-ca.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 10:26:50PM +0800, Hillf Danton wrote:
-> On Wed, Dec 1, 2010 at 10:41 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Wed, Dec 01, 2010 at 09:30:00PM +0800, Hillf Danton wrote:
-> >> On Tue, Nov 30, 2010 at 10:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> > On Fri, Nov 26, 2010 at 10:46:01PM +0800, Hillf Danton wrote:
-> >> >> When dispatching bio, the quantum is divided into read/write budgets,
-> >> >> and dispatching for write could not exceed the write budget even if
-> >> >> the read budget is not exhausted, either dispatching for read.
-> >> >>
-> >> >> It is changed to exhaust the quantum, if possible, in this work for
-> >> >> dispatching bio.
-> >> >>
-> >> >> Though it is hard to understand that 50/50 division is not selected,
-> >> >> the difference between divisions could impact little on dispatching as
-> >> >> much as quantum allows then.
-> >> >>
-> >> >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> >> >> ---
-> >> >
-> >> > Hi Hillf,
-> >> >
-> >> > Even if there are not enough READS/WRITES to consume the quantum, I don't
-> >> > think that it changes anyting much. The next dispatch round will be
-> >>
-> >> Why not exhaust quantum this round directly if not throttled?
-> >>
-> >
-> > Yes we can do that. I am wondering what do we gain by putting extra code
-> > in?
-> >
-> >> > scheduled almost immediately (If there are bios which are ready to
-> >> > be dispatched). Look at throtl_schedule_next_dispatch().
-> >> >
-> >> > Have you noticed some issues/improvements with this patch?
-> >>
-> >> Originally I wanted to get 75/25 division parameterized through sysfs or proc,
-> >> but I changed mind since exhausting quantum is simpler and much applicable.
-> >
-> > But these are two different things isn't it?
-> >
-> > We can introduce some sysfs tunables (if need be) so that a user can decide
-> > the division of READS/WRITES.
-> >
-> >>
-> >> As you see, the application environments change from one user to another,
-> >> even though are more latency sensitive.
-> >>
-> >> It looks nicer, I think, to provide both the default division and the
-> >> methods to
-> >> change for users to play their games.
-> >
-> > Yep, tunables can help here and introducing tunables is easy. At the same
-> 
-> If it is too hard, please change to what is more valuable.
-> Hillf
+On Fri, Dec 3, 2010 at 1:27 AM,  <ext-jarkko.2.sakkinen@nokia.com> wrote:
+> Hi
+>
+> I don't like to whine about unnecessary things but it would really nice to get into the author field :) The patch that I sent to list did have merge issues. I  don't know what messed it.
+>
+> Casey, I propose we take some steps back and fix the workflow so next time things will go smoother. I propose that I create my own tree from your tree and put patch there and you can then cherry pick or merge my patch to his tree.  Then James can pick the patch from your tree.
+>
+> BR, Jarkko
 
-It should not be too hard. IO schedulers already create
-/sys/block/<dev>/queue/iosched/ dir and we can create <dev>/queue/throttle/
-dir and export throttle related tunables there.
+You can't apply Sign-off's on a git-pull/git-merge.  I'm not sure if
+James cares that he didn't sign the patch off either.  That doesn't
+mean one can't do it, it just means it isn't an easy workflow.
 
-What I am not clear about is that what problem are you running into.
-Tunbales and your patch to fill the quantum are two different things. So
-how can both the things solve your problem. One of these should.
+If git tree owners use git am to apply mboxes (rather than patch + git
+commit) the author/time/date type stuff will be correct.  The fact
+that the original author forgot the signed-off is a problem unrelated
+to git usage.
 
-So if you can explain the issue you are facing with some more details, it
-will help. I am not sure how your patch of filling the quantum with
-requests of other direction is helping you?
+Now how could security set up git trees?  That is the question.
 
-Vivek
+1) 'child' trees (I see child tree as the SELinux or SMACK tree)
+should NEVER be based on something newer than security-testing.
+Personally I don't think security-testing should merge Linus' except
+maybe 2 times per upstream kernel cycle.  At release and then about
+-rc4 or 5.  If we are doing things right security-testing shouldn't
+need to merge ever, but I digress.  Linus would MUCH rather deal with
+conflicts himself than have development trees merge his work quickly
+or regularly.  That's a problem for James to deal with I guess.  We as
+child tree owners need to just base off of James.
 
-> 
-> > time I prefer to intoroduce tunables only on need basis otherwise it
-> > runs the risk of too many tunables which are not being used.
-> >
-> > So, conceptually this patch looks fine to me. Jeff Moyer also raised the
-> > same question of why not fill up the quantum if READ/WRITE are not using
-> > their quota. So I think it does not hurt to take this patch in.
-> >
-> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> >
-> > Thanks
-> > Vivek
-> >
-> >>
-> >> Thanks
-> >> Hillf
-> >>
-> >> >
-> >> > Generally READS are more latency sensitive as compared to WRITE hence
-> >> > I thought of dispatching more READS per quantum.
-> >> >
-> >> > Thanks
-> >> > Vivek
-> >> >
-> >> >>
-> >> >> --- a/block/blk-throttle.c    2010-11-01 19:54:12.000000000 +0800
-> >> >> +++ b/block/blk-throttle.c    2010-11-26 21:49:00.000000000 +0800
-> >> >> @@ -647,11 +647,16 @@ static int throtl_dispatch_tg(struct thr
-> >> >>       unsigned int max_nr_reads = throtl_grp_quantum*3/4;
-> >> >>       unsigned int max_nr_writes = throtl_grp_quantum - nr_reads;
-> >> >>       struct bio *bio;
-> >> >> +     int read_throttled = 0, write_throttled = 0;
-> >> >>
-> >> >>       /* Try to dispatch 75% READS and 25% WRITES */
-> >> >> -
-> >> >> + try_read:
-> >> >>       while ((bio = bio_list_peek(&tg->bio_lists[READ]))
-> >> >> -             && tg_may_dispatch(td, tg, bio, NULL)) {
-> >> >> +             && ! read_throttled) {
-> >> >> +             if (! tg_may_dispatch(td, tg, bio, NULL)) {
-> >> >> +                     read_throttled = 1;
-> >> >> +                     break;
-> >> >> +             }
-> >> >>
-> >> >>               tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
-> >> >>               nr_reads++;
-> >> >> @@ -659,9 +664,15 @@ static int throtl_dispatch_tg(struct thr
-> >> >>               if (nr_reads >= max_nr_reads)
-> >> >>                       break;
-> >> >>       }
-> >> >> -
-> >> >> +     if (! bio)
-> >> >> +             read_throttled = 1;
-> >> >> + try_write:
-> >> >>       while ((bio = bio_list_peek(&tg->bio_lists[WRITE]))
-> >> >> -             && tg_may_dispatch(td, tg, bio, NULL)) {
-> >> >> +             && ! write_throttled) {
-> >> >> +             if (! tg_may_dispatch(td, tg, bio, NULL)) {
-> >> >> +                     write_throttled = 1;
-> >> >> +                     break;
-> >> >> +             }
-> >> >>
-> >> >>               tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
-> >> >>               nr_writes++;
-> >> >> @@ -669,7 +680,23 @@ static int throtl_dispatch_tg(struct thr
-> >> >>               if (nr_writes >= max_nr_writes)
-> >> >>                       break;
-> >> >>       }
-> >> >> +     if (! bio)
-> >> >> +             write_throttled = 1;
-> >> >> +
-> >> >> +     if (write_throttled && read_throttled)
-> >> >> +             goto out;
-> >> >>
-> >> >> +     if (! (throtl_grp_quantum > nr_writes + nr_reads))
-> >> >> +             goto out;
-> >> >> +
-> >> >> +     if (read_throttled) {
-> >> >> +             max_nr_writes = throtl_grp_quantum - nr_reads;
-> >> >> +             goto try_write;
-> >> >> +     } else {
-> >> >> +             max_nr_reads = throtl_grp_quantum - nr_writes;
-> >> >> +             goto try_read;
-> >> >> +     }
-> >> >> + out:
-> >> >>       return nr_reads + nr_writes;
-> >> >>  }
-> >> >> --
-> >> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> >> the body of a message to majordomo@vger.kernel.org
-> >> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >> >
-> >
+2) If #1 is true and you want to get Sign-off's in your parent tree
+you can set up the child trees as a remote.  Then you can use:
+
+git format-patch -k --stdout HEAD..remotes/[child]/[branch] | git am
+-3 -k --whitespace=fix -s
+
+Where you obviously set child/branch appropriately.  This will apply
+the patches found in the child tree but not in the parent tree (which
+is the reason the child must be behind) one at a time and will add
+your Signed-off.
+
+The problem with this method is that it makes it harder to check if
+the pull request was done properly.  A merge gives a unified diff that
+can be compared to a properly formated (git request-pull) pull request
+to make it easy for the puller to verify he pulled what he was ask to
+pull.  So the parent tree has to do that unified diff themselves and
+double check.
+
+Our tree is so simple I don't really understand why we need all this,
+but if we need it, lets figure out what works best for everyone!
+
+-Eric
