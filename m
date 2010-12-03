@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab0LCP1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:27:38 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:35235 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751349Ab0LCP1h (ORCPT
+	id S1752072Ab0LCP3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:29:07 -0500
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:57523 "EHLO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab0LCP3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:27:37 -0500
-Date: Fri, 3 Dec 2010 10:27:33 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC][PATCH 1/2 v2] tracing: Add TRACE_EVENT_CONDITIONAL()
-Message-ID: <20101203152733.GA25580@Krystal>
-References: <20101203040358.955427199@goodmis.org> <20101203040822.144348122@goodmis.org> <20101203045402.GA29609@Krystal> <1291385344.3228.4.camel@gandalf.stny.rr.com>
+	Fri, 3 Dec 2010 10:29:06 -0500
+Message-ID: <4CF90CBD.9090204@ge.com>
+Date: Fri, 03 Dec 2010 15:29:01 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291385344.3228.4.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:23:47 up 9 days, 20:26,  3 users,  load average: 0.06, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>, "Emilio G. Cota" <cota@braap.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/vme_user: add missing calls to vme_master_free
+ calls in .remove
+References: <1288055476-19438-26-git-send-email-cota@braap.org> <20101203142051.17155.30135.stgit@ES-BJ21R4J> <20101203144412.GA32222@kroah.com>
+In-Reply-To: <20101203144412.GA32222@kroah.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Dec 2010 15:29:04.0100 (UTC) FILETIME=[D14CA240:01CB92FE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-12-02 at 23:54 -0500, Mathieu Desnoyers wrote:
-[...]
-> > 
-> > One small documentation-related detail: my guess is that you are leaving
-> > "cond" without likely/unlikely builtin expect purposefully so that we
-> > can write, in TP_CONDITION:
-> > 
-> >   TP_CONDITION(unlikely(someparam)),
+On 03/12/10 14:44, Greg KH wrote:
+> On Fri, Dec 03, 2010 at 02:20:51PM +0000, Martyn Welch wrote:
+>> From: Emilio G. Cota <cota@braap.org>
+>>
+>> Signed-off-by: Emilio G. Cota <cota@braap.org>
+>> Acked-by: Martyn Welch <martyn.welch@ge.com>
+>> ---
 > 
-> I actually think this is an abuse of "unlikely".
+> Does this need to be in .37 or can it wait for .38?
+> 
 
-Why are you considering this an abuse ?
+Given that this is in the vme_user device in the staging tree, I think
+it can safely wait until .38.
 
-Mathieu
+Martyn
+
+> thanks,
+> 
+> greg k-h
+
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
