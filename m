@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab0LCPHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:07:09 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:35302 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751377Ab0LCPHG (ORCPT
+	id S1752576Ab0LCPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:07:28 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:54200 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750837Ab0LCPHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:07:06 -0500
+	Fri, 3 Dec 2010 10:07:22 -0500
 From: Sundar Iyer <sundar.iyer@stericsson.com>
 To: <linux-arm-kernel@lists.infradead.org>, <dmitry.torokhov@gmail.com>,
         <sameo@linux.intel.com>, <ben-linux@fluff.org>
 Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Sundar Iyer <sundar.iyer@stericsson.com>
-Subject: [PATCH 07/20] mfd/tc35892: rename tc35892 core driver to tc3589x
-Date: Fri, 3 Dec 2010 20:35:40 +0530
-Message-ID: <1291388753-14662-8-git-send-email-sundar.iyer@stericsson.com>
+Subject: [PATCH 18/20] mach-ux500: explicit enable MTU TCR in the kernel
+Date: Fri, 3 Dec 2010 20:35:51 +0530
+Message-ID: <1291388753-14662-19-git-send-email-sundar.iyer@stericsson.com>
 X-Mailer: git-send-email 1.7.2.dirty
 In-Reply-To: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
 References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
@@ -24,95 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the tc35892 core/gpio drivers to tc3589x to include
-new variants in the same mfd core
+PRCM_TCR enables the various timers in the system. This must be achieved
+before any of the MTUs are usable for kernel usage. Explicit enabling of
+this in the kernel makes it independent of bootloader actions.
 
 Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
 ---
- drivers/gpio/Kconfig                            |    8 ++++----
- drivers/gpio/Makefile                           |    2 +-
- drivers/gpio/{tc35892-gpio.c => tc3589x-gpio.c} |    0
- drivers/mfd/Kconfig                             |    6 +++---
- drivers/mfd/Makefile                            |    2 +-
- drivers/mfd/{tc35892.c => tc3589x.c}            |    0
- 6 files changed, 9 insertions(+), 9 deletions(-)
- rename drivers/gpio/{tc35892-gpio.c => tc3589x-gpio.c} (100%)
- rename drivers/mfd/{tc35892.c => tc3589x.c} (100%)
+ arch/arm/mach-ux500/clock.c |   49 ++++++++-----------------------------------
+ 1 files changed, 9 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 3143ac7..082495b 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -230,11 +230,11 @@ config GPIO_STMPE
- 	  This enables support for the GPIOs found on the STMPE I/O
- 	  Expanders.
+diff --git a/arch/arm/mach-ux500/clock.c b/arch/arm/mach-ux500/clock.c
+index 531de5c..6657b05 100644
+--- a/arch/arm/mach-ux500/clock.c
++++ b/arch/arm/mach-ux500/clock.c
+@@ -132,7 +132,7 @@ static unsigned long clk_mtu_get_rate(struct clk *clk)
+ {
+ 	void __iomem *addr = __io_address(UX500_PRCMU_BASE)
+ 		+ PRCM_TCR;
+-	u32 tcr = readl(addr);
++	u32 tcr;
+ 	int mtu = (int) clk->data;
+ 	/*
+ 	 * One of these is selected eventually
+@@ -143,6 +143,14 @@ static unsigned long clk_mtu_get_rate(struct clk *clk)
+ 	unsigned long mturate;
+ 	unsigned long retclk;
  
--config GPIO_TC35892
--	bool "TC35892 GPIOs"
--	depends on MFD_TC35892
-+config GPIO_TC3589X
-+	bool "TC3589X GPIOs"
-+	depends on MFD_TC3589X
- 	help
--	  This enables support for the GPIOs found on the TC35892
-+	  This enables support for the GPIOs found on the TC3589X
- 	  I/O Expander.
++	/*
++	 * On a startup, always conifgure the TCR to the doze mode;
++	 * bootloaders do it for us. Do this in the kernel too.
++	 */
++	writel(PRCM_TCR_DOZE_MODE, addr);
++
++	tcr = readl(addr);
++
+ 	/* Get the rate from the parent as a default */
+ 	if (clk->parent_periph)
+ 		mturate = clk_get_rate(clk->parent_periph);
+@@ -152,45 +160,6 @@ static unsigned long clk_mtu_get_rate(struct clk *clk)
+ 		/* We need to be connected SOMEWHERE */
+ 		BUG();
  
- config GPIO_TWL4030
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index bdf3dde..39bfd7a 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -24,7 +24,7 @@ obj-$(CONFIG_GPIO_PCF857X)	+= pcf857x.o
- obj-$(CONFIG_GPIO_PCH)		+= pch_gpio.o
- obj-$(CONFIG_GPIO_PL061)	+= pl061.o
- obj-$(CONFIG_GPIO_STMPE)	+= stmpe-gpio.o
--obj-$(CONFIG_GPIO_TC35892)	+= tc35892-gpio.o
-+obj-$(CONFIG_GPIO_TC3589X)	+= tc3589x-gpio.o
- obj-$(CONFIG_GPIO_TIMBERDALE)	+= timbgpio.o
- obj-$(CONFIG_GPIO_TWL4030)	+= twl4030-gpio.o
- obj-$(CONFIG_GPIO_UCB1400)	+= ucb1400_gpio.o
-diff --git a/drivers/gpio/tc35892-gpio.c b/drivers/gpio/tc3589x-gpio.c
-similarity index 100%
-rename from drivers/gpio/tc35892-gpio.c
-rename to drivers/gpio/tc3589x-gpio.c
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index c856aa7..a4c2e3e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -218,12 +218,12 @@ config MFD_STMPE
- 		Keypad: stmpe-keypad
- 		Touchscreen: stmpe-ts
- 
--config MFD_TC35892
--	bool "Support Toshiba TC35892"
-+config MFD_TC3589X
-+	bool "Support Toshiba TC35892 and variants"
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
- 	help
--	  Support for the Toshiba TC35892 I/O Expander.
-+	  Support for the Toshiba TC35892 and variants I/O Expander.
- 
- 	  This driver provides common support for accessing the device,
- 	  additional drivers must be enabled in order to use the
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 67c8bcb..e42e0889 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -16,7 +16,7 @@ obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
- obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
- 
- obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
--obj-$(CONFIG_MFD_TC35892)	+= tc35892.o
-+obj-$(CONFIG_MFD_TC3589X)	+= tc3589x.o
- obj-$(CONFIG_MFD_T7L66XB)	+= t7l66xb.o tmio_core.o
- obj-$(CONFIG_MFD_TC6387XB)	+= tc6387xb.o tmio_core.o
- obj-$(CONFIG_MFD_TC6393XB)	+= tc6393xb.o tmio_core.o
-diff --git a/drivers/mfd/tc35892.c b/drivers/mfd/tc3589x.c
-similarity index 100%
-rename from drivers/mfd/tc35892.c
-rename to drivers/mfd/tc3589x.c
+-	/*
+-	 * Are we in doze mode?
+-	 * In this mode the parent peripheral or the fixed 32768 Hz
+-	 * clock is fed into the block.
+-	 */
+-	if (!(tcr & PRCM_TCR_DOZE_MODE)) {
+-		/*
+-		 * Here we're using the clock input from the APE ULP
+-		 * clock domain. But first: are the timers stopped?
+-		 */
+-		if (tcr & PRCM_TCR_STOPPED) {
+-			clk32k = 0;
+-			mturate = 0;
+-		} else {
+-			/* Else default mode: 0 and 2.4 MHz */
+-			clk32k = 0;
+-			if (cpu_is_u5500())
+-				/* DB5500 divides by 8 */
+-				mturate /= 8;
+-			else if (cpu_is_u8500ed()) {
+-				/*
+-				 * This clocking setting must not be used
+-				 * in the ED chip, it is simply not
+-				 * connected anywhere!
+-				 */
+-				mturate = 0;
+-				BUG();
+-			} else
+-				/*
+-				 * In this mode the ulp38m4 clock is divided
+-				 * by a factor 16, on the DB8500 typically
+-				 * 38400000 / 16 ~ 2.4 MHz.
+-				 * TODO: Replace the constant with a reference
+-				 * to the ULP source once this is modeled.
+-				 */
+-				mturate = 38400000 / 16;
+-		}
+-	}
+-
+ 	/* Return the clock selected for this MTU */
+ 	if (tcr & (1 << mtu))
+ 		retclk = clk32k;
 -- 
 1.7.2.dirty
 
