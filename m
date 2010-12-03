@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0LCTha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 14:37:30 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:54083 "EHLO mail.asbjorn.biz"
+	id S1753512Ab0LCUDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 15:03:19 -0500
+Received: from mx2.compro.net ([12.186.155.4]:11807 "EHLO mx2.compro.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753323Ab0LCTh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 14:37:28 -0500
-Message-ID: <4CF946F5.6040103@asbjorn.biz>
-Date: Fri, 03 Dec 2010 19:37:25 +0000
-From: =?UTF-8?B?QXNiasO4cm4gU2xvdGggVMO4bm5lc2Vu?= <asbjorn@asbjorn.biz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+	id S1751826Ab0LCUDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 15:03:18 -0500
+X-Greylist: delayed 854 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Dec 2010 15:03:18 EST
+X-IronPort-AV: E=Sophos;i="4.59,294,1288584000"; 
+   d="scan'208";a="6081046"
+Message-ID: <4CF949AF.1000502@compro.net>
+Date: Fri, 03 Dec 2010 14:49:03 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: maximilian attems <max@stro.at>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
-Subject: Re: [PATCH] kbuild, deb-pkg: support overriding userland architecture
-References: <4CD5A6C8.8030603@asbjorn.biz> <1289070320-20726-1-git-send-email-asbjorn@asbjorn.biz> <20101203174800.GA952@stro.at>
-In-Reply-To: <20101203174800.GA952@stro.at>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: linux-kernel@vger.kernel.org
+Subject: kernel tree "diff -urN" anomaly?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Max,
+I start with two clean identical 2.6.36.1 kernel trees (different names
+of coarse). I build one of them. I then do a "make clean mrproper" in
+the tree I built. Why then does the diff command in the subject line
+find the following files changed?
 
-On 12/03/2010 05:48 PM, maximilian attems wrote:
-> On Sat, 06 Nov 2010, Asbjoern Sloth Toennesen wrote:
->> Usefull if building for sparc64 userland, because the
->> sparc and sparc64 userlands use the same 64-bit kernel,
->> making it impossible to always select the correct userland
->> architecture for the resulting debian package.
->>
->> Might also be usefull, if you want a i386 userland with a amd64 kernel.
->>
->> Example usage:
->> 	make DEBARCH=i386 deb-pkg
->>
->> This patch is based on my 'kbuild, deb-pkg: select
->> userland architecture based on UTS_MACHINE' patch.
->
-> care to repost with KBUILD_ prefix, to keep namespace sane and mention
-> in  Documentation/kbuild/kbuild.txt together with the relevant acks.
-> It be really cool to have that in next 2.6.38.
+drivers/gpu/drm/radeon/evergreen_reg_safe.h
+drivers/gpu/drm/radeon/r100_reg_safe.h
+drivers/gpu/drm/radeon/r200_reg_safe.h
+drivers/gpu/drm/radeon/r300_reg_safe.h
+divers/gpu/drm/radeon/r420_reg_safe.h
+drivers/gpu/drm/radeon/r600_reg_safe.h
+drivers/gpu/drm/radeon/rn50_reg_safe.h
+drivers/gpu/drm/radeon/rs600_reg_safe.h
+drivers/gpu/drm/radeon/rv515_reg_safe.h
 
-Sure its on my todo for the weekend, have just had an insane week.
-
-I just noticed the armhf port effort yesterday, that would also need
-this patch, I will add your Ack-by when sending the updated patch.
-
-I also have a bunch of e1000e cleanups scheduled for 2.6.38, will submit
-to netdev this weekend as well.
-
-Thanks, for the reminding effort.
-
--- 
-Best regards
-Asbjørn Sloth Tønnesen
-asbjorn.biz
+Thanks
+Mark
