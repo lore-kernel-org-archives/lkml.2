@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab0LCNjI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 08:39:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50735 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab0LCNjG (ORCPT
+	id S1758092Ab0LCNk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 08:40:58 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44581 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab0LCNk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 08:39:06 -0500
-Date: Fri, 3 Dec 2010 14:39:03 +0100
-From: Holger Eitzenberger <holger@eitzenberger.org>
-To: netfilter-devel <netfilter-devel@lists.netfilter.org>
-Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: ctnetlink loop
-Message-ID: <20101203133903.GG13225@mail.eitzenberger.org>
-Mail-Followup-To: netfilter-devel <netfilter-devel@lists.netfilter.org>,
-	netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+	Fri, 3 Dec 2010 08:40:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Tgby+jE9aQd0EtFtzAunamUTbpe/zeDxWt94j3Kme4V+y55+r/zXPuRc7ufbHiWRrl
+         VB94SoUzeA9pyFeduZCTwR+rMu+mcSXTZV/djrXHlJWPHa8aGctncInzZZjYhD2m0wa2
+         oKnyrpKDYwy8037D2PROEclF38EjNEFuleNJc=
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Provags-ID: V02:K0:WyXh7Uk24QKKweYUvXbGUbIfeSJiLWw7gCuZOjWmu3b
- A6SOA/x6oaHvwXkEsiJ+elFJf2JTTJgXd9crB0lO5tqVw4VS81
- /1ne9WCGVhb4MZVR8Xyx6icmDRYa5JvMh8XBBi5eJN9omwW3yY
- PRZmqg1m3cl/RnWIM0PWzXCczblLZ8idQvLz2fz6VUcMWvrqKy
- huCBCPrvIB+BxMHFlWg3FFZwO1oDG0g0a8LouOEQ4I=
+Date: Fri, 3 Dec 2010 14:40:56 +0100
+Message-ID: <AANLkTimL=UX-FpNL7gqPnThmqK-BuZQJStGLrwwq2O0w@mail.gmail.com>
+Subject: dma_unmap_sg - what number of entries is to be passed as parameter really?
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: linux kernel <linux-kernel@vger.kernel.org>,
+        David Brownell <david-b@pacbell.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: per.forlin@linaro.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi,
-
-I see a problem with how ctnetlink GET requests are being
-processed in the kernel (2.6.32.24) under high load.
-
-Initially I saw this problem on a large performance testing
-system when getting HTTP proxy performance numbers, but lately
-there have been two reports on large customers boxes (both
-many-core with 10G NICs).
-
-The sympton is Netlink looping around nfnetlink_rcv_msg(),
-which is just because netlink_unicast() came back with -EAGAIN
-when trying to write the newly created Netlink skb to the SK
-receive buffer in ctnetlink_get_conntrack().  In this case a
-(possibly) infinit loop is entered.  Mostly infinit in fact in
-case the userland party trying to receive those messages may
-be stuck in the sendmsg() call, being unable to read anything
-if being single threaded.
-
-I tried to reproduce several times, a few times the loop
-disappeared and the box proceeded normally after some time.
-I have no explanation for this.
-
-The attached patch tries to solve it by simple not trying
-again to netlink_unicast() the reply skb and just fail with
--ENOBUFS.  The reasoning is that at the point a Netlink overrun
-is observed it seems counter intuitive to insist on sending
-one more Netlink message.
-
-I checked for possible side effects to other Netlink requests,
-please check.
-
-The patch applies to net-next-2.6.
-
-Feedback appreciated.
-
- /holger
+Now we have a contradiction between two pieces of documentation,
+in Documentation/DMA-API.txt
 
 
---AhhlLboLdkugWU4S
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: inline; filename="nfnl-fix.diff"
+        void
+        dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+                int nhwentries, enum dma_data_direction direction)
 
-nfnetlink: avoid unbound loop on busy Netlink socket
+  Unmap the previously mapped scatter/gather list.  All the parameters
+  must be the same as those and passed in to the scatter/gather mapping
+  API.
 
-I see a problem with how ctnetlink GET requests are being
-processed in the kernel (2.6.32.24) under high load.
+  Note: <nents> must be the number you passed in, *not* the number of
+  physical entries returned.
 
-The sympton is Netlink looping around nfnetlink_rcv_msg(), which
-is just because netlink_unicast() came back with EAGAIN when
-trying to write the newly created Netlink skb to the SK receive
-buffer in ctnetlink_get_conntrack().  In this case a (possibly)
-infinit loop is entered.  Mostly infinit I think in case the
-userland party trying to receive those messages may be stuck in
-the sendmsg() call, being unable to read anything if being single
-threaded.
 
-I tried to reproduce several times, a few times the loop
-disappeared and the box proceeded normally after some minutes.
-I have no explanation for this.
+Note the last paragraph! But in arch/arm/mm/dma-mapping.c;
 
-The attached patch tries to solve it by simple not trying again
-to netlink_unicast() the reply skb and just fail with -ENOBUFS.
-The reasoning is that at the point a Netlink overrun is detected
-it seems counter intuitive to insist on sending one more Netlink
-message.
 
-Signed-off-by: Holger Eitzenberger <holger@eitzenberger.org>
+/**
+ * dma_unmap_sg - unmap a set of SG buffers mapped by dma_map_sg
+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+ * @sg: list of buffers
+ * @nents: number of buffers to unmap (returned from dma_map_sg)
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ * @dir: DMA transfer direction (same as was passed to dma_map_sg)
+ *
+ * Unmap a set of streaming mode DMA translations.  Again, CPU access
+ * rules concerning calls here are the same as for dma_unmap_single().
+ */
 
-Index: net-next-2.6/net/netfilter/nfnetlink.c
-===================================================================
---- net-next-2.6.orig/net/netfilter/nfnetlink.c	2010-12-03 14:33:32.000000000 +0100
-+++ net-next-2.6/net/netfilter/nfnetlink.c	2010-12-03 14:34:21.000000000 +0100
-@@ -138,7 +138,6 @@
- 		return 0;
- 
- 	type = nlh->nlmsg_type;
--replay:
- 	ss = nfnetlink_get_subsys(type);
- 	if (!ss) {
- #ifdef CONFIG_MODULES
-@@ -169,7 +168,7 @@
- 
- 		err = nc->call(net->nfnl, skb, nlh, (const struct nlattr **)cda);
- 		if (err == -EAGAIN)
--			goto replay;
-+			err = -ENOBUFS;
- 		return err;
- 	}
- }
+So the documentation in Documentation/ says one thing, whereas
+the ARM implementation documentation says something else.
 
---AhhlLboLdkugWU4S--
+Which one is it? (Looks like the first one from Documentation/ to me.)
+
+I will happily patch the culprit...
+
+Yours,
+Linus Walleij
