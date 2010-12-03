@@ -1,108 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab0LCNJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 08:09:59 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63062 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab0LCNJ5 (ORCPT
+	id S1755543Ab0LCNXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 08:23:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60548 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab0LCNXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 08:09:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=XYnZSC2XhUOKuNKJf3ePmXfo+21s6z/b2YqpiKSdX8sIUnZ2uCmjA+mKWo1jN/rZ+9
-         vHfF8OgrwRiDlxy9abi7eF0sGrkO/KGATt0bedQ4hWY91eQM1MxPLgkCZ0Gt6u1+y+JG
-         Q0NTGbuNsuz4YDqOT6HU9p6H7JDW8Fz8+JaH4=
-Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Toshio <andrej@ota.si>
-Cc: linux-kernel@vger.kernel.org, gvs@zemos.net,
-        Rami Rosen <ramirose@gmail.com>, netdev <netdev@vger.kernel.org>
-In-Reply-To: <0fe401cb92e7$85ba2260$912e6720$@si>
-References: <0fe401cb92e7$85ba2260$912e6720$@si>
+	Fri, 3 Dec 2010 08:23:34 -0500
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+In-Reply-To: <20101202144423.3ad1908d@annuminas.surriel.com>
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+	 <20101202144423.3ad1908d@annuminas.surriel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Dec 2010 14:09:51 +0100
-Message-ID: <1291381791.2897.250.camel@edumazet-laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 03 Dec 2010 14:23:39 +0100
+Message-ID: <1291382619.32004.2124.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 03 décembre 2010 à 13:42 +0100, Toshio a écrit :
-> I have also hit on Bug 20292 (https://bugzilla.kernel.org/show_bug.cgi?id=20292) in final 2.6.36. After investigating changes made between 2.6.35.4, which worked, and 2.6.36 which started oopsing, I think the problem was in double freeing of skb caused by change of return value for __pppoe_xmit in case of errors.
-> 
-> As it turned out this might be the cause of random BUG reports throught the kernel, whenever something touched skb. Most common BUG with my use case happened at skb_dequeue:
-> 
+On Thu, 2010-12-02 at 14:44 -0500, Rik van Riel wrote:
+				unsigned long clone_flags);
+> +
+> +#ifdef CONFIG_SCHED_HRTICK
+> +extern u64 slice_remain(struct task_struct *);
+> +extern void yield_to(struct task_struct *);
+> +#else
+> +static inline void yield_to(struct task_struct *p) yield()
+> +#endif
 
-CC netdev and Rami Rosen
+That does SCHED_HRTICK have to do with any of this?
 
-> 00000060 <skb_dequeue>:
->       60:       53                      push   %ebx
->       61:       89 c2                   mov    %eax,%edx
->       63:       9c                      pushf  
->       64:       59                      pop    %ecx
->       65:       fa                      cli    
->       66:       8b 00                   mov    (%eax),%eax
->       68:       39 c2                   cmp    %eax,%edx
->       6a:       74 24                   je     90 <skb_dequeue+0x30>
->       6c:       85 c0                   test   %eax,%eax
->       6e:       74 1a                   je     8a <skb_dequeue+0x2a>
->       70:       ff 4a 08                decl   0x8(%edx)
->       73:       8b 18                   mov    (%eax),%ebx
->       75:       c7 00 00 00 00 00       movl   $0x0,(%eax)
->       7b:       8b 50 04                mov    0x4(%eax),%edx
->       7e:       c7 40 04 00 00 00 00    movl   $0x0,0x4(%eax)
->       85:       89 53 04                mov    %edx,0x4(%ebx)
->       88:*      89 1a                   mov    %ebx,(%edx)
->       8a:       51                      push   %ecx
->       8b:       9d                      popf   
->       8c:       5b                      pop    %ebx
->       8d:       c3                      ret    
->       8e:       66 90                   xchg   %ax,%ax
->       90:       b8 00 00 00 00          mov    $0x0,%eax
->       95:       eb f3                   jmp    8a <skb_dequeue+0x2a>
->       97:       89 f6                   mov    %esi,%esi
->       99:       8d bc 27 00 00 00 00    lea    0x0(%edi,%eiz,1),%edi
-> 
-> 
-> This location corresponds to line "next = next->next" from inlined __skb_dequeue(). The only reason BUG could happen here is something overwriting or otherwise corrupting skb list.
-> 
-> Patch that works for me is below. Now I only hope I haven't (re)introduced a memory leak...
-> 
-> I am not subscribed to LKML, so please reply-to-all if you need to contact me.
-> 
-> -----------------------------------------------------------------------------
-> --- linux-2.6.36/drivers/net/pppoe.c    2010-10-20 22:30:22.000000000 +0200
-> +++ linux-2.6.36.toshio/drivers/net/pppoe.c     2010-12-03 13:11:56.000000000 +0100
-> @@ -924,8 +924,10 @@
->         /* Copy the data if there is no space for the header or if it's
->          * read-only.
->          */
-> -       if (skb_cow_head(skb, sizeof(*ph) + dev->hard_header_len))
-> +       if (skb_cow_head(skb, sizeof(*ph) + dev->hard_header_len)) {
-> +               kfree_skb(skb);
->                 goto abort;
-> +       }
->  
->         __skb_push(skb, sizeof(*ph));
->         skb_reset_network_header(skb);
-> @@ -947,7 +949,6 @@
->         return 1;
->  
->  abort:
-> -       kfree_skb(skb);
->         return 0;
+>  #ifdef CONFIG_SMP
+>   extern void kick_process(struct task_struct *tsk);
+>  #else
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index f8e5a25..ef088cd 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -1909,6 +1909,26 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int sleep)
+>  	p->se.on_rq = 0;
 >  }
-> 
+>  
+> +/**
+> + * requeue_task - requeue a task which priority got changed by yield_to
 
-Problem comes from commit 55c95e738da85 (fix return value of
-__pppoe_xmit() method)
+priority doesn't seem the right word, you're not actually changing
+anything related to p->*prio
 
-I am not sure patch is OK
+> + * @rq: the tasks's runqueue
+> + * @p: the task in question
+> + * Must be called with the runqueue lock held. Will cause the CPU to
+> + * reschedule if p is now at the head of the runqueue.
+> + */
+> +void requeue_task(struct rq *rq, struct task_struct *p)
+> +{
+> +	assert_spin_locked(&rq->lock);
+> +
+> +	if (!p->se.on_rq || task_running(rq, p) || task_has_rt_policy(p))
+> +		return;
+> +
+> +	dequeue_task(rq, p, 0);
+> +	enqueue_task(rq, p, 0);
+> +
+> +	resched_task(p);
+
+I guess that wants to be something like check_preempt_curr()
+
+> +}
+> +
+>  /*
+>   * __normal_prio - return the priority that is based on the static prio
+>   */
+> @@ -6797,6 +6817,36 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_SCHED_HRTICK
+
+Still wondering what all this has to do with SCHED_HRTICK..
+
+> +/*
+> + * Yield the CPU, giving the remainder of our time slice to task p.
+> + * Typically used to hand CPU time to another thread inside the same
+> + * process, eg. when p holds a resource other threads are waiting for.
+> + * Giving priority to p may help get that resource released sooner.
+> + */
+> +void yield_to(struct task_struct *p)
+> +{
+> +	unsigned long flags;
+> +	struct sched_entity *se = &p->se;
+> +	struct rq *rq;
+> +	struct cfs_rq *cfs_rq;
+> +	u64 remain = slice_remain(current);
+> +
+> +	rq = task_rq_lock(p, &flags);
+> +	if (task_running(rq, p) || task_has_rt_policy(p))
+> +		goto out;
+
+See, this all ain't nice, slice_remain() don't make no sense to be
+called for !fair tasks.
+
+Why not write:
+
+  if (curr->sched_class == p->sched_class &&
+      curr->sched_class->yield_to)
+	curr->sched_class->yield_to(curr, p);
+
+or something, and then implement sched_class_fair::yield_to only,
+leaving it a NOP for all other classes.
 
 
+Also, I think you can side-step that whole curr vs p rq->lock thing
+you're doing here, by holding p's rq->lock, you've disabled IRQs in
+current's task context, since ->sum_exec_runtime and all are only
+changed during scheduling and the scheduler_tick, disabling IRQs in its
+task context pins them.
 
+> +	cfs_rq = cfs_rq_of(se);
+> +	se->vruntime -= remain;
+> +	if (se->vruntime < cfs_rq->min_vruntime)
+> +		se->vruntime = cfs_rq->min_vruntime;
+
+Now here we have another problem, remain was measured in wall-time, and
+then you go change a virtual time measure using that. These things are
+related like:
+
+ vt = t/weight
+
+So you're missing a weight factor somewhere.
+
+Also, that check against min_vruntime doesn't really make much sense.
+
+
+> +	requeue_task(rq, p);
+
+Just makes me wonder why you added requeue task to begin with.. why not
+simply dequeue at the top of this function, and enqueue at the tail,
+like all the rest does: see rt_mutex_setprio(), set_user_nice(),
+sched_move_task().
+
+> + out:
+> +	task_rq_unlock(rq, &flags);
+> +	yield();
+> +}
+> +EXPORT_SYMBOL(yield_to);
+
+EXPORT_SYMBOL_GPL() pretty please, I really hate how kvm is a module and
+needs to export hooks all over the core kernel :/
+
+> +#endif
+> +
+>  /**
+>   * sys_sched_yield - yield the current processor to other threads.
+>   *
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 5119b08..2a0a595 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -974,6 +974,25 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>   */
+>  
+>  #ifdef CONFIG_SCHED_HRTICK
+> +u64 slice_remain(struct task_struct *p)
+> +{
+> +	unsigned long flags;
+> +	struct sched_entity *se = &p->se;
+> +	struct cfs_rq *cfs_rq;
+> +	struct rq *rq;
+> +	u64 slice, ran;
+> +	s64 delta;
+> +
+> +	rq = task_rq_lock(p, &flags);
+> +	cfs_rq = cfs_rq_of(se);
+> +	slice = sched_slice(cfs_rq, se);
+> +	ran = se->sum_exec_runtime - se->prev_sum_exec_runtime;
+> +	delta = slice - ran;
+> +	task_rq_unlock(rq, &flags);
+> +
+> +	return max(delta, 0LL);
+> +}
+
+
+Right, so another approach might be to simply swap the vruntime between
+curr and p.
 
