@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab0LCJ6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 04:58:03 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41873 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab0LCJ57 (ORCPT
+	id S932500Ab0LCJ6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 04:58:21 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:38210 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932479Ab0LCJ6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 04:57:59 -0500
-X-AuditID: b753bd60-a5fa4ba000003e7d-d0-4cf8bf243127
+	Fri, 3 Dec 2010 04:58:12 -0500
+X-AuditID: b753bd60-a69a5ba000003e7d-07-4cf8bf31d18c
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v5 6/8] x86: Introduce text_poke_smp_batch() for
-	batch-code modifying
+Subject: [PATCH -tip v5 8/8] kprobes: Use text_poke_smp_batch for unoptimizing
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -18,15 +17,17 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Jason Baron <jbaron@redhat.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <mhiramat@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jan Beulich <jbeulich@novell.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 03 Dec 2010 18:54:22 +0900
-Message-ID: <20101203095422.2961.51217.stgit@ltc236.sdl.hitachi.co.jp>
+Date: Fri, 03 Dec 2010 18:54:34 +0900
+Message-ID: <20101203095434.2961.22657.stgit@ltc236.sdl.hitachi.co.jp>
 In-Reply-To: <20101203095325.2961.75137.stgit@ltc236.sdl.hitachi.co.jp>
 References: <20101203095325.2961.75137.stgit@ltc236.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -39,139 +40,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce text_poke_smp_batch(). This function modifies several
-text areas with one stop_machine() on SMP. Because calling
-stop_machine() is heavy task, it is better to aggregate text_poke
-requests.
+Use text_poke_smp_batch() on unoptimization path for reducing
+the number of stop_machine() issues. If the number of unoptimizing
+probes is more than MAX_OPTIMIZE_PROBES(=256), kprobes unoptimizes
+first MAX_OPTIMIZE_PROBES probes and kicks optimizer for remaining
+probes.
 
-Frederic, I've talked with Rusty about this interface, and
-he would not like to expand stop_machine() interface, since
-it is not for generic use.
-
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: Jan Beulich <jbeulich@novell.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
 
- arch/x86/include/asm/alternative.h |    7 +++++
- arch/x86/kernel/alternative.c      |   49 +++++++++++++++++++++++++++++-------
- 2 files changed, 47 insertions(+), 9 deletions(-)
+ arch/x86/kernel/kprobes.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/kprobes.h   |    2 ++
+ kernel/kprobes.c          |   10 ++++------
+ 3 files changed, 46 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 76561d2..4a2adaa 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -180,8 +180,15 @@ extern void *text_poke_early(void *addr, const void *opcode, size_t len);
-  * On the local CPU you need to be protected again NMI or MCE handlers seeing an
-  * inconsistent instruction while you patch.
-  */
-+struct text_poke_param {
-+	void *addr;
-+	const void *opcode;
-+	size_t len;
-+};
-+
- extern void *text_poke(void *addr, const void *opcode, size_t len);
- extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
-+extern void text_poke_smp_batch(struct text_poke_param *params, int n);
- 
- #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
- #define IDEAL_NOP_SIZE_5 5
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 5079f24..553d0b0 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -591,17 +591,21 @@ static atomic_t stop_machine_first;
- static int wrote_text;
- 
- struct text_poke_params {
--	void *addr;
--	const void *opcode;
--	size_t len;
-+	struct text_poke_param *params;
-+	int nparams;
- };
- 
- static int __kprobes stop_machine_text_poke(void *data)
- {
- 	struct text_poke_params *tpp = data;
-+	struct text_poke_param *p;
-+	int i;
- 
- 	if (atomic_dec_and_test(&stop_machine_first)) {
--		text_poke(tpp->addr, tpp->opcode, tpp->len);
-+		for (i = 0; i < tpp->nparams; i++) {
-+			p = &tpp->params[i];
-+			text_poke(p->addr, p->opcode, p->len);
-+		}
- 		smp_wmb();	/* Make sure other cpus see that this has run */
- 		wrote_text = 1;
- 	} else {
-@@ -610,8 +614,12 @@ static int __kprobes stop_machine_text_poke(void *data)
- 		smp_mb();	/* Load wrote_text before following execution */
- 	}
- 
--	flush_icache_range((unsigned long)tpp->addr,
--			   (unsigned long)tpp->addr + tpp->len);
-+	for (i = 0; i < tpp->nparams; i++) {
-+		p = &tpp->params[i];
-+		flush_icache_range((unsigned long)p->addr,
-+				   (unsigned long)p->addr + p->len);
-+	}
-+
- 	return 0;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index 25a8af7..5940282 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1457,6 +1457,46 @@ void __kprobes arch_optimize_kprobes(struct list_head *oplist)
+ 	text_poke_smp_batch(jump_poke_params, c);
  }
  
-@@ -631,10 +639,13 @@ static int __kprobes stop_machine_text_poke(void *data)
- void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
- {
- 	struct text_poke_params tpp;
-+	struct text_poke_param p;
- 
--	tpp.addr = addr;
--	tpp.opcode = opcode;
--	tpp.len = len;
-+	p.addr = addr;
-+	p.opcode = opcode;
-+	p.len = len;
-+	tpp.params = &p;
-+	tpp.nparams = 1;
- 	atomic_set(&stop_machine_first, 1);
- 	wrote_text = 0;
- 	/* Use __stop_machine() because the caller already got online_cpus. */
-@@ -642,6 +653,26 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
- 	return addr;
- }
- 
-+/**
-+ * text_poke_smp_batch - Update instructions on a live kernel on SMP
-+ * @params: an array of text_poke parameters
-+ * @n: the number of elements in params.
-+ *
-+ * Modify multi-byte instruction by using stop_machine() on SMP. Since the
-+ * stop_machine() is heavy task, it is better to aggregate text_poke requests
-+ * and do it once if possible.
-+ *
-+ * Note: Must be called under get_online_cpus() and text_mutex.
-+ */
-+void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
++static void __kprobes setup_unoptimize_kprobe(struct text_poke_param *tprm,
++					      u8 *insn_buf,
++					      struct optimized_kprobe *op)
 +{
-+	struct text_poke_params tpp = {.params = params, .nparams = n};
++	/* Set int3 to first byte for kprobes */
++	insn_buf[0] = BREAKPOINT_INSTRUCTION;
++	memcpy(insn_buf + 1, op->optinsn.copied_insn, RELATIVE_ADDR_SIZE);
 +
-+	atomic_set(&stop_machine_first, 1);
-+	wrote_text = 0;
-+	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
++	tprm->addr = op->kp.addr;
++	tprm->opcode = insn_buf;
++	tprm->len = RELATIVEJUMP_SIZE;
 +}
 +
- #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
++/*
++ * Recover original instructions and breakpoints from relative jumps.
++ * Caller must call with locking kprobe_mutex.
++ */
++extern void arch_unoptimize_kprobes(struct list_head *oplist,
++				    struct list_head *done_list)
++{
++	struct optimized_kprobe *op, *tmp;
++	int c = 0;
++
++	list_for_each_entry_safe(op, tmp, oplist, list) {
++		/* Setup param */
++		setup_unoptimize_kprobe(&jump_poke_params[c],
++					jump_poke_bufs[c].buf, op);
++		list_move(&op->list, done_list);
++		if (++c >= MAX_OPTIMIZE_PROBES)
++			break;
++	}
++
++	/*
++	 * text_poke_smp doesn't support NMI/MCE code modifying.
++	 * However, since kprobes itself also doesn't support NMI/MCE
++	 * code probing, it's not a problem.
++	 */
++	text_poke_smp_batch(jump_poke_params, c);
++}
++
+ /* Replace a relative jump with a breakpoint (int3).  */
+ void __kprobes arch_unoptimize_kprobe(struct optimized_kprobe *op)
+ {
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index fe157ba..b78edb5 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -276,6 +276,8 @@ extern int arch_check_optimized_kprobe(struct optimized_kprobe *op);
+ extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op);
+ extern void arch_remove_optimized_kprobe(struct optimized_kprobe *op);
+ extern void arch_optimize_kprobes(struct list_head *oplist);
++extern void arch_unoptimize_kprobes(struct list_head *oplist,
++				    struct list_head *done_list);
+ extern void arch_unoptimize_kprobe(struct optimized_kprobe *op);
+ extern kprobe_opcode_t *get_optinsn_slot(void);
+ extern void free_optinsn_slot(kprobe_opcode_t *slot, int dirty);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 531e101..7663e5d 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -517,9 +517,9 @@ static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
+ 	/* Ditto to do_optimize_kprobes */
+ 	get_online_cpus();
+ 	mutex_lock(&text_mutex);
+-	list_for_each_entry_safe(op, tmp, &unoptimizing_list, list) {
+-		/* Unoptimize kprobes */
+-		arch_unoptimize_kprobe(op);
++	arch_unoptimize_kprobes(&unoptimizing_list, free_list);
++	/* Loop free_list for disarming */
++	list_for_each_entry_safe(op, tmp, free_list, list) {
+ 		/* Disarm probes if marked disabled */
+ 		if (kprobe_disabled(&op->kp))
+ 			arch_disarm_kprobe(&op->kp);
+@@ -530,8 +530,6 @@ static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
+ 			 * (reclaiming is done by do_free_cleaned_kprobes.)
+ 			 */
+ 			hlist_del_rcu(&op->kp.hlist);
+-			/* Move only unused probes on free_list */
+-			list_move(&op->list, free_list);
+ 		} else
+ 			list_del_init(&op->list);
+ 	}
+@@ -592,7 +590,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ 	mutex_unlock(&module_mutex);
  
- #ifdef CONFIG_X86_64
+ 	/* Step 5: Kick optimizer again if needed */
+-	if (!list_empty(&optimizing_list))
++	if (!list_empty(&optimizing_list) || !list_empty(&unoptimizing_list))
+ 		kick_kprobe_optimizer();
+ 	else
+ 		/* Wake up all waiters */
 
