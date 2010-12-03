@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab0LCCKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 21:10:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34543 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758321Ab0LCCKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 21:10:39 -0500
-Message-ID: <4CF85183.5030103@zytor.com>
-Date: Thu, 02 Dec 2010 18:10:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S932243Ab0LCCZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 21:25:15 -0500
+Received: from sous-sol.org ([216.99.217.87]:43583 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755654Ab0LCCZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 21:25:13 -0500
+Date: Thu, 2 Dec 2010 18:24:18 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 3/3] kvm: use yield_to instead of sleep in
+ kvm_vcpu_on_spin
+Message-ID: <20101203022418.GW10050@sequoia.sous-sol.org>
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+ <20101202144516.45a0385d@annuminas.surriel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Daniel Drake <dsd@laptop.org>, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 resend] OLPC: Add XO-1 suspend/resume support
-References: <20101118202837.B24899D401B@zog.reactivated.net> <20101202165724.b852b82b.akpm@linux-foundation.org>
-In-Reply-To: <20101202165724.b852b82b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202144516.45a0385d@annuminas.surriel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2010 04:57 PM, Andrew Morton wrote:
-> On Thu, 18 Nov 2010 20:28:37 +0000 (GMT)
-> Daniel Drake <dsd@laptop.org> wrote:
-> 
->> Add code needed for basic suspend/resume of the XO-1 laptop.
->>
->> Signed-off-by: Daniel Drake <dsd@laptop.org>
->> ---
->>  arch/x86/Kconfig                         |    2 +-
->>  arch/x86/include/asm/olpc.h              |    9 ++-
->>  arch/x86/platform/olpc/Makefile          |    2 +-
->>  arch/x86/platform/olpc/olpc-xo1-wakeup.S |  132 ++++++++++++++++++++++++++++++
->>  arch/x86/platform/olpc/olpc-xo1.c        |   79 ++++++++++++++++++
-> 
-> i386 allmodconfig:
-> 
-> make[3]: *** No rule to make target `arch/x86/platform/olpc/olpc-xo1-wakeup.c', 
-> 
-> I "fixed" that locally by making olpc depend on x86_64.
+* Rik van Riel (riel@redhat.com) wrote:
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1880,18 +1880,53 @@ void kvm_resched(struct kvm_vcpu *vcpu)
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_resched);
+>  
+> -void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu)
+> +void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  {
+> -	ktime_t expires;
+> -	DEFINE_WAIT(wait);
+> +	struct kvm *kvm = me->kvm;
+> +	struct kvm_vcpu *vcpu;
+> +	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
 
-... which is of course completely busted since olpc is 32 bit.
+s/me->//
 
-	-hpa
+> +	int first_round = 1;
+> +	int i;
+>  
+> -	prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+> +	me->spinning = 1;
+> +
+> +	/*
+> +	 * We boost the priority of a VCPU that is runnable but not
+> +	 * currently running, because it got preempted by something
+> +	 * else and called schedule in __vcpu_run.  Hopefully that
+> +	 * VCPU is holding the lock that we need and will release it.
+> +	 * We approximate round-robin by starting at the last boosted VCPU.
+> +	 */
+> + again:
+> +	kvm_for_each_vcpu(i, vcpu, kvm) {
+> +		struct task_struct *task = vcpu->task;
+> +		if (first_round && i < last_boosted_vcpu) {
+> +			i = last_boosted_vcpu;
+> +			continue;
+> +		} else if (!first_round && i > last_boosted_vcpu)
+> +			break;
+> +		if (vcpu == me)
+> +			continue;
+> +		if (vcpu->spinning)
+> +			continue;
+> +		if (!task)
+> +			continue;
+> +		if (waitqueue_active(&vcpu->wq))
+> +			continue;
+> +		if (task->flags & PF_VCPU)
+> +			continue;
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+I wonder if you set vcpu->task in sched_out and then NULL it in sched_in
+if you'd get what you want you could simplify the checks.  Basically
+that would be only the preempted runnable vcpus.
 
+> +		kvm->last_boosted_vcpu = i;
+> +		yield_to(task);
+
+Just trying to think of ways to be sure this doesn't become just
+yield() (although I thnk PF_VCPU is enough to catch that).
