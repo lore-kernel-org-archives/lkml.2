@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab0LCV1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 16:27:32 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43009 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab0LCV1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 16:27:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=vU4IiJ/sDHfIq0m+3qpcv7haJ/xg5GEKTuZjbrKu338qksJFoMqKPhzfmm7+I5eUlw
-         g8rNCT94e/gYduHJ4vN+05TdKrItk4aijTO3uuCddUbFr46Pdf1BWlKzYlrH4C7QiCHI
-         hky6bGqFehjSPQAjBQgP6d3XHrkmIRIFyYqrM=
-From: Xenofon Foukas <foukas.xenofon@gmail.com>
-To: gregh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@drivedev.osuosl.org,
-        Xenofon Foukas <foukas.xenofon@gmail.com>
-Subject: [PATCH] Fix coding style issues in drivers.c
-Date: Fri,  3 Dec 2010 23:27:19 +0200
-Message-Id: <1291411639-15526-1-git-send-email-foukas.xenofon@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754092Ab0LCV1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 16:27:35 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52662 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752524Ab0LCV1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 16:27:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [Bug #22532] 2.6.37-rc1: BUG: scheduling while atomic (kvm_init)
+Date: Fri, 3 Dec 2010 22:26:49 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera> <gUkHV_Vc3aE.A.X0.ozC-MB@chimera> <1291396759.13945.0.camel@localhost.localdomain>
+In-Reply-To: <1291396759.13945.0.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012032226.49768.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes line over 80 characters warning issues found
-in file drivers.c
-Signed-off-by: Xenofon Foukas <foukas.xenofon@gmail.com>
----
- drivers/staging/comedi/drivers.c |   26 ++++++++++++++++++--------
- 1 files changed, 18 insertions(+), 8 deletions(-)
+On Friday, December 03, 2010, Thomas Meyer wrote:
+> Am Freitag, den 03.12.2010, 00:41 +0100 schrieb Rafael J. Wysocki:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> 
+> The BUG still happens:
+> 
+> [    0.502550] BUG: scheduling while atomic: swapper/1/0x00000002
+> [    0.502574] Modules linked in:
+> [    0.502577] Pid: 1, comm: swapper Not tainted 2.6.37-rc4-00153-g59e57c6 #104
+> [    0.502579] Call Trace:
+> [    0.502581]  [<ffffffff81052552>] __schedule_bug+0x5a/0x5e
+> [    0.502585]  [<ffffffff816f0492>] schedule+0xd4/0x592
+> [    0.502588]  [<ffffffff8105010e>] ? resched_task+0x68/0x6d
+> [    0.502591]  [<ffffffff8105009c>] ? test_tsk_need_resched+0x12/0x1c
+> [    0.502595]  [<ffffffff816f0b91>] schedule_timeout+0x31/0xde
+> [    0.502598]  [<ffffffff81057654>] ? wake_up_process+0x10/0x12
+> [    0.502602]  [<ffffffff8106c73c>] ? wake_up_worker+0x1f/0x21
+> [    0.502605]  [<ffffffff8106c795>] ? insert_work+0x57/0x5f
+> [    0.502608]  [<ffffffff816f1e5e>] ? _raw_spin_unlock_irqrestore+0x20/0x2b
+> [    0.502611]  [<ffffffff816f02ac>] wait_for_common+0x98/0x10e
+> [    0.502614]  [<ffffffff81057628>] ? default_wake_function+0x0/0xf
+> [    0.502618]  [<ffffffff816f03bc>] wait_for_completion+0x18/0x1a
+> [    0.502621]  [<ffffffff8106c160>] call_usermodehelper_exec+0x82/0xd1
+> [    0.502624]  [<ffffffff812c7053>] kobject_uevent_env+0x3e6/0x422
+> [    0.502628]  [<ffffffff812c709a>] kobject_uevent+0xb/0xd
+> [    0.502632]  [<ffffffff81390748>] device_add+0x360/0x4f6
+> [    0.502635]  [<ffffffff813908f7>] device_register+0x19/0x1e
+> [    0.502639]  [<ffffffff81390988>] device_create_vargs+0x8c/0xc4
+> [    0.502642]  [<ffffffff813909ec>] device_create+0x2c/0x2e
+> [    0.502646]  [<ffffffff813587df>] misc_register+0xba/0x113
+> [    0.502649]  [<ffffffff81001e83>] kvm_init+0x1d1/0x2dc
+> [    0.502652]  [<ffffffff81d39ab1>] ? pci_iommu_init+0x0/0x41
+> [    0.502655]  [<ffffffff81d37505>] ? svm_init+0x0/0x1e
+> [    0.502657]  [<ffffffff81d37521>] svm_init+0x1c/0x1e
+> [    0.502660]  [<ffffffff810002f8>] do_one_initcall+0x7a/0x12a
+> [    0.502663]  [<ffffffff81d34cfb>] kernel_init+0x133/0x1bd
+> [    0.502667]  [<ffffffff81026794>] kernel_thread_helper+0x4/0x10
+> [    0.502670]  [<ffffffff81d34bc8>] ? kernel_init+0x0/0x1bd
+> [    0.502673]  [<ffffffff81026790>] ? kernel_thread_helper+0x0/0x10
+> [    0.502754] initcall svm_init+0x0/0x1e returned with preemption imbalance 
 
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index 4a29ed7..840b7e0 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -118,7 +118,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	for (driv = comedi_drivers; driv; driv = driv->next) {
- 		if (!try_module_get(driv->module)) {
- 			printk
--			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
-+			     (KERN_INFO "comedi: failed to increment "
-+						"module count, skipping\n");
- 			continue;
- 		}
- 		if (driv->num_names) {
-@@ -206,8 +207,9 @@ int comedi_driver_unregister(struct comedi_driver *driver)
- 		if (dev->attached && dev->driver == driver) {
- 			if (dev->use_count)
- 				printk
--				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
--				     dev->use_count);
-+				    (KERN_WARNING "BUG! detaching device "
-+						"with use_count=%d\n",
-+						dev->use_count);
- 			comedi_device_detach(dev);
- 		}
- 		mutex_unlock(&dev->mutex);
-@@ -442,7 +444,9 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 		unsigned i;
- 		for (i = 0; i < async->n_buf_pages; ++i) {
- 			if (async->buf_page_list[i].virt_addr) {
--				clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
-+				clear_bit(PG_reserved,
-+					&(virt_to_page(async->buf_page_list[i].
-+							virt_addr)->flags));
- 				if (s->async_dma_dir != DMA_NONE) {
- 					dma_free_coherent(dev->hw_dev,
- 							  PAGE_SIZE,
-@@ -496,8 +500,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 					break;
- 
- 				set_bit(PG_reserved,
--					&(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
--				pages[i] = virt_to_page(async->buf_page_list[i].virt_addr);
-+					&(virt_to_page(async->buf_page_list[i].
-+							virt_addr)->flags));
-+				pages[i] = virt_to_page(async->buf_page_list[i].
-+								virt_addr);
- 			}
- 		}
- 		if (i == n_pages) {
-@@ -514,7 +520,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 					    NULL) {
- 						break;
- 					}
--					clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
-+					clear_bit(PG_reserved,
-+						&(virt_to_page(async->
-+							buf_page_list[i].
-+							virt_addr)->flags));
- 					if (s->async_dma_dir != DMA_NONE) {
- 						dma_free_coherent(dev->hw_dev,
- 								  PAGE_SIZE,
-@@ -647,7 +656,8 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
- 	if ((int)(async->buf_write_count + nbytes -
- 		  async->buf_write_alloc_count) > 0) {
- 		printk
--		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
-+		    (KERN_INFO "comedi: attempted to write-free more bytes "
-+					"than have been write-allocated.\n");
- 		nbytes = async->buf_write_alloc_count - async->buf_write_count;
- 	}
- 	async->buf_write_count += nbytes;
--- 
-1.7.3.2
+Thanks for the update.
+
+Rafael
 
