@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab0LCWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 17:18:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51967 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab0LCWSI (ORCPT
+	id S1753946Ab0LCWYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 17:24:54 -0500
+Received: from rev-153-13.globalproof.net ([194.146.153.13]:59403 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752916Ab0LCWYw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 17:18:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ulVG0rfLFvz/5lPlMcrgHPyMac5b0roa2JGxyGgzJzB61rgCpvsL0KbqXtSOpn11yy
-         snZyYr0fP1IepHTOmgayARY51zjwMHJdM+ED2A80U3tnnol89uo98ssYDc6MaQ+o9Sbe
-         SWqiUuNj6LtWlSGfBOhI1T86RxBCNzy9ZnH6c=
-From: Xenofon Foukas <foukas.xenofon@gmail.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Xenofon Foukas <foukas.xenofon@gmail.com>
-Subject: [PATCH] Fix coding style issues in drivers.c
-Date: Sat,  4 Dec 2010 00:17:55 +0200
-Message-Id: <1291414675-17730-1-git-send-email-foukas.xenofon@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
+	Fri, 3 Dec 2010 17:24:52 -0500
+X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Dec 2010 17:24:52 EST
+From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
+Date: Sat, 4 Dec 2010 00:16:42 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-git5-home1; KDE/4.4.5; x86_64; ; )
+Cc: Andrej Ota <andrej@ota.si>, linux-kernel@vger.kernel.org, gvs@zemos.net,
+        Rami Rosen <ramirose@gmail.com>, netdev <netdev@vger.kernel.org>
+References: <0fe401cb92e7$85ba2260$912e6720$@si> <aa43945b38cee751a8231084866b074d@192.168.253.23> <1291387595.2897.350.camel@edumazet-laptop>
+In-Reply-To: <1291387595.2897.350.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201012040016.42429.nuclearcat@nuclearcat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes line over 80 characters warning issues found
-in file drivers.c
-Signed-off-by: Xenofon Foukas <foukas.xenofon@gmail.com>
----
- drivers/staging/comedi/drivers.c |   26 +++++++++++++++-----------
- 1 files changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index 4a29ed7..afdb391 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -117,8 +117,7 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	for (driv = comedi_drivers; driv; driv = driv->next) {
- 		if (!try_module_get(driv->module)) {
--			printk
--			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
-+			printk(KERN_INFO "comedi: failed to increment module count, skipping\n");
- 			continue;
- 		}
- 		if (driv->num_names) {
-@@ -205,9 +204,8 @@ int comedi_driver_unregister(struct comedi_driver *driver)
- 		mutex_lock(&dev->mutex);
- 		if (dev->attached && dev->driver == driver) {
- 			if (dev->use_count)
--				printk
--				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
--				     dev->use_count);
-+				printk(KERN_WARNING "BUG! detaching device with use_count=%d\n",
-+						dev->use_count);
- 			comedi_device_detach(dev);
- 		}
- 		mutex_unlock(&dev->mutex);
-@@ -442,7 +440,9 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 		unsigned i;
- 		for (i = 0; i < async->n_buf_pages; ++i) {
- 			if (async->buf_page_list[i].virt_addr) {
--				clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
-+				clear_bit(PG_reserved,
-+					&(virt_to_page(async->buf_page_list[i].
-+							virt_addr)->flags));
- 				if (s->async_dma_dir != DMA_NONE) {
- 					dma_free_coherent(dev->hw_dev,
- 							  PAGE_SIZE,
-@@ -496,8 +496,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 					break;
- 
- 				set_bit(PG_reserved,
--					&(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
--				pages[i] = virt_to_page(async->buf_page_list[i].virt_addr);
-+					&(virt_to_page(async->buf_page_list[i].
-+							virt_addr)->flags));
-+				pages[i] = virt_to_page(async->buf_page_list[i].
-+								virt_addr);
- 			}
- 		}
- 		if (i == n_pages) {
-@@ -514,7 +516,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 					    NULL) {
- 						break;
- 					}
--					clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
-+					clear_bit(PG_reserved,
-+						&(virt_to_page(async->
-+							buf_page_list[i].
-+							virt_addr)->flags));
- 					if (s->async_dma_dir != DMA_NONE) {
- 						dma_free_coherent(dev->hw_dev,
- 								  PAGE_SIZE,
-@@ -646,8 +651,7 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
- {
- 	if ((int)(async->buf_write_count + nbytes -
- 		  async->buf_write_alloc_count) > 0) {
--		printk
--		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
-+		printk(KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
- 		nbytes = async->buf_write_alloc_count - async->buf_write_count;
- 	}
- 	async->buf_write_count += nbytes;
--- 
-1.7.3.2
-
+On Friday 03 December 2010 16:46:35 Eric Dumazet wrote:
+> Le vendredi 03 décembre 2010 à 15:37 +0100, Andrej Ota a écrit :
+> > >> Patch that works for me is below. Now I only hope I haven't
+> > >> (re)introduced a memory leak...
+> > > 
+> > > Problem comes from commit 55c95e738da85 (fix return value of
+> > > __pppoe_xmit() method)
+> > > 
+> > > I am not sure patch is OK
+> > 
+> > Me neither. That's why I wrote "works for me". All I dare say is that it
+> > works better than current code and is probably no worse than it was
+> > before above mentioned commit. Apart from that, there is no point in
+> > having return value for __pppoe_xmit if return value isn't needed.
+> > 
+> > Easiest way of triggering this BUG is by terminating PPPoE on the server
+> > side, which then hits "if (!dev) { goto abort; }". This in turn calls
+> > "kfree_skb(skb); return 0;" which returns to pppoe_rcv_core which then
+> > goto-s to "abort_put" which again calls "kfree_skb(skb)". Voila the bug.
+> > 
+> > I don't know how to trigger "if (skb_cow_head(skb, ..." to see if I have
+> > just caused another BUG. However, if I read file comments at the top, I
+> > see a comment from 19/07/01 stating that I have to delete original skb
+> > if code succeeds and never delete it on failure. About the skb copy
+> > mentioned in the same comment, I don't know. 2001 was many commits ago.
+> 
+> Well, all I wanted to say was that _I_ was not sure, but probably other
+> network guys have a better diagnostic.
+> 
+> Rami, could you re-explain the rationale of your patch ?
+> 
+> Thanks
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This patch seems fixed my issue (Re: 2.6.35->2.6.36 regression, vanilla kernel 
+panic, ppp or hrtimers crashing), tested now.
+	
