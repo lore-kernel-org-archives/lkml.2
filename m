@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab0LCXs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 18:48:29 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33284 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab0LCXsT (ORCPT
+	id S1754466Ab0LCXs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 18:48:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64465 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab0LCXsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 18:48:19 -0500
+	Fri, 3 Dec 2010 18:48:18 -0500
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
@@ -15,10 +15,11 @@ Cc: <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
         Kevin Hilman <khilman@deeprootsystems.com>,
-        Arnd Bergmann <arnd@arndb.de>, Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH v3 3/4] OMAP4: hwmod data: Add hwspinlock
-Date: Sat,  4 Dec 2010 01:50:46 +0200
-Message-Id: <1291420247-18171-4-git-send-email-ohad@wizery.com>
+        Arnd Bergmann <arnd@arndb.de>, Simon Que <sque@ti.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+Subject: [PATCH v3 2/4] drivers: hwspinlock: add OMAP implementation
+Date: Sat,  4 Dec 2010 01:50:45 +0200
+Message-Id: <1291420247-18171-3-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1291420247-18171-1-git-send-email-ohad@wizery.com>
 References: <1291420247-18171-1-git-send-email-ohad@wizery.com>
@@ -26,100 +27,293 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benoit Cousson <b-cousson@ti.com>
+From: Simon Que <sque@ti.com>
 
-Add hwspinlock hwmod data for OMAP4 chip
+Add hwspinlock support for the OMAP4 Hardware Spinlock device.
 
-Signed-off-by: Cousson, Benoit <b-cousson@ti.com>
+The Hardware Spinlock device on OMAP4 provides hardware assistance
+for synchronization between the multiple processors in the system
+(dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
+
+[ohad@wizery.com: adapt to hwspinlock framework, tidy up]
+Signed-off-by: Simon Que <sque@ti.com>
 Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+Signed-off-by: Krishnamoorthy, Balaji T <balajitk@ti.com>
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   64 ++++++++++++++++++++++++++++
- 1 files changed, 64 insertions(+), 0 deletions(-)
+ drivers/hwspinlock/Kconfig           |    9 ++
+ drivers/hwspinlock/Makefile          |    1 +
+ drivers/hwspinlock/omap_hwspinlock.c |  231 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 241 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwspinlock/omap_hwspinlock.c
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index d258936..e577d54 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -1376,6 +1376,67 @@ static struct omap_hwmod omap44xx_gpio6_hwmod = {
- 	.slaves_cnt	= ARRAY_SIZE(omap44xx_gpio6_slaves),
- 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
- };
+diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
+index 9dd8db4..eb4af28 100644
+--- a/drivers/hwspinlock/Kconfig
++++ b/drivers/hwspinlock/Kconfig
+@@ -11,3 +11,12 @@ config HWSPINLOCK
+ 	  coprocessors).
+ 
+ 	  If unsure, say N.
 +
++config HWSPINLOCK_OMAP
++	tristate "OMAP Hardware Spinlock device"
++	depends on HWSPINLOCK && ARCH_OMAP4
++	help
++	  Say y here to support the OMAP Hardware Spinlock device (firstly
++	  introduced in OMAP4).
++
++	  If unsure, say N.
+diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
+index b9d2b9f..5729a3f 100644
+--- a/drivers/hwspinlock/Makefile
++++ b/drivers/hwspinlock/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
++obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
+diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/omap_hwspinlock.c
+new file mode 100644
+index 0000000..b5867e1
+--- /dev/null
++++ b/drivers/hwspinlock/omap_hwspinlock.c
+@@ -0,0 +1,231 @@
 +/*
-+ * 'spinlock' class
-+ * spinlock provides hardware assistance for synchronizing the processes
-+ * running on multiple processors
++ * OMAP hardware spinlock driver
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
++ *
++ * Contact: Simon Que <sque@ti.com>
++ *          Hari Kanigeri <h-kanigeri2@ti.com>
++ *          Ohad Ben-Cohen <ohad@wizery.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
 + */
 +
-+static struct omap_hwmod_class_sysconfig omap44xx_spinlock_sysc = {
-+	.rev_offs	= 0x0000,
-+	.sysc_offs	= 0x0010,
-+	.syss_offs	= 0x0014,
-+	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_CLOCKACTIVITY |
-+			   SYSC_HAS_ENAWAKEUP | SYSC_HAS_SIDLEMODE |
-+			   SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-+	.sysc_fields	= &omap_hwmod_sysc_type1,
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/log2.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/hwspinlock.h>
++#include <linux/platform_device.h>
++
++#include "hwspinlock.h"
++
++/* Spinlock register offsets */
++#define SYSSTATUS_OFFSET		0x0014
++#define LOCK_BASE_OFFSET		0x0800
++
++#define SPINLOCK_NUMLOCKS_BIT_OFFSET	(24)
++
++/* Possible values of SPINLOCK_LOCK_REG */
++#define SPINLOCK_NOTTAKEN		(0)	/* free */
++#define SPINLOCK_TAKEN			(1)	/* locked */
++
++#define to_omap_hwspinlock(lock)	\
++	container_of(lock, struct omap_hwspinlock, lock)
++
++struct omap_hwspinlock {
++	struct hwspinlock lock;
++	void __iomem *addr;
 +};
 +
-+static struct omap_hwmod_class omap44xx_spinlock_hwmod_class = {
-+	.name = "spinlock",
-+	.sysc = &omap44xx_spinlock_sysc,
++struct omap_hwspinlock_state {
++	int num_locks;			/* Total number of locks in system */
++	void __iomem *io_base;		/* Mapped base address */
 +};
 +
-+/* spinlock */
-+static struct omap_hwmod omap44xx_spinlock_hwmod;
-+static struct omap_hwmod_addr_space omap44xx_spinlock_addrs[] = {
-+	{
-+		.pa_start	= 0x4a0f6000,
-+		.pa_end		= 0x4a0f6fff,
-+		.flags		= ADDR_TYPE_RT
++static int omap_hwspinlock_trylock(struct hwspinlock *lock)
++{
++	struct omap_hwspinlock *omap_lock = to_omap_hwspinlock(lock);
++
++	/* attempt to acquire the lock by reading its value */
++	return (SPINLOCK_NOTTAKEN == readl(omap_lock->addr));
++}
++
++static void omap_hwspinlock_unlock(struct hwspinlock *lock)
++{
++	struct omap_hwspinlock *omap_lock = to_omap_hwspinlock(lock);
++
++	/* release the lock by writing 0 to it */
++	writel(SPINLOCK_NOTTAKEN, omap_lock->addr);
++}
++
++/*
++ * relax the OMAP interconnect while spinning on it.
++ *
++ * The specs recommended that the retry delay time will be
++ * just over half of the time that a requester would be
++ * expected to hold the lock.
++ *
++ * The number below is taken from an hardware specs example,
++ * obviously it is somewhat arbitrary.
++ */
++static void omap_hwspinlock_relax(struct hwspinlock *lock)
++{
++	ndelay(50);
++}
++
++static const struct hwspinlock_ops omap_hwspinlock_ops = {
++	.trylock = omap_hwspinlock_trylock,
++	.unlock = omap_hwspinlock_unlock,
++	.relax = omap_hwspinlock_relax,
++};
++
++static int __devinit omap_hwspinlock_probe(struct platform_device *pdev)
++{
++	struct omap_hwspinlock *omap_lock;
++	struct omap_hwspinlock_state *state;
++	struct hwspinlock *lock;
++	struct resource *res;
++	void __iomem *io_base;
++	int i, ret;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	state = kzalloc(sizeof(*state), GFP_KERNEL);
++	if (!state)
++		return -ENOMEM;
++
++	io_base = ioremap(res->start, resource_size(res));
++	if (!io_base) {
++		ret = -ENOMEM;
++		goto free_state;
++	}
++
++	/* Determine number of locks */
++	i = readl(io_base + SYSSTATUS_OFFSET);
++	i >>= SPINLOCK_NUMLOCKS_BIT_OFFSET;
++
++	/* exactly one of the four least significant bits must be 1 */
++	if (!i || !is_power_of_2(i) || i > 8) {
++		ret = -EINVAL;
++		goto iounmap_base;
++	}
++
++	state->num_locks = i * 32;
++	state->io_base = io_base;
++
++	platform_set_drvdata(pdev, state);
++
++	/*
++	 * runtime PM will make sure the clock of this module is
++	 * enabled iff at least one lock is requested
++	 */
++	pm_runtime_enable(&pdev->dev);
++
++	for (i = 0; i < state->num_locks; i++) {
++		omap_lock = kzalloc(sizeof(*omap_lock), GFP_KERNEL);
++		if (!omap_lock) {
++			ret = -ENOMEM;
++			goto free_locks;
++		}
++
++		omap_lock->lock.dev = &pdev->dev;
++		omap_lock->lock.owner = THIS_MODULE;
++		omap_lock->lock.id = i;
++		omap_lock->lock.ops = &omap_hwspinlock_ops;
++		omap_lock->addr = io_base + LOCK_BASE_OFFSET + sizeof(u32) * i;
++
++		ret = hwspin_lock_register(&omap_lock->lock);
++		if (ret) {
++			kfree(omap_lock);
++			goto free_locks;
++		}
++	}
++
++	return 0;
++
++free_locks:
++	while (--i >= 0) {
++		lock = hwspin_lock_unregister(i);
++		/* this should't happen, but let's give our best effort */
++		if (!lock) {
++			dev_err(&pdev->dev, "%s: cleanups failed\n", __func__);
++			continue;
++		}
++		omap_lock = to_omap_hwspinlock(lock);
++		kfree(omap_lock);
++	}
++	pm_runtime_disable(&pdev->dev);
++iounmap_base:
++	iounmap(io_base);
++free_state:
++	kfree(state);
++	return ret;
++}
++
++static int omap_hwspinlock_remove(struct platform_device *pdev)
++{
++	struct omap_hwspinlock_state *state = platform_get_drvdata(pdev);
++	struct hwspinlock *lock;
++	struct omap_hwspinlock *omap_lock;
++	int i;
++
++	for (i = 0; i < state->num_locks; i++) {
++		lock = hwspin_lock_unregister(i);
++		/* this shouldn't happen at this point. if it does, at least
++		 * don't continue with the remove */
++		if (!lock) {
++			dev_err(&pdev->dev, "%s: failed on %d\n", __func__, i);
++			return -EBUSY;
++		}
++
++		omap_lock = to_omap_hwspinlock(lock);
++		kfree(omap_lock);
++	}
++
++	pm_runtime_disable(&pdev->dev);
++	iounmap(state->io_base);
++	kfree(state);
++
++	return 0;
++}
++
++static struct platform_driver omap_hwspinlock_driver = {
++	.probe		= omap_hwspinlock_probe,
++	.remove		= omap_hwspinlock_remove,
++	.driver		= {
++		.name	= "omap_hwspinlock",
 +	},
 +};
 +
-+/* l4_cfg -> spinlock */
-+static struct omap_hwmod_ocp_if omap44xx_l4_cfg__spinlock = {
-+	.master		= &omap44xx_l4_cfg_hwmod,
-+	.slave		= &omap44xx_spinlock_hwmod,
-+	.clk		= "l4_div_ck",
-+	.addr		= omap44xx_spinlock_addrs,
-+	.addr_cnt	= ARRAY_SIZE(omap44xx_spinlock_addrs),
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
++static int __init omap_hwspinlock_init(void)
++{
++	return platform_driver_register(&omap_hwspinlock_driver);
++}
++/* board init code might need to reserve hwspinlocks for predefined purposes */
++postcore_initcall(omap_hwspinlock_init);
 +
-+/* spinlock slave ports */
-+static struct omap_hwmod_ocp_if *omap44xx_spinlock_slaves[] = {
-+	&omap44xx_l4_cfg__spinlock,
-+};
++static void __exit omap_hwspinlock_exit(void)
++{
++	platform_driver_unregister(&omap_hwspinlock_driver);
++}
++module_exit(omap_hwspinlock_exit);
 +
-+static struct omap_hwmod omap44xx_spinlock_hwmod = {
-+	.name		= "spinlock",
-+	.class		= &omap44xx_spinlock_hwmod_class,
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_reg = OMAP4430_CM_L4CFG_HW_SEM_CLKCTRL,
-+		},
-+	},
-+	.slaves		= omap44xx_spinlock_slaves,
-+	.slaves_cnt	= ARRAY_SIZE(omap44xx_spinlock_slaves),
-+	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
-+};
-+
- static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
- 	/* dmm class */
- 	&omap44xx_dmm_hwmod,
-@@ -1418,6 +1479,9 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
- 	&omap44xx_uart2_hwmod,
- 	&omap44xx_uart3_hwmod,
- 	&omap44xx_uart4_hwmod,
-+
-+	/* spinlock class */
-+	&omap44xx_spinlock_hwmod,
- 	NULL,
- };
- 
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Hardware spinlock driver for OMAP");
++MODULE_AUTHOR("Simon Que <sque@ti.com>");
++MODULE_AUTHOR("Hari Kanigeri <h-kanigeri2@ti.com>");
++MODULE_AUTHOR("Ohad Ben-Cohen <ohad@wizery.com>");
 -- 
 1.7.0.4
 
