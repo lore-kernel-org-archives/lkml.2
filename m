@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab0LCQzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 11:55:19 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:63452 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751431Ab0LCQzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 11:55:17 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAHev+Ex5LdV4/2dsb2JhbACjNXLDIoVIBA
-Date: Sat, 4 Dec 2010 03:55:08 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: David Miller <davem@davemloft.net>
-Cc: npiggin@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
-Message-ID: <20101203165508.GC3346@amd>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <20101201.100330.226770021.davem@davemloft.net>
+	id S1753466Ab0LCRJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 12:09:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753246Ab0LCRJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 12:09:28 -0500
+Message-ID: <4CF9242D.4090007@redhat.com>
+Date: Fri, 03 Dec 2010 12:09:01 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101201.100330.226770021.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: vatsa@linux.vnet.ibm.com
+CC: Mike Galbraith <efault@gmx.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144423.3ad1908d@annuminas.surriel.com> <1291355656.7633.124.camel@marge.simson.net> <20101203134618.GG27994@linux.vnet.ibm.com> <1291387511.7992.15.camel@marge.simson.net> <4CF90341.4020101@redhat.com> <1291388987.7992.27.camel@marge.simson.net> <4CF90E3D.7090103@redhat.com> <20101203162003.GA13515@linux.vnet.ibm.com>
+In-Reply-To: <20101203162003.GA13515@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 10:03:30AM -0800, David Miller wrote:
-> From: Nick Piggin <npiggin@kernel.dk>
-> Date: Sat, 27 Nov 2010 21:15:58 +1100
-> 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
-> 
-> Just want to say that I've been running this code for the past few days on
-> my 128 cpu box and it seems quite sturdy.
-> 
-> If there are any kinds of vfs benchmarks you want me to run on this
-> machine both with and without the scaling changes, just let me know.
+On 12/03/2010 11:20 AM, Srivatsa Vaddagiri wrote:
+> On Fri, Dec 03, 2010 at 10:35:25AM -0500, Rik van Riel wrote:
+>> Do you have suggestions on what I should do to make
+>> this yield_to functionality work?
+>
+> Keeping in mind the complications of yield_to, I had suggested we do something
+> suggested below:
+>
+> http://marc.info/?l=kvm&m=129122645006996&w=2
+>
+> Essentially yield to other tasks on your own runqueue and when you get to run
+> again, try reclaiming what you gave up earlier (with a cap on how much one can
+> feedback this relinquished time). It can be accomplished via a special form of
+> yield(), available only to in-kernel users, kvm in this case.
 
-Hi Dave, great, thanks!
+I don't see how that is going to help get the lock
+released, when the VCPU holding the lock is on another
+CPU.
 
-I am mostly interested in single-thread performance on different ISAs
-and different microarchitectures.
-
-Microbenchmarks are easy, I attached a couple of quick ones I use in
-an offline mail.
-
-Single-threaded (preloadindex=false), cached and uncached, git diff on
-an unmodified tree is slightly more real world.
-
-And then anything else you can think of.
-
-Thanks,
-Nick
-
+-- 
+All rights reversed
