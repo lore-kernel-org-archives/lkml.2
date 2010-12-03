@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab0LCSZJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 13:25:09 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35247 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab0LCSZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 13:25:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=a1mB6J15fRp5NoniGA8yVF3MhRr2vzIPBgnmuhIhQOwnYK+78++aIGfzJT4qy4GS4c
-         UO1V7upNyYtFcNqgQTN8c6MN6OVXWFGYXe3cTgREscc9rUURb3fvjNr6yW1n6X2QxtE/
-         B87tp8BBtGvYL704KQ4SqwdikvLIUcDpOhvj0=
-Message-ID: <4CF935FB.5010903@gmail.com>
-Date: Fri, 03 Dec 2010 13:24:59 -0500
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1753969Ab0LCS1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 13:27:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752646Ab0LCS1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 13:27:47 -0500
+Message-ID: <4CF9368C.8030309@redhat.com>
+Date: Fri, 03 Dec 2010 13:27:24 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: James Bottomley <james.bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        sandeen <sandeen@redhat.com>
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <1290102616-sup-7212@think>
-In-Reply-To: <1290102616-sup-7212@think>
+To: Chris Wright <chrisw@sous-sol.org>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144423.3ad1908d@annuminas.surriel.com> <20101203005008.GU10050@sequoia.sous-sol.org>
+In-Reply-To: <20101203005008.GU10050@sequoia.sous-sol.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 12:55 PM, Chris Mason wrote:
-> Excerpts from James Bottomley's message of 2010-11-18 12:19:10 -0500:
->> On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
->>> On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
->>>> I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
->>>> filesystem that was TRIM-aware would pass that information down to the
->>>> block device that it's mounted on.  I strongly feel that we shouldn't
->>>> have two interfaces to do essentially the same thing.
->>>>
->>>> I guess I'm saying that you're going to have to learn about TRIM :-)
->>> Did you actually look Lukas FITRIM code (not the slight reordering here,
->>> but the original one).  It's the ext4 version of the batched discard
->>> model, that is a userspace ioctl to discard free space in the
->>> filesystem.
->>>
->>> hole punching will free the blocks into the free space pool.  If you do
->>> online discard it will also get discarded, but a filesystem that has
->>> online discard enabled doesn't need FITRIM.
->> Not stepping into the debate: I'm happy to see punch go to the mapping
->> data and FITRIM pick it up later.
+On 12/02/2010 07:50 PM, Chris Wright wrote:
+
+>> +void requeue_task(struct rq *rq, struct task_struct *p)
+>> +{
+>> +	assert_spin_locked(&rq->lock);
+>> +
+>> +	if (!p->se.on_rq || task_running(rq, p) || task_has_rt_policy(p))
+>> +		return;
+>
+> already checked task_running(rq, p) || task_has_rt_policy(p) w/ rq lock
+> held.
+
+OK, I removed the duplicate checks.
+
+>> +
+>> +	dequeue_task(rq, p, 0);
+>> +	enqueue_task(rq, p, 0);
+>
+> seems like you could condense to save an update_rq_clock() call at least,
+> don't know if the info_queued, info_dequeued need to be updated
+
+Or I can do the whole operation with the task not queued.
+Not sure yet what approach I'll take...
+
+>> +#ifdef CONFIG_SCHED_HRTICK
+>> +/*
+>> + * Yield the CPU, giving the remainder of our time slice to task p.
+>> + * Typically used to hand CPU time to another thread inside the same
+>> + * process, eg. when p holds a resource other threads are waiting for.
+>> + * Giving priority to p may help get that resource released sooner.
+>> + */
+>> +void yield_to(struct task_struct *p)
+>> +{
+>> +	unsigned long flags;
+>> +	struct sched_entity *se =&p->se;
+>> +	struct rq *rq;
+>> +	struct cfs_rq *cfs_rq;
+>> +	u64 remain = slice_remain(current);
+>> +
+>> +	rq = task_rq_lock(p,&flags);
+>> +	if (task_running(rq, p) || task_has_rt_policy(p))
+>> +		goto out;
+>> +	cfs_rq = cfs_rq_of(se);
+>> +	se->vruntime -= remain;
+>> +	if (se->vruntime<  cfs_rq->min_vruntime)
+>> +		se->vruntime = cfs_rq->min_vruntime;
+>
+> Should these details all be in sched_fair?  Seems like the wrong layer
+> here.  And would that condition go the other way?  If new vruntime is
+> smaller than min, then it becomes new cfs_rq->min_vruntime?
+
+That would be nice.  Unfortunately, EXPORT_SYMBOL() does
+not seem to work right from sched_fair.c, which is included
+from sched.c instead of being built from the makefile!
+
+>> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+>> index 5119b08..2a0a595 100644
+>> --- a/kernel/sched_fair.c
+>> +++ b/kernel/sched_fair.c
+>> @@ -974,6 +974,25 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>>    */
 >>
->> However, I think it's time to question whether we actually still want to
->> allow online discard at all.  Most of the benchmarks show it to be a net
->> lose to almost everything (either SSD or Thinly Provisioned arrays), so
->> it's become an "enable this to degrade performance" option with no
->> upside.
-> I think we want to keep it.  In general we've (except for hch) spent
-> almost zero time actually tuning online discard, and the benchmarking
-> needs to be redone with the shiny new barrier code.
+>>   #ifdef CONFIG_SCHED_HRTICK
+>> +u64 slice_remain(struct task_struct *p)
+>> +{
+>> +	unsigned long flags;
+>> +	struct sched_entity *se =&p->se;
+>> +	struct cfs_rq *cfs_rq;
+>> +	struct rq *rq;
+>> +	u64 slice, ran;
+>> +	s64 delta;
+>> +
+>> +	rq = task_rq_lock(p,&flags);
+>> +	cfs_rq = cfs_rq_of(se);
+>> +	slice = sched_slice(cfs_rq, se);
+>> +	ran = se->sum_exec_runtime - se->prev_sum_exec_runtime;
+>> +	delta = slice - ran;
+>> +	task_rq_unlock(rq,&flags);
+>> +
+>> +	return max(delta, 0LL);
 >
-> -chris
->
+> Can delta go negative?
 
-Very belated response - I agree that we should keep the online discard support 
-in (but off by default).
+Good question.  I don't know.
 
-Some of the devices we have tested perform well with it and I expect that 
-hardware vendors will get better now that we have the support for them to test with.
-
-Ric
-
-
+-- 
+All rights reversed
