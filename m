@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab0LCCZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 21:25:15 -0500
-Received: from sous-sol.org ([216.99.217.87]:43583 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755654Ab0LCCZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 21:25:13 -0500
-Date: Thu, 2 Dec 2010 18:24:18 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 3/3] kvm: use yield_to instead of sleep in
- kvm_vcpu_on_spin
-Message-ID: <20101203022418.GW10050@sequoia.sous-sol.org>
-References: <20101202144129.4357fe00@annuminas.surriel.com>
- <20101202144516.45a0385d@annuminas.surriel.com>
+	id S932272Ab0LCC1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 21:27:42 -0500
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:55113 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab0LCC1l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 21:27:41 -0500
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Dec 2010 21:27:41 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=Z/E
+	ekz8GYMC1e/RS30BlQ/3l8hZUyU8/7qQXfc+hm475V7Wl+aHnbZAGj4x9r2+GuBI
+	oWgHlROa8J8rTFe+bv0c2qhgNVdpD2lRH76Ly5ZcuIzgbZjr+wJtH5UI5bl85yvk
+	Z8niICK0LRCu36Jdgm1bqs3pex2yjreC4EEVE8TE=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.0.8, 1.7.1.3 and 1.7.2.4
+From: Junio C Hamano <gitster@pobox.com>
+Date: Thu, 02 Dec 2010 18:21:13 -0800
+Message-ID: <7vk4jrppeu.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101202144516.45a0385d@annuminas.surriel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Pobox-Relay-ID: 0EF297A8-FE84-11DF-A637-CDEAE6EC64FC-77302942!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rik van Riel (riel@redhat.com) wrote:
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1880,18 +1880,53 @@ void kvm_resched(struct kvm_vcpu *vcpu)
->  }
->  EXPORT_SYMBOL_GPL(kvm_resched);
->  
-> -void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu)
-> +void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  {
-> -	ktime_t expires;
-> -	DEFINE_WAIT(wait);
-> +	struct kvm *kvm = me->kvm;
-> +	struct kvm_vcpu *vcpu;
-> +	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
+A few maintenance releases of Git 1.7.0.8, 1.7.1.3 and 1.7.2.4 are
+available at the usual places (replace $V below with these version
+numbers):
 
-s/me->//
+  http://www.kernel.org/pub/software/scm/git/
 
-> +	int first_round = 1;
-> +	int i;
->  
-> -	prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
-> +	me->spinning = 1;
-> +
-> +	/*
-> +	 * We boost the priority of a VCPU that is runnable but not
-> +	 * currently running, because it got preempted by something
-> +	 * else and called schedule in __vcpu_run.  Hopefully that
-> +	 * VCPU is holding the lock that we need and will release it.
-> +	 * We approximate round-robin by starting at the last boosted VCPU.
-> +	 */
-> + again:
-> +	kvm_for_each_vcpu(i, vcpu, kvm) {
-> +		struct task_struct *task = vcpu->task;
-> +		if (first_round && i < last_boosted_vcpu) {
-> +			i = last_boosted_vcpu;
-> +			continue;
-> +		} else if (!first_round && i > last_boosted_vcpu)
-> +			break;
-> +		if (vcpu == me)
-> +			continue;
-> +		if (vcpu->spinning)
-> +			continue;
-> +		if (!task)
-> +			continue;
-> +		if (waitqueue_active(&vcpu->wq))
-> +			continue;
-> +		if (task->flags & PF_VCPU)
-> +			continue;
+  git-$V.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-$V.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-$V.tar.{gz,bz2}		(preformatted docs)
 
-I wonder if you set vcpu->task in sched_out and then NULL it in sched_in
-if you'd get what you want you could simplify the checks.  Basically
-that would be only the preempted runnable vcpus.
+The RPM binary packages for a few architectures are found in:
 
-> +		kvm->last_boosted_vcpu = i;
-> +		yield_to(task);
+  RPMS/$arch/git-*-$V-1.fc11.$arch.rpm	(RPM)
 
-Just trying to think of ways to be sure this doesn't become just
-yield() (although I thnk PF_VCPU is enough to catch that).
+These are primarily to backport support for the new "add.ignoreErrors"
+name given to the existing "add.ignore-errors" configuration variable.
+
+The next version, Git 1.7.4, and future versions, will support both
+old and incorrect name and the new corrected name, but without this
+backport, users who want to use the new name "add.ignoreErrors" in
+their repositories cannot use older versions of Git.
+
+
