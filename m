@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab0LCXCg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 18:02:36 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:18555 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab0LCXCf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 18:02:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Sn8o6Uk5KqiYa0V1zMHc8nXVvf4K3rrzxbEI/aYPoN7dZXuooAUQgXLV27ZHnwkIS9
-         +p6unHJVhznT9M3sQAMg==
+	id S1753448Ab0LCXRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 18:17:47 -0500
+Received: from kroah.org ([198.145.64.141]:41920 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884Ab0LCXRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 18:17:46 -0500
+Date: Fri, 3 Dec 2010 14:52:17 -0800
+From: Greg KH <greg@kroah.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: stable@kernel.org, David Airlie <airlied@linux.ie>,
+        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [stable] [PATCH] [Stable] agp/intel: complete the enablement
+ for B43.1
+Message-ID: <20101203225217.GB15457@kroah.com>
+References: <1289555843-6425-1-git-send-email-ike.pan@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1291335412-16231-1-git-send-email-walken@google.com>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
-Date: Fri, 3 Dec 2010 15:02:33 -0800
-Message-ID: <AANLkTi=3VJRa4g4UcDM+Z_vYHAuCwwHM=DyOOPD41MPe@mail.gmail.com>
-Subject: Re: [PATCH 0/6] mlock: do not hold mmap_sem for extended periods of time
-From: Michel Lespinasse <walken@google.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289555843-6425-1-git-send-email-ike.pan@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Fri, Nov 12, 2010 at 05:57:23PM +0800, Ike Panhc wrote:
+> This patch completes the missing part of commit 41a514 and 3dde04b and I think
+> commit 3dde04b is already in queue for next stable release.
+> 
+> Thanks Chris Wilson has the patch for enabling Intel B43.1 and backports it to
+> stable kernel. On mainline commit 210b23 and 1a997ff the way to detect gtt size
+> is changed, but these two commits landed on mainline kernel after .36 kernel
+> released. So that mainline kernel works fine on B43.1 machine but not stable
+> kernel.
+> 
+> Without this patch, X fails to start on 2.6.35.y kernel. After patched, X
+> starts.
+> 
+> This patch is made for 2.6.35.y and I believe it suits for 2.6.36.y.
+> 
+> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
 
-I forgot to add you on the original submission, but I think you'd be
-best qualified to look at the two patches implementing
-rwsem_is_contended()...
+I don't understand, is this patch upstream already?  If so, what is git
+git commit id for it?  If not, why not?
 
-On Thu, Dec 2, 2010 at 4:16 PM, Michel Lespinasse <walken@google.com> wrote:
-> Currently mlock() holds mmap_sem in exclusive mode while the pages get
-> faulted in. In the case of a large mlock, this can potentially take a
-> very long time, during which various commands such as 'ps auxw' will
-> block. This makes sysadmins unhappy:
->
-> real    14m36.232s
-> user    0m0.003s
-> sys     0m0.015s
-> (output from 'time ps auxw' while a 20GB file was being mlocked without
-> being previously preloaded into page cache)
->
-> I propose that mlock() could release mmap_sem after the VM_LOCKED bits
-> have been set in all appropriate VMAs. Then a second pass could be done
-> to actually mlock the pages, in small batches, releasing mmap_sem when
-> we block on disk access or when we detect some contention.
->
-> Patches are against v2.6.37-rc4 plus my patches to avoid mlock dirtying
-> (presently queued in -mm).
->
-> Michel Lespinasse (6):
->  mlock: only hold mmap_sem in shared mode when faulting in pages
->  mm: add FOLL_MLOCK follow_page flag.
->  mm: move VM_LOCKED check to __mlock_vma_pages_range()
->  rwsem: implement rwsem_is_contended()
->  mlock: do not hold mmap_sem for extended periods of time
->  x86 rwsem: more precise rwsem_is_contended() implementation
+confused,
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+greg k-h
+
+> ---
+>  drivers/char/agp/intel-agp.h |    1 +
+>  drivers/char/agp/intel-gtt.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
+> index bc9a4ad..cdefd47 100644
+> --- a/drivers/char/agp/intel-agp.h
+> +++ b/drivers/char/agp/intel-agp.h
+> @@ -241,6 +241,7 @@
+>  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_GM45_HB || \
+>  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_G41_HB || \
+>  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_B43_HB || \
+> +		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_B43_1_HB || \
+>  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB || \
+>  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB || \
+>  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB || \
+> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+> index ed11c77..c35361c 100644
+> --- a/drivers/char/agp/intel-gtt.c
+> +++ b/drivers/char/agp/intel-gtt.c
+> @@ -1338,6 +1338,7 @@ static void intel_i965_get_gtt_range(int *gtt_offset, int *gtt_size)
+>  	case PCI_DEVICE_ID_INTEL_G45_HB:
+>  	case PCI_DEVICE_ID_INTEL_G41_HB:
+>  	case PCI_DEVICE_ID_INTEL_B43_HB:
+> +	case PCI_DEVICE_ID_INTEL_B43_1_HB:
+>  	case PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB:
+>  	case PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB:
+>  	case PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB:
+> -- 
+> 1.7.1
+> 
+> _______________________________________________
+> stable mailing list
+> stable@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/stable
