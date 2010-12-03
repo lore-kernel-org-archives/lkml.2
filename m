@@ -1,67 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab0LCAR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:17:29 -0500
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:48483 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758241Ab0LCARX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758256Ab0LCARX (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 2 Dec 2010 19:17:23 -0500
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bug #23102] [bisected] i915 regression in post 2.6.36 kernels
-Date: Fri, 3 Dec 2010 01:20:05 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4-space-cache-dbg-00022-g620731b-dirty; KDE/4.5.3; i686; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera> <gUkHV_Vc3aE.A.PRH.uyC-MB@chimera>
-In-Reply-To: <gUkHV_Vc3aE.A.PRH.uyC-MB@chimera>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012030120.06282.johannes.hirte@fem.tu-ilmenau.de>
+Received: from smtp-out.google.com ([216.239.44.51]:44933 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab0LCARU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 19:17:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=BfU0YATyroAs+Wz4dIO8CglgEzvZoWfDxdnwLsBgwbvf2UcTtTv3rDbznxGnA/oToV
+         7ysUsKQ3Ofu4yTWxVhTw==
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 2/6] mm: add FOLL_MLOCK follow_page flag.
+Date: Thu,  2 Dec 2010 16:16:48 -0800
+Message-Id: <1291335412-16231-3-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1291335412-16231-1-git-send-email-walken@google.com>
+References: <1291335412-16231-1-git-send-email-walken@google.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 December 2010 00:41:44 Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23102
-> Subject		: [bisected] i915 regression in post 2.6.36 kernels
-> Submitter	: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-> Date		: 2010-11-10 7:02 (23 days old)
-> Message-ID	: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de>
-> References	: http://marc.info/?l=linux-kernel&m=128937310017057&w=2
+Move the code to mlock pages from __mlock_vma_pages_range()
+to follow_page().
 
-Still not fixed. As I mentioned, the revert of
-5c12a07e8073295ce8b57a822f811ac34e4f8420 missed some lines. I'm not familiar
-with the hardware or the code, so I'm not sure if this patch is right. At least
-it solves the bug for me. Chris any objection to re-adding it?
+This allows __mlock_vma_pages_range() to not have to break down work
+into 16-page batches.
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index ef188e3..bace93c 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2042,6 +2042,11 @@ i915_gem_flush_ring(struct drm_device *dev,
+An additional motivation for doing this within the present patch series
+is that it'll make it easier for a later chagne to drop mmap_sem when
+blocking on disk (we'd like to be able to resume at the page that was
+read from disk instead of at the start of a 16-page batch).
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ include/linux/mm.h |    1 +
+ mm/memory.c        |   27 ++++++++++++++++++++-
+ mm/mlock.c         |   65 ++++------------------------------------------------
+ 3 files changed, 32 insertions(+), 61 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 721f451..cebbb0d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1415,6 +1415,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
++#define FOLL_MLOCK	0x20	/* mark page as mlocked */
+ 
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/memory.c b/mm/memory.c
+index b8f97b8..f3a9242 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1297,7 +1297,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		page = pte_page(pte);
+ 	}
+ 
+-	if (flags & FOLL_GET)
++	if (flags & (FOLL_GET | FOLL_MLOCK))
+ 		get_page(page);
+ 	if (flags & FOLL_TOUCH) {
+ 		if ((flags & FOLL_WRITE) &&
+@@ -1310,6 +1310,31 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		 */
+ 		mark_page_accessed(page);
+ 	}
++	if (flags & FOLL_MLOCK) {
++		pte_unmap_unlock(ptep, ptl);
++		lru_add_drain();  /* push cached pages to LRU */
++		if (page->mapping) {
++			/*
++			 * That preliminary check is mainly to avoid
++			 * the pointless overhead of lock_page on the
++			 * ZERO_PAGE: which might bounce very badly if
++			 * there is contention.  However, we're still
++			 * dirtying its cacheline with get/put_page.
++			 */
++			lock_page(page);
++			/*
++			 * Because we lock page here and migration is
++			 * blocked by the elevated reference, we need
++			 * only check for file-cache page truncation.
++			 */
++			if (page->mapping)
++				mlock_vma_page(page);
++			unlock_page(page);
++		}
++		VM_BUG_ON(flags & FOLL_GET);
++		put_page(page);
++		return page;
++	}
+ unlock:
+ 	pte_unmap_unlock(ptep, ptl);
+ out:
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 8d6b702..0531173 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -159,10 +159,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
  {
-        ring->flush(dev, ring, invalidate_domains, flush_domains);
-        i915_gem_process_flushing_list(dev, flush_domains, ring);
-+
-+       if (ring->outstanding_lazy_request) {
-+               (void)i915_add_request(dev, file_priv, NULL, ring);
-+               ring->outstanding_lazy_request = false;
-+       }
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long addr = start;
+-	struct page *pages[16]; /* 16 gives a reasonable batch */
+ 	int nr_pages = (end - start) / PAGE_SIZE;
+-	int ret = 0;
+ 	int gup_flags;
++	int ret;
+ 
+ 	VM_BUG_ON(start & ~PAGE_MASK);
+ 	VM_BUG_ON(end   & ~PAGE_MASK);
+@@ -170,7 +169,7 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 	VM_BUG_ON(end   > vma->vm_end);
+ 	VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
+ 
+-	gup_flags = FOLL_TOUCH | FOLL_GET;
++	gup_flags = FOLL_TOUCH | FOLL_MLOCK;
+ 	/*
+ 	 * We want to touch writable mappings with a write fault in order
+ 	 * to break COW, except for shared mappings because these don't COW
+@@ -185,63 +184,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 		nr_pages--;
+ 	}
+ 
+-	while (nr_pages > 0) {
+-		int i;
+-
+-		cond_resched();
+-
+-		/*
+-		 * get_user_pages makes pages present if we are
+-		 * setting mlock. and this extra reference count will
+-		 * disable migration of this page.  However, page may
+-		 * still be truncated out from under us.
+-		 */
+-		ret = __get_user_pages(current, mm, addr,
+-				min_t(int, nr_pages, ARRAY_SIZE(pages)),
+-				gup_flags, pages, NULL);
+-		/*
+-		 * This can happen for, e.g., VM_NONLINEAR regions before
+-		 * a page has been allocated and mapped at a given offset,
+-		 * or for addresses that map beyond end of a file.
+-		 * We'll mlock the pages if/when they get faulted in.
+-		 */
+-		if (ret < 0)
+-			break;
+-
+-		lru_add_drain();	/* push cached pages to LRU */
+-
+-		for (i = 0; i < ret; i++) {
+-			struct page *page = pages[i];
+-
+-			if (page->mapping) {
+-				/*
+-				 * That preliminary check is mainly to avoid
+-				 * the pointless overhead of lock_page on the
+-				 * ZERO_PAGE: which might bounce very badly if
+-				 * there is contention.  However, we're still
+-				 * dirtying its cacheline with get/put_page:
+-				 * we'll add another __get_user_pages flag to
+-				 * avoid it if that case turns out to matter.
+-				 */
+-				lock_page(page);
+-				/*
+-				 * Because we lock page here and migration is
+-				 * blocked by the elevated reference, we need
+-				 * only check for file-cache page truncation.
+-				 */
+-				if (page->mapping)
+-					mlock_vma_page(page);
+-				unlock_page(page);
+-			}
+-			put_page(page);	/* ref from get_user_pages() */
+-		}
+-
+-		addr += ret * PAGE_SIZE;
+-		nr_pages -= ret;
+-		ret = 0;
+-	}
+-
+-	return ret;	/* 0 or negative error code */
++	ret = __get_user_pages(current, mm, addr, nr_pages, gup_flags,
++			       NULL, NULL);
++	return max(ret, 0);	/* 0 or negative error code */
  }
  
- static void
+ /*
+-- 
+1.7.3.1
+
