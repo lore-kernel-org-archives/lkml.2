@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab0LCVX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 16:23:59 -0500
-Received: from nm13.bullet.mail.sp2.yahoo.com ([98.139.91.83]:25540 "HELO
-	nm13.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750837Ab0LCVX6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 16:23:58 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 678208.96110.bm@omp1020.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=zTZ7ej+LVqMUyu9oa70U2HqBlZfU43933qSg7+CmibnXOrmhsbXWhP6TMXcmpSZ1m87GoUfz3ajkNu60K8FFuWqEwjoHiIsG9TrP7v3FLW59P/z88EGqny4Q4IW6RiGGlY5MPTtcP9ZcidFzRV0wjRL8wzx/OvoyxO51Ib6qmpE=;
-Message-ID: <268480.24096.qm@web111714.mail.gq1.yahoo.com>
-X-YMail-OSG: ni2bjv8VM1k3Lsd77Xfuizob8FoAUEXQIDYxC8DH.Ol2IvI
- _XWj0t0._ttIbrg.A7EJmbSOWjHb2lZHSCO2VTpsQY0Uaz3ON1X5.Lj4Uf3S
- ntfb0rGkg8LRt46bOtvHMVOPXiIUvbCsH.M0c3ehr9yFGC4lFAC10Yx7xCEV
- 5Cgd5DZpgljn83BRHjLLhVQAqLeiPmXZnyQGlgad.sANeeDtVQ1pjWj.Jx_a
- pUi_QrdiZ3h5HGuhSJDQg7mPvNDkm.YL4bJ890YjSfPTQRjml8GF8LHL4i5s
- ZiTEVJ3mkJAvRy1p4IRqyMG4WF2L3YPwhEXKBgahRwj.VHFlAK6OYrGuFwiv
- mBviLvdcEuxIDYZdZeATs2JV1yAHU5wiIV6K.l00Kg4Y5
-X-Mailer: YahooMailClassic/11.4.7 YahooMailWebService/0.8.107.285259
-Date: Fri, 3 Dec 2010 13:23:56 -0800 (PST)
-From: Doug Thompson <norsk5@yahoo.com>
-Subject: Re: edac_core: crashes on shutdown
-To: Tobias Karnat <tobias.karnat@googlemail.com>,
-        Borislav Petkov <bp@amd64.org>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101202183724.GH27263@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1754020Ab0LCV0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 16:26:11 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:43472 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab0LCV0J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 16:26:09 -0500
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Rik van Riel <riel@redhat.com>, vatsa@linux.vnet.ibm.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+In-Reply-To: <1291388987.7992.27.camel@marge.simson.net>
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+	 <20101202144423.3ad1908d@annuminas.surriel.com>
+	 <1291355656.7633.124.camel@marge.simson.net>
+	 <20101203134618.GG27994@linux.vnet.ibm.com>
+	 <1291387511.7992.15.camel@marge.simson.net>  <4CF90341.4020101@redhat.com>
+	 <1291388987.7992.27.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 03 Dec 2010 22:26:18 +0100
+Message-ID: <1291411578.2032.9.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
---- On Thu, 12/2/10, Borislav Petkov <bp@amd64.org> wrote:
-
-> From: Borislav Petkov <bp@amd64.org>
-> Subject: Re: edac_core: crashes on shutdown
-> To: "Tobias Karnat" <tobias.karnat@googlemail.com>
-> Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "Doug Thompson" <norsk5@yahoo.com>
-> Date: Thursday, December 2, 2010, 11:37 AM
-> On Thu, Dec 02, 2010 at 01:05:01PM
-> -0500, Tobias Karnat wrote:
-> > This patch fixed it.
-> > I have rebooted five times and it does not crash
-> anymore.
+On Fri, 2010-12-03 at 16:09 +0100, Mike Galbraith wrote:
+> On Fri, 2010-12-03 at 09:48 -0500, Rik van Riel wrote:
+> > On 12/03/2010 09:45 AM, Mike Galbraith wrote:
 > > 
-> > Thank you.
-> 
-> Thanks for testing and taking pictures :). I'll send it to
-> Linus before
-> .37 is out.
-
-great find. I haven't had time to do much with this one (sorry). Just started a new job (in user space now, instead of kernel space) in the past 2 weeks. As things settle down, I hope to have some cycles back on this.
-
-doug t
-
-> 
-> > Btw, are there any information available regarding the
-> NMI option?
+> > > I'll have to go back and re-read that.  Off the top of my head, I see no
+> > > way it could matter which container the numbers live in as long as they
+> > > keep advancing, and stay in the same runqueue.  (hm, task weights would
+> > > have to be the same too or scaled. dangerous business, tinkering with
+> > > vruntimes)
 > > 
-> > parm:    edac_op_state:EDAC Error
-> Reporting state: 0=Poll,1=NMI (int)
-> > 
-> > In edac.txt NMI is listed under FUTURE HARDWARE
-> SCANNING.
+> > They're not necessarily in the same runqueue, the
+> > VCPU that is given time might be on another CPU
+> > than the one that was spinning on a lock.
 > 
-> Well, looking at
-> <arch/x86/kernel/traps.c:mem_parity_error()> this
-> should already work. But it is kinda of a hack, if I'm
-> reading Doug
-> correctly: http://lkml.org/lkml/2010/9/21/144
-> 
-> And yes, using some kind of an interrupt is much better
-> than polling but
-> I don't know whether there's a single interrupt source for
-> the error
-> types all edac drivers can decode and report. In the
-> amd64_edac case,
-> we're piggybacking on MCE, for example. This was actually
-> the initial
-> reason for 00740c58541b6087d78418cebca1fcb86dc6077d and
-> dropping polling
-> from that driver.
-> 
-> Doug, any additions?
+> I don't think pumping vruntime cross cfs_rq would be safe, for the
+> reason noted (et al).  No competition means vruntime is meaningless.
+> Donating just advances a clock that nobody's looking at.
 
-I had an implementation for NMI processing, but as pointed out, we don't have a single cause source that applies everyone, and I (we) didn't have enough boxes to try it out on.  The documentation indicated a future feature with NMI, but it has faded over time and NMI patch (at sourceforge) is way stale.
-
-I whole new R&D stage would need to be done again to recapture all the old information and new possible implementation changes that have occurred in the past 4 years (if any).  
-
-The NMI/parity was a hack that was used to solved a problem back in 2005/2006 at Linux Networx (now defunct), but it worked then.  It was very much a lower priority thing once it worked on many machines. Today, it need a re-eval
-
-doug thompson
-
-
- 
+Yeah, cross-cpu you have to model it like exchanging lag. That's a
+slightly more complicated trick (esp. since we still don't have a proper
+measure for lag) but it should be doable.
