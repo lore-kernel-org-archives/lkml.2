@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab0LCPqg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:46:36 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:48193 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751045Ab0LCPqf (ORCPT
+	id S1752015Ab0LCPul (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:50:41 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47210 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab0LCPuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:46:35 -0500
-Date: Fri, 3 Dec 2010 10:46:33 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC][PATCH 1/2 v2] tracing: Add TRACE_EVENT_CONDITIONAL()
-Message-ID: <20101203154633.GA25790@Krystal>
-References: <20101203040358.955427199@goodmis.org> <20101203040822.144348122@goodmis.org> <20101203045402.GA29609@Krystal> <1291385344.3228.4.camel@gandalf.stny.rr.com> <20101203152733.GA25580@Krystal> <1291390727.3228.10.camel@gandalf.stny.rr.com>
+	Fri, 3 Dec 2010 10:50:40 -0500
+Date: Fri, 3 Dec 2010 16:50:31 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Stefan Roese <sr@denx.de>
+Cc: linuxppc-dev@lists.ozlabs.org, John Williams <john.williams@petalogix.com>,
+        gregkh@suse.de,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        hjk@linutronix.de, Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: UIO / of_genirq driver
+Message-ID: <20101203155031.GC5636@pengutronix.de>
+References: <1d3f23371001272313i62fc9158se4cd9173f196fb12@mail.gmail.com>
+ <20100128104545.GA3105@pengutronix.de>
+ <201012031643.31428.sr@denx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WfZ7S8PLGjBY9Voh"
 Content-Disposition: inline
-In-Reply-To: <1291390727.3228.10.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:44:37 up 9 days, 20:47,  3 users,  load average: 0.12, 0.03,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201012031643.31428.sr@denx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Fri, 2010-12-03 at 10:27 -0500, Mathieu Desnoyers wrote:
-> 
-> > > >   TP_CONDITION(unlikely(someparam)),
-> > > 
-> > > I actually think this is an abuse of "unlikely".
-> > 
-> > Why are you considering this an abuse ?
-> 
-> Because it is overused. I would rather get rid of most unlikely()'s
-> because they are mostly meaningless. Just run the unlikely profiler, and
-> you will see a large number of them are just plain incorrect.
-> 
-> Adding them here probably doesn't do any good. The only reason for this
-> TP_CONDITION() is to ignore those cases that it just does not make sense
-> to trace. Like a wake up tracepoint that does not wake anything up. No
-> need for "unlikely" or "likely", by trying to do that, you will most
-> likely get it wrong.
-> 
-> 	unlikely(use_likely_correctly)
 
-Ah OK. You are afraid that people will misuse it, not saying that it would be
-technically incorrect. Fair enough. It sounds like a good enough reason for not
-documenting this use-case.
+--WfZ7S8PLGjBY9Voh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
 
-Mathieu
+> Is there any update on this in the meantime? Do you know of any plans to =
+re-
+> work/-push this patchset? Just checking...
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+I had another look recently; I wouldn't like to just copy/paste the
+"new_id"-mechanism from PCI because the code would then exist three
+times in the kernel (PCMCIA being the third user I am aware of). I
+wondered if it was feasible to make the "new-id"-code generic and make
+those subsystems just use it. I haven't started working on it, though.
+
+Kind regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--WfZ7S8PLGjBY9Voh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkz5EccACgkQD27XaX1/VRuMWQCdF8iOdjY8DK3GeACA1YbVY/qX
+oVkAniWPpN9kz0GSvHQJuDUZ18Jf0OgD
+=8Ygy
+-----END PGP SIGNATURE-----
+
+--WfZ7S8PLGjBY9Voh--
