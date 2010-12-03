@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0LCRLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 12:11:44 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32812 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab0LCRLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 12:11:42 -0500
-Subject: [PATCH] NFS: suppressing showing of default mount port value in /proc
-	fixed
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 03 Dec 2010 20:11:45 +0300
-Message-ID: <20101203170138.22955.86546.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1753402Ab0LCRLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 12:11:47 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:6668 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752023Ab0LCRLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 12:11:45 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPuy+Ex5LdV4/2dsb2JhbACjNXLDJ4VIBA
+Date: Sat, 4 Dec 2010 04:11:40 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: LVM general discussion and development <linux-lvm@redhat.com>,
+        Spelic <spelic@shiftmail.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, npiggin@kernel.dk, dm-devel@redhat.com
+Subject: Re: Bugs in mkfs.xfs, device mapper, xfs, and /dev/ram
+Message-ID: <20101203171140.GA11889@amd>
+References: <4CF7A539.1050206@shiftmail.org>
+ <20101202141134.GA22012@infradead.org>
+ <4CF7A9C4.2040607@shiftmail.org>
+ <20101202141737.GA29799@infradead.org>
+ <20101202212227.GA22703@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202212227.GA22703@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Default value for mount server port is set to NFS_UNSPEC_PORT (-1) and will not
-be changed during parsing mount options for mound data version 6. This default
-value will be showed for mountport in /proc/mounts always since current default
-check is for zero value. This small mistake leads to big problem, because
-during umount.nfs execution from old user-space utils (at least nfs-utils
-1.0.9) this value will be used as the server port to connect to. This request
-will be rejected (since port is 65535) and thus nfs mount point can't be
-unmounted.
+On Thu, Dec 02, 2010 at 04:22:27PM -0500, Mike Snitzer wrote:
+> On Thu, Dec 02 2010 at  9:17am -0500,
+> Christoph Hellwig <hch@infradead.org> wrote:
+> 
+> > On Thu, Dec 02, 2010 at 03:14:28PM +0100, Spelic wrote:
+> > > On 12/02/2010 03:11 PM, Christoph Hellwig wrote:
+> > > >I'm pretty sure you have CONFIG_DEBUG_BLOCK_EXT_DEVT enabled.  This
+> > > >option must never be enabled, as it causes block devices to be
+> > > >randomly renumered.  Together with the ramdisk driver overloading
+> > > >the BLKFLSBUF ioctl to discard all data it guarantees you to get
+> > > >data loss like yours.
+> > > 
+> > > Nope...
+> > > 
+> > > # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+> > 
+> > Hmm, I suspect dm-linear's dumb forwarding of ioctls has the same
+> > effect.
+> 
+> For the benefit of others:
+> - mkfs.xfs will avoid sending BLKFLSBUF to any device whose major is
+>   ramdisk's major, this dates back to 2004:
+>   http://oss.sgi.com/archives/xfs/2004-08/msg00463.html
+> - but because a kpartx partition overlay (linear DM mapping) is used for
+>   the /dev/ram0p1 device, mkfs.xfs only sees a device with DM's major 
+> - so mkfs.xfs sends BLKFLSBUF to the DM device blissfully unaware that
+>   the backing device (behind the DM linear target) is a brd device
+> - DM will forward the BLKFLSBUF ioctl to brd, which triggers
+>   drivers/block/brd.c:brd_ioctl (nuking the entire ramdisk in the
+>   process)
+> 
+> So coming full circle this is what hch was referring to when he
+> mentioned:
+> 1) "ramdisk driver overloading the BLKFLSBUF ioctl ..."
+> 2) "dm-linear's dumb forwarding of ioctls ..."
+> 
+> I really can't see DM adding a specific check for ramdisk's major when
+> forwarding the BLKFLSBUF ioctl.
+> 
+> brd has direct partition support (see commit d7853d1f8932c) so maybe
+> kpartx should just blacklist /dev/ram devices?
+> 
+> Alternatively, what about switching brd away from overloading BLKFLSBUF
+> to a real implementation of (overloaded) BLKDISCARD support in brd.c?
+> One that doesn't blindly nuke the entire device but that properly
+> processes the discard request.
 
-Kernel version affected: 2.6.37-rc4
+Yeah the situation really sucks (mkfs.jfs doesn't work on ramdisk
+for the same reason).
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+I want to unfortunately keep ioctl for compatibility, but adding new
+saner ones would be welcome. Also, having a non-default config or
+load time parameter for brd, to skip the special case, if that would
+help testing on older userspace.
 
----
- fs/nfs/super.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 6d6e21d..fd4cac8 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -681,7 +681,8 @@ static void nfs_show_mountd_options(struct seq_file *m, struct nfs_server *nfss,
- 
- 	if (nfss->mountd_version || showdefaults)
- 		seq_printf(m, ",mountvers=%u", nfss->mountd_version);
--	if (nfss->mountd_port || showdefaults)
-+	if (nfss->mountd_port != (unsigned short)NFS_UNSPEC_PORT ||
-+			showdefaults)
- 		seq_printf(m, ",mountport=%u", nfss->mountd_port);
- 
- 	nfs_show_mountd_netid(m, nfss, showdefaults);
+DISCARD is actually a problem for rd. To actually get proper
+correctness, you need to preload brd with pages, otherwise when
+doing stress tests, IO can require memory allocations and deadlock.
+If we add a discard that frees pages, that introduces the same problem.
+If you find any option useful for testing, however, patches are fine --
+brd pretty much is only useful for testing nowadays.
 
