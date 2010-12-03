@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab0LCPcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:32:18 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:35326 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750939Ab0LCPcO (ORCPT
+	id S1752356Ab0LCPcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:32:17 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:60084 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998Ab0LCPcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Dec 2010 10:32:14 -0500
-X-Greylist: delayed 1535 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Dec 2010 10:32:14 EST
 From: Sundar Iyer <sundar.iyer@stericsson.com>
 To: <linux-arm-kernel@lists.infradead.org>, <dmitry.torokhov@gmail.com>,
         <sameo@linux.intel.com>, <ben-linux@fluff.org>
 Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Sundar Iyer <sundar.iyer@stericsson.com>
-Subject: [PATCH 19/20] mach-ux500: clean up checkpatch spits
-Date: Fri, 3 Dec 2010 20:35:52 +0530
-Message-ID: <1291388753-14662-20-git-send-email-sundar.iyer@stericsson.com>
+Subject: [PATCH 01/20] mfd/ab8500: remove spi support
+Date: Fri, 3 Dec 2010 20:35:34 +0530
+Message-ID: <1291388753-14662-2-git-send-email-sundar.iyer@stericsson.com>
 X-Mailer: git-send-email 1.7.2.dirty
 In-Reply-To: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
 References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
@@ -25,175 +24,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since the Ab8500 v1.0, the SPI support is deprecated on the HW.
+
 Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
 ---
- arch/arm/mach-ux500/clock.c |  118 +++++++++++++++++++++---------------------
- 1 files changed, 59 insertions(+), 59 deletions(-)
+ drivers/mfd/Kconfig      |    8 +-
+ drivers/mfd/Makefile     |    2 +-
+ drivers/mfd/ab8500-spi.c |  143 ----------------------------------------------
+ 3 files changed, 5 insertions(+), 148 deletions(-)
+ delete mode 100644 drivers/mfd/ab8500-spi.c
 
-diff --git a/arch/arm/mach-ux500/clock.c b/arch/arm/mach-ux500/clock.c
-index 6657b05..ca01368 100644
---- a/arch/arm/mach-ux500/clock.c
-+++ b/arch/arm/mach-ux500/clock.c
-@@ -334,92 +334,92 @@ static DEFINE_PRCMU_CLK(uiccclk,	0x4, 1, UICCCLK); /* v1 */
-  */
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 3a7b891..c856aa7 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -496,13 +496,13 @@ config EZX_PCAP
  
- /* Peripheral Cluster #1 */
--static DEFINE_PRCC_CLK(1, i2c4, 	10, 9, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(1, i2c4,		10, 9, &clk_i2cclk);
- static DEFINE_PRCC_CLK(1, gpio0,	9, -1, NULL);
--static DEFINE_PRCC_CLK(1, slimbus0, 	8,  8, &clk_slimclk);
--static DEFINE_PRCC_CLK(1, spi3_ed, 	7,  7, NULL);
--static DEFINE_PRCC_CLK(1, spi3_v1, 	7, -1, NULL);
--static DEFINE_PRCC_CLK(1, i2c2, 	6,  6, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(1, slimbus0,	8,  8, &clk_slimclk);
-+static DEFINE_PRCC_CLK(1, spi3_ed,	7,  7, NULL);
-+static DEFINE_PRCC_CLK(1, spi3_v1,	7, -1, NULL);
-+static DEFINE_PRCC_CLK(1, i2c2,		6,  6, &clk_i2cclk);
- static DEFINE_PRCC_CLK(1, sdi0,		5,  5, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(1, msp1_ed, 	4,  4, &clk_msp02clk);
--static DEFINE_PRCC_CLK(1, msp1_v1, 	4,  4, &clk_msp1clk);
--static DEFINE_PRCC_CLK(1, msp0, 	3,  3, &clk_msp02clk);
--static DEFINE_PRCC_CLK(1, i2c1, 	2,  2, &clk_i2cclk);
--static DEFINE_PRCC_CLK(1, uart1, 	1,  1, &clk_uartclk);
--static DEFINE_PRCC_CLK(1, uart0, 	0,  0, &clk_uartclk);
-+static DEFINE_PRCC_CLK(1, msp1_ed,	4,  4, &clk_msp02clk);
-+static DEFINE_PRCC_CLK(1, msp1_v1,	4,  4, &clk_msp1clk);
-+static DEFINE_PRCC_CLK(1, msp0,		3,  3, &clk_msp02clk);
-+static DEFINE_PRCC_CLK(1, i2c1,		2,  2, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(1, uart1,	1,  1, &clk_uartclk);
-+static DEFINE_PRCC_CLK(1, uart0,	0,  0, &clk_uartclk);
+ config AB8500_CORE
+ 	bool "ST-Ericsson AB8500 Mixed Signal Power Management chip"
+-	depends on GENERIC_HARDIRQS && ABX500_CORE && SPI_MASTER && ARCH_U8500
++	depends on GENERIC_HARDIRQS && ABX500_CORE && ARCH_U8500
+ 	select MFD_CORE
+ 	help
+ 	  Select this option to enable access to AB8500 power management
+-	  chip. This connects to U8500 either on the SSP/SPI bus
+-	  or the I2C bus via PRCMU. It also adds the irq_chip
+-	  parts for handling the Mixed Signal chip events.
++	  chip. This connects to U8500 either on the SSP/SPI bus (deprecated
++	  since hardware version v1.0) or the I2C bus via PRCMU. It also adds
++	  the irq_chip parts for handling the Mixed Signal chip events.
+ 	  This chip embeds various other multimedia funtionalities as well.
  
- /* Peripheral Cluster #2 */
- 
- static DEFINE_PRCC_CLK(2, gpio1_ed,	12, -1, NULL);
--static DEFINE_PRCC_CLK(2, ssitx_ed, 	11, -1, NULL);
--static DEFINE_PRCC_CLK(2, ssirx_ed, 	10, -1, NULL);
--static DEFINE_PRCC_CLK(2, spi0_ed, 	 9, -1, NULL);
--static DEFINE_PRCC_CLK(2, sdi3_ed, 	 8,  6, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(2, sdi1_ed, 	 7,  5, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(2, msp2_ed, 	 6,  4, &clk_msp02clk);
--static DEFINE_PRCC_CLK(2, sdi4_ed, 	 4,  2, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, ssitx_ed,	11, -1, NULL);
-+static DEFINE_PRCC_CLK(2, ssirx_ed,	10, -1, NULL);
-+static DEFINE_PRCC_CLK(2, spi0_ed,	 9, -1, NULL);
-+static DEFINE_PRCC_CLK(2, sdi3_ed,	 8,  6, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, sdi1_ed,	 7,  5, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, msp2_ed,	 6,  4, &clk_msp02clk);
-+static DEFINE_PRCC_CLK(2, sdi4_ed,	 4,  2, &clk_sdmmcclk);
- static DEFINE_PRCC_CLK(2, pwl_ed,	 3,  1, NULL);
--static DEFINE_PRCC_CLK(2, spi1_ed, 	 2, -1, NULL);
--static DEFINE_PRCC_CLK(2, spi2_ed, 	 1, -1, NULL);
--static DEFINE_PRCC_CLK(2, i2c3_ed, 	 0,  0, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(2, spi1_ed,	 2, -1, NULL);
-+static DEFINE_PRCC_CLK(2, spi2_ed,	 1, -1, NULL);
-+static DEFINE_PRCC_CLK(2, i2c3_ed,	 0,  0, &clk_i2cclk);
- 
- static DEFINE_PRCC_CLK(2, gpio1_v1,	11, -1, NULL);
--static DEFINE_PRCC_CLK(2, ssitx_v1, 	10,  7, NULL);
--static DEFINE_PRCC_CLK(2, ssirx_v1, 	 9,  6, NULL);
--static DEFINE_PRCC_CLK(2, spi0_v1, 	 8, -1, NULL);
--static DEFINE_PRCC_CLK(2, sdi3_v1, 	 7,  5, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(2, sdi1_v1, 	 6,  4, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(2, msp2_v1, 	 5,  3, &clk_msp02clk);
--static DEFINE_PRCC_CLK(2, sdi4_v1, 	 4,  2, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, ssitx_v1,	10,  7, NULL);
-+static DEFINE_PRCC_CLK(2, ssirx_v1,	 9,  6, NULL);
-+static DEFINE_PRCC_CLK(2, spi0_v1,	 8, -1, NULL);
-+static DEFINE_PRCC_CLK(2, sdi3_v1,	 7,  5, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, sdi1_v1,	 6,  4, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(2, msp2_v1,	 5,  3, &clk_msp02clk);
-+static DEFINE_PRCC_CLK(2, sdi4_v1,	 4,  2, &clk_sdmmcclk);
- static DEFINE_PRCC_CLK(2, pwl_v1,	 3,  1, NULL);
--static DEFINE_PRCC_CLK(2, spi1_v1, 	 2, -1, NULL);
--static DEFINE_PRCC_CLK(2, spi2_v1, 	 1, -1, NULL);
--static DEFINE_PRCC_CLK(2, i2c3_v1, 	 0,  0, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(2, spi1_v1,	 2, -1, NULL);
-+static DEFINE_PRCC_CLK(2, spi2_v1,	 1, -1, NULL);
-+static DEFINE_PRCC_CLK(2, i2c3_v1,	 0,  0, &clk_i2cclk);
- 
- /* Peripheral Cluster #3 */
--static DEFINE_PRCC_CLK(3, gpio2, 	8, -1, NULL);
--static DEFINE_PRCC_CLK(3, sdi5, 	7,  7, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(3, uart2, 	6,  6, &clk_uartclk);
--static DEFINE_PRCC_CLK(3, ske, 		5,  5, &clk_32khz);
--static DEFINE_PRCC_CLK(3, sdi2, 	4,  4, &clk_sdmmcclk);
--static DEFINE_PRCC_CLK(3, i2c0, 	3,  3, &clk_i2cclk);
--static DEFINE_PRCC_CLK(3, ssp1_ed, 	2,  2, &clk_i2cclk);
--static DEFINE_PRCC_CLK(3, ssp0_ed, 	1,  1, &clk_i2cclk);
--static DEFINE_PRCC_CLK(3, ssp1_v1, 	2,  2, &clk_sspclk);
--static DEFINE_PRCC_CLK(3, ssp0_v1, 	1,  1, &clk_sspclk);
--static DEFINE_PRCC_CLK(3, fsmc, 	0, -1, NULL);
-+static DEFINE_PRCC_CLK(3, gpio2,	8, -1, NULL);
-+static DEFINE_PRCC_CLK(3, sdi5,		7,  7, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(3, uart2,	6,  6, &clk_uartclk);
-+static DEFINE_PRCC_CLK(3, ske,		5,  5, &clk_32khz);
-+static DEFINE_PRCC_CLK(3, sdi2,		4,  4, &clk_sdmmcclk);
-+static DEFINE_PRCC_CLK(3, i2c0,		3,  3, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(3, ssp1_ed,	2,  2, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(3, ssp0_ed,	1,  1, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(3, ssp1_v1,	2,  2, &clk_sspclk);
-+static DEFINE_PRCC_CLK(3, ssp0_v1,	1,  1, &clk_sspclk);
-+static DEFINE_PRCC_CLK(3, fsmc,		0, -1, NULL);
- 
- /* Peripheral Cluster #4 is in the always on domain */
- 
- /* Peripheral Cluster #5 */
--static DEFINE_PRCC_CLK(5, gpio3, 	1, -1, NULL);
--static DEFINE_PRCC_CLK(5, usb_ed, 	0,  0, &clk_i2cclk);
--static DEFINE_PRCC_CLK(5, usb_v1, 	0,  0, NULL);
-+static DEFINE_PRCC_CLK(5, gpio3,	1, -1, NULL);
-+static DEFINE_PRCC_CLK(5, usb_ed,	0,  0, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(5, usb_v1,	0,  0, NULL);
- 
- /* Peripheral Cluster #6 */
- 
- /* MTU ID in data */
- static DEFINE_PRCC_CLK_CUSTOM(6, mtu1_v1, 8, -1, NULL, clk_mtu_get_rate, 1);
- static DEFINE_PRCC_CLK_CUSTOM(6, mtu0_v1, 7, -1, NULL, clk_mtu_get_rate, 0);
--static DEFINE_PRCC_CLK(6, cfgreg_v1, 	6,  6, NULL);
--static DEFINE_PRCC_CLK(6, dmc_ed, 	6,  6, NULL);
--static DEFINE_PRCC_CLK(6, hash1, 	5, -1, NULL);
--static DEFINE_PRCC_CLK(6, unipro_v1, 	4,  1, &clk_uniproclk);
--static DEFINE_PRCC_CLK(6, cryp1_ed, 	4, -1, NULL);
--static DEFINE_PRCC_CLK(6, pka, 		3, -1, NULL);
--static DEFINE_PRCC_CLK(6, hash0, 	2, -1, NULL);
--static DEFINE_PRCC_CLK(6, cryp0, 	1, -1, NULL);
--static DEFINE_PRCC_CLK(6, rng_ed, 	0,  0, &clk_i2cclk);
--static DEFINE_PRCC_CLK(6, rng_v1, 	0,  0, &clk_rngclk);
-+static DEFINE_PRCC_CLK(6, cfgreg_v1,	6,  6, NULL);
-+static DEFINE_PRCC_CLK(6, dmc_ed,	6,  6, NULL);
-+static DEFINE_PRCC_CLK(6, hash1,	5, -1, NULL);
-+static DEFINE_PRCC_CLK(6, unipro_v1,	4,  1, &clk_uniproclk);
-+static DEFINE_PRCC_CLK(6, cryp1_ed,	4, -1, NULL);
-+static DEFINE_PRCC_CLK(6, pka,		3, -1, NULL);
-+static DEFINE_PRCC_CLK(6, hash0,	2, -1, NULL);
-+static DEFINE_PRCC_CLK(6, cryp0,	1, -1, NULL);
-+static DEFINE_PRCC_CLK(6, rng_ed,	0,  0, &clk_i2cclk);
-+static DEFINE_PRCC_CLK(6, rng_v1,	0,  0, &clk_rngclk);
- 
- /* Peripheral Cluster #7 */
- 
--static DEFINE_PRCC_CLK(7, tzpc0_ed, 	4, -1, NULL);
-+static DEFINE_PRCC_CLK(7, tzpc0_ed,	4, -1, NULL);
- /* MTU ID in data */
- static DEFINE_PRCC_CLK_CUSTOM(7, mtu1_ed, 3, -1, NULL, clk_mtu_get_rate, 1);
- static DEFINE_PRCC_CLK_CUSTOM(7, mtu0_ed, 2, -1, NULL, clk_mtu_get_rate, 0);
--static DEFINE_PRCC_CLK(7, wdg_ed, 	1, -1, NULL);
--static DEFINE_PRCC_CLK(7, cfgreg_ed, 	0, -1, NULL);
-+static DEFINE_PRCC_CLK(7, wdg_ed,	1, -1, NULL);
-+static DEFINE_PRCC_CLK(7, cfgreg_ed,	0, -1, NULL);
- 
- static struct clk clk_dummy_apb_pclk;
- 
-@@ -522,7 +522,7 @@ static struct clk_lookup u8500_ed_clks[] = {
- 
- static struct clk_lookup u8500_v1_clks[] = {
- 	/* Peripheral Cluster #1 */
--	CLK(i2c4,	"nmk-i2c.4", 	NULL),
-+	CLK(i2c4,	"nmk-i2c.4",	NULL),
- 	CLK(spi3_v1,	"spi3",		NULL),
- 	CLK(msp1_v1,	"msp1",		NULL),
- 
+ config AB8500_I2C_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 04a7226..67c8bcb 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -70,7 +70,7 @@ obj-$(CONFIG_ABX500_CORE)	+= abx500-core.o
+ obj-$(CONFIG_AB3100_CORE)	+= ab3100-core.o
+ obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
+ obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
+-obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-spi.o
++obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o
+ obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
+ obj-$(CONFIG_AB8500_DEBUG)	+= ab8500-debugfs.o
+ obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+diff --git a/drivers/mfd/ab8500-spi.c b/drivers/mfd/ab8500-spi.c
+deleted file mode 100644
+index b165342..0000000
+--- a/drivers/mfd/ab8500-spi.c
++++ /dev/null
+@@ -1,143 +0,0 @@
+-/*
+- * Copyright (C) ST-Ericsson SA 2010
+- *
+- * License Terms: GNU General Public License v2
+- * Author: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/slab.h>
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/mfd/ab8500.h>
+-
+-/*
+- * This funtion writes to any AB8500 registers using
+- * SPI protocol &  before it writes it packs the data
+- * in the below 24 bit frame format
+- *
+- *	 *|------------------------------------|
+- *	 *| 23|22...18|17.......10|9|8|7......0|
+- *	 *| r/w  bank       adr          data  |
+- *	 * ------------------------------------
+- *
+- * This function shouldn't be called from interrupt
+- * context
+- */
+-static int ab8500_spi_write(struct ab8500 *ab8500, u16 addr, u8 data)
+-{
+-	struct spi_device *spi = container_of(ab8500->dev, struct spi_device,
+-					      dev);
+-	unsigned long spi_data = addr << 10 | data;
+-	struct spi_transfer xfer;
+-	struct spi_message msg;
+-
+-	ab8500->tx_buf[0] = spi_data;
+-	ab8500->rx_buf[0] = 0;
+-
+-	xfer.tx_buf	= ab8500->tx_buf;
+-	xfer.rx_buf	= NULL;
+-	xfer.len	= sizeof(unsigned long);
+-
+-	spi_message_init(&msg);
+-	spi_message_add_tail(&xfer, &msg);
+-
+-	return spi_sync(spi, &msg);
+-}
+-
+-static int ab8500_spi_read(struct ab8500 *ab8500, u16 addr)
+-{
+-	struct spi_device *spi = container_of(ab8500->dev, struct spi_device,
+-					      dev);
+-	unsigned long spi_data = 1 << 23 | addr << 10;
+-	struct spi_transfer xfer;
+-	struct spi_message msg;
+-	int ret;
+-
+-	ab8500->tx_buf[0] = spi_data;
+-	ab8500->rx_buf[0] = 0;
+-
+-	xfer.tx_buf	= ab8500->tx_buf;
+-	xfer.rx_buf	= ab8500->rx_buf;
+-	xfer.len	= sizeof(unsigned long);
+-
+-	spi_message_init(&msg);
+-	spi_message_add_tail(&xfer, &msg);
+-
+-	ret = spi_sync(spi, &msg);
+-	if (!ret)
+-		/*
+-		 * Only the 8 lowermost bytes are
+-		 * defined with value, the rest may
+-		 * vary depending on chip/board noise.
+-		 */
+-		ret = ab8500->rx_buf[0] & 0xFFU;
+-
+-	return ret;
+-}
+-
+-static int __devinit ab8500_spi_probe(struct spi_device *spi)
+-{
+-	struct ab8500 *ab8500;
+-	int ret;
+-
+-	spi->bits_per_word = 24;
+-	ret = spi_setup(spi);
+-	if (ret < 0)
+-		return ret;
+-
+-	ab8500 = kzalloc(sizeof *ab8500, GFP_KERNEL);
+-	if (!ab8500)
+-		return -ENOMEM;
+-
+-	ab8500->dev = &spi->dev;
+-	ab8500->irq = spi->irq;
+-
+-	ab8500->read = ab8500_spi_read;
+-	ab8500->write = ab8500_spi_write;
+-
+-	spi_set_drvdata(spi, ab8500);
+-
+-	ret = ab8500_init(ab8500);
+-	if (ret)
+-		kfree(ab8500);
+-
+-	return ret;
+-}
+-
+-static int __devexit ab8500_spi_remove(struct spi_device *spi)
+-{
+-	struct ab8500 *ab8500 = spi_get_drvdata(spi);
+-
+-	ab8500_exit(ab8500);
+-	kfree(ab8500);
+-
+-	return 0;
+-}
+-
+-static struct spi_driver ab8500_spi_driver = {
+-	.driver = {
+-		.name = "ab8500-spi",
+-		.owner = THIS_MODULE,
+-	},
+-	.probe	= ab8500_spi_probe,
+-	.remove	= __devexit_p(ab8500_spi_remove)
+-};
+-
+-static int __init ab8500_spi_init(void)
+-{
+-	return spi_register_driver(&ab8500_spi_driver);
+-}
+-subsys_initcall(ab8500_spi_init);
+-
+-static void __exit ab8500_spi_exit(void)
+-{
+-	spi_unregister_driver(&ab8500_spi_driver);
+-}
+-module_exit(ab8500_spi_exit);
+-
+-MODULE_AUTHOR("Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com");
+-MODULE_DESCRIPTION("AB8500 SPI");
+-MODULE_LICENSE("GPL v2");
 -- 
 1.7.2.dirty
 
