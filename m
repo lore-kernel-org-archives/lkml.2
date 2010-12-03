@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0LCHvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 02:51:12 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:41977 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649Ab0LCHvJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 02:51:09 -0500
-Date: Fri, 3 Dec 2010 16:50:07 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh updates for 2.6.37-rc5
-Message-ID: <20101203075006.GA1560@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1758416Ab0LCHyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 02:54:18 -0500
+Received: from serv04.lahn.de ([213.239.197.57]:53123 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756083Ab0LCHyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 02:54:17 -0500
+Date: Fri, 3 Dec 2010 08:53:50 +0100
+From: Michael Leun <lkml20101129@newton.leun.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: hughd@google.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: kernel BUG at mm/truncate.c:475!
+Message-ID: <20101203085350.55f94057@xenia.leun.net>
+In-Reply-To: <20101202115722.1c00afd5@xenia.leun.net>
+References: <20101130194945.58962c44@xenia.leun.net>
+	<alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com>
+	<E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu>
+	<20101201124528.6809c539@xenia.leun.net>
+	<E1PNqO1-0005px-9h@pomaz-ex.szeredi.hu>
+	<20101202084159.6bff7355@xenia.leun.net>
+	<20101202091552.4a63f717@xenia.leun.net>
+	<E1PO5gh-00079U-Ma@pomaz-ex.szeredi.hu>
+	<20101202115722.1c00afd5@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This contains some fixups for the SH7724 FSI utilization and fixes up the
-clock refcounting problems, as per the R-Mobile changes, as well as a
-fix for lazy dcache writeback that follows an identical ARM change.
+On Thu, 2 Dec 2010 11:57:22 +0100
+Michael Leun <lkml20101129@newton.leun.net> wrote:
 
-It's been an uphill battle for the PG_dcache_dirty case, and the current
-tree is unreliable for some combintions of root on MMC, CF, and USB for a
-number of configurations. Newer parts are D-cache coherent so this hasn't
-really been much of a problem except for on older configurations, which
-unfortunately people have started hitting and reporting.
+> > Can you please describe in detail the workload that's causing this
+> > to happen?
+> 
+> Thats rather complicated, but I'll try. Basically it boils down to:
+> 
+> unshare -n -m /bin/bash
+> unionfs -o
+> cow,suid,allow_other,max_files=65536 /home/netenv/user1-union=RW:/=RO /home/netenv/user1
+> mount -n -t proc none /home/netenv/user1/proc mount -n -t sysfs
+> none /home/netenv/user1/sys mount -n -t devtmpfs
+> devtmpfs /home/netenv/user1/dev mount -n -t devpts
+> devpts /home/netenv/user1/dev/pts chroot /home/netenv/user1 /bin/su -
+> user1
+[...]
+> In some of this setups two or more environments share the same
+> writable branch, so the files in this environments changed against
+> real root of the machine are the same, e.g.:
+> 
+> [...]
+> unionfs -o
+> cow,suid,allow_other,max_files=65536 /home/netenv/commondir=RW:/=RO /home/netenv/user1
+> [...]
+> 
+> and another one
+> 
+> [...]
+> unionfs -o
+> cow,suid,allow_other,max_files=65536 /home/netenv/commondir=RW:/=RO /home/netenv/user2
+> [...]
 
-This will result in potentially more aggressive flushing than we
-specifically need at the moment, but it does fix up all of the
-outstanding bugs reported. It should be possible to back off of the
-flush_kernel_dcache_page() implementation with this in place, but that's
-left as a .38 exercise where we have more time to test the configurations
-with reported problems.
+Additional note: Happens also WITHOUT that "two unionfs mounts use the
+same branch dir" stuff.
 
-Please pull from:
+Really seems to happen much more often in 2.6.36.1 than in 2.6.36.
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
+> I observed that unionfs process takes much more cpu power than usual
+> before fault happens.
 
-Which contains:
+This also happens without that "two unionfs mounts use the same branch
+dir" stuff.
 
-Guennadi Liakhovetski (1):
-      dma: shdma: add a MODULE_ALIAS() to allow module autoloading
+-- 
+MfG,
 
-Kuninori Morimoto (1):
-      sh: Add div6_reparent_clks to clock framework for FSI
+Michael Leun
 
-Nobuhiro Iwamatsu (2):
-      sh: se/7724: Update clock framework of FSI clock to non-legacy
-      sh: se/7724: Remove FSI/B of GPIO init code
-
-Paul Mundt (1):
-      sh: Assume new page cache pages have dirty dcache lines.
-
-Vasiliy Kulikov (1):
-      sh: boards: mach-se: use IS_ERR() instead of NULL check
-
- arch/sh/boards/mach-ecovec24/setup.c   |   34 +++--------------------
- arch/sh/boards/mach-se/7724/setup.c    |   47 +++++---------------------------
- arch/sh/include/asm/cacheflush.h       |    2 +-
- arch/sh/include/cpu-sh4/cpu/sh7724.h   |    3 ++
- arch/sh/kernel/cpu/sh4a/clock-sh7724.c |   44 ++++++++++++++++++++++++++---
- arch/sh/mm/cache-sh4.c                 |    4 +-
- arch/sh/mm/cache-sh7705.c              |    2 +-
- arch/sh/mm/cache.c                     |   14 +++++-----
- arch/sh/mm/kmap.c                      |    2 +-
- drivers/dma/shdma.c                    |    1 +
- 10 files changed, 66 insertions(+), 87 deletions(-)
