@@ -1,381 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0LCXir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 18:38:47 -0500
-Received: from fmmailgate02.web.de ([217.72.192.227]:44061 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab0LCXhi (ORCPT
+	id S1754137Ab0LCXsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 18:48:13 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:51730 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab0LCXsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 18:37:38 -0500
-From: Jan Kiszka <jan.kiszka@web.de>
-To: Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
-        Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [PATCH 2/5] genirq: Introduce interrupt sharing notifier
-Date: Sat,  4 Dec 2010 00:37:28 +0100
-Message-Id: <65fc7600b3df0e83e79aaf95eb2e44fccee8895e.1291419444.git.jan.kiszka@web.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1291419444.git.jan.kiszka@web.de>
-References: <cover.1291419444.git.jan.kiszka@web.de>
-In-Reply-To: <cover.1291419444.git.jan.kiszka@web.de>
-References: <cover.1291419444.git.jan.kiszka@web.de>
-X-Provags-ID: V01U2FsdGVkX1+PEjXZcvlanseXdXqqz4mKVSIvFanhhD7CNm4o
-	ePkSM8xQit7kdBBD3HG+DPV7OLoySen9W+EfGdTiAXKb8Ed4B5
-	TnVUyVPiM=
+	Fri, 3 Dec 2010 18:48:12 -0500
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 0/4] Introduce hardware spinlock framework
+Date: Sat,  4 Dec 2010 01:50:43 +0200
+Message-Id: <1291420247-18171-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+OMAP4 introduces a Hardware Spinlock device, which provides hardware
+assistance for synchronization and mutual exclusion between heterogeneous
+processors and those not operating under a single, shared operating system
+(e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
 
-This enables drivers to switch their interrupt handling between
-exclusive and shared mode.
+The intention of this hardware device is to allow remote processors,
+that have no alternative mechanism to accomplish synchronization and mutual
+exclusion operations, to share resources (such as memory and/or any other
+hardware resource).
 
-While there is generally no advantage in exclusive interrupt handling
-patterns, at least one use case can benefit from adaptive handling:
-Generic stub drivers that hand out PCI devices for unprivileged use in
-virtualization or user space device driver scenarios. They need to mask
-the interrupt until the unprivileged driver had a chance to process the
-event. As generic IRQ masking at device level (via PCI config space) is
-at least 10 times slower than disabling at interrupt controller level on
-x86, we only want to apply the costly method when there is a real need.
+This patchset adds hwspinlock framework that makes it possible
+for drivers to use those hwspinlock devices and stay platform-independent.
 
-The sharing notifier provides both the required information about the
-number of interrupt handlers as well as a properly synchronized
-execution context to run interrupt de-/registration and mode switch
-procedures. The notifier is called with IRQN_SETUP_USED or
-IRQN_SETUP_USED, respectively, during registration to allow setup
-according to the current interrupt use. When the number of users is one
-on entry of request_threaded_irq or on exit of free_irq, IRQN_SHARED or
-IRQN_EXCLUSIVE, respectively, are signaled. Deregistration is signaled
-as IRQN_SHUTDOWN to the removed notifier.
+Currently there are two users for this hwspinlock interface:
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- include/linux/interrupt.h |   21 ++++++
- include/linux/irqdesc.h   |    9 +++
- kernel/irq/irqdesc.c      |    6 ++
- kernel/irq/manage.c       |  158 +++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 190 insertions(+), 4 deletions(-)
+1. Inter-processor communications: on OMAP4, cpu-intensive multimedia
+tasks are offloaded by the host to the remote M3 and/or C64x+ slave
+processors.
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 79d0c4f..9ebb98f 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -96,6 +96,23 @@ enum {
- 	IRQC_IS_NESTED,
- };
- 
-+/*
-+ * These values are passed to the sharing notifier as second argument.
-+ *
-+ * IRQN_SHARED - interrupt line is shared by two or more devices
-+ * IRQN_EXCLUSIVE - interrupt line is used by one device only
-+ * IRQN_SETUP_USED - initial notification for interrupt line already in use
-+ * IRQN_SETUP_UNUSED - initial notification for yet unused interrupt line
-+ * IRQN_SHUTDOWN - shutdown notification on notifier unregistration
-+ */
-+enum {
-+	IRQN_SHARED = 0,
-+	IRQN_EXCLUSIVE,
-+	IRQN_SETUP_USED,
-+	IRQN_SETUP_UNUSED,
-+	IRQN_SHUTDOWN,
-+};
-+
- typedef irqreturn_t (*irq_handler_t)(int, void *);
- 
- /**
-@@ -176,6 +193,10 @@ static inline void exit_irq_thread(void) { }
- 
- extern void free_irq(unsigned int, void *);
- 
-+int register_irq_sharing_notifier(unsigned int irq, struct notifier_block *nb);
-+int unregister_irq_sharing_notifier(unsigned int irq,
-+				    struct notifier_block *nb);
-+
- struct device;
- 
- extern int __must_check
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 979c68c..eefffef 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -29,6 +29,10 @@ struct timer_rand_state;
-  * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
-  * @dir:		/proc/irq/ procfs entry
-  * @name:		flow handler name for /proc/interrupts output
-+ * @users:		number of registered users (>1: irq is shared)
-+ * @sh_lock:		mutex to synchronize sharing notifications
-+ * @sh_lock_holder:	holder of sh_lock, allows recursion
-+ * @sh_notifier:	fired when the sharing state changes
-  */
- struct irq_desc {
- 
-@@ -80,6 +84,11 @@ struct irq_desc {
- 	struct proc_dir_entry	*dir;
- #endif
- 	const char		*name;
-+
-+	unsigned int		users;
-+	struct mutex		sh_lock;
-+	struct task_struct	*sh_lock_holder;
-+	struct raw_notifier_head sh_notifier;
- } ____cacheline_internodealigned_in_smp;
- 
- #ifndef CONFIG_SPARSE_IRQ
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 9988d03..8c5399d 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -83,6 +83,9 @@ static void desc_set_defaults(unsigned int irq, struct irq_desc *desc, int node)
- 	desc->irq_count = 0;
- 	desc->irqs_unhandled = 0;
- 	desc->name = NULL;
-+	desc->users = 0;
-+	desc->sh_lock_holder = NULL;
-+	RAW_INIT_NOTIFIER_HEAD(&desc->sh_notifier);
- 	memset(desc->kstat_irqs, 0, nr_cpu_ids * sizeof(*(desc->kstat_irqs)));
- 	desc_smp_init(desc, node);
- }
-@@ -144,6 +147,8 @@ static struct irq_desc *alloc_desc(int irq, int node)
- 	raw_spin_lock_init(&desc->lock);
- 	lockdep_set_class(&desc->lock, &irq_desc_lock_class);
- 
-+	mutex_init(&desc->sh_lock);
-+
- 	desc_set_defaults(irq, desc, node);
- 
- 	return desc;
-@@ -254,6 +259,7 @@ int __init early_irq_init(void)
- 		alloc_masks(desc + i, GFP_KERNEL, node);
- 		desc_smp_init(desc + i, node);
- 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
-+		mutex_init(&desc[i].sh_lock);
- 	}
- 	return arch_early_irq_init();
- }
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 6341765..a19d621 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -414,7 +414,12 @@ int can_request_irq(unsigned int irq, unsigned long irqflags)
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 	action = desc->action;
- 	if (action)
--		if (irqflags & action->flags & IRQF_SHARED)
-+		/*
-+		 * A registered sharing notifier indicates the ability to turn
-+		 * the irq into a sharable one on demand.
-+		 */
-+		if (irqflags & action->flags & IRQF_SHARED ||
-+		    desc->sh_notifier.head)
- 			action = NULL;
- 
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
-@@ -870,8 +875,12 @@ out_thread:
- int setup_irq(unsigned int irq, struct irqaction *act)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-+	int ret;
- 
--	return __setup_irq(irq, desc, act);
-+	ret = __setup_irq(irq, desc, act);
-+	if (!ret)
-+		desc->users++;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(setup_irq);
- 
-@@ -980,9 +989,37 @@ void remove_irq(unsigned int irq, struct irqaction *act)
- 		return;
- 
- 	__free_irq(desc, act->dev_id);
-+	desc->users--;
- }
- EXPORT_SYMBOL_GPL(remove_irq);
- 
-+/*
-+ * Internal helper that informs listeners about potential sharing state
-+ * changes after free_irq() or failed request_irq.
-+ */
-+static void notify_free_irq(struct irq_desc *desc)
-+{
-+	int ret = 0;
-+
-+	if (desc->sh_lock_holder != current) {
-+		mutex_lock(&desc->sh_lock);
-+		if (--desc->users == 1) {
-+			desc->sh_lock_holder = current;
-+			raw_notifier_call_chain(&desc->sh_notifier,
-+						IRQN_EXCLUSIVE, &ret);
-+			desc->sh_lock_holder = NULL;
-+		}
-+		mutex_unlock(&desc->sh_lock);
-+	} else if (--desc->users == 1)
-+		raw_notifier_call_chain(&desc->sh_notifier, IRQN_EXCLUSIVE,
-+					&ret);
-+
-+	if (ret)
-+		printk(KERN_ERR
-+		       "IRQ sharing callback returned %d on IRQN_EXCLUSIVE\n",
-+		       ret);
-+}
-+
- /**
-  *	free_irq - free an interrupt allocated with request_irq
-  *	@irq: Interrupt line to free
-@@ -1007,6 +1044,8 @@ void free_irq(unsigned int irq, void *dev_id)
- 	chip_bus_lock(desc);
- 	kfree(__free_irq(desc, dev_id));
- 	chip_bus_sync_unlock(desc);
-+
-+	notify_free_irq(desc);
- }
- EXPORT_SYMBOL(free_irq);
- 
-@@ -1059,7 +1098,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
- {
- 	struct irqaction *action;
- 	struct irq_desc *desc;
--	int retval;
-+	int retval = 0;
- 
- 	/*
- 	 * Sanity-check: shared interrupts must pass in a real dev-ID,
-@@ -1093,12 +1132,37 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
- 	action->name = devname;
- 	action->dev_id = dev_id;
- 
-+	if (desc->sh_lock_holder != current) {
-+		mutex_lock(&desc->sh_lock);
-+		if (desc->users == 1) {
-+			desc->sh_lock_holder = current;
-+			raw_notifier_call_chain(&desc->sh_notifier,
-+						IRQN_SHARED, &retval);
-+			desc->sh_lock_holder = NULL;
-+		}
-+		desc->users++;
-+		mutex_unlock(&desc->sh_lock);
-+	} else {
-+		if (desc->users == 1)
-+			raw_notifier_call_chain(&desc->sh_notifier,
-+						IRQN_SHARED, &retval);
-+		desc->users++;
-+	}
-+	if (retval) {
-+		printk(KERN_ERR
-+		       "IRQ sharing callback returned %d on IRQN_SHARED\n",
-+		       retval);
-+		return retval;
-+	}
-+
- 	chip_bus_lock(desc);
- 	retval = __setup_irq(irq, desc, action);
- 	chip_bus_sync_unlock(desc);
- 
--	if (retval)
-+	if (retval) {
-+		notify_free_irq(desc);
- 		kfree(action);
-+	}
- 
- #ifdef CONFIG_DEBUG_SHIRQ
- 	if (!retval && (irqflags & IRQF_SHARED)) {
-@@ -1159,3 +1223,89 @@ int request_any_context_irq(unsigned int irq, irq_handler_t handler,
- 	return !ret ? IRQC_IS_HARDIRQ : ret;
- }
- EXPORT_SYMBOL_GPL(request_any_context_irq);
-+
-+/**
-+ *	register_irq_sharing_notifier - register notifier for sharing state
-+ *					changes
-+ *	@irq: Interrupt line to register on
-+ *	@nb: Notifier block
-+ *
-+ *	This registers a notifier to be called whenever the specified interrupt
-+ *	line is about to be shared or unshared. The callback is invoked with
-+ *	IRQN_SHARED when the second user of the line calls a request_irq
-+ *	service. IRQN_EXCLUSIVE is signaled when only one user remains for the
-+ *	interrupt line after a free_irq invocation.
-+ *
-+ *	The callback is supposed to re-register the interrupt handler it
-+ *	manages to allow sharing or to optimize for non-shared operation. It
-+ *	can safely call register_[threaded_]irq and free_irq without triggering
-+ *	a recursive notification for itself. It has to report errors by
-+ *	returning NOTIFY_BAD and writing the error code to the int which the
-+ *	third argument of the callback points to.
-+ *
-+ *	Before registration, the notifier is fired once for the passed callback
-+ *	to report the current usage of the interrupt, i.e. IRQN_SETUP_USED or
-+ *	IRQN_SETUP_UNUSED. If this initial call fails, no registration is
-+ *	performed.
-+ *
-+ *	On failure, it returns negative value. On success, it returns 0.
-+ */
-+int register_irq_sharing_notifier(unsigned int irq, struct notifier_block *nb)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long event;
-+	int ret = 0;
-+
-+	if (!desc)
-+		return -EINVAL;
-+
-+	mutex_lock(&desc->sh_lock);
-+	desc->sh_lock_holder = current;
-+
-+	event = desc->users ? IRQN_SETUP_USED : IRQN_SETUP_UNUSED;
-+	nb->notifier_call(nb, event, &ret);
-+	if (!ret)
-+		raw_notifier_chain_register(&desc->sh_notifier, nb);
-+
-+	desc->sh_lock_holder = NULL;
-+	mutex_unlock(&desc->sh_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(register_irq_sharing_notifier);
-+
-+/**
-+ *	unregister_irq_sharing_notifier - unregister notifier for sharing state
-+ *					  changes
-+ *	@irq: Interrupt line to unregister from
-+ *	@nb: Notifier block
-+ *
-+ *	Unregisters the notifier previously registered with the specified
-+ *	interrupt line via register_irq_sharing_notifier. A final IRQN_SHUTDOWN
-+ *	is sent to the callback of the unregistered notifier to allow resource
-+ *	cleanup in a synchronized context.
-+ *
-+ *	On failure, it returns a negative value. On success, it returns 0.
-+ */
-+int unregister_irq_sharing_notifier(unsigned int irq,
-+				    struct notifier_block *nb)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	int ret;
-+
-+	if (!desc)
-+		return -EINVAL;
-+
-+	mutex_lock(&desc->sh_lock);
-+	desc->sh_lock_holder = current;
-+
-+	ret = raw_notifier_chain_unregister(&desc->sh_notifier, nb);
-+	if (!ret)
-+		nb->notifier_call(nb, IRQN_SHUTDOWN, &ret);
-+
-+	desc->sh_lock_holder = NULL;
-+	mutex_unlock(&desc->sh_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(unregister_irq_sharing_notifier);
--- 
-1.7.1
+To achieve fast message-based communications, a minimal kernel support
+is needed to deliver messages arriving from a remote processor to the
+appropriate user process.
+
+This communication is based on a simple data structure that is shared between
+the remote processors, and access to it is synchronized using the hwspinlock
+module (remote processor directly places new messages in this shared data
+structure).
+
+2. On some OMAP4 boards, the I2C bus is shared between the A9 and the M3,
+and the hwspinlock is used to synchronize access to it.
+
+While (2) can get away with an omap-specific hwspinlock implementation,
+(1) is by no means omap-specific, and a common hwspinlock interface is
+needed to keep it generic, in hopes that it will be useful for other
+platforms as well.
+
+Changes v2->v3:
+- Remove the timeout-less _lock API variant (Tony)
+- s/state->io_base/io_base/ (Ionut)
+- Remove the "generic" wording (David)
+- s/hwspinlock_/hwspin_lock_/ (Mugdha)
+- Use MAX_SCHEDULE_TIMEOUT to indicate no timeout (Mugdha)
+- Be more verbose on egregious API misuse (Olof)
+- locking API misuse is BUG_ON material (Russell)
+
+  Note: Russell also suggested compiling out NULL checks on ARM.
+  I've posted an initial proposal for this (see
+  https://lkml.org/lkml/2010/11/29/96), which I'm going to resubmit
+  separately. If accepted, I'll adopt hwspinlocks to use it.
+
+Patches are tested against linux-omap-2.6 master, which is 2.6.37-rc4 plus
+omap material. All, but the third (the hwmod omap patch), apply on top of
+mainline 2.6.37-rc4 as well
+
+Changes v1->v2:
+- Convert to a generic interface (Tony)
+- API should silently succeed if framework isn't built (Greg)
+- Don't use ERR_PTR pattern (Grant)
+- Use tristate, fix and extend commentary (Kevin)
+- Provide API flexibility regarding irq handling (Arnd, Grant)
+
+  Note: after reviewing OMAP's L4 access times, and comparing them with
+  external memory latencies, I can say that there is no notable difference.
+  Because of that, we can safely treat the hwspinlock like we do
+  with regular spinlocks: preemption should be disabled, but whether
+  to disable interrupts or not is up to the caller.
+
+  So despite the TRM's recommendation to always disable local interrupts
+  when taking an OMAP Hardware Spinlock, I have decided to allow callers
+  not to do that (by providing the full extent of hwspin_lock(),
+  hwspin_lock_irq() and hwspin_lock_irqsave() API).
+
+  Just like regular spinlocks, it's up to the callers to decide whether
+  interrupts should be disabled or not.
+
+  Sleeping, btw, is still prohibited of course.
+
+Contributions:
+
+Previous versions of an omap-specific hwspinlock driver circulated in
+linux-omap several times, and received substantial attention and contribution
+from many developers (see [1][2][3][4][5][6]):
+
+Simon Que did the initial implementation and pushed several iterations
+Benoit Cousson provided extensive review, help, improvements and hwmod support
+Hari Kanigeri helped out when Simon was away
+Sanjeev Premi, Santosh Shilimkar and Nishanth Menon did lots of review
+
+I'd like to thank Benoit Cousson, Steve Krueger, Hari Kanigeri,
+Nourredine Hamoudi and Richard Woodruff for useful discussions about
+the OMAP Spinlock requirements and use-cases.
+
+Relevant linux-omap threads:
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/38755
+[2] http://thread.gmane.org/gmane.linux.ports.arm.omap/38917
+[3] http://thread.gmane.org/gmane.linux.ports.arm.omap/39187
+[4] http://thread.gmane.org/gmane.linux.ports.arm.omap/39365
+[5] http://thread.gmane.org/gmane.linux.ports.arm.omap/39815
+[6] http://thread.gmane.org/gmane.linux.ports.arm.omap/40901
+
+Benoit Cousson (1):
+  OMAP4: hwmod data: Add hwspinlock
+
+Ohad Ben-Cohen (1):
+  drivers: hwspinlock: add framework
+
+Simon Que (2):
+  drivers: hwspinlock: add OMAP implementation
+  omap: add hwspinlock device
+
+ Documentation/hwspinlock.txt               |  299 +++++++++++++++
+ arch/arm/mach-omap2/Makefile               |    1 +
+ arch/arm/mach-omap2/hwspinlock.c           |   63 ++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   64 ++++
+ drivers/Kconfig                            |    2 +
+ drivers/Makefile                           |    1 +
+ drivers/hwspinlock/Kconfig                 |   22 ++
+ drivers/hwspinlock/Makefile                |    6 +
+ drivers/hwspinlock/hwspinlock.h            |   61 +++
+ drivers/hwspinlock/hwspinlock_core.c       |  557 ++++++++++++++++++++++++++++
+ drivers/hwspinlock/omap_hwspinlock.c       |  231 ++++++++++++
+ include/linux/hwspinlock.h                 |  298 +++++++++++++++
+ 12 files changed, 1605 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwspinlock.txt
+ create mode 100644 arch/arm/mach-omap2/hwspinlock.c
+ create mode 100644 drivers/hwspinlock/Kconfig
+ create mode 100644 drivers/hwspinlock/Makefile
+ create mode 100644 drivers/hwspinlock/hwspinlock.h
+ create mode 100644 drivers/hwspinlock/hwspinlock_core.c
+ create mode 100644 drivers/hwspinlock/omap_hwspinlock.c
+ create mode 100644 include/linux/hwspinlock.h
 
