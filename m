@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0LCARX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:17:23 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:44933 "EHLO
+	id S1758274Ab0LCAR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 19:17:28 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:44985 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab0LCARU (ORCPT
+	with ESMTP id S1758238Ab0LCARZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:17:20 -0500
+	Thu, 2 Dec 2010 19:17:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BfU0YATyroAs+Wz4dIO8CglgEzvZoWfDxdnwLsBgwbvf2UcTtTv3rDbznxGnA/oToV
-         7ysUsKQ3Ofu4yTWxVhTw==
+        b=ZI6hpHluEUsaanBw2rTOaJfX4dzSLRCwoU189XF38G5POuG/NiQzn0Au1qdbMh5zOD
+         uJs+Sl0sB1YnuqVIeM1g==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
@@ -19,9 +19,9 @@ To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/6] mm: add FOLL_MLOCK follow_page flag.
-Date: Thu,  2 Dec 2010 16:16:48 -0800
-Message-Id: <1291335412-16231-3-git-send-email-walken@google.com>
+Subject: [PATCH 5/6] mlock: do not hold mmap_sem for extended periods of time
+Date: Thu,  2 Dec 2010 16:16:51 -0800
+Message-Id: <1291335412-16231-6-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1291335412-16231-1-git-send-email-walken@google.com>
 References: <1291335412-16231-1-git-send-email-walken@google.com>
@@ -30,173 +30,227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the code to mlock pages from __mlock_vma_pages_range()
-to follow_page().
-
-This allows __mlock_vma_pages_range() to not have to break down work
-into 16-page batches.
-
-An additional motivation for doing this within the present patch series
-is that it'll make it easier for a later chagne to drop mmap_sem when
-blocking on disk (we'd like to be able to resume at the page that was
-read from disk instead of at the start of a 16-page batch).
+__get_user_pages gets a new 'nonblocking' parameter to signal that the
+caller is prepared to re-acquire mmap_sem and retry the operation if needed.
+This is used to split off long operations if they are going to block on
+a disk transfer, or when we detect contention on the mmap_sem.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/mm.h |    1 +
- mm/memory.c        |   27 ++++++++++++++++++++-
- mm/mlock.c         |   65 ++++------------------------------------------------
- 3 files changed, 32 insertions(+), 61 deletions(-)
+ mm/internal.h |    3 ++-
+ mm/memory.c   |   27 ++++++++++++++++++++++-----
+ mm/mlock.c    |   34 ++++++++++++++++++++--------------
+ mm/nommu.c    |    6 ++++--
+ 4 files changed, 48 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 721f451..cebbb0d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1415,6 +1415,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_GET	0x04	/* do get_page on page */
- #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
- #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
-+#define FOLL_MLOCK	0x20	/* mark page as mlocked */
+diff --git a/mm/internal.h b/mm/internal.h
+index dedb0af..bd4f581 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -243,7 +243,8 @@ static inline void mminit_validate_memmodel_limits(unsigned long *start_pfn,
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
+ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		     unsigned long start, int len, unsigned int foll_flags,
+-		     struct page **pages, struct vm_area_struct **vmas);
++		     struct page **pages, struct vm_area_struct **vmas,
++		     int *nonblocking);
+ 
+ #define ZONE_RECLAIM_NOSCAN	-2
+ #define ZONE_RECLAIM_FULL	-1
 diff --git a/mm/memory.c b/mm/memory.c
-index b8f97b8..f3a9242 100644
+index f3a9242..85e56dc 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -1297,7 +1297,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		page = pte_page(pte);
- 	}
+@@ -1366,7 +1366,8 @@ no_page_table:
  
--	if (flags & FOLL_GET)
-+	if (flags & (FOLL_GET | FOLL_MLOCK))
- 		get_page(page);
- 	if (flags & FOLL_TOUCH) {
- 		if ((flags & FOLL_WRITE) &&
-@@ -1310,6 +1310,31 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		 */
- 		mark_page_accessed(page);
- 	}
-+	if (flags & FOLL_MLOCK) {
-+		pte_unmap_unlock(ptep, ptl);
-+		lru_add_drain();  /* push cached pages to LRU */
-+		if (page->mapping) {
-+			/*
-+			 * That preliminary check is mainly to avoid
-+			 * the pointless overhead of lock_page on the
-+			 * ZERO_PAGE: which might bounce very badly if
-+			 * there is contention.  However, we're still
-+			 * dirtying its cacheline with get/put_page.
-+			 */
-+			lock_page(page);
-+			/*
-+			 * Because we lock page here and migration is
-+			 * blocked by the elevated reference, we need
-+			 * only check for file-cache page truncation.
-+			 */
-+			if (page->mapping)
-+				mlock_vma_page(page);
-+			unlock_page(page);
-+		}
-+		VM_BUG_ON(flags & FOLL_GET);
-+		put_page(page);
-+		return page;
-+	}
- unlock:
- 	pte_unmap_unlock(ptep, ptl);
- out:
+ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		     unsigned long start, int nr_pages, unsigned int gup_flags,
+-		     struct page **pages, struct vm_area_struct **vmas)
++		     struct page **pages, struct vm_area_struct **vmas,
++		     int *nonblocking)
+ {
+ 	int i;
+ 	unsigned long vm_flags;
+@@ -1465,11 +1466,15 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 
+ 			cond_resched();
+ 			while (!(page = follow_page(vma, start, foll_flags))) {
++				int fault_flags = 0;
+ 				int ret;
+ 
++				if (foll_flags & FOLL_WRITE)
++					fault_flags |= FAULT_FLAG_WRITE;
++				if (nonblocking)
++					fault_flags |= FAULT_FLAG_ALLOW_RETRY;
+ 				ret = handle_mm_fault(mm, vma, start,
+-					(foll_flags & FOLL_WRITE) ?
+-					FAULT_FLAG_WRITE : 0);
++						      fault_flags);
+ 
+ 				if (ret & VM_FAULT_ERROR) {
+ 					if (ret & VM_FAULT_OOM)
+@@ -1485,6 +1490,11 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 				else
+ 					tsk->min_flt++;
+ 
++				if (ret & VM_FAULT_RETRY) {
++					*nonblocking = 0;
++					return i;
++				}
++
+ 				/*
+ 				 * The VM_FAULT_WRITE bit tells us that
+ 				 * do_wp_page has broken COW when necessary,
+@@ -1516,6 +1526,11 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			i++;
+ 			start += PAGE_SIZE;
+ 			nr_pages--;
++			if (nonblocking && rwsem_is_contended(&mm->mmap_sem)) {
++				up_read(&mm->mmap_sem);
++				*nonblocking = 0;
++				return i;
++			}
+ 		} while (nr_pages && start < vma->vm_end);
+ 	} while (nr_pages);
+ 	return i;
+@@ -1584,7 +1599,8 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 	if (force)
+ 		flags |= FOLL_FORCE;
+ 
+-	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas);
++	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas,
++				NULL);
+ }
+ EXPORT_SYMBOL(get_user_pages);
+ 
+@@ -1609,7 +1625,8 @@ struct page *get_dump_page(unsigned long addr)
+ 	struct page *page;
+ 
+ 	if (__get_user_pages(current, current->mm, addr, 1,
+-			FOLL_FORCE | FOLL_DUMP | FOLL_GET, &page, &vma) < 1)
++			     FOLL_FORCE | FOLL_DUMP | FOLL_GET, &page, &vma,
++			     NULL) < 1)
+ 		return NULL;
+ 	flush_cache_page(vma, addr, page_to_pfn(page));
+ 	return page;
 diff --git a/mm/mlock.c b/mm/mlock.c
-index 8d6b702..0531173 100644
+index 241a5d2..569ae6a 100644
 --- a/mm/mlock.c
 +++ b/mm/mlock.c
-@@ -159,10 +159,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+@@ -155,13 +155,13 @@ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long add
+  * vma->vm_mm->mmap_sem must be held for at least read.
+  */
+ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+-				    unsigned long start, unsigned long end)
++				    unsigned long start, unsigned long end,
++				    int *nonblocking)
  {
  	struct mm_struct *mm = vma->vm_mm;
  	unsigned long addr = start;
--	struct page *pages[16]; /* 16 gives a reasonable batch */
  	int nr_pages = (end - start) / PAGE_SIZE;
--	int ret = 0;
  	int gup_flags;
-+	int ret;
+-	int ret;
  
  	VM_BUG_ON(start & ~PAGE_MASK);
  	VM_BUG_ON(end   & ~PAGE_MASK);
-@@ -170,7 +169,7 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	VM_BUG_ON(end   > vma->vm_end);
- 	VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
- 
--	gup_flags = FOLL_TOUCH | FOLL_GET;
-+	gup_flags = FOLL_TOUCH | FOLL_MLOCK;
- 	/*
- 	 * We want to touch writable mappings with a write fault in order
- 	 * to break COW, except for shared mappings because these don't COW
-@@ -185,63 +184,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+@@ -187,9 +187,8 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
  		nr_pages--;
  	}
  
--	while (nr_pages > 0) {
--		int i;
--
--		cond_resched();
--
--		/*
--		 * get_user_pages makes pages present if we are
--		 * setting mlock. and this extra reference count will
--		 * disable migration of this page.  However, page may
--		 * still be truncated out from under us.
--		 */
--		ret = __get_user_pages(current, mm, addr,
--				min_t(int, nr_pages, ARRAY_SIZE(pages)),
--				gup_flags, pages, NULL);
--		/*
--		 * This can happen for, e.g., VM_NONLINEAR regions before
--		 * a page has been allocated and mapped at a given offset,
--		 * or for addresses that map beyond end of a file.
--		 * We'll mlock the pages if/when they get faulted in.
--		 */
--		if (ret < 0)
--			break;
--
--		lru_add_drain();	/* push cached pages to LRU */
--
--		for (i = 0; i < ret; i++) {
--			struct page *page = pages[i];
--
--			if (page->mapping) {
--				/*
--				 * That preliminary check is mainly to avoid
--				 * the pointless overhead of lock_page on the
--				 * ZERO_PAGE: which might bounce very badly if
--				 * there is contention.  However, we're still
--				 * dirtying its cacheline with get/put_page:
--				 * we'll add another __get_user_pages flag to
--				 * avoid it if that case turns out to matter.
--				 */
--				lock_page(page);
--				/*
--				 * Because we lock page here and migration is
--				 * blocked by the elevated reference, we need
--				 * only check for file-cache page truncation.
--				 */
--				if (page->mapping)
--					mlock_vma_page(page);
--				unlock_page(page);
--			}
--			put_page(page);	/* ref from get_user_pages() */
--		}
--
--		addr += ret * PAGE_SIZE;
--		nr_pages -= ret;
--		ret = 0;
--	}
--
--	return ret;	/* 0 or negative error code */
-+	ret = __get_user_pages(current, mm, addr, nr_pages, gup_flags,
-+			       NULL, NULL);
-+	return max(ret, 0);	/* 0 or negative error code */
+-	ret = __get_user_pages(current, mm, addr, nr_pages, gup_flags,
+-			       NULL, NULL);
+-	return max(ret, 0);	/* 0 or negative error code */
++	return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
++				NULL, NULL, nonblocking);
  }
  
  /*
+@@ -233,7 +232,7 @@ long mlock_vma_pages_range(struct vm_area_struct *vma,
+ 			is_vm_hugetlb_page(vma) ||
+ 			vma == get_gate_vma(current))) {
+ 
+-		__mlock_vma_pages_range(vma, start, end);
++		__mlock_vma_pages_range(vma, start, end, NULL);
+ 
+ 		/* Hide errors from mmap() and other callers */
+ 		return 0;
+@@ -429,21 +428,23 @@ static int do_mlock_pages(unsigned long start, size_t len)
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long end, nstart, nend;
+ 	struct vm_area_struct *vma = NULL;
++	int locked = 0;
+ 	int ret = 0;
+ 
+ 	VM_BUG_ON(start & ~PAGE_MASK);
+ 	VM_BUG_ON(len != PAGE_ALIGN(len));
+ 	end = start + len;
+ 
+-	down_read(&mm->mmap_sem);
+ 	for (nstart = start; nstart < end; nstart = nend) {
+ 		/*
+ 		 * We want to fault in pages for [nstart; end) address range.
+ 		 * Find first corresponding VMA.
+ 		 */
+-		if (!vma)
++		if (!locked) {
++			locked = 1;
++			down_read(&mm->mmap_sem);
+ 			vma = find_vma(mm, nstart);
+-		else
++		} else if (nstart >= vma->vm_end)
+ 			vma = vma->vm_next;
+ 		if (!vma || vma->vm_start >= end)
+ 			break;
+@@ -456,16 +457,21 @@ static int do_mlock_pages(unsigned long start, size_t len)
+ 			continue;
+ 		if (nstart < vma->vm_start)
+ 			nstart = vma->vm_start;
+ 		/*
+-		 * Now fault in a range of pages within the first VMA.
++		 * Now fault in a range of pages. __mlock_vma_pages_range()
++		 * double checks the vma flags, so that it won't mlock pages
++		 * if the vma was already munlocked.
+ 		 */
+-		ret = __mlock_vma_pages_range(vma, nstart, nend);
+-		if (ret) {
++		ret = __mlock_vma_pages_range(vma, nstart, nend, &locked);
++		if (ret < 0) {
+ 			ret = __mlock_posix_error_return(ret);
+ 			break;
+ 		}
++		nend = nstart + ret * PAGE_SIZE;
++		ret = 0;
+ 	}
+-	up_read(&mm->mmap_sem);
++	if (locked)
++		up_read(&mm->mmap_sem);
+ 	return ret;	/* 0 or negative error code */
+ }
+ 
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 27a9ac5..c8b8a7e 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -127,7 +127,8 @@ unsigned int kobjsize(const void *objp)
+ 
+ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		     unsigned long start, int nr_pages, unsigned int foll_flags,
+-		     struct page **pages, struct vm_area_struct **vmas)
++		     struct page **pages, struct vm_area_struct **vmas,
++		     int *retry)
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned long vm_flags;
+@@ -185,7 +186,8 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 	if (force)
+ 		flags |= FOLL_FORCE;
+ 
+-	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas);
++	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas,
++				NULL);
+ }
+ EXPORT_SYMBOL(get_user_pages);
+ 
 -- 
 1.7.3.1
 
