@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab0LCA7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:59:06 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14631 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753857Ab0LCA7E (ORCPT
+	id S1758261Ab0LCBDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 20:03:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56383 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758190Ab0LCBDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:59:04 -0500
-Message-ID: <00c001cb9285$46adc4d0$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: <wg@grandegger.com>, <w.sang@pengutronix.de>, <chripell@fsfe.org>,
-        <21cnbao@gmail.com>, <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <andrew.chih.howe.khor@intel.com>,
-        <joel.clark@intel.com>, <kok.howg.ewe@intel.com>,
-        <margie.foster@intel.com>
-References: <4CF47B2C.4010507@dsn.okisemi.com> <20101202.131236.28815617.davem@davemloft.net>
-Subject: Re: [PATCH net-next-2.6 v6 04/20] can: EG20T PCH: Add Tx Flow Control
-Date: Fri, 3 Dec 2010 09:58:59 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
+	Thu, 2 Dec 2010 20:03:37 -0500
+Date: Thu, 2 Dec 2010 17:02:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH] PM / Hibernate: Fix memory corruption related to swap
+Message-Id: <20101202170254.25ec5941.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.00.1012021622370.26812@tigran.mtv.corp.google.com>
+References: <201012030040.37273.rjw@sisk.pl>
+	<20101202155453.92e8ca57.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1012021622370.26812@tigran.mtv.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 03, 2010 6:12 AM, David Miller wrote :
+On Thu, 2 Dec 2010 16:37:21 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
+> On Thu, 2 Dec 2010, Andrew Morton wrote:
+> > On Fri, 3 Dec 2010 00:40:36 +0100
+> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > 
+> > > This patch is a fix for a regression and nasty memory corruption, so I'd like
+> > > to push it to Linus for 2.6.37 if there are no objections.
 > 
-> When implementing functionality like this it is better to use other
-> existing well tested network drivers as a guide rather then trying
-> to be unique and clever, as you are doing here.
-
-Sure. I will do so.
-
+> (It will need backport to 2.6.35-stable and 2.6.36-stable:
+> IIRC it doesn't quite apply cleanly to those, so we'll need
+> to send a separate version.)
 > 
-> Second of all, checking the state of the device to determine if a
-> stop queue should be performed has two problems:
+> > 
+> > It looks OK to me for 2.6.37 but for 2.6.38 please let's make
+> > everything here a 100% no-op for CONFIG_PM_SLEEP=n builds. 
+> > Specifically the slight overhead in __alloc_pages_nodemask.
 > 
-> 1) The test uses a magic constant mask, which is undocumented.
-
-Do you above "magic constant" mean "0xfc00" ?
-If so, this constant is replaced to MACRO in 08/20 patch. 
-
+> I expect you're right that the CONFIG_PM would better be CONFIG__PM_SLEEP;
+> but I think you misunderstand gfp_allowed_mask in __alloc_pages_nodemask:
+> it came from slab & slub, to fix some early bootup issues, and predates
+> Rafael's recent use of it in suspend and hibernation.
 > 
-> 2) It causes the race you have on the wake queue side
+> > 
+> > Because given the global nature of saved_gfp_mask and the unlocked way
+> > in which it is accessed, this facility won't be at all useful for
+> > anything other than suspend.
 > 
-> Use pure software state to guide your actions, and let the hardware
-> interrupt trigger the wake queue.
+> ... and bootup.
 > 
-> Also, you don't implement this as a true ring buffer, you only
-> consider to stop the queue when you hit the last TX object entry.  But
-> all the previous slots could be available.
 
-We can't use ring buffer.
-Because ring buffer causes issue of tx packet out-of-order.
-
-I show EG20T CAN HW spec below
-According to priority, EG20T CAN HW sends packet from message object.
-The priority is Message object number.
-Lower number is high-priority, Higher is low priority
-
-Thus, I think we can't use ring buffer.
-
-Still, do you think I can use ring buffer ?
-------
-Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+Oh.  Who writes this crap :(
