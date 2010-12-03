@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab0LCKKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 05:10:30 -0500
-Received: from hera.kernel.org ([140.211.167.34]:35898 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441Ab0LCKK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 05:10:29 -0500
-Message-ID: <4CF8C204.8010904@kernel.org>
-Date: Fri, 03 Dec 2010 11:10:12 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates for 2.6.37
-References: <4CF52652.4030802@kernel.org> <20101130163150.GA25668@bombadil.infradead.org> <20101130175317.GB25668@bombadil.infradead.org> <20101130210938.GF25668@bombadil.infradead.org> <4CF62EE0.7040607@kernel.org> <20101201124445.GG25668@bombadil.infradead.org> <4CF6595A.6010104@kernel.org> <20101201155026.GH25668@bombadil.infradead.org> <20101201200907.GI25668@bombadil.infradead.org> <4CF77225.3040904@kernel.org> <20101202212346.GK25668@bombadil.infradead.org>
-In-Reply-To: <20101202212346.GK25668@bombadil.infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Dec 2010 10:09:45 +0000 (UTC)
+	id S1755422Ab0LCKYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 05:24:39 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:54015 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932285Ab0LCKYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 05:24:38 -0500
+Date: Fri, 03 Dec 2010 19:01:34 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [GIT PULL] Samsung fixes for 2.6.37-rc4
+In-reply-to: <AANLkTinuYg2LzwZJUnpT0-b3Gi+vOJr-_fi4o874DAFG@mail.gmail.com>
+To: "'Darius Augulis'" <augulis.darius@gmail.com>, ben-linux@fluff.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Message-id: <015301cb92d1$132c94a0$3985bde0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuQpiA8plnQaHNHQkmMcpA1jaENqQBTpoVA
+References: <008201cb8c58$363980e0$a2ac82a0$%kim@samsung.com>
+ <4CEFFBE6.9040909@gmail.com> <006601cb9024$c9369110$5ba3b330$%kim@samsung.com>
+ <AANLkTinuYg2LzwZJUnpT0-b3Gi+vOJr-_fi4o874DAFG@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kyle.
-
-On 12/02/2010 10:23 PM, Kyle McMartin wrote:
-> On Thu, Dec 02, 2010 at 11:17:09AM +0100, Tejun Heo wrote:
->> Hmmm... something is setting EH_PENDING while EH is in progress.
->> Let's see what's doing it.  Can you please apply the following patch
->> on top of the previous one and report the kernel log?
->>
+Darius Augulis wrote:
 > 
-> This gets triggered a bunch on boot-up:
+> Hi Ben, Kukjin,
+> 
+Hi Darius,
+Ok...I will apply this in my tree for -next with Ben's ack.
 
-Yeah, that's expected.  Can you please do the usual testing routine
-and trigger the EH giving up message and then attach the full kernel
-log?
+Ben, if any problems, please let me know.
 
 Thanks.
 
--- 
-tejun
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+> could you please both find out who must 'handle' it?
+> Do you think it's normal to force people to ping you for the same four
+> lines patch for 4 months or more?
+> I think, it's at least not optimal and not good for kernel development
+> process.
+> 
+> 
+> On Tue, Nov 30, 2010 at 2:23 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> > Darius Augulis wrote:
+> >>
+> >> Hi Kukjin,
+> >>
+> > Hi,
+> >
+> >> you have missed "serial: samsung: fix device name" again.
+> >> Please, don't forget to add it to your tree, better do it right now.
+> >> Perhaps it's fifth or sixth time when remind about that...
+> >>
+> > I remember, I've replied about that like following.
+> > Maybe you missed...
+> >
+> > ---
+> >> you have missed "serial: samsung: fix device name" which is hanging
+here
+> >> for a long time and was decided to merge in 2.6.37-rc1.
+> >> Please, pick it up.
+> >>
+> > Hmm...I thought it should be handled by Ben Dooks at that time.
+> >
+> > Anyway, as Ben said, I'm thinking it should be sent upstream when merge
+> > window
+> > even though have missed it in the last merge window.
+> >
+> > However, if Ben is ok to merge this during 37-rc, will merge it into
+> > s5p-fixes-
+> > for-linus for 37-rc.
+> > ---
+> >
+> > But I still thinking it should be handled by Ben Dooks...
+> 
+> handle what? You have Ben ack to merge it. I'm confused how 'optimal'
+> is development process when have to ping the same people for the same
+> four lines patch for 4 months. You both  Do you think I really have to
+> ask help for arm, serial or linux-stable maintainers to 'hadle' this?
+> Because I gave up believing it's possible to do by samsung
+> maintainers.
+
