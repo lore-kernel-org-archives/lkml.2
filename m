@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab0LCAIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:08:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50114 "EHLO ogre.sisk.pl"
+	id S1758180Ab0LCAJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 19:09:45 -0500
+Received: from kroah.org ([198.145.64.141]:35845 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756216Ab0LCAIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:08:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] PM / Hibernate: Fix memory corruption related to swap
-Date: Fri, 3 Dec 2010 01:06:48 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201012030040.37273.rjw@sisk.pl> <20101202155453.92e8ca57.akpm@linux-foundation.org>
-In-Reply-To: <20101202155453.92e8ca57.akpm@linux-foundation.org>
+	id S1757824Ab0LCAJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 19:09:43 -0500
+Date: Thu, 2 Dec 2010 16:07:13 -0800
+From: Greg KH <greg@kroah.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Luben Tuikov <ltuikov@yahoo.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [USB] UAS: Rename urbs by pipe
+Message-ID: <20101203000713.GA21514@kroah.com>
+References: <20101202214011.GE5009@linux.intel.com>
+ <815549.25363.qm@web31805.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012030106.49226.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <815549.25363.qm@web31805.mail.mud.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 03, 2010, Andrew Morton wrote:
-> On Fri, 3 Dec 2010 00:40:36 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
+On Thu, Dec 02, 2010 at 02:26:42PM -0800, Luben Tuikov wrote:
+> --- On Thu, 12/2/10, Matthew Wilcox <willy@linux.intel.com> wrote:
+> > > On Thu, Oct 28, 2010 at 01:05:14PM -0700, Luben Tuikov
+> > wrote:
+> > > > The reason to do this is to accommodate sending
+> > > > different IU types using the existing
+> > > > infrastructure.
+> > > > 
+> > > > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> > > 
+> > > Matthew, it's been over a month, please comment on
+> > these UAS patches, or
+> > > I guess I'll just apply them...
 > > 
-> > There is a problem that swap pages allocated before the creation of
-> > a hibernation image can be released and used for storing the contents
-> > of different memory pages while the image is being saved.  Since the
-> > kernel stored in the image doesn't know of that, it causes memory
-> > corruption to occur after resume from hibernation, especially on
-> > systems with relatively small RAM that need to swap often.
+> > Hi Greg,
 > > 
-> > This issue can be addressed by keeping the GFP_IOFS bits clear
-> > in gfp_allowed_mask during the entire hibernation, including the
-> > saving of the image, until the system is finally turned off or
-> > the hibernation is aborted.  Unfortunately, for this purpose
-> > it's necessary to rework the way in which the hibernate and
-> > suspend code manipulates gfp_allowed_mask.
-> > 
-> > This change is based on an earlier patch from Hugh Dickins.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > Reported-by: Ondrej Zary <linux@rainbow-software.org>
-> > Acked-by: Hugh Dickins <hughd@google.com>
-> > ---
-> > 
-> > Hi,
-> > 
-> > This patch is a fix for a regression and nasty memory corruption, so I'd like
-> > to push it to Linus for 2.6.37 if there are no objections.
-> > 
-> 
-> It looks OK to me for 2.6.37 but for 2.6.38 please let's make
-> everything here a 100% no-op for CONFIG_PM_SLEEP=n builds. 
-> Specifically the slight overhead in __alloc_pages_nodemask.
+> > These patches are NAKed in their current form.
 
-OK, I'll take care of it.
+I never saw those NAKs, please always copy the original people who were
+copied on the patch when you do that.  The list never saw them either.
 
-> Because given the global nature of saved_gfp_mask and the unlocked way
-> in which it is accessed, this facility won't be at all useful for
-> anything other than suspend.
+> >  Luben
+> > does not care for how
+> > I have modified them, so I need to rework them to take his
+> > name off them.
 
-Right.
+Where did you rework them?  When were those patches posted?
+
+> > I'll have a git tree ready for you after the weekend.
+
+No, I want patches in email please.
+
+> Are you serious? My commit message is quoted above. This email thread
+> is available at http://marc.info/?t=128829652800022&r=1&w=2 as are my
+> other patches to your code, where you stated you've committed them all
+> but changed the commit logs (as typed by me). When asked to provide
+> your changes to the commit logs in this very thread, you didn't.
+> *Please don't twist the facts as you did my commit messages to suit
+> your own needs.* 
+
+I agree, this seems very odd.
+
+Mathew, please be more public about what is going on here.
+
+thanks,
+
+greg k-h
