@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab0LCWYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 17:24:54 -0500
-Received: from rev-153-13.globalproof.net ([194.146.153.13]:59403 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752916Ab0LCWYw convert rfc822-to-8bit (ORCPT
+	id S1753905Ab0LCWav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 17:30:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41759 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab0LCWau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 17:24:52 -0500
-X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Dec 2010 17:24:52 EST
-From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
-Date: Sat, 4 Dec 2010 00:16:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-git5-home1; KDE/4.4.5; x86_64; ; )
-Cc: Andrej Ota <andrej@ota.si>, linux-kernel@vger.kernel.org, gvs@zemos.net,
-        Rami Rosen <ramirose@gmail.com>, netdev <netdev@vger.kernel.org>
-References: <0fe401cb92e7$85ba2260$912e6720$@si> <aa43945b38cee751a8231084866b074d@192.168.253.23> <1291387595.2897.350.camel@edumazet-laptop>
-In-Reply-To: <1291387595.2897.350.camel@edumazet-laptop>
+	Fri, 3 Dec 2010 17:30:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=W8h7kxuYBCyiA2MapsHn1EdVq/w9D6oZ3LRRY2FPpo9LBoc80AtN9U8nQnuDI510V+
+         f8yTQUKRHio4/ob5D6SEVYaa6D+IEK+pLJs2gL2on5wpeuscpBvDk4Jx1CkNZN+H4oOT
+         jiy4CkbwDgPNzHGeQ4Hj9Gn2e/Kqabv0wT7vE=
+Date: Sat, 4 Dec 2010 00:30:43 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Xenofon Foukas <foukas.xenofon@gmail.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] Fix coding style issues in drivers.c
+Message-ID: <20101203223043.GA28174@core2.telecom.by>
+References: <1291411877-15579-1-git-send-email-foukas.xenofon@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201012040016.42429.nuclearcat@nuclearcat.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291411877-15579-1-git-send-email-foukas.xenofon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 December 2010 16:46:35 Eric Dumazet wrote:
-> Le vendredi 03 décembre 2010 à 15:37 +0100, Andrej Ota a écrit :
-> > >> Patch that works for me is below. Now I only hope I haven't
-> > >> (re)introduced a memory leak...
-> > > 
-> > > Problem comes from commit 55c95e738da85 (fix return value of
-> > > __pppoe_xmit() method)
-> > > 
-> > > I am not sure patch is OK
-> > 
-> > Me neither. That's why I wrote "works for me". All I dare say is that it
-> > works better than current code and is probably no worse than it was
-> > before above mentioned commit. Apart from that, there is no point in
-> > having return value for __pppoe_xmit if return value isn't needed.
-> > 
-> > Easiest way of triggering this BUG is by terminating PPPoE on the server
-> > side, which then hits "if (!dev) { goto abort; }". This in turn calls
-> > "kfree_skb(skb); return 0;" which returns to pppoe_rcv_core which then
-> > goto-s to "abort_put" which again calls "kfree_skb(skb)". Voila the bug.
-> > 
-> > I don't know how to trigger "if (skb_cow_head(skb, ..." to see if I have
-> > just caused another BUG. However, if I read file comments at the top, I
-> > see a comment from 19/07/01 stating that I have to delete original skb
-> > if code succeeds and never delete it on failure. About the skb copy
-> > mentioned in the same comment, I don't know. 2001 was many commits ago.
-> 
-> Well, all I wanted to say was that _I_ was not sure, but probably other
-> network guys have a better diagnostic.
-> 
-> Rami, could you re-explain the rationale of your patch ?
-> 
-> Thanks
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-This patch seems fixed my issue (Re: 2.6.35->2.6.36 regression, vanilla kernel 
-panic, ppp or hrtimers crashing), tested now.
-	
+On Fri, Dec 03, 2010 at 11:31:17PM +0200, Xenofon Foukas wrote:
+> This patch fixes line over 80 characters warning issues found
+> in file drivers.c
+> Signed-off-by: Xenofon Foukas <foukas.xenofon@gmail.com>
+
+string literals shouldn't be broken because people grep for them.
+
+> --- a/drivers/staging/comedi/drivers.c
+> +++ b/drivers/staging/comedi/drivers.c
+> @@ -118,7 +118,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  	for (driv = comedi_drivers; driv; driv = driv->next) {
+>  		if (!try_module_get(driv->module)) {
+>  			printk
+> -			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
+> +			     (KERN_INFO "comedi: failed to increment "
+> +						"module count, skipping\n");
+>  			continue;
+>  		}
+>  		if (driv->num_names) {
