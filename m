@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab0LCWHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 17:07:09 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35762 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0LCWHH (ORCPT
+	id S1753842Ab0LCWJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 17:09:37 -0500
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:57210 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab0LCWJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 17:07:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=YD62aIvI2fSZpc0KVERfX8kaOYguVr2Gajy24VrPZHshUo/Ghs2bqbCY15yvzJ4/w2
-         aeRA1NHE0pelvVKt9yWUQ28XtMrx3/hLY87Z92RRc/5BRAZalaXeoXKy4LqlwiHsmUxr
-         +qH0Jnc2loVOSVdEfew3M6WlG9Pir5qG8hmic=
-Message-ID: <4CF96A05.40908@gmail.com>
-Date: Fri, 03 Dec 2010 23:07:01 +0100
-From: Jarek Poplawski <jarkao2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.13) Gecko/20100916 SeaMonkey/2.0.8
+	Fri, 3 Dec 2010 17:09:36 -0500
+Message-ID: <4CF96A9D.8070800@telenet.be>
+Date: Fri, 03 Dec 2010 23:09:33 +0100
+From: Jef Driesen <jefdriesen@telenet.be>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andrej Ota <andrej@ota.si>, linux-kernel@vger.kernel.org, gvs@zemos.net,
-        Rami Rosen <ramirose@gmail.com>, netdev <netdev@vger.kernel.org>
-Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
-References: <0fe401cb92e7$85ba2260$912e6720$@si>	 <1291381791.2897.250.camel@edumazet-laptop>	 <aa43945b38cee751a8231084866b074d@192.168.253.23> <1291387595.2897.350.camel@edumazet-laptop>
-In-Reply-To: <1291387595.2897.350.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Greg KH <greg@kroah.com>
+CC: Robert Lukassen <Robert.Lukassen@tomtom.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: g_serial: Allow to override the default VID/PID
+References: <4CE6F807.1090607@telenet.be> <1290209554-7026-1-git-send-email-jefdriesen@telenet.be> <20101120001247.GB17421@kroah.com> <4CE853BF.80504@telenet.be> <D6DB9C7EDECDA944B870F62B587008622C8A42@NL-EXC-06.intra.local> <20101130174605.GC19977@kroah.com>
+In-Reply-To: <20101130174605.GC19977@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet wrote:
-> Le vendredi 03 décembre 2010 à 15:37 +0100, Andrej Ota a écrit :
->>>> Patch that works for me is below. Now I only hope I haven't
->>>> (re)introduced a memory leak...
+On 30/11/10 18:46, Greg KH wrote:
+> On Mon, Nov 22, 2010 at 11:20:55AM +0100, Robert Lukassen wrote:
+>> Hi,
 >>
->>> Problem comes from commit 55c95e738da85 (fix return value of
->>> __pppoe_xmit() method)
-...
-> Rami, could you re-explain the rationale of your patch ?
+>> I just revisited the patch I submitted and I can see that it needs
+>> fixing. The intention of the patch was to provide the idVendor&
+>> idProduct kernel module parameter overrides to the individual
+>> functions at 'bind()' time. Prior to the patch, the overrides were
+>> done after the bind, making it hard for individual functions to
+>> determine the correct value for idVendor (some functions may need
+>> to use that value, e.g. USB audio when it registers itself
+>> as an ALSA device; it would want to use the same Vendor id).
+>>
+>> The patch makes sure that that happens, however, right after the bind()
+>> the patched values are lost due to the copying of the gadget specific
+>> device descriptor. Here's the snippet from 2.6.34:
+>>
+>>   999        usb_gadget_set_selfpowered(gadget);
+>> 1000
+>>
+>> 1001        /* interface and string IDs start at zero via kzalloc.
+>> 1002         * we force endpoints to start unassigned; few controller
+>> 1003         * drivers will zero ep->driver_data.
+>> 1004         */
+>> 1005        usb_ep_autoconfig_reset(cdev->gadget);
+>> 1006
+>> 1007        /* composite gadget needs to assign strings for whole device (like
+>> 1008         * serial number), register function drivers, potentially update
+>> 1009         * power state and consumption, etc
+>> 1010         */
+>> 1011        status = composite->bind(cdev);
+>> 1012        if (status<  0)
+>> 1013                goto fail;
+>> 1014
+>> 1015        cdev->desc = *composite->dev;
+>> 1016        cdev->desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
+>> 1017
+>> 1018        /* standardized runtime overrides for device ID data */
+>> 1019        if (idVendor)
+>> 1020                cdev->desc.idVendor = cpu_to_le16(idVendor);
+>> 1021        if (idProduct)
+>> 1022                cdev->desc.idProduct = cpu_to_le16(idProduct);
+>> 1023        if (bcdDevice)
+>> 1024                cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
+>> 1025
+>>
+>> In line 1015, the composite device descriptor is copied to the cdev->desc
+>> field. Then the values get patched.
+>>
+>> My patch just moved lines 1018-1024, so that the functions could access
+>> the patched values. The ill side effect is that these patched values
+>> are lost when the *composite->dev (== device descriptor) is copied
+>> in line 1015.
+>>
+>> It would seem that the patch should also have moved lines 1015-1016 in front
+>> of the composite->bind(cdev) call.
+>>
+>> It would require all composite gadgets (such as serial.c) and all functions
+>> (such as f_acm.c) to do any modifications to the device descriptor as passed
+>> to them in the 'bind' call. For functions that is natural, as they should be
+>> unaware of the gadget that uses them.
+>>
+>> The composite gadgets such as 'serial' seem to deal with it differently.
+>> The serial.c gadget refers to the device descriptor as 'device_desc', and it
+>> is a static struct. It references it in its 'init' function (which is ok, it is
+>> prior to the registration point) and in the gs_bind() call. At that point it should
+>> probably not be using 'device_desc', but cdev->desc.
+>>
+>> I think we can go one of two ways. I'd be happy to go over the composite gadgets and
+>> change their use of their device descriptors, such that they use cdev->desc at
+>> bind() time. Combining that with the moving the copying of the *composite->dev
+>> to before calling 'composite->bind()' would make things consistent.
+>>
+>> The other way is reverting my original patch. For those functions that need access
+>> to the overridden idVendor/idProduct code, we'll need to work out another
+>> (generic) solution.
+>
+> So, do you want me to revert your original patch and wait for you to
+> come up with a "better" solution?
+>
+> That seems like the correct thing to do at the moment.
 
-I guess we could revert it in the meantime: it seems there might be
-at least three threads (including bugzilla) with this problem.
-
-Jarek P.
+If the original commit is reverted, the idVendor and idProduct module parameters 
+can still be accessed through the global variables directly (like I did in my 
+own pathc). Since access to those values appears to be the main goal of the 
+patch, I think no functionality will be lost by reverting the commit.
