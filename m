@@ -1,58 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab0LCMQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 07:16:42 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43983 "EHLO mga09.intel.com"
+	id S932552Ab0LCMQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 07:16:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37652 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab0LCMQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 07:16:41 -0500
+	id S932355Ab0LCMQu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 07:16:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,292,1288594800"; 
-   d="scan'208";a="683567851"
-Date: Fri, 3 Dec 2010 20:13:15 +0800
+   d="scan'208,223";a="580223481"
+Date: Fri, 3 Dec 2010 20:13:38 +0800
 From: Chuanxiao Dong <chuanxiao.dong@intel.com>
 To: linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, akpm@linux-foundation.org,
         arjan@linux.intel.com, alan@linux.intel.com, kmpark@infradead.org
-Subject: [PATCH v2 0/4]enable Background operations and HPI feature for
-	eMMC4.41 card
-Message-ID: <20101203121315.GA18655@intel.com>
+Subject: [PATCH v2 1/4]enable background operations for supported eMMC card
+Message-ID: <20101203121338.GB18655@intel.com>
 Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-	This is the version 2 patch to enable background operations and HPI
-	feature for eMMC4.41 card. Both of these two features are optional.
+>From 984adc755cf2f7966a89e510a50f085e314fe347 Mon Sep 17 00:00:00 2001
+From: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Date: Mon, 22 Nov 2010 16:31:12 +0800
+Subject: [PATCH 1/4] mmc: Enabled background operations feature if eMMC card supports
 
-	Background operations can be started when user request queue is idle. So
-	each time user start to handle a new request, driver should check
-	whether the card is doing BKOPS. If so, should wait until BKOPS is done
-	or use a HPI command to interrupt it if eMMC card support HPI. The
-	serial patches were designed as this work flow.
+Background operations is a new feature defined in eMMC4.41 standard.
+Since this feature is opertional for eMMC card, so driver only enable
+for those eMMC card which supports this feature
 
-	This version patch only use HPI to interrupt background operation,
-	didnot implement to interrupt foreground operations.
+Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+---
+ drivers/mmc/core/mmc.c   |   26 ++++++++++++++++++++++++++
+ include/linux/mmc/card.h |    2 ++
+ include/linux/mmc/mmc.h  |    3 +++
+ 3 files changed, 31 insertions(+), 0 deletions(-)
 
-	patch1: enable background operations feature for supported eMMC card.
-	patch2: start to do background operations when user request queue is
-	idle. Check whether card is doing BKOPS when start a new user request.
-	patch3: enable HPI for supported eMMC card.
-	patch4: use HPI command to interrupt BKOPS.
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 77f93c3..471ed82 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -310,6 +310,14 @@ static int mmc_read_ext_csd(struct mmc_card *card)
+ 			ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
+ 		card->ext_csd.trim_timeout = 300 *
+ 			ext_csd[EXT_CSD_TRIM_MULT];
++
++		/* detect whether the eMMC card support BKOPS */
++		if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
++			card->ext_csd.bkops = 1;
++			card->ext_csd.bkops_en =
++				ext_csd[EXT_CSD_BKOPS_EN];
++		}
++
+ 	}
+ 
+ 	if (ext_csd[EXT_CSD_ERASED_MEM_CONT])
+@@ -484,6 +492,24 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+ 	}
+ 
+ 	/*
++	 * enable BKOPS if eMMC card supports.
++	 */
++	if (card->ext_csd.bkops) {
++		if (!card->ext_csd.bkops_en) {
++			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
++					EXT_CSD_BKOPS_EN, 1);
++			if (err && err != -EBADMSG)
++				goto free_card;
++
++			if (err) {
++				card->ext_csd.bkops_en = 0;
++				err = 0;
++			} else
++				card->ext_csd.bkops_en = 1;
++		}
++	}
++
++	/*
+ 	 * Activate high speed (if supported)
+ 	 */
+ 	if ((card->ext_csd.hs_max_dtr != 0) &&
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 8ce0827..9b755cb 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -54,6 +54,8 @@ struct mmc_ext_csd {
+ 	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
+ 	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
+ 	unsigned int		trim_timeout;		/* In milliseconds */
++	unsigned int		bkops:1; /* background support bit */
++	unsigned int		bkops_en:1; /* background enable bit */
+ };
+ 
+ struct sd_scr {
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index 956fbd8..14f7813 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -251,6 +251,8 @@ struct _mmc_csd {
+  * EXT_CSD fields
+  */
+ 
++#define EXT_CSD_BKOPS_EN		163	/* R/W */
++#define EXT_CSD_BKOPS_START		164	/* W */
+ #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
+ #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
+ #define EXT_CSD_BUS_WIDTH		183	/* R/W */
+@@ -266,6 +268,7 @@ struct _mmc_csd {
+ #define EXT_CSD_SEC_ERASE_MULT		230	/* RO */
+ #define EXT_CSD_SEC_FEATURE_SUPPORT	231	/* RO */
+ #define EXT_CSD_TRIM_MULT		232	/* RO */
++#define EXT_CSD_BKOPS_SUPPORT	502	/* RO */
+ 
+ /*
+  * EXT_CSD field definitions
+-- 
+1.6.6.1
 
-	change-log:
-
-	patch2: remove the added workqueue in the version 1 patch. This
-	workqueue is used to put card in runtime suspend state. Since current
-	MMC driver has not a runtime power management in card block layer, just
-	remove this workqueue. Define erro response to be macro R1_ERROR_RESPONSE
-
-	patch3: fixed community comment. Thanks for Kyungmin Park.
-
-Thanks
-Chuanxiao
