@@ -1,105 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758439Ab0LCEIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 23:08:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33056 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758379Ab0LCEIY (ORCPT
+	id S1758463Ab0LCEgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 23:36:11 -0500
+Received: from syscomptechweb.com ([72.55.168.116]:44707 "EHLO
+	cl-t085-170cl.privatedns.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754003Ab0LCEgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 23:08:24 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=TDEHhdMsG1UA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=7appX6giRh2mzXHeI_gA:9 a=fsaJmgr2YFfB25X6bj4A:7 a=CR5-GmFvIPO5MahWELKs-ZQyijsA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20101203040822.473086528@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 02 Dec 2010 23:04:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 2/2 v2] tracing: Only trace sched_wakeup if it actually work something up
-References: <20101203040358.955427199@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Only-trace-sched_wakeup-if-it-actually-work-.patch
+	Thu, 2 Dec 2010 23:36:10 -0500
+Message-ID: <fb0f17acf2dd8366977e5c7385e186c0.squirrel@72.55.168.116>
+Date: Fri, 3 Dec 2010 08:14:58 +0400
+Subject: Interesting deal
+From: "A.M.Yassin" <a.m.yassin@g.pl>
+Reply-To: a.myassin@g.pl
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: multipart/mixed;boundary="----=_20101203081458_41838"
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cl-t085-170cl.privatedns.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - g.pl
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+------=_20101203081458_41838
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
 
-Currently the tracepoint sched_wakeup traces the wakeup event even
-if the wakeup failed to wake anything up. This is quite stupid
-but it happens because we did not want to add a conditional
-to the core kernel code that would just slow down the wakeup events.
 
-This patch changes the wakeup tracepoints to use the
 
- DEFINE_EVENT_CONDITIONAL()
+Greeting,
 
-to test the "success" parameter and will only trace the event if
-the wakeup was successfull.
+My name is Mr. A. M. Yassin, I live and work in Abu Dhabi UAE.
+I have an urgent business which I believe will interest you.
+Find the enclose for details.
 
-The success field in the tracepoint is removed since it is no
-longer needed.
+For any reason you cannot open that attachment, please let me
+know so that I can resend it in the body of the mail, thank you.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/trace/events/sched.h |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+I wait for your response, Thank you.
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index f633478..29e6030 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -62,7 +62,6 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		__array(	char,	comm,	TASK_COMM_LEN	)
- 		__field(	pid_t,	pid			)
- 		__field(	int,	prio			)
--		__field(	int,	success			)
- 		__field(	int,	target_cpu		)
- 	),
- 
-@@ -70,25 +69,26 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
- 		__entry->pid		= p->pid;
- 		__entry->prio		= p->prio;
--		__entry->success	= success;
- 		__entry->target_cpu	= task_cpu(p);
- 	),
- 
--	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-+	TP_printk("comm=%s pid=%d prio=%d target_cpu=%03d",
- 		  __entry->comm, __entry->pid, __entry->prio,
--		  __entry->success, __entry->target_cpu)
-+		  __entry->target_cpu)
- );
- 
--DEFINE_EVENT(sched_wakeup_template, sched_wakeup,
-+DEFINE_EVENT_CONDITION(sched_wakeup_template, sched_wakeup,
- 	     TP_PROTO(struct task_struct *p, int success),
--	     TP_ARGS(p, success));
-+	     TP_ARGS(p, success),
-+	     TP_CONDITION(success));
- 
- /*
-  * Tracepoint for waking up a new task:
-  */
--DEFINE_EVENT(sched_wakeup_template, sched_wakeup_new,
-+DEFINE_EVENT_CONDITION(sched_wakeup_template, sched_wakeup_new,
- 	     TP_PROTO(struct task_struct *p, int success),
--	     TP_ARGS(p, success));
-+	     TP_ARGS(p, success),
-+	     TP_CONDITION(success));
- 
- #ifdef CREATE_TRACE_POINTS
- static inline long __trace_sched_switch_state(struct task_struct *p)
--- 
-1.7.2.3
+Regards
+
+A. M. Yassin
+------=_20101203081458_41838
+Content-Type: application/pdf; name="Interesting deal.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Interesting deal.pdf"
+
+JVBERi0xLjUNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFu
+Zyhlbi1VUykgPj4NCmVuZG9iag0KMiAwIG9iag0KPDwvVHlwZS9QYWdlcy9Db3VudCAxL0tpZHNb
+IDMgMCBSXSA+Pg0KZW5kb2JqDQozIDAgb2JqDQo8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL1Jl
+c291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUi9GMiA3IDAgUj4+L1Byb2NTZXRbL1BERi9UZXh0L0lt
+YWdlQi9JbWFnZUMvSW1hZ2VJXSA+Pi9NZWRpYUJveFsgMCAwIDYxMiA3OTJdIC9Db250ZW50cyA0
+IDAgUi9Hcm91cDw8L1R5cGUvR3JvdXAvUy9UcmFuc3BhcmVuY3kvQ1MvRGV2aWNlUkdCPj4vVGFi
+cy9TPj4NCmVuZG9iag0KNCAwIG9iag0KPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCAzNzM5
+Pj4NCnN0cmVhbQ0KeJytW1uP28YVfjfg/zAPLSoB2jHvFNEnu3HcJHYSxFsUQdIHSuQuhV2T9HLp
+df59z2WulGaloEVgrUTO9Vy+850zkzfXL1+8+jYWcSyjTFzfvHwRiwj+i0WZyCjJRJkmMtuK608v
+X0TiFj/evXzx2+rdOl89rK/SVduur5LV47pYHdZX2aq/Xcfxatqs/yOuv3/54i0M/+baDhrHpczd
+MX9biUBTPX9cyW1xYduolIlu+9063q5Evb6Kk9WndVwGO1eZzIpF51q8qfu7NXQVMEC0+gm2e4Pb
+pQ/a6b5db1kEosM9t/A9X7ViXSlJ4EPxGjruZvEN/Onq3QGbbEILSTLYauUvpINhadRAlzKWRex3
+cWb/F/TtD6CbR3zWNri411pz9U68/YRCog786BEnm/CrFEqA0CRfiSfdixrTcHYe0rng34Kt4hZm
+qkkizYSzUo8B1FFBk+e1WIBC8kxtZhjH4WFdcv+ZZrMr+MOdl3TMT4ZjVV2hJuEd9SN9wV6v1MZQ
+Qvf4gj6o3a5F00mUHGmUT9CKJml7klArdq1p0sLG1IRK2kJtmUYbeF76wasTMzkKiRmW0dVfYAQ9
+ZNsLMpVeTPiUVoJS2Hdi0BOJaSDVtEOvtve8VLexrDLPREI9tqnMlj1IsMPM9r4fZtQjOj09YKnT
+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
+uIqnYQgkY9SJxBkhJ6UsdPKg7kVpdliLW1Mob+3AQsXkiaIMXYGCb8d3O6eZftxyvcum0a7sWDX0
+rlOorW9sunXRG3wKxJDzN1K8QnnSKLMAi/jTRuQwQkTxOY/w5V8NjxzEzrmAJEZTETcoRExi40a4
+MzKMcxlpGU5dzb6GZwpPBx0UGGaotm+u3U1UJfBvGdEzuxNVQ9DZvuK8+8GKeVSeTKxTG0WHQUS7
+SNu7W2kcQ6EBpHiPZNLed7oDAoh4lhmGZxMOQLehd/j48ydPWj5RIjNjYzDESPBPS2Ay0QzOCa8G
+pMeFQ7vzVYZMnDnVU8cpa3WvB2+N/Cw+rtPV23/QzYZs9faar8HgIP9mMkK1BnsIzJWGQbhnda7X
+IxmnYrlqT8496Jo9O4ZGAcyW9epVDv0HFTYuuXeTbCtzcYk7sG+pOEc2R740qlIH6T9YDcwyvHnh
+Dnpu/rKUFxbPE4wN+n4AppNulin65R3gpjYJybuhQVLBYKvO/6V43eOBhV8RPjwTaMvSX8LI4cA/
+l/DSmP9doBgIq9yf95yY8theozjXNq3wLN7WKtxrmDYNcq95B+/8JxWQXm/Ac5MnBd7OuqxtnNr/
+PwATEvlB/hq8+pDiJVevC5PnyTh5cBOQvPk9g6bOmZLXNnxcDtYTbvpfWOkCRQ0KZW5kc3RyZWFt
+DQplbmRvYmoNCjUgMCBvYmoNCjw8L1R5cGUvRm9udC9TdWJ0eXBlL1RydWVUeXBlL05hbWUvRjEv
+QmFzZUZvbnQvVGltZXMjMjBOZXcjMjBSb21hbi9FbmNvZGluZy9XaW5BbnNpRW5jb2RpbmcvRm9u
+dERlc2NyaXB0b3IgNiAwIFIvRmlyc3RDaGFyIDMyL0xhc3RDaGFyIDEyMS9XaWR0aHMgMTAgMCBS
+Pj4NCmVuZG9iag0KNiAwIG9iag0KPDwvVHlwZS9Gb250RGVzY3JpcHRvci9Gb250TmFtZS9UaW1l
+cyMyME5ldyMyMFJvbWFuL0ZsYWdzIDMyL0l0YWxpY0FuZ2xlIDAvQXNjZW50IDg5MS9EZXNjZW50
+IC0yMTYvQ2FwSGVpZ2h0IDY5My9BdmdXaWR0aCA0MDEvTWF4V2lkdGggMjU2OC9Gb250V2VpZ2h0
+IDQwMC9YSGVpZ2h0IDI1MC9MZWFkaW5nIDQyL1N0ZW1WIDQwL0ZvbnRCQm94WyAtNTY4IC0yMTYg
+MjAwMCA2OTNdID4+DQplbmRvYmoNCjcgMCBvYmoNCjw8L1R5cGUvRm9udC9TdWJ0eXBlL1RydWVU
+eXBlL05hbWUvRjIvQmFzZUZvbnQvVGltZXMjMjBOZXcjMjBSb21hbixCb2xkL0VuY29kaW5nL1dp
+bkFuc2lFbmNvZGluZy9Gb250RGVzY3JpcHRvciA4IDAgUi9GaXJzdENoYXIgMzIvTGFzdENoYXIg
+ODkvV2lkdGhzIDExIDAgUj4+DQplbmRvYmoNCjggMCBvYmoNCjw8L1R5cGUvRm9udERlc2NyaXB0
+b3IvRm9udE5hbWUvVGltZXMjMjBOZXcjMjBSb21hbixCb2xkL0ZsYWdzIDMyL0l0YWxpY0FuZ2xl
+IDAvQXNjZW50IDg5MS9EZXNjZW50IC0yMTYvQ2FwSGVpZ2h0IDY3Ny9BdmdXaWR0aCA0MjcvTWF4
+V2lkdGggMjU1OC9Gb250V2VpZ2h0IDcwMC9YSGVpZ2h0IDI1MC9MZWFkaW5nIDQyL1N0ZW1WIDQy
+L0ZvbnRCQm94WyAtNTU4IC0yMTYgMjAwMCA2NzddID4+DQplbmRvYmoNCjkgMCBvYmoNCjw8L0F1
+dGhvcihQZXRlcikvQ3JlYXRvcij+/wBNAGkAYwByAG8AcwBvAGYAdACuACAATwBmAGYAaQBjAGUA
+IABXAG8AcgBkACAAMgAwADAANykvQ3JlYXRpb25EYXRlKEQ6MjAxMDExMjcxMzMxNDMpIC9Nb2RE
+YXRlKEQ6MjAxMDExMjcxMzMxNDMpIC9Qcm9kdWNlcij+/wBNAGkAYwByAG8AcwBvAGYAdACuACAA
+TwBmAGYAaQBjAGUAIABXAG8AcgBkACAAMgAwADAANyk+Pg0KZW5kb2JqDQoxMCAwIG9iag0KWyAy
+NTAgMCAwIDAgNTAwIDgzMyAwIDE4MCAzMzMgMzMzIDAgMCAyNTAgMzMzIDI1MCAyNzggNTAwIDAg
+NTAwIDAgNTAwIDUwMCA1MDAgNTAwIDAgMCAwIDI3OCAwIDAgMCAwIDAgNzIyIDY2NyA2NjcgNzIy
+IDYxMSA1NTYgNzIyIDcyMiAzMzMgMzg5IDcyMiA2MTEgODg5IDcyMiA3MjIgNTU2IDAgNjY3IDU1
+NiA2MTEgNzIyIDAgOTQ0IDAgNzIyIDAgMCAwIDAgMCAwIDAgNDQ0IDUwMCA0NDQgNTAwIDQ0NCAz
+MzMgNTAwIDUwMCAyNzggMCA1MDAgMjc4IDc3OCA1MDAgNTAwIDUwMCA1MDAgMzMzIDM4OSAyNzgg
+NTAwIDUwMCA3MjIgNTAwIDUwMF0gDQplbmRvYmoNCjExIDAgb2JqDQpbIDI1MCAwIDAgMCAwIDAg
+MCAwIDAgMCAwIDAgMjUwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCA3
+MjIgMCAwIDcyMiAwIDAgNzc4IDAgMzg5IDAgMCA2NjcgMCA3MjIgNzc4IDAgMCA3MjIgNTU2IDY2
+NyA3MjIgMCAwIDAgNzIyXSANCmVuZG9iag0KMTIgMCBvYmoNCjw8L1R5cGUvWFJlZi9TaXplIDEy
+L1dbIDEgNCAyXSAvUm9vdCAxIDAgUi9JbmZvIDkgMCBSL0lEWzwxQTkyQTNFMjlCQ0RFRDRCOERD
+MzhDMDQ1OUY4MzU4MT48MUE5MkEzRTI5QkNERUQ0QjhEQzM4QzA0NTlGODM1ODE+XSAvRmlsdGVy
+L0ZsYXRlRGVjb2RlL0xlbmd0aCA1NT4+DQpzdHJlYW0NCnicY2AAgv//GYGkIAMDiPKDUG1gijEV
+TAl4Q6gfYErwGZgSmg6mhLvAlEg+mBLdwcAAAGKFCEUNCmVuZHN0cmVhbQ0KZW5kb2JqDQp4cmVm
+DQowIDEzDQowMDAwMDAwMDAwIDY1NTM1IGYNCjAwMDAwMDAwMTcgMDAwMDAgbg0KMDAwMDAwMDA3
+OCAwMDAwMCBuDQowMDAwMDAwMTM0IDAwMDAwIG4NCjAwMDAwMDAzNTcgMDAwMDAgbg0KMDAwMDAw
+NDE3MSAwMDAwMCBuDQowMDAwMDA0MzQ0IDAwMDAwIG4NCjAwMDAwMDQ1ODIgMDAwMDAgbg0KMDAw
+MDAwNDc1OSAwMDAwMCBuDQowMDAwMDA1MDAyIDAwMDAwIG4NCjAwMDAwMDUyMzEgMDAwMDAgbg0K
+MDAwMDAwNTU2MCAwMDAwMCBuDQowMDAwMDA1NzI3IDAwMDAwIG4NCnRyYWlsZXINCjw8L1NpemUg
+MTMvUm9vdCAxIDAgUi9JbmZvIDkgMCBSL0lEWzwxQTkyQTNFMjlCQ0RFRDRCOERDMzhDMDQ1OUY4
+MzU4MT48MUE5MkEzRTI5QkNERUQ0QjhEQzM4QzA0NTlGODM1ODE+XSA+Pg0Kc3RhcnR4cmVmDQo1
+OTgxDQolJUVPRg0KeHJlZg0KMCAwDQp0cmFpbGVyDQo8PC9TaXplIDEzL1Jvb3QgMSAwIFIvSW5m
+byA5IDAgUi9JRFs8MUE5MkEzRTI5QkNERUQ0QjhEQzM4QzA0NTlGODM1ODE+PDFBOTJBM0UyOUJD
+REVENEI4REMzOEMwNDU5RjgzNTgxPl0gL1ByZXYgNTk4MS9YUmVmU3RtIDU3Mjc+Pg0Kc3RhcnR4
+cmVmDQo2Mzk2DQolJUVPRg==
+------=_20101203081458_41838--
 
 
