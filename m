@@ -1,126 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab0LCFGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 00:06:09 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:57970 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab0LCFGH (ORCPT
+	id S1751800Ab0LCFL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 00:11:57 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:59874 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0LCFL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 00:06:07 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6185"; a="65093458"
-Message-ID: <1c6eadd860e1a9085336bf75a2a96eb3.squirrel@www.codeaurora.org>
-In-Reply-To: <20101202223812.GA2685@rere.qmqm.pl>
-References: <4C80187D.9000304@yahoo.es>
-    <1291288582.15187.91.camel@stummala-linux.in.qualcomm.com>
-    <4CF80DC6.1020801@yahoo.es> <20101202223812.GA2685@rere.qmqm.pl>
-Date: Thu, 2 Dec 2010 21:05:54 -0800 (PST)
-Subject: Re: [PATCH v4] mmc: Make ID freq configurable
-From: stummala@codeaurora.org
-To: "Michal Miroslaw" <mirq-linux@rere.qmqm.pl>
-Cc: "Hein_Tibosch" <hein_tibosch@yahoo.es>,
-        "Sahitya Tummala" <stummala@codeaurora.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Pierre Ossman" <pierre@ossman.eu>, "Chris Ball" <cjb@laptop.org>,
-        "Ben Nizette" <bn@niasdigital.com>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>,
-        "Adrian Hunter" <adrian.hunter@nokia.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Matt Fleming" <matt@console-pimps.org>
-User-Agent: SquirrelMail/1.4.17
+	Fri, 3 Dec 2010 00:11:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:newsgroups:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=Ap2h7CzeViv+xVLUr49nBfRXDF6ox2MweAas1mFIA4p8ewBpyjZSE8nk1LNWG39Wuu
+         Xz1VO/sBJj/D+4CAQAPA==
+Message-ID: <4CF87C14.8000708@google.com>
+Date: Thu, 02 Dec 2010 21:11:48 -0800
+From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Newsgroups: gmane.linux.kernel
+To: Mike Galbraith <efault@gmx.de>
+CC: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+References: <20101121133744.GA10765@elte.hu>	 <1290700829.4759.16.camel@maggy.simson.net>	 <1290954299.30515.15.camel@marge.simson.net>  <4CF5C379.8030204@google.com> <1291184173.7466.147.camel@marge.simson.net>
+In-Reply-To: <1291184173.7466.147.camel@marge.simson.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-
-> On Fri, Dec 03, 2010 at 05:21:10AM +0800, Hein_Tibosch wrote:
->> Hi Sahitya,
->> On 2-12-2010 19:16, Sahitya Tummala wrote:
->> > Hi Hein Tibosch,
->> >
->> > On Fri, 2010-09-03 at 05:34 +0800, Hein_Tibosch wrote:
->> >> In the latest releases of the mmc driver, the freq during
->> initialization
->> >> is set to a fixed 400 Khz. This was reportedly too fast for several
->> >> users. As there doesn't seem to be an ideal frequency
->> which-works-for-all,
->> >> Pierre suggested to let the driver try several frequencies.
->> >> <cut>
->> >> +		/*
->> >> +		 * First we search for SDIO...
->> >> +		 */
->> >> +		err = mmc_send_io_op_cond(host, 0, &ocr);
->> >> +		if (!err) {
->> >> +			if (mmc_attach_sdio(host, ocr)) {
->> >> +				mmc_claim_host(host);
->> >> +				/* try SDMEM (but not MMC) even if SDIO is broken */
->> >> +				if (mmc_send_app_op_cond(host, 0, &ocr))
->> > In case of SDIO error, mmc_power_off() is getting called as part of
->> > mmc_detach_bus().  Shouldn't we power up the host before checking for
->> > SDMEM? Any comments?
->> I think you should ask Michal Miroslaw, as he wrote the patch for the
->> SD-combo (IO + mem)*
+On 11/30/10 22:16, Mike Galbraith wrote:
+> On Tue, 2010-11-30 at 19:39 -0800, Paul Turner wrote:
+>> On 11/28/10 06:24, Mike Galbraith wrote:
+>>>
+>>> Something else is seriously wrong though.  36.1 with attached (plus
+>>> sched, cgroup: Fixup broken cgroup movement) works a treat, whereas
+>>> 37.git and tip with fixlet below both suck rocks.  With a make -j40
+>>> running, wakeup-latency is showing latencies of>100ms, amarok skips,
+>>> mouse lurches badly.. generally horrid.  Something went south.
 >>
->> But yes, in case of a failure, mmc_attach_sdio() will call
->> mmc_detach_bus()
->> which in turn will call mmc_power_off()
+>> I'm looking at this.
 >>
->> And so it should be mmc_power_up() again before trying to detect SD
->> memory.
+>> The share:share ratios looked good in static testing, but perhaps we
+>> need a little more wake-up boost to improve interactivity.
 >
-> Yes, you are right!  This explains some things...
+> Yeah, feels like a wakeup issue.  I too did a (brief) static test, and
+> that looked ok.
 >
-> Please try attached patch. (Not tested, but obvious enough.)
-
-I was looking at the code and figured out this issue. I don't have any
-SD-combo card to verify your patch.
-
-Thanks
-Sahitya.
---
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-> Best Regards,
-> Micha³ Miros³aw
->
-> ---
->
-> mmc: fix detection of memory part of SD-combo card with broken SDIO
->
-> In case of failure, mmc_attach_sdio() will power off the SD bus.
-> Power it up and reinitialize before trying SD memory detection.
->
-> Reported-by: Sahitya Tummala <stummala@codeaurora.org>
-> Signed-off-by: Micha³ Miros³aw <mirq-linux@rere.qmqm.pl>
-> ---
->  drivers/mmc/core/core.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 6286898..32a4798 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1564,6 +1564,11 @@ void mmc_rescan(struct work_struct *work)
->  				 * Try SDMEM (but not MMC) even if SDIO
->  				 * is broken.
->  				 */
-> +				mmc_power_up(host);
-> +				sdio_reset(host);
-> +				mmc_go_idle(host);
-> +				mmc_send_if_cond(host, host->ocr_avail);
-> +
->  				if (mmc_send_app_op_cond(host, 0, &ocr))
->  					goto out_fail;
->
-> --
-> 1.7.2.3
->
+> 	-Mike
 >
 
+Hey Mike,
 
+Does something like the below help?
+
+We're quick to drive the load_contribution up (to avoid over-commit). 
+However on sleepy workloads this results in lots of weight being 
+stranded (since it reaches maximum contribution instantaneously but 
+decays slowly) as the thread migrates between cpus.
+
+Avoid this by averaging "up" in the wake-up direction as well as the sleep.
+
+We also get a boost from the fact that we use the instantaneous weight 
+in computing the actual received shares.
+
+I actually don't have a desktop setup handy to test "interactivity" (sad 
+but true -- working on grabbing one).  But it looks better on under 
+synthetic load.
+
+- Paul
+
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -743,12 +743,19 @@ static void update_cfs_load(struct cfs_r
+                 return;
+
+         now = rq_of(cfs_rq)->clock;
+-       delta = now - cfs_rq->load_stamp;
++
++       if (likely(cfs_rq->load_stamp))
++               delta = now - cfs_rq->load_stamp;
++       else {
++               /* avoid large initial delta and initialize load_period */
++               delta = 1;
++               cfs_rq->load_stamp = 1;
++       }
+
+         /* truncate load history at 4 idle periods */
+         if (cfs_rq->load_stamp > cfs_rq->load_last &&
+             now - cfs_rq->load_last > 4 * period) {
+-               cfs_rq->load_period = 0;
++               cfs_rq->load_period = period/2;
+                 cfs_rq->load_avg = 0;
+         }
