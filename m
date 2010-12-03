@@ -1,160 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab0LCRO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 12:14:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15817 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab0LCRO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 12:14:28 -0500
-Date: Fri, 3 Dec 2010 18:07:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Roland McGrath <roland@redhat.com>, michal.simek@petalogix.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        John Williams <john.williams@petalogix.com>,
-        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: Flushing whole page instead of work for ptrace
-Message-ID: <20101203170712.GA16642@redhat.com>
-References: <4CEFA8AE.2090804@petalogix.com> <20101130233250.35603401C8@magilla.sf.frob.com> <20101203150021.GA11114@redhat.com> <20101203162817.GA21438@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101203162817.GA21438@barrios-desktop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752549Ab0LCRTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 12:19:24 -0500
+Received: from www17.your-server.de ([213.133.104.17]:48181 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab0LCRTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 12:19:22 -0500
+Subject: Re: [Bug #22532] 2.6.37-rc1: BUG: scheduling while atomic
+ (kvm_init)
+From: Thomas Meyer <thomas@m3y3r.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+In-Reply-To: <gUkHV_Vc3aE.A.X0.ozC-MB@chimera>
+References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
+	 <gUkHV_Vc3aE.A.X0.ozC-MB@chimera>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Dec 2010 18:19:19 +0100
+Message-ID: <1291396759.13945.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04, Minchan Kim wrote:
->
-> On Fri, Dec 03, 2010 at 04:00:21PM +0100, Oleg Nesterov wrote:
-> > On 11/30, Roland McGrath wrote:
-> > >
-> > > Documentation/cachetlb.txt says:
-> > >
-> > > 	Any time the kernel writes to a page cache page, _OR_
-> > > 	the kernel is about to read from a page cache page and
-> > > 	user space shared/writable mappings of this page potentially
-> > > 	exist, this routine is called.
-> > >
-> > > In your case, the kernel is only reading (write=0 passed to
-> > > access_process_vm and get_user_pages).  In normal situations,
-> > > the page in question will have only a private and read-only
-> > > mapping in user space.  So the call should not be required in
-> > > these cases--if the code can tell that's so.
-> > >
-> > > Perhaps something like the following would be safe.
-> > > But you really need some VM folks to tell you for sure.
-> > >
-> > > diff --git a/mm/memory.c b/mm/memory.c
-> > > index 02e48aa..2864ee7 100644
-> > > --- a/mm/memory.c
-> > > +++ b/mm/memory.c
-> > > @@ -1484,7 +1484,8 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-> > >  				pages[i] = page;
-> > >
-> > >  				flush_anon_page(vma, page, start);
-> > > -				flush_dcache_page(page);
-> > > +				if ((vm_flags & VM_WRITE) || (vma->vm_flags & VM_SHARED)
-> > > +					flush_dcache_page(page);
-> >
-> > First of all, I know absolutely nothing about D-cache aliasing.
-> > My poor understanding of flush_dcache_page() is: synchronize the
-> > kernel/user vision of this memory, in the case when either side
-> > can change it.
-> >
-> > If this is true, then this change doesn't look right in general.
-> >
-> > Even if (vma->vm_flags & VM_SHARED) == 0, it is possible that
-> > tsk can write to this memory, this mapping can be writable and
-> > private.
-> >
-> > Even if we ensure that this mapping is readonly/private, another
-> > user-space process can write to this page via shared/writable
-> > mapping.
-> >
->
-> I think you're right. It has a portential that other processes have
-> a such mapping.
->
-> >
-> > I'd like to know if my understanding is correct, I am just curious.
-> >
-> > Oleg.
->
-> How about this?
-> Maybe this patch would mitigate the overhead.
-> But I am not sure this patch. Cced GUP experts.
->
-> From 8fb3d84c7bb32c4ba9c4a0063198ce7cfcca6b37 Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan.kim@gmail.com>
-> Date: Sat, 4 Dec 2010 01:19:43 +0900
-> Subject: [PATCH] Remove redundant flush_dcache_page in GUP
->
-> If we get the page with handle_mm_fault, it already handled
-> page flush. So GUP's flush_dcache_page call is redundant.
+Am Freitag, den 03.12.2010, 00:41 +0100 schrieb Rafael J. Wysocki:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
 
-Oh, I am not sure. Say, do_wp_page() can only clear !pte_write(),
-but let me remind I do not understand this magic.
+The BUG still happens:
 
-However, evem if this change is correct, I am not sure it can solve
-the original problem. Debugger issues a lot of short reads, I don't
-think follow_page() fails that often.
+[    0.502550] BUG: scheduling while atomic: swapper/1/0x00000002
+[    0.502574] Modules linked in:
+[    0.502577] Pid: 1, comm: swapper Not tainted 2.6.37-rc4-00153-g59e57c6 #104
+[    0.502579] Call Trace:
+[    0.502581]  [<ffffffff81052552>] __schedule_bug+0x5a/0x5e
+[    0.502585]  [<ffffffff816f0492>] schedule+0xd4/0x592
+[    0.502588]  [<ffffffff8105010e>] ? resched_task+0x68/0x6d
+[    0.502591]  [<ffffffff8105009c>] ? test_tsk_need_resched+0x12/0x1c
+[    0.502595]  [<ffffffff816f0b91>] schedule_timeout+0x31/0xde
+[    0.502598]  [<ffffffff81057654>] ? wake_up_process+0x10/0x12
+[    0.502602]  [<ffffffff8106c73c>] ? wake_up_worker+0x1f/0x21
+[    0.502605]  [<ffffffff8106c795>] ? insert_work+0x57/0x5f
+[    0.502608]  [<ffffffff816f1e5e>] ? _raw_spin_unlock_irqrestore+0x20/0x2b
+[    0.502611]  [<ffffffff816f02ac>] wait_for_common+0x98/0x10e
+[    0.502614]  [<ffffffff81057628>] ? default_wake_function+0x0/0xf
+[    0.502618]  [<ffffffff816f03bc>] wait_for_completion+0x18/0x1a
+[    0.502621]  [<ffffffff8106c160>] call_usermodehelper_exec+0x82/0xd1
+[    0.502624]  [<ffffffff812c7053>] kobject_uevent_env+0x3e6/0x422
+[    0.502628]  [<ffffffff812c709a>] kobject_uevent+0xb/0xd
+[    0.502632]  [<ffffffff81390748>] device_add+0x360/0x4f6
+[    0.502635]  [<ffffffff813908f7>] device_register+0x19/0x1e
+[    0.502639]  [<ffffffff81390988>] device_create_vargs+0x8c/0xc4
+[    0.502642]  [<ffffffff813909ec>] device_create+0x2c/0x2e
+[    0.502646]  [<ffffffff813587df>] misc_register+0xba/0x113
+[    0.502649]  [<ffffffff81001e83>] kvm_init+0x1d1/0x2dc
+[    0.502652]  [<ffffffff81d39ab1>] ? pci_iommu_init+0x0/0x41
+[    0.502655]  [<ffffffff81d37505>] ? svm_init+0x0/0x1e
+[    0.502657]  [<ffffffff81d37521>] svm_init+0x1c/0x1e
+[    0.502660]  [<ffffffff810002f8>] do_one_initcall+0x7a/0x12a
+[    0.502663]  [<ffffffff81d34cfb>] kernel_init+0x133/0x1bd
+[    0.502667]  [<ffffffff81026794>] kernel_thread_helper+0x4/0x10
+[    0.502670]  [<ffffffff81d34bc8>] ? kernel_init+0x0/0x1bd
+[    0.502673]  [<ffffffff81026790>] ? kernel_thread_helper+0x0/0x10
+[    0.502754] initcall svm_init+0x0/0x1e returned with preemption imbalance 
 
-But this is only my guess.
-
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->
-> ---
->  mm/memory.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ebfeedf..9166f4b 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1430,6 +1430,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  		do {
->  			struct page *page;
->  			unsigned int foll_flags = gup_flags;
-> +			bool dcache_flushed = false;
->
->  			/*
->  			 * If we have a pending SIGKILL, don't keep faulting
-> @@ -1464,6 +1465,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  					tsk->maj_flt++;
->  				else
->  					tsk->min_flt++;
-> +				dcache_flushed = true;
->
->  				/*
->  				 * The VM_FAULT_WRITE bit tells us that
-> @@ -1489,7 +1491,8 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  				pages[i] = page;
->
->  				flush_anon_page(vma, page, start);
-> -				flush_dcache_page(page);
-> +				if (!dcache_flushed)
-> +					flush_dcache_page(page);
->  			}
->  			if (vmas)
->  				vmas[i] = vma;
-> --
-> 1.7.0.4
->
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
 
