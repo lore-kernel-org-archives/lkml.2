@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab0LCS7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 13:59:04 -0500
-Received: from claw.goop.org ([74.207.240.146]:39346 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753402Ab0LCS7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 13:59:02 -0500
-Message-ID: <4CF93DF3.90908@goop.org>
-Date: Fri, 03 Dec 2010 10:58:59 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1752916Ab0LCTao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 14:30:44 -0500
+Received: from sous-sol.org ([216.99.217.87]:50744 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752460Ab0LCTan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 14:30:43 -0500
+Date: Fri, 3 Dec 2010 11:30:08 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Chris Wright <chrisw@sous-sol.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+Message-ID: <20101203193008.GK10050@sequoia.sous-sol.org>
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+ <20101202144423.3ad1908d@annuminas.surriel.com>
+ <20101203005008.GU10050@sequoia.sous-sol.org>
+ <4CF9368C.8030309@redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stable Kernel <stable@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] [GIT PULL] Xen fixes
-References: <4CF92911.8060704@goop.org>
-In-Reply-To: <4CF92911.8060704@goop.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF9368C.8030309@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2010 09:29 AM, Jeremy Fitzhardinge wrote:
-> Hi Linus,
->
-> Another handful of Xen fixes:
+* Rik van Riel (riel@redhat.com) wrote:
+> On 12/02/2010 07:50 PM, Chris Wright wrote:
+> >>+/*
+> >>+ * Yield the CPU, giving the remainder of our time slice to task p.
+> >>+ * Typically used to hand CPU time to another thread inside the same
+> >>+ * process, eg. when p holds a resource other threads are waiting for.
+> >>+ * Giving priority to p may help get that resource released sooner.
+> >>+ */
+> >>+void yield_to(struct task_struct *p)
+> >>+{
+> >>+	unsigned long flags;
+> >>+	struct sched_entity *se =&p->se;
+> >>+	struct rq *rq;
+> >>+	struct cfs_rq *cfs_rq;
+> >>+	u64 remain = slice_remain(current);
+> >>+
+> >>+	rq = task_rq_lock(p,&flags);
+> >>+	if (task_running(rq, p) || task_has_rt_policy(p))
+> >>+		goto out;
+> >>+	cfs_rq = cfs_rq_of(se);
+> >>+	se->vruntime -= remain;
+> >>+	if (se->vruntime<  cfs_rq->min_vruntime)
+> >>+		se->vruntime = cfs_rq->min_vruntime;
+> >
+> >Should these details all be in sched_fair?  Seems like the wrong layer
+> >here.  And would that condition go the other way?  If new vruntime is
+> >smaller than min, then it becomes new cfs_rq->min_vruntime?
+> 
+> That would be nice.  Unfortunately, EXPORT_SYMBOL() does
+> not seem to work right from sched_fair.c, which is included
+> from sched.c instead of being built from the makefile!
 
-Oh, could you also pull:
-
-  git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc4-pvhvm-fixes
-
-Stefano Stabellini (5):
-      xen: use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
-      xen: fix MSI setup and teardown for PV on HVM guests
-      xen: resume the pv console for hvm guests too
-      xen: fix save/restore for PV on HVM guests with pirq remapping
-      xen: unplug the emulated devices at resume time
-
- arch/x86/pci/xen.c                 |   27 +++++++---
- arch/x86/xen/platform-pci-unplug.c |    2 +-
- arch/x86/xen/suspend.c             |    1 +
- arch/x86/xen/xen-ops.h             |    2 +-
- drivers/xen/events.c               |  105 +++++++++++++++++++++++++-----------
- drivers/xen/manage.c               |    1 +
- include/xen/events.h               |    7 ++-
- include/xen/interface/physdev.h    |   10 ++++
- 8 files changed, 114 insertions(+), 41 deletions(-)
-
-
-Which fixes various bugs when running in "fully virtualized +
-paravirtualizations" mode:
-
-    * removes the use of a never-implemented experimental Xen ABI, and
-      replaces it with the one that did finally get implemented
-    * make MSI work on passed-through devices
-    * various save/restore fixes (console, interrupts, emulated device
-      unplugging)
-
-Thanks,
-    J
+add a ->yield_to() to properly isolate (only relevant then in
+sched_fair)?
