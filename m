@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab0LCLqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 06:46:20 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:44289 "EHLO gir.skynet.ie"
+	id S932520Ab0LCLpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 06:45:35 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:44281 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932465Ab0LCLpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932404Ab0LCLpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Dec 2010 06:45:33 -0500
 From: Mel Gorman <mel@csn.ul.ie>
 To: Simon Kirby <sim@hostway.ca>
@@ -13,243 +13,58 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 1/5] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
-Date: Fri,  3 Dec 2010 11:45:30 +0000
-Message-Id: <1291376734-30202-2-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory in response to high-order allocations V2
+Date: Fri,  3 Dec 2010 11:45:29 +0000
+Message-Id: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the allocator enters its slow path, kswapd is woken up to balance the
-node. It continues working until all zones within the node are balanced. For
-order-0 allocations, this makes perfect sense but for higher orders it can
-have unintended side-effects. If the zone sizes are imbalanced, kswapd may
-reclaim heavily within a smaller zone discarding an excessive number of
-pages. The user-visible behaviour is that kswapd is awake and reclaiming
-even though plenty of pages are free from a suitable zone.
+This still needs testing. I've tried multiple reproduction scenarios locally
+but two things are tripping me. One, Simon's network card is using GFP_ATOMIC
+allocations where as the one I use locally does not. Second, Simon's is a real
+mail workload with network traffic and there are no decent mail simulator
+benchmarks (that I could find at least) that would replicate the situation.
+Still, I'm hopeful it'll stop kswapd going mad on his machine and might
+also alleviate some of the "too much free memory" problem.
 
-This patch alters the "balance" logic for high-order reclaim allowing kswapd
-to stop if any suitable zone becomes balanced to reduce the number of pages
-it reclaims from other zones. kswapd still tries to ensure that order-0
-watermarks for all zones are met before sleeping.
+Changelog since V1
+  o Take classzone into account
+  o Ensure that kswapd always balances at order-09
+  o Reset classzone and order after reading
+  o Require a percentage of a node be balanced for high-order allocations,
+    not just any zone as ZONE_DMA could be balanced when the node in general
+    is a mess
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
+Simon Kirby reported the following problem
+
+   We're seeing cases on a number of servers where cache never fully
+   grows to use all available memory.  Sometimes we see servers with 4
+   GB of memory that never seem to have less than 1.5 GB free, even with
+   a constantly-active VM.  In some cases, these servers also swap out
+   while this happens, even though they are constantly reading the working
+   set into memory.  We have been seeing this happening for a long time;
+   I don't think it's anything recent, and it still happens on 2.6.36.
+
+After some debugging work by Simon, Dave Hansen and others, the prevaling
+theory became that kswapd is reclaiming order-3 pages requested by SLUB
+too aggressive about it.
+
+There are two apparent problems here. On the target machine, there is a small
+Normal zone in comparison to DMA32. As kswapd tries to balance all zones, it
+would continually try reclaiming for Normal even though DMA32 was balanced
+enough for callers. The second problem is that sleeping_prematurely() uses
+the requested order, not the order kswapd finally reclaimed at. This keeps
+kswapd artifically awake.
+
+This series aims to alleviate these problems but needs testing to confirm
+it alleviates the actual problem and wider review to think if there is a
+better alternative approach. Local tests passed but are not reproducing
+the same problem unfortunately so the results are inclusive.
+
  include/linux/mmzone.h |    3 +-
- mm/page_alloc.c        |    8 ++++--
- mm/vmscan.c            |   55 +++++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 54 insertions(+), 12 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 39c24eb..7177f51 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -645,6 +645,7 @@ typedef struct pglist_data {
- 	wait_queue_head_t kswapd_wait;
- 	struct task_struct *kswapd;
- 	int kswapd_max_order;
-+	enum zone_type classzone_idx;
- } pg_data_t;
- 
- #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
-@@ -660,7 +661,7 @@ typedef struct pglist_data {
- 
- extern struct mutex zonelists_mutex;
- void build_all_zonelists(void *data);
--void wakeup_kswapd(struct zone *zone, int order);
-+void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
- int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- 		int classzone_idx, int alloc_flags);
- enum memmap_context {
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e409270..82e3499 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1915,13 +1915,14 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
- 
- static inline
- void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
--						enum zone_type high_zoneidx)
-+						enum zone_type high_zoneidx,
-+						enum zone_type classzone_idx)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 
- 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
--		wakeup_kswapd(zone, order);
-+		wakeup_kswapd(zone, order, classzone_idx);
- }
- 
- static inline int
-@@ -1998,7 +1999,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 		goto nopage;
- 
- restart:
--	wake_all_kswapd(order, zonelist, high_zoneidx);
-+	wake_all_kswapd(order, zonelist, high_zoneidx,
-+						zone_idx(preferred_zone));
- 
- 	/*
- 	 * OK, we're below the kswapd watermark and have kicked background
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d31d7ce..d070d19 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2165,11 +2165,14 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-  * interoperates with the page allocator fallback scheme to ensure that aging
-  * of pages is balanced across the zones.
-  */
--static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
-+static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-+							int classzone_idx)
- {
- 	int all_zones_ok;
-+	int any_zone_ok;
- 	int priority;
- 	int i;
-+	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 	unsigned long total_scanned;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct scan_control sc = {
-@@ -2192,7 +2195,6 @@ loop_again:
- 	count_vm_event(PAGEOUTRUN);
- 
- 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
--		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 		unsigned long lru_pages = 0;
- 		int has_under_min_watermark_zone = 0;
- 
-@@ -2201,6 +2203,7 @@ loop_again:
- 			disable_swap_token();
- 
- 		all_zones_ok = 1;
-+		any_zone_ok = 0;
- 
- 		/*
- 		 * Scan in the highmem->dma direction for the highest
-@@ -2310,10 +2313,12 @@ loop_again:
- 				 * spectulatively avoid congestion waits
- 				 */
- 				zone_clear_flag(zone, ZONE_CONGESTED);
-+				if (i <= classzone_idx)
-+					any_zone_ok = 1;
- 			}
- 
- 		}
--		if (all_zones_ok)
-+		if (all_zones_ok || (order && any_zone_ok))
- 			break;		/* kswapd: all done */
- 		/*
- 		 * OK, kswapd is getting into trouble.  Take a nap, then take
-@@ -2336,7 +2341,7 @@ loop_again:
- 			break;
- 	}
- out:
--	if (!all_zones_ok) {
-+	if (!(all_zones_ok || (order && any_zone_ok))) {
- 		cond_resched();
- 
- 		try_to_freeze();
-@@ -2361,6 +2366,31 @@ out:
- 		goto loop_again;
- 	}
- 
-+	/*
-+	 * If kswapd was reclaiming at a higher order, it has the option of
-+	 * sleeping without all zones being balanced. Before it does, it must
-+	 * ensure that the watermarks for order-0 on *all* zones are met and
-+	 * that the congestion flags are cleared
-+	 */
-+	if (order) {
-+		for (i = 0; i <= end_zone; i++) {
-+			struct zone *zone = pgdat->node_zones + i;
-+
-+			if (!populated_zone(zone))
-+				continue;
-+
-+			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
-+				continue;
-+
-+			zone_clear_flag(zone, ZONE_CONGESTED);
-+			if (!zone_watermark_ok(zone, order,
-+					high_wmark_pages(zone), 0, 0)) {
-+				order = sc.order = 0;
-+				goto loop_again;
-+			}
-+		}
-+	}
-+
- 	return sc.nr_reclaimed;
- }
- 
-@@ -2380,6 +2410,7 @@ out:
- static int kswapd(void *p)
- {
- 	unsigned long order;
-+	int classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
- 	struct task_struct *tsk = current;
- 	DEFINE_WAIT(wait);
-@@ -2410,19 +2441,24 @@ static int kswapd(void *p)
- 	set_freezable();
- 
- 	order = 0;
-+	classzone_idx = MAX_NR_ZONES - 1;
- 	for ( ; ; ) {
- 		unsigned long new_order;
-+		int new_classzone_idx;
- 		int ret;
- 
- 		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
- 		new_order = pgdat->kswapd_max_order;
-+		new_classzone_idx = pgdat->classzone_idx;
- 		pgdat->kswapd_max_order = 0;
--		if (order < new_order) {
-+		pgdat->classzone_idx = MAX_NR_ZONES - 1;
-+		if (order < new_order || classzone_idx > new_classzone_idx) {
- 			/*
- 			 * Don't sleep if someone wants a larger 'order'
--			 * allocation
-+			 * allocation or has tigher zone constraints
- 			 */
- 			order = new_order;
-+			classzone_idx = new_classzone_idx;
- 		} else {
- 			if (!freezing(current) && !kthread_should_stop()) {
- 				long remaining = 0;
-@@ -2451,6 +2487,7 @@ static int kswapd(void *p)
- 			}
- 
- 			order = pgdat->kswapd_max_order;
-+			classzone_idx = pgdat->classzone_idx;
- 		}
- 		finish_wait(&pgdat->kswapd_wait, &wait);
- 
-@@ -2473,7 +2510,7 @@ static int kswapd(void *p)
- /*
-  * A zone is low on free memory, so wake its kswapd task to service it.
-  */
--void wakeup_kswapd(struct zone *zone, int order)
-+void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
- {
- 	pg_data_t *pgdat;
- 
-@@ -2483,8 +2520,10 @@ void wakeup_kswapd(struct zone *zone, int order)
- 	pgdat = zone->zone_pgdat;
- 	if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0, 0))
- 		return;
--	if (pgdat->kswapd_max_order < order)
-+	if (pgdat->kswapd_max_order < order) {
- 		pgdat->kswapd_max_order = order;
-+		pgdat->classzone_idx = min(pgdat->classzone_idx, classzone_idx);
-+	}
- 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
- 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 		return;
--- 
-1.7.1
+ mm/page_alloc.c        |    8 ++-
+ mm/vmscan.c            |  109 ++++++++++++++++++++++++++++++++++++++++-------
+ 3 files changed, 99 insertions(+), 21 deletions(-)
 
