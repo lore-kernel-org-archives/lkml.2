@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314Ab0LCPHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:07:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0LCPHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:07:31 -0500
-Date: Fri, 3 Dec 2010 16:00:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: michal.simek@petalogix.com, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        John Williams <john.williams@petalogix.com>,
-        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
-Subject: Re: Flushing whole page instead of work for ptrace
-Message-ID: <20101203150021.GA11114@redhat.com>
-References: <4CEFA8AE.2090804@petalogix.com> <20101130233250.35603401C8@magilla.sf.frob.com>
+	id S1752475Ab0LCPH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:07:26 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:37688 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750965Ab0LCPHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 10:07:22 -0500
+From: Sundar Iyer <sundar.iyer@stericsson.com>
+To: <linux-arm-kernel@lists.infradead.org>, <dmitry.torokhov@gmail.com>,
+        <sameo@linux.intel.com>, <ben-linux@fluff.org>
+Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sundar Iyer <sundar.iyer@stericsson.com>
+Subject: [PATCH 20/20] i2c/nomadik: some checkpatch warnings
+Date: Fri, 3 Dec 2010 20:35:53 +0530
+Message-ID: <1291388753-14662-21-git-send-email-sundar.iyer@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
+References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130233250.35603401C8@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30, Roland McGrath wrote:
->
-> Documentation/cachetlb.txt says:
->
-> 	Any time the kernel writes to a page cache page, _OR_
-> 	the kernel is about to read from a page cache page and
-> 	user space shared/writable mappings of this page potentially
-> 	exist, this routine is called.
->
-> In your case, the kernel is only reading (write=0 passed to
-> access_process_vm and get_user_pages).  In normal situations,
-> the page in question will have only a private and read-only
-> mapping in user space.  So the call should not be required in
-> these cases--if the code can tell that's so.
->
-> Perhaps something like the following would be safe.
-> But you really need some VM folks to tell you for sure.
->
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 02e48aa..2864ee7 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1484,7 +1484,8 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  				pages[i] = page;
->
->  				flush_anon_page(vma, page, start);
-> -				flush_dcache_page(page);
-> +				if ((vm_flags & VM_WRITE) || (vma->vm_flags & VM_SHARED)
-> +					flush_dcache_page(page);
+Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
+---
+ drivers/i2c/busses/i2c-nomadik.c |   34 +++++++++++++++++-----------------
+ 1 files changed, 17 insertions(+), 17 deletions(-)
 
-First of all, I know absolutely nothing about D-cache aliasing.
-My poor understanding of flush_dcache_page() is: synchronize the
-kernel/user vision of this memory, in the case when either side
-can change it.
-
-If this is true, then this change doesn't look right in general.
-
-Even if (vma->vm_flags & VM_SHARED) == 0, it is possible that
-tsk can write to this memory, this mapping can be writable and
-private.
-
-Even if we ensure that this mapping is readonly/private, another
-user-space process can write to this page via shared/writable
-mapping.
-
-
-I'd like to know if my understanding is correct, I am just curious.
-
-Oleg.
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index baa8ff7..3ead1b6 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -62,11 +62,11 @@
+ /* Master controller (MCR) register */
+ #define I2C_MCR_OP		(0x1 << 0)	/* Operation */
+ #define I2C_MCR_A7		(0x7f << 1)	/* 7-bit address */
+-#define I2C_MCR_EA10		(0x7 << 8) 	/* 10-bit Extended address */
++#define I2C_MCR_EA10		(0x7 << 8)	/* 10-bit Extended address */
+ #define I2C_MCR_SB		(0x1 << 11)	/* Extended address */
+ #define I2C_MCR_AM		(0x3 << 12)	/* Address type */
+-#define I2C_MCR_STOP		(0x1 << 14) 	/* Stop condition */
+-#define I2C_MCR_LENGTH		(0x7ff << 15) 	/* Transaction length */
++#define I2C_MCR_STOP		(0x1 << 14)	/* Stop condition */
++#define I2C_MCR_LENGTH		(0x7ff << 15)	/* Transaction length */
+ 
+ /* Status register (SR) */
+ #define I2C_SR_OP		(0x3 << 0)	/* Operation */
+@@ -76,7 +76,7 @@
+ #define I2C_SR_LENGTH		(0x7ff << 9)	/* Transfer length */
+ 
+ /* Interrupt mask set/clear (IMSCR) bits */
+-#define I2C_IT_TXFE 		(0x1 << 0)
++#define I2C_IT_TXFE		(0x1 << 0)
+ #define I2C_IT_TXFNE		(0x1 << 1)
+ #define I2C_IT_TXFF		(0x1 << 2)
+ #define I2C_IT_TXFOVR		(0x1 << 3)
+@@ -154,15 +154,15 @@ struct i2c_nmk_client {
+  */
+ struct nmk_i2c_dev {
+ 	struct platform_device		*pdev;
+-	struct i2c_adapter 		adap;
+-	int 				irq;
++	struct i2c_adapter		adap;
++	int				irq;
+ 	void __iomem			*virtbase;
+ 	struct clk			*clk;
+ 	struct nmk_i2c_controller	cfg;
+ 	struct i2c_nmk_client		cli;
+-	int 				stop;
++	int				stop;
+ 	struct completion		xfer_complete;
+-	int 				result;
++	int				result;
+ };
+ 
+ /* controller's abort causes */
+@@ -275,7 +275,7 @@ static int init_hw(struct nmk_i2c_dev *dev)
+ }
+ 
+ /* enable peripheral, master mode operation */
+-#define DEFAULT_I2C_REG_CR 	((1 << 1) | I2C_CR_PE)
++#define DEFAULT_I2C_REG_CR	((1 << 1) | I2C_CR_PE)
+ 
+ /**
+  * load_i2c_mcr_reg() - load the MCR register
+@@ -519,13 +519,13 @@ static int write_i2c(struct nmk_i2c_dev *dev)
+  *
+  * NOTE:
+  * READ TRANSFER : We impose a restriction of the first message to be the
+- * 		index message for any read transaction.
+- * 		- a no index is coded as '0',
+- * 		- 2byte big endian index is coded as '3'
+- * 		!!! msg[0].buf holds the actual index.
+- * 		This is compatible with generic messages of smbus emulator
+- * 		that send a one byte index.
+- * 		eg. a I2C transation to read 2 bytes from index 0
++ *		index message for any read transaction.
++ *		- a no index is coded as '0',
++ *		- 2byte big endian index is coded as '3'
++ *		!!! msg[0].buf holds the actual index.
++ *		This is compatible with generic messages of smbus emulator
++ *		that send a one byte index.
++ *		eg. a I2C transation to read 2 bytes from index 0
+  *			idx = 0;
+  *			msg[0].addr = client->addr;
+  *			msg[0].flags = 0x0;
+@@ -841,7 +841,7 @@ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (request_mem_region(res->start, resource_size(res),
+-		DRIVER_NAME "I/O region") == 	NULL)	{
++		DRIVER_NAME "I/O region") ==	NULL)	{
+ 		ret = -EBUSY;
+ 		goto err_no_region;
+ 	}
+-- 
+1.7.2.dirty
 
