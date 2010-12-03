@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab0LCOZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 09:25:36 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:36613
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758398Ab0LCOZe (ORCPT
+	id S1758601Ab0LCO0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 09:26:30 -0500
+Received: from coyote.quickmin.net ([217.14.112.24]:55847 "EHLO
+	coyote.quickmin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758456Ab0LCO02 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 09:25:34 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i691h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LCUW29-01-7U2-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/3] KVM: SVM: Remove flush_guest_tlb function
-Date: Fri, 3 Dec 2010 15:25:14 +0100
-Message-ID: <1291386316-6885-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291386316-6885-1-git-send-email-joerg.roedel@amd.com>
-References: <1291386316-6885-1-git-send-email-joerg.roedel@amd.com>
+	Fri, 3 Dec 2010 09:26:28 -0500
+Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=default; d=telemotive.de;
+  b=lMdDwXzZ82JFvN0G9jmoiUJlXdMBwsCqBukxXV9qY/LahsOdP4dyLI1it4CwbmPVd+rD3xtB71XaqLmmTyMsstkr0Npg3cP7gudxJ9Zhw0E2rSX9S6D+nftQCUHDylNXKH3lDQU2+qTEHIpEd9TFjlcYZS5yM1YOCh1JNu5WcEc=  ;
+From: Roman Fietze <roman.fietze@telemotive.de>
+Organization: Telemotive AG
+To: Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH] Proposal to add dynamic debug feature for print_hex_dump [1/2]
+User-Agent: KMail/1.13.5 (Linux/2.6.31.14-0.4-default; KDE/4.5.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201012031517.35062.roman.fietze@telemotive.de>
+In-Reply-To: <201012031517.35062.roman.fietze@telemotive.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Message-ID: <201012031519.45827.roman.fietze@telemotive.de>
+Date: Fri, 3 Dec 2010 15:19:45 +0100
+X-MIMETrack: Itemize by SMTP Server on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
+ 03.12.2010 15:19:45,
+	Serialize by Router on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
+ 03.12.2010 15:19:46,
+	Serialize complete at 03.12.2010 15:19:46
+Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is unused and there is svm_flush_tlb which
-does the same. So this function can be removed.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+>From 9990f3b651adad147a40bd4ce6289182e3b7da74 Mon Sep 17 00:00:00 2001
+From: Roman Fietze <roman.fietze@telemotive.de>
+Date: Fri, 3 Dec 2010 14:06:56 +0100
+Subject: [PATCH 1/2] kernel.h: add pr_<level>_hex_dump macros
+
+Add macros e.g. named pr_<level>_hex_dump calling print_hex_dump with
+the approriate level, with level beeing emerg, alert, ..., debug. This
+is similiar to the functions starting with "pr_".
+
+The parameters for those macros are the same as for print_hex_dump
+excluding the level.
+
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
 ---
- arch/x86/kvm/svm.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ include/linux/printk.h |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index c00ea90..772d48e 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -389,11 +389,6 @@ static inline void force_new_asid(struct kvm_vcpu *vcpu)
- 	to_svm(vcpu)->asid_generation--;
- }
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index b772ca5..77903f1 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -179,6 +179,44 @@ extern void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
+ #define pr_cont(fmt, ...) \
+ 	printk(KERN_CONT fmt, ##__VA_ARGS__)
  
--static inline void flush_guest_tlb(struct kvm_vcpu *vcpu)
--{
--	force_new_asid(vcpu);
--}
--
- static int get_npt_level(void)
- {
- #ifdef CONFIG_X86_64
++#define pr_emerg_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			  buf, len, ascii)				\
++	print_hex_dump(KERN_EMERG, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_alert_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			  buf, len, ascii)				\
++	print_hex_dump(KERN_ALERT, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_crit_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			 buf, len, ascii)				\
++	print_hex_dump(KERN_CRIT, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_err_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			buf, len, ascii)				\
++	print_hex_dump(KERN_ERR, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_warning_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			    buf, len, ascii)				\
++	print_hex_dump(KERN_WARNING, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_warn_hex_dump pr_warning_hex_dump
++#define pr_notice_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			   buf, len, ascii)				\
++	print_hex_dump(KERN_NOTICE, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_info_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			 buf, len, ascii)				\
++	print_hex_dump(KERN_INFO, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_cont_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			 buf, len, ascii)				\
++	print_hex_dump(KERN_CONT, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++#define pr_debug_hex_dump(prfx_str, prfx_type, rowsz,  grpsz,		\
++			  buf, len, ascii)				\
++	print_hex_dump(KERN_DEBUG, prfx_str, prfx_type, rowsz, grpsz,	\
++		       buf, len, ascii)
++
+ /* pr_devel() should produce zero code unless DEBUG is defined */
+ #ifdef DEBUG
+ #define pr_devel(fmt, ...) \
 -- 
-1.7.1
+1.7.3.2
 
 
+
+-- 
+Roman Fietze              Telemotive AG Buero Muehlhausen
+Breitwiesen                             73347 Muehlhausen
+Tel.: +49(0)7335/18493-45        http://www.telemotive.de
