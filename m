@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0LCVDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 16:03:32 -0500
-Received: from mx2.compro.net ([12.186.155.4]:63446 "EHLO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab0LCVDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 16:03:31 -0500
-X-IronPort-AV: E=Sophos;i="4.59,295,1288584000"; 
-   d="scan'208";a="6081243"
-Message-ID: <4CF95B22.3010206@compro.net>
-Date: Fri, 03 Dec 2010 16:03:30 -0500
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	id S1753732Ab0LCVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 16:09:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35907 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab0LCVJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 16:09:28 -0500
+Date: Fri, 3 Dec 2010 16:07:19 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org,
+        jason.wessel@windriver.com
+Cc: Andi Kleen <andi@firstfloor.org>, lwn@lwn.net
+Subject: Announcement: Plans for v2.6.34-longterm
+Message-ID: <20101203210719.GB21223@windriver.com>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: kernel tree "diff -urN" anomaly?
-References: <4CF949AF.1000502@compro.net> <20101203204709.GA17591@merkur.ravnborg.org>
-In-Reply-To: <20101203204709.GA17591@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 03 Dec 2010 21:07:20.0434 (UTC) FILETIME=[12DB6D20:01CB932E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2010 03:47 PM, Sam Ravnborg wrote:
-> On Fri, Dec 03, 2010 at 02:49:03PM -0500, Mark Hounschell wrote:
->> I start with two clean identical 2.6.36.1 kernel trees (different names
->> of coarse). I build one of them. I then do a "make clean mrproper" in
->> the tree I built. Why then does the diff command in the subject line
->> find the following files changed?
->>
->> drivers/gpu/drm/radeon/evergreen_reg_safe.h
->> drivers/gpu/drm/radeon/r100_reg_safe.h
->> drivers/gpu/drm/radeon/r200_reg_safe.h
->> drivers/gpu/drm/radeon/r300_reg_safe.h
->> divers/gpu/drm/radeon/r420_reg_safe.h
->> drivers/gpu/drm/radeon/r600_reg_safe.h
->> drivers/gpu/drm/radeon/rn50_reg_safe.h
->> drivers/gpu/drm/radeon/rs600_reg_safe.h
->> drivers/gpu/drm/radeon/rv515_reg_safe.h
-> 
-> Files are generated during the build.
-> So after you have build your kernel the files are present.
-> And the Makefile is missing logic to delete the files during "make clean".
-> 
+Firstly, I'd like to thank Greg for all the past work he's done on
+juggling all these different stable releases - many people have
+reaped the benefits of them for quite some time, and it only makes
+sense to spread the loading around as it has grown significantly.
 
-OK, broken Makefile then
+With that in mind, it is our intention to also maintain a 2.6.34
+longterm tree.  Jason and I work at Wind River, which already has
+released products based on v2.6.34, and as such it only makes sense
+to have a public long-term tree that others who are also based on
+2.6.34 can make use of.
 
-Thanks
-Mark
+I've already done an end-to-end audit of the current 2.6.32 longterm
+stable release, and used the list of these already "approved for stable"
+patches on v2.6.32 to identify 260 upstream commits that are applicable,
+but not yet present in the last 2.6.34.7 stable release.
+
+A candidate tree for 2.6.34.8 with the above 260 commits applied to
+it is available now for review/testing at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux-2.6.34.y.git
+
+Note that there are no additional "non-stable" commits applied to this
+tree.  It is purely commits that are already in use in a stable release.
+The next step will be to audit the 35-stable for appropriate content.
+
+This tree is currently undergoing internal testing at WR on various
+x86[64], ARM, MIPS and PowerPC targets, but of course any additional
+testing and feedback is most welcome.  If anyone is interested in the
+audit data, I can send folks details on that too.
+
+Just as with Andi's longterm tree, the final details of where these
+will be finally located on kernel.org and so forth remains to be worked
+out and will be announced at a later date as things are finalized.
+
+Paul.
