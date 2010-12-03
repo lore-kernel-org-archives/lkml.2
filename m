@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab0LCSSA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 13:18:00 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51920 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab0LCSR6 convert rfc822-to-8bit (ORCPT
+	id S1753946Ab0LCSZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 13:25:09 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35247 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab0LCSZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 13:17:58 -0500
-Subject: Re: [PATCH] NFS: suppressing showing of default mount port value in /proc fixed
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=utf-8
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <4CF9307D.9040504@parallels.com>
-Date: Fri, 3 Dec 2010 13:17:19 -0500
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CE50CA7A-57F5-4441-9F16-2E5951F51228@oracle.com>
-References: <20101203170138.22955.86546.stgit@localhost6.localdomain6> <7AF6FF7E-F57C-493B-8880-25509CC54EDE@oracle.com> <4CF9307D.9040504@parallels.com>
-To: Kinsbursky Stanislav <skinsbursky@parallels.com>
-X-Mailer: Apple Mail (2.1082)
+	Fri, 3 Dec 2010 13:25:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=a1mB6J15fRp5NoniGA8yVF3MhRr2vzIPBgnmuhIhQOwnYK+78++aIGfzJT4qy4GS4c
+         UO1V7upNyYtFcNqgQTN8c6MN6OVXWFGYXe3cTgREscc9rUURb3fvjNr6yW1n6X2QxtE/
+         B87tp8BBtGvYL704KQ4SqwdikvLIUcDpOhvj0=
+Message-ID: <4CF935FB.5010903@gmail.com>
+Date: Fri, 03 Dec 2010 13:24:59 -0500
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>
+CC: James Bottomley <james.bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        sandeen <sandeen@redhat.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <1290102616-sup-7212@think>
+In-Reply-To: <1290102616-sup-7212@think>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/18/2010 12:55 PM, Chris Mason wrote:
+> Excerpts from James Bottomley's message of 2010-11-18 12:19:10 -0500:
+>> On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
+>>> On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
+>>>> I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
+>>>> filesystem that was TRIM-aware would pass that information down to the
+>>>> block device that it's mounted on.  I strongly feel that we shouldn't
+>>>> have two interfaces to do essentially the same thing.
+>>>>
+>>>> I guess I'm saying that you're going to have to learn about TRIM :-)
+>>> Did you actually look Lukas FITRIM code (not the slight reordering here,
+>>> but the original one).  It's the ext4 version of the batched discard
+>>> model, that is a userspace ioctl to discard free space in the
+>>> filesystem.
+>>>
+>>> hole punching will free the blocks into the free space pool.  If you do
+>>> online discard it will also get discarded, but a filesystem that has
+>>> online discard enabled doesn't need FITRIM.
+>> Not stepping into the debate: I'm happy to see punch go to the mapping
+>> data and FITRIM pick it up later.
+>>
+>> However, I think it's time to question whether we actually still want to
+>> allow online discard at all.  Most of the benchmarks show it to be a net
+>> lose to almost everything (either SSD or Thinly Provisioned arrays), so
+>> it's become an "enable this to degrade performance" option with no
+>> upside.
+> I think we want to keep it.  In general we've (except for hch) spent
+> almost zero time actually tuning online discard, and the benchmarking
+> needs to be redone with the shiny new barrier code.
+>
+> -chris
+>
 
-On Dec 3, 2010, at 1:01 PM, Kinsbursky Stanislav wrote:
+Very belated response - I agree that we should keep the online discard support 
+in (but off by default).
 
-> 03.12.2010 20:35, Chuck Lever пишет:
->> 
->> On Dec 3, 2010, at 12:11 PM, Stanislav Kinsbursky wrote:
->> 
->>> Default value for mount server port is set to NFS_UNSPEC_PORT (-1) and will not
->>> be changed during parsing mount options for mound data version 6. This default
->>> value will be showed for mountport in /proc/mounts always since current default
->>> check is for zero value. This small mistake leads to big problem, because
->>> during umount.nfs execution from old user-space utils (at least nfs-utils
->>> 1.0.9) this value will be used as the server port to connect to. This request
->>> will be rejected (since port is 65535) and thus nfs mount point can't be
->>> unmounted.
->> 
->> Note: this is only possible if /etc/mtab is a link to /proc/mounts.  Not all systems have this configuration.
->> 
-> 
-> I found it on CentOs 5.5 with RHEL6 kernel.
-> Actually, the current patch has a specific flaw: if mount port is not passed by nfs utils using mount options version 6, then it will be set to 0 and showed in /proc/mounts as "mountport=0".
+Some of the devices we have tested perform well with it and I expect that 
+hardware vendors will get better now that we have the support for them to test with.
 
-Right: zero and negative one are both special internal port values that should not be displayed in /proc/mounts.  Why not check if mountport > 0 instead?
-
-> Another fix solution is to call "nfs_set_port(sap, &args->nfs_server.port, 0);" when parsing mount options version 6 (like in done in default casein nfs_validate_mount_data) instead of changing nfs_show_mountd_options().
-
-I'm not sure I follow here.  Why would setting nfsport be the right thing to do?  The default case is for text-based mounts only.
-
-> Kernel version affected: 2.6.37-rc4
->>> 
->>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>> 
->>> ---
->>> fs/nfs/super.c |    3 ++-
->>> 1 files changed, 2 insertions(+), 1 deletions(-)
->>> 
->>> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
->>> index 6d6e21d..fd4cac8 100644
->>> --- a/fs/nfs/super.c
->>> +++ b/fs/nfs/super.c
->>> @@ -681,7 +681,8 @@ static void nfs_show_mountd_options(struct seq_file *m, struct nfs_server *nfss,
->>> 
->>> 	if (nfss->mountd_version || showdefaults)
->>> 		seq_printf(m, ",mountvers=%u", nfss->mountd_version);
->>> -	if (nfss->mountd_port || showdefaults)
->>> +	if (nfss->mountd_port != (unsigned short)NFS_UNSPEC_PORT ||
->>> +			showdefaults)
->>> 		seq_printf(m, ",mountport=%u", nfss->mountd_port);
->>> 
->>> 	nfs_show_mountd_netid(m, nfss, showdefaults);
->>> 
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> 
-> 
-> 
-> -- 
-> Best regards,
-> Stanislav Kinsbursky
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
+Ric
 
 
