@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab0LCCjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 21:39:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4318 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757726Ab0LCCjF convert rfc822-to-8bit (ORCPT
+	id S932282Ab0LCCo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 21:44:56 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42393 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932226Ab0LCCoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 21:39:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,290,1288594800"; 
-   d="scan'208";a="863873116"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "adrian.hunter@nokia.com" <adrian.hunter@nokia.com>,
-        "prakity@marvell.com" <prakity@marvell.com>
-Date: Fri, 3 Dec 2010 10:38:59 +0800
-Subject: RE: [PATCH v3 2/3]set timeout control reg for such SDHCI host
-Thread-Topic: [PATCH v3 2/3]set timeout control reg for such SDHCI host
-Thread-Index: AcuSF45TMm76kESgTdi/v2O/En8fqQAdpT7A
-Message-ID: <5D8008F58939784290FAB48F54975198320B3E41F7@shsmsx502.ccr.corp.intel.com>
-References: <20101202112613.GC10358@intel.com>
- <20101202115329.GE3345@pengutronix.de>
-In-Reply-To: <20101202115329.GE3345@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Dec 2010 21:44:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=BiEq+HehvnuvY/a33ZnlcMesMK4Y0mdN4oFi1FvA8A3gp7tiUiNFGxphhnaq1BI5gi
+         /56o1J3RdA9cFY9CgzROOKTm8O+QvGDbYVCif/nBf+q5HhOd92Gl3h8s8Iz21NpXSp6U
+         fGten5BQ3Dv/yTESbvHrEkj/qSTAB3fqdI3uM=
+Message-ID: <4CF859AA.8010505@lwfinger.net>
+Date: Thu, 02 Dec 2010 20:44:58 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [Bug #22562] Regression in 2.6.37-rc1 - logs spammed with "unable
+ to enumerate USB port" - bisected to commit 3df7169e
+References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera> <gUkHV_Vc3aE.A.qi.gzC-MB@chimera>
+In-Reply-To: <gUkHV_Vc3aE.A.qi.gzC-MB@chimera>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > 
-> On Thu, Dec 02, 2010 at 07:26:13PM +0800, Chuanxiao Dong wrote:
+On 12/02/2010 05:41 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> > +	if (host->quirks & SDHCI_QUIRK_FORCE_ERASE_SINGLE) {
-> > +		/* Set the timeout to be the maximum value */
-> > +		if (cmd->erase_timeout)
-> > +			sdhci_writeb(host, 0xE, SDHCI_TIMEOUT_CONTROL);
-> > +	}
-> > +
-> >  	sdhci_writew(host, SDHCI_MAKE_CMD(cmd->opcode, flags),
-> > SDHCI_COMMAND);
+> The following bug entry is on the current list of known regressions
+> from 2.6.36.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> Hmm, this looks like another argument for Philip's idea to always use the maximum
-> timeout value and skip the quirks related to it?
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22562
+> Subject		: Regression in 2.6.37-rc1 - logs spammed with "unable to enumerate USB port" - bisected to commit 3df7169e
+> Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
+> Date		: 2010-11-02 22:32 (31 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/3df7169e73fc1d71a39cffeacc969f6840cdf52b
+> Message-ID	: <4CD09166.4060202@lwfinger.net>
+> References	: http://marc.info/?l=linux-kernel&m=128873713207906&w=2
 
-Yes, if always using the maximum timeout value is OK for other command, the patch2 can be removed I think.
-The new added quirk in the serials patches is used to set the limitation of request queue, not only just to set the timeout control reg.
-Even the timeout value was set to be 0xE (the maximum value), erasing too many sectors can still be failed since the timeout time was still not longer enough.
-So the count of erased sectors passed down by request queue should be reduced by using this quirk.
+Still present in 2.6.37-rc4. The box with the problem has been repaired and I
+can now debug the problem again. Any hints would be appreciated.
 
+Larry
