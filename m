@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab0LCAoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:44:34 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:40393 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab0LCAod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:44:33 -0500
-Date: Thu, 2 Dec 2010 22:44:06 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/4] perf/core improvements
-Message-ID: <20101203004406.GA18492@ghostprotocols.net>
-References: <1291318772-30880-1-git-send-email-acme@infradead.org>
- <alpine.LFD.2.00.1012022358380.2653@localhost6.localdomain6>
+	id S932227Ab0LCArX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 19:47:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50223 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932079Ab0LCArW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 19:47:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] PM / Hibernate: Fix memory corruption related to swap
+Date: Fri, 3 Dec 2010 01:46:37 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <201012030040.37273.rjw@sisk.pl> <20101202155453.92e8ca57.akpm@linux-foundation.org> <alpine.LSU.2.00.1012021622370.26812@tigran.mtv.corp.google.com>
+In-Reply-To: <alpine.LSU.2.00.1012021622370.26812@tigran.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012022358380.2653@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012030146.37887.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 03, 2010 at 12:00:09AM +0100, Thomas Gleixner escreveu:
-> On Thu, 2 Dec 2010, Arnaldo Carvalho de Melo wrote:
+On Friday, December 03, 2010, Hugh Dickins wrote:
+> On Thu, 2 Dec 2010, Andrew Morton wrote:
+> > On Fri, 3 Dec 2010 00:40:36 +0100
+> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > 
+> > > This patch is a fix for a regression and nasty memory corruption, so I'd like
+> > > to push it to Linus for 2.6.37 if there are no objections.
 > 
-> > Hi Ingo,
-> > 
-> >         Please consider pulling after at least Ian and Peter acks it:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> > 
-> > 	Peter already acked a previous version of this, so I left his acked by
-> > there, this new one is much simpler than the first one he acked, so I think
-> > he'll be happy with this one as well, Peter?
-> > 
-> > 	I tested it using the perf tools built from what is in tip/perf/urgent
-> > and it works as expected, i.e. the new fields are just discarded since they are
-> > stashed as a trailer in the MMAP, FORK, etc events, so old tools process new
-> > perf.data files just fine.
-> > 
-> > 	Also the new tools works on older kernels, also tested.
-> > 
-> > 	Ian, if you prefer, please test it before Ingo merges it.
-> 
-> Did so. Have some odd fallout:
-> 
->     tracepoint event: type 65535
-> 
->     data->tid 2621441 data->pid 9
-> 
-> Investigating. Please wait
+> (It will need backport to 2.6.35-stable and 2.6.36-stable:
+> IIRC it doesn't quite apply cleanly to those, so we'll need
+> to send a separate version.)
 
-Thanks, as I said on IRC, perhaps I neglected the non-perf bits of perf
-:-\
+That's correct.  I'll backport it when it hits the Linus' tree.
 
-- Arnaldo
-
-Guess even for people understanding that "perf" is not just about
-profiling that name gets in the way, "observe" is the only thing I think
-I would think in a potential rename, but heck, it has 3+ letters :-\
+Rafael
