@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab0LCWp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 17:45:29 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37962 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab0LCWp1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 17:45:27 -0500
-Date: Fri, 3 Dec 2010 22:45:23 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, dwalker@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, Nicolas Pitre <nico@marvell.com>,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to early_initcall
-Message-ID: <20101203224523.GU12385@pulham.picochip.com>
-References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org>
- <20101202221909.GK29347@n2100.arm.linux.org.uk>
- <4CF94DDD.8000409@codeaurora.org>
- <20101203203653.GB10245@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101203203653.GB10245@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754007Ab0LCWuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 17:50:10 -0500
+Received: from smtp.witbe.net ([81.88.96.48]:39575 "EHLO smtp.witbe.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752527Ab0LCWuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 17:50:08 -0500
+X-Greylist: delayed 3828 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Dec 2010 17:50:07 EST
+Date: Fri, 3 Dec 2010 22:45:59 +0100
+From: Paul Rolland <rol@as2917.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: [Bug #22542] [2.6.37-rc1] drm:i195 errors
+Message-ID: <20101203224559.7e852abe@tux.DEF.witbe.net>
+In-Reply-To: <ATV3yiK8i4C.A.ynE.Rib5MB@chimera>
+References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
+	<ATV3yiK8i4C.A.ynE.Rib5MB@chimera>
+Organization: AS2917.net
+X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 08:36:53PM +0000, Russell King - ARM Linux wrote:
-> On Fri, Dec 03, 2010 at 12:06:53PM -0800, Saravana Kannan wrote:
-> > The MSM8660 SoC uses the TrustZone technology and the Linux kernel  
-> > executes in normal/non-secure domain. When the second core is brought  
-> > out of reset, it starts executing a secure image which then jumps to  
-> > "secondary_startup". So, before bringing the second core out of reset,  
-> > we need to inform the secure domain code where secondary_startup is  
-> > located in memory.
-> >
-> > We do the communication with the secure code by using buffers in memory.  
-> >  The cache treats the NS (non secure) bit as an additional address bit  
-> > when tagging memory. Hence, cache accesses are not coherent between the  
-> > secure and non-secure domains. So, the secure side flushes it's cache  
-> > after writing to the buffer. To properly read the response from the  
-> > secure side, the kernel has to pick a buffer that isn't cacheable in the  
-> > first place. We have similar issues in the reverse direction.
-Is the secure world running with the MMU enabled (or is there enough onchip 
-memory for page tables in the secure world)? If so, could you recreate the 
-direct-mapping in the secure world with the same attributes and the nonsecure 
-bit set in the page table descriptors?  The cache should be coherent between 
-both worlds in this case.
+Hello,
 
-Alternatively could you not pass the address to the monitor mode in a 
-register?
+On Fri, 19 Nov 2010 00:42:44 +0100 (CET)
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Jamie
+> This message has been generated automatically as a part of a summary
+> report of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.36.  Please verify if it still should be listed and let the
+> tracking team know (either way).
+
+Still present in 2.6.27-rc4 :
+
+Dec  3 21:31:32 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
+Dec  3 21:31:32 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
+Dec  3 21:41:32 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
+Dec  3 21:41:32 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
+Dec  3 22:41:18 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
+
+Paul
+-- 
+Paul Rolland                                E-Mail : rol(at)witbe.net
+CTO - Witbe.net SA                          Tel. +33 (0)1 47 67 77 77
+Les Collines de l'Arche                     Fax. +33 (0)1 47 67 77 99
+F-92057 Paris La Defense                    RIPE : PR12-RIPE
+
+Please no HTML, I'm not a browser - Pas d'HTML, je ne suis pas un
+navigateur "Some people dream of success... while others wake up and work
+hard at it" 
+
+"I worry about my child and the Internet all the time, even though she's
+too young to have logged on yet. Here's what I worry about. I worry that 10
+or 15 years from now, she will come to me and say 'Daddy, where were you
+when they took freedom of the press away from the Internet?'"
+--Mike Godwin, Electronic Frontier Foundation 
