@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab0LCOpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 09:45:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35343 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758556Ab0LCOpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 09:45:01 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=YndEQwitm8YA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VwQbUJbxAAAA:8 a=1nSz6Ew-AAAA:8 a=meVymXHHAAAA:8 a=Tty9oNO6AAAA:8 a=pGLkceISAAAA:8 a=bb4madVcwnGkgdAtjnAA:9 a=-28QVHXow4AWcWk9CQiO3FCD01IA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=CY6gl2JlH4YA:10 a=LI9Vle30uBYA:10 a=nj4rVwXhlm8A:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip v5 6/8] x86: Introduce text_poke_smp_batch() for
- batch-code modifying
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jan Beulich <jbeulich@novell.com>
-In-Reply-To: <20101203095422.2961.51217.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20101203095325.2961.75137.stgit@ltc236.sdl.hitachi.co.jp>
-	 <20101203095422.2961.51217.stgit@ltc236.sdl.hitachi.co.jp>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 03 Dec 2010 09:44:59 -0500
-Message-ID: <1291387499.3228.5.camel@gandalf.stny.rr.com>
+	id S1758664Ab0LCOph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 09:45:37 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:33374 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1758556Ab0LCOpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 09:45:36 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/LA7MtkIHLr+CNSyqEpCJsIcSHgeZoZr0XRTzVqZ
+	nIlKpobjZzFvhl
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <efault@gmx.de>
+To: vatsa@linux.vnet.ibm.com
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+In-Reply-To: <20101203134618.GG27994@linux.vnet.ibm.com>
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+	 <20101202144423.3ad1908d@annuminas.surriel.com>
+	 <1291355656.7633.124.camel@marge.simson.net>
+	 <20101203134618.GG27994@linux.vnet.ibm.com>
+Content-Type: text/plain
+Date: Fri, 03 Dec 2010 15:45:10 +0100
+Message-Id: <1291387511.7992.15.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.24.1.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 18:54 +0900, Masami Hiramatsu wrote:
-> Introduce text_poke_smp_batch(). This function modifies several
-> text areas with one stop_machine() on SMP. Because calling
-> stop_machine() is heavy task, it is better to aggregate text_poke
-> requests.
+On Fri, 2010-12-03 at 19:16 +0530, Srivatsa Vaddagiri wrote:
+> On Fri, Dec 03, 2010 at 06:54:16AM +0100, Mike Galbraith wrote:
+> > > +void yield_to(struct task_struct *p)
+> > > +{
+> > > +	unsigned long flags;
+> > > +	struct sched_entity *se = &p->se;
+> > > +	struct rq *rq;
+> > > +	struct cfs_rq *cfs_rq;
+> > > +	u64 remain = slice_remain(current);
+> > 
+> > That "slice remaining" only shows the distance to last preempt, however
+> > brief.  It shows nothing wrt tree position, the yielding task may well
+> > already be right of the task it wants to yield to, having been a buddy.
 > 
-> Frederic, I've talked with Rusty about this interface, and
-> he would not like to expand stop_machine() interface, since
-> it is not for generic use.
+> Good point.
 > 
-> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Jan Beulich <jbeulich@novell.com>
+> > > cfs_rq = cfs_rq_of(se);
+> > > +	se->vruntime -= remain;
+> > > +	if (se->vruntime < cfs_rq->min_vruntime)
+> > > +		se->vruntime = cfs_rq->min_vruntime;
+> > 
+> > (This is usually done using max_vruntime())
+> > 
+> > If the recipient was already left of the fair stick (min_vruntime),
+> > clipping advances it's vruntime, vaporizing entitlement from both donor
+> > and recipient.
+> > 
+> > What if a task tries to yield to another not on the same cpu, and/or in
+> > the same task group?
+> 
+> In this case, target of yield_to is a vcpu belonging to the same VM and hence is
+> expected to be in same task group, but I agree its good to put a check.
+> 
+> >  This would munge min_vruntime of other queues.  I
+> > think you'd have to restrict this to same cpu, same group.  If tasks can
+> > donate cross cfs_rq, (say) pinned task A cpu A running solo could donate
+> > vruntime to selected tasks pinned to cpu B, for as long as minuscule
+> > preemptions can resupply ammo.  Would suck to not be the favored child.
+> 
+> IOW starving "non-favored" childs?
 
-Looks good,
+Yes, as in fairness ceases to exists.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> > Maybe you could exchange vruntimes cooperatively (iff same cfs_rq)
+> > between threads, but I don't think donations with clipping works.
+> 
+> Can't that lead to starvation again (as I pointed in a mail to Peterz):
+> 
+> p0 -> A0 B0 A1
+> 
+> A0/A1 enter a yield_to(other) deadlock, which means we keep swapping their
+> vruntimes, starving B0?
 
--- Steve
+I'll have to go back and re-read that.  Off the top of my head, I see no
+way it could matter which container the numbers live in as long as they
+keep advancing, and stay in the same runqueue.  (hm, task weights would
+have to be the same too or scaled. dangerous business, tinkering with
+vruntimes)
 
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
-
+	-Mike
 
