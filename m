@@ -1,50 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab0LCP4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:56:09 -0500
-Received: from sous-sol.org ([216.99.217.87]:44892 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751289Ab0LCP4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:56:08 -0500
-Date: Fri, 3 Dec 2010 07:55:36 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 1/3] kvm: keep track of which task is running a KVM
- vcpu
-Message-ID: <20101203155536.GB10050@sequoia.sous-sol.org>
-References: <20101202144129.4357fe00@annuminas.surriel.com>
- <20101202144324.4a79263b@annuminas.surriel.com>
- <20101203011810.GV10050@sequoia.sous-sol.org>
- <4CF903A6.5050209@redhat.com>
+	id S1752419Ab0LCQAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 11:00:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751473Ab0LCQAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 11:00:02 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] MN10300: Implement asm/syscall.h
+To: torvalds@osdl.org, akpm@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 03 Dec 2010 15:59:50 +0000
+Message-ID: <20101203155950.26704.552.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.15-97-g9680-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CF903A6.5050209@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rik van Riel (riel@redhat.com) wrote:
-> On 12/02/2010 08:18 PM, Chris Wright wrote:
-> >* Rik van Riel (riel@redhat.com) wrote:
-> >>Keep track of which task is running a KVM vcpu.  This helps us
-> >>figure out later what task to wake up if we want to boost a
-> >>vcpu that got preempted.
-> >>
-> >>Unfortunately there are no guarantees that the same task
-> >>always keeps the same vcpu, so we can only track the task
-> >>across a single "run" of the vcpu.
-> >
-> >So shouldn't it confine to KVM_RUN?  The other vcpu_load callers aren't
-> >always a vcpu in a useful runnable state.
-> 
-> Yeah, probably.  If you want I can move the setting of
-> vcpu->task to kvm_vcpu_ioctl.
+Implement asm/syscall.h for the MN10300 arch.
 
-Or maybe setting in sched_out and unsetting in sched_in.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/mn10300/include/asm/syscall.h |  117 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 117 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mn10300/include/asm/syscall.h
+
+
+diff --git a/arch/mn10300/include/asm/syscall.h b/arch/mn10300/include/asm/syscall.h
+new file mode 100644
+index 0000000..b44b0bb
+--- /dev/null
++++ b/arch/mn10300/include/asm/syscall.h
+@@ -0,0 +1,117 @@
++/* Access to user system call parameters and results
++ *
++ * See asm-generic/syscall.h for function descriptions.
++ *
++ * Copyright (C) 2010 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef _ASM_SYSCALL_H
++#define _ASM_SYSCALL_H
++
++#include <linux/sched.h>
++#include <linux/err.h>
++
++extern const unsigned long sys_call_table[];
++
++static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
++{
++	return regs->orig_d0;
++}
++
++static inline void syscall_rollback(struct task_struct *task,
++				    struct pt_regs *regs)
++{
++	regs->d0 = regs->orig_d0;
++}
++
++static inline long syscall_get_error(struct task_struct *task,
++				     struct pt_regs *regs)
++{
++	unsigned long error = regs->d0;
++	return IS_ERR_VALUE(error) ? error : 0;
++}
++
++static inline long syscall_get_return_value(struct task_struct *task,
++					    struct pt_regs *regs)
++{
++	return regs->d0;
++}
++
++static inline void syscall_set_return_value(struct task_struct *task,
++					    struct pt_regs *regs,
++					    int error, long val)
++{
++	regs->d0 = (long) error ?: val;
++}
++
++static inline void syscall_get_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 unsigned long *args)
++{
++	switch (i) {
++	case 0:
++		if (!n--) break;
++		*args++ = regs->a0;
++	case 1:
++		if (!n--) break;
++		*args++ = regs->d1;
++	case 2:
++		if (!n--) break;
++		*args++ = regs->a3;
++	case 3:
++		if (!n--) break;
++		*args++ = regs->a2;
++	case 4:
++		if (!n--) break;
++		*args++ = regs->d3;
++	case 5:
++		if (!n--) break;
++		*args++ = regs->d2;
++	case 6:
++		if (!n--) break;
++	default:
++		BUG();
++		break;
++	}
++}
++
++static inline void syscall_set_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 const unsigned long *args)
++{
++	switch (i) {
++	case 0:
++		if (!n--) break;
++		regs->a0 = *args++;
++	case 1:
++		if (!n--) break;
++		regs->d1 = *args++;
++	case 2:
++		if (!n--) break;
++		regs->a3 = *args++;
++	case 3:
++		if (!n--) break;
++		regs->a2 = *args++;
++	case 4:
++		if (!n--) break;
++		regs->d3 = *args++;
++	case 5:
++		if (!n--) break;
++		regs->d2 = *args++;
++	case 6:
++		if (!n--) break;
++	default:
++		BUG();
++		break;
++	}
++}
++
++#endif /* _ASM_SYSCALL_H */
+
