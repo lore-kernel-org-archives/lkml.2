@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab0LCBYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 20:24:53 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46579 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758211Ab0LCBYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 20:24:52 -0500
-Date: Fri, 3 Dec 2010 02:24:50 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1012030210200.14806@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758379Ab0LCB0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 20:26:12 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49531 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758255Ab0LCB0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 20:26:10 -0500
+Date: Thu, 2 Dec 2010 17:26:11 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: [PATCH] ext3: Set barrier=0 when block device does not advertise
+	flush support
+Message-ID: <20101203012611.GJ18195@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+If the user tries to enable write flushes with "barrier=1" and the underlying
+block device does not support flushes, print a message and set barrier=0.
 
-please pull from 'for-linus' branch of
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+ fs/ext3/super.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-to receive updates for HID subsystem that should be in 2.6.37.
-
-The most important one is a fix from Dmitry. We don't want to do a major 
-release with wrong units being exported, as that would be bad ABI issue in 
-evdev.
-The rest is just very simple fixes and device ID addition.
-
-Note: you are going to get conflict in drivers/hid/hid-input.c. This is 
-caused by commit a0bf0ea8 ("Input: hid-input - switch to using new keycode 
-interface") which went through Dmitry's tree, as it was part of larger 
-rework. It's fine to just use the variant from that commit. I'd normally 
-pull your tree into the 'for-linus' branch and resolve the conflict 
-myself, but as you explicitly asked last time (and on KS I believe as 
-well) not to do it, I am keeping the conflict resolution there for you :)
-
-Thanks!
-
-
-
-Dmitry Torokhov (1):
-      HID: length resolution should be reported units/mm
-
-Henrik Rydberg (1):
-      HID: egalax: Use kzalloc
-
-Joe Perches (1):
-      HID: Remove KERN_DEBUG from dbg_hid use
-
-Simon Wood (1):
-      HID: add support for F430 Force Feedback Wheel
-
- drivers/hid/hid-core.c   |    1 +
- drivers/hid/hid-egalax.c |    2 +-
- drivers/hid/hid-input.c  |   22 +++++++++++++---------
- drivers/hid/hid-tmff.c   |    2 ++
- 4 files changed, 17 insertions(+), 10 deletions(-)
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index d15209e..75ca265 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -1691,6 +1691,13 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
+ 			    NULL, 0))
+ 		goto failed_mount;
+ 
++	/* Catch barrier=1 and no flush support */
++	if (test_opt(sb, BARRIER) &&
++		     !(sb->s_bdev->bd_disk->queue->flush_flags & REQ_FLUSH)) {
++		ext3_msg(sb, KERN_WARNING, "flush not supported; disabling.");
++		clear_opt(sbi->s_mount_opt, BARRIER);
++	}
++
+ 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+ 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+ 
+@@ -2574,6 +2581,13 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
+ 		goto restore_opts;
+ 	}
+ 
++	/* Catch barrier=1 and no flush support */
++	if (test_opt(sb, BARRIER) &&
++		     !(sb->s_bdev->bd_disk->queue->flush_flags & REQ_FLUSH)) {
++		ext3_msg(sb, KERN_WARNING, "flush not supported; disabling.");
++		clear_opt(sbi->s_mount_opt, BARRIER);
++	}
++
+ 	if (test_opt(sb, ABORT))
+ 		ext3_abort(sb, __func__, "Abort forced by user");
+ 
