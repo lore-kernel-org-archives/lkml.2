@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab0LCJMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 04:12:23 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:50927 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755348Ab0LCJMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 04:12:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAExC+Ex5LdV4/2dsb2JhbACjNHLCLYVHBI9/
-Date: Fri, 3 Dec 2010 20:12:12 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2 3/3] NFS: Fix a memory leak in nfs_readdir
-Message-ID: <20101203091212.GA3346@amd>
-References: <20101201133831.ea6ba10a.akpm@linux-foundation.org>
- <1291240272.6609.50.camel@heimdal.trondhjem.org>
- <20101201141351.8609140b.akpm@linux-foundation.org>
- <AANLkTimgZPET+T16Qpj_KnpCu==97g-8+_y5dtjNOrxG@mail.gmail.com>
- <20101201143856.51f4f9d9.akpm@linux-foundation.org>
- <AANLkTi=x1bz5sJXOGERXh8iRHNZa+_gaYOyDecg3G92+@mail.gmail.com>
- <20101201153608.78b331f9.akpm@linux-foundation.org>
- <AANLkTinbuRRpg7Y8Zu=PD36BO11+qdjZ9uT=u9gCTpDw@mail.gmail.com>
- <20101201172224.b8a25bdf.akpm@linux-foundation.org>
- <AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
+	id S1758423Ab0LCJOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 04:14:47 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59863 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755676Ab0LCJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 04:14:45 -0500
+Date: Fri, 3 Dec 2010 01:14:45 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] ext4: Set barrier=0 when block device does not
+	advertise flush support
+Message-ID: <20101203091445.GK18195@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20101203001659.GI18195@tux1.beaverton.ibm.com> <20101203070950.GA19071@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinpvMJsC2XMUyDTaAdozFBLkcdde5_V57Jx-Z4w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101203070950.GA19071@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 01, 2010 at 05:42:08PM -0800, Linus Torvalds wrote:
-> On Wed, Dec 1, 2010 at 5:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > What we're talking about is races against memory reclaim, unmount, etc.
+On Fri, Dec 03, 2010 at 02:09:50AM -0500, Christoph Hellwig wrote:
+> On Thu, Dec 02, 2010 at 04:16:59PM -0800, Darrick J. Wong wrote:
+> > If the user tries to enable write flushes with "barrier=1" and the underlying
+> > block device does not support flushes, print a message and set barrier=0.
 > 
-> Ahh. Those I can believe in.
+> That doesn't make any sense at all with the ne wFLUSH+FUA code, which is
+> designed to make the cache flushing entirely transparanent.  Basically
+> with the new code the barrier option should become a no-op and always
+> enabled.
 
-Yeah, it's a tricky question. It would be solved if the inode reclaim
-code didn't have the nasty shortcuts for nr_pages == 0 sitting outisde
-the tree_lock... any time we have these kinds of optimisations checking
-things outside locks, we invaraibly find they have races or data races
-:(
+Are we ready to remove the barrier= mount option at this point?  How many users
+exist who use barrier=0 to speed up write performance when they're willing to
+take on the added safety risk?
 
-So doing those checks under lock would be a reasonable way to fix it
-if anyone cares for 2.6.37 or earlier (eg. distros). But it is another
-lock in inode freeing path which is nice to avoid, so let's just get
-it fixed with RCU in 2.6.38.
+I've noticed that provisioning goes faster if one mounts the filesystem with
+barrier=0; so long as the control software turns barriers on after the deploy
+finishes and always restarts the deploy after a failure, a power failure on the
+client system won't cause problems.  Unfortunately, there doesn't seem to be
+any other way to communicate that relaxation to the code.
 
+Personally I'd rather the knob remain in ext4 on the grounds that I know my
+workloads and can judge the appropriate level of risk, especially since ext4
+picks the safe option by default.  However, I'd prefer /proc/mounts not
+misrepresent the status of flush support, to the best of ext4's knowledge.
 
-> Although I think they'd almost
-> incidentally be fixed by making inode freeing (which is where the
-> 'struct address_space' is embedded) RCU-safe, which we're going to do
-> anyway in 38. Then we could make the vmscan code just be a rcu-read
-> section.
-
-Yep, good observation.
-
-Thanks,
-Nick
-
+--D
