@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab0LCPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:07:28 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:54200 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750837Ab0LCPHW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:07:22 -0500
-From: Sundar Iyer <sundar.iyer@stericsson.com>
-To: <linux-arm-kernel@lists.infradead.org>, <dmitry.torokhov@gmail.com>,
-        <sameo@linux.intel.com>, <ben-linux@fluff.org>
-Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Sundar Iyer <sundar.iyer@stericsson.com>
-Subject: [PATCH 18/20] mach-ux500: explicit enable MTU TCR in the kernel
-Date: Fri, 3 Dec 2010 20:35:51 +0530
-Message-ID: <1291388753-14662-19-git-send-email-sundar.iyer@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
-In-Reply-To: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
-References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
+	id S1752314Ab0LCPHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:07:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab0LCPHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 10:07:31 -0500
+Date: Fri, 3 Dec 2010 16:00:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: michal.simek@petalogix.com, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        John Williams <john.williams@petalogix.com>,
+        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
+Subject: Re: Flushing whole page instead of work for ptrace
+Message-ID: <20101203150021.GA11114@redhat.com>
+References: <4CEFA8AE.2090804@petalogix.com> <20101130233250.35603401C8@magilla.sf.frob.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101130233250.35603401C8@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PRCM_TCR enables the various timers in the system. This must be achieved
-before any of the MTUs are usable for kernel usage. Explicit enabling of
-this in the kernel makes it independent of bootloader actions.
+On 11/30, Roland McGrath wrote:
+>
+> Documentation/cachetlb.txt says:
+>
+> 	Any time the kernel writes to a page cache page, _OR_
+> 	the kernel is about to read from a page cache page and
+> 	user space shared/writable mappings of this page potentially
+> 	exist, this routine is called.
+>
+> In your case, the kernel is only reading (write=0 passed to
+> access_process_vm and get_user_pages).  In normal situations,
+> the page in question will have only a private and read-only
+> mapping in user space.  So the call should not be required in
+> these cases--if the code can tell that's so.
+>
+> Perhaps something like the following would be safe.
+> But you really need some VM folks to tell you for sure.
+>
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 02e48aa..2864ee7 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1484,7 +1484,8 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  				pages[i] = page;
+>
+>  				flush_anon_page(vma, page, start);
+> -				flush_dcache_page(page);
+> +				if ((vm_flags & VM_WRITE) || (vma->vm_flags & VM_SHARED)
+> +					flush_dcache_page(page);
 
-Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
----
- arch/arm/mach-ux500/clock.c |   49 ++++++++-----------------------------------
- 1 files changed, 9 insertions(+), 40 deletions(-)
+First of all, I know absolutely nothing about D-cache aliasing.
+My poor understanding of flush_dcache_page() is: synchronize the
+kernel/user vision of this memory, in the case when either side
+can change it.
 
-diff --git a/arch/arm/mach-ux500/clock.c b/arch/arm/mach-ux500/clock.c
-index 531de5c..6657b05 100644
---- a/arch/arm/mach-ux500/clock.c
-+++ b/arch/arm/mach-ux500/clock.c
-@@ -132,7 +132,7 @@ static unsigned long clk_mtu_get_rate(struct clk *clk)
- {
- 	void __iomem *addr = __io_address(UX500_PRCMU_BASE)
- 		+ PRCM_TCR;
--	u32 tcr = readl(addr);
-+	u32 tcr;
- 	int mtu = (int) clk->data;
- 	/*
- 	 * One of these is selected eventually
-@@ -143,6 +143,14 @@ static unsigned long clk_mtu_get_rate(struct clk *clk)
- 	unsigned long mturate;
- 	unsigned long retclk;
- 
-+	/*
-+	 * On a startup, always conifgure the TCR to the doze mode;
-+	 * bootloaders do it for us. Do this in the kernel too.
-+	 */
-+	writel(PRCM_TCR_DOZE_MODE, addr);
-+
-+	tcr = readl(addr);
-+
- 	/* Get the rate from the parent as a default */
- 	if (clk->parent_periph)
- 		mturate = clk_get_rate(clk->parent_periph);
-@@ -152,45 +160,6 @@ static unsigned long clk_mtu_get_rate(struct clk *clk)
- 		/* We need to be connected SOMEWHERE */
- 		BUG();
- 
--	/*
--	 * Are we in doze mode?
--	 * In this mode the parent peripheral or the fixed 32768 Hz
--	 * clock is fed into the block.
--	 */
--	if (!(tcr & PRCM_TCR_DOZE_MODE)) {
--		/*
--		 * Here we're using the clock input from the APE ULP
--		 * clock domain. But first: are the timers stopped?
--		 */
--		if (tcr & PRCM_TCR_STOPPED) {
--			clk32k = 0;
--			mturate = 0;
--		} else {
--			/* Else default mode: 0 and 2.4 MHz */
--			clk32k = 0;
--			if (cpu_is_u5500())
--				/* DB5500 divides by 8 */
--				mturate /= 8;
--			else if (cpu_is_u8500ed()) {
--				/*
--				 * This clocking setting must not be used
--				 * in the ED chip, it is simply not
--				 * connected anywhere!
--				 */
--				mturate = 0;
--				BUG();
--			} else
--				/*
--				 * In this mode the ulp38m4 clock is divided
--				 * by a factor 16, on the DB8500 typically
--				 * 38400000 / 16 ~ 2.4 MHz.
--				 * TODO: Replace the constant with a reference
--				 * to the ULP source once this is modeled.
--				 */
--				mturate = 38400000 / 16;
--		}
--	}
--
- 	/* Return the clock selected for this MTU */
- 	if (tcr & (1 << mtu))
- 		retclk = clk32k;
--- 
-1.7.2.dirty
+If this is true, then this change doesn't look right in general.
+
+Even if (vma->vm_flags & VM_SHARED) == 0, it is possible that
+tsk can write to this memory, this mapping can be writable and
+private.
+
+Even if we ensure that this mapping is readonly/private, another
+user-space process can write to this page via shared/writable
+mapping.
+
+
+I'd like to know if my understanding is correct, I am just curious.
+
+Oleg.
 
