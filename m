@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664Ab0LCOph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 09:45:37 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:33374 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1758556Ab0LCOpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 09:45:36 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/LA7MtkIHLr+CNSyqEpCJsIcSHgeZoZr0XRTzVqZ
-	nIlKpobjZzFvhl
-Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
-From: Mike Galbraith <efault@gmx.de>
-To: vatsa@linux.vnet.ibm.com
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-In-Reply-To: <20101203134618.GG27994@linux.vnet.ibm.com>
-References: <20101202144129.4357fe00@annuminas.surriel.com>
-	 <20101202144423.3ad1908d@annuminas.surriel.com>
-	 <1291355656.7633.124.camel@marge.simson.net>
-	 <20101203134618.GG27994@linux.vnet.ibm.com>
-Content-Type: text/plain
-Date: Fri, 03 Dec 2010 15:45:10 +0100
-Message-Id: <1291387511.7992.15.camel@marge.simson.net>
+	id S1758671Ab0LCOql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 09:46:41 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50814 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758556Ab0LCOqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 09:46:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=iEtBAcHmc2nSODX5jx1wlBzxNPlHyCcZ66jJLaTZ1zAKU0nTDqv1XMHIX3GlYGvEOC
+         i6I9eLjdkGSeFdZZ3BNYM5reDsMx85H5JF7kvPOhjvJjBAZPF36dz1Yu6OnpZk/Yhyw9
+         rPonBO4aS8TgRB5YhfyNRKIG9ggqMNDLd8Mfg=
+Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrej Ota <andrej@ota.si>
+Cc: linux-kernel@vger.kernel.org, gvs@zemos.net,
+        Rami Rosen <ramirose@gmail.com>, netdev <netdev@vger.kernel.org>
+In-Reply-To: <aa43945b38cee751a8231084866b074d@192.168.253.23>
+References: <0fe401cb92e7$85ba2260$912e6720$@si>
+	 <1291381791.2897.250.camel@edumazet-laptop>
+	 <aa43945b38cee751a8231084866b074d@192.168.253.23>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Dec 2010 15:46:35 +0100
+Message-ID: <1291387595.2897.350.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 19:16 +0530, Srivatsa Vaddagiri wrote:
-> On Fri, Dec 03, 2010 at 06:54:16AM +0100, Mike Galbraith wrote:
-> > > +void yield_to(struct task_struct *p)
-> > > +{
-> > > +	unsigned long flags;
-> > > +	struct sched_entity *se = &p->se;
-> > > +	struct rq *rq;
-> > > +	struct cfs_rq *cfs_rq;
-> > > +	u64 remain = slice_remain(current);
+Le vendredi 03 décembre 2010 à 15:37 +0100, Andrej Ota a écrit :
+> >> Patch that works for me is below. Now I only hope I haven't
+> >> (re)introduced a memory leak...
+> 
+> > Problem comes from commit 55c95e738da85 (fix return value of
+> > __pppoe_xmit() method)
 > > 
-> > That "slice remaining" only shows the distance to last preempt, however
-> > brief.  It shows nothing wrt tree position, the yielding task may well
-> > already be right of the task it wants to yield to, having been a buddy.
+> > I am not sure patch is OK
 > 
-> Good point.
 > 
-> > > cfs_rq = cfs_rq_of(se);
-> > > +	se->vruntime -= remain;
-> > > +	if (se->vruntime < cfs_rq->min_vruntime)
-> > > +		se->vruntime = cfs_rq->min_vruntime;
-> > 
-> > (This is usually done using max_vruntime())
-> > 
-> > If the recipient was already left of the fair stick (min_vruntime),
-> > clipping advances it's vruntime, vaporizing entitlement from both donor
-> > and recipient.
-> > 
-> > What if a task tries to yield to another not on the same cpu, and/or in
-> > the same task group?
+> Me neither. That's why I wrote "works for me". All I dare say is that it
+> works better than current code and is probably no worse than it was before
+> above mentioned commit. Apart from that, there is no point in having return
+> value for __pppoe_xmit if return value isn't needed.
 > 
-> In this case, target of yield_to is a vcpu belonging to the same VM and hence is
-> expected to be in same task group, but I agree its good to put a check.
+> Easiest way of triggering this BUG is by terminating PPPoE on the server
+> side, which then hits "if (!dev) { goto abort; }". This in turn calls
+> "kfree_skb(skb); return 0;" which returns to pppoe_rcv_core which then
+> goto-s to "abort_put" which again calls "kfree_skb(skb)". Voila the bug.
 > 
-> >  This would munge min_vruntime of other queues.  I
-> > think you'd have to restrict this to same cpu, same group.  If tasks can
-> > donate cross cfs_rq, (say) pinned task A cpu A running solo could donate
-> > vruntime to selected tasks pinned to cpu B, for as long as minuscule
-> > preemptions can resupply ammo.  Would suck to not be the favored child.
-> 
-> IOW starving "non-favored" childs?
+> I don't know how to trigger "if (skb_cow_head(skb, ..." to see if I have
+> just caused another BUG. However, if I read file comments at the top, I see
+> a comment from 19/07/01 stating that I have to delete original skb if code
+> succeeds and never delete it on failure. About the skb copy mentioned in
+> the same comment, I don't know. 2001 was many commits ago.
 
-Yes, as in fairness ceases to exists.
+Well, all I wanted to say was that _I_ was not sure, but probably other
+network guys have a better diagnostic.
 
-> > Maybe you could exchange vruntimes cooperatively (iff same cfs_rq)
-> > between threads, but I don't think donations with clipping works.
-> 
-> Can't that lead to starvation again (as I pointed in a mail to Peterz):
-> 
-> p0 -> A0 B0 A1
-> 
-> A0/A1 enter a yield_to(other) deadlock, which means we keep swapping their
-> vruntimes, starving B0?
+Rami, could you re-explain the rationale of your patch ?
 
-I'll have to go back and re-read that.  Off the top of my head, I see no
-way it could matter which container the numbers live in as long as they
-keep advancing, and stay in the same runqueue.  (hm, task weights would
-have to be the same too or scaled. dangerous business, tinkering with
-vruntimes)
+Thanks
 
-	-Mike
 
