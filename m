@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab0LCLmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 06:42:42 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33785 "EHLO arroyo.ext.ti.com"
+	id S932527Ab0LCLmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 06:42:50 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59754 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932404Ab0LCLmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 06:42:40 -0500
+	id S932404Ab0LCLmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 06:42:43 -0500
 From: manjunatha_halli@ti.com
 To: mchehab@infradead.org, hverkuil@xs4all.nl
 Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         Manjunatha Halli <manjunatha_halli@ti.com>
-Subject: [RFC v6 0/9] FM V4L2 drivers for WL128x
-Date: Fri,  3 Dec 2010 07:50:22 -0500
-Message-Id: <1291380631-25993-1-git-send-email-manjunatha_halli@ti.com>
+Subject: [RFC v6 2/9] Documentation:DocBook:v4l: Update the controls.xml for TI FM driver
+Date: Fri,  3 Dec 2010 07:50:24 -0500
+Message-Id: <1291380631-25993-3-git-send-email-manjunatha_halli@ti.com>
 X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1291380631-25993-2-git-send-email-manjunatha_halli@ti.com>
+References: <1291380631-25993-1-git-send-email-manjunatha_halli@ti.com>
+ <1291380631-25993-2-git-send-email-manjunatha_halli@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunatha Halli <manjunatha_halli@ti.com>
 
-Mauro and the list,
+Added entries for following 2 new CID's which are added for TI FM
+driver:
+- V4L2_CID_RSSI_THRESHOLD
+- V4L2_CID_TUNE_AF
 
-This is the v6 version of the TI WL128x FM V4L2 drivers patchset.
-Texas Instrument's WL128x chipset packs BT, FM, GPS and WLAN in a single
-die with BT, FM and GPS being interfaced over a single UART.
-This driver works on top of the shared transport line discipline driver.
-This driver can also be made use for the WL127x version of the chip which packs
-BT, FM and WLAN only.
+Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+---
+ Documentation/DocBook/v4l/controls.xml |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-Comments on the last version of the patches have been taken care,
-such asi
-- Removed use of new V4L2 CID to set the BAND (US/JAPAN). Instead handle it
-in driver.
-- Removed the new private CID defined for channel spacing instead handle it
-in ioctl VIDIOC_S_HW_FREQ_SEEK.
-
-Also,
-Can you please also stage this version? Since the files are becoming big
-to be posted as patches?
-
-Thanks & Regards,
-Manjunatha Halli
-
-Manjunatha Halli (9):
-  include:linux: videodev2.h: FM Rx control class
-  Documentation:DocBook:v4l: Update the controls.xml for TI FM driver
-  drivers:staging: ti-st: fmdrv common header file
-  drivers:staging: ti-st: fmdrv_v4l2 sources
-  drivers:staging: ti-st: fmdrv_common sources
-  drivers:staging: ti-st: FM driver RX sources
-  drivers:staging: ti-st: FM driver TX sources
-  drivers:staging: ti-st: Kconfig & Makefile change
-  driver:staging:ti-st: Update TODO for FM V4L2 driver.
-
- Documentation/DocBook/v4l/controls.xml |   12 +
- drivers/staging/ti-st/Kconfig          |   10 +
- drivers/staging/ti-st/Makefile         |    2 +
- drivers/staging/ti-st/TODO             |   10 +-
- drivers/staging/ti-st/fmdrv.h          |  239 ++++
- drivers/staging/ti-st/fmdrv_common.c   | 2003 ++++++++++++++++++++++++++++++++
- drivers/staging/ti-st/fmdrv_common.h   |  402 +++++++
- drivers/staging/ti-st/fmdrv_rx.c       |  902 ++++++++++++++
- drivers/staging/ti-st/fmdrv_rx.h       |   59 +
- drivers/staging/ti-st/fmdrv_tx.c       |  420 +++++++
- drivers/staging/ti-st/fmdrv_tx.h       |   37 +
- drivers/staging/ti-st/fmdrv_v4l2.c     |  720 ++++++++++++
- drivers/staging/ti-st/fmdrv_v4l2.h     |   32 +
- include/linux/videodev2.h              |    8 +
- 14 files changed, 4855 insertions(+), 1 deletions(-)
- create mode 100644 drivers/staging/ti-st/fmdrv.h
- create mode 100644 drivers/staging/ti-st/fmdrv_common.c
- create mode 100644 drivers/staging/ti-st/fmdrv_common.h
- create mode 100644 drivers/staging/ti-st/fmdrv_rx.c
- create mode 100644 drivers/staging/ti-st/fmdrv_rx.h
- create mode 100644 drivers/staging/ti-st/fmdrv_tx.c
- create mode 100644 drivers/staging/ti-st/fmdrv_tx.h
- create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
- create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
+diff --git a/Documentation/DocBook/v4l/controls.xml b/Documentation/DocBook/v4l/controls.xml
+index 2fae3e8..b560953 100644
+--- a/Documentation/DocBook/v4l/controls.xml
++++ b/Documentation/DocBook/v4l/controls.xml
+@@ -132,6 +132,18 @@ consumption state.</entry>
+ 	    <entry>Loudness mode (bass boost).</entry>
+ 	  </row>
+ 	  <row>
++           <entry><constant>V4L2_CID_RSSI_THRESHOLD</constant></entry>
++           <entry>integer</entry>
++           <entry>Set RSSI threshold level. Change the default threshold
++level used to select valid frequencies during vidioc_s_hw_freq_seek.</entry>
++         </row>
++         <row>
++           <entry><constant>V4L2_CID_TUNE_AF</constant></entry>
++           <entry>integer</entry>
++           <entry>Set Alternative Frequency mode. Enable or disable
++alternative frequency mode.</entry>
++         </row>
++         <row>
+ 	    <entry><constant>V4L2_CID_BLACK_LEVEL</constant></entry>
+ 	    <entry>integer</entry>
+ 	    <entry>Another name for brightness (not a synonym of
+-- 
+1.5.6.3
 
