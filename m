@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab0LCNq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 08:46:29 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:56283 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753059Ab0LCNq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 08:46:28 -0500
-Date: Fri, 3 Dec 2010 19:16:18 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
-Message-ID: <20101203134618.GG27994@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <20101202144129.4357fe00@annuminas.surriel.com>
- <20101202144423.3ad1908d@annuminas.surriel.com>
- <1291355656.7633.124.camel@marge.simson.net>
+	id S1758234Ab0LCNuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 08:50:35 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:49665 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab0LCNue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 08:50:34 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [RFC/PATCH v6 03/12] media: Entities, pads and links
+Date: Fri, 3 Dec 2010 14:50:58 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
+        lennart@poettering.net
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <201012031119.36771.laurent.pinchart@ideasonboard.com> <201012031306.18520.hverkuil@xs4all.nl>
+In-Reply-To: <201012031306.18520.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291355656.7633.124.camel@marge.simson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012031450.59137.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 06:54:16AM +0100, Mike Galbraith wrote:
-> > +void yield_to(struct task_struct *p)
-> > +{
-> > +	unsigned long flags;
-> > +	struct sched_entity *se = &p->se;
-> > +	struct rq *rq;
-> > +	struct cfs_rq *cfs_rq;
-> > +	u64 remain = slice_remain(current);
+Hi Hans,
+
+Adding by the original CC list which was dropped by mistake.
+
+On Friday 03 December 2010 13:06:18 Hans Verkuil wrote:
+> On Friday, December 03, 2010 11:19:36 Laurent Pinchart wrote:
+> > On Sunday 28 November 2010 16:57:00 you wrote:
+> > > On Sunday, November 28, 2010 13:34:45 Laurent Pinchart wrote:
+> > > > On Friday 26 November 2010 15:14:42 Mark Brown wrote:
+> > > > > On Fri, Nov 26, 2010 at 03:13:36PM +0100, Laurent Pinchart wrote:
+> > > > > > On Thursday 25 November 2010 16:49:52 Mark Brown wrote:
+> > > > > > > On Thu, Nov 25, 2010 at 04:40:41PM +0100, Laurent Pinchart 
+wrote:
+> > > > > > > > It's supposed to reflect whether the link can carry data.
+> > > > > > > > Think of the active flag as a valve on a pipe. If the valve
+> > > > > > > > is open, the link is active. If the valve is closed, the
+> > > > > > > > link is inactive. This is unrelated to whether water
+> > > > > > > > actually flows through the pipe.
+> > > > > > > 
+> > > > > > > This seems a confusing name, then - I'd expect an active link
+> > > > > > > to be one which is actually carrying data rather than one
+> > > > > > > which is available to carry data.  How a more neutrally worded
+> > > > > > > name such as "connected" (which is what ASoC uses currently)?
+> > > > > > 
+> > > > > > In our current vocabulary "connected" refers to entities between
+> > > > > > which a link exist, regardless of the link state ("valve opened"
+> > > > > > or "valve closed"). I'm not totally happy with "active" either,
+> > > > > > but if we replace it with "connected" we need another word to
+> > > > > > replace current uses of "connected".
+> > > > > 
+> > > > > Linked?
+> > > > 
+> > > > That's a good option. Hans, do you want to comment on this ?
+> > > 
+> > > Fine by me! It's better than 'active'.
+> > 
+> > Just to confirm thinks, Mark's proposal is to replace 'connected' by
+> > 'linked' and 'active' by 'connected'. Are we on the same page here ?
 > 
-> That "slice remaining" only shows the distance to last preempt, however
-> brief.  It shows nothing wrt tree position, the yielding task may well
-> already be right of the task it wants to yield to, having been a buddy.
+> Yes, but when I read it back it does not make me happy. 'Connected' and
+> 'linked' basically have the same meaning in English.
 
-Good point.
+I unfortunately agree that it's a bit confusing :-(
 
-> > cfs_rq = cfs_rq_of(se);
-> > +	se->vruntime -= remain;
-> > +	if (se->vruntime < cfs_rq->min_vruntime)
-> > +		se->vruntime = cfs_rq->min_vruntime;
-> 
-> (This is usually done using max_vruntime())
-> 
-> If the recipient was already left of the fair stick (min_vruntime),
-> clipping advances it's vruntime, vaporizing entitlement from both donor
-> and recipient.
-> 
-> What if a task tries to yield to another not on the same cpu, and/or in
-> the same task group?
+> I really like your analogy with valves, so perhaps we should use either
+> 'linked' or 'connected' to describe that two entities are, well,
+> linked/connected, and use the 'open' and 'closed' terminology to describe
+> whether a link/connection is open (data can flow) or closed (no data can
+> flow).
 
-In this case, target of yield_to is a vcpu belonging to the same VM and hence is
-expected to be in same task group, but I agree its good to put a check.
+I don't really like the open/closed terminology to describe links.
 
->  This would munge min_vruntime of other queues.  I
-> think you'd have to restrict this to same cpu, same group.  If tasks can
-> donate cross cfs_rq, (say) pinned task A cpu A running solo could donate
-> vruntime to selected tasks pinned to cpu B, for as long as minuscule
-> preemptions can resupply ammo.  Would suck to not be the favored child.
+I can think of two analogies: pipes with valves that can be opened/closed, or 
+cables that can be connected/disconnected.
 
-IOW starving "non-favored" childs?
+In the first case, connected/linked can be used to specify the pipes that 
+exist in the system, but I'm not happy with open/closed.
 
-> Maybe you could exchange vruntimes cooperatively (iff same cfs_rq)
-> between threads, but I don't think donations with clipping works.
+In the second case, connected/linked can be used to specify whether a cable is 
+connected, but in that case we will need another word to describe whether two 
+pads are connectable or not.
 
-Can't that lead to starvation again (as I pointed in a mail to Peterz):
+> I have a slight preference for 'link' over 'connection', but that's mostly
+> because it is a shorter word :-)
 
-p0 -> A0 B0 A1
+Link refers to a pipe/possible cable connection. It's an object on both the 
+kernel side and the userspace side. Using the above analogies, tt makes sense 
+to use the word 'linked' to refer to two pads that are connected by a pipe, or 
+between which a cable can be connected.
 
-A0/A1 enter a yield_to(other) deadlock, which means we keep swapping their
-vruntimes, starving B0?
+Now we need a word to descripe whether the valve is opened or closed, or 
+whether the cable is connected or not. I don't really like 'open'/'closed' for 
+the first analogy. 'connected' would make sense for the second analogy, but it 
+can indeed be a bit confusing.
 
-- vatsa
+Thoughts ?
+
+-- 
+Regards,
+
+Laurent Pinchart
