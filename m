@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab0LCPhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:37:01 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57744 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab0LCPhA (ORCPT
+	id S1753320Ab0LCPhX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:37:23 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:56775 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752747Ab0LCPhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:37:00 -0500
-Date: Fri, 3 Dec 2010 15:36:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        David Brownell <david-b@pacbell.net>, per.forlin@linaro.org,
-        Ulf Hansson <Ulf.Hansson@stericsson.com>
-Subject: Re: dma_unmap_sg - what number of entries is to be passed as
-	parameter really?
-Message-ID: <20101203153645.GB30898@n2100.arm.linux.org.uk>
-References: <AANLkTimL=UX-FpNL7gqPnThmqK-BuZQJStGLrwwq2O0w@mail.gmail.com>
+	Fri, 3 Dec 2010 10:37:13 -0500
+From: Sundar Iyer <sundar.iyer@stericsson.com>
+To: <linux-arm-kernel@lists.infradead.org>, <dmitry.torokhov@gmail.com>,
+        <sameo@linux.intel.com>, <ben-linux@fluff.org>
+Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sundar Iyer <sundar.iyer@stericsson.com>
+Subject: [PATCH 12/20] mfd/tc3589x: undo gpio module reset during chip init
+Date: Fri, 3 Dec 2010 20:35:45 +0530
+Message-ID: <1291388753-14662-13-git-send-email-sundar.iyer@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
+References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimL=UX-FpNL7gqPnThmqK-BuZQJStGLrwwq2O0w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 02:40:56PM +0100, Linus Walleij wrote:
-> Now we have a contradiction between two pieces of documentation,
-> in Documentation/DMA-API.txt
-> 
-> 
->         void
->         dma_unmap_sg(struct device *dev, struct scatterlist *sg,
->                 int nhwentries, enum dma_data_direction direction)
-> 
->   Unmap the previously mapped scatter/gather list.  All the parameters
->   must be the same as those and passed in to the scatter/gather mapping
->   API.
-> 
->   Note: <nents> must be the number you passed in, *not* the number of
->   physical entries returned.
-> 
-> 
-> Note the last paragraph! But in arch/arm/mm/dma-mapping.c;
-> 
-> 
-> /**
->  * dma_unmap_sg - unmap a set of SG buffers mapped by dma_map_sg
->  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
->  * @sg: list of buffers
->  * @nents: number of buffers to unmap (returned from dma_map_sg)
->    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->  * @dir: DMA transfer direction (same as was passed to dma_map_sg)
->  *
->  * Unmap a set of streaming mode DMA translations.  Again, CPU access
->  * rules concerning calls here are the same as for dma_unmap_single().
->  */
-> 
-> So the documentation in Documentation/ says one thing, whereas
-> the ARM implementation documentation says something else.
-> 
-> Which one is it? (Looks like the first one from Documentation/ to me.)
+Skip putting the GPIO module into a reset during the chip init.  This makes
+sure to preserve any existing GPIO configurations done by pre-kernel boot code.
 
-The only from Documentation/.  Luckily though, it doesn't make any
-odds to the implementation on ARM as we don't have IOMMUs involved
-in the DMA layer where we could coalesce entries.
+Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
+---
+ drivers/mfd/tc3589x.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index e173f33..fd206fd 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -247,12 +247,15 @@ static int tc3589x_chip_init(struct tc3589x *tc3589x)
+ 
+ 	dev_info(tc3589x->dev, "manufacturer: %#x, version: %#x\n", manf, ver);
+ 
+-	/* Put everything except the IRQ module into reset */
++	/*
++	 * Put everything except the IRQ module into reset;
++	 * also spare the GPIO module for any pin initialization
++	 * done during pre-kernel boot
++	 */
+ 	ret = tc3589x_reg_write(tc3589x, TC3589x_RSTCTRL,
+ 				TC3589x_RSTCTRL_TIMRST
+ 				| TC3589x_RSTCTRL_ROTRST
+-				| TC3589x_RSTCTRL_KBDRST
+-				| TC3589x_RSTCTRL_GPIRST);
++				| TC3589x_RSTCTRL_KBDRST);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-- 
+1.7.2.dirty
+
