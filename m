@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0LCPhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:37:25 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:42731 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751289Ab0LCPhN (ORCPT
+	id S1753203Ab0LCPhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:37:20 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:47694 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752697Ab0LCPhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Dec 2010 10:37:13 -0500
 From: Sundar Iyer <sundar.iyer@stericsson.com>
@@ -12,9 +12,9 @@ To: <linux-arm-kernel@lists.infradead.org>, <dmitry.torokhov@gmail.com>,
         <sameo@linux.intel.com>, <ben-linux@fluff.org>
 Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Sundar Iyer <sundar.iyer@stericsson.com>
-Subject: [PATCH 13/20] mfd/tc3589x: add suspend/resume support
-Date: Fri, 3 Dec 2010 20:35:46 +0530
-Message-ID: <1291388753-14662-14-git-send-email-sundar.iyer@stericsson.com>
+Subject: [PATCH 17/20] mach-ux500: add TC35893 keypad platform data
+Date: Fri, 3 Dec 2010 20:35:50 +0530
+Message-ID: <1291388753-14662-18-git-send-email-sundar.iyer@stericsson.com>
 X-Mailer: git-send-email 1.7.2.dirty
 In-Reply-To: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
 References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
@@ -26,76 +26,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
 ---
- drivers/mfd/tc3589x.c |   42 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 42 insertions(+), 0 deletions(-)
+ arch/arm/mach-ux500/board-mop500-keypads.c |   63 ++++++++++++++++++++++++++++
+ 1 files changed, 63 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-index fd206fd..a7dd2b6 100644
---- a/drivers/mfd/tc3589x.c
-+++ b/drivers/mfd/tc3589x.c
-@@ -14,6 +14,9 @@
- #include <linux/mfd/core.h>
- #include <linux/mfd/tc3589x.h>
+diff --git a/arch/arm/mach-ux500/board-mop500-keypads.c b/arch/arm/mach-ux500/board-mop500-keypads.c
+index 4acc4f1..663f0c3 100644
+--- a/arch/arm/mach-ux500/board-mop500-keypads.c
++++ b/arch/arm/mach-ux500/board-mop500-keypads.c
+@@ -11,6 +11,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <linux/mfd/stmpe.h>
++#include <linux/mfd/tc3589x.h>
+ #include <linux/input/matrix_keypad.h>
  
-+#define TC3589x_CLKMODE_MODCTL_SLEEP		0x0
-+#define TC3589x_CLKMODE_MODCTL_OPERATION	(1 << 0)
-+
- /**
-  * tc3589x_reg_read() - read a single TC3589x register
-  * @tc3589x:	Device to read from
-@@ -365,6 +368,42 @@ static int __devexit tc3589x_remove(struct i2c_client *client)
- 	return 0;
- }
+ #include <plat/pincfg.h>
+@@ -157,10 +158,72 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
+ 	},
+ };
  
-+#ifdef CONFIG_PM
-+static int tc3589x_suspend(struct device *dev)
-+{
-+	struct tc3589x *tc35892 = dev_get_drvdata(dev);
-+	struct i2c_client *client = tc3589x->i2c;
-+	int ret = 0;
++/*
++ * TC35893
++ */
 +
-+	/* put the system to sleep mode */
-+	if (!device_may_wakeup(&client->dev))
-+		ret = tc3589x_reg_write(tc3589x, TC3589x_CLKMODE,
-+				TC3589x_CLKMODE_MODCTL_SLEEP);
++static const unsigned int nuib_keymap[] = {
++	KEY(3, 1, KEY_END),
++	KEY(4, 1, KEY_POWER),
++	KEY(6, 4, KEY_VOLUMEDOWN),
++	KEY(4, 2, KEY_EMAIL),
++	KEY(3, 3, KEY_RIGHT),
++	KEY(2, 5, KEY_BACKSPACE),
 +
-+	return ret;
-+}
++	KEY(6, 7, KEY_MENU),
++	KEY(5, 0, KEY_ENTER),
++	KEY(4, 3, KEY_0),
++	KEY(3, 4, KEY_DOT),
++	KEY(5, 2, KEY_UP),
++	KEY(3, 5, KEY_DOWN),
 +
-+static int tc3589x_resume(struct device *dev)
-+{
-+	struct tc3589x *tc3589x = dev_get_drvdata(dev);
-+	struct i2c_client *client = tc3589x->i2c;
-+	int ret = 0;
-+
-+	/* enable the system into operation */
-+	if (!device_may_wakeup(&client->dev))
-+		ret = tc3589x_reg_write(tc3589x, TC3589x_CLKMODE,
-+				TC3589x_CLKMODE_MODCTL_OPERATION);
-+
-+	return ret;
-+}
-+
-+
-+static const struct dev_pm_ops tc3589x_dev_pm_ops = {
-+	.suspend = tc3589x_suspend,
-+	.resume  = tc3589x_resume,
++	KEY(4, 5, KEY_SEND),
++	KEY(0, 5, KEY_BACK),
++	KEY(6, 2, KEY_VOLUMEUP),
++	KEY(1, 3, KEY_SPACE),
++	KEY(7, 6, KEY_LEFT),
++	KEY(5, 5, KEY_SEARCH),
 +};
-+#endif
 +
- static const struct i2c_device_id tc3589x_id[] = {
- 	{ "tc3589x", 24 },
- 	{ }
-@@ -374,6 +413,9 @@ MODULE_DEVICE_TABLE(i2c, tc3589x_id);
- static struct i2c_driver tc3589x_driver = {
- 	.driver.name	= "tc3589x",
- 	.driver.owner	= THIS_MODULE,
-+#ifdef CONFIG_PM
-+	.driver.pm	= &tc3589x_dev_pm_ops,
-+#endif
- 	.probe		= tc3589x_probe,
- 	.remove		= __devexit_p(tc3589x_remove),
- 	.id_table	= tc3589x_id,
++static struct matrix_keymap_data nuib_keymap_data = {
++	.keymap         = nuib_keymap,
++	.keymap_size    = ARRAY_SIZE(nuib_keymap),
++};
++
++static struct tc3589x_keypad_platform_data tc35893_data = {
++	.krow = TC_KPD_ROWS,
++	.kcol = TC_KPD_COLUMNS,
++	.debounce_period = TC_KPD_DEBOUNCE_PERIOD,
++	.settle_time = TC_KPD_SETTLE_TIME,
++	.irqtype = IRQF_TRIGGER_FALLING,
++	.enable_wakeup = true,
++	.keymap_data    = &nuib_keymap_data,
++	.no_autorepeat  = true,
++};
++
++static struct tc3589x_platform_data tc3589x_keypad_data = {
++	.block = TC3589x_BLOCK_KEYPAD,
++	.keypad = &tc35893_data,
++	.irq_base = MOP500_EGPIO_IRQ_BASE,
++};
++
++static struct i2c_board_info __initdata mop500_i2c0_devices_nuib[] = {
++	{
++		I2C_BOARD_INFO("tc3589x", 0x44),
++		.platform_data = &tc3589x_keypad_data,
++		.irq = NOMADIK_GPIO_TO_IRQ(218),
++		.flags = I2C_CLIENT_WAKE,
++	},
++};
++
+ void mop500_keypad_init(void)
+ {
+ 	db8500_add_ske_keypad(&ske_keypad_board);
+ 
+ 	i2c_register_board_info(0, mop500_i2c0_devices_stuib,
+ 			ARRAY_SIZE(mop500_i2c0_devices_stuib));
++
++	i2c_register_board_info(0, mop500_i2c0_devices_nuib,
++			ARRAY_SIZE(mop500_i2c0_devices_nuib));
++
+ }
 -- 
 1.7.2.dirty
 
