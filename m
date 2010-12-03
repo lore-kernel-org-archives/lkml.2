@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab0LCOJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 09:09:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40832 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab0LCOJH (ORCPT
+	id S1758018Ab0LCOJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 09:09:46 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41488 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716Ab0LCOJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 09:09:07 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=wnbCvAVmVDgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=7d_E57ReAAAA:8 a=-XCUuMyHlfz9xJ10Rd8A:9 a=FeQ9XXDifW9PLQnoxV4A:7 a=YSz3QGRuFxp9MIZxMvvgL51jLdAA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 1/2 v2] tracing: Add TRACE_EVENT_CONDITIONAL()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <20101203045402.GA29609@Krystal>
-References: <20101203040358.955427199@goodmis.org>
-	 <20101203040822.144348122@goodmis.org>  <20101203045402.GA29609@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 03 Dec 2010 09:09:04 -0500
-Message-ID: <1291385344.3228.4.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 3 Dec 2010 09:09:45 -0500
+Message-ID: <4CF8FA1F.40404@infradead.org>
+Date: Fri, 03 Dec 2010 12:09:35 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: manjunatha_halli@ti.com, Greg KH <greg@kroah.com>, hverkuil@xs4all.nl,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [RFC v6 0/9] FM V4L2 drivers for WL128x
+References: <1291380631-25993-1-git-send-email-manjunatha_halli@ti.com> <AANLkTi=0jRz8cfU5KmpsCcMVK3si1ZfeDqKg3HPNqXS+@mail.gmail.com>
+In-Reply-To: <AANLkTi=0jRz8cfU5KmpsCcMVK3si1ZfeDqKg3HPNqXS+@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-02 at 23:54 -0500, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> [...]
-> > -#define __DO_TRACE(tp, proto, args)					\
-> > +#define __DO_TRACE(tp, proto, args, cond)				\
-> >  	do {								\
-> >  		struct tracepoint_func *it_func_ptr;			\
-> >  		void *it_func;						\
-> >  		void *__data;						\
-> >  									\
-> > +		if (!(cond))						\
+Em 03-12-2010 11:54, Ohad Ben-Cohen escreveu:
+> On Fri, Dec 3, 2010 at 2:50 PM,  <manjunatha_halli@ti.com> wrote:
+> ...
+>> Can you please also stage this version? Since the files are becoming big
+>> to be posted as patches?
 > 
-> One small documentation-related detail: my guess is that you are leaving
-> "cond" without likely/unlikely builtin expect purposefully so that we
-> can write, in TP_CONDITION:
-> 
->   TP_CONDITION(unlikely(someparam)),
+> You should really CC Greg for staging requests...
 
-I actually think this is an abuse of "unlikely".
+In this case, the driver requires a change at the V4L2 API. The better is to
+send it to me, c/c Greg at the git pull request, for him to know that a new
+staging driver will be added.
 
 > 
-> when we expect the condition to be usually false (and likely() for the
-> reverse). Maybe it could be worth documenting that expressions like the
-> following are valid :
-> 
->   TP_CONDITION((likely(param1) && unlikely(param2)) || likely(param3))
-> 
-> It's fair to assume that kernel developers know this already, but given
-> we plan to re-use TRACE_EVENT() for the user-space tracer soon enough,
-> documenting this kind of use-case now can save us the trouble in the
-> future.
-
-I would frown on someone using unlikely here. But a TRACE_EVENT()
-belongs to the maintainer, not me.
-
-> 
-> Other than that,
-> 
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Thanks!
-
--- Steve
-
-
+>>
+>> Thanks & Regards,
+>> Manjunatha Halli
+>>
+>> Manjunatha Halli (9):
+>>  include:linux: videodev2.h: FM Rx control class
+>>  Documentation:DocBook:v4l: Update the controls.xml for TI FM driver
+>>  drivers:staging: ti-st: fmdrv common header file
+>>  drivers:staging: ti-st: fmdrv_v4l2 sources
+>>  drivers:staging: ti-st: fmdrv_common sources
+>>  drivers:staging: ti-st: FM driver RX sources
+>>  drivers:staging: ti-st: FM driver TX sources
+>>  drivers:staging: ti-st: Kconfig & Makefile change
+>>  driver:staging:ti-st: Update TODO for FM V4L2 driver.
+>>
+>>  Documentation/DocBook/v4l/controls.xml |   12 +
+>>  drivers/staging/ti-st/Kconfig          |   10 +
+>>  drivers/staging/ti-st/Makefile         |    2 +
+>>  drivers/staging/ti-st/TODO             |   10 +-
+>>  drivers/staging/ti-st/fmdrv.h          |  239 ++++
+>>  drivers/staging/ti-st/fmdrv_common.c   | 2003 ++++++++++++++++++++++++++++++++
+>>  drivers/staging/ti-st/fmdrv_common.h   |  402 +++++++
+>>  drivers/staging/ti-st/fmdrv_rx.c       |  902 ++++++++++++++
+>>  drivers/staging/ti-st/fmdrv_rx.h       |   59 +
+>>  drivers/staging/ti-st/fmdrv_tx.c       |  420 +++++++
+>>  drivers/staging/ti-st/fmdrv_tx.h       |   37 +
+>>  drivers/staging/ti-st/fmdrv_v4l2.c     |  720 ++++++++++++
+>>  drivers/staging/ti-st/fmdrv_v4l2.h     |   32 +
+>>  include/linux/videodev2.h              |    8 +
+>>  14 files changed, 4855 insertions(+), 1 deletions(-)
+>>  create mode 100644 drivers/staging/ti-st/fmdrv.h
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_common.c
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_common.h
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_rx.c
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_rx.h
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_tx.c
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_tx.h
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
+>>  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 
