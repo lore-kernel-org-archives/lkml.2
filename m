@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab0LCQw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 11:52:27 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:26041 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753293Ab0LCQw0 (ORCPT
+	id S1753428Ab0LCQyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 11:54:11 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:45011 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab0LCQyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 11:52:26 -0500
-Date: Fri, 3 Dec 2010 08:52:26 -0800
-From: Dmitry Torokhov <dtor@vmware.com>
+	Fri, 3 Dec 2010 11:54:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:from:date:to:reply-to:cc:subject;
+        b=e8UN9KwfhbQ1CeX0GMfaZmavj0r6qJS9VHciyX1pITaYvAa513kW7cFAdJQ8LpQiFk
+         8ru8ylM0xVS1ZkL5w+5A==
+Message-ID: <4cf92096.17edd80a.1540.5d60@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Fri, 3 Dec 2010 17:52:01 +0200
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, pv-drivers@vmware.com
-Subject: [PATCH] VMware balloon: stop locking pages when hypervisor tells us
- enough
-Message-ID: <20101203165226.GA16146@dtor-ws.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com
+Subject: [PATCH] perf: fix compiler warning in builtin_script.c:is_top_script()
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hypervisor decides to decrease target balloon size while the
-balloon driver tries to lock pages hypervisor may respond with
-VMW_BALLOON_PPN_NOTNEEDED. Use this data and immediately stop reserving
-pages and wait for the next update cycle to fetch new target instead
-of continuing trying to lock pages until size of refused list grows
-above VMW_BALLOON_MAX_REFUSED (16) pages.
+Fix annoying compiler warning in the is_top_script() function.
+The issue was that a const char * was cast into a char * to call
+ends_with(). We fix the users of ends_with() instead. Some are
+passing a char *, but it is okay to cast the return value of
+ends_with() to char * (because we understand what ends_with() does).
 
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- drivers/misc/vmw_balloon.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
-index 2a1e804..4263d9d 100644
---- a/drivers/misc/vmw_balloon.c
-+++ b/drivers/misc/vmw_balloon.c
-@@ -45,7 +45,7 @@
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 4539551..77983e8 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -397,10 +397,10 @@ out_delete_desc:
+ 	return NULL;
+ }
  
- MODULE_AUTHOR("VMware, Inc.");
- MODULE_DESCRIPTION("VMware Memory Control (Balloon) Driver");
--MODULE_VERSION("1.2.1.1-k");
-+MODULE_VERSION("1.2.1.2-k");
- MODULE_ALIAS("dmi:*:svnVMware*:*");
- MODULE_ALIAS("vmware_vmmemctl");
- MODULE_LICENSE("GPL");
-@@ -315,7 +315,8 @@ static bool vmballoon_send_get_target(struct vmballoon *b, u32 *new_target)
-  * fear that guest will need it. Host may reject some pages, we need to
-  * check the return value and maybe submit a different page.
-  */
--static bool vmballoon_send_lock_page(struct vmballoon *b, unsigned long pfn)
-+static bool vmballoon_send_lock_page(struct vmballoon *b, unsigned long pfn,
-+				     unsigned int *hv_status)
+-static char *ends_with(char *str, const char *suffix)
++static const char *ends_with(const char *str, const char *suffix)
  {
- 	unsigned long status, dummy;
- 	u32 pfn32;
-@@ -326,7 +327,7 @@ static bool vmballoon_send_lock_page(struct vmballoon *b, unsigned long pfn)
+ 	size_t suffix_len = strlen(suffix);
+-	char *p = str;
++	const char *p = str;
  
- 	STATS_INC(b->stats.lock);
+ 	if (strlen(str) > suffix_len) {
+ 		p = str + strlen(str) - suffix_len;
+@@ -492,7 +492,7 @@ static int list_available_scripts(const struct option *opt __used,
  
--	status = VMWARE_BALLOON_CMD(LOCK, pfn, dummy);
-+	*hv_status = status = VMWARE_BALLOON_CMD(LOCK, pfn, dummy);
- 	if (vmballoon_check_status(b, status))
- 		return true;
+ 		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+ 			script_root = strdup(script_dirent.d_name);
+-			str = ends_with(script_root, REPORT_SUFFIX);
++			str = (char *)ends_with(script_root, REPORT_SUFFIX);
+ 			if (str) {
+ 				*str = '\0';
+ 				desc = script_desc__findnew(script_root);
+@@ -540,7 +540,7 @@ static char *get_script_path(const char *script_root, const char *suffix)
  
-@@ -410,6 +411,7 @@ static int vmballoon_reserve_page(struct vmballoon *b, bool can_sleep)
+ 		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+ 			__script_root = strdup(script_dirent.d_name);
+-			str = ends_with(__script_root, suffix);
++			str = (char *)ends_with(__script_root, suffix);
+ 			if (str) {
+ 				*str = '\0';
+ 				if (strcmp(__script_root, script_root))
+@@ -560,7 +560,7 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 
+ static bool is_top_script(const char *script_path)
  {
- 	struct page *page;
- 	gfp_t flags;
-+	unsigned int hv_status;
- 	bool locked = false;
+-	return ends_with((char *)script_path, "top") == NULL ? false : true;
++	return ends_with(script_path, "top") == NULL ? false : true;
+ }
  
- 	do {
-@@ -429,11 +431,12 @@ static int vmballoon_reserve_page(struct vmballoon *b, bool can_sleep)
- 		}
- 
- 		/* inform monitor */
--		locked = vmballoon_send_lock_page(b, page_to_pfn(page));
-+		locked = vmballoon_send_lock_page(b, page_to_pfn(page), &hv_status);
- 		if (!locked) {
- 			STATS_INC(b->stats.refused_alloc);
- 
--			if (b->reset_required) {
-+			if (hv_status == VMW_BALLOON_ERROR_RESET ||
-+			    hv_status == VMW_BALLOON_ERROR_PPN_NOTNEEDED) {
- 				__free_page(page);
- 				return -EIO;
- 			}
--- 
-1.7.3.2
-
+ static int has_required_arg(char *script_path)
