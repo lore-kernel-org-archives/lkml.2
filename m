@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab0LCPni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 10:43:38 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:56194 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab0LCPnh (ORCPT
+	id S1752452Ab0LCPqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 10:46:12 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37513 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab0LCPqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 10:43:37 -0500
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohavlCkce+Ub5QXMSOpHp3KRAmnemF
-X-RZG-CLASS-ID: mo05
-From: Stefan Roese <sr@denx.de>
-To: linuxppc-dev@lists.ozlabs.org
-Subject: Re: UIO / of_genirq driver
-Date: Fri, 3 Dec 2010 16:43:31 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1-sr; KDE/4.5.3; i686; ; )
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        John Williams <john.williams@petalogix.com>, gregkh@suse.de,
-        "devicetree-discuss" <devicetree-discuss@lists.ozlabs.org>,
-        hjk@linutronix.de, Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <1d3f23371001272313i62fc9158se4cd9173f196fb12@mail.gmail.com> <20100128104545.GA3105@pengutronix.de>
-In-Reply-To: <20100128104545.GA3105@pengutronix.de>
+	Fri, 3 Dec 2010 10:46:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=DWCU0SUBRpXuZECEd/9UGxpwfoh3iCrH3074cS8DoRX1DvrUXO9ALteAZKDxystahm
+         3ASTAY/Mide6YGl27o2fPYNUe74vAut8FzmWBaAml1Rd0a19sTXfj5e0LfIZVbKBDKcs
+         0wySF8JXRZnnhTWNZjOqud6Q8wy2lXI97l5Gk=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012031643.31428.sr@denx.de>
+In-Reply-To: <20101203111623.GA2741@redhat.com>
+References: <20101203111623.GA2741@redhat.com>
+Date: Fri, 3 Dec 2010 18:46:09 +0300
+Message-ID: <AANLkTi=Xvbi5M_cNRL=wC+uwksG08SiCyWcqdmwB_5TU@mail.gmail.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+From: Maxim Uvarov <muvarov@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram,
+2010/12/3 Stanislaw Gruszka <sgruszka@redhat.com>:
+> On my T-60 laptop, i686 system with 2.6.37-rc4 kernel,
+> "echo c > /proc/sysrq-trigger" just hung the system. Kdump
+> works on 2.6.36. Is this known issue? If not, what info
+> I should provide to solve it (I think the easiest way
+> to solve the problem would be bisect) ?
+>
+> Stanislaw
+>
 
-On Thursday 28 January 2010 11:45:45 Wolfram Sang wrote:
-> > I guess I'd like to just open up a discussion, see if there's been any
-> > progress towards a general solution.
-> 
-> I decided to wait for the outcome of the of_platform-removal-idea. Though,
-> I have to admit that in the last weeks I haven't followed of-related
-> things due to other commitments.
+I tested x86 QEMU yesterday with the latest git. It worked.
+Might be something target specific.., What does console print?
 
-Is there any update on this in the meantime? Do you know of any plans to re-
-work/-push this patchset? Just checking...
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+>
 
-Thanks,
-Stefan
 
---
-DENX Software Engineering GmbH,      MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich,  Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: (+49)-8142-66989-0 Fax: (+49)-8142-66989-80 Email: office@denx.de
+
+-- 
+Best regards,
+Maxim Uvarov
