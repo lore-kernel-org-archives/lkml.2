@@ -1,186 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396Ab0LCASd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 19:18:33 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:44878 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758217Ab0LCARQ (ORCPT
+	id S1758226Ab0LCAVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 19:21:03 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60881 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758120Ab0LCAVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 19:17:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Ek0GaJWmnuPVQ/1TfpbTo0lkNp/dwXa0g1zj0utpdI6tpWRLJVXU84FyG6jLDwp6Xw
-         a33II79pIG3PxPtAC3qA==
-From: Michel Lespinasse <walken@google.com>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when faulting in pages
-Date: Thu,  2 Dec 2010 16:16:47 -0800
-Message-Id: <1291335412-16231-2-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1291335412-16231-1-git-send-email-walken@google.com>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
-X-System-Of-Record: true
+	Thu, 2 Dec 2010 19:21:00 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 3 Dec 2010 09:15:08 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH] PM / Hibernate: Fix memory corruption related to swap
+Message-Id: <20101203091508.9fabf04d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201012030040.37273.rjw@sisk.pl>
+References: <201012030040.37273.rjw@sisk.pl>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this change, mlock() holds mmap_sem in exclusive mode while the
-pages get faulted in. In the case of a large mlock, this can potentially
-take a very long time. Various things will block while mmap_sem is held,
-including 'ps auxw'. This can make sysadmins angry.
+On Fri, 3 Dec 2010 00:40:36 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-I propose that mlock() could release mmap_sem after the VM_LOCKED bits
-have been set in all appropriate VMAs. Then a second pass could be done
-to actually mlock the pages with mmap_sem held for reads only. We need
-to recheck the vma flags after we re-acquire mmap_sem, but this is easy.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> There is a problem that swap pages allocated before the creation of
+> a hibernation image can be released and used for storing the contents
+> of different memory pages while the image is being saved.  Since the
+> kernel stored in the image doesn't know of that, it causes memory
+> corruption to occur after resume from hibernation, especially on
+> systems with relatively small RAM that need to swap often.
+> 
+> This issue can be addressed by keeping the GFP_IOFS bits clear
+> in gfp_allowed_mask during the entire hibernation, including the
+> saving of the image, until the system is finally turned off or
+> the hibernation is aborted.  Unfortunately, for this purpose
+> it's necessary to rework the way in which the hibernate and
+> suspend code manipulates gfp_allowed_mask.
+> 
+> This change is based on an earlier patch from Hugh Dickins.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Reported-by: Ondrej Zary <linux@rainbow-software.org>
+> Acked-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-In the case where a vma has been munlocked before mlock completes,
-pages that were already marked as PageMlocked() are handled by the
-munlock() call, and mlock() is careful to not mark new page batches
-as PageMlocked() after the munlock() call has cleared the VM_LOCKED
-vma flags. So, the end result will be identical to what'd happen if
-munlock() had executed after the mlock() call.
-
-In a later change, I will allow the second pass to release mmap_sem when
-blocking on disk accesses or when it is otherwise contended, so that
-it won't be held for long periods of time even in shared mode.
-
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- mm/mlock.c |   75 ++++++++++++++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 58 insertions(+), 17 deletions(-)
-
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 4f31864..8d6b702 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -377,18 +377,10 @@ static int mlock_fixup(struct vm_area_struct *vma, struct vm_area_struct **prev,
- 	int ret = 0;
- 	int lock = newflags & VM_LOCKED;
- 
--	if (newflags == vma->vm_flags ||
--			(vma->vm_flags & (VM_IO | VM_PFNMAP)))
-+	if (newflags == vma->vm_flags || (vma->vm_flags & VM_SPECIAL) ||
-+	    is_vm_hugetlb_page(vma) || vma == get_gate_vma(current))
- 		goto out;	/* don't set VM_LOCKED,  don't count */
- 
--	if ((vma->vm_flags & (VM_DONTEXPAND | VM_RESERVED)) ||
--			is_vm_hugetlb_page(vma) ||
--			vma == get_gate_vma(current)) {
--		if (lock)
--			make_pages_present(start, end);
--		goto out;	/* don't set VM_LOCKED,  don't count */
--	}
--
- 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
- 	*prev = vma_merge(mm, *prev, start, end, newflags, vma->anon_vma,
- 			  vma->vm_file, pgoff, vma_policy(vma));
-@@ -424,14 +416,10 @@ success:
- 	 * set VM_LOCKED, __mlock_vma_pages_range will bring it back.
- 	 */
- 
--	if (lock) {
-+	if (lock)
- 		vma->vm_flags = newflags;
--		ret = __mlock_vma_pages_range(vma, start, end);
--		if (ret < 0)
--			ret = __mlock_posix_error_return(ret);
--	} else {
-+	else
- 		munlock_vma_pages_range(vma, start, end);
--	}
- 
- out:
- 	*prev = vma;
-@@ -444,7 +432,8 @@ static int do_mlock(unsigned long start, size_t len, int on)
- 	struct vm_area_struct * vma, * prev;
- 	int error;
- 
--	len = PAGE_ALIGN(len);
-+	VM_BUG_ON(start & ~PAGE_MASK);
-+	VM_BUG_ON(len != PAGE_ALIGN(len));
- 	end = start + len;
- 	if (end < start)
- 		return -EINVAL;
-@@ -487,6 +476,54 @@ static int do_mlock(unsigned long start, size_t len, int on)
- 	return error;
- }
- 
-+static int do_mlock_pages(unsigned long start, size_t len)
-+{
-+	struct mm_struct *mm = current->mm;
-+	unsigned long end, nstart, nend;
-+	struct vm_area_struct *vma = NULL;
-+	int ret = 0;
-+
-+	VM_BUG_ON(start & ~PAGE_MASK);
-+	VM_BUG_ON(len != PAGE_ALIGN(len));
-+	end = start + len;
-+
-+	down_read(&mm->mmap_sem);
-+	for (nstart = start; nstart < end; nstart = nend) {
-+		/*
-+		 * We want to fault in pages for [nstart; end) address range.
-+		 * Find first corresponding VMA.
-+		 */
-+		if (!vma)
-+			vma = find_vma(mm, nstart);
-+		else
-+			vma = vma->vm_next;
-+		if (!vma || vma->vm_start >= end)
-+			break;
-+		/*
-+		 * Set [nstart; nend) to intersection of desired address
-+		 * range with the first VMA. Also, skip undesirable VMA types.
-+		 */
-+		nend = min(end, vma->vm_end);
-+		if (vma->vm_flags & (VM_IO | VM_PFNMAP))
-+			continue;
-+		if (nstart < vma->vm_start)
-+			nstart = vma->vm_start;
-+		/*
-+		 * Now fault in a range of pages within the first VMA.
-+		 */
-+		if (vma->vm_flags & VM_LOCKED) {
-+			ret = __mlock_vma_pages_range(vma, nstart, nend);
-+			if (ret) {
-+				ret = __mlock_posix_error_return(ret);
-+				break;
-+			}
-+		} else
-+			make_pages_present(nstart, nend);
-+	}
-+	up_read(&mm->mmap_sem);
-+	return ret;	/* 0 or negative error code */
-+}
-+
- SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
- {
- 	unsigned long locked;
-@@ -512,6 +549,8 @@ SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
- 	if ((locked <= lock_limit) || capable(CAP_IPC_LOCK))
- 		error = do_mlock(start, len, 1);
- 	up_write(&current->mm->mmap_sem);
-+	if (!error)
-+		error = do_mlock_pages(start, len);
- 	return error;
- }
- 
-@@ -576,6 +615,8 @@ SYSCALL_DEFINE1(mlockall, int, flags)
- 	    capable(CAP_IPC_LOCK))
- 		ret = do_mlockall(flags);
- 	up_write(&current->mm->mmap_sem);
-+	if (!ret && (flags & MCL_CURRENT))
-+		ret = do_mlock_pages(0, TASK_SIZE);
- out:
- 	return ret;
- }
--- 
-1.7.3.1
+Thanks,
+-Kame
 
