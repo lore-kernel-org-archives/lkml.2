@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341Ab0LCBTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Dec 2010 20:19:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49150 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758120Ab0LCBTn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Dec 2010 20:19:43 -0500
+	id S1758310Ab0LCBYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Dec 2010 20:24:53 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46579 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758211Ab0LCBYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Dec 2010 20:24:52 -0500
+Date: Fri, 3 Dec 2010 02:24:50 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1012030210200.14806@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201011291504.40536.bjorn.helgaas@hp.com>
-References: <20101129183009.11256.33739.stgit@bob.kio> <201011291432.51264.bjorn.helgaas@hp.com>
- <4CF41C89.9060708@zytor.com> <201011291504.40536.bjorn.helgaas@hp.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 2 Dec 2010 17:19:20 -0800
-Message-ID: <AANLkTinJhVj7sY6wC1tFRA+rYW72j7GqKvxfRsyRC=Vs@mail.gmail.com>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below 4G
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 2:04 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->
-> I think we're talking about whether to reserve the top 1MB or top 2MB.
-> I freely admit I don't know the right answer.  My point is merely that
-> since we're using a heuristic anyway, copying Windows is a pretty good
-> starting point.  In my mind, doing something different requires a
-> stronger argument than "it might fix some machines where Windows is
-> broken."
+Linus,
 
-What's the status of this? The original patch is pretty nasty, and I
-think that hack to put things in the bios_align_resource() function is
-just disgusting.
+please pull from 'for-linus' branch of
 
-And why is the fix not the really _trivial_ one, which does just this:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-  diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-  index ca0437c..aef9f77 100644
-  --- a/arch/x86/include/asm/pci.h
-  +++ b/arch/x86/include/asm/pci.h
-  @@ -141,7 +141,7 @@ void dma32_reserve_bootmem(void);
+to receive updates for HID subsystem that should be in 2.6.37.
 
-   /* generic pci stuff */
-   #include <asm-generic/pci.h>
-  -#define PCIBIOS_MAX_MEM_32 0xffffffff
-  +#define PCIBIOS_MAX_MEM_32 0xfff00000
+The most important one is a fix from Dmitry. We don't want to do a major 
+release with wrong units being exported, as that would be bad ABI issue in 
+evdev.
+The rest is just very simple fixes and device ID addition.
 
-   #ifdef CONFIG_NUMA
-   /* Returns the node based on pci bus */
+Note: you are going to get conflict in drivers/hid/hid-input.c. This is 
+caused by commit a0bf0ea8 ("Input: hid-input - switch to using new keycode 
+interface") which went through Dmitry's tree, as it was part of larger 
+rework. It's fine to just use the variant from that commit. I'd normally 
+pull your tree into the 'for-linus' branch and resolve the conflict 
+myself, but as you explicitly asked last time (and on KS I believe as 
+well) not to do it, I am keeping the conflict resolution there for you :)
 
-Hmm?
+Thanks!
 
-(Ok, so that doesn't protect a 64-bit resource that just happens to be
-inside a window that ends at 0xffffffff, but if you have those kinds
-of bus windows, that means that there's nothing there at the 4GB mark
-anyway, no?)
 
-                     Linus
 
-               Linus
+Dmitry Torokhov (1):
+      HID: length resolution should be reported units/mm
+
+Henrik Rydberg (1):
+      HID: egalax: Use kzalloc
+
+Joe Perches (1):
+      HID: Remove KERN_DEBUG from dbg_hid use
+
+Simon Wood (1):
+      HID: add support for F430 Force Feedback Wheel
+
+ drivers/hid/hid-core.c   |    1 +
+ drivers/hid/hid-egalax.c |    2 +-
+ drivers/hid/hid-input.c  |   22 +++++++++++++---------
+ drivers/hid/hid-tmff.c   |    2 ++
+ 4 files changed, 17 insertions(+), 10 deletions(-)
