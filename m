@@ -1,240 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab0LCLdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 06:33:05 -0500
-Received: from cantor.suse.de ([195.135.220.2]:60891 "EHLO mx1.suse.de"
+	id S1758508Ab0LCLeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 06:34:06 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33471 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab0LCLdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 06:33:03 -0500
-Message-ID: <4CF8D56B.2010208@suse.cz>
-Date: Fri, 03 Dec 2010 12:32:59 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1758423Ab0LCLeF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 06:34:05 -0500
+From: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+To: "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Drivers <Drivers@analog.com>, "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Date: Fri, 3 Dec 2010 17:03:42 +0530
+Subject: RE: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
+Thread-Topic: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
+Thread-Index: AcuSHNDjTuzI42DoRs2X9BqvrLAF2QAJXs3QACRGK4AAAm4wEA==
+Message-ID: <0680EC522D0CC943BC586913CF3768C0041390E05A@dbde02.ent.ti.com>
+References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com>
+ <1291292489-32362-4-git-send-email-michael.hennerich@analog.com>
+ <0680EC522D0CC943BC586913CF3768C0041390DDE7@dbde02.ent.ti.com>
+ <544AC56F16B56944AEC3BD4E3D591771312F08227A@LIMKCMBX1.ad.analog.com>
+In-Reply-To: <544AC56F16B56944AEC3BD4E3D591771312F08227A@LIMKCMBX1.ad.analog.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-Cc: npalix.work@gmail.com, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] scripts/coccinelle: update for compatability with
- Coccinelle 0.2.4
-References: <Pine.LNX.4.64.1011241539220.13402@pc-004.diku.dk> <Pine.LNX.4.64.1011241553510.13402@pc-004.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1011241553510.13402@pc-004.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.11.2010 15:54, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> For doubleinit.cocci, Coccinelle 0.2.4 requires a comma after ... in a
-> field list.  Coccinelle also now behaves gracefully when a definition is
-> provided for a virtual that doesn't exist, so there is no need for the
-> semantic patch code to check for this case.
-> 
-> Updated the documentation to reflect the fact that the best results will
-> now be obtained with Coccinelle version 0.2.4 or later.
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Michel,
+Just a thought not a comment. However I think error handling could be dealt later.
 
-Applied to kbuild-2.6.git#misc, thanks. BTW, please always CC lkml when
-sending patches.
-
-Michal
+> -----Original Message-----
+> From: Hennerich, Michael [mailto:Michael.Hennerich@analog.com]
+> Sent: Friday, December 03, 2010 4:13 PM
+> To: Datta, Shubhrajyoti; linux-iio@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Cc: Drivers; jic23@cam.ac.uk; device-drivers-devel@blackfin.uclinux.org
+> Subject: RE: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
 > 
-> ---
->  Documentation/coccinelle.txt             |    4 +++
->  scripts/coccinelle/misc/doubleinit.cocci |    6 ++--
->  scripts/coccinelle/null/deref_null.cocci |   39 +++++++++++--------------------
->  3 files changed, 21 insertions(+), 28 deletions(-)
-> 
-> diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
-> index 4a276ea..96b6903 100644
-> --- a/Documentation/coccinelle.txt
-> +++ b/Documentation/coccinelle.txt
-> @@ -36,6 +36,10 @@ as a regular user, and install it with
->  
->          sudo make install
->  
-> +The semantic patches in the kernel will work best with Coccinelle version
-> +0.2.4 or later.  Using earlier versions may incur some parse errors in the
-> +semantic patch code, but any results that are obtained should still be
-> +correct.
->  
->   Using Coccinelle on the Linux kernel
->  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> diff --git a/scripts/coccinelle/misc/doubleinit.cocci b/scripts/coccinelle/misc/doubleinit.cocci
-> index 55d7dc1..156b20a 100644
-> --- a/scripts/coccinelle/misc/doubleinit.cocci
-> +++ b/scripts/coccinelle/misc/doubleinit.cocci
-> @@ -7,7 +7,7 @@
->  // Copyright: (C) 2010 Julia Lawall, DIKU.  GPLv2.
->  // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
->  // URL: http://coccinelle.lip6.fr/
-> -// Comments:
-> +// Comments: requires at least Coccinelle 0.2.4, lex or parse error otherwise
->  // Options: -no_includes -include_headers
->  
->  virtual org
-> @@ -19,7 +19,7 @@ position p0,p;
->  expression E;
->  @@
->  
-> -struct I s =@p0 { ... .fld@p = E, ...};
-> +struct I s =@p0 { ..., .fld@p = E, ...};
->  
->  @s@
->  identifier I, s, r.fld;
-> @@ -27,7 +27,7 @@ position r.p0,p;
->  expression E;
->  @@
->  
-> -struct I s =@p0 { ... .fld@p = E, ...};
-> +struct I s =@p0 { ..., .fld@p = E, ...};
->  
->  @script:python depends on org@
->  p0 << r.p0;
-> diff --git a/scripts/coccinelle/null/deref_null.cocci b/scripts/coccinelle/null/deref_null.cocci
-> index 9969d76..cdac6cf 100644
-> --- a/scripts/coccinelle/null/deref_null.cocci
-> +++ b/scripts/coccinelle/null/deref_null.cocci
-> @@ -11,21 +11,10 @@
->  // Options:
->  
->  virtual context
-> -virtual patch
->  virtual org
->  virtual report
->  
-> -@initialize:python depends on !context && patch && !org && !report@
-> -
-> -import sys
-> -print >> sys.stderr, "This semantic patch does not support the 'patch' mode."
-> -
-> -@depends on patch@
-> -@@
-> -
-> -this_rule_should_never_matches();
-> -
-> -@ifm depends on !patch@
-> +@ifm@
->  expression *E;
->  statement S1,S2;
->  position p1;
-> @@ -35,7 +24,7 @@ if@p1 ((E == NULL && ...) || ...) S1 else S2
->  
->  // The following two rules are separate, because both can match a single
->  // expression in different ways
-> -@pr1 depends on !patch expression@
-> +@pr1 expression@
->  expression *ifm.E;
->  identifier f;
->  position p1;
-> @@ -43,7 +32,7 @@ position p1;
->  
->   (E != NULL && ...) ? <+...E->f@p1...+> : ...
->  
-> -@pr2 depends on !patch expression@
-> +@pr2 expression@
->  expression *ifm.E;
->  identifier f;
->  position p2;
-> @@ -59,7 +48,7 @@ position p2;
->  
->  // For org and report modes
->  
-> -@r depends on !context && !patch && (org || report) exists@
-> +@r depends on !context && (org || report) exists@
->  expression subE <= ifm.E;
->  expression *ifm.E;
->  expression E1,E2;
-> @@ -99,7 +88,7 @@ if@p1 ((E == NULL && ...) || ...)
->  }
->  else S3
->  
-> -@script:python depends on !context && !patch && !org && report@
-> +@script:python depends on !context && !org && report@
->  p << r.p;
->  p1 << ifm.p1;
->  x << ifm.E;
-> @@ -109,7 +98,7 @@ msg="ERROR: %s is NULL but dereferenced." % (x)
->  coccilib.report.print_report(p[0], msg)
->  cocci.include_match(False)
->  
-> -@script:python depends on !context && !patch && org && !report@
-> +@script:python depends on !context && org && !report@
->  p << r.p;
->  p1 << ifm.p1;
->  x << ifm.E;
-> @@ -120,7 +109,7 @@ msg_safe=msg.replace("[","@(").replace("]",")")
->  cocci.print_main(msg_safe,p)
->  cocci.include_match(False)
->  
-> -@s depends on !context && !patch && (org || report) exists@
-> +@s depends on !context && (org || report) exists@
->  expression subE <= ifm.E;
->  expression *ifm.E;
->  expression E1,E2;
-> @@ -159,7 +148,7 @@ if@p1 ((E == NULL && ...) || ...)
->  }
->  else S3
->  
-> -@script:python depends on !context && !patch && !org && report@
-> +@script:python depends on !context && !org && report@
->  p << s.p;
->  p1 << ifm.p1;
->  x << ifm.E;
-> @@ -168,7 +157,7 @@ x << ifm.E;
->  msg="ERROR: %s is NULL but dereferenced." % (x)
->  coccilib.report.print_report(p[0], msg)
->  
-> -@script:python depends on !context && !patch && org && !report@
-> +@script:python depends on !context && org && !report@
->  p << s.p;
->  p1 << ifm.p1;
->  x << ifm.E;
-> @@ -180,7 +169,7 @@ cocci.print_main(msg_safe,p)
->  
->  // For context mode
->  
-> -@depends on context && !patch && !org && !report exists@
-> +@depends on context && !org && !report exists@
->  expression subE <= ifm.E;
->  expression *ifm.E;
->  expression E1,E2;
-> @@ -223,7 +212,7 @@ else S3
->  // The following three rules are duplicates of ifm, pr1 and pr2 respectively.
->  // It is need because the previous rule as already made a "change".
->  
-> -@ifm1 depends on !patch@
-> +@ifm1@
->  expression *E;
->  statement S1,S2;
->  position p1;
-> @@ -231,7 +220,7 @@ position p1;
->  
->  if@p1 ((E == NULL && ...) || ...) S1 else S2
->  
-> -@pr11 depends on !patch expression@
-> +@pr11 expression@
->  expression *ifm1.E;
->  identifier f;
->  position p1;
-> @@ -239,7 +228,7 @@ position p1;
->  
->   (E != NULL && ...) ? <+...E->f@p1...+> : ...
->  
-> -@pr12 depends on !patch expression@
-> +@pr12 expression@
->  expression *ifm1.E;
->  identifier f;
->  position p2;
-> @@ -253,7 +242,7 @@ position p2;
->   sizeof(<+...E->f@p2...+>)
->  )
->  
-> -@depends on context && !patch && !org && !report exists@
-> +@depends on context && !org && !report exists@
->  expression subE <= ifm1.E;
->  expression *ifm1.E;
->  expression E1,E2;
+> > Datta, Shubhrajyoti wrote on 2010-12-02:
+> > > -----Original Message-----
+> > > From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-
+> > > owner@vger.kernel.org] On Behalf Of michael.hennerich@analog.com
+> > > Sent: Thursday, December 02, 2010 5:51 PM
+> > > To: linux-iio@vger.kernel.org; linux-kernel@vger.kernel.org
+> > > Cc: drivers@analog.com; jic23@cam.ac.uk; device-drivers-
+> > > devel@blackfin.uclinux.org; Michael Hennerich
+> > > Subject: [RFC 3/3] IIO: DDS: AD9833 / AD9834 driver
+> > >
+> > > From: Michael Hennerich <michael.hennerich@analog.com>
+> > >
+> > > Example driver using the proposed ABI
+> > >
+> > > Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+> > > ---
+> > >  drivers/staging/iio/dds/Kconfig  |    7 +
+> > >  drivers/staging/iio/dds/Makefile |    1 +
+> > >  drivers/staging/iio/dds/ad9834.c |  483
+> > > ++++++++++++++++++++++++++++++++++++++
+> > >  drivers/staging/iio/dds/ad9834.h |  112 +++++++++
+> > >  4 files changed, 603 insertions(+), 0 deletions(-)
+> > >  create mode 100644 drivers/staging/iio/dds/ad9834.c
+> > >  create mode 100644 drivers/staging/iio/dds/ad9834.h
+> > >
+> > > diff --git a/drivers/staging/iio/dds/Kconfig
+> > > b/drivers/staging/iio/dds/Kconfig
+> > > index 7969be2..4c9cce3 100644
+> > > --- a/drivers/staging/iio/dds/Kconfig
+> > > +++ b/drivers/staging/iio/dds/Kconfig
+> > > @@ -17,6 +17,13 @@ config AD9832
+> > >         Say yes here to build support for Analog Devices DDS chip
+> > >         ad9832 and ad9835, provides direct access via sysfs.
+> > >
+> > > +config AD9834
+> > > +     tristate "Analog Devices ad9833/4/ driver"
+> > > +     depends on SPI
+> > > +     help
+> > > +       Say yes here to build support for Analog Devices DDS chip
+> > > +       AD9833 and AD9834, provides direct access via sysfs.
+> > > +
+> > >  config AD9850
+> > >       tristate "Analog Devices ad9850/1 driver"
+> > >       depends on SPI
+> > > diff --git a/drivers/staging/iio/dds/Makefile
+> > > b/drivers/staging/iio/dds/Makefile
+> > > index 6f274ac..1477461 100644
+> > > --- a/drivers/staging/iio/dds/Makefile
+> > > +++ b/drivers/staging/iio/dds/Makefile
+> > > @@ -4,6 +4,7 @@
+> > >
+> > >  obj-$(CONFIG_AD5930) += ad5930.o
+> > >  obj-$(CONFIG_AD9832) += ad9832.o
+> > > +obj-$(CONFIG_AD9834) += ad9834.o
+> > >  obj-$(CONFIG_AD9850) += ad9850.o
+> > >  obj-$(CONFIG_AD9852) += ad9852.o
+> > >  obj-$(CONFIG_AD9910) += ad9910.o
+> > > diff --git a/drivers/staging/iio/dds/ad9834.c
+> > > b/drivers/staging/iio/dds/ad9834.c
+> > > new file mode 100644
+> > > index 0000000..eb1fabf
+> > > --- /dev/null
+> > > +++ b/drivers/staging/iio/dds/ad9834.c
+> > > @@ -0,0 +1,483 @@
+> > > +/*
+> > > + * AD9834 SPI DAC driver
+> > > + *
+> > > + * Copyright 2010 Analog Devices Inc.
+> > > + *
+> > > + * Licensed under the GPL-2 or later.
+> > > + */
+> > > +
+> > > +#include <linux/interrupt.h>
+> > > +#include <linux/workqueue.h>
+> > > +#include <linux/device.h>
+> > > +#include <linux/kernel.h>
+> > > +#include <linux/slab.h>
+> > > +#include <linux/sysfs.h>
+> > > +#include <linux/list.h>
+> > > +#include <linux/spi/spi.h>
+> > > +#include <linux/regulator/consumer.h>
+> > > +#include <linux/err.h>
+> > > +#include <asm/div64.h>
+> > > +
+> > > +#include "../iio.h"
+> > > +#include "../sysfs.h"
+> > > +#include "dds.h"
+> > > +
+> > > +#include "ad9834.h"
+> > > +
+> > > +static unsigned int ad9834_calc_freqreg(unsigned long mclk, unsigned
+> > long
+> > > fout)
+> > > +{
+> > > +     unsigned long long freqreg = (u64) fout * (u64) (1 <<
+> > > AD9834_FREQ_BITS);
+> > > +     do_div(freqreg, mclk);
+> > > +     return freqreg;
+> > > +}
+> > > +
+> > > +static int ad9834_write_frequency(struct ad9834_state *st,
+> > > +                               unsigned long addr, unsigned long
+> > fout)
+> > > +{
+> > > +     unsigned long regval;
+> > > +
+> > > +     if (fout > (st->mclk / 2))
+> > > +             return -EINVAL;
+> > > +
+> > > +     regval = ad9834_calc_freqreg(st->mclk, fout);
+> > > +
+> > > +     st->freq_data[0] = cpu_to_be16(addr | (regval &
+> > > +                                    RES_MASK(AD9834_FREQ_BITS /
+> > 2)));
+> > > +     st->freq_data[1] = cpu_to_be16(addr | ((regval >>
+> > > +                                    (AD9834_FREQ_BITS / 2)) &
+> > > +                                    RES_MASK(AD9834_FREQ_BITS /
+> > 2)));
+> > > +
+> > > +     return spi_sync(st->spi, &st->freq_msg);;
+> > > +}
+> > > +
+> > > +static int ad9834_write_phase(struct ad9834_state *st,
+> > > +                               unsigned long addr, unsigned long
+> > phase)
+> > > +{
+> > > +     if (phase > (1 << AD9834_PHASE_BITS))
+> > > +             return -EINVAL;
+> > > +     st->data = cpu_to_be16(addr | phase);
+> > > +
+> > > +     return spi_sync(st->spi, &st->msg);
+> > > +}
+> > > +
+> > > +static ssize_t ad9834_write(struct device *dev,
+> > > +             struct device_attribute *attr,
+> > > +             const char *buf,
+> > > +             size_t len)
+> > > +{
+> > > +     struct iio_dev *dev_info = dev_get_drvdata(dev);
+> > > +     struct ad9834_state *st = dev_info->dev_data;
+> > > +     struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+> > > +     int ret;
+> > > +     long val;
+> > > +
+> > > +     ret = strict_strtol(buf, 10, &val);
+> > > +     if (ret)
+> > > +             goto error_ret;
+> > Could we do some bounds check.
+> The functions called with val as argument from the switch cases below, do
+> some bound checking, where necessary.
+> It's questionable whether these simple enable switch cases, should return
+> with
+> error if someone writes something other than 0 or 1.
 
+In that case we could we at least consider ret = strict_strtoul(buf, 10, &val);
+
+> > > +
+> > > +     mutex_lock(&dev_info->mlock);
+> > > +     switch (this_attr->address) {
+> > > +     case AD9834_REG_FREQ0:
+> > > +     case AD9834_REG_FREQ1:
+> > > +             ret = ad9834_write_frequency(st, this_attr->address,
+> > val);
+> > > +             break;
+> > > +     case AD9834_REG_PHASE0:
+> > > +     case AD9834_REG_PHASE1:
+> > > +             ret = ad9834_write_phase(st, this_attr->address, val);
+> > > +             break;
+> > > +
+> > > +     case AD9834_OPBITEN:
+> > > +             if (st->control & AD9834_MODE) {
+> > > +                     ret = -EINVAL;  /* AD9843 reserved mode */
+> > > +                     break;
+> > > +             }
+> > > +
+> > > +             if (val)
+> > > +                     st->control &= ~AD9834_OPBITEN;
+> > > +             else
+> > > +                     st->control |= AD9834_OPBITEN;
+Here you check for something other than 0 if the user passes -1 then it may go through.
