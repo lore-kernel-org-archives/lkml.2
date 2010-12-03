@@ -1,110 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234Ab0LCNuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 08:50:35 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:49665 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab0LCNue (ORCPT
+	id S1758114Ab0LCNxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 08:53:06 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:36113 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754683Ab0LCNxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 08:50:34 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [RFC/PATCH v6 03/12] media: Entities, pads and links
-Date: Fri, 3 Dec 2010 14:50:58 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
-        lennart@poettering.net
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <201012031119.36771.laurent.pinchart@ideasonboard.com> <201012031306.18520.hverkuil@xs4all.nl>
-In-Reply-To: <201012031306.18520.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 3 Dec 2010 08:53:04 -0500
+Subject: Re: [RFC v6 2/9] Documentation:DocBook:v4l: Update the
+ controls.xml for TI FM driver
+From: Andy Walls <awalls@md.metrocast.net>
+To: manjunatha_halli@ti.com
+Cc: mchehab@infradead.org, hverkuil@xs4all.nl, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+In-Reply-To: <1291380631-25993-3-git-send-email-manjunatha_halli@ti.com>
+References: <1291380631-25993-1-git-send-email-manjunatha_halli@ti.com>
+	 <1291380631-25993-2-git-send-email-manjunatha_halli@ti.com>
+	 <1291380631-25993-3-git-send-email-manjunatha_halli@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Dec 2010 08:53:27 -0500
+Message-ID: <1291384407.2800.77.camel@morgan.silverblock.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012031450.59137.laurent.pinchart@ideasonboard.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-12-03_09:2010-12-03,2010-12-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1012030043
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-Adding by the original CC list which was dropped by mistake.
-
-On Friday 03 December 2010 13:06:18 Hans Verkuil wrote:
-> On Friday, December 03, 2010 11:19:36 Laurent Pinchart wrote:
-> > On Sunday 28 November 2010 16:57:00 you wrote:
-> > > On Sunday, November 28, 2010 13:34:45 Laurent Pinchart wrote:
-> > > > On Friday 26 November 2010 15:14:42 Mark Brown wrote:
-> > > > > On Fri, Nov 26, 2010 at 03:13:36PM +0100, Laurent Pinchart wrote:
-> > > > > > On Thursday 25 November 2010 16:49:52 Mark Brown wrote:
-> > > > > > > On Thu, Nov 25, 2010 at 04:40:41PM +0100, Laurent Pinchart 
-wrote:
-> > > > > > > > It's supposed to reflect whether the link can carry data.
-> > > > > > > > Think of the active flag as a valve on a pipe. If the valve
-> > > > > > > > is open, the link is active. If the valve is closed, the
-> > > > > > > > link is inactive. This is unrelated to whether water
-> > > > > > > > actually flows through the pipe.
-> > > > > > > 
-> > > > > > > This seems a confusing name, then - I'd expect an active link
-> > > > > > > to be one which is actually carrying data rather than one
-> > > > > > > which is available to carry data.  How a more neutrally worded
-> > > > > > > name such as "connected" (which is what ASoC uses currently)?
-> > > > > > 
-> > > > > > In our current vocabulary "connected" refers to entities between
-> > > > > > which a link exist, regardless of the link state ("valve opened"
-> > > > > > or "valve closed"). I'm not totally happy with "active" either,
-> > > > > > but if we replace it with "connected" we need another word to
-> > > > > > replace current uses of "connected".
-> > > > > 
-> > > > > Linked?
-> > > > 
-> > > > That's a good option. Hans, do you want to comment on this ?
-> > > 
-> > > Fine by me! It's better than 'active'.
+> Em 03-12-2010 10:50, manjunatha_halli@ti.com escreveu:
+> > From: Manjunatha Halli <manjunatha_halli@ti.com>
 > > 
-> > Just to confirm thinks, Mark's proposal is to replace 'connected' by
-> > 'linked' and 'active' by 'connected'. Are we on the same page here ?
+> > Added entries for following 2 new CID's which are added for TI FM
+> > driver:
+> > - V4L2_CID_RSSI_THRESHOLD
+> > - V4L2_CID_TUNE_AF
+> > 
+> > Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+> > ---
+> >  Documentation/DocBook/v4l/controls.xml |   12 ++++++++++++
+> >  1 files changed, 12 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/Documentation/DocBook/v4l/controls.xml b/Documentation/DocBook/v4l/controls.xml
+> > index 2fae3e8..b560953 100644
+> > --- a/Documentation/DocBook/v4l/controls.xml
+> > +++ b/Documentation/DocBook/v4l/controls.xml
+> > @@ -132,6 +132,18 @@ consumption state.</entry>
+> >  	    <entry>Loudness mode (bass boost).</entry>
+> >  	  </row>
+> >  	  <row>
+> > +           <entry><constant>V4L2_CID_RSSI_THRESHOLD</constant></entry>
+> > +           <entry>integer</entry>
+> > +           <entry>Set RSSI threshold level. Change the default threshold
+> > +level used to select valid frequencies during vidioc_s_hw_freq_seek.</entry>
+> > +         </row>
+> > +         <row>
+> > +           <entry><constant>V4L2_CID_TUNE_AF</constant></entry>
+> > +           <entry>integer</entry>
+> > +           <entry>Set Alternative Frequency mode. Enable or disable
+> > +alternative frequency mode.</entry>
+> > +         </row>
+> > +         <row>
+> >  	    <entry><constant>V4L2_CID_BLACK_LEVEL</constant></entry>
+> >  	    <entry>integer</entry>
+> >  	    <entry>Another name for brightness (not a synonym of
 > 
-> Yes, but when I read it back it does not make me happy. 'Connected' and
-> 'linked' basically have the same meaning in English.
+> Sorry, but, I doubt that any userspace application developer will find those descriptions
+> useful. 
+> 
+> For the threshold: I understand that this is the carrier strength used to detect a
+> channel, right? If so, please improve the description.
+> Also, The better is to associate its scale to a carrier level in some unit like dB.
 
-I unfortunately agree that it's a bit confusing :-(
+Hi Mauro and Manjunatha,
 
-> I really like your analogy with valves, so perhaps we should use either
-> 'linked' or 'connected' to describe that two entities are, well,
-> linked/connected, and use the 'open' and 'closed' terminology to describe
-> whether a link/connection is open (data can flow) or closed (no data can
-> flow).
+>From my recollection of 3GPP (which is obviously not FM radio), the
+requirements on a RSSI are intentionally loose.  The "I" in RSSI is for
+"indicator", not a precise quantity.  An example RSSI measurement
+specification can be found here:
 
-I don't really like the open/closed terminology to describe links.
+ftp://ftp.3gpp.org/specs/2010-09/Rel-9/25_series/25215-920.zip
+(I couldn't find an RSSI spec for FM radio.)
 
-I can think of two analogies: pipes with valves that can be opened/closed, or 
-cables that can be connected/disconnected.
+In 3GPP, RSSI is used for Human-Machine interfaces: e.g. How many bars
+are shown on your phone's display.  Applications can also use it to
+decide if they have sufficient signal or not.
 
-In the first case, connected/linked can be used to specify the pipes that 
-exist in the system, but I'm not happy with open/closed.
+I don't think standardizing the units into dB is going to be useful for
+applications.  RSSI measurements from different FM receiver hardware
+cannot be fairly compared using standard units, since not all FM
+receivers will be creating a RSSI value in the same way.
 
-In the second case, connected/linked can be used to specify whether a cable is 
-connected, but in that case we will need another word to describe whether two 
-pads are connectable or not.
+However, standardizing the range of the scale for this control would be
+useful for applications.  I don't care if drivers use a scale of 0-100,
+0-255 (like this patchset), or 0-65535.  I just suggest that all
+drivers, that provide this process-decision threshold-control, use the
+same range.
 
-> I have a slight preference for 'link' over 'connection', but that's mostly
-> because it is a shorter word :-)
+My $0.02.
 
-Link refers to a pipe/possible cable connection. It's an object on both the 
-kernel side and the userspace side. Using the above analogies, tt makes sense 
-to use the word 'linked' to refer to two pads that are connected by a pipe, or 
-between which a cable can be connected.
 
-Now we need a word to descripe whether the valve is opened or closed, or 
-whether the cable is connected or not. I don't really like 'open'/'closed' for 
-the first analogy. 'connected' would make sense for the second analogy, but it 
-can indeed be a bit confusing.
+> The second control means absolutely nothing... It is not a boolean value, and what
+> is "alternative" frequency mode?
 
-Thoughts ?
+I agree with Mauro here.  The documentation does not give any idea what
+alternate frequency means to an application developer who does not
+already know about the underlying hardware receiver.
 
--- 
 Regards,
+Andy
 
-Laurent Pinchart
+
