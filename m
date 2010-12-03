@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab0LCJUE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 04:20:04 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64794 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199Ab0LCJUB (ORCPT
+	id S932306Ab0LCJf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 04:35:28 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:59647 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab0LCJf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 04:20:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=oHJ2J7+4F/oaPRHofHukXKLYlejVL5XDXg24cFcsihOkrPGIzhZ5lLe9KLwei2HFYH
-         SWpU2oJVoKds3vcBD4CZv2bVaPpZ220Pl/g1AINglU86daS+UAU/PY6Dinbsj+QE22gc
-         BGtr79G7g3mda/t6nVeDoqzhb4RkE6keuxORc=
-Subject: [PATCH] ASoC: Fix inconsistent meaning of default case while
-	checking alc5623->id
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain
-Date: Fri, 03 Dec 2010 17:25:57 +0800
-Message-Id: <1291368357.20452.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Dec 2010 04:35:27 -0500
+Date: Fri, 3 Dec 2010 10:35:20 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
+        Andi Kleen <andi@firstfloor.org>, tim.bird@am.sony.com
+Subject: Plans for 2.6.35-longterm was Re: Linux stable kernel release
+ procedure changes
+Message-ID: <20101203093519.GA8800@basil.fritz.box>
+References: <20101203004247.GA21762@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101203004247.GA21762@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In alc5623_i2c_probe(),
-the default case for checking alc5623->id behaves the same as case 0x23.
-However, In alc5623_probe() the default case for checking alc5623->id
-becomes to be the same as case 0x21.
-This makes the meaning of default case inconsistent.
+> I already have someone lined up who wants to maintain the .35 kernel in
+> a longterm manner that I trust, Andi Kleen, and I'll let him write to
+> explain his goals for this kernel and what he's going to do.
 
-Since we have checked codec id in alc5623_i2c_probe() by comparing
-vid2 with id->driver_data, it is not possible to run into the default case now.
+Thanks Greg, for all your work on this.
 
-In case we may add more supported devices to alc5623_i2c_table in the future,
-this patch changes the default case return -EINVAL to let people know that
-they should not run into this case. They should also add a new case accordingly
-for the new id.
+I plan to maintain the 2.6.35 tree longterm for now. My employer 
+(Intel) is interested in basing a distribution on it, and there are others 
+(like CELF) who also want to base long term trees on 2.6.35.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
+The longterm tree will continue where Greg left 2.6.35-stable.
+It will not be called "stable", but called "longterm" to make
+the distinction clear.
 
-Or alternatively, we can simply remove the default cases.
+The tree will follow the stable rules in Documentation/stable_kernel_rules.txt.
 
-Axel
+My plan is to look at all patches that go into later stables (that is which 
+are sent to stable@ or marked Cc: stable@kernel.org in the git description) 
+and merge them into 2.6.35 when applicable. I don't expect there will be many
+patches only for 2.6.35 and not for later stable trees. If there are and
+they are submitted to stable@ I will consider them.  I plan to be fairly 
+conservative.
 
- sound/soc/codecs/alc5623.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+I will follow a similar flow as Greg: There will be candidate trees which
+are posted to Linux kernel and have a 48h review period, with patches
+being dropped then as needed. Then the candidates will turn into 
+releases.
 
-diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
-index 9783e7e..4f377c9 100644
---- a/sound/soc/codecs/alc5623.c
-+++ b/sound/soc/codecs/alc5623.c
-@@ -925,7 +925,6 @@ static int alc5623_probe(struct snd_soc_codec *codec)
- 	}
- 
- 	switch (alc5623->id) {
--	default:
- 	case 0x21:
- 		snd_soc_add_controls(codec, rt5621_vol_snd_controls,
- 			ARRAY_SIZE(rt5621_vol_snd_controls));
-@@ -938,6 +937,8 @@ static int alc5623_probe(struct snd_soc_codec *codec)
- 		snd_soc_add_controls(codec, alc5623_vol_snd_controls,
- 			ARRAY_SIZE(alc5623_vol_snd_controls));
- 		break;
-+	default:
-+		return -EINVAL;
- 	}
- 
- 	snd_soc_add_controls(codec, alc5623_snd_controls,
-@@ -950,7 +951,6 @@ static int alc5623_probe(struct snd_soc_codec *codec)
- 	snd_soc_dapm_add_routes(dapm, intercon, ARRAY_SIZE(intercon));
- 
- 	switch (alc5623->id) {
--	default:
- 	case 0x21:
- 	case 0x22:
- 		snd_soc_dapm_new_controls(dapm, alc5623_dapm_amp_widgets,
-@@ -962,6 +962,8 @@ static int alc5623_probe(struct snd_soc_codec *codec)
- 		snd_soc_dapm_add_routes(dapm, intercon_spk,
- 					ARRAY_SIZE(intercon_spk));
- 		break;
-+	default:
-+		return -EINVAL;
- 	}
- 
- 	return ret;
-@@ -1039,10 +1041,12 @@ static int alc5623_i2c_probe(struct i2c_client *client,
- 	case 0x22:
- 		alc5623_dai.name = "alc5622-hifi";
- 		break;
--	default:
- 	case 0x23:
- 		alc5623_dai.name = "alc5623-hifi";
- 		break;
-+	default:
-+		kfree(alc5623);
-+		return -EINVAL;
- 	}
- 
- 	i2c_set_clientdata(client, alc5623);
+Right now I only plan to post them to linux-kernel and not bother the 
+usual review comittee, but this may change if the reviewers want to see 
+2.6.35 too. There are also at least one volunteer (hi Tim) who plans
+to test the tree (but it still needs to be worked out if that should
+be done before or after the release). Any others doing reviewing and testing
+would be also appreciated.
+
+For security problems there will be faster releases, using a similar
+procedure as Greg uses today.
+
+The exact locations for the candidate and release trees on kernel.org
+still need to be worked out and will be announced at a future date.
+
+I should also add I will be on vacation for three weeks in December. I plan
+to release a catchup release before that and then pick up everything 
+else left after that.
+
+-Andi
+
 -- 
-1.7.2
-
-
-
+ak@linux.intel.com -- Speaking for myself only.
