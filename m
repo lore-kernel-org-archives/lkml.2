@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758423Ab0LCJOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 04:14:47 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59863 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755676Ab0LCJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 04:14:45 -0500
-Date: Fri, 3 Dec 2010 01:14:45 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] ext4: Set barrier=0 when block device does not
-	advertise flush support
-Message-ID: <20101203091445.GK18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20101203001659.GI18195@tux1.beaverton.ibm.com> <20101203070950.GA19071@infradead.org>
+	id S1758453Ab0LCJQj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 04:16:39 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35907 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683Ab0LCJQh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 04:16:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=oFjjZztbo5gOyG7uUEtDnAJg3RSGB3HmaBK+f74xmj0xfHAlXPK1FGX80g2BJBRgFC
+         sCPn7goLetoxNfjcwdfxix7OaH+AKLcz/LvyF4XGoLt10gTn2s43ZQZfrxr/eUqfPybg
+         o+6o0dUHfSPfB/Alz1c9R8ZdnmkbkXYYBDGm8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101203070950.GA19071@infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <20101029172443.61f7b067@pyx>
+References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
+	<20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
+	<AANLkTinj93zAXJAipB3HjE62Xa1Z=9k9gPBxaT=+MLtg@mail.gmail.com>
+	<20101029172443.61f7b067@pyx>
+Date: Fri, 3 Dec 2010 10:16:25 +0100
+Message-ID: <AANLkTimiyxiKzT=9pKXLFACkc6C=nTD2dtBR7PcgjhOL@mail.gmail.com>
+Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
+From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linus.walleij@stericsson.com, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 02:09:50AM -0500, Christoph Hellwig wrote:
-> On Thu, Dec 02, 2010 at 04:16:59PM -0800, Darrick J. Wong wrote:
-> > If the user tries to enable write flushes with "barrier=1" and the underlying
-> > block device does not support flushes, print a message and set barrier=0.
-> 
-> That doesn't make any sense at all with the ne wFLUSH+FUA code, which is
-> designed to make the cache flushing entirely transparanent.  Basically
-> with the new code the barrier option should become a no-op and always
-> enabled.
+2010/10/29 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+>> The reason is that the work is generated so often that a work is not
+>> finished before next work of same type comes. This is especially true
+>> for transmit and receive. Then I get 0 back when queuing the work and
+>> there is no real way to solve it from what I can see than to allocate
+>> new work structures every time.
+>
+> So if that is the case what bounds your memory usage - can a busy box end
+> up with thousands of work queue slos used ? It sounds like your model is
+> perhaps wrong - if there is a continual stream of work maybe you should
+> simply have a kernel thread to handle it if it cannot be deferred
+> - remember ldisc code is able to sleep in most paths.
+>
+>
 
-Are we ready to remove the barrier= mount option at this point?  How many users
-exist who use barrier=0 to speed up write performance when they're willing to
-take on the added safety risk?
+Hi Alan,
 
-I've noticed that provisioning goes faster if one mounts the filesystem with
-barrier=0; so long as the control software turns barriers on after the deploy
-finishes and always restarts the deploy after a failure, a power failure on the
-client system won't cause problems.  Unfortunately, there doesn't seem to be
-any other way to communicate that relaxation to the code.
+I went through my old mails here and realized I hadn't answered you
+for this question.
+Basically most of the time we are able to handle the works in time for
+the next work to be created. But there are occasions where next work
+is created really quickly and we end up with an error situation when
+starting the work. But if we allocate the work it will then be handled
+when the first one is ready. It's not like we will never handle it.
+The data transfers can be received in a bit bursty way and then there
+are no interrupts for a while. So in the end all works are handled
+rather quickly and queue will never build up. We have tested with
+several large file transfers and data pumps without issues.
 
-Personally I'd rather the knob remain in ext4 on the grounds that I know my
-workloads and can judge the appropriate level of risk, especially since ext4
-picks the safe option by default.  However, I'd prefer /proc/mounts not
-misrepresent the status of flush support, to the best of ext4's knowledge.
+By the way, I will soon release a new patch set for CG2900 (hopefully
+next week), which contains major rework. It's hard to explain
+everything here and now but changes include:
+ - Reuse of existing HCI line discipline under /drivers/bluetooth/.
+Line discipline has been modified so it is selectable from protocol if
+line discipline should register to Bluetooth stack or not.
+ - Architecture modification: core, chip, and transport is new created
+from platform specific files (/arch/). Each chip file then spawns MFD
+devices for the channels it support.
+ - Core file now only handles detection of connected chip. All chip
+dependent code is moved to transport and chip files.
 
---D
+/P-G
