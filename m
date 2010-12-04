@@ -1,126 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab0LDLwY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 06:52:24 -0500
-Received: from tomasu.net ([64.85.170.234]:50469 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753332Ab0LDLwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 06:52:22 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: "jack_wang" <jack_wang@usish.com>
-Subject: Re: mvsas errors in 2.6.36
-Date: Sat, 4 Dec 2010 04:52:04 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: "David Milburn" <dmilburn@redhat.com>, "Andre Tomt" <andre@tomt.net>,
-        "Linux Kernel List" <linux-kernel@vger.kernel.org>,
-        "linux-scsi" <linux-scsi@vger.kernel.org>
-References: <201010290650.32892.thomas@fjellstrom.ca> <4CF95394.7010400@redhat.com> <201012041550372348573@usish.com>
-In-Reply-To: <201012041550372348573@usish.com>
+	id S1754836Ab0LDMYE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 07:24:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55558 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab0LDMYC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 07:24:02 -0500
+Date: Sat, 4 Dec 2010 12:23:40 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH] mmci: handle clock frequency 0 properly
+Message-ID: <20101204122340.GC20969@n2100.arm.linux.org.uk>
+References: <1289927869-14519-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012040452.04587.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1289927869-14519-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 4, 2010, jack_wang wrote:
-> Hi, I've done as you requested.
-> here's all of the output from the first (and currently only) event:
-> [ 1428.000080] sas: command 0xffff880184ed1680, task 0xffff88017a0f2680, timed out: BLK_EH_NOT_HANDLED
-> [ 1428.080051] sas: command 0xffff880224e03880, task 0xffff88017a0f24c0, timed out: BLK_EH_NOT_HANDLED
-> [ 1428.080077] sas: Enter sas_scsi_recover_host
-> [ 1428.080085] sas: trying to find task 0xffff88017a0f2680
-> [ 1428.080092] sas: sas_scsi_find_task: aborting task 0xffff88017a0f2680
-> [ 1428.080102] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88017a0f2680 slot=ffff880224066680 slot_idx=x4
-> [ 1428.080113] sas: sas_scsi_find_task: querying task 0xffff88017a0f2680
-> [ 1428.080119] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
-> [ 1428.080125] sas: sas_scsi_find_task: task 0xffff88017a0f2680 failed to abort
-> [ 1428.080130] sas: task 0xffff88017a0f2680 is not at LU: I_T recover
-> [ 1428.080135] sas: I_T nexus reset for dev 0000000000000000
-> [ 1428.080172] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x89800.
-> [ 1428.080180] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001
-> [ 1428.080193] drivers/scsi/mvsas/mv_sas.c 2111:phy0 Unplug Notice
-> [ 1428.090228] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
-> [ 1428.090236] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1081
-> [ 1428.111954] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
-> [ 1428.111962] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x10000
-> [ 1428.111969] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[0]
-> [ 1428.146351] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 20004
-> [ 1428.146351] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
-> [ 1428.222044] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
-> [ 1428.222109] sas: sas_form_port: phy0 belongs to port0 already(1)!
-> [ 1430.300028] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[0]:rc= 0
-> [ 1430.300040] sas: I_T 0000000000000000 recovered
-> [ 1430.300048] sas: sas_ata_task_done: SAS error 8d
-> [ 1430.300059] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-> [ 1430.300883] ata9.00: device reported invalid CHS sector 0
-> [ 1430.300888] ata9: status=0x01 { Error }
-> [ 1430.300894] ata9: error=0x04 { DriveStatusError }
-> [ 1430.300950] sas: trying to find task 0xffff88017a0f24c0
-> [ 1430.300956] sas: sas_scsi_find_task: aborting task 0xffff88017a0f24c0
-> [ 1430.300963] sas: sas_scsi_find_task: task 0xffff88017a0f24c0 is done
-> [ 1430.300968] sas: sas_eh_handle_sas_errors: task 0xffff88017a0f24c0 is done
-> [ 1430.300974] sas: sas_ata_task_done: SAS error 8d
-> [ 1430.300982] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-> [ 1430.301777] ata12.00: device reported invalid CHS sector 0
-> [ 1430.301782] ata12: status=0x01 { Error }
-> [ 1430.301788] ata12: error=0x04 { DriveStatusError }
-> [ 1430.301808] sas: --- Exit sas_scsi_recover_host
-> Thanks.
+On Tue, Nov 16, 2010 at 06:17:49PM +0100, Linus Walleij wrote:
+> This removes the default clocking for the MMCI controller so that
+> the external MCI card clock does not activate until the first
+> .set_ios() call is issued. It will further handle the transitions
+> from a clock != 0 to 0 and vice versa by gating/ungating the
+> clock with clk_disable()/clk_enable().
+
+I've just looked at this again, and I'm not happy - initially with the
+above description, but the on the way the clock gating is being handled.
+
+Your commentry seems to suggest that we currently don't turn off the
+clock signal to the card.  This is not the case:
+
+| The clock management logic generates and controls the MMCICLK signal.
+| The MMCICLK output can use either a clock divide or clock bypass mode.
+| The clock output is inactive:
+| • after the PrimeCell MMCI is reset
+| • during the power-off or power-up phases
+| • if the power saving mode is enabled and the card bus is in the IDLE
+|   state (eight clock periods after both the command and data path subunits
+|   enter the IDLE phase).
+
+I think what you actually mean is that the MCLK input to the primecell
+(described as "PrimeCell MMCI adapter clock (MCLK)") rather than "external
+MCI card clock".
+
+> This assures that the MCI clock will not be active unless there
+> is a card in the MMC slot.
+
+Is this sufficient?  The ARM MMCI TRM says that (eg) clear signals for
+the status register (from the clear register) are synchronized to the
+MCLK domain, which means without MCLK running, writing to the clear
+register will be a no-op.
+
+Also, the power, clock, data control and command registers have a
+restriction that after any write to these individual registers, that
+register must not be re-written for 3 MCLK periods plus 2 PCLK periods.
+Are we sure that we're writing these registers with the MCLK turned
+on, and it remains on for sufficient time?
+
+I suspect that what this means is that we must enable MCLK before
+writing to these registers, and disable MCLK after a delay after the
+last write to any of these registers.  We probably want a read-back
+and barrier after the last write to ensure that any delay is correct.
+
+> By default the MMC core will not gate off the clock to a card
+> once it's enabled, but with the separate patch for aggressive
+> clocking this can optionally be enabled for the system.
 > 
-> [Jack] The error shows that there are two commands have no respounse utill the timer timeout, and scsi host enter error hander
-> to quary and abort task but all failed so try to reset the device .
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+> ---
+> Changes since v8:
 > 
-> I look into mvs_abort_task in mv_sas.c,
-> if (SATA_DEV == dev->dev_type) {
-> struct mvs_slot_info *slot = task->lldd_task;
-> struct task_status_struct *tstat;
-> u32 slot_idx = (u32)(slot - mvi->slot_info);
-> tstat = &task->task_status;
-> mv_dprintk(KERN_DEBUG "mv_abort_task() mvi=%p task=%p "
->    "slot=%p slot_idx=x%x\n",
->    mvi, task, slot, slot_idx);
-> tstat->stat = SAS_ABORTED_TASK;
-> if (mvi_dev && mvi_dev->running_req)
-> mvi_dev->running_req--;
-> if (sas_protocol_ata(task->task_proto))
-> mvs_free_reg_set(mvi, mvi_dev);
-> mvs_slot_task_free(mvi, task, slot, slot_idx);
-> return -1;
->  //// here the return -1 looks suspicuse , you can remove it to have a try
-> >
-> [Jack] Sorry, please try to use return 0 to see if help. 
-
-Here is what I get with that returning 0 rather than -1 as you requested:
-
-[19107.040031] sas: command 0xffff88011c77f9c0, task 0xffff88022ae51600, timed out: BLK_EH_NOT_HANDLED
-[19107.040062] sas: Enter sas_scsi_recover_host
-[19107.040072] sas: trying to find task 0xffff88022ae51600
-[19107.040079] sas: sas_scsi_find_task: aborting task 0xffff88022ae51600
-[19107.040089] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88022ae51600 slot=ffff880224066680 slot_idx=x4
-[19107.040101] sas: sas_scsi_find_task: task 0xffff88022ae51600 is aborted
-[19107.040107] sas: sas_eh_handle_sas_errors: task 0xffff88022ae51600 is aborted
-[19107.040113] sas: sas_ata_task_done: SAS error 8d
-[19107.040124] ata21: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-[19107.040860] ata21: status=0x01 { Error }
-[19107.040866] ata21: error=0x04 { DriveStatusError }
-[19107.040886] sas: --- Exit sas_scsi_recover_host
-[19318.000085] sas: command 0xffff8801250291c0, task 0xffff88018a8e5b80, timed out: BLK_EH_NOT_HANDLED
-[19318.000125] sas: Enter sas_scsi_recover_host
-[19318.000135] sas: trying to find task 0xffff88018a8e5b80
-[19318.000141] sas: sas_scsi_find_task: aborting task 0xffff88018a8e5b80
-[19318.000152] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88018a8e5b80 slot=ffff8802240666d8 slot_idx=x5
-[19318.000163] sas: sas_scsi_find_task: task 0xffff88018a8e5b80 is aborted
-[19318.000169] sas: sas_eh_handle_sas_errors: task 0xffff88018a8e5b80 is aborted
-[19318.000175] sas: sas_ata_task_done: SAS error 8d
-[19318.000185] ata24: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-[19318.000896] ata24: status=0x01 { Error }
-[19318.000902] ata24: error=0x04 { DriveStatusError }
-[19318.000922] sas: --- Exit sas_scsi_recover_host
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+> The frequency registers shall be set with mmci_set_clkreg()
+> no matter whether the clock gets enabled or disabled, systems
+> without a clk framework will need this so that the clock
+> dividers are set to the apropriate values for clock 0 as
+> well, and that will probably mitigate power consumption
+> somewhat on these systems.
+> 
+> Chris: this is a new version after Russell found an error in
+> it. Can you please take the old version of this patch out of
+> the MMC tree so I can merge it through Russells ARM tree
+> instead? The patches are perfectly orthogonal so it doesn't
+> need to live in the MMC tree.
+> ---
+>  drivers/mmc/host/mmci.c |   33 ++++++++++++++++++++++-----------
+>  drivers/mmc/host/mmci.h |    1 +
+>  2 files changed, 23 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+> index 0814b88..3709ab3 100644
+> --- a/drivers/mmc/host/mmci.c
+> +++ b/drivers/mmc/host/mmci.c
+> @@ -689,6 +689,22 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+>  
+>  	mmci_set_clkreg(host, ios->clock);
+>  
+> +	/*
+> +	 * Turn on clock whenever ios->clock transitions
+> +	 * from 0 to !=0 and gate it off whenever ios->clock
+> +	 * transitions from !=0 to 0.
+> +	 */
+> +	if (host->iosclock == 0 && ios->clock != 0) {
+> +		dev_dbg(mmc_dev(mmc), "enable clock f=%d\n", ios->clock);
+> +		clk_enable(host->clk);
+> +	} else if (host->iosclock != 0 && ios->clock == 0) {
+> +		dev_dbg(mmc_dev(mmc), "disable clock\n");
+> +		clk_disable(host->clk);
+> +	} else if (ios->clock != 0) {
+> +		dev_dbg(mmc_dev(mmc), "set clock f=%d\n", ios->clock);
+> +	}
+> +	host->iosclock = ios->clock;
+> +
+>  	if (host->pwr != pwr) {
+>  		host->pwr = pwr;
+>  		writel(pwr, host->base + MMCIPOWER);
+> @@ -772,6 +788,8 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+>  
+>  	host = mmc_priv(mmc);
+>  	host->mmc = mmc;
+> +	host->plat = plat;
+> +	host->variant = variant;
+>  
+>  	host->gpio_wp = -ENOSYS;
+>  	host->gpio_cd = -ENOSYS;
+> @@ -782,19 +800,14 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+>  	dev_dbg(mmc_dev(mmc), "designer ID = 0x%02x\n", host->hw_designer);
+>  	dev_dbg(mmc_dev(mmc), "revision = 0x%01x\n", host->hw_revision);
+>  
+> +	/* This clock will be enabled/disabled by set_ios() calls later */
+>  	host->clk = clk_get(&dev->dev, NULL);
+>  	if (IS_ERR(host->clk)) {
+>  		ret = PTR_ERR(host->clk);
+>  		host->clk = NULL;
+>  		goto host_free;
+>  	}
+> -
+> -	ret = clk_enable(host->clk);
+> -	if (ret)
+> -		goto clk_free;
+> -
+> -	host->plat = plat;
+> -	host->variant = variant;
+> +	host->iosclock = 0;
+>  	host->mclk = clk_get_rate(host->clk);
+>  	/*
+>  	 * According to the spec, mclk is max 100 MHz,
+> @@ -804,7 +817,7 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+>  	if (host->mclk > 100000000) {
+>  		ret = clk_set_rate(host->clk, 100000000);
+>  		if (ret < 0)
+> -			goto clk_disable;
+> +			goto clk_free;
+>  		host->mclk = clk_get_rate(host->clk);
+>  		dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
+>  			host->mclk);
+> @@ -812,7 +825,7 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+>  	host->base = ioremap(dev->res.start, resource_size(&dev->res));
+>  	if (!host->base) {
+>  		ret = -ENOMEM;
+> -		goto clk_disable;
+> +		goto clk_free;
+>  	}
+>  
+>  	mmc->ops = &mmci_ops;
+> @@ -961,8 +974,6 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
+>  		gpio_free(host->gpio_cd);
+>   err_gpio_cd:
+>  	iounmap(host->base);
+> - clk_disable:
+> -	clk_disable(host->clk);
+>   clk_free:
+>  	clk_put(host->clk);
+>   host_free:
+> diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
+> index df06f01..4791a2b 100644
+> --- a/drivers/mmc/host/mmci.h
+> +++ b/drivers/mmc/host/mmci.h
+> @@ -167,6 +167,7 @@ struct mmci_host {
+>  
+>  	unsigned int		mclk;
+>  	unsigned int		cclk;
+> +	unsigned int		iosclock;
+>  	u32			pwr;
+>  	struct mmci_platform_data *plat;
+>  	struct variant_data	*variant;
+> -- 
+> 1.6.3.3
+> 
