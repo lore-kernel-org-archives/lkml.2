@@ -1,325 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab0LDGw2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 01:52:28 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41867 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab0LDGw0 convert rfc822-to-8bit (ORCPT
+	id S1754472Ab0LDGzk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 01:55:40 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:18791 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab0LDGzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 01:52:26 -0500
+	Sat, 4 Dec 2010 01:55:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OzqkoQpkoAvu/2fgL3mg6pFrfJ1re5YTWbxbfd8OpiOhXBhmcgfDcKgD3qWhOOHWxW
-         SS5WT4uq+e4s8S+6gIvlAcWW6Y7UJ70kO7IjYxM4lUqhxeZvi2akolFGNJEC8AS6ZvwM
-         P+66Tu8oaDi1tZiVF6sel0ThgREmD+pFrQMV0=
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JSnkiAo5Skq2VbYqBj3XKUxdftNFCs6N1sY2y5TE/wiCtxKt0u7IVK7aUvDMyoFvs7
+         Ly2CfEFSiNh9JAbPs+sw==
+Date: Fri, 3 Dec 2010 22:55:30 -0800
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/6] mm: add FOLL_MLOCK follow_page flag.
+Message-ID: <20101204065530.GA27895@google.com>
+References: <1291335412-16231-1-git-send-email-walken@google.com>
+ <1291335412-16231-3-git-send-email-walken@google.com>
 MIME-Version: 1.0
-In-Reply-To: <201011261224.59490.arnd@arndb.de>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local>
-	<201011251747.48365.arnd@arndb.de>
-	<C832F8F5D375BD43BFA11E82E0FE9FE0082586F430@EXDCVYMBSTM005.EQ1STM.local>
-	<201011261224.59490.arnd@arndb.de>
-Date: Sat, 4 Dec 2010 16:52:25 +1000
-Message-ID: <AANLkTik1oVf6Xdt43csTByTu3uLOimd8zTBzwTrFFBDd@mail.gmail.com>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-From: Dave Airlie <airlied@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291335412-16231-3-git-send-email-walken@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->> > Having the kms/fb/v4l2 drivers on top definitely makes sense, so
->> > these should all be able to be standalone loadable modules.
->> > I do not understand why you have a v4l2 driver at all, or why
->> > you need both fb and kms drivers, but that is probably because
->> > of my ignorance of display device drivers.
->>
->> All APIs have to be provided, these are user space API requirements.
->> KMS has a generic FB implementation. But most of KMS is modeled by
->> desktop/PC graphics cards. And while we might squeeze MCDE in to look
->> like a PC card, it might also just make things more complex and
->> restrict us to do things not possible in PC architecture.
->
-> Ok, so you have identified a flaw with the existing KMS code. You should
-> most certainly not try to make your driver fit into the flawed model by
-> making it look like a PC. Instead, you are encouraged to fix the problems
-> with KMS to make sure it can also meet your requirements. The reason
-> why it doesn't do that today is that all the existing users are PC
-> hardware and we don't build infrastructure that we expect to be used
-> in the future but don't need yet. It would be incorrect anyway.
->
-> Can you describe the shortcomings of the KSM code? I've added the dri-devel
-> list to Cc, to get the attention of the right people.
+I did not realize that previously, but it turns out to be possible to
+manipulate LRU lists under control of the pte lock, rather than having
+to get/put the page. This allows the FOLL_MLOCK follow_page flag
+implementation to look much nicer than it did in initial proposal.
 
-I'm not sure I've a full understanding of what this bus is all about,
-but I can't see
-why it can't fit inside KMS, with maybe a V4L bolted on. The whole
-point of KMS is to provide a consistent userspace
-interface for describing the graphics hardware in enough detail that
-userspace can use it, but without giving it all the gorey details.
+Please consider the following as a replacement for the initial
+patch 2/6 proposal...
 
-So we've reduced the interface to crtc/encoder/connectors as the base
-level objects at the interface, internally drivers can and do have
-extra layers, but usually no need to show this to userspace.
+--------------------------------- 8< --------------------------------------
 
-KMS at the moment doesn't really handle dynamic hotplug of new crtcs
-connectors etc, but I'm not sure that is needed here.
+Move the code to mlock pages from __mlock_vma_pages_range()
+to follow_page().
 
-It sounds like you just have some embedded building blocks you want to
-put together on a design by design basis, please correct me if I'm
-wrong.
+This allows __mlock_vma_pages_range() to not have to break down work
+into 16-page batches.
 
-Dave.
+An additional motivation for doing this within the present patch series
+is that it'll make it easier for a later chagne to drop mmap_sem when
+blocking on disk (we'd like to be able to resume at the page that was
+read from disk instead of at the start of a 16-page batch).
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ include/linux/mm.h |    1 +
+ mm/memory.c        |   22 +++++++++++++++++
+ mm/mlock.c         |   65 ++++------------------------------------------------
+ 3 files changed, 28 insertions(+), 60 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 721f451..cebbb0d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1415,6 +1415,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
++#define FOLL_MLOCK	0x20	/* mark page as mlocked */
+ 
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/memory.c b/mm/memory.c
+index b8f97b8..15e1f19 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1310,6 +1310,28 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		 */
+ 		mark_page_accessed(page);
+ 	}
++	if (flags & FOLL_MLOCK) {
++		/*
++		 * The preliminary mapping check is mainly to avoid the
++		 * pointless overhead of lock_page on the ZERO_PAGE
++		 * which might bounce very badly if there is contention.
++		 *
++		 * If the page is already locked, we don't need to
++		 * handle it now - vmscan will handle it later if and
++		 * when it attempts to reclaim the page.
++		 */
++		if (page->mapping && trylock_page(page)) {
++			lru_add_drain();  /* push cached pages to LRU */
++			/*
++			 * Because we lock page here and migration is
++			 * blocked by the pte's page reference, we need
++			 * only check for file-cache page truncation.
++			 */
++			if (page->mapping)
++				mlock_vma_page(page);
++			unlock_page(page);
++		}
++	}
+ unlock:
+ 	pte_unmap_unlock(ptep, ptl);
+ out:
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 71db83e..573bd2c 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -159,10 +159,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long addr = start;
+-	struct page *pages[16]; /* 16 gives a reasonable batch */
+ 	int nr_pages = (end - start) / PAGE_SIZE;
+-	int ret = 0;
+ 	int gup_flags;
++	int ret;
+ 
+ 	VM_BUG_ON(start & ~PAGE_MASK);
+ 	VM_BUG_ON(end   & ~PAGE_MASK);
+@@ -170,7 +169,7 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 	VM_BUG_ON(end   > vma->vm_end);
+ 	VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
+ 
+-	gup_flags = FOLL_TOUCH | FOLL_GET;
++	gup_flags = FOLL_TOUCH | FOLL_MLOCK;
+ 	/*
+ 	 * We want to touch writable mappings with a write fault in order
+ 	 * to break COW, except for shared mappings because these don't COW
+@@ -185,63 +184,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 		nr_pages--;
+ 	}
+ 
+-	while (nr_pages > 0) {
+-		int i;
+-
+-		cond_resched();
+-
+-		/*
+-		 * get_user_pages makes pages present if we are
+-		 * setting mlock. and this extra reference count will
+-		 * disable migration of this page.  However, page may
+-		 * still be truncated out from under us.
+-		 */
+-		ret = __get_user_pages(current, mm, addr,
+-				min_t(int, nr_pages, ARRAY_SIZE(pages)),
+-				gup_flags, pages, NULL);
+-		/*
+-		 * This can happen for, e.g., VM_NONLINEAR regions before
+-		 * a page has been allocated and mapped at a given offset,
+-		 * or for addresses that map beyond end of a file.
+-		 * We'll mlock the pages if/when they get faulted in.
+-		 */
+-		if (ret < 0)
+-			break;
+-
+-		lru_add_drain();	/* push cached pages to LRU */
+-
+-		for (i = 0; i < ret; i++) {
+-			struct page *page = pages[i];
+-
+-			if (page->mapping) {
+-				/*
+-				 * That preliminary check is mainly to avoid
+-				 * the pointless overhead of lock_page on the
+-				 * ZERO_PAGE: which might bounce very badly if
+-				 * there is contention.  However, we're still
+-				 * dirtying its cacheline with get/put_page:
+-				 * we'll add another __get_user_pages flag to
+-				 * avoid it if that case turns out to matter.
+-				 */
+-				lock_page(page);
+-				/*
+-				 * Because we lock page here and migration is
+-				 * blocked by the elevated reference, we need
+-				 * only check for file-cache page truncation.
+-				 */
+-				if (page->mapping)
+-					mlock_vma_page(page);
+-				unlock_page(page);
+-			}
+-			put_page(page);	/* ref from get_user_pages() */
+-		}
+-
+-		addr += ret * PAGE_SIZE;
+-		nr_pages -= ret;
+-		ret = 0;
+-	}
+-
+-	return ret;	/* 0 or negative error code */
++	ret = __get_user_pages(current, mm, addr, nr_pages, gup_flags,
++			       NULL, NULL);
++	return max(ret, 0);	/* 0 or negative error code */
+ }
+ 
+ /*
+-- 
+1.7.3.1
 
 
->
->> Alex Deucher noted in a previous post that we also have the option of
->> implementing the KMS ioctls. We are looking at both options. And having
->> our own framebuffer driver might make sense since it is a very basic
->> driver, and it will allow us to easily extend support for things like
->> partial updates for display panels with on board memory. These panels
->> with memory (like DSI command mode displays) is one of the reasons why
->> KMS is not the perfect match. Since we want to expose features available
->> for these types of displays.
->
-> Ok.
->
->> > > > From what I understood so far, you have a single multi-channel
->> > display
->> > > > controller (mcde_hw.c) that drives the hardware.
->> > > > Each controller can have multiple frame buffers attached to it,
->> > which
->> > > > in turn can have multiple displays attached to each of them, but
->> > your
->> > > > current configuration only has one of each, right?
->> > >
->> > > Correct, channels A/B (crtcs) can have two blended "framebuffers"
->> > plus
->> > > background color, channels C0/C1 can have one framebuffer.
->> >
->> > We might still be talking about different things here, not sure.
->>
->> In short,
->> KMS connector = MCDE port
->> KMS encoder = MCDE channel
->> KMS crtc = MCDE overlay
->
-> Any chance you could change the identifiers in the code for this
-> without confusing other people?
->
->> > Looking at the representation in sysfs, you should probably aim
->> > for something like
->> >
->> > /sys/devices/axi/axi0/mcde_controller
->> >                               /chnlA
->> >                                       /dspl_crtc0
->> >                                               /fb0
->> >                                               /fb1
->> >                                               /v4l_0
->> >                                       /dspl_dbi0
->> >                                               /fb2
->> >                                               /v4l_1
->> >                               /chnlB
->> >                                       /dspl_ctrc1
->> >                                               /fb3
->> >                               /chnlC
->> >                                       /dspl_lcd0
->> >                                               /fb4
->> >                                               /v4l_2
->> >
->> > Not sure if that is close to what your hardware would really
->> > look like. My point is that all the objects that you are
->> > dealing with as a device driver should be represented hierarchically
->> > according to how you probe them.
->>
->> Yes, mcde_bus should be connected to mcde, this is a bug. The display
->> drivers will placed in this bus, since this is where they are probed
->> like platform devices, by name (unless driver can do MIPI standard
->> probing or something). Framebuffers/V4L2 overlay devices can't be
->> put in same hierarchy, since they have multiple "parents" in case
->> the same framebuffer is cloned to multiple displays for example.
->> But I think I understand your more general point of sysfs representing
->> the "real" probe hierarchy. And this is something we will look at.
->
-> Ok. If your frame buffers are not children of the displays, they should
-> however be children of the controller:
->
-> .../mcde_controller/
->        /chnlA/
->                /displ_crtc0
->                /displ_dbi0
->        /chnlB/
->                dspl_crtc1
->        /fb0
->        /fb1
->        /fb2
->        /v4l_0
->        /v4l_1
->
-> Does this fit better?
->
->> > Assuming the structure above is correct and you cannot probe
->> > any of this by looking at registers, you would put a description
->> > of it into the a data structure (ideally a flattened device tree
->> > or a section of one) and let the probing happen:
->> >
->> > * The axi core registers an mcde controller as device axi0.
->> > * udev matches the device and loads the mcde hw driver from
->> >   user space
->>
->> We are trying to avoid dynamic driver loading and udev for platform
->> devices to be able to show application graphics within a few seconds
->> after boot.
->
-> That is fine, you don't need to do that for products. However, it
-> is valuable to be able to do it and to think of it in this way.
-> When you are able to have everything modular, it is much easier to
-> spot layering violations and you can much easier define the object
-> life time rules.
->
-> Also, for the general case of building a cross-platform kernel,
-> you want to be able to use modules for everything. Remember that
-> we are targetting a single kernel binary that can run on multiple
-> SoC families, potentially with hundreds of different boards.
->
->> > * the hw driver creates a device for each channel, and passes
->> >   the channel specific configuration data to the channel device
->>
->> We have to migrate displays in runtime between different channels
->> (different use cases and different channel features), we don't want
->> to model displays as probed beneath the channel. Maybe the
->> port/connector could be a device. But that code is so small, so it
->> might just add complexity to visualize sysfs hierarchy.
->> What do you think?
->
-> This makes it pretty obvious that the channel should not be a
-> device, but rather something internal to the dss or hw module.
->
-> What is the relation between a port/connector and a display?
-> If it's 1:1, it should be the same device.
->
->> > * the dss driver gets loaded through udev and matches all the
->> >   channels
->> > * the dss driver creates the display devices below each channel,
->> >   according to the configuration data it got passed.
->>
->> "All" display devices need static platform_data from
->> mach-ux500/board-xx.c. This is why we have the bus,
->> to bind display dev and driver.
->
-> You don't need to instantiate the device from the board though,
-> just provide the data. When you add the display specific data
-> to the dss data, the dss can create the display devices:
->
-> static struct mcde_display_data mcde_displays[2] = {
-> {
->        ...
-> }, {
->        ...
-> },
-> };
->
-> static struct mcde_dss_data {
->        int num_displays;
->        struct mcde_display_data *displays;
-> } my_dss = {
->        .num_displays = 2,
->        .displays = &mcde_displays;
-> };
->
-> The mcde_dss probe function then takes the dss_data and iterates
-> the displays, creating a new child device for each.
->
->> > * The various display drivers get loaded through udev as needed
->> >   and match the display devices
->> > * Each display device driver initializes the display and creates
->> >   the high-level devices (fb and v4l) as needed.
->>
->> This is setup by board/product specific code. Display drivers
->> just enable use of the HW, not defining how the displays are
->> used from user space.
->
-> Right, this also gets obsolete, since as you said an fb cannot be
-> the child of a display.
->
->> > * Your fb and v4l highlevel drivers get loaded through udev and
->> >   bind to the devices, creating the user space device nodes
->> >   through their subsystems.
->> >
->> > Now this would be the most complex scenerio that hopefully is
->> > not really needed, but I guess it illustrates the concept.
->> > I would guess that you can actually reduce this significantly
->> > if you do not actually need all the indirections.
->> >
->> > Some parts could also get simpler if you change the layering,
->> > e.g. by making the v4l and fb drivers library code and having
->> > the display drivers call them, rather than have the display
->> > drivers create the devices that get passed to upper drivers.
->>
->> Devices are static from mach-ux500/board-xx. And v4l2/fb setup
->> is board/product specific and could change dynamically.
->
-> Not sure how the fb setup can be both board specific and dynamic.
-> If it's statically defined per board, it should be part of the
-> dss data, and dss can then create the fb devices. If it's completely
-> dynamic, it gets created through user space interaction anyway.
->
->> > > > The frame buffer device also looks weird. Right now you only seem
->> > > > to have a single frame buffer registered to a driver in the same
->> > > > module. Is that frame buffer not dependent on a controller?
->> > >
->> > > MCDE framebuffers are only depending on MCDE DSS. DSS is the API that
->> > > will be used by all user space APIs so that we don't have to
->> > duplicate
->> > > the common code. We are planning mcde_kms and mcde_v4l2 drivers on
->> > top
->> > > of MCDE DSS(=Display Sub System).
->> >
->> > My impression was that you don't need a frame buffer driver if you have
->> > a kms driver, is this wrong?
->>
->> No, see above. Just that we have mcde dss to support multiple user
->> space apis by customer request. Then doing our own fb on top of
->> that is very simple and adds flexibility.
->
-> This sounds like an odd thing for a customer to ask for ;-)
->
-> In my experience customers want to solve specific problems like
-> everyone else, they have little interest in adding complexity
-> for the sake of it. Is there something wrong with one of the
-> interfaces? If so, it would be better to fix that than to add
-> an indirection to allow more of them!
->
->> > What does the v4l2 driver do? In my simple world, displays are for
->> > output
->> > and v4l is for input, so I must have missed something here.
->>
->> Currently nothing, since it is not finished. But the idea (and
->> requirement) is that normal graphics will use framebuffer and
->> video/camera overlays will use v4l2 overlays. Both using same
->> mcde channel and display. Some users might also configure their
->> board to use two framebuffers instead. Or maybe only use KMS etc ...
->
-> I still don't understand, sorry for being slow. Why does a camera
-> use a display?
->
->        Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
