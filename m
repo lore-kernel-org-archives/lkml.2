@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab0LDPIe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 10:08:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50023 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab0LDPId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 10:08:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=UWzFo/0JGMmWe3ZjA41ALnsBtfUdPNFZapQZK3EcfPtcpfaLXVbv7ABmafVpSBB+uC
-         XlGQq3WLgEP42OvKeXpScpzM7ntK6S/dszG7ff8/EVhAwSs2TFu92uTVNFopeKZLJlfk
-         YK5a0g4tjN/ETCdLnKlJ0K2d/myg+KZZEjA+c=
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Subject: Re: [PATCH] arm/income pxa270: enable backlight when pwm_bl is a module
-Date: Sat, 4 Dec 2010 16:10:17 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-trunk-amd64; KDE/4.4.5; x86_64; ; )
-Cc: Pavel Revak <palo@bielyvlk.sk>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <20101204152923.04244dfa@absol.kitzblitz>
-In-Reply-To: <20101204152923.04244dfa@absol.kitzblitz>
+	id S1755443Ab0LDPov (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 10:44:51 -0500
+Received: from tomasu.net ([64.85.170.234]:37242 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755261Ab0LDPou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 10:44:50 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: "jack_wang" <jack_wang@usish.com>
+Subject: Re: mvsas errors in 2.6.36
+Date: Sat, 4 Dec 2010 08:44:47 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: "David Milburn" <dmilburn@redhat.com>, "Andre Tomt" <andre@tomt.net>,
+        "Linux Kernel List" <linux-kernel@vger.kernel.org>,
+        "linux-scsi" <linux-scsi@vger.kernel.org>
+References: <201010290650.32892.thomas@fjellstrom.ca> <201012042033380623575@usish.com> <201012040554.31111.thomas@fjellstrom.ca>
+In-Reply-To: <201012040554.31111.thomas@fjellstrom.ca>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="gb2312"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012041610.17342.marek.vasut@gmail.com>
+Message-Id: <201012040844.47337.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 04 December 2010 15:29:23 Nicolas Kaiser wrote:
-> Fixes a suspected typo in the config symbol.
+On December 4, 2010, Thomas Fjellstrom wrote:
+> On December 4, 2010, jack_wang wrote:
+> > 
+> > Here is what I get with that returning 0 rather than -1 as you requested:
+> > [19107.040031] sas: command 0xffff88011c77f9c0, task 0xffff88022ae51600, timed out: BLK_EH_NOT_HANDLED
+> > [19107.040062] sas: Enter sas_scsi_recover_host
+> > [19107.040072] sas: trying to find task 0xffff88022ae51600
+> > [19107.040079] sas: sas_scsi_find_task: aborting task 0xffff88022ae51600
+> > [19107.040089] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88022ae51600 slot=ffff880224066680 slot_idx=x4
+> > [19107.040101] sas: sas_scsi_find_task: task 0xffff88022ae51600 is aborted
+> > [19107.040107] sas: sas_eh_handle_sas_errors: task 0xffff88022ae51600 is aborted
+> > [19107.040113] sas: sas_ata_task_done: SAS error 8d
+> > [19107.040124] ata21: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+> > [19107.040860] ata21: status=0x01 { Error }
+> > [19107.040866] ata21: error=0x04 { DriveStatusError }
+> > [19107.040886] sas: --- Exit sas_scsi_recover_host
+> > [19318.000085] sas: command 0xffff8801250291c0, task 0xffff88018a8e5b80, timed out: BLK_EH_NOT_HANDLED
+> > [19318.000125] sas: Enter sas_scsi_recover_host
+> > [19318.000135] sas: trying to find task 0xffff88018a8e5b80
+> > [19318.000141] sas: sas_scsi_find_task: aborting task 0xffff88018a8e5b80
+> > [19318.000152] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88018a8e5b80 slot=ffff8802240666d8 slot_idx=x5
+> > [19318.000163] sas: sas_scsi_find_task: task 0xffff88018a8e5b80 is aborted
+> > [19318.000169] sas: sas_eh_handle_sas_errors: task 0xffff88018a8e5b80 is aborted
+> > [19318.000175] sas: sas_ata_task_done: SAS error 8d
+> > [19318.000185] ata24: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+> > [19318.000896] ata24: status=0x01 { Error }
+> > [19318.000902] ata24: error=0x04 { DriveStatusError }
+> > [19318.000922] sas: --- Exit sas_scsi_recover_host
+> > 
+> > 
+> > 
+> > [Jack] Do all the drives discoverd? There are still commands timeout, maybe the disks need more time to response, or something
+> > wrong with the driver, I'm not sure.
 > 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> ---
-> I don't have the hardware to test, but this config symbol looks
-> unusual enough to me that I'm suspecting it might be a typo.
+> All drives come up. That last set of logs is something that happens once
+> or twice an hour while running. I just rebooted again to see what
+> difference the change makes with a fresh startup. So far it seems that
+> the controller is running properly in SATA II/3Gbps mode after the reboot.
 > 
->  arch/arm/mach-pxa/colibri-pxa270-income.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Just to contrast what the kernel reports in the two scenarios:
+> rmmod+modprobe:
+> sas: DOING DISCOVERY on port 0, pid:7283
+> drivers/scsi/mvsas/mv_sas.c 1388:found dev[0:5] is gone.
+> sas: sas_ata_phy_reset: Found ATA device.
+> ata15.00: ATA-8: ST31000528AS, CC34, max UDMA/133
+> ata15.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+> ata15.00: qc timeout (cmd 0xef)
+> [snip mvsas reset]
+> sas: sas_ata_phy_reset: Found ATA device.
+> sas: sas_to_ata_err: Saw error 2.  What to do?
+> sas: sas_ata_task_done: SAS error 2
+> ata15.00: failed to IDENTIFY (I/O error, err_mask=0x100)
+> sas: STUB sas_ata_scr_read
+> ata15: limiting SATA link speed to 1.5 Gbps
+> ata15.00: limiting speed to UDMA/133:PIO3
 > 
-> diff --git a/arch/arm/mach-pxa/colibri-pxa270-income.c
-> b/arch/arm/mach-pxa/colibri-pxa270-income.c index 37f0f3e..3aba0e1 100644
-> --- a/arch/arm/mach-pxa/colibri-pxa270-income.c
-> +++ b/arch/arm/mach-pxa/colibri-pxa270-income.c
-> @@ -231,7 +231,7 @@ static inline void income_lcd_init(void) {}
->  /*************************************************************************
-> ***** * Backlight
->  
-> **************************************************************************
-> ****/ -#if defined(CONFIG_BACKLIGHT_PWM) ||
-> defined(CONFIG_BACKLIGHT_PWM__MODULE) +#if defined(CONFIG_BACKLIGHT_PWM)
-> || defined(CONFIG_BACKLIGHT_PWM_MODULE) static struct
-> platform_pwm_backlight_data income_backlight_data = { .pwm_id		= 0,
->  	.max_brightness	= 0x3ff,
+> fresh boot:
+> sas: DOING DISCOVERY on port 0, pid:312
+> drivers/scsi/mvsas/mv_sas.c 1388:found dev[0:5] is gone.
+> sas: sas_ata_phy_reset: Found ATA device.
+> ata9.00: ATA-8: ST31000528AS, CC34, max UDMA/133
+> ata9.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+> ata9.00: configured for UDMA/133
+> 
+> This seems to happen on all ports. As does my original issue, though it
+> (the original issue) doesn't happen to all ports at the same time, rather
+> events seem to randomly happen, to one or more ports at random times.
+> 
+> As you can see, the drive are 1TB Seagate SATAII drives. They are setup
+> in a md-raid 5 array. Luckily these events don't bubble any errors up
+> the stack causing a rebuild.
 
-Acked-by: Marek Vasut <marek.vasut@gmail.com>
+Even after the reboot it still happens, though with that change, it /seems/
+as if the pause is gone, but I can't be sure yet.
 
-Cheers
+[ 6080.020026] sas: command 0xffff880172dfbe80, task 0xffff8800379cbb40, timed out: BLK_EH_NOT_HANDLED
+[ 6080.020053] sas: Enter sas_scsi_recover_host
+[ 6080.020062] sas: trying to find task 0xffff8800379cbb40
+[ 6080.020069] sas: sas_scsi_find_task: aborting task 0xffff8800379cbb40
+[ 6080.020079] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880222a00000 task=ffff8800379cbb40 slot=ffff880222a26680 slot_idx=x4
+[ 6080.020090] sas: sas_scsi_find_task: task 0xffff8800379cbb40 is aborted
+[ 6080.020096] sas: sas_eh_handle_sas_errors: task 0xffff8800379cbb40 is aborted
+[ 6080.020102] sas: sas_ata_task_done: SAS error 8d
+[ 6080.020113] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 6080.020931] ata9: status=0x01 { Error }
+[ 6080.020937] ata9: error=0x04 { DriveStatusError }
+[ 6080.021008] sas: --- Exit sas_scsi_recover_host
+
+Hopefully we can figure out whats causing these errors.
+
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
+> 
+> 
+
+
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
