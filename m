@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab0LDIsp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 03:48:45 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60087 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab0LDIso (ORCPT
+	id S1754878Ab0LDJQY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 04:16:24 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:55611 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab0LDJQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 03:48:44 -0500
-Date: Sat, 4 Dec 2010 08:48:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tony Lindgren <tony@atomide.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Jamie Iles <jamie.iles@picochip.com>,
-        Anton Vorontsov <avorontsov@mvista.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Colin Cross <ccross@android.com>,
-        linux-tegra@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/8] ARM: SCU: Add common routines for secondary CPU
-	bootup
-Message-ID: <20101204084815.GA20969@n2100.arm.linux.org.uk>
-References: <20101130171626.GA6165@oksana.dev.rtsoft.ru> <20101130171658.GA24034@oksana.dev.rtsoft.ru> <20101130233204.GB14383@n2100.arm.linux.org.uk> <20101201002527.GC14383@n2100.arm.linux.org.uk> <AANLkTikpjq-8BVanF5W76j0ZdDBur8DyHWSH8GGgJBQs@mail.gmail.com> <20101202152428.GD10461@n2100.arm.linux.org.uk> <1291307320.11271.51.camel@e102109-lin.cambridge.arm.com> <20101202173824.GE10461@n2100.arm.linux.org.uk> <20101202180150.GF10461@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101202180150.GF10461@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 4 Dec 2010 04:16:21 -0500
+From: Pekka Enberg <penberg@kernel.org>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: [PATCH 4/6] w35und: Kill struct hwdata ->NullPacketCount
+Date: Sat,  4 Dec 2010 11:16:15 +0200
+Message-Id: <1291454177-5102-4-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1291454177-5102-1-git-send-email-penberg@kernel.org>
+References: <1291454177-5102-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 06:01:50PM +0000, Russell King - ARM Linux wrote:
-> On Thu, Dec 02, 2010 at 05:38:24PM +0000, Russell King - ARM Linux wrote:
-> > What if a platform, for what ever reason, wants to have 3 CPUs,
-> > numbered 0, 2, 3 ?  That's the reason why the code which sets the
-> > possible and present maps isn't in the ARM core code - Eg, we don't
-> > know if a platform wants to keep CPU 1 in AMP mode to run some
-> > special software on it.
-> > 
-> > I don't think it's worth it because I think trying to considate this
-> > is going to cripple the code structure in the future.
-> 
-> I don't think this is particularly worth it either:
+This patch kills the NullPacketCount member of struct hwdata. It's not used for
+anything so it's safe to remove it.
 
-As Catalin has pointed out:
+Cc: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/staging/winbond/wbhal.h |    6 ------
+ drivers/staging/winbond/wbusb.c |    9 ---------
+ 2 files changed, 0 insertions(+), 15 deletions(-)
 
-http://lists.arm.linux.org.uk/lurker/message/20101202.162840.5465758c.en.html
+diff --git a/drivers/staging/winbond/wbhal.h b/drivers/staging/winbond/wbhal.h
+index 821a1b3..6f4cd76 100644
+--- a/drivers/staging/winbond/wbhal.h
++++ b/drivers/staging/winbond/wbhal.h
+@@ -342,9 +342,6 @@ struct wb35_descriptor { /* Skip length = 8 DWORD */
+ 	void	*buffer_address[MAX_DESCRIPTOR_BUFFER_INDEX];
+ };
+ 
+-
+-#define DEFAULT_NULL_PACKET_COUNT	180000	/* 180 seconds */
+-
+ #define MAX_TXVGA_EEPROM		9	/* How many word(u16) of EEPROM will be used for TxVGA */
+ #define MAX_RF_PARAMETER		32
+ 
+@@ -517,9 +514,6 @@ struct hw_data {
+ 
+ 	/* For error recover */
+ 	u32		HwStop;
+-
+-	/* For avoid AP disconnect */
+-	u32		NullPacketCount;
+ };
+ 
+ #endif
+diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
+index 82040f4..dcb6d5b 100644
+--- a/drivers/staging/winbond/wbusb.c
++++ b/drivers/staging/winbond/wbusb.c
+@@ -611,15 +611,6 @@ static void hal_led_control(unsigned long data)
+ 			}
+ 			break;
+ 		}
+-
+-		/* Active send null packet to avoid AP disconnect */
+-		if (pHwData->LED_LinkOn) {
+-			pHwData->NullPacketCount += TimeInterval;
+-			if (pHwData->NullPacketCount >=
+-			    DEFAULT_NULL_PACKET_COUNT) {
+-				pHwData->NullPacketCount = 0;
+-			}
+-		}
+ 	}
+ 
+ 	pHwData->time_count += TimeInterval;
+-- 
+1.7.0.4
 
-The SCU is part of the core, and if you consult the TRMs for the MPCore
-devices, it is actually different in ARM11 MPCore vs Cortex-A9 MPCore.
-Cortex-A15 doesn't have a MMIO addressable SCU at all.
-
-So, this is about as far as I want to go with stripping out the common
-code from the various platforms (this includes my previous SMP series):
-
-http://lists.arm.linux.org.uk/lurker/message/20101203.200746.31424430.en.html
-
-This results in a net reduction of 242 LOC, as shown in the following
-diffstat:
-
- arch/arm/include/asm/hardirq.h            |   18 ++
- arch/arm/include/asm/mach/irq.h           |    2 +-
- arch/arm/include/asm/smp.h                |   17 +-
- arch/arm/include/asm/smp_mpidr.h          |   17 --
- arch/arm/kernel/entry-armv.S              |    2 +-
- arch/arm/kernel/fiq.c                     |    5 +-
- arch/arm/kernel/head.S                    |   39 +++--
- arch/arm/kernel/irq.c                     |   23 ++-
- arch/arm/kernel/smp.c                     |  243 ++++++++++++++++-------------
- arch/arm/mach-msm/include/mach/smp.h      |    4 +-
- arch/arm/mach-omap2/omap-hotplug.c        |   14 +--
- arch/arm/mach-omap2/omap-smp.c            |   66 ++------
- arch/arm/mach-realview/hotplug.c          |   18 +--
- arch/arm/mach-realview/include/mach/smp.h |    5 +-
- arch/arm/mach-realview/platsmp.c          |   95 +++---------
- arch/arm/mach-s5pv310/hotplug.c           |   18 +--
- arch/arm/mach-s5pv310/include/mach/smp.h  |    5 +-
- arch/arm/mach-s5pv310/platsmp.c           |   46 +-----
- arch/arm/mach-tegra/hotplug.c             |   18 +--
- arch/arm/mach-tegra/include/mach/smp.h    |   12 +--
- arch/arm/mach-tegra/platsmp.c             |   33 +---
- arch/arm/mach-ux500/hotplug.c             |   18 +--
- arch/arm/mach-ux500/include/mach/smp.h    |    5 +-
- arch/arm/mach-ux500/platsmp.c             |   57 ++-----
- arch/arm/mach-vexpress/include/mach/smp.h |    5 +-
- arch/arm/mach-vexpress/platsmp.c          |   54 ++-----
- arch/arm/plat-omap/include/plat/smp.h     |    5 +-
- 27 files changed, 301 insertions(+), 543 deletions(-)
-
-Can someone also explain why OMAP uses different file naming from everyone
-else?  It's annoying as (eg) arch/arm/*/platsmp.c for editing the platform
-SMP support files gets everyone except OMAP.
