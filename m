@@ -1,118 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab0LDTiy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 14:38:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8835 "EHLO mx1.redhat.com"
+	id S1755713Ab0LDTvg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 14:51:36 -0500
+Received: from fanny.its.uu.se ([130.238.4.241]:59776 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755355Ab0LDTix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 14:38:53 -0500
-Date: Sat, 4 Dec 2010 14:38:29 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Matt <jackdachef@gmail.com>
-Cc: Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
-        htejun@gmail.com, linux-ext4@vger.kernel.org,
-        Jon Nelson <jnelson@jamponi.net>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101204193828.GB13871@redhat.com>
-References: <4CE05A9E.9090204@redhat.com>
- <AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
- <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
- <20101201165229.GC13415@redhat.com>
- <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com>
- <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com>
- <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+	id S1755543Ab0LDTvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 14:51:35 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Message-ID: <19706.39875.954626.75344@pilspetsen.it.uu.se>
+Date: Sat, 4 Dec 2010 20:51:31 +0100
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [Bug #23902] [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+In-Reply-To: <19706.13300.115878.641839@pilspetsen.it.uu.se>
+References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
+	<gUkHV_Vc3aE.A.RjG.9xC-MB@chimera>
+	<19706.13300.115878.641839@pilspetsen.it.uu.se>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 04 2010 at  2:18pm -0500,
-Matt <jackdachef@gmail.com> wrote:
+Mikael Pettersson writes:
+ > Rafael J. Wysocki wrote:
+ > > This message has been generated automatically as a part of a summary report
+ > > of recent regressions.
+ > > 
+ > > The following bug entry is on the current list of known regressions
+ > > from 2.6.36.  Please verify if it still should be listed and let the tracking team
+ > > know (either way).
+ > > 
+ > > 
+ > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23902
+ > > Subject		: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+ > > Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+ > > Date		: 2010-11-27 15:16 (6 days old)
+ > > Message-ID	: <19697.8378.717761.236202@pilspetsen.it.uu.se>
+ > > References	: http://marc.info/?l=linux-kernel&m=129087098911837&w=2
+ > 
+ > The bug is still present in 2.6.37-rc4.  I'm currently trying to bisect it.
 
-> On Wed, Dec 1, 2010 at 10:23 PM, Mike Snitzer <snitzer@redhat.com> wrote:
-> > Matt and Jon,
-> >
-> > If you'd be up to it: could you try testing your dm-crypt+ext4
-> > corruption reproducers against the following two 2.6.37-rc commits:
-> >
-> > 1) 1de3e3df917459422cb2aecac440febc8879d410
-> > then
-> > 2) bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
-> >
-> > Then, depending on results of no corruption for those commits, bonus
-> > points for testing the same commits but with Andi and Milan's latest
-> > dm-crypt cpu scalability patch applied too:
-> > https://patchwork.kernel.org/patch/365542/
-> >
-> > Thanks!
-> > Mike
-> >
-> 
-> Hi Mike,
-> 
-> it seems like there isn't even much testing to do:
-> 
-> I tested all 3 commits / checkouts by re-compiling gcc which was/is
-> the 2nd easy way to trigger this "corruption", compiling google's
-> chromium (v9) and looking at the output/existance of gcc, g++ and
-> eselect opengl list
+git bisect identified
 
-Can you be a bit more precise about what you're doing to reproduce?
-What sequence?  What (if any) builds are going in parallel?  Etc.
+[305e6835e05513406fa12820e40e4a8ecb63743c] sched: Do not account irq time to current task
 
-> so far everything went fine
-> 
-> After that I used the new patch (v6 or pre-v6), before that I had to
-> 
-> replace WQ_MEM_RECLAIM with WQ_RESCUER
-> 
-> and, re-compiled the kernels
-> 
-> shortly after I had booted up the system with the first kernel
-> (http://git.eu.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=5a87b7a5da250c9be6d757758425dfeaf8ed3179)
-> the output of 'eselect opengl list' did show no opengl backend
-> selected
-> 
-> so it seems to manifest itself even earlier (ext4: call
-> mpage_da_submit_io() from mpage_da_map_blocks()) even if only subtly
-> and over time -
-> I'm still currently running that kernel and posting from it & having tests run
+as the cause of this regression.  Reverting it from 2.6.37-rc4 (requires some
+hackery due to subsequent changes in the same area) restores sane behaviour.
 
-OK.
- 
-> I'm not sure if it's even a problem with ext4 - I haven't had the time
-> to test with XFS yet - maybe it's also happening with that so it more
-> likely would be dm-core, like Milan suspected
-> (http://marc.info/?l=linux-kernel&m=129123636223477&w=2) :(
+(Author of original patch cc:d.)
 
-It'd be interesting to try to reproduce with that same kernel but using
-XFS.  I'll check with Milan on what he thinks would be the best next
-steps.  Ideally we'll be able to reproduce your results to aid in
-pinpointing the issue.  I think Milan will be trying to do so shortly
-(if he hasn't started already -- using gentoo emerge, etc).
+The original patch submission talks about irq-heavy scenarios.  My case is the
+exact opposite: UP, !PREEMPT, NO_HZ, very low irq rate, essentially 100% CPU
+bound in userspace but expected to schedule quickly when needed (e.g. running
+top or ps or just hitting CR in one shell while another runs a compile job).
 
-> even though most of the time it's compiling I don't need to do much -
-> I need the box for work so if my time allows next tests would be next
-> weekend and I'm back to my other partition
-> 
-> I really do hope that this bugger can be nailed down ASAP - I like the
-> improvements made in 2.6.37 but without the dm-crypt multi-cpu patch
-> it's only half the "fun" ;)
-
-Sure, we'll need to get to the bottom of this before we can have
-confidence sending the dm-crypt cpu scalability patch upstream.
-
-Thanks for your testing,
-Mike
+/Mikael
