@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab0LDVaM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 16:30:12 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38503 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab0LDVaK (ORCPT
+	id S1756094Ab0LDVd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 16:33:58 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56722 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab0LDVd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 16:30:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=SB6Qx4Vwah886jChyEc71actLAhRhVd1wKFYFdp9ID+lP3xWq3c/k/qciioABTycdb
-         HxXVJUUbCvhsVTp0oKpRsy8p0Ke6LTo0UunZ8btUIGDUihN57st2MITx/eI8NOOwi6d8
-         i/qAWK0KVmKSccxRMO5JmzkdjMHfFFJu/Gufw=
+	Sat, 4 Dec 2010 16:33:57 -0500
+Date: Sat, 4 Dec 2010 22:33:48 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "adrian.hunter@nokia.com" <adrian.hunter@nokia.com>,
+        "prakity@marvell.com" <prakity@marvell.com>
+Subject: Re: [PATCH v3 2/3]set timeout control reg for such SDHCI host
+Message-ID: <20101204213348.GE671@pengutronix.de>
+References: <20101202112613.GC10358@intel.com> <20101202115329.GE3345@pengutronix.de> <5D8008F58939784290FAB48F54975198320B3E41F7@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimr=ESQpid8yR-ZkK7uJcaOKoF9dAnmfPu1qiG3@mail.gmail.com>
-References: <AANLkTimr=ESQpid8yR-ZkK7uJcaOKoF9dAnmfPu1qiG3@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Sat, 4 Dec 2010 13:29:48 -0800
-Message-ID: <AANLkTi=uV3d9+u0ajm0i=qs7AMwDn+0m9_zaqet6G-Aw@mail.gmail.com>
-Subject: Re: [compat-wireless] compat-wireless-2.6.37-rc4?
-To: sedat.dilek@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ryJZkp9/svQ58syV"
+Content-Disposition: inline
+In-Reply-To: <5D8008F58939784290FAB48F54975198320B3E41F7@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 2, 2010 at 2:21 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi Luis,
->
-> are you planning a stable compat-wireless-2.6.37-rc4 tarball?
->
-> Kind Regards,
-> - Sedat -
->
-> [1] http://wireless.kernel.org/en/users/Download/stable/#Releases
->
 
-Sure here:
+--ryJZkp9/svQ58syV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-rc4-1.tar.bz2
+On Fri, Dec 03, 2010 at 10:38:59AM +0800, Dong, Chuanxiao wrote:
+>  >=20
+> > On Thu, Dec 02, 2010 at 07:26:13PM +0800, Chuanxiao Dong wrote:
+> >=20
+> > > +	if (host->quirks & SDHCI_QUIRK_FORCE_ERASE_SINGLE) {
+> > > +		/* Set the timeout to be the maximum value */
+> > > +		if (cmd->erase_timeout)
+> > > +			sdhci_writeb(host, 0xE, SDHCI_TIMEOUT_CONTROL);
+> > > +	}
+> > > +
+> > >  	sdhci_writew(host, SDHCI_MAKE_CMD(cmd->opcode, flags),
+> > > SDHCI_COMMAND);
+> >=20
+> > Hmm, this looks like another argument for Philip's idea to always use t=
+he maximum
+> > timeout value and skip the quirks related to it?
+>=20
+> Yes, if always using the maximum timeout value is OK for other command, t=
+he patch2 can be removed I think.
+> The new added quirk in the serials patches is used to set the limitation =
+of request queue, not only just to set the timeout control reg.
+> Even the timeout value was set to be 0xE (the maximum value), erasing too=
+ many sectors can still be failed since the timeout time was still not long=
+er enough.
+> So the count of erased sectors passed down by request queue should be red=
+uced by using this quirk.
 
-ChangeLog:
+Yes, I think I understand the issue. Have you tried adding a callback, so we
+don't have the options between MAX_UINT and '1' but rather MAX_UINT and ret=
+urn
+value of the callback?
 
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/ChangeLog-2.6.37-wireless
+Regards,
 
-Sorry for the delay.
+   Wolfram
 
-  Luis
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--ryJZkp9/svQ58syV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkz6s7wACgkQD27XaX1/VRuaVwCfeqwPNsEcK6rfLHK5jyyQICoB
+3rwAnRN9LfQvg9NIys8grMMBC9hHFJo4
+=yJdq
+-----END PGP SIGNATURE-----
+
+--ryJZkp9/svQ58syV--
