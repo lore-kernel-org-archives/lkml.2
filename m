@@ -1,207 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab0LGSad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:30:33 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48686 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab0LGSac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:30:32 -0500
-Date: Tue, 7 Dec 2010 11:24:20 -0700
-From: Eric B Munson <emunson@mgebm.net>
-To: shaohui.zheng@intel.com
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [1/7,v8] NUMA Hotplug Emulator: documentation
-Message-ID: <20101207182420.GA2038@mgebm.net>
-References: <20101207010033.280301752@intel.com>
- <20101207010139.681125359@intel.com>
+	id S1753603Ab0LGSbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:31:17 -0500
+Received: from [213.175.202.166] ([213.175.202.166]:54977 "EHLO
+	vps17819.eukhost.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752696Ab0LGSbQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 13:31:16 -0500
+Message-ID: <20101204235120.14495tc1ty2liask@webmail.lapo-nigeria.org>
+Date: Sat, 04 Dec 2010 23:51:20 +0000
+From: Tetsuya Koike <info@maillondon.co.uk>
+Reply-to: ma.da20022002@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: Re Your Urgent Response
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20101207010139.681125359@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - vps17819.eukhost.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - maillondon.co.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Shaohui,
+Mr. Tetsuya Koike
+Chiba Bank Ltd
+3rd Floor, Atlas House 1 King Street,
+London EC2V 8AU,
+U.K.
 
-The documentation patch seems to be stale, it needs to be updated to match =
-the
-new file names.
+Dear Friend,
 
-On Tue, 07 Dec 2010, shaohui.zheng@intel.com wrote:
+I am Mr. Tetsuya Koike the Manager, Branch Support Division of Chiba  
+Bank Ltd of 3rd Floor, Atlas House 1 King Street, London EC2V 8AU, U.K.
 
-> From: Shaohui Zheng <shaohui.zheng@intel.com>
->=20
-> add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
-> to explain the usage for the hotplug emulator.
->=20
-> Reviewed-By: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-> Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-> ---
-> Index: linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> +++ linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt	2010-12=
--07 08:53:19.677622002 +0800
-> @@ -0,0 +1,102 @@
-> +NUMA Hotplug Emulator for x86_64
-> +---------------------------------------------------
-> +
-> +NUMA hotplug emulator is able to emulate NUMA Node Hotplug
-> +thru a pure software way. It intends to help people easily debug
-> +and test node/CPU/memory hotplug related stuff on a
-> +none-NUMA-hotplug-support machine, even a UMA machine and virtual
-> +environment.
-> +
-> +1) Node hotplug emulation:
-> +
-> +Adds a numa=3Dpossible=3D<N> command line option to set an additional N =
-nodes
-> +as being possible for memory hotplug.  This set of possible nodes
-> +control nr_node_ids and the sizes of several dynamically allocated node
-> +arrays.
-> +
-> +This allows memory hotplug to create new nodes for newly added memory
-> +rather than binding it to existing nodes.
-> +
-> +For emulation on x86, it would be possible to set aside memory for hotpl=
-ugged
-> +nodes (say, anything above 2G) and to add an additional four nodes as be=
-ing
-> +possible on boot with
-> +
-> +	mem=3D2G numa=3Dpossible=3D4
-> +
-> +and then creating a new 128M node at runtime:
-> +
-> +	# echo 128M@0x80000000 > /sys/kernel/debug/node/add_node
-> +	On node 1 totalpages: 0
-> +	init_memory_mapping: 0000000080000000-0000000088000000
-> +	 0080000000 - 0088000000 page 2M
-> +
-> +Once the new node has been added, its memory can be onlined.  If this
-> +memory represents memory section 16, for example:
-> +
-> +	# echo online > /sys/devices/system/memory/memory16/state
-> +	Built 2 zonelists in Node order, mobility grouping on.  Total pages: 51=
-4846
-> +	Policy zone: Normal
-> + [ The memory section(s) mapped to a particular node are visible via
-> +   /sys/devices/system/node/node1, in this example. ]
-> +
-> +2) CPU hotplug emulation:
-> +
-> +The emulator reserves CPUs thru grub parameter, the reserved CPUs can be
-> +hot-add/hot-remove in software method, it emulates the process of physic=
-al
-> +cpu hotplug.
-> +
-> +When hotplugging a CPU with emulator, we are using a logical CPU to emul=
-ate the
-> +CPU socket hotplug process. For the CPU supported SMT, some logical CPUs=
- are in
-> +the same socket, but it may located in different NUMA node after we have
-> +emulator. We put the logical CPU into a fake CPU socket, and assign it a
-> +unique phys_proc_id. For the fake socket, we put one logical CPU in only.
-> +
-> + - to hide CPUs
-> +	- Using boot option "maxcpus=3DN" hide CPUs
-> +	  N is the number of CPUs to initialize; the reset will be hidden.
-> +	- Using boot option "cpu_hpe=3Don" to enable CPU hotplug emulation
-> +      when cpu_hpe is enabled, the rest CPUs will not be initialized
-> +
-> + - to hot-add CPU to node
-> +	# echo nid > cpu/probe
-> +
-> + - to hot-remove CPU
-> +	# echo nid > cpu/release
-> +
-> +3) Memory hotplug emulation:
-> +
-> +The emulator reserves memory before OS boots, the reserved memory region=
- is
-> +removed from e820 table. Each online node has an add_memory interface, a=
-nd
-> +memory can be hot-added via the per-ndoe add_memory debugfs interface.
-> +
-> +The difficulty of Memory Release is well-known, we have no plan for it u=
-ntil
-> +now.
-> +
-> + - reserve memory thru a kernel boot paramter
-> + 	mem=3D1024m
-> +
-> + - add a memory section to node 3
-> +    # echo 0x40000000 > mem_hotplug/node3/add_memory
-> +	OR
-> +    # echo 1024m > mem_hotplug/node3/add_memory
-> +
-> +4) Script for hotplug testing
-> +
-> +These scripts provides convenience when we hot-add memory/cpu in batch.
-> +
-> +- Online all memory sections:
-> +for m in /sys/devices/system/memory/memory*;
-> +do
-> +	echo online > $m/state;
-> +done
-> +
-> +- CPU Online:
-> +for c in /sys/devices/system/cpu/cpu*;
-> +do
-> +	echo 1 > $c/online;
-> +done
-> +
-> +- David Rientjes <rientjes@google.com>
-> +- Haicheng Li <haicheng.li@intel.com>
-> +- Shaohui Zheng <shaohui.zheng@intel.com>
-> +  Nov 2010
->=20
-> --=20
-> Thanks & Regards,
-> Shaohui
->=20
->=20
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=3Dmailto:"dont@kvack.org"> email@kvack.org </a>
->=20
+I have a very confidential business proposition with you; I will need  
+you to execute a project on behalf of my late client which amount to  
+GBP£25 MILLION POUNDS in my bank. Please, indicate your interest to  
+enable me furnish you with full detail of this transaction.
 
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Your urgent response will highly Appreciated and Provide Me with the  
+following;
+1. Full Name
+2. Your Telephone Number and Fax Number
+3. Your Contact Address.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Regards
+Mr. Tetsuya Koike.
 
-iQEcBAEBAgAGBQJM/nvUAAoJEH65iIruGRnN4jQH/3wn/OE8ZwAXORWGOZhbNzzk
-3Ggrw2JfbvRiP9mYOusy6+jFnNA2P8hJKfhNq/kOjYQSHzYdik+Lq489ftlc1yc3
-Cph/d0fFne9zKJlKZAl/ZcZT97BSkEUdc0z3G9cy3cJHq93X7biwR+RlMs07U9GI
-/b/lz48ujG/ELvhYbXpW3oP0Fr30C6tjJ2WSvhRTZeRdakM3fPDSvHO88azkJZgo
-NKQQiEFYyS9IYVTJ4FinchpIs+A0V0t32pqsNYa8MYz+YJpLf2C1xa7+Cn2ynI5G
-HEnOSa5TEM2INWHAtRTN0Ww0zMk9HB216IQPfGARwFJi3Qi5/SVvZPIrNChOf4w=
-=Tsp+
------END PGP SIGNATURE-----
-
---C7zPtVaVf+AK4Oqc--
