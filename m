@@ -1,263 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab0LDG5l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 01:57:41 -0500
-Received: from tomasu.net ([64.85.170.234]:39710 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab0LDG5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 01:57:39 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: David Milburn <dmilburn@redhat.com>
-Subject: Re: mvsas errors in 2.6.36
-Date: Fri, 3 Dec 2010 23:57:18 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: Andre Tomt <andre@tomt.net>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org
-References: <201010290650.32892.thomas@fjellstrom.ca> <201012030939.44858.thomas@fjellstrom.ca> <4CF95394.7010400@redhat.com>
-In-Reply-To: <4CF95394.7010400@redhat.com>
+	id S1754663Ab0LDHmv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 02:42:51 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60762 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928Ab0LDHmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 02:42:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=WSTt7vI/CCO9B0JhZI9ysjKdaGcPWRjhhvXKnb0SLXD0LH5G/FNp0jQi3JHYX5oDzD
+         +ac0K449JdsuVakUQnRmI48sK2yEKrUjtMEjrsIpwUn5d174ZZtha9VCyBSVAX0GngrZ
+         D7p98JEHss0Jq052h9hx936Zh2P1mtDRRDkTQ=
+Date: Sat, 4 Dec 2010 15:42:37 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Bjoern B. Brandenburg" <bbb.lst@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrea Bastoni <bastoni@sprg.uniroma2.it>,
+        "James H. Anderson" <anderson@cs.unc.edu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Scheduler bug related to rq->skip_clock_update?
+Message-ID: <20101204074236.GA2295@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LNX.2.00.1011202315290.8927@jupiter-cs.cs.unc.edu>
+ <1290359641.4816.69.camel@maggy.simson.net>
+ <alpine.LNX.2.00.1011212327250.8927@jupiter-cs.cs.unc.edu>
+ <1290442781.16393.22.camel@maggy.simson.net>
+ <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012032357.18970.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 3, 2010, David Milburn wrote:
-> Thomas Fjellstrom wrote:
-> > On December 2, 2010, Thomas Fjellstrom wrote:
-> >> On December 1, 2010, Thomas Fjellstrom wrote:
-> >>> On November 17, 2010, you wrote:
-> >>>> On 11/17/2010 08:53 AM, Thomas Fjellstrom wrote:
-> >>>> [snip]
-> >>>> 
-> >>>>> Still no fatal errors, but the problem is still happening regularly.
-> >>>>> It causes a pause in disk io of a couple seconds at least. Really
-> >>>>> quite annoying.
-> >>>>> 
-> >>>>> One thing thats got me wondering, is could this be a power issue?
-> >>>>> It almost seems like (from the messages) that a single drive (any
-> >>>>> drive) is freaking out, and returning an error that probably
-> >>>>> shouldn't happen (no CHS 0?), which could mean the drive is
-> >>>>> underpowered and the firmware is flipping out. I'm not entirely
-> >>>>> sure. The system has a 750w decent quality Antec power supply. The
-> >>>>> total power use of the system shouldn't come over half that (phenom
-> >>>>> II x4 810 cpu, gigabyte ma790fxtud5p mb, low profile nvidia 9400GS
-> >>>>> gpu, 8 sata hdds, 3 fans, etc). I'm mostly sure the 12v rails are
-> >>>>> spread out evenly, but I have yet to make absolutely sure.
-> >>> 
-> >>> Made absolute sure. I had been worrying that I was overloading one of
-> >>> the rails on the PSU, but it turns out that it isn't a multi 12v rail
-> >>> PSU after all. The box and advertising says it is, but the electronics
-> >>> inside all say its a single 12v rail device.
-> >>> 
-> >>>> [snip]
-> >>>> 
-> >>>> After the mvsas update in 2.6.35 this started happening to me as well;
-> >>>> at least its better than the previous state - not working.. ;-)
-> >>>> However, after rolling a new 2.6.35 with the following fix that is
-> >>>> queued up for the upcoming 2.6.35 and 2.6.36 stable releases, they
-> >>>> seem to have dissapeared - 3 days and counting.
-> >>>> 
-> >>>> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=bl
-> >>>> o b_ pl
-> >>>> ain;f=queue-2.6.33/libsas-fix-ncq-mixing-with-non-ncq.patch;h=b6d7c920
-> >>>> 9 4 d95 ad67a3b23c2e09c25d4fbd0f46b;hb=HEAD
-> >>>> 
-> >>>> The fix is queued up for the next 2.6.36 and 2.6.35 stable
-> >>>> point-releases.
-> >>> 
-> >>> Ahah. I wonder how I missed that when I first read it. I'll have to
-> >>> give the stable .36 kernel a try. Thanks!
-> >> 
-> >> No fix so far:
-> >> 
-> >> [ 2539.040104] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
-> >> mvi=ffff880222f00000 task=ffff88018b3e2980 slot=ffff880222f265d0
-> >> slot_idx=x2 [ 2539.040118] drivers/scsi/mvsas/mv_sas.c
-> >> 1632:mvs_query_task:rc= 5 [ 2539.040154] drivers/scsi/mvsas/mv_sas.c
-> >> 2083:port 7 ctrl sts=0x89800. [ 2539.040163] drivers/scsi/mvsas/mv_sas.c
-> >> 2085:Port 7 irq sts = 0x1001001 [ 2539.040176]
-> >> drivers/scsi/mvsas/mv_sas.c 2111:phy7 Unplug Notice [ 2539.050220]
-> >> drivers/scsi/mvsas/mv_sas.c
+On Mon, Nov 22, 2010 at 01:14:47PM -0500, Bjoern B. Brandenburg wrote:
+> On Mon, 22 Nov 2010, Mike Galbraith wrote:
 > 
-> The controller is reporting a phy ready state change, which is why you see
-> the unplug notice.
+> > On Sun, 2010-11-21 at 23:29 -0500, Bjoern B. Brandenburg wrote:
+> > > On Sun, 21 Nov 2010, Mike Galbraith wrote:
+> > >
+> > > > On Sat, 2010-11-20 at 23:22 -0500, Bjoern B. Brandenburg wrote:
+> > > >
+> > > > > I was under the impression that, as an invariant, tasks should not have
+> > > > > TIF_NEED_RESCHED set after they've blocked. In this case, the idle load
+> > > > > balancer should not mark the task that's on its way out with
+> > > > > set_tsk_need_resched().
+> > > >
+> > > > Nice find.
+> > > >
+> > > > > In any case, check_preempt_curr() seems to assume that a resuming task cannot
+> > > > > have TIF_NEED_RESCHED already set. Setting skip_clock_update on a remote CPU
+> > > > > that hasn't even been notified via IPI seems wrong.
+> > > >
+> > > > Yes. Does the below fix it up for you?
+> > >
+> > > The patch definitely changes the behavior, but it doesn't seem to solve (all
+> > > of) the root cause(s). The failsafe kicks in and clears the flag the next
+> > > time that update_rq_clock() is called, but there can still be a significant
+> > > delay between setting and clearing the flag. Right after boot, I'm now seeing
+> > > values that go up to ~21ms.
+> >
+> > A pull isn't the only vulnerability.  Since idle_balance() drops
+> > rq->lock, so another cpu can wake to this rq.
+> >
+> > > Please let me know if there is something else that I should test.
+> >
+> > Sched: clear_tsk_need_resched() after NEWIDLE balancing
+> >
+> > idle_balance() drops/retakes rq->lock, leaving the previous task
+> > vulnerable to set_tsk_need_resched() from another CPU.  Clear it
+> > after NEWIDLE balancing to maintain the invariant that descheduled
+> > tasks are NOT marked for resched.
+> >
+> > This also confuses the skip_clock_update logic, which assumes that
+> > the next call to update_rq_clock() will come nearly ĩmmediately after
+> > being set.  Make the optimization more robust by clearing before we
+> > balance and in update_rq_clock().
 > 
-> Can you enable SCSI_SAS_LIBSAS_DEBUG and see if libsas reports anything
-> before the abort?
+> Unfortunately that doesn't seem to do it yet.
 > 
-> You should be able to turn on in your kernel config:
+> After running five 'find /' instances to completion on the ARM platform,
+> I'm still seeing delays close to 10ms.
 > 
-> Device Drivers
->   SCSI device support
->    SCSI Transports
->     Compile the SAS Domain Transport Attributes in debug mode
-
-Hi, I've done as you requested.
-
-here's all of the output from the first (and currently only) event:
-
-[ 1428.000080] sas: command 0xffff880184ed1680, task 0xffff88017a0f2680, timed out: BLK_EH_NOT_HANDLED
-[ 1428.080051] sas: command 0xffff880224e03880, task 0xffff88017a0f24c0, timed out: BLK_EH_NOT_HANDLED
-[ 1428.080077] sas: Enter sas_scsi_recover_host
-[ 1428.080085] sas: trying to find task 0xffff88017a0f2680
-[ 1428.080092] sas: sas_scsi_find_task: aborting task 0xffff88017a0f2680
-[ 1428.080102] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88017a0f2680 slot=ffff880224066680 slot_idx=x4
-[ 1428.080113] sas: sas_scsi_find_task: querying task 0xffff88017a0f2680
-[ 1428.080119] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
-[ 1428.080125] sas: sas_scsi_find_task: task 0xffff88017a0f2680 failed to abort
-[ 1428.080130] sas: task 0xffff88017a0f2680 is not at LU: I_T recover
-[ 1428.080135] sas: I_T nexus reset for dev 0000000000000000
-[ 1428.080172] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x89800.
-[ 1428.080180] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001
-[ 1428.080193] drivers/scsi/mvsas/mv_sas.c 2111:phy0 Unplug Notice
-[ 1428.090228] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
-[ 1428.090236] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1081
-[ 1428.111954] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
-[ 1428.111962] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x10000
-[ 1428.111969] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[0]
-[ 1428.146351] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 20004
-[ 1428.146351] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
-[ 1428.222044] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
-[ 1428.222109] sas: sas_form_port: phy0 belongs to port0 already(1)!
-[ 1430.300028] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[0]:rc= 0
-[ 1430.300040] sas: I_T 0000000000000000 recovered
-[ 1430.300048] sas: sas_ata_task_done: SAS error 8d
-[ 1430.300059] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-[ 1430.300883] ata9.00: device reported invalid CHS sector 0
-[ 1430.300888] ata9: status=0x01 { Error }
-[ 1430.300894] ata9: error=0x04 { DriveStatusError }
-[ 1430.300950] sas: trying to find task 0xffff88017a0f24c0
-[ 1430.300956] sas: sas_scsi_find_task: aborting task 0xffff88017a0f24c0
-[ 1430.300963] sas: sas_scsi_find_task: task 0xffff88017a0f24c0 is done
-[ 1430.300968] sas: sas_eh_handle_sas_errors: task 0xffff88017a0f24c0 is done
-[ 1430.300974] sas: sas_ata_task_done: SAS error 8d
-[ 1430.300982] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-[ 1430.301777] ata12.00: device reported invalid CHS sector 0
-[ 1430.301782] ata12: status=0x01 { Error }
-[ 1430.301788] ata12: error=0x04 { DriveStatusError }
-[ 1430.301808] sas: --- Exit sas_scsi_recover_host
-
-Thanks.
-
-> Thanks,
-> David
+>     bbb@district10:~$ egrep 'cpu#|skip' /proc/sched_debug
+>     cpu#0
+>       .skip_clock_count              : 89606
+>       .skip_clock_recent_max         : 9817250
+>       .skip_clock_max                : 21992375
+>     cpu#1
+>       .skip_clock_count              : 81978
+>       .skip_clock_recent_max         : 9582500
+>       .skip_clock_max                : 17201750
+>     cpu#2
+>       .skip_clock_count              : 74565
+>       .skip_clock_recent_max         : 9678000
+>       .skip_clock_max                : 9879250
+>     cpu#3
+>       .skip_clock_count              : 81685
+>       .skip_clock_recent_max         : 9300125
+>       .skip_clock_max                : 14115750
 > 
-> >> 2083:port 7 ctrl sts=0x199800. [ 2539.050229]
-> >> drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001081 [
-> >> 2539.071157] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
-> >> [ 2539.071165] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts =
-> >> 0x10000 [ 2539.071173] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in
-> >> on phy[7] [ 2539.081142] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach
-> >> dev info is 5000002 [ 2539.081142]
-> >> drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7 [
-> >> 2539.081142] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
-> >> [ 2541.270047] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
-> >> device[5]:rc= 0 [ 2541.270066] ata14: translated ATA stat/err 0x01/04 to
-> >> SCSI SK/ASC/ASCQ 0xb/00/00 [ 2541.270926] ata14: status=0x01 { Error }
-> >> [ 2541.271747] ata14: error=0x04 { DriveStatusError }
-> >> 
-> >> That appeared after about 42 minutes of uptime.
-> > 
-> > So after about 32 hours of uptime theres been 36 separate events. Each
-> > spits out similar messages as above, and each comes with a noticeable
-> > pause while the drive is reset.
-> > 
-> > There are a number of possible reasons that I'm still having issues:
-> >  - I managed to mess up the git checkout
-> >  - My problem isn't related to the fix
-> >  - The fix doesn't cover all cases of the problem it meant to fix
-> > 
-> > I'm not certain which of them it is, I'd be more inclined to think I
-> > messed up the checkout, as I did patch something in, but the patches
-> > were completely unrelated and shouldn't have affected the scsi or ata
-> > systems at all. At this point I'm just grasping at straws.
-> > 
-> > In case my card is somehow different than expected, I'll paste the lspci
-> > info for it: (AOC-SASLP-MV8)
-> > 
-> > 04:00.0 SCSI storage controller: Marvell Technology Group Ltd.
-> > MV64460/64461/64462 System Controller, Revision B (rev 01)
-> > 
-> >         Subsystem: Super Micro Computer Inc Device 0500
-> >         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-> >         ParErr- Stepping- SERR- FastB2B- DisINTx- Status: Cap+ 66MHz-
-> >         UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort-
-> >         >SERR- <PERR- INTx- Latency: 0, Cache Line Size: 64 bytes
-> >         Interrupt: pin A routed to IRQ 19
-> >         Region 2: I/O ports at df00 [size=128]
-> >         Region 4: Memory at fdef0000 (64-bit, non-prefetchable)
-> >         [size=64K] [virtual] Expansion ROM at fdd00000 [disabled]
-> >         [size=256K] Capabilities: [48] Power Management version 2
-> >         
-> >                 Flags: PMEClk- DSI- D1+ D2- AuxCurrent=0mA
-> >                 PME(D0+,D1+,D2-,D3hot+,D3cold-) Status: D0 NoSoftRst-
-> >                 PME-Enable- DSel=0 DScale=1 PME-
-> >         
-> >         Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-> >         
-> >                 Address: 0000000000000000  Data: 0000
-> >         
-> >         Capabilities: [e0] Express (v1) Legacy Endpoint, MSI 00
-> >         
-> >                 DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
-> >                 unlimited, L1 unlimited
-> >                 
-> >                         ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-> >                 
-> >                 DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
-> >                 Unsupported-
-> >                 
-> >                         RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-> >                         MaxPayload 128 bytes, MaxReadReq 2048 bytes
-> >                 
-> >                 DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr-
-> >                 TransPend- LnkCap: Port #0, Speed 2.5GT/s, Width x4,
-> >                 ASPM L0s, Latency L0 <256ns, L1 unlimited
-> >                 
-> >                         ClockPM- Surprise- LLActRep- BwNot-
-> >                 
-> >                 LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
-> >                 CommClk+
-> >                 
-> >                         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> >                 
-> >                 LnkSta: Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+
-> >                 DLActive- BWMgmt- ABWMgmt-
-> >         
-> >         Capabilities: [100 v1] Advanced Error Reporting
-> >         
-> >                 UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
-> >                 UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol- UEMsk:
-> >                  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
-> >                 RxOF- MalfTLP- ECRC- UnsupReq- ACSViol- UESvrt: DLP+
-> >                 SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+
-> >                 MalfTLP+ ECRC- UnsupReq- ACSViol- CESta:  RxErr+ BadTLP-
-> >                 BadDLLP- Rollover- Timeout- NonFatalErr- CEMsk:  RxErr-
-> >                 BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr- AERCap:
-> >                 First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
-> >         
-> >         Kernel driver in use: mvsas
-> > 
-> > Its installed in a Phenom II X4 810 based system with a 790FX/SB750
-> > chipset, 8G DDR3 1333 RAM, 6 1TB Seagate 7200.12 SATAII drives connected
-> > to the card via sas->sata breakout cables, and a couple 4 drive SATA
-> > hotswap bays. There are also two Seagate 7200.12 500G drives hooked up
-> > to the motherboard SATA controller. The system is powered via an Antec
-> > Neopower Blue 650W PSU which is probably only half loaded. System also
-> > has a discreet gfx card, but its a low end, low profile, fanless card
-> > that takes up next to no power.
-> > 
-> > I'm still willing to help test any fixes for the mvsas driver on this
-> > card.
-> > 
-> > Thank you.
+> On the x86_64 host, I've changed to HZ=100 and am now also seeing delays
+> close to 10ms after 'make clean && make -j8 bzImage'.
+> 
+>     bbb@koruna:~$ egrep 'cpu#|skip' /proc/sched_debug
+>     cpu#0, 2493.476 MHz
+>       .skip_clock_count              : 29703
+>       .skip_clock_recent_max         : 9999858
+>       .skip_clock_max                : 40645942
+>     cpu#1, 2493.476 MHz
+>       .skip_clock_count              : 32696
+>       .skip_clock_recent_max         : 9959118
+>       .skip_clock_max                : 35074771
+>     cpu#2, 2493.476 MHz
+>       .skip_clock_count              : 31742
+>       .skip_clock_recent_max         : 9788654
+>       .skip_clock_max                : 24821765
+>     cpu#3, 2493.476 MHz
+>       .skip_clock_count              : 31123
+>       .skip_clock_recent_max         : 9858546
+>       .skip_clock_max                : 44276033
+>     cpu#4, 2493.476 MHz
+>       .skip_clock_count              : 28346
+>       .skip_clock_recent_max         : 10000775
+>       .skip_clock_max                : 18681753
+>     cpu#5, 2493.476 MHz
+>       .skip_clock_count              : 29421
+>       .skip_clock_recent_max         : 9997656
+>       .skip_clock_max                : 138473407
+>     cpu#6, 2493.476 MHz
+>       .skip_clock_count              : 27721
+>       .skip_clock_recent_max         : 9992074
+>       .skip_clock_max                : 53436918
+>     cpu#7, 2493.476 MHz
+>       .skip_clock_count              : 29637
+>       .skip_clock_recent_max         : 9994516
+>       .skip_clock_max                : 566793528
+> 
+> These numbers were recorded with the below patch.
+> 
+> Please let me know if I can help by testing or tracing something else.
 
+Seems the checking for <if (prev->se.on_rq)> in put_prev_task()
+is the culprit.
 
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Because if we preempt a going sleep process on another CPU,
+we will fail to update the rq clock for that CPU in schedule.
+For example:
+
+          CPUA                       CPUB
+                                  process xxx == current
+ check_preempt_curr() for CPUB		... skip_clock_update==1
+				  going to sleep   
+                                    ->schedule()
+				      ->deactivate_task() fail to update rq clock
+				                       because skip_clock_update==1
+				      ->put_prev_task() fail to update rq clock
+				                       because prev->se.on_rq==false
+
+Then rq clock on CPUB will updated until another schedule envent
+comes.
+
+So Bjoern, is deleting the checking for prev->se.on_rq in
+put_prev_task() helpful?
+
+Thanks,
+Yong
