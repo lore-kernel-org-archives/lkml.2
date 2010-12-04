@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab0LDBDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 20:03:22 -0500
-Received: from smtp5.freeserve.com ([193.252.22.159]:47614 "EHLO
-	smtp5.freeserve.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab0LDBDU (ORCPT
+	id S1754150Ab0LDBNM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 20:13:12 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54119 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab0LDBNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 20:03:20 -0500
-X-ME-UUID: 20101204010316857.D114C1C0008B@mwinf3403.me.freeserve.com
-Date: Sat, 4 Dec 2010 01:02:44 +0000
-From: Chris Vine <chris@cvine.freeserve.co.uk>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #23762] kernel 2.6.37-rc2 breaks i915 graphics
-Message-ID: <20101204010244.7c72482c@boulder.homenet>
-In-Reply-To: <gUkHV_Vc3aE.A.YpG.ByC-MB@chimera>
-References: <1OMp3vU_qjP.A.JXG.uxC-MB@chimera>
-	<gUkHV_Vc3aE.A.YpG.ByC-MB@chimera>
-X-Mailer: Claws Mail 3.7.7 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Dec 2010 20:13:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=okQyIMtBFxkfwbnKoT5x1o68iN5NB49pYRoSshJEwoZ3n/lBUT6JWrcUkBIYs3Xp5P
+         IVo93xpINA6uVGcnF71kcoswi/BVPb6waSWEsHqvrp7smX3UsKCaqgvQFvRfpzlttLYK
+         oOhNPD9qARQOo/diCl0Gk2S7rD4YXdKKKrqKU=
+MIME-Version: 1.0
+In-Reply-To: <C0A2BC8065D6AE4BA759B25FE7A3795E036E7186@WHQBEMAIL1.whq.wistron>
+References: <C0A2BC8065D6AE4BA759B25FE7A3795E036E7186@WHQBEMAIL1.whq.wistron>
+Date: Fri, 3 Dec 2010 17:13:10 -0800
+X-Google-Sender-Auth: gLizonp3Zn5MREqRdq0smHEhc4M
+Message-ID: <AANLkTimx0U8-fAyDnnaFrUJfQMfEtcpYPymYbnBtEYK1@mail.gmail.com>
+Subject: Re: [PATCH] intel_mid_dma: Fix section mismatch warnings
+From: Dan Williams <dan.j.williams@intel.com>
+To: Major_Lee@wistron.com
+Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  3 Dec 2010 00:41:46 +0100 (CET)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a summary
-> report of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.36.  Please verify if it still should be listed and let the
-> tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23762
-> Subject		: kernel 2.6.37-rc2 breaks i915 graphics
-> Submitter	: Chris Vine <chris@cvine.freeserve.co.uk>
-> Date		: 2010-11-21 10:23 (12 days old)
-> Message-ID	: <20101121102344.7c590b99@laptop.homenet>
-> References	:
-> http://marc.info/?l=linux-kernel&m=129033505414671&w=2
+On Tue, Nov 30, 2010 at 12:24 AM,  <Major_Lee@wistron.com> wrote:
+> Fix the following section mismatch warnings.
 
-Yes, it should still be in the list of regressions.  The bug is still
-present in kernel 2.6.37-rc4.
+Actually no, this patch does not fix the warnings, it hides them by
+undoing the annotation.
 
-Chris
+Take a closer look at the warning message:
 
+>
+> WARNING: drivers/built-in.o(.data+0xfa10): Section mismatch in reference
+> from the variable intel_mid_dma_pci to the function
+> .devinit.text:intel_mid_dma_probe()
+> The variable intel_mid_dma_pci references the function __devinit
+> intel_mid_dma_probe() If the reference is valid then annotate the
+> variable with __init* or __refdata (see linux/init.h) or name the
+> variable:
+> *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+> *_console,
 
+Let me highlight the relevant suggestion:
+
+> or name the variable:
+> *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+> *_console,
+
+...nowhere does it say delete the __devinit annotation.
+
+--
+Dan
