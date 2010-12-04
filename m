@@ -1,243 +1,992 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab0LDCCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 21:02:24 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:59661 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751620Ab0LDCCX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 21:02:23 -0500
-X-Authenticated: #1587495
-X-Provags-ID: V01U2FsdGVkX1/ZuDYzsCjZmLVJCo5JyUkohzs+GWWTG0UDK3j/eY
-	+JOG2uBczx4/on
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: gregkh@suse.de
-Subject: Re: Patch "block: fix accounting bug on cross partition merges" has been added to the 2.6.36-stable tree
-Date: Sat, 4 Dec 2010 03:01:57 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-1.slh.2-aptosid-686; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        stable@kernel.org
-References: <12904636664174@site> <201011250234.10424.s.L-H@gmx.de>
-In-Reply-To: <201011250234.10424.s.L-H@gmx.de>
+	id S1754283Ab0LDCGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 21:06:23 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:33559 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752735Ab0LDCGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 21:06:21 -0500
+From: Kevin McNeely <kev@cypress.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: David Brown <davidb@codeaurora.org>, Trilok Soni <tsoni@codeaurora.org>,
+        Kevin McNeely <kev@cypress.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Luotao Fu <l.fu@pengutronix.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [v2] touchscreen Cypress TTSP G3 MTDEV Core Driver
+Date: Fri,  3 Dec 2010 18:06:21 -0800
+Message-Id: <1291428384-26364-1-git-send-email-kev@cypress.com>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <Kevin McNeely <kev@cypress.com>
+References: <Kevin McNeely <kev@cypress.com>
+X-Brightmail-Tracker: AAAAAA==
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201012040302.01436.s.L-H@gmx.de>
-X-Y-GMX-Trusted: 0
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Amended version of Cypress TTSP Gen3 Core Driver.
+Core Driver includes platform data definition file,
+core driver definition file, and core touchscreen
+touch handling of device data. Generates
+multi-touch input events.
+Amendments include changes recommended by reviewers
+of initial version.  Kconfig is for I2C and SPI modules
+including the core.
 
-On Thursday 25 November 2010, Stefan Lippers-Hollmann wrote:
-> Hi
-> 
-> On Thursday 25 November 2010, gregkh@suse.de wrote: 
-> > This is a note to let you know that I've just added the patch titled
-> > 
-> >     block: fix accounting bug on cross partition merges
-> > 
-> > to the 2.6.36-stable tree which can be found at:
-> >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+Signed-off-by: Kevin McNeely <kev@cypress.com>
+---
+ drivers/input/touchscreen/Kconfig       |   24 ++-
+ drivers/input/touchscreen/Makefile      |    2 +-
+ drivers/input/touchscreen/cyttsp_core.c |  442 ++++++++++++++++---------------
+ drivers/input/touchscreen/cyttsp_core.h |    5 +-
+ include/linux/input/cyttsp.h            |   35 +--
+ 5 files changed, 263 insertions(+), 245 deletions(-)
 
-Ping, this continues to be an issue with today's updated queue-2.6.36 
-and reverting this single patch still reliably avoids the problem with 
-unplugging USB storage devices. Is there anything else I could try to
-debug the regression introduced by this patch in queue-2.6.36 any 
-further?
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index ee5a31b..14aa5d0 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -126,12 +126,34 @@ config TOUCHSCREEN_CY8CTMG110
+ 
+ config TOUCHSCREEN_CYTTSP_CORE
+ 	bool "Cypress TTSP touchscreen core"
++	depends on TOUCHSCREEN_CYTTSP_I2C || TOUCHSCREEN_CYTTSP_SPI
++	help
++	  Always activated for Cypress TTSP touchscreen
++
++config TOUCHSCREEN_CYTTSP_I2C
++	tristate "Cypress TTSP i2c touchscreen"
++	depends on I2C
+ 	help
+ 	  Say Y here if you have a Cypress TTSP touchscreen
+-	  connected to your system.
++	  connected to your system with an I2C interface.
++
++	  If unsure, say N.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called cyttsp-i2c.
++
++config TOUCHSCREEN_CYTTSP_SPI
++	tristate "Cypress TTSP spi touchscreen"
++	depends on SPI_MASTER
++	help
++	  Say Y here if you have a Cypress TTSP touchscreen
++	  connected to your  with an SPI interface.
+ 
+ 	  If unsure, say N.
+ 
++	  To compile this driver as a module, choose M here: the
++	  module will be called cyttsp-spi.
++
+ config TOUCHSCREEN_DA9034
+ 	tristate "Touchscreen support for Dialog Semiconductor DA9034"
+ 	depends on PMIC_DA903X
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index f629af9..b6f1ba8 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -16,7 +16,7 @@ obj-$(CONFIG_TOUCHSCREEN_ATMEL_TSADCC)	+= atmel_tsadcc.o
+ obj-$(CONFIG_TOUCHSCREEN_BITSY)		+= h3600_ts_input.o
+ obj-$(CONFIG_TOUCHSCREEN_BU21013)       += bu21013_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)	+= cy8ctmg110_ts.o
+-obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)	+= cyttsp_core.o
++obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)   += cyttsp_core.o
+ obj-$(CONFIG_TOUCHSCREEN_DA9034)	+= da9034-ts.o
+ obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
+ obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
+diff --git a/drivers/input/touchscreen/cyttsp_core.c b/drivers/input/touchscreen/cyttsp_core.c
+index 99fd316..72b9be9 100644
+--- a/drivers/input/touchscreen/cyttsp_core.c
++++ b/drivers/input/touchscreen/cyttsp_core.c
+@@ -70,12 +70,14 @@
+ #define CY_SMALL_TOOL_WIDTH         10
+ #define CY_LARGE_TOOL_WIDTH         255
+ #define CY_REG_BASE                 0x00
+-#define CY_REG_GEST_SET             0x1E
++#define CY_REG_ACT_DIST             0x1E
+ #define CY_REG_ACT_INTRVL           0x1D
+ #define CY_REG_TCH_TMOUT            (CY_REG_ACT_INTRVL+1)
+ #define CY_REG_LP_INTRVL            (CY_REG_TCH_TMOUT+1)
+ #define CY_MAXZ                     255
+-#define CY_DELAY_SYSINFO            20 /* ms */
++#define CY_DELAY_DFLT               20 /* ms */
++#define CY_DELAY_MAX                (500/CY_DELAY_DFLT) /* half second */
++#define CY_ACT_DIST_DFLT            0xF8
+ #define CY_HNDSHK_BIT               0x80
+ /* device mode bits */
+ #define CY_OPERATE_MODE             0x00
+@@ -87,8 +89,8 @@
+ 
+ /* Touch structure */
+ struct cyttsp_touch {
+-	u16 x __attribute__ ((packed));
+-	u16 y __attribute__ ((packed));
++	u8 x[2];
++	u8 y[2];
+ 	u8 z;
+ };
+ 
+@@ -106,7 +108,7 @@ struct cyttsp_xydata {
+ 	u8 touch34_id;
+ 	struct cyttsp_touch tch4;
+ 	u8 tt_undef[3];
+-	u8 gest_set;
++	u8 act_dist;
+ 	u8 tt_reserved;
+ };
+ 
+@@ -160,8 +162,7 @@ struct cyttsp_tch {
+ };
+ 
+ struct cyttsp_trk {
+-	u8 tch;
+-	u8 w;
++	bool tch;
+ 	u16 x;
+ 	u16 y;
+ 	u8 z;
+@@ -173,16 +174,17 @@ struct cyttsp {
+ 	struct input_dev *input;
+ 	struct mutex mutex;
+ 	char phys[32];
+-	struct bus_type *bus_type;
+-	struct cyttsp_platform_data *platform_data;
++	const struct bus_type *bus_type;
++	const struct cyttsp_platform_data *platform_data;
++	struct cyttsp_bus_ops *bus_ops;
+ 	struct cyttsp_xydata xy_data;
+ 	struct cyttsp_bootloader_data bl_data;
+ 	struct cyttsp_sysinfo_data sysinfo_data;
+ 	struct cyttsp_trk prv_trk[CY_NUM_TRK_ID];
+ 	struct cyttsp_tch tch_map[CY_NUM_TCH_ID];
+-	struct cyttsp_bus_ops *bus_ops;
+ 	struct timer_list to_timer;
+-	bool bl_ready;
++	struct completion bl_ready;
++	enum cyttsp_powerstate power_state;
+ };
+ 
+ struct cyttsp_track_data {
+@@ -237,14 +239,6 @@ static int ttsp_tch_ext(struct cyttsp *ts, void *buf)
+ 	return retval;
+ }
+ 
+-static irqreturn_t cyttsp_bl_ready_irq(int irq, void *handle)
+-{
+-	struct cyttsp *ts = handle;
+-
+-	ts->bl_ready = true;
+-	return IRQ_HANDLED;
+-}
+-
+ static int cyttsp_load_bl_regs(struct cyttsp *ts)
+ {
+ 	int retval;
+@@ -294,25 +288,10 @@ static int cyttsp_bl_app_valid(struct cyttsp *ts)
+ 
+ }
+ 
+-static bool cyttsp_wait_bl_ready(struct cyttsp *ts, int loop_delay, int max_try)
+-{
+-	int tries = 0;
+-
+-	ts->bl_ready = false;	/* wait for interrupt to set ready flag */
+-
+-	while (!ts->bl_ready && (tries++ < max_try))
+-		msleep(loop_delay);
+-
+-	if (tries < max_try)
+-		return true;
+-	else
+-		return false;
+-}
+-
+ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
+ {
+ 	int retval;
+-	int tries = 0;
++	int tries;
+ 	u8 bl_cmd[sizeof(bl_command)];
+ 
+ 	memcpy(bl_cmd, bl_command, sizeof(bl_command));
+@@ -332,12 +311,17 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
+ 	if (retval < 0)
+ 		return retval;
+ 
++	/* wait for TTSP Device to complete switch to Operational mode */
++	tries = 0;
+ 	do {
+-		msleep(500);
++		msleep(CY_DELAY_DFLT);
+ 		retval = cyttsp_load_bl_regs(ts);
+-	} while (GET_BOOTLOADERMODE(ts->bl_data.bl_status) &&
+-		tries++ < 10 &&
+-		!(retval < 0));
++	} while (!((retval == 0) &&
++		!GET_BOOTLOADERMODE(ts->bl_data.bl_status)) &&
++		(tries++ < CY_DELAY_MAX));
++
++	dev_dbg(ts->dev, "%s: check bl ready tries=%d ret=%d stat=%02X\n",
++		__func__, tries, retval, ts->bl_data.bl_status);
+ 
+ 	if (retval < 0)
+ 		return retval;
+@@ -350,6 +334,7 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
+ static int cyttsp_set_operational_mode(struct cyttsp *ts)
+ {
+ 	int retval;
++	int tries;
+ 	u8 cmd = CY_OPERATE_MODE;
+ 
+ 	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
+@@ -358,7 +343,17 @@ static int cyttsp_set_operational_mode(struct cyttsp *ts)
+ 		return retval;
+ 
+ 	/* wait for TTSP Device to complete switch to Operational mode */
+-	msleep(500);
++	tries = 0;
++	do {
++		msleep(CY_DELAY_DFLT);
++		retval = ttsp_read_block_data(ts, CY_REG_BASE,
++			sizeof(ts->xy_data), &(ts->xy_data));
++	} while (!((retval == 0) &&
++		(ts->xy_data.act_dist == CY_ACT_DIST_DFLT)) &&
++		(tries++ < CY_DELAY_MAX));
++
++	dev_dbg(ts->dev, "%s: check op ready tries=%d ret=%d dist=%02X\n",
++		__func__, tries, retval, ts->xy_data.act_dist);
+ 
+ 	return retval;
+ }
+@@ -366,6 +361,7 @@ static int cyttsp_set_operational_mode(struct cyttsp *ts)
+ static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
+ {
+ 	int retval;
++	int tries;
+ 	u8 cmd = CY_SYSINFO_MODE;
+ 
+ 	memset(&(ts->sysinfo_data), 0, sizeof(struct cyttsp_sysinfo_data));
+@@ -375,11 +371,19 @@ static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
+ 	if (retval < 0)
+ 		return retval;
+ 
+-	msleep(500);
+-
+ 	/* read sysinfo registers */
+-	retval = ttsp_read_block_data(ts, CY_REG_BASE,
+-		sizeof(ts->sysinfo_data), &(ts->sysinfo_data));
++	tries = 0;
++	do {
++		msleep(CY_DELAY_DFLT);
++		retval = ttsp_read_block_data(ts, CY_REG_BASE,
++			sizeof(ts->sysinfo_data), &(ts->sysinfo_data));
++	} while (!((retval == 0) &&
++		!((ts->sysinfo_data.tts_verh == 0) &&
++		(ts->sysinfo_data.tts_verl == 0))) &&
++		(tries++ < CY_DELAY_MAX));
++
++	dev_dbg(ts->dev, "%s: check sysinfo ready tries=%d ret=%d\n",
++		__func__, tries, retval);
+ 
+ 	dev_info(ts->dev, "%s: tv=%02X%02X ai=0x%02X%02X "
+ 		"av=0x%02X%02X ci=0x%02X%02X%02X\n", "cyttsp",
+@@ -396,9 +400,9 @@ static int cyttsp_set_sysinfo_regs(struct cyttsp *ts)
+ {
+ 	int retval = 0;
+ 
+-	if ((ts->platform_data->act_intrvl != CY_ACT_INTRVL_DFLT) ||
+-		(ts->platform_data->tch_tmout != CY_TCH_TMOUT_DFLT) ||
+-		(ts->platform_data->lp_intrvl != CY_LP_INTRVL_DFLT)) {
++	if (ts->platform_data->act_intrvl != CY_ACT_INTRVL_DFLT ||
++		ts->platform_data->tch_tmout != CY_TCH_TMOUT_DFLT ||
++		ts->platform_data->lp_intrvl != CY_LP_INTRVL_DFLT) {
+ 
+ 		u8 intrvl_ray[3];
+ 
+@@ -411,7 +415,7 @@ static int cyttsp_set_sysinfo_regs(struct cyttsp *ts)
+ 				CY_REG_ACT_INTRVL,
+ 				sizeof(intrvl_ray), intrvl_ray);
+ 
+-		msleep(CY_DELAY_SYSINFO);
++		msleep(CY_DELAY_DFLT);
+ 	}
+ 
+ 	return retval;
+@@ -422,37 +426,36 @@ static int cyttsp_soft_reset(struct cyttsp *ts)
+ 	int retval;
+ 	u8 cmd = CY_SOFT_RESET_MODE;
+ 
+-	/* enable bootloader interrupts */
+-	retval = request_irq(ts->irq, cyttsp_bl_ready_irq,
+-		IRQF_TRIGGER_FALLING, ts->platform_data->name, ts);
+-	if (retval)
++	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
++	if (retval < 0)
+ 		return retval;
+ 
+-	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
+-	if (!retval) {
+-		if (!cyttsp_wait_bl_ready(ts, 20, 100))
+-			retval = -ENODEV;
+-		else
+-			retval = 0;
+-	}
++	/* wait for interrupt to set ready completion */
++	INIT_COMPLETION(ts->bl_ready);
++
++	retval = wait_for_completion_interruptible_timeout(&ts->bl_ready,
++		msecs_to_jiffies(CY_DELAY_DFLT * CY_DELAY_MAX));
++
++	if (retval > 0)
++		retval = 0;
+ 
+-	free_irq(ts->irq, ts);
+ 	return retval;
+ }
+ 
+-static int cyttsp_gesture_setup(struct cyttsp *ts)
++static int cyttsp_act_dist_setup(struct cyttsp *ts)
+ {
+ 	int retval;
+-	u8 gesture_setup;
++	u8 act_dist_setup;
+ 
+ 	/* Init gesture; active distance setup */
+-	gesture_setup = ts->platform_data->gest_set;
+-	retval = ttsp_write_block_data(ts, CY_REG_GEST_SET,
+-		sizeof(gesture_setup), &gesture_setup);
++	act_dist_setup = ts->platform_data->act_dist;
++	retval = ttsp_write_block_data(ts, CY_REG_ACT_DIST,
++		sizeof(act_dist_setup), &act_dist_setup);
+ 
+ 	return retval;
+ }
+ 
++/* map pointers to touch information to allow loop on get xy_data */
+ static void cyttsp_init_tch_map(struct cyttsp *ts)
+ {
+ 	ts->tch_map[0].tch = &ts->xy_data.tch1;
+@@ -465,17 +468,6 @@ static void cyttsp_init_tch_map(struct cyttsp *ts)
+ 	ts->tch_map[3].id = &ts->xy_data.touch34_id;
+ }
+ 
+-static void cyttsp_init_prv_trks(struct cyttsp *ts)
+-{
+-	/* init the touch structures */
+-	memset(ts->prv_trk, CY_NTCH, sizeof(ts->prv_trk));
+-}
+-
+-static void cyttsp_init_cur_trks(struct cyttsp_track_data *t)
+-{
+-	memset(t->cur_trk, CY_NTCH, sizeof(t->cur_trk));
+-}
+-
+ static int cyttsp_hndshk(struct cyttsp *ts, u8 hst_mode)
+ {
+ 	int retval;
+@@ -491,7 +483,7 @@ static int cyttsp_hndshk(struct cyttsp *ts, u8 hst_mode)
+ 	return retval;
+ }
+ 
+-static void handle_multi_touch(struct cyttsp_track_data *t, struct cyttsp *ts)
++static void handle_multi_touch(struct cyttsp_trk *cur_trk, struct cyttsp *ts)
+ {
+ 	u8 id;
+ 	u8 cnt = 0;
+@@ -500,35 +492,27 @@ static void handle_multi_touch(struct cyttsp_track_data *t, struct cyttsp *ts)
+ 	 * is missing from the current event
+ 	 */
+ 	for (id = 0; id < CY_NUM_TRK_ID; id++) {
+-		if (t->cur_trk[id].tch) {
++		if (cur_trk[id].tch) {
+ 			/* put active current track data */
+ 			input_report_abs(ts->input,
+-				ABS_MT_TRACKING_ID, id);
+-			input_report_abs(ts->input,
+-				ABS_MT_WIDTH_MAJOR, t->cur_trk[id].w);
++				ABS_MT_POSITION_X, cur_trk[id].x);
+ 			input_report_abs(ts->input,
+-				ABS_MT_POSITION_X, t->cur_trk[id].x);
++				ABS_MT_POSITION_Y, cur_trk[id].y);
+ 			input_report_abs(ts->input,
+-				ABS_MT_POSITION_Y, t->cur_trk[id].y);
+-			input_report_abs(ts->input,
+-				ABS_MT_TOUCH_MAJOR, t->cur_trk[id].z);
++				ABS_MT_TOUCH_MAJOR, cur_trk[id].z);
+ 			input_mt_sync(ts->input);
+ 
+-			dev_dbg(ts->dev, "%s: MT1: X=%d Y=%d Z=%d\n",
+-				__func__,
+-				t->cur_trk[id].x,
+-				t->cur_trk[id].y,
+-				t->cur_trk[id].z);
+-			/* save current track data into previous track data */
+-			ts->prv_trk[id] = t->cur_trk[id];
++			dev_dbg(ts->dev, "%s: MT% 2d: X=%d Y=%d Z=%d\n",
++				__func__, id,
++				cur_trk[id].x,
++				cur_trk[id].y,
++				cur_trk[id].z);
++			/* save current touch xy_data as previous track data */
++			ts->prv_trk[id] = cur_trk[id];
+ 			cnt++;
+ 		} else if (ts->prv_trk[id].tch) {
+ 			/* put lift-off previous track data */
+ 			input_report_abs(ts->input,
+-				ABS_MT_TRACKING_ID, id);
+-			input_report_abs(ts->input,
+-				ABS_MT_WIDTH_MAJOR, ts->prv_trk[id].w);
+-			input_report_abs(ts->input,
+ 				ABS_MT_POSITION_X, ts->prv_trk[id].x);
+ 			input_report_abs(ts->input,
+ 				ABS_MT_POSITION_Y, ts->prv_trk[id].y);
+@@ -536,11 +520,12 @@ static void handle_multi_touch(struct cyttsp_track_data *t, struct cyttsp *ts)
+ 				ABS_MT_TOUCH_MAJOR, CY_NTCH);
+ 			input_mt_sync(ts->input);
+ 
+-			dev_dbg(ts->dev, "%s: MT1: X=%d Y=%d Z=%d lift-off\n",
+-				__func__,
++			dev_dbg(ts->dev, "%s: MT% 2d: X=%d Y=%d Z=%d liftoff\n",
++				__func__, id,
+ 				ts->prv_trk[id].x,
+ 				ts->prv_trk[id].y,
+ 				CY_NTCH);
++			/* clear previous touch indication */
+ 			ts->prv_trk[id].tch = CY_NTCH;
+ 			cnt++;
+ 		}
+@@ -551,27 +536,21 @@ static void handle_multi_touch(struct cyttsp_track_data *t, struct cyttsp *ts)
+ 		input_sync(ts->input);
+ }
+ 
+-static void cyttsp_get_xydata(struct cyttsp *ts,
+-	struct cyttsp_track_data *t,
+-	u8 id, u8 w, u16 x, u16 y, u8 z)
+-{
+-	struct cyttsp_trk *trk;
+-
+-	trk = &(t->cur_trk[id]);
+-	trk->tch = CY_TCH;
+-	trk->w = w;
+-	trk->x = x;
+-	trk->y = y;
+-	trk->z = z;
+-}
+-
++/* read xy_data for all current touches */
+ static int cyttsp_xy_worker(struct cyttsp *ts)
+ {
+ 	u8 cur_tch = 0;
+ 	u8 tch;
+-	struct cyttsp_track_data trk;
++	u8 id;
++	u8 *x;
++	u8 *y;
++	u8 z;
++	struct cyttsp_trk cur_trk[CY_NUM_TRK_ID];
+ 
+-	/* get event data from CYTTSP device */
++	/* Get event data from CYTTSP device.
++	 * The event data includes all data
++	 * for all active touches.
++	 */
+ 	if (ttsp_read_block_data(ts,
+ 		CY_REG_BASE, sizeof(struct cyttsp_xydata), &ts->xy_data))
+ 		return 0;
+@@ -585,9 +564,11 @@ static int cyttsp_xy_worker(struct cyttsp *ts)
+ 		if (cyttsp_hndshk(ts, ts->xy_data.hst_mode))
+ 			return 0;
+ 
++	/* determine number of currently active touches */
+ 	cur_tch = GET_NUM_TOUCHES(ts->xy_data.tt_stat);
+ 
+-	if (ts->bus_ops->power_state == CY_IDLE_STATE)
++	/* check for any error conditions */
++	if (ts->power_state == CY_IDLE_STATE)
+ 		return 0;
+ 	else if (GET_BOOTLOADERMODE(ts->xy_data.tt_mode)) {
+ 		return -1;
+@@ -605,44 +586,70 @@ static int cyttsp_xy_worker(struct cyttsp *ts)
+ 		dev_dbg(ts->dev, "%s: Invalid buffer detected\n", __func__);
+ 	}
+ 
+-	/* process the touches */
+-	cyttsp_init_cur_trks(&trk);
++	/* clear current touch tracking structures */
++	memset(cur_trk, CY_NTCH, sizeof(cur_trk));
+ 
++	/* extract xy_data for all currently reported touches */
+ 	for (tch = 0; tch < cur_tch; tch++) {
+-		cyttsp_get_xydata(ts, &trk,
+-			tch & 0x01 ?
++		id = tch & 0x01 ?
+ 			(*(ts->tch_map[tch].id) & 0x0F) :
+-			(*(ts->tch_map[tch].id) & 0xF0) >> 4,
+-			CY_SMALL_TOOL_WIDTH,
+-			be16_to_cpu((ts->tch_map[tch].tch)->x),
+-			be16_to_cpu((ts->tch_map[tch].tch)->y),
+-			(ts->tch_map[tch].tch)->z);
++			(*(ts->tch_map[tch].id) & 0xF0) >> 4;
++		x = (u8 *)&((ts->tch_map[tch].tch)->x);
++		y = (u8 *)&((ts->tch_map[tch].tch)->y);
++		z = (ts->tch_map[tch].tch)->z;
++		cur_trk[id].tch = CY_TCH;
++		cur_trk[id].x = ((u16)x[0] << 8) + x[1];
++		cur_trk[id].y = ((u16)y[0] << 8) + y[1];
++		cur_trk[id].z = z;
+ 	}
+ 
+-	handle_multi_touch(&trk, ts);
++	/* provide input event signaling for each active touch */
++	handle_multi_touch(cur_trk, ts);
+ 
+ 	return 0;
+ }
+ 
++static void cyttsp_pr_state(struct cyttsp *ts)
++{
++	static char *cyttsp_powerstate_string[] = {
++		"IDLE",
++		"ACTIVE",
++		"LOW_PWR",
++		"SLEEP",
++		"BOOTLOADER",
++		"INVALID"
++	};
++
++	dev_info(ts->dev, "%s: %s\n", __func__,
++		ts->power_state < CY_INVALID_STATE ?
++		cyttsp_powerstate_string[ts->power_state] :
++		"INVALID");
++}
++
+ static irqreturn_t cyttsp_irq(int irq, void *handle)
+ {
+ 	struct cyttsp *ts = handle;
+ 	int retval;
+ 
+-	retval = cyttsp_xy_worker(ts);
+-
+-	if (retval < 0) {
+-		/* TTSP device has reset back to bootloader mode
+-		 * Reset driver touch history and restore operational mode
+-		 */
+-		cyttsp_init_prv_trks(ts);
+-		retval = cyttsp_exit_bl_mode(ts);
+-		if (retval)
+-			ts->bus_ops->power_state = CY_IDLE_STATE;
+-		dev_info(ts->dev, "%s: %s\n",
+-			__func__,
+-			(ts->bus_ops->power_state == CY_ACTIVE_STATE) ?
+-			"ACTIVE" : "IDLE");
++	if (ts->power_state == CY_BL_STATE)
++		complete(&ts->bl_ready);
++	else {
++		/* process the touches */
++		retval = cyttsp_xy_worker(ts);
++
++		if (retval < 0) {
++			/* TTSP device has reset back to bootloader mode
++			 * Reset driver touch history and restore
++			 * operational mode
++			 */
++			memset(ts->prv_trk, CY_NTCH, sizeof(ts->prv_trk));
++			retval = cyttsp_exit_bl_mode(ts);
++			if (retval)
++				ts->power_state = CY_IDLE_STATE;
++			else
++				ts->power_state = CY_ACTIVE_STATE;
++			cyttsp_pr_state(ts);
++		}
+ 	}
+ 	return IRQ_HANDLED;
+ }
+@@ -651,21 +658,35 @@ static int cyttsp_power_on(struct cyttsp *ts)
+ {
+ 	int retval = 0;
+ 
+-	ts->bus_ops->power_state = CY_IDLE_STATE;
++	if (!ts)
++		return -ENOMEM;
++
++	ts->power_state = CY_BL_STATE;
++
++	/* enable interrupts */
++	retval = request_threaded_irq(ts->irq, NULL, cyttsp_irq,
++		IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++		ts->platform_data->name, ts);
++	if (retval < 0)
++		goto bypass;
++
++	retval = cyttsp_soft_reset(ts);
++	if (retval < 0)
++		goto bypass;
+ 
+ 	retval = cyttsp_bl_app_valid(ts);
+ 	if (retval < 0)
+ 		goto bypass;
+-	else if (retval > 0) {
+-		retval = cyttsp_soft_reset(ts);
+-		if (retval < 0)
+-			goto bypass;
+-	}
++	else if (retval > 0)
++		goto no_bl_bypass;
+ 
+ 	retval = cyttsp_exit_bl_mode(ts);
+ 	if (retval < 0)
+ 		goto bypass;
+ 
++	ts->power_state = CY_IDLE_STATE;
++
++no_bl_bypass:
+ 	retval = cyttsp_set_sysinfo_mode(ts);
+ 	if (retval < 0)
+ 		goto bypass;
+@@ -678,24 +699,16 @@ static int cyttsp_power_on(struct cyttsp *ts)
+ 	if (retval < 0)
+ 		goto bypass;
+ 
+-	/* enable touch interrupts */
+-	retval = request_threaded_irq(ts->irq, NULL, cyttsp_irq,
+-		IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-		ts->platform_data->name, ts);
++	/* init active distance */
++	retval = cyttsp_act_dist_setup(ts);
+ 	if (retval < 0)
+ 		goto bypass;
+ 
+-	/* init gesture setup; required for active distance */
+-	retval = cyttsp_gesture_setup(ts);
++	ts->power_state = CY_ACTIVE_STATE;
++	retval = 0;
+ 
+ bypass:
+-	if (!retval)
+-		ts->bus_ops->power_state = CY_ACTIVE_STATE;
+-
+-	dev_info(ts->dev, "%s: %s\n",
+-		__func__,
+-		(ts->bus_ops->power_state == CY_ACTIVE_STATE) ?
+-		"ACTIVE" : "IDLE");
++	cyttsp_pr_state(ts);
+ 	return retval;
+ }
+ 
+@@ -706,7 +719,7 @@ int cyttsp_resume(void *handle)
+ 	int retval = 0;
+ 	struct cyttsp_xydata xydata;
+ 
+-	if (ts->platform_data->use_sleep && (ts->bus_ops->power_state !=
++	if (ts->platform_data->use_sleep && (ts->power_state !=
+ 		CY_ACTIVE_STATE)) {
+ 		if (ts->platform_data->wakeup) {
+ 			retval = ts->platform_data->wakeup();
+@@ -722,7 +735,7 @@ int cyttsp_resume(void *handle)
+ 			retval = ttsp_read_block_data(ts, CY_REG_BASE,
+ 				sizeof(xydata), &xydata);
+ 			if (!(retval < 0) && !GET_HSTMODE(xydata.hst_mode))
+-				ts->bus_ops->power_state = CY_ACTIVE_STATE;
++				ts->power_state = CY_ACTIVE_STATE;
+ 		}
+ 	}
+ 	dev_dbg(ts->dev, "%s: Wake Up %s\n", __func__,
+@@ -738,51 +751,77 @@ int cyttsp_suspend(void *handle)
+ 	int retval = 0;
+ 
+ 	if (ts->platform_data->use_sleep &&
+-		(ts->bus_ops->power_state == CY_ACTIVE_STATE)) {
++		(ts->power_state == CY_ACTIVE_STATE)) {
+ 		sleep_mode = CY_DEEP_SLEEP_MODE;
+ 		retval = ttsp_write_block_data(ts,
+ 			CY_REG_BASE, sizeof(sleep_mode), &sleep_mode);
+ 		if (!(retval < 0))
+-			ts->bus_ops->power_state = CY_SLEEP_STATE;
++			ts->power_state = CY_SLEEP_STATE;
+ 	}
+ 	dev_dbg(ts->dev, "%s: Sleep Power state is %s\n", __func__,
+-		(ts->bus_ops->power_state == CY_ACTIVE_STATE) ?
++		(ts->power_state == CY_ACTIVE_STATE) ?
+ 		"ACTIVE" :
+-		((ts->bus_ops->power_state == CY_SLEEP_STATE) ?
++		((ts->power_state == CY_SLEEP_STATE) ?
+ 		"SLEEP" : "LOW POWER"));
+ 	return retval;
+ }
+ EXPORT_SYMBOL_GPL(cyttsp_suspend);
+ #endif
+ 
+-int cyttsp_core_init(struct cyttsp_bus_ops *bus_ops,
+-	struct device *dev, void *handle)
++static int cyttsp_open(struct input_dev *dev)
++{
++	struct cyttsp *ts = input_get_drvdata(dev);
++
++	return cyttsp_power_on(ts);
++}
++
++void cyttsp_core_release(void *handle)
++{
++	struct cyttsp *ts = handle;
++
++	if (ts) {
++		mutex_destroy(&ts->mutex);
++		free_irq(ts->irq, ts);
++		input_unregister_device(ts->input);
++		if (ts->platform_data->exit)
++			ts->platform_data->exit();
++		kfree(ts);
++	}
++}
++EXPORT_SYMBOL_GPL(cyttsp_core_release);
++
++static void cyttsp_close(struct input_dev *dev)
++{
++	struct cyttsp *ts = input_get_drvdata(dev);
++
++	cyttsp_core_release(ts);
++}
++
++void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *dev)
+ {
+ 	struct input_dev *input_device;
+-	struct cyttsp *ts;
+-	int retval = 0;
++	struct cyttsp *ts = kzalloc(sizeof(*ts), GFP_KERNEL);
+ 
+-	if ((dev == NULL) || (bus_ops == NULL))
++	if (!ts) {
++		dev_dbg(ts->dev, "%s: Error, kzalloc\n", __func__);
+ 		goto error_alloc_data;
++	}
+ 
+-	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
+-	if (ts == NULL) {
+-		dev_dbg(ts->dev, "%s: Error, kzalloc\n", __func__);
+-		retval = -ENOMEM;
++	if ((dev == NULL) || (bus_ops == NULL)) {
++		kfree(ts);
+ 		goto error_alloc_data;
+ 	}
++
+ 	mutex_init(&ts->mutex);
+ 	ts->dev = dev;
+ 	ts->platform_data = dev->platform_data;
+ 	ts->bus_ops = bus_ops;
+-	ts->platform_data->dev = ts->dev;
++	init_completion(&ts->bl_ready);
+ 
+ 	if (ts->platform_data->init) {
+-		retval = ts->platform_data->init(ts->platform_data, 1);
+-		if (retval) {
++		if (ts->platform_data->init()) {
+ 			dev_dbg(ts->dev, "%s: Error, platform init failed!\n",
+ 				__func__);
+-			retval = -EIO;
+ 			goto error_init;
+ 		}
+ 	}
+@@ -791,28 +830,29 @@ int cyttsp_core_init(struct cyttsp_bus_ops *bus_ops,
+ 	if (ts->irq <= 0) {
+ 		dev_dbg(ts->dev, "%s: Error, failed to allocate irq\n",
+ 			__func__);
+-			retval = -EIO;
+ 			goto error_init;
+ 	}
+ 
+ 	/* Create the input device and register it. */
+ 	input_device = input_allocate_device();
+ 	if (!input_device) {
+-		retval = -ENOMEM;
+ 		dev_dbg(ts->dev, "%s: Error, failed to allocate input device\n",
+ 			__func__);
+-			retval = -ENODEV;
+ 		goto error_input_allocate_device;
+ 	}
+ 
+ 	ts->input = input_device;
+ 	input_device->name = ts->platform_data->name;
++	snprintf(ts->phys, sizeof(ts->phys), "%s", dev_name(dev));
+ 	input_device->phys = ts->phys;
+ 	input_device->dev.parent = ts->dev;
+ 	ts->bus_type = bus_ops->dev->bus;
++	input_device->open = cyttsp_open;
++	input_device->close = cyttsp_close;
++	input_set_drvdata(input_device, ts);
+ 
+ 	cyttsp_init_tch_map(ts);
+-	cyttsp_init_prv_trks(ts);
++	memset(ts->prv_trk, CY_NTCH, sizeof(ts->prv_trk));
+ 
+ 	__set_bit(EV_SYN, input_device->evbit);
+ 	__set_bit(EV_KEY, input_device->evbit);
+@@ -824,61 +864,29 @@ int cyttsp_core_init(struct cyttsp_bus_ops *bus_ops,
+ 		0, ts->platform_data->maxy, 0, 0);
+ 	input_set_abs_params(input_device, ABS_MT_TOUCH_MAJOR,
+ 		0, CY_MAXZ, 0, 0);
+-	input_set_abs_params(input_device, ABS_MT_WIDTH_MAJOR,
+-		0, CY_LARGE_TOOL_WIDTH, 0, 0);
+-	input_set_abs_params(input_device, ABS_MT_TRACKING_ID,
+-		0, CY_NUM_TRK_ID, 0, 0);
+ 
+-	retval = input_register_device(input_device);
+-	if (retval) {
++	if (input_register_device(input_device)) {
+ 		dev_dbg(ts->dev, "%s: Error, failed to register input device\n",
+ 			__func__);
+-			retval = -ENODEV;
+ 		goto error_input_register_device;
+ 	}
+ 
+-	retval = cyttsp_power_on(ts);
+-
+-	if (retval < 0) {
+-		dev_dbg(ts->dev, "%s: Error, power on failed!\n", __func__);
+-		retval = -ENODEV;
+-		goto error_power_on;
+-	}
+-
+-	handle = ts;
+ 	goto no_error;
+ 
+-error_power_on:
+-	free_irq(ts->irq, ts);
+ error_input_register_device:
+ 	input_unregister_device(input_device);
+ error_input_allocate_device:
+-	if (ts->platform_data->init)
+-		ts->platform_data->init(ts->platform_data, 0);
++	if (ts->platform_data->exit)
++		ts->platform_data->exit();
+ error_init:
+ 	mutex_destroy(&ts->mutex);
+ 	kfree(ts);
+ error_alloc_data:
+-	handle = NULL;
+ no_error:
+-	return retval;
++	return ts;
+ }
+ EXPORT_SYMBOL_GPL(cyttsp_core_init);
+ 
+-/* registered in driver struct */
+-void cyttsp_core_release(void *handle)
+-{
+-	struct cyttsp *ts = handle;
+-
+-	mutex_destroy(&ts->mutex);
+-	free_irq(ts->irq, ts);
+-	input_unregister_device(ts->input);
+-	if (ts->platform_data->init)
+-		ts->platform_data->init(ts->platform_data, 0);
+-	kfree(ts);
+-}
+-EXPORT_SYMBOL_GPL(cyttsp_core_release);
+-
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard touchscreen driver core");
+ MODULE_AUTHOR("Cypress");
+diff --git a/drivers/input/touchscreen/cyttsp_core.h b/drivers/input/touchscreen/cyttsp_core.h
+index 43fe438..58ab186 100644
+--- a/drivers/input/touchscreen/cyttsp_core.h
++++ b/drivers/input/touchscreen/cyttsp_core.h
+@@ -30,6 +30,7 @@
+ #define __CYTTSP_CORE_H__
+ 
+ #include <linux/kernel.h>
++#include <linux/err.h>
+ #include <linux/input/cyttsp.h>
+ 
+ #define CY_NUM_RETRY                4 /* max number of retries for read ops */
+@@ -40,11 +41,9 @@ struct cyttsp_bus_ops {
+ 	s32 (*read)(void *handle, u8 addr, u8 length, void *values);
+ 	s32 (*ext)(void *handle, void *values);
+ 	struct device *dev;
+-	enum cyttsp_powerstate power_state;
+ };
+ 
+-int cyttsp_core_init(struct cyttsp_bus_ops *bus_ops,
+-	struct device *dev, void *handle);
++void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *dev);
+ 
+ void cyttsp_core_release(void *handle);
+ #ifdef CONFIG_PM
+diff --git a/include/linux/input/cyttsp.h b/include/linux/input/cyttsp.h
+index 5280252..e942183 100644
+--- a/include/linux/input/cyttsp.h
++++ b/include/linux/input/cyttsp.h
+@@ -30,46 +30,35 @@
+ #define CY_SPI_NAME "cyttsp-spi"
+ #define CY_I2C_NAME "cyttsp-i2c"
+ /* Active Power state scanning/processing refresh interval */
+-#define CY_ACT_INTRVL_DFLT 0x00
++#define CY_ACT_INTRVL_DFLT 0x00 /* ms */
+ /* touch timeout for the Active power */
+-#define CY_TCH_TMOUT_DFLT 0xFF
++#define CY_TCH_TMOUT_DFLT 0xFF /* ms */
+ /* Low Power state scanning/processing refresh interval */
+-#define CY_LP_INTRVL_DFLT 0x0A
+-/*
+- * Active distance in pixels for a gesture to be reported
+- * if set to 0, then all gesture movements are reported
+- * Valid range is 0 - 15
+- */
+-#define CY_ACT_DIST_DFLT 8
+-#define CY_ACT_DIST CY_ACT_DIST_DFLT
+-
+-enum cyttsp_gest {
+-	CY_GEST_GRP_NONE = 0,
+-	CY_GEST_GRP1 =	0x10,
+-	CY_GEST_GRP2 = 0x20,
+-	CY_GEST_GRP3 = 0x40,
+-	CY_GEST_GRP4 = 0x80,
+-};
++#define CY_LP_INTRVL_DFLT 0x0A /* ms */
++/* Active distance in pixels for a gesture to be reported */
++#define CY_ACT_DIST_DFLT 0xF8 /* pixels */
+ 
+ enum cyttsp_powerstate {
+ 	CY_IDLE_STATE,
+ 	CY_ACTIVE_STATE,
+ 	CY_LOW_PWR_STATE,
+ 	CY_SLEEP_STATE,
++	CY_BL_STATE,
++	CY_INVALID_STATE	/* always last in the list */
+ };
+ 
+ struct cyttsp_platform_data {
+-	struct device *dev;
+ 	u32 maxx;
+ 	u32 maxy;
+-	unsigned use_hndshk:1;
+-	unsigned use_sleep:1;
+-	u8 gest_set;	/* Active distance */
++	bool use_hndshk;
++	bool use_sleep;
++	u8 act_dist;	/* Active distance */
+ 	u8 act_intrvl;  /* Active refresh interval; ms */
+ 	u8 tch_tmout;   /* Active touch timeout; ms */
+ 	u8 lp_intrvl;   /* Low power refresh interval; ms */
+ 	int (*wakeup)(void);
+-	int (*init)(struct cyttsp_platform_data *, int on_off);
++	int (*init)(void);
++	void (*exit)(void);
+ 	char *name;
+ 	s16 irq_gpio;
+ 	u8 *bl_keys;
+-- 
+1.7.2.1
 
-> > The filename of the patch is:
-> >      block-fix-accounting-bug-on-cross-partition-merges.patch
-> > and it can be found in the queue-2.6.36 subdirectory.
-> > 
-> > If you, or anyone else, feels it should not be added to the stable tree,
-> > please let <stable@kernel.org> know about it.
-> > 
-> > 
-> > From 7681bfeeccff5efa9eb29bf09249a3c400b15327 Mon Sep 17 00:00:00 2001
-> > From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > Date: Tue, 19 Oct 2010 09:05:00 +0200
-> > Subject: block: fix accounting bug on cross partition merges
-> [...]
-> 
-> This patch, as part of the current -stable queue-2.6.36, throws the 
-> attached NULL pointer dereference upon unplugging usb_storage devices. 
-> My test case is plugging in an USB flash drive, letting it settle a 
-> few seconds and - without having it mounted or touched in any other 
-> way - removing it again (X doesn't need to be running). I can reproduce
-> this reliably with several different flash drives and on different 
-> ia32 and x86_64 systems running current Debian/ unstable userland:
-> 
-> x86_64 (AMD CPU):
-> [  125.041034] usb 1-4: new high speed USB device using ehci_hcd and address 5
-> [  125.167103] usb 1-4: New USB device found, idVendor=0930, idProduct=6545
-> [  125.167111] usb 1-4: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> [  125.167118] usb 1-4: Product: USB Flash Memory
-> [  125.167123] usb 1-4: SerialNumber: 0DC0D77160A25918
-> [  125.201275] Initializing USB Mass Storage driver...
-> [  125.201554] scsi6 : usb-storage 1-4:1.0
-> [  125.201953] usbcore: registered new interface driver usb-storage
-> [  125.201958] USB Mass Storage support registered.
-> [  126.232761] scsi 6:0:0:0: Direct-Access              USB Flash Memory 5.00 PQ: 0 ANSI: 0 CCS
-> [  126.234239] sd 6:0:0:0: Attached scsi generic sg3 type 0
-> [  126.428102] sd 6:0:0:0: [sdb] 1956864 512-byte logical blocks: (1.00 GB/955 MiB)
-> [  126.429105] sd 6:0:0:0: [sdb] Write Protect is off
-> [  126.429111] sd 6:0:0:0: [sdb] Mode Sense: 23 00 00 00
-> [  126.429117] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> [  126.434082] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> [  126.474358]  sdb: sdb1
-> [  126.477081] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> [  126.477203] sd 6:0:0:0: [sdb] Attached SCSI removable disk
-> [  160.223809] usb 1-4: USB disconnect, address 5
-> [  160.224168] BUG: unable to handle kernel NULL pointer dereference at 0000000000000340
-> [  160.224322] IP: [<ffffffff811b203a>] disk_replace_part_tbl+0x2a/0x80
-> [  160.224445] PGD 7a245067 PUD 7a244067 PMD 0 
-> [  160.224538] Oops: 0000 [#1] PREEMPT SMP 
-> [  160.224625] last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
-> [  160.224755] CPU 0 
-> [  160.224792] Modules linked in: usb_storage cpufreq_stats cpufreq_ondemand cpufreq_powersave cpufreq_conservative cpufreq_performance ppdev lp af_packet fuse nls_utf8 ntfs powernow_k8 freq_table mperf arc4 ecb ath9k ir_lirc_codec lirc_dev tda18218 ir_sony_decoder af9013 ir_jvc_decoder mac80211 ir_rc6_decoder snd_intel8x0 snd_ac97_codec ac97_bus ir_rc5_decoder radeon ath9k_common ath9k_hw dvb_usb_af9015 ath dvb_usb rtc_cmos ttm snd_pcm drm_kms_helper ir_nec_decoder cfg80211 drm rtc_core tpm_tis dvb_core snd_seq pcspkr rtc_lib tpm rfkill k8temp snd_timer ir_core parport_pc psmouse tpm_bios evdev serio_raw led_class parport i2c_algo_bit snd_seq_device button processor snd soundcore snd_page_alloc shpchp edac_core pci_hotplug edac_mce_amd i2c_nforce2 i2c_core ext4 mbcache jbd2 crc16 dm_mod btrfs zlib_deflate crc32c libcrc32c sg sr_mod cdrom sd_mod usbhid ata_generic hid pata_acpi ohci_hcd sata_nv pata_amd ssb libata mmc_core ehci_hcd pcmcia usbcore floppy e1000 firewire_ohci fan
->  firewire_core thermal crc_itu_t scsi_mod pcmcia_core forcedeth nls_base [last unloaded: scsi_wait_scan]
-> [  160.227178] 
-> [  160.227178] Pid: 682, comm: khubd Not tainted 2.6.36-1.slh.1-aptosid-amd64 #1 MS-7185/MS-7185
-> [  160.227178] RIP: 0010:[<ffffffff811b203a>]  [<ffffffff811b203a>] disk_replace_part_tbl+0x2a/0x80
-> [  160.227178] RSP: 0018:ffff88003774dae0  EFLAGS: 00010286
-> [  160.227178] RAX: 0000000000000000 RBX: ffff88007cb50ec0 RCX: 0000000000000040
-> [  160.227178] RDX: 0000000000000051 RSI: 0000000000000000 RDI: ffff88007c9f9400
-> [  160.227178] RBP: 0000000000000000 R08: ffffffff814d4fd8 R09: ffffffff811c1130
-> [  160.227178] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-> [  160.227178] R13: ffffffffa0ac26e0 R14: ffffffffa0ac2748 R15: 0000000000000000
-> [  160.227178] FS:  00007fcf9962f700(0000) GS:ffff880001800000(0000) knlGS:0000000000000000
-> [  160.227178] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  160.227178] CR2: 0000000000000340 CR3: 000000007a23e000 CR4: 00000000000006f0
-> [  160.227178] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  160.227178] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  160.227178] Process khubd (pid: 682, threadinfo ffff88003774c000, task ffff88007ca942e0)
-> [  160.227178] Stack:
-> [  160.227178]  0000000000000000 ffff88007c9f9400 ffffffff8150cc20 ffffffff811b210b
-> [  160.227178] <0> 0000000000000000 ffffffff8126b52a ffff88007c9f9470 ffffffff811c04e3
-> [  160.227178] <0> ffff88007c9f94a8 ffffffff811c04a0 0000000000000286 ffffffff811c1713
-> [  160.227178] Call Trace:
-> [  160.227178]  [<ffffffff811b210b>] ? disk_release+0x1b/0x30
-> [  160.227178]  [<ffffffff8126b52a>] ? device_release+0x1a/0x80
-> [  160.227178]  [<ffffffff811c04e3>] ? kobject_release+0x43/0xb0
-> [  160.227178]  [<ffffffff811c04a0>] ? kobject_release+0x0/0xb0
-> [  160.227178]  [<ffffffff811c1713>] ? kref_put+0x33/0x70
-> [  160.227178]  [<ffffffffa0314570>] ? sg_device_destroy+0x60/0xa0 [sg]
-> [  160.227178]  [<ffffffffa0314510>] ? sg_device_destroy+0x0/0xa0 [sg]
-> [  160.227178]  [<ffffffff811c1713>] ? kref_put+0x33/0x70
-> [  160.227178]  [<ffffffff8126bf4a>] ? device_del+0xba/0x1c0
-> [  160.227178]  [<ffffffff8126c059>] ? device_unregister+0x9/0x20
-> [  160.227178]  [<ffffffffa000cf7d>] ? __scsi_remove_device+0xad/0xc0 [scsi_mod]
-> [  160.227178]  [<ffffffffa0009a84>] ? scsi_forget_host+0x54/0x80 [scsi_mod]
-> [  160.227178]  [<ffffffffa0001fc1>] ? scsi_remove_host+0x61/0x100 [scsi_mod]
-> [  160.227178]  [<ffffffffa0abf240>] ? quiesce_and_remove_host+0x60/0xb0 [usb_storage]
-> [  160.227178]  [<ffffffffa0abf345>] ? usb_stor_disconnect+0x15/0x20 [usb_storage]
-> [  160.227178]  [<ffffffffa00bf246>] ? usb_unbind_interface+0x66/0x1b0 [usbcore]
-> [  160.227178]  [<ffffffff8126e8ff>] ? __device_release_driver+0x6f/0xf0
-> [  160.227178]  [<ffffffff8126ea55>] ? device_release_driver+0x25/0x40
-> [  160.227178]  [<ffffffff8126dd8e>] ? bus_remove_device+0x9e/0xe0
-> [  160.227178]  [<ffffffff8126bfb0>] ? device_del+0x120/0x1c0
-> [  160.227178]  [<ffffffffa00bbfc8>] ? usb_disable_device+0x68/0x120 [usbcore]
-> [  160.227178]  [<ffffffffa00b68af>] ? usb_disconnect+0x8f/0x130 [usbcore]
-> [  160.227178]  [<ffffffffa00b7719>] ? hub_thread+0x479/0x11b0 [usbcore]
-> [  160.227178]  [<ffffffff810416d0>] ? __dequeue_entity+0x40/0x50
-> [  160.227178]  [<ffffffff8106b740>] ? autoremove_wake_function+0x0/0x30
-> [  160.227178]  [<ffffffffa00b72a0>] ? hub_thread+0x0/0x11b0 [usbcore]
-> [  160.227178]  [<ffffffffa00b72a0>] ? hub_thread+0x0/0x11b0 [usbcore]
-> [  160.227178]  [<ffffffff8106b276>] ? kthread+0x96/0xa0
-> [  160.227178]  [<ffffffff8100bce4>] ? kernel_thread_helper+0x4/0x10
-> [  160.227178]  [<ffffffff8106b1e0>] ? kthread+0x0/0xa0
-> [  160.227178]  [<ffffffff8100bce0>] ? kernel_thread_helper+0x0/0x10
-> [  160.227178] Code: 00 48 83 ec 18 48 89 5c 24 08 48 89 6c 24 10 48 8b 5f 38 48 8b af d0 02 00 00 48 85 db 48 89 77 38 74 4e 48 c7 43 18 00 00 00 00 <48> 8b bd 40 03 00 00 e8 3a ae 1d 00 48 89 ef e8 b2 6d ff ff 48 
-> [  160.227178] RIP  [<ffffffff811b203a>] disk_replace_part_tbl+0x2a/0x80
-> [  160.227178]  RSP <ffff88003774dae0>
-> [  160.227178] CR2: 0000000000000340
-> [  160.615286] ---[ end trace a932a28f5152163d ]---
-> 
-> 
-> 
-> i386 (Intel CPU):
-> [   49.420017] usb 1-5: new high speed USB device using ehci_hcd and address 4
-> [   49.539578] usb 1-5: New USB device found, idVendor=0ea0, idProduct=2168
-> [   49.539585] usb 1-5: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> [   49.539588] usb 1-5: Product: Mass storage    
-> [   49.539591] usb 1-5: Manufacturer: USB     
-> [   49.539594] usb 1-5: SerialNumber: 1D7A160C3FB576C6
-> [   49.590718] Initializing USB Mass Storage driver...
-> [   49.590946] scsi2 : usb-storage 1-5:1.0
-> [   49.591562] usbcore: registered new interface driver usb-storage
-> [   49.591567] USB Mass Storage support registered.
-> [   50.598755] scsi 2:0:0:0: Direct-Access     SHARKOON USB2.0 Drive     2.00 PQ: 0 ANSI: 2
-> [   50.601613] sd 2:0:0:0: Attached scsi generic sg2 type 0
-> [   51.658219] ready
-> [   51.658848] sd 2:0:0:0: [sdb] 256000 512-byte logical blocks: (131 MB/125 MiB)
-> [   51.659603] sd 2:0:0:0: [sdb] Write Protect is off
-> [   51.659611] sd 2:0:0:0: [sdb] Mode Sense: 03 00 00 00
-> [   51.659615] sd 2:0:0:0: [sdb] Assuming drive cache: write through
-> [   51.664973] sd 2:0:0:0: [sdb] Assuming drive cache: write through
-> [   51.666514]  sdb: sdb1
-> [   51.669373] sd 2:0:0:0: [sdb] Assuming drive cache: write through
-> [   51.669468] sd 2:0:0:0: [sdb] Attached SCSI removable disk
-> [   81.733729] usb 1-5: USB disconnect, address 4
-> [   81.734045] BUG: unable to handle kernel NULL pointer dereference at 000001c0
-> [   81.734166] IP: [<c0263ab1>] disk_replace_part_tbl+0x21/0x70
-> [   81.734256] *pde = 00000000 
-> [   81.734312] Oops: 0000 [#1] PREEMPT SMP 
-> [   81.734408] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.7/usb1/1-5/1-5:1.0/host2/target2:0:0/2:0:0:0/block/sdb/size
-> [   81.734520] Modules linked in: usb_storage af_packet rt73usb crc_itu_t arc4 ecb rt2500usb rt2x00usb rt2x00lib snd_intel8x0 snd_ac97_codec ac97_bus p54usb tpm_tis snd_pcm p54common tpm rtc_cmos i915 drm_kms_helper drm i2c_i801 led_class rtc_core tpm_bios intel_agp rng_core avmfritz parport_pc mISDNipac processor i2c_algo_bit rtc_lib mac80211 i2c_core container button evdev parport psmouse video snd_seq pcspkr output serio_raw mISDN_core snd_timer snd_seq_device usbhid hid snd cfg80211 shpchp soundcore rfkill pci_hotplug snd_page_alloc ext4 mbcache jbd2 crc16 dm_mod sg sr_mod sd_mod cdrom ata_generic pata_acpi ata_piix libata uhci_hcd ehci_hcd usbcore scsi_mod e100 floppy mii thermal nls_base [last unloaded: scsi_wait_scan]
-> [   81.735009] 
-> [   81.735009] Pid: 553, comm: khubd Not tainted 2.6.36-1.slh.1-aptosid-686 #1 D1521/SCENIC P300
-> [   81.735009] EIP: 0060:[<c0263ab1>] EFLAGS: 00010286 CPU: 0
-> [   81.735009] EIP is at disk_replace_part_tbl+0x21/0x70
-> [   81.735009] EAX: de70c400 EBX: d7713e00 ECX: d7713dc0 EDX: 00000000
-> [   81.735009] ESI: 00000000 EDI: 00000000 EBP: e0017d20 ESP: d74a7db0
-> [   81.735009]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> [   81.735009] Process khubd (pid: 553, ti=d74a6000 task=df071920 task.ti=d74a6000)
-> [   81.735009] Stack:
-> [   81.735009]  de70c400 c0509988 c0263b68 00000000 c03060b6 d764b740 00000000 e043731c
-> [   81.735009] <0> 00000000 de70c458 c026f727 de70c474 c026f6f0 de4554b8 c02706ba d764b700
-> [   81.735009] <0> 00000292 e0433495 c0223778 dd7f3d50 d764b72c e0433450 c02706ba de4555e8
-> [   81.735009] Call Trace:
-> [   81.735009]  [<c0263b68>] ? disk_release+0x18/0x30
-> [   81.735009]  [<c03060b6>] ? device_release+0x16/0x80
-> [   81.735009]  [<c026f727>] ? kobject_release+0x37/0x90
-> [   81.735009]  [<c026f6f0>] ? kobject_release+0x0/0x90
-> [   81.735009]  [<c02706ba>] ? kref_put+0x2a/0x60
-> [   81.735009]  [<e0433495>] ? sg_device_destroy+0x45/0x70 [sg]
-> [   81.735009]  [<c0223778>] ? sysfs_hash_and_remove+0x78/0x80
-> [   81.735009]  [<e0433450>] ? sg_device_destroy+0x0/0x70 [sg]
-> [   81.735009]  [<c02706ba>] ? kref_put+0x2a/0x60
-> [   81.735009]  [<c030690d>] ? device_del+0x9d/0x180
-> [   81.735009]  [<c03069f8>] ? device_unregister+0x8/0x10
-> [   81.735009]  [<e000992b>] ? __scsi_remove_device+0x8b/0xa0 [scsi_mod]
-> [   81.735009]  [<e0006aef>] ? scsi_forget_host+0x5f/0x70 [scsi_mod]
-> [   81.735009]  [<dffffb61>] ? scsi_remove_host+0x51/0xd0 [scsi_mod]
-> [   81.735009]  [<e07a7f6b>] ? quiesce_and_remove_host+0x5b/0xa0 [usb_storage]
-> [   81.735009]  [<e07a8050>] ? usb_stor_disconnect+0x10/0x20 [usb_storage]
-> [   81.735009]  [<e005bbe8>] ? usb_unbind_interface+0x38/0x130 [usbcore]
-> [   81.735009]  [<c0308d8d>] ? __device_release_driver+0x4d/0xb0
-> [   81.735009]  [<c0308e9d>] ? device_release_driver+0x1d/0x30
-> [   81.735009]  [<c030842b>] ? bus_remove_device+0x7b/0xb0
-> [   81.735009]  [<c030695f>] ? device_del+0xef/0x180
-> [   81.735009]  [<e0058e8d>] ? usb_disable_device+0x4d/0xf0 [usbcore]
-> [   81.735009]  [<e0054308>] ? usb_disconnect+0x78/0x100 [usbcore]
-> [   81.735009]  [<e0054fad>] ? hub_thread+0x3dd/0xfa0 [usbcore]
-> [   81.735009]  [<c01518f0>] ? autoremove_wake_function+0x0/0x40
-> [   81.735009]  [<e0054bd0>] ? hub_thread+0x0/0xfa0 [usbcore]
-> [   81.735009]  [<c0151574>] ? kthread+0x74/0x80
-> [   81.735009]  [<c0151500>] ? kthread+0x0/0x80
-> [   81.735009]  [<c0103cb6>] ? kernel_thread_helper+0x6/0x10
-> [   81.735009] Code: 36 22 01 00 83 c4 0c c3 66 90 83 ec 08 89 1c 24 89 74 24 04 8b 58 30 8b b0 a8 01 00 00 85 db 89 50 30 74 3e c7 43 0c 00 00 00 00 <8b> 86 c0 01 00 00 e8 f4 60 1a 00 89 f0 e8 4d 7a ff ff 8b 86 c0 
-> [   81.735009] EIP: [<c0263ab1>] disk_replace_part_tbl+0x21/0x70 SS:ESP 0068:d74a7db0
-> [   81.735009] CR2: 00000000000001c0
-> [   81.924511] ---[ end trace af3a9b8b1414ddab ]---
-> 
-> Reverting just this patch and keeping the rest of queue-2.6.36
-[...]
-> fixes the 
-> regression for me.
-[...]
 
- Regards
-	Stefan Lippers-Hollmann
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
