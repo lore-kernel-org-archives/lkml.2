@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab0LDCcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 21:32:21 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62393 "EHLO
+	id S1754722Ab0LDCcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 21:32:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52435 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab0LDCbn (ORCPT
+	with ESMTP id S1753604Ab0LDCbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Dec 2010 21:31:43 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=uQMzxKW3AL4A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=qr02Ien6On4zqSQgeJAA:9 a=oLrXhcDnmUG5mvbSVcwA:7 a=DcbFd1LuGzXWCUlcQqE7-IdCdh0A:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=MSJTFYPfGdIA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=rLogI6DC0sUyjKtDrq4A:9 a=hfe9ecyzOdHrMqBjMT0HRyLjdagA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=l07xrTs1LC0vC91L:21 a=0iFEhcI2_tIRA80d:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101204023141.552849493@goodmis.org>
+Message-Id: <20101204023141.280871614@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 03 Dec 2010 21:17:47 -0500
+Date: Fri, 03 Dec 2010 21:17:46 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,198 +21,129 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 3/4] tracing: Add TRACE_EVENT_CONDITIONAL()
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Subject: [PATCH 2/4] tracing/events: Show real number in array fields
 References: <20101204021744.521599148@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Add-TRACE_EVENT_CONDITIONAL.patch
+Content-Disposition: inline; filename=0002-tracing-events-Show-real-number-in-array-fields.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-There are instances in the kernel that we only want to trace
-a tracepoint when a certain condition is set. But we do not
-want to test for that condition in the core kernel.
-If we test for that condition before calling the tracepoin, then
-we will be performing that test even when tracing is not enabled.
-This is 99.99% of the time.
+Currently we have in something like the sched_switch event:
 
-We currently can just filter out on that condition, but that happens
-after we write to the trace buffer. We just wasted time writing to
-the ring buffer for an event we never cared about.
+  field:char prev_comm[TASK_COMM_LEN];	offset:12;	size:16;	signed:1;
 
-This patch adds:
+When a userspace tool such as perf tries to parse this, the
+TASK_COMM_LEN is meaningless. This is done because the TRACE_EVENT() macro
+simply uses a #len to show the string of the length. When the length is
+an enum, we get a string that means nothing for tools.
 
-   TRACE_EVENT_CONDITION() and DEFINE_EVENT_CONDITION()
+By adding a static buffer and a mutex to protect it, we can store the
+string into that buffer with snprintf and show the actual number.
+Now we get:
 
-These have a new TP_CONDITION() argument that comes right after
-the TP_ARGS().  This condition can use the parameters of TP_ARGS()
-in the TRACE_EVENT() to determine if the tracepoint should be traced
-or not. The TP_CONDITION() will be placed in a if (cond) trace;
+  field:char prev_comm[16];       offset:12;      size:16;        signed:1;
 
-For example, for the tracepoint sched_wakeup, it is useless to
-trace a wakeup event where the caller never actually wakes
-anything up (where success == 0). So adding:
+Something much more useful.
 
-	TP_CONDITION(success),
-
-which uses the "success" parameter of the wakeup tracepoint
-will have it only trace when we have successfully woken up a
-task.
-
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/tracepoint.h   |   29 +++++++++++++++++++++++------
- include/trace/define_trace.h |   15 +++++++++++++++
- 2 files changed, 38 insertions(+), 6 deletions(-)
+ include/linux/ftrace_event.h |    4 ++++
+ include/trace/ftrace.h       |   14 ++++++++++----
+ kernel/trace/trace_events.c  |    6 ++++++
+ kernel/trace/trace_export.c  |   14 ++++++++++----
+ 4 files changed, 30 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 5a6074f..d3e4f87 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -106,6 +106,7 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 725bf6b..47e3997 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -225,6 +225,10 @@ enum {
+ 	FILTER_PTR_STRING,
+ };
  
- #define TP_PROTO(args...)	args
- #define TP_ARGS(args...)	args
-+#define TP_CONDITION(args...)	args
- 
- #ifdef CONFIG_TRACEPOINTS
- 
-@@ -119,12 +120,14 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
-  * as "(void *, void)". The DECLARE_TRACE_NOARGS() will pass in just
-  * "void *data", where as the DECLARE_TRACE() will pass in "void *data, proto".
-  */
--#define __DO_TRACE(tp, proto, args)					\
-+#define __DO_TRACE(tp, proto, args, cond)				\
- 	do {								\
- 		struct tracepoint_func *it_func_ptr;			\
- 		void *it_func;						\
- 		void *__data;						\
- 									\
-+		if (!(cond))						\
-+			return;						\
- 		rcu_read_lock_sched_notrace();				\
- 		it_func_ptr = rcu_dereference_sched((tp)->funcs);	\
- 		if (it_func_ptr) {					\
-@@ -142,7 +145,7 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
-  * not add unwanted padding between the beginning of the section and the
-  * structure. Force alignment to the same alignment as the section start.
-  */
--#define __DECLARE_TRACE(name, proto, args, data_proto, data_args)	\
-+#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
- 	extern struct tracepoint __tracepoint_##name;			\
- 	static inline void trace_##name(proto)				\
- 	{								\
-@@ -151,7 +154,8 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
- do_trace:								\
- 			__DO_TRACE(&__tracepoint_##name,		\
- 				TP_PROTO(data_proto),			\
--				TP_ARGS(data_args));			\
-+				TP_ARGS(data_args),			\
-+				TP_CONDITION(cond));			\
- 	}								\
- 	static inline int						\
- 	register_trace_##name(void (*probe)(data_proto), void *data)	\
-@@ -186,7 +190,7 @@ do_trace:								\
- 	EXPORT_SYMBOL(__tracepoint_##name)
- 
- #else /* !CONFIG_TRACEPOINTS */
--#define __DECLARE_TRACE(name, proto, args, data_proto, data_args)	\
-+#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
- 	static inline void trace_##name(proto)				\
- 	{ }								\
- 	static inline int						\
-@@ -227,13 +231,18 @@ do_trace:								\
-  * "void *__data, proto" as the callback prototype.
-  */
- #define DECLARE_TRACE_NOARGS(name)					\
--		__DECLARE_TRACE(name, void, , void *__data, __data)
-+		__DECLARE_TRACE(name, void, , 1, void *__data, __data)
- 
- #define DECLARE_TRACE(name, proto, args)				\
--		__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args),	\
-+		__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args), 1,	\
- 				PARAMS(void *__data, proto),		\
- 				PARAMS(__data, args))
- 
-+#define DECLARE_TRACE_CONDITION(name, proto, args, cond)		\
-+	__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args), PARAMS(cond), \
-+			PARAMS(void *__data, proto),			\
-+			PARAMS(__data, args))
++#define EVENT_STORAGE_SIZE 128
++extern struct mutex event_storage_mutex;
++extern char event_storage[EVENT_STORAGE_SIZE];
 +
- #define TRACE_EVENT_FLAGS(event, flag)
+ extern int trace_event_raw_init(struct ftrace_event_call *call);
+ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 			      const char *name, int offset, int size,
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index e718a91..e16610c 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -296,13 +296,19 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
  
- #endif /* DECLARE_TRACE */
-@@ -349,12 +358,20 @@ do_trace:								\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-+#define DEFINE_EVENT_CONDITION(template, name, proto,		\
-+			       args, cond)			\
-+	DECLARE_TRACE_CONDITION(name, PARAMS(proto),		\
-+				PARAMS(args), PARAMS(cond))
+ #undef __array
+ #define __array(type, item, len)					\
+-	BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);				\
+-	ret = trace_define_field(event_call, #type "[" #len "]", #item,	\
++	do {								\
++		mutex_lock(&event_storage_mutex);			\
++		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
++		snprintf(event_storage, sizeof(event_storage),		\
++			 "%s[%d]", #type, len);				\
++		ret = trace_define_field(event_call, event_storage, #item, \
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), FILTER_OTHER);	\
+-	if (ret)							\
+-		return ret;
++		mutex_unlock(&event_storage_mutex);			\
++		if (ret)						\
++			return ret;					\
++	} while (0);
  
- #define TRACE_EVENT(name, proto, args, struct, assign, print)	\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define TRACE_EVENT_FN(name, proto, args, struct,		\
- 		assign, print, reg, unreg)			\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-+#define TRACE_EVENT_CONDITION(name, proto, args, cond,		\
-+			      struct, assign, print)		\
-+	DECLARE_TRACE_CONDITION(name, PARAMS(proto),		\
-+				PARAMS(args), PARAMS(cond))
+ #undef __dynamic_array
+ #define __dynamic_array(type, item, len)				       \
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 0725eea..35fde09 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -27,6 +27,12 @@
  
- #define TRACE_EVENT_FLAGS(event, flag)
+ DEFINE_MUTEX(event_mutex);
  
-diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-index 1dfab54..b0b4eb2 100644
---- a/include/trace/define_trace.h
-+++ b/include/trace/define_trace.h
-@@ -26,6 +26,15 @@
- #define TRACE_EVENT(name, proto, args, tstruct, assign, print)	\
- 	DEFINE_TRACE(name)
- 
-+#undef TRACE_EVENT_CONDITION
-+#define TRACE_EVENT_CONDITION(name, proto, args, cond, tstruct, assign, print) \
-+	TRACE_EVENT(name,						\
-+		PARAMS(proto),						\
-+		PARAMS(args),						\
-+		PARAMS(tstruct),					\
-+		PARAMS(assign),						\
-+		PARAMS(print))
++DEFINE_MUTEX(event_storage_mutex);
++EXPORT_SYMBOL_GPL(event_storage_mutex);
 +
- #undef TRACE_EVENT_FN
- #define TRACE_EVENT_FN(name, proto, args, tstruct,		\
- 		assign, print, reg, unreg)			\
-@@ -39,6 +48,10 @@
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_TRACE(name)
- 
-+#undef DEFINE_EVENT_CONDITION
-+#define DEFINE_EVENT_CONDITION(template, name, proto, args, cond) \
-+	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
++char event_storage[EVENT_STORAGE_SIZE];
++EXPORT_SYMBOL_GPL(event_storage);
 +
- #undef DECLARE_TRACE
- #define DECLARE_TRACE(name, proto, args)	\
- 	DEFINE_TRACE(name)
-@@ -75,9 +88,11 @@
+ LIST_HEAD(ftrace_events);
+ LIST_HEAD(ftrace_common_fields);
  
- #undef TRACE_EVENT
- #undef TRACE_EVENT_FN
-+#undef TRACE_EVENT_CONDITION
- #undef DECLARE_EVENT_CLASS
- #undef DEFINE_EVENT
- #undef DEFINE_EVENT_PRINT
-+#undef DEFINE_EVENT_CONDITION
- #undef TRACE_HEADER_MULTI_READ
- #undef DECLARE_TRACE
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 4ba44de..4b74d71 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -83,13 +83,19 @@ static void __always_unused ____ftrace_check_##name(void)	\
  
+ #undef __array
+ #define __array(type, item, len)					\
+-	BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);				\
+-	ret = trace_define_field(event_call, #type "[" #len "]", #item,	\
++	do {								\
++		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
++		mutex_lock(&event_storage_mutex);			\
++		snprintf(event_storage, sizeof(event_storage),		\
++			 "%s[%d]", #type, len);				\
++		ret = trace_define_field(event_call, event_storage, #item, \
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), FILTER_OTHER);	\
+-	if (ret)							\
+-		return ret;
++		mutex_unlock(&event_storage_mutex);			\
++		if (ret)						\
++			return ret;					\
++	} while (0);
+ 
+ #undef __array_desc
+ #define __array_desc(type, container, item, len)			\
 -- 
 1.7.2.3
 
