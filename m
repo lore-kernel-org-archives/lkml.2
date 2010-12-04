@@ -1,175 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab0LDHmv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 02:42:51 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60762 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab0LDHmt (ORCPT
+	id S1754706Ab0LDHuw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 02:50:52 -0500
+Received: from smtpgw.dpu.edu.tr ([194.27.43.25]:60870 "EHLO
+	smtpgw.dumlupinar.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532Ab0LDHuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 02:42:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=WSTt7vI/CCO9B0JhZI9ysjKdaGcPWRjhhvXKnb0SLXD0LH5G/FNp0jQi3JHYX5oDzD
-         +ac0K449JdsuVakUQnRmI48sK2yEKrUjtMEjrsIpwUn5d174ZZtha9VCyBSVAX0GngrZ
-         D7p98JEHss0Jq052h9hx936Zh2P1mtDRRDkTQ=
-Date: Sat, 4 Dec 2010 15:42:37 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Bjoern B. Brandenburg" <bbb.lst@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrea Bastoni <bastoni@sprg.uniroma2.it>,
-        "James H. Anderson" <anderson@cs.unc.edu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Scheduler bug related to rq->skip_clock_update?
-Message-ID: <20101204074236.GA2295@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <alpine.LNX.2.00.1011202315290.8927@jupiter-cs.cs.unc.edu>
- <1290359641.4816.69.camel@maggy.simson.net>
- <alpine.LNX.2.00.1011212327250.8927@jupiter-cs.cs.unc.edu>
- <1290442781.16393.22.camel@maggy.simson.net>
- <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
+	Sat, 4 Dec 2010 02:50:51 -0500
+From: "yapi_isl" <yapi_isl@mail.dumlupinar.edu.tr>
+Reply-To: micros.corporation_inc@msn.com
+Subject: **MICROSOFT END OF YEAR  CONSOLATION PRIZE WINNING**
+Date: Sat, 4 Dec 2010 10:35:04 +0200
+Message-Id: <20101204083504.M50912@mail.dumlupinar.edu.tr>
+X-Mailer: Open WebMail 2.51 20070807
+X-OriginatingIP: 41.138.186.19 (yapi_isl)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=iso-8859-1
+To: undisclosed-recipients:;
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: -4.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 01:14:47PM -0500, Bjoern B. Brandenburg wrote:
-> On Mon, 22 Nov 2010, Mike Galbraith wrote:
-> 
-> > On Sun, 2010-11-21 at 23:29 -0500, Bjoern B. Brandenburg wrote:
-> > > On Sun, 21 Nov 2010, Mike Galbraith wrote:
-> > >
-> > > > On Sat, 2010-11-20 at 23:22 -0500, Bjoern B. Brandenburg wrote:
-> > > >
-> > > > > I was under the impression that, as an invariant, tasks should not have
-> > > > > TIF_NEED_RESCHED set after they've blocked. In this case, the idle load
-> > > > > balancer should not mark the task that's on its way out with
-> > > > > set_tsk_need_resched().
-> > > >
-> > > > Nice find.
-> > > >
-> > > > > In any case, check_preempt_curr() seems to assume that a resuming task cannot
-> > > > > have TIF_NEED_RESCHED already set. Setting skip_clock_update on a remote CPU
-> > > > > that hasn't even been notified via IPI seems wrong.
-> > > >
-> > > > Yes. Does the below fix it up for you?
-> > >
-> > > The patch definitely changes the behavior, but it doesn't seem to solve (all
-> > > of) the root cause(s). The failsafe kicks in and clears the flag the next
-> > > time that update_rq_clock() is called, but there can still be a significant
-> > > delay between setting and clearing the flag. Right after boot, I'm now seeing
-> > > values that go up to ~21ms.
-> >
-> > A pull isn't the only vulnerability.  Since idle_balance() drops
-> > rq->lock, so another cpu can wake to this rq.
-> >
-> > > Please let me know if there is something else that I should test.
-> >
-> > Sched: clear_tsk_need_resched() after NEWIDLE balancing
-> >
-> > idle_balance() drops/retakes rq->lock, leaving the previous task
-> > vulnerable to set_tsk_need_resched() from another CPU.  Clear it
-> > after NEWIDLE balancing to maintain the invariant that descheduled
-> > tasks are NOT marked for resched.
-> >
-> > This also confuses the skip_clock_update logic, which assumes that
-> > the next call to update_rq_clock() will come nearly ĩmmediately after
-> > being set.  Make the optimization more robust by clearing before we
-> > balance and in update_rq_clock().
-> 
-> Unfortunately that doesn't seem to do it yet.
-> 
-> After running five 'find /' instances to completion on the ARM platform,
-> I'm still seeing delays close to 10ms.
-> 
->     bbb@district10:~$ egrep 'cpu#|skip' /proc/sched_debug
->     cpu#0
->       .skip_clock_count              : 89606
->       .skip_clock_recent_max         : 9817250
->       .skip_clock_max                : 21992375
->     cpu#1
->       .skip_clock_count              : 81978
->       .skip_clock_recent_max         : 9582500
->       .skip_clock_max                : 17201750
->     cpu#2
->       .skip_clock_count              : 74565
->       .skip_clock_recent_max         : 9678000
->       .skip_clock_max                : 9879250
->     cpu#3
->       .skip_clock_count              : 81685
->       .skip_clock_recent_max         : 9300125
->       .skip_clock_max                : 14115750
-> 
-> On the x86_64 host, I've changed to HZ=100 and am now also seeing delays
-> close to 10ms after 'make clean && make -j8 bzImage'.
-> 
->     bbb@koruna:~$ egrep 'cpu#|skip' /proc/sched_debug
->     cpu#0, 2493.476 MHz
->       .skip_clock_count              : 29703
->       .skip_clock_recent_max         : 9999858
->       .skip_clock_max                : 40645942
->     cpu#1, 2493.476 MHz
->       .skip_clock_count              : 32696
->       .skip_clock_recent_max         : 9959118
->       .skip_clock_max                : 35074771
->     cpu#2, 2493.476 MHz
->       .skip_clock_count              : 31742
->       .skip_clock_recent_max         : 9788654
->       .skip_clock_max                : 24821765
->     cpu#3, 2493.476 MHz
->       .skip_clock_count              : 31123
->       .skip_clock_recent_max         : 9858546
->       .skip_clock_max                : 44276033
->     cpu#4, 2493.476 MHz
->       .skip_clock_count              : 28346
->       .skip_clock_recent_max         : 10000775
->       .skip_clock_max                : 18681753
->     cpu#5, 2493.476 MHz
->       .skip_clock_count              : 29421
->       .skip_clock_recent_max         : 9997656
->       .skip_clock_max                : 138473407
->     cpu#6, 2493.476 MHz
->       .skip_clock_count              : 27721
->       .skip_clock_recent_max         : 9992074
->       .skip_clock_max                : 53436918
->     cpu#7, 2493.476 MHz
->       .skip_clock_count              : 29637
->       .skip_clock_recent_max         : 9994516
->       .skip_clock_max                : 566793528
-> 
-> These numbers were recorded with the below patch.
-> 
-> Please let me know if I can help by testing or tracing something else.
-
-Seems the checking for <if (prev->se.on_rq)> in put_prev_task()
-is the culprit.
-
-Because if we preempt a going sleep process on another CPU,
-we will fail to update the rq clock for that CPU in schedule.
-For example:
-
-          CPUA                       CPUB
-                                  process xxx == current
- check_preempt_curr() for CPUB		... skip_clock_update==1
-				  going to sleep   
-                                    ->schedule()
-				      ->deactivate_task() fail to update rq clock
-				                       because skip_clock_update==1
-				      ->put_prev_task() fail to update rq clock
-				                       because prev->se.on_rq==false
-
-Then rq clock on CPUB will updated until another schedule envent
-comes.
-
-So Bjoern, is deleting the checking for prev->se.on_rq in
-put_prev_task() helpful?
-
-Thanks,
-Yong
+Your E-mail ID have won 1,550,952.00 GBP credited to MICRO CHIP NO:9465206 
+1. FULL NAMES: 2. RESIDENTIAL ADDRESS: 3. TELL NO: 4. MICRO CHIP NUMBER
+Barrister Nicholas Caldwell.Email : micros.corporation_inc@msn.com
+For More Information Tel: (+44)704-573-3163
