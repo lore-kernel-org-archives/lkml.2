@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab0LDAQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 19:16:17 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:58497 "EHLO
+	id S1754701Ab0LDAP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 19:15:59 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:16972 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab0LDANv (ORCPT
+	with ESMTP id S1753422Ab0LDANw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 19:13:51 -0500
+	Fri, 3 Dec 2010 19:13:52 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=POC9q5B86hlpPJSCP3tZc345d7njmjUK3SaLcJn/H+ld8LkQ/ZUrr6v5BVhSbRC1s
-	2Lpmdd2QsYeCVpE+OqlFA==
+	b=EnTSDUbtNDbES1e9hA44PYwtL40QOrdZOptQph0ZoE3xSAVbQ/2Z3l96zQ7EBdSfE
+	lvU/scs9KKaT1J00xUkTA==
 From: David Sharp <dhsharp@google.com>
 To: rostedt@goodmis.org, linux-kernel@vger.kernel.org
 Cc: mrubin@google.com, David Sharp <dhsharp@google.com>
-Subject: [PATCH 09/15] ftrace: fix event alignment: skb:kfree_skb
-Date: Fri,  3 Dec 2010 16:13:23 -0800
-Message-Id: <1291421609-14665-10-git-send-email-dhsharp@google.com>
+Subject: [PATCH 06/15] ftrace: fix event alignment: module:module_request
+Date: Fri,  3 Dec 2010 16:13:20 -0800
+Message-Id: <1291421609-14665-7-git-send-email-dhsharp@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1291421609-14665-1-git-send-email-dhsharp@google.com>
 References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
@@ -27,32 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: David Sharp <dhsharp@google.com>
 ---
- include/trace/events/skb.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/trace/events/module.h |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
-index 75ce9d5..aa4a56a 100644
---- a/include/trace/events/skb.h
-+++ b/include/trace/events/skb.h
-@@ -19,16 +19,16 @@ TRACE_EVENT(kfree_skb,
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index c7bb2f0..8154f5f 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -98,14 +98,14 @@ TRACE_EVENT(module_request,
+ 	TP_ARGS(name, wait, ip),
  
  	TP_STRUCT__entry(
- 		__field(	void *,		skbaddr		)
--		__field(	unsigned short,	protocol	)
- 		__field(	void *,		location	)
-+		__field(	unsigned short,	protocol	)
+-		__field(	bool,		wait		)
+ 		__field(	unsigned long,	ip		)
++		__field(	bool,		wait		)
+ 		__string(	name,		name		)
  	),
  
  	TP_fast_assign(
- 		__entry->skbaddr = skb;
-+		__entry->location = location;
- 		if (skb) {
- 			__entry->protocol = ntohs(skb->protocol);
- 		}
--		__entry->location = location;
+-		__entry->wait	= wait;
+ 		__entry->ip	= ip;
++		__entry->wait	= wait;
+ 		__assign_str(name, name);
  	),
  
- 	TP_printk("skbaddr=%p protocol=%u location=%p",
+@@ -119,4 +119,3 @@ TRACE_EVENT(module_request,
+ 
+ /* This part must be outside protection */
+ #include <trace/define_trace.h>
+-
 -- 
 1.7.3.1
 
