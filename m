@@ -1,210 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab0LDGzk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 01:55:40 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:18791 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab0LDGzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 01:55:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JSnkiAo5Skq2VbYqBj3XKUxdftNFCs6N1sY2y5TE/wiCtxKt0u7IVK7aUvDMyoFvs7
-         Ly2CfEFSiNh9JAbPs+sw==
-Date: Fri, 3 Dec 2010 22:55:30 -0800
-From: Michel Lespinasse <walken@google.com>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/6] mm: add FOLL_MLOCK follow_page flag.
-Message-ID: <20101204065530.GA27895@google.com>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
- <1291335412-16231-3-git-send-email-walken@google.com>
+	id S1754575Ab0LDG5l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 01:57:41 -0500
+Received: from tomasu.net ([64.85.170.234]:39710 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753659Ab0LDG5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 01:57:39 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: David Milburn <dmilburn@redhat.com>
+Subject: Re: mvsas errors in 2.6.36
+Date: Fri, 3 Dec 2010 23:57:18 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: Andre Tomt <andre@tomt.net>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+References: <201010290650.32892.thomas@fjellstrom.ca> <201012030939.44858.thomas@fjellstrom.ca> <4CF95394.7010400@redhat.com>
+In-Reply-To: <4CF95394.7010400@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291335412-16231-3-git-send-email-walken@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012032357.18970.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did not realize that previously, but it turns out to be possible to
-manipulate LRU lists under control of the pte lock, rather than having
-to get/put the page. This allows the FOLL_MLOCK follow_page flag
-implementation to look much nicer than it did in initial proposal.
+On December 3, 2010, David Milburn wrote:
+> Thomas Fjellstrom wrote:
+> > On December 2, 2010, Thomas Fjellstrom wrote:
+> >> On December 1, 2010, Thomas Fjellstrom wrote:
+> >>> On November 17, 2010, you wrote:
+> >>>> On 11/17/2010 08:53 AM, Thomas Fjellstrom wrote:
+> >>>> [snip]
+> >>>> 
+> >>>>> Still no fatal errors, but the problem is still happening regularly.
+> >>>>> It causes a pause in disk io of a couple seconds at least. Really
+> >>>>> quite annoying.
+> >>>>> 
+> >>>>> One thing thats got me wondering, is could this be a power issue?
+> >>>>> It almost seems like (from the messages) that a single drive (any
+> >>>>> drive) is freaking out, and returning an error that probably
+> >>>>> shouldn't happen (no CHS 0?), which could mean the drive is
+> >>>>> underpowered and the firmware is flipping out. I'm not entirely
+> >>>>> sure. The system has a 750w decent quality Antec power supply. The
+> >>>>> total power use of the system shouldn't come over half that (phenom
+> >>>>> II x4 810 cpu, gigabyte ma790fxtud5p mb, low profile nvidia 9400GS
+> >>>>> gpu, 8 sata hdds, 3 fans, etc). I'm mostly sure the 12v rails are
+> >>>>> spread out evenly, but I have yet to make absolutely sure.
+> >>> 
+> >>> Made absolute sure. I had been worrying that I was overloading one of
+> >>> the rails on the PSU, but it turns out that it isn't a multi 12v rail
+> >>> PSU after all. The box and advertising says it is, but the electronics
+> >>> inside all say its a single 12v rail device.
+> >>> 
+> >>>> [snip]
+> >>>> 
+> >>>> After the mvsas update in 2.6.35 this started happening to me as well;
+> >>>> at least its better than the previous state - not working.. ;-)
+> >>>> However, after rolling a new 2.6.35 with the following fix that is
+> >>>> queued up for the upcoming 2.6.35 and 2.6.36 stable releases, they
+> >>>> seem to have dissapeared - 3 days and counting.
+> >>>> 
+> >>>> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=bl
+> >>>> o b_ pl
+> >>>> ain;f=queue-2.6.33/libsas-fix-ncq-mixing-with-non-ncq.patch;h=b6d7c920
+> >>>> 9 4 d95 ad67a3b23c2e09c25d4fbd0f46b;hb=HEAD
+> >>>> 
+> >>>> The fix is queued up for the next 2.6.36 and 2.6.35 stable
+> >>>> point-releases.
+> >>> 
+> >>> Ahah. I wonder how I missed that when I first read it. I'll have to
+> >>> give the stable .36 kernel a try. Thanks!
+> >> 
+> >> No fix so far:
+> >> 
+> >> [ 2539.040104] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+> >> mvi=ffff880222f00000 task=ffff88018b3e2980 slot=ffff880222f265d0
+> >> slot_idx=x2 [ 2539.040118] drivers/scsi/mvsas/mv_sas.c
+> >> 1632:mvs_query_task:rc= 5 [ 2539.040154] drivers/scsi/mvsas/mv_sas.c
+> >> 2083:port 7 ctrl sts=0x89800. [ 2539.040163] drivers/scsi/mvsas/mv_sas.c
+> >> 2085:Port 7 irq sts = 0x1001001 [ 2539.040176]
+> >> drivers/scsi/mvsas/mv_sas.c 2111:phy7 Unplug Notice [ 2539.050220]
+> >> drivers/scsi/mvsas/mv_sas.c
+> 
+> The controller is reporting a phy ready state change, which is why you see
+> the unplug notice.
+> 
+> Can you enable SCSI_SAS_LIBSAS_DEBUG and see if libsas reports anything
+> before the abort?
+> 
+> You should be able to turn on in your kernel config:
+> 
+> Device Drivers
+>   SCSI device support
+>    SCSI Transports
+>     Compile the SAS Domain Transport Attributes in debug mode
 
-Please consider the following as a replacement for the initial
-patch 2/6 proposal...
+Hi, I've done as you requested.
 
---------------------------------- 8< --------------------------------------
+here's all of the output from the first (and currently only) event:
 
-Move the code to mlock pages from __mlock_vma_pages_range()
-to follow_page().
+[ 1428.000080] sas: command 0xffff880184ed1680, task 0xffff88017a0f2680, timed out: BLK_EH_NOT_HANDLED
+[ 1428.080051] sas: command 0xffff880224e03880, task 0xffff88017a0f24c0, timed out: BLK_EH_NOT_HANDLED
+[ 1428.080077] sas: Enter sas_scsi_recover_host
+[ 1428.080085] sas: trying to find task 0xffff88017a0f2680
+[ 1428.080092] sas: sas_scsi_find_task: aborting task 0xffff88017a0f2680
+[ 1428.080102] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88017a0f2680 slot=ffff880224066680 slot_idx=x4
+[ 1428.080113] sas: sas_scsi_find_task: querying task 0xffff88017a0f2680
+[ 1428.080119] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 1428.080125] sas: sas_scsi_find_task: task 0xffff88017a0f2680 failed to abort
+[ 1428.080130] sas: task 0xffff88017a0f2680 is not at LU: I_T recover
+[ 1428.080135] sas: I_T nexus reset for dev 0000000000000000
+[ 1428.080172] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x89800.
+[ 1428.080180] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001
+[ 1428.080193] drivers/scsi/mvsas/mv_sas.c 2111:phy0 Unplug Notice
+[ 1428.090228] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+[ 1428.090236] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1081
+[ 1428.111954] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+[ 1428.111962] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x10000
+[ 1428.111969] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[0]
+[ 1428.146351] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 20004
+[ 1428.146351] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
+[ 1428.222044] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+[ 1428.222109] sas: sas_form_port: phy0 belongs to port0 already(1)!
+[ 1430.300028] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[0]:rc= 0
+[ 1430.300040] sas: I_T 0000000000000000 recovered
+[ 1430.300048] sas: sas_ata_task_done: SAS error 8d
+[ 1430.300059] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 1430.300883] ata9.00: device reported invalid CHS sector 0
+[ 1430.300888] ata9: status=0x01 { Error }
+[ 1430.300894] ata9: error=0x04 { DriveStatusError }
+[ 1430.300950] sas: trying to find task 0xffff88017a0f24c0
+[ 1430.300956] sas: sas_scsi_find_task: aborting task 0xffff88017a0f24c0
+[ 1430.300963] sas: sas_scsi_find_task: task 0xffff88017a0f24c0 is done
+[ 1430.300968] sas: sas_eh_handle_sas_errors: task 0xffff88017a0f24c0 is done
+[ 1430.300974] sas: sas_ata_task_done: SAS error 8d
+[ 1430.300982] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 1430.301777] ata12.00: device reported invalid CHS sector 0
+[ 1430.301782] ata12: status=0x01 { Error }
+[ 1430.301788] ata12: error=0x04 { DriveStatusError }
+[ 1430.301808] sas: --- Exit sas_scsi_recover_host
 
-This allows __mlock_vma_pages_range() to not have to break down work
-into 16-page batches.
+Thanks.
 
-An additional motivation for doing this within the present patch series
-is that it'll make it easier for a later chagne to drop mmap_sem when
-blocking on disk (we'd like to be able to resume at the page that was
-read from disk instead of at the start of a 16-page batch).
+> Thanks,
+> David
+> 
+> >> 2083:port 7 ctrl sts=0x199800. [ 2539.050229]
+> >> drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001081 [
+> >> 2539.071157] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
+> >> [ 2539.071165] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts =
+> >> 0x10000 [ 2539.071173] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in
+> >> on phy[7] [ 2539.081142] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach
+> >> dev info is 5000002 [ 2539.081142]
+> >> drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7 [
+> >> 2539.081142] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
+> >> [ 2541.270047] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+> >> device[5]:rc= 0 [ 2541.270066] ata14: translated ATA stat/err 0x01/04 to
+> >> SCSI SK/ASC/ASCQ 0xb/00/00 [ 2541.270926] ata14: status=0x01 { Error }
+> >> [ 2541.271747] ata14: error=0x04 { DriveStatusError }
+> >> 
+> >> That appeared after about 42 minutes of uptime.
+> > 
+> > So after about 32 hours of uptime theres been 36 separate events. Each
+> > spits out similar messages as above, and each comes with a noticeable
+> > pause while the drive is reset.
+> > 
+> > There are a number of possible reasons that I'm still having issues:
+> >  - I managed to mess up the git checkout
+> >  - My problem isn't related to the fix
+> >  - The fix doesn't cover all cases of the problem it meant to fix
+> > 
+> > I'm not certain which of them it is, I'd be more inclined to think I
+> > messed up the checkout, as I did patch something in, but the patches
+> > were completely unrelated and shouldn't have affected the scsi or ata
+> > systems at all. At this point I'm just grasping at straws.
+> > 
+> > In case my card is somehow different than expected, I'll paste the lspci
+> > info for it: (AOC-SASLP-MV8)
+> > 
+> > 04:00.0 SCSI storage controller: Marvell Technology Group Ltd.
+> > MV64460/64461/64462 System Controller, Revision B (rev 01)
+> > 
+> >         Subsystem: Super Micro Computer Inc Device 0500
+> >         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+> >         ParErr- Stepping- SERR- FastB2B- DisINTx- Status: Cap+ 66MHz-
+> >         UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort-
+> >         >SERR- <PERR- INTx- Latency: 0, Cache Line Size: 64 bytes
+> >         Interrupt: pin A routed to IRQ 19
+> >         Region 2: I/O ports at df00 [size=128]
+> >         Region 4: Memory at fdef0000 (64-bit, non-prefetchable)
+> >         [size=64K] [virtual] Expansion ROM at fdd00000 [disabled]
+> >         [size=256K] Capabilities: [48] Power Management version 2
+> >         
+> >                 Flags: PMEClk- DSI- D1+ D2- AuxCurrent=0mA
+> >                 PME(D0+,D1+,D2-,D3hot+,D3cold-) Status: D0 NoSoftRst-
+> >                 PME-Enable- DSel=0 DScale=1 PME-
+> >         
+> >         Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+> >         
+> >                 Address: 0000000000000000  Data: 0000
+> >         
+> >         Capabilities: [e0] Express (v1) Legacy Endpoint, MSI 00
+> >         
+> >                 DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+> >                 unlimited, L1 unlimited
+> >                 
+> >                         ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+> >                 
+> >                 DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+> >                 Unsupported-
+> >                 
+> >                         RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+> >                         MaxPayload 128 bytes, MaxReadReq 2048 bytes
+> >                 
+> >                 DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr-
+> >                 TransPend- LnkCap: Port #0, Speed 2.5GT/s, Width x4,
+> >                 ASPM L0s, Latency L0 <256ns, L1 unlimited
+> >                 
+> >                         ClockPM- Surprise- LLActRep- BwNot-
+> >                 
+> >                 LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
+> >                 CommClk+
+> >                 
+> >                         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+> >                 
+> >                 LnkSta: Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+
+> >                 DLActive- BWMgmt- ABWMgmt-
+> >         
+> >         Capabilities: [100 v1] Advanced Error Reporting
+> >         
+> >                 UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+> >                 UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol- UEMsk:
+> >                  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+> >                 RxOF- MalfTLP- ECRC- UnsupReq- ACSViol- UESvrt: DLP+
+> >                 SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+
+> >                 MalfTLP+ ECRC- UnsupReq- ACSViol- CESta:  RxErr+ BadTLP-
+> >                 BadDLLP- Rollover- Timeout- NonFatalErr- CEMsk:  RxErr-
+> >                 BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr- AERCap:
+> >                 First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+> >         
+> >         Kernel driver in use: mvsas
+> > 
+> > Its installed in a Phenom II X4 810 based system with a 790FX/SB750
+> > chipset, 8G DDR3 1333 RAM, 6 1TB Seagate 7200.12 SATAII drives connected
+> > to the card via sas->sata breakout cables, and a couple 4 drive SATA
+> > hotswap bays. There are also two Seagate 7200.12 500G drives hooked up
+> > to the motherboard SATA controller. The system is powered via an Antec
+> > Neopower Blue 650W PSU which is probably only half loaded. System also
+> > has a discreet gfx card, but its a low end, low profile, fanless card
+> > that takes up next to no power.
+> > 
+> > I'm still willing to help test any fixes for the mvsas driver on this
+> > card.
+> > 
+> > Thank you.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- include/linux/mm.h |    1 +
- mm/memory.c        |   22 +++++++++++++++++
- mm/mlock.c         |   65 ++++------------------------------------------------
- 3 files changed, 28 insertions(+), 60 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 721f451..cebbb0d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1415,6 +1415,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_GET	0x04	/* do get_page on page */
- #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
- #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
-+#define FOLL_MLOCK	0x20	/* mark page as mlocked */
- 
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
-diff --git a/mm/memory.c b/mm/memory.c
-index b8f97b8..15e1f19 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1310,6 +1310,28 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		 */
- 		mark_page_accessed(page);
- 	}
-+	if (flags & FOLL_MLOCK) {
-+		/*
-+		 * The preliminary mapping check is mainly to avoid the
-+		 * pointless overhead of lock_page on the ZERO_PAGE
-+		 * which might bounce very badly if there is contention.
-+		 *
-+		 * If the page is already locked, we don't need to
-+		 * handle it now - vmscan will handle it later if and
-+		 * when it attempts to reclaim the page.
-+		 */
-+		if (page->mapping && trylock_page(page)) {
-+			lru_add_drain();  /* push cached pages to LRU */
-+			/*
-+			 * Because we lock page here and migration is
-+			 * blocked by the pte's page reference, we need
-+			 * only check for file-cache page truncation.
-+			 */
-+			if (page->mapping)
-+				mlock_vma_page(page);
-+			unlock_page(page);
-+		}
-+	}
- unlock:
- 	pte_unmap_unlock(ptep, ptl);
- out:
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 71db83e..573bd2c 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -159,10 +159,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	unsigned long addr = start;
--	struct page *pages[16]; /* 16 gives a reasonable batch */
- 	int nr_pages = (end - start) / PAGE_SIZE;
--	int ret = 0;
- 	int gup_flags;
-+	int ret;
- 
- 	VM_BUG_ON(start & ~PAGE_MASK);
- 	VM_BUG_ON(end   & ~PAGE_MASK);
-@@ -170,7 +169,7 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	VM_BUG_ON(end   > vma->vm_end);
- 	VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
- 
--	gup_flags = FOLL_TOUCH | FOLL_GET;
-+	gup_flags = FOLL_TOUCH | FOLL_MLOCK;
- 	/*
- 	 * We want to touch writable mappings with a write fault in order
- 	 * to break COW, except for shared mappings because these don't COW
-@@ -185,63 +184,9 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 		nr_pages--;
- 	}
- 
--	while (nr_pages > 0) {
--		int i;
--
--		cond_resched();
--
--		/*
--		 * get_user_pages makes pages present if we are
--		 * setting mlock. and this extra reference count will
--		 * disable migration of this page.  However, page may
--		 * still be truncated out from under us.
--		 */
--		ret = __get_user_pages(current, mm, addr,
--				min_t(int, nr_pages, ARRAY_SIZE(pages)),
--				gup_flags, pages, NULL);
--		/*
--		 * This can happen for, e.g., VM_NONLINEAR regions before
--		 * a page has been allocated and mapped at a given offset,
--		 * or for addresses that map beyond end of a file.
--		 * We'll mlock the pages if/when they get faulted in.
--		 */
--		if (ret < 0)
--			break;
--
--		lru_add_drain();	/* push cached pages to LRU */
--
--		for (i = 0; i < ret; i++) {
--			struct page *page = pages[i];
--
--			if (page->mapping) {
--				/*
--				 * That preliminary check is mainly to avoid
--				 * the pointless overhead of lock_page on the
--				 * ZERO_PAGE: which might bounce very badly if
--				 * there is contention.  However, we're still
--				 * dirtying its cacheline with get/put_page:
--				 * we'll add another __get_user_pages flag to
--				 * avoid it if that case turns out to matter.
--				 */
--				lock_page(page);
--				/*
--				 * Because we lock page here and migration is
--				 * blocked by the elevated reference, we need
--				 * only check for file-cache page truncation.
--				 */
--				if (page->mapping)
--					mlock_vma_page(page);
--				unlock_page(page);
--			}
--			put_page(page);	/* ref from get_user_pages() */
--		}
--
--		addr += ret * PAGE_SIZE;
--		nr_pages -= ret;
--		ret = 0;
--	}
--
--	return ret;	/* 0 or negative error code */
-+	ret = __get_user_pages(current, mm, addr, nr_pages, gup_flags,
-+			       NULL, NULL);
-+	return max(ret, 0);	/* 0 or negative error code */
- }
- 
- /*
 -- 
-1.7.3.1
-
-
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thomas Fjellstrom
+thomas@fjellstrom.ca
