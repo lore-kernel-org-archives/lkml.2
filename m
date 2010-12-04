@@ -1,282 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab0LDW1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 17:27:24 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40541 "EHLO
+	id S1755347Ab0LDW1e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 17:27:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40546 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab0LDW1V (ORCPT
+	with ESMTP id S1755118Ab0LDW1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 17:27:21 -0500
+	Sat, 4 Dec 2010 17:27:24 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Mike Galbraith <efault@gmx.de>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/5] perf events: Separate the routines handling the PERF_SAMPLE_ identity fields
-Date: Sat,  4 Dec 2010 20:26:54 -0200
-Message-Id: <1291501617-6966-3-git-send-email-acme@infradead.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [GIT PULL 0/5] perf/core: Support for PERF_SAMPLE_ in all events
+Date: Sat,  4 Dec 2010 20:26:52 -0200
+Message-Id: <1291501617-6966-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1291501617-6966-1-git-send-email-acme@infradead.org>
-References: <1291501617-6966-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-Those will be made available in sample like events like MMAP, EXEC, etc in a
-followup patch. So precalculate the extra id header space and have a separate
-routine to fill them up.
+        Please consider pulling from:
 
-V2: Thomas noticed that the id header needs to be precalculated at
-inherit_events too:
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-LKML-Reference: <alpine.LFD.2.00.1012031245220.2653@localhost6.localdomain6>
+Regards,
 
-Tested-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Ian Munsie <imunsie@au1.ibm.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1291318772-30880-2-git-send-email-acme@infradead.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- include/linux/perf_event.h |    1 +
- kernel/perf_event.c        |  129 +++++++++++++++++++++++++------------------
- 2 files changed, 76 insertions(+), 54 deletions(-)
+- Arnaldo
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index adf6d99..b9950b1 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -759,6 +759,7 @@ struct perf_event {
- 
- 	struct perf_event_attr		attr;
- 	u16				header_size;
-+	u16				id_header_size;
- 	u16				read_size;
- 	struct hw_perf_event		hw;
- 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 7961b27..a047997 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -133,6 +133,28 @@ static void unclone_ctx(struct perf_event_context *ctx)
- 	}
- }
- 
-+static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
-+{
-+	/*
-+	 * only top level events have the pid namespace they were created in
-+	 */
-+	if (event->parent)
-+		event = event->parent;
-+
-+	return task_tgid_nr_ns(p, event->ns);
-+}
-+
-+static u32 perf_event_tid(struct perf_event *event, struct task_struct *p)
-+{
-+	/*
-+	 * only top level events have the pid namespace they were created in
-+	 */
-+	if (event->parent)
-+		event = event->parent;
-+
-+	return task_pid_nr_ns(p, event->ns);
-+}
-+
- /*
-  * If we inherit events we want to return the parent event id
-  * to userspace.
-@@ -351,15 +373,30 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_IP)
- 		size += sizeof(data->ip);
- 
-+	if (sample_type & PERF_SAMPLE_ADDR)
-+		size += sizeof(data->addr);
-+
-+	if (sample_type & PERF_SAMPLE_PERIOD)
-+		size += sizeof(data->period);
-+
-+	if (sample_type & PERF_SAMPLE_READ)
-+		size += event->read_size;
-+
-+	event->header_size = size;
-+}
-+
-+static void perf_event__id_header_size(struct perf_event *event)
-+{
-+	struct perf_sample_data *data;
-+	u64 sample_type = event->attr.sample_type;
-+	u16 size = 0;
-+
- 	if (sample_type & PERF_SAMPLE_TID)
- 		size += sizeof(data->tid_entry);
- 
- 	if (sample_type & PERF_SAMPLE_TIME)
- 		size += sizeof(data->time);
- 
--	if (sample_type & PERF_SAMPLE_ADDR)
--		size += sizeof(data->addr);
--
- 	if (sample_type & PERF_SAMPLE_ID)
- 		size += sizeof(data->id);
- 
-@@ -369,13 +406,7 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_CPU)
- 		size += sizeof(data->cpu_entry);
- 
--	if (sample_type & PERF_SAMPLE_PERIOD)
--		size += sizeof(data->period);
--
--	if (sample_type & PERF_SAMPLE_READ)
--		size += event->read_size;
--
--	event->header_size = size;
-+	event->id_header_size = size;
- }
- 
- static void perf_group_attach(struct perf_event *event)
-@@ -3357,6 +3388,36 @@ __always_inline void perf_output_copy(struct perf_output_handle *handle,
- 	} while (len);
- }
- 
-+static void perf_event_header__init_id(struct perf_event_header *header,
-+				       struct perf_sample_data *data,
-+				       struct perf_event *event)
-+{
-+	u64 sample_type = event->attr.sample_type;
-+
-+	data->type = sample_type;
-+	header->size += event->id_header_size;
-+
-+	if (sample_type & PERF_SAMPLE_TID) {
-+		/* namespace issues */
-+		data->tid_entry.pid = perf_event_pid(event, current);
-+		data->tid_entry.tid = perf_event_tid(event, current);
-+	}
-+
-+	if (sample_type & PERF_SAMPLE_TIME)
-+		data->time = perf_clock();
-+
-+	if (sample_type & PERF_SAMPLE_ID)
-+		data->id = primary_event_id(event);
-+
-+	if (sample_type & PERF_SAMPLE_STREAM_ID)
-+		data->stream_id = event->id;
-+
-+	if (sample_type & PERF_SAMPLE_CPU) {
-+		data->cpu_entry.cpu	 = raw_smp_processor_id();
-+		data->cpu_entry.reserved = 0;
-+	}
-+}
-+
- int perf_output_begin(struct perf_output_handle *handle,
- 		      struct perf_event *event, unsigned int size,
- 		      int nmi, int sample)
-@@ -3459,28 +3520,6 @@ void perf_output_end(struct perf_output_handle *handle)
- 	rcu_read_unlock();
- }
- 
--static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
--{
--	/*
--	 * only top level events have the pid namespace they were created in
--	 */
--	if (event->parent)
--		event = event->parent;
--
--	return task_tgid_nr_ns(p, event->ns);
--}
--
--static u32 perf_event_tid(struct perf_event *event, struct task_struct *p)
--{
--	/*
--	 * only top level events have the pid namespace they were created in
--	 */
--	if (event->parent)
--		event = event->parent;
--
--	return task_pid_nr_ns(p, event->ns);
--}
--
- static void perf_output_read_one(struct perf_output_handle *handle,
- 				 struct perf_event *event,
- 				 u64 enabled, u64 running)
-@@ -3655,37 +3694,17 @@ void perf_prepare_sample(struct perf_event_header *header,
- {
- 	u64 sample_type = event->attr.sample_type;
- 
--	data->type = sample_type;
--
- 	header->type = PERF_RECORD_SAMPLE;
- 	header->size = sizeof(*header) + event->header_size;
- 
- 	header->misc = 0;
- 	header->misc |= perf_misc_flags(regs);
- 
-+	perf_event_header__init_id(header, data, event);
-+
- 	if (sample_type & PERF_SAMPLE_IP)
- 		data->ip = perf_instruction_pointer(regs);
- 
--	if (sample_type & PERF_SAMPLE_TID) {
--		/* namespace issues */
--		data->tid_entry.pid = perf_event_pid(event, current);
--		data->tid_entry.tid = perf_event_tid(event, current);
--	}
--
--	if (sample_type & PERF_SAMPLE_TIME)
--		data->time = perf_clock();
--
--	if (sample_type & PERF_SAMPLE_ID)
--		data->id = primary_event_id(event);
--
--	if (sample_type & PERF_SAMPLE_STREAM_ID)
--		data->stream_id = event->id;
--
--	if (sample_type & PERF_SAMPLE_CPU) {
--		data->cpu_entry.cpu		= raw_smp_processor_id();
--		data->cpu_entry.reserved	= 0;
--	}
--
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
- 
-@@ -5745,6 +5764,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 	 * Precalculate sample_data sizes
- 	 */
- 	perf_event__header_size(event);
-+	perf_event__id_header_size(event);
- 
- 	/*
- 	 * Drop the reference on the group_event after placing the
-@@ -6102,6 +6122,7 @@ inherit_event(struct perf_event *parent_event,
- 	 * Precalculate sample_data sizes
- 	 */
- 	perf_event__header_size(child_event);
-+	perf_event__id_header_size(child_event);
- 
- 	/*
- 	 * Link it up in the child's context:
--- 
-1.6.2.5
+Arnaldo Carvalho de Melo (4):
+  perf events: Separate the routines handling the PERF_SAMPLE_ identity fields
+  perf events: Make sample_type identity fields available in all PERF_RECORD_ events
+  perf session: Parse sample earlier
+  perf tools: Ask for ID PERF_SAMPLE_ info on all PERF_RECORD_ events
+
+Thomas Gleixner (1):
+  perf events: Fix event inherit fallout of precalculated headers
+
+ include/linux/perf_event.h               |   13 +-
+ kernel/perf_event.c                      |  234 +++++++++++++++------
+ tools/perf/Documentation/perf-record.txt |    5 +
+ tools/perf/builtin-annotate.c            |    6 +-
+ tools/perf/builtin-diff.c                |   11 +-
+ tools/perf/builtin-inject.c              |   39 ++--
+ tools/perf/builtin-kmem.c                |   21 +--
+ tools/perf/builtin-lock.c                |   12 +-
+ tools/perf/builtin-record.c              |   23 ++
+ tools/perf/builtin-report.c              |   15 +-
+ tools/perf/builtin-sched.c               |   21 +--
+ tools/perf/builtin-script.c              |   34 +--
+ tools/perf/builtin-timechart.c           |   40 ++--
+ tools/perf/builtin-top.c                 |   12 +-
+ tools/perf/util/build-id.c               |    7 +-
+ tools/perf/util/event.c                  |  341 +++++++++++++++++++----------
+ tools/perf/util/event.h                  |   27 ++-
+ tools/perf/util/header.c                 |   29 ++-
+ tools/perf/util/header.h                 |    1 +
+ tools/perf/util/hist.h                   |    2 +
+ tools/perf/util/session.c                |  159 ++++++++++++---
+ tools/perf/util/session.h                |   12 +-
+ 22 files changed, 717 insertions(+), 347 deletions(-)
 
