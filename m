@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab0LDW1U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 17:27:20 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44102 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab0LDW1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 17:27:19 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+	id S1755060Ab0LDWkh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 17:40:37 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39863 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754605Ab0LDWkg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 17:40:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
+References: <1289783580.495.58.camel@maggy.simson.net> <1289811438.2109.474.camel@laptop>
+ <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116130413.GA29368@redhat.com> <1289917109.5169.131.camel@maggy.simson.net>
+ <20101116150319.GA3475@redhat.com> <1289922108.5169.185.camel@maggy.simson.net>
+ <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net>
+ <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com>
+ <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com> <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 4 Dec 2010 14:39:40 -0800
+Message-ID: <AANLkTikFXv042qg4uzXF--9_co6-b_UgJF7Jeo2bVA=f@mail.gmail.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+To: Colin Walters <walters@verbum.org>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/5] perf events: Fix event inherit fallout of precalculated headers
-Date: Sat,  4 Dec 2010 20:26:53 -0200
-Message-Id: <1291501617-6966-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1291501617-6966-1-git-send-email-acme@infradead.org>
-References: <1291501617-6966-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Sat, Dec 4, 2010 at 12:01 PM, Colin Walters <walters@verbum.org> wrote:
+>
+> But then again here's a Berkeley "Unix Tutorial" that does cover it:
+> http://people.ischool.berkeley.edu/~kevin/unix-tutorial/section13.html
 
-The precalculated header size is not updated when an event is inherited. That
-results in bogus sample entries for all child events. Bug introduced in c320c7b.
+What part of "nobody does that" didn't you understand?
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <alpine.LFD.2.00.1012031245220.2653@localhost6.localdomain6>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- kernel/perf_event.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+I know about "nice". I think it was part of the original Unix course I
+ever took, and it probably made more sense back then (sixteen people
+at a time on a microvax, compiling stuff). And I never used it, afaik.
+Nor does really anybody else.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index aede712..7961b27 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -6099,6 +6099,11 @@ inherit_event(struct perf_event *parent_event,
- 	child_event->overflow_handler = parent_event->overflow_handler;
- 
- 	/*
-+	 * Precalculate sample_data sizes
-+	 */
-+	perf_event__header_size(child_event);
-+
-+	/*
- 	 * Link it up in the child's context:
- 	 */
- 	raw_spin_lock_irqsave(&child_ctx->lock, flags);
--- 
-1.6.2.5
+But hey, whatever floats your boat. You can use it. And you can feel
+special and better than the rest of us exactly because you know you
+really _are_ special.
 
+> Hmm...how many threads are we talking about here?  If it's just say
+> one per core, then I doubt it needs nicing.
+
+I think git defaults to a maximum of 20 for it. Remember: it's not
+about "cores". It's about IO, and then 20 is a "let's not mess up
+everybody else _too_ much when we're actually CPU-bound".
+
+But that's not the point. The point is that "nice" is totally the
+wrong thing to do. It's _always_ the wrong thing to do. The only
+reason it's in tutorials and taught in intro Unix classes is that it's
+the only thing there is in traditional unix.
+
+And we can be better. We don't need to be stupid and traditional.
+
+But you go right on and use it. Nobody stops you.
+
+> Sure...though I imagine for "most" people that's totally I/O bound
+> (either on ext4 journal or hard disk seeks).
+
+Sure. And "most" people do something totally different. What's your
+point? The fact is, the session-based group scheduling really does
+work. It works on a lot of different loads. It's nice for things like
+my use, but it's _also_ nice for things like me ssh'ing into my kids
+or wife's computers to update their kernel. And it's nice for things
+like "make -j test" for git etc.
+
+And it doesn't hurt you. If you're happy with "nice", go on and use
+it. Why are you even discussing it? I'm telling you the FACT that
+others aren't happy with nice, and that smart people consider nice to
+be totally useless.
+
+But none of that means that you can't go on using it. Comprende?
+
+> # firefox &     # Launch firefox and move it to "browser" group
+>
+> As soon as you do that from the same terminal that you're going to
+> launch the "make" from, you're back to total lossage.
+
+"Mommy mommy, it hurts when I stick forks in my eyes!"
+
+What's your point again? It's a heuristic. It works great for the
+cases many normal people have. If you have a graphical desktop, most
+sane people would tend to start the browser from that nice big browser
+icon. But again, if you want to stick forks in your eyes, go right
+ahead. It's not _my_ problem.
+
+And similarly, it's not _your_ problem if other people want to do
+saner things, is it?
+
+                    Linus
