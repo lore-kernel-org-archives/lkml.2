@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab0LDMyj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 07:54:39 -0500
-Received: from tomasu.net ([64.85.170.234]:42343 "EHLO mail.tomasu.net"
+	id S1754932Ab0LDNDF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 08:03:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32692 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754782Ab0LDMyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 07:54:38 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: "jack_wang" <jack_wang@usish.com>
-Subject: Re: mvsas errors in 2.6.36
-Date: Sat, 4 Dec 2010 05:54:30 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: "David Milburn" <dmilburn@redhat.com>, "Andre Tomt" <andre@tomt.net>,
-        "Linux Kernel List" <linux-kernel@vger.kernel.org>,
-        "linux-scsi" <linux-scsi@vger.kernel.org>
-References: <201010290650.32892.thomas@fjellstrom.ca> <201012041550372348573@usish.com> <201012042033380623575@usish.com>
-In-Reply-To: <201012042033380623575@usish.com>
+	id S1753070Ab0LDNDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 08:03:04 -0500
+Message-ID: <4CFA3BE7.4050905@redhat.com>
+Date: Sat, 04 Dec 2010 08:02:31 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="gb2312"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: vatsa@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+References: <20101202144129.4357fe00@annuminas.surriel.com>	 <20101202144423.3ad1908d@annuminas.surriel.com>	 <1291382619.32004.2124.camel@laptop>	 <20101203133056.GF27994@linux.vnet.ibm.com>	 <1291385010.32004.2165.camel@laptop>	 <20101203140607.GA9800@linux.vnet.ibm.com>	 <20101203141037.GE16411@linux.vnet.ibm.com> <1291411391.2032.4.camel@laptop>
+In-Reply-To: <1291411391.2032.4.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012040554.31111.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 4, 2010, jack_wang wrote:
-> 
-> Here is what I get with that returning 0 rather than -1 as you requested:
-> [19107.040031] sas: command 0xffff88011c77f9c0, task 0xffff88022ae51600, timed out: BLK_EH_NOT_HANDLED
-> [19107.040062] sas: Enter sas_scsi_recover_host
-> [19107.040072] sas: trying to find task 0xffff88022ae51600
-> [19107.040079] sas: sas_scsi_find_task: aborting task 0xffff88022ae51600
-> [19107.040089] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88022ae51600 slot=ffff880224066680 slot_idx=x4
-> [19107.040101] sas: sas_scsi_find_task: task 0xffff88022ae51600 is aborted
-> [19107.040107] sas: sas_eh_handle_sas_errors: task 0xffff88022ae51600 is aborted
-> [19107.040113] sas: sas_ata_task_done: SAS error 8d
-> [19107.040124] ata21: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-> [19107.040860] ata21: status=0x01 { Error }
-> [19107.040866] ata21: error=0x04 { DriveStatusError }
-> [19107.040886] sas: --- Exit sas_scsi_recover_host
-> [19318.000085] sas: command 0xffff8801250291c0, task 0xffff88018a8e5b80, timed out: BLK_EH_NOT_HANDLED
-> [19318.000125] sas: Enter sas_scsi_recover_host
-> [19318.000135] sas: trying to find task 0xffff88018a8e5b80
-> [19318.000141] sas: sas_scsi_find_task: aborting task 0xffff88018a8e5b80
-> [19318.000152] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880224040000 task=ffff88018a8e5b80 slot=ffff8802240666d8 slot_idx=x5
-> [19318.000163] sas: sas_scsi_find_task: task 0xffff88018a8e5b80 is aborted
-> [19318.000169] sas: sas_eh_handle_sas_errors: task 0xffff88018a8e5b80 is aborted
-> [19318.000175] sas: sas_ata_task_done: SAS error 8d
-> [19318.000185] ata24: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-> [19318.000896] ata24: status=0x01 { Error }
-> [19318.000902] ata24: error=0x04 { DriveStatusError }
-> [19318.000922] sas: --- Exit sas_scsi_recover_host
-> 
-> 
-> 
-> [Jack] Do all the drives discoverd? There are still commands timeout, maybe the disks need more time to response, or something
-> wrong with the driver, I'm not sure.
+On 12/03/2010 04:23 PM, Peter Zijlstra wrote:
+> On Fri, 2010-12-03 at 19:40 +0530, Srivatsa Vaddagiri wrote:
+>> On Fri, Dec 03, 2010 at 07:36:07PM +0530, Srivatsa Vaddagiri wrote:
+>>> On Fri, Dec 03, 2010 at 03:03:30PM +0100, Peter Zijlstra wrote:
+>>>> No, because they do receive service (they spend some time spinning
+>>>> before being interrupted), so the respective vruntimes will increase, at
+>>>> some point they'll pass B0 and it'll get scheduled.
+>>>
+>>> Is that sufficient to ensure that B0 receives its fair share (1/3 cpu in this
+>>> case)?
+>>
+>> Hmm perhaps yes, althought at cost of tons of context switches, which would be
+>> nice to minimize on?
+>
+> Don't care, as long as the guys calling yield_to() pay for that time its
+> their problem.
 
-All drives come up. That last set of logs is something that happens once
-or twice an hour while running. I just rebooted again to see what
-difference the change makes with a fresh startup. So far it seems that
-the controller is running properly in SATA II/3Gbps mode after the reboot.
-
-Just to contrast what the kernel reports in the two scenarios:
-rmmod+modprobe:
-sas: DOING DISCOVERY on port 0, pid:7283
-drivers/scsi/mvsas/mv_sas.c 1388:found dev[0:5] is gone.
-sas: sas_ata_phy_reset: Found ATA device.
-ata15.00: ATA-8: ST31000528AS, CC34, max UDMA/133
-ata15.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-ata15.00: qc timeout (cmd 0xef)
-[snip mvsas reset]
-sas: sas_ata_phy_reset: Found ATA device.
-sas: sas_to_ata_err: Saw error 2.  What to do?
-sas: sas_ata_task_done: SAS error 2
-ata15.00: failed to IDENTIFY (I/O error, err_mask=0x100)
-sas: STUB sas_ata_scr_read
-ata15: limiting SATA link speed to 1.5 Gbps
-ata15.00: limiting speed to UDMA/133:PIO3
-
-fresh boot:
-sas: DOING DISCOVERY on port 0, pid:312
-drivers/scsi/mvsas/mv_sas.c 1388:found dev[0:5] is gone.
-sas: sas_ata_phy_reset: Found ATA device.
-ata9.00: ATA-8: ST31000528AS, CC34, max UDMA/133
-ata9.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-ata9.00: configured for UDMA/133
-
-This seems to happen on all ports. As does my original issue, though it
-(the original issue) doesn't happen to all ports at the same time, rather
-events seem to randomly happen, to one or more ports at random times.
-
-As you can see, the drive are 1TB Seagate SATAII drives. They are setup
-in a md-raid 5 array. Luckily these events don't bubble any errors up
-the stack causing a rebuild.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Also, the context switches are cheaper than spinning
+entire time slices on spinlocks we're not going to get
+(because the VCPU holding the lock is not running).
 
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+All rights reversed
