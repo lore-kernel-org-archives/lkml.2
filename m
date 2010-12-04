@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab0LDAfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 19:35:25 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:55672 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab0LDAfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 19:35:22 -0500
-From: Manoj Iyer <manoj.iyer@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH] Enable jack sense for Thinkpad Edge 13
-Date: Fri,  3 Dec 2010 18:34:49 -0600
-Message-Id: <1291422889-29102-2-git-send-email-manoj.iyer@canonical.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291422889-29102-1-git-send-email-manoj.iyer@canonical.com>
-References: <1291422889-29102-1-git-send-email-manoj.iyer@canonical.com>
+	id S1754206Ab0LDAje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 19:39:34 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:35212 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752344Ab0LDAjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Dec 2010 19:39:33 -0500
+Date: Sat, 4 Dec 2010 11:39:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2010-12-02-16-34 uploaded
+Message-Id: <20101204113920.9af9b561.sfr@canb.auug.org.au>
+In-Reply-To: <201012030107.oB317ZSW019223@imap1.linux-foundation.org>
+References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__4_Dec_2010_11_39_20_+1100_8X5m3+zilYGHT9rg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a quirk to cxt5066_cfg_tbl to enable jack sense for ThinkPad Edge 13.
+--Signature=_Sat__4_Dec_2010_11_39_20_+1100_8X5m3+zilYGHT9rg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reference: http://launchpad.net/bugs/685015
+Hi Andrew,
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
----
- sound/pci/hda/patch_conexant.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Thu, 02 Dec 2010 16:34:54 -0800 akpm@linux-foundation.org wrote:
+>
+> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
+>=20
+>    http://userweb.kernel.org/~akpm/mmotm/
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 846d1ea..d8b5d48 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3109,6 +3109,7 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
- 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400s", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
-+	SND_PCI_QUIRK(0x17aa, 0x21c5, "Thinkpad Edge 13", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b3, "Thinkpad Edge 13 (197)", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b4, "Thinkpad Edge", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21c8, "Thinkpad Edge 11", CXT5066_IDEAPAD),
--- 
-1.7.1
+Build results here (as they get done): http://kisskb.ellerman.id.au/kisskb/=
+head/3514/
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+P.S. hungry, yet?
+
+--Signature=_Sat__4_Dec_2010_11_39_20_+1100_8X5m3+zilYGHT9rg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM+Y24AAoJEDMEi1NhKgbsom0H/1GSpQl7wdY+POZ3k4WVoDmd
+ksj5jmG6zN9dxDtKvpKOFzw8dL6QWGzubCDw/1G1xC4mZLS9/XWrDdQZrCVrJfkq
+BVIok6ltnAQ2DyhR7kks/szJC3HvMdB27x6FbzFGDxXPoBMGmV8hDBjBqHLx5Qio
+/qwNCTKEWfVhqauc9/D565d/WCdM2PHm1OqX5tPv55CKAofGMKPDjqYqgrQeyuKP
+IklLST0gAhu7TaWCZviK5yKmVdErOM1L6n1F/ZcaLN+6896ymqxaJC2AdJiFxLUA
+8t7k/mQefY9NANYCH+KSO1acrNq/NEWocWs4Nx9jNqhkZUn4Q5bTHRSj3JFsh7I=
+=ga7c
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__4_Dec_2010_11_39_20_+1100_8X5m3+zilYGHT9rg--
