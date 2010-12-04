@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab0LDCbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 21:31:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52435 "EHLO
+	id S1754394Ab0LDCbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 21:31:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34631 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab0LDCbn (ORCPT
+	with ESMTP id S1754169Ab0LDCbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 21:31:43 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=ERE9BSCttyQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=ToJ5R8-vIOH6_0CJYEUA:9 a=u8pGRSdO-Cly7ZbCS7ac4KKnKL0A:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Fri, 3 Dec 2010 21:31:44 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=e3zf_k9m_9kA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=7appX6giRh2mzXHeI_gA:9 a=fsaJmgr2YFfB25X6bj4A:7 a=CR5-GmFvIPO5MahWELKs-ZQyijsA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101204021744.521599148@goodmis.org>
+Message-Id: <20101204023141.817418425@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 03 Dec 2010 21:17:44 -0500
+Date: Fri, 03 Dec 2010 21:17:48 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,69 +21,85 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Subject: [PATCH 0/4] [GIT PULL] tracing: Harry Potter and the Deathly Macros
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 4/4] tracing: Only trace sched_wakeup if it actually work something up
+References: <20101204021744.521599148@goodmis.org>
+Content-Disposition: inline; filename=0004-tracing-Only-trace-sched_wakeup-if-it-actually-work-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Ingo,
+Currently the tracepoint sched_wakeup traces the wakeup event even
+if the wakeup failed to wake anything up. This is quite stupid
+but it happens because we did not want to add a conditional
+to the core kernel code that would just slow down the wakeup events.
 
-This pull request is for 2.6.38.
+This patch changes the wakeup tracepoints to use the
 
-The first two patches are boring and are just some updates for tracing.
+ DEFINE_EVENT_CONDITIONAL()
 
-But the second two patches are the Deathly Macros.
+to test the "success" parameter and will only trace the event if
+the wakeup was successfull.
 
-The first of the two is the Macro of Invisibility. Not really anything
-to worry about. It adds the TP_CONDITION() which allows a tracepoint
-to "hide" unwanted traces nicely. If the condition is not met, that
-tracepoint will not be traced. Also, the "if" statement is outside
-the fast path and is only hit during actual tracing (not there when
-tracing is disabled).
+The success field in the tracepoint is removed since it is no
+longer needed.
 
-The second patch is the Macro of Resurrection. It is resurrecting
-the debate about stable tracepoints and if current tracepoints may change.
-This patch uses the first patch to only trace the wakeup tracepoint
-if it succeeds to actually wake something up. This makes the
-"success" field in the tracepoint redundant and it seems silly to
-keep it there. It wastes space in the buffers and adds a slight overhead
-just to record it. But this wasted space is more of an issue than
-the overhead.
-
-Now if we change this, it may break tools that analyze the wakeup
-tracepoint and checks the "success" field to know if it should
-ignore it or not. Any tools that do this should have tested to
-see if that field was there and if not assume the wakeup succeeded.
-
-If we had the Macro of Invinicibility (true stable events), then
-this would not be an issue for us. But unfortunately, the Macro of
-Invincibility is not here, and is probably buried somewhere
-with an old gay wizard.
-
-Please pull the latest tip/perf/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/core
-
-
-Steven Rostedt (3):
-      tracing/events: Show real number in array fields
-      tracing: Add TRACE_EVENT_CONDITIONAL()
-      tracing: Only trace sched_wakeup if it actually work something up
-
-Wu Zhangjin (1):
-      ftrace: Speed up recordmcount
-
-----
- include/linux/ftrace_event.h |    4 ++++
- include/linux/tracepoint.h   |   29 +++++++++++++++++++++++------
- include/trace/define_trace.h |   15 +++++++++++++++
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
  include/trace/events/sched.h |   16 ++++++++--------
- include/trace/ftrace.h       |   14 ++++++++++----
- kernel/trace/trace_events.c  |    6 ++++++
- kernel/trace/trace_export.c  |   14 ++++++++++----
- scripts/Makefile.build       |   13 +++++++++----
- 8 files changed, 85 insertions(+), 26 deletions(-)
+ 1 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index f633478..29e6030 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -62,7 +62,6 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+ 		__array(	char,	comm,	TASK_COMM_LEN	)
+ 		__field(	pid_t,	pid			)
+ 		__field(	int,	prio			)
+-		__field(	int,	success			)
+ 		__field(	int,	target_cpu		)
+ 	),
+ 
+@@ -70,25 +69,26 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+ 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
+ 		__entry->pid		= p->pid;
+ 		__entry->prio		= p->prio;
+-		__entry->success	= success;
+ 		__entry->target_cpu	= task_cpu(p);
+ 	),
+ 
+-	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
++	TP_printk("comm=%s pid=%d prio=%d target_cpu=%03d",
+ 		  __entry->comm, __entry->pid, __entry->prio,
+-		  __entry->success, __entry->target_cpu)
++		  __entry->target_cpu)
+ );
+ 
+-DEFINE_EVENT(sched_wakeup_template, sched_wakeup,
++DEFINE_EVENT_CONDITION(sched_wakeup_template, sched_wakeup,
+ 	     TP_PROTO(struct task_struct *p, int success),
+-	     TP_ARGS(p, success));
++	     TP_ARGS(p, success),
++	     TP_CONDITION(success));
+ 
+ /*
+  * Tracepoint for waking up a new task:
+  */
+-DEFINE_EVENT(sched_wakeup_template, sched_wakeup_new,
++DEFINE_EVENT_CONDITION(sched_wakeup_template, sched_wakeup_new,
+ 	     TP_PROTO(struct task_struct *p, int success),
+-	     TP_ARGS(p, success));
++	     TP_ARGS(p, success),
++	     TP_CONDITION(success));
+ 
+ #ifdef CREATE_TRACE_POINTS
+ static inline long __trace_sched_switch_state(struct task_struct *p)
+-- 
+1.7.2.3
+
 
