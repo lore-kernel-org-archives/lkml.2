@@ -1,100 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab0LDCyQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Dec 2010 21:54:16 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63524 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab0LDCyP (ORCPT
+	id S1754306Ab0LDDig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Dec 2010 22:38:36 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39445 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753766Ab0LDDie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Dec 2010 21:54:15 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=_hCqAiHmeU0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=jgQfevDBVUav35kChZgA:9 a=6_zRsg3WxhpZyXJ-nHEA:7 a=bpdOqcJvrIQIhQLUSjKkUsyfDCoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
- events.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
-	 <1291421609-14665-14-git-send-email-dhsharp@google.com>
-	 <1291427770.16223.15.camel@gandalf.stny.rr.com>
-	 <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 03 Dec 2010 21:54:12 -0500
-Message-ID: <1291431252.16223.28.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Dec 2010 22:38:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=cwn6LE4QRsfx/8BittCIXNtIDpsnBRjEHhEFpkZGeHSuS+B4Vii0rvd6lzMhUznm/D
+         /eOcwja0ty6oQnbW4tCnwWCfQcghz7BQ1IPw+e8vWzw7FcO5mMK4sTVUe2vaf8hPq3LX
+         +IMkLNI9HxdrCkbM8BZFPK3MsQu/VefiiSZPY=
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Joseph Chan <JosephChan@via.com.tw>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH] drivers/video/via/viafbdev.c: Check return value of strict_strtoul().
+Date: Sat,  4 Dec 2010 01:38:23 -0200
+Message-Id: <1dda71ee1b12baa2366520b894d83d7b0abefc5c.1291433779.git.tfransosi@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.343.g7d43d
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 18:33 -0800, David Sharp wrote:
-> I considered that, and I generally thing it's a good idea. However, I
-> also want to use this switch to shrink individual tracepoint event
-> structures.
-> 
-> eg: sched switch is a high frequency event and it is 68 bytes (60
-> after these patches)
-> 
-> Can you suggest a syntax for TRACE_EVENT, DECLARE_EVENT_CLASS, etc,
-> that could express the two versions and produce the right code?
-> 
-> I'm worried about adding even further complexity to the TRACE_EVENT
-> macros. I could add TRACE_EVENT_SMALL that takes two versions of
-> TP_STRUCT__entry, TP_fast_assign, and TP_printk each, but then this
-> will need to be permuted with your TP_CONDITIONAL patches as well.
+This fix the following warnings:
 
-I would not touch the TRACE_EVENT() structures. They are there as is and
-I would not think about changing them. Something like that would never
-make it into mainline.
+drivers/video/via/viafbdev.c:1144: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c:1214: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c:1272: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c:1311: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c:1380: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c:1417: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
 
-Now what you can do, is to make your own events based off of the same
-tracepoints. For example, the TRACE_EVENT(sched_switch...) has in
-sched.c:
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+---
+ drivers/video/via/viafbdev.c |   40 +++++++++++++++++++++++++++++++++-------
+ 1 files changed, 33 insertions(+), 7 deletions(-)
 
-	trace_sched_switch(prev, next);
-
-
-You could even write a module that does something like this:
-
-	register_trace_sched_switch(probe_sched_switch, mydata);
-
-
-
-void probe_sched_switch(void *mydata,
-		struct task_struct *prev,
-		struct task_struct *next)
-{
-	struct ring_buffer *buffer;
-	struct ring_buffer_event *event;
-	struct myentry *entry;
-
-	event = trace_current_buffer_lock_reserve(buffer,
-			mytype, sizeof(*entry),
-			0, 0);
-
-	if (!event)
-		return;
-
-	entry = ring_buffer_event_data(event);
-
-	entry->myfield = prev->x;
-	...
-
-	trace_nowake_buffer_unlock_commit(buffer, event,
-					0, 0);
-}
-
-You will need to do a register_ftrace_event() to register that 'mytype'
-and how to output it. Otherwise it would just be ignored in the "trace"
-file.
-
-All of the above would work fine as a loadable module that you could
-easily maintain out of tree, and still uses the internals of the system.
-
--- Steve
-
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index d298cfc..7c35100 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1131,6 +1131,8 @@ static ssize_t viafb_dvp0_proc_write(struct file *file,
+ 	char buf[20], *value, *pbuf;
+ 	u8 reg_val = 0;
+ 	unsigned long length, i;
++	int ret;
++
+ 	if (count < 1)
+ 		return -EINVAL;
+ 	length = count > 20 ? 20 : count;
+@@ -1141,7 +1143,10 @@ static ssize_t viafb_dvp0_proc_write(struct file *file,
+ 	for (i = 0; i < 3; i++) {
+ 		value = strsep(&pbuf, " ");
+ 		if (value != NULL) {
+-			strict_strtoul(value, 0, (unsigned long *)&reg_val);
++			ret = strict_strtoul(value, 0, (unsigned long *)&reg_val);
++			if (ret)
++				return ret;
++
+ 			DEBUG_MSG(KERN_INFO "DVP0:reg_val[%l]=:%x\n", i,
+ 				  reg_val);
+ 			switch (i) {
+@@ -1201,6 +1206,8 @@ static ssize_t viafb_dvp1_proc_write(struct file *file,
+ 	char buf[20], *value, *pbuf;
+ 	u8 reg_val = 0;
+ 	unsigned long length, i;
++	int ret;
++
+ 	if (count < 1)
+ 		return -EINVAL;
+ 	length = count > 20 ? 20 : count;
+@@ -1211,7 +1218,10 @@ static ssize_t viafb_dvp1_proc_write(struct file *file,
+ 	for (i = 0; i < 3; i++) {
+ 		value = strsep(&pbuf, " ");
+ 		if (value != NULL) {
+-			strict_strtoul(value, 0, (unsigned long *)&reg_val);
++			ret = strict_strtoul(value, 0, (unsigned long *)&reg_val);
++			if (ret)
++				return ret;
++
+ 			switch (i) {
+ 			case 0:
+ 				viafb_write_reg_mask(CR9B, VIACR,
+@@ -1263,13 +1273,17 @@ static ssize_t viafb_dfph_proc_write(struct file *file,
+ 	char buf[20];
+ 	u8 reg_val = 0;
+ 	unsigned long length;
++	int ret;
++
+ 	if (count < 1)
+ 		return -EINVAL;
+ 	length = count > 20 ? 20 : count;
+ 	if (copy_from_user(&buf[0], buffer, length))
+ 		return -EFAULT;
+ 	buf[length - 1] = '\0';	/*Ensure end string */
+-	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
++	ret = strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
++	if (ret)
++		return ret;
+ 	viafb_write_reg_mask(CR97, VIACR, reg_val, 0x0f);
+ 	return count;
+ }
+@@ -1302,13 +1316,17 @@ static ssize_t viafb_dfpl_proc_write(struct file *file,
+ 	char buf[20];
+ 	u8 reg_val = 0;
+ 	unsigned long length;
++	int ret;
++
+ 	if (count < 1)
+ 		return -EINVAL;
+ 	length = count > 20 ? 20 : count;
+ 	if (copy_from_user(&buf[0], buffer, length))
+ 		return -EFAULT;
+ 	buf[length - 1] = '\0';	/*Ensure end string */
+-	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
++	ret = strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
++	if (ret)
++		return ret;
+ 	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
+ 	return count;
+ }
+@@ -1365,6 +1383,8 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
+ 	char buf[30], *value, *pbuf;
+ 	struct IODATA reg_val;
+ 	unsigned long length, i;
++	int ret;
++
+ 	if (count < 1)
+ 		return -EINVAL;
+ 	length = count > 30 ? 30 : count;
+@@ -1377,8 +1397,11 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
+ 		for (i = 0; i < 2; i++) {
+ 			value = strsep(&pbuf, " ");
+ 			if (value != NULL) {
+-				strict_strtoul(value, 0,
+-					(unsigned long *)&reg_val.Data);
++				ret = strict_strtoul(value, 0,
++						(unsigned long *)&reg_val.Data);
++				if (ret)
++					return ret;
++
+ 				switch (i) {
+ 				case 0:
+ 					reg_val.Index = 0x08;
+@@ -1414,8 +1437,11 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
+ 		for (i = 0; i < 2; i++) {
+ 			value = strsep(&pbuf, " ");
+ 			if (value != NULL) {
+-				strict_strtoul(value, 0,
++				ret = strict_strtoul(value, 0,
+ 					(unsigned long *)&reg_val.Data);
++				if (ret)
++					return ret;
++
+ 				switch (i) {
+ 				case 0:
+ 					reg_val.Index = 0x08;
+-- 
+1.7.3.2.343.g7d43d
 
