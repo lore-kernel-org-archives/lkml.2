@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab0LERae (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:30:34 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60513 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756633Ab0LERa0 (ORCPT
+	id S1756619Ab0LERaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:30:24 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44789 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530Ab0LERaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:30:26 -0500
+	Sun, 5 Dec 2010 12:30:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=urvxUt+xvi1T27DASa1N4C4PCvxFa3JSFK9sXaEufCNdlWq67i557TdYVnTABPm4PQ
-         eSoo+yDqudKtIEj+nRrNzk7Sof2JhPVZ85rf+lcr38QHDavLE/iLafirD+tZfS5DF0us
-         o9uhk/ioZF4s6ZK3jk+D2GUwmp2td4L5c8ODs=
+        b=XV6B8t7irSYJvSsus+B9OOZBSotj7gsUCB/26NIrMCdMzzy0bDf3J74szDYq/sQxTc
+         uusJq5BWzZUJ3eENFUvTKsWMOekLwFk0+lonBztvuEIBnsoDiK0u1Ix6PzsqaQb9mv04
+         OFVZOfgiDWSEbUmWkE+D/TvZCkF+huM6w7qJM=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>,
@@ -22,9 +22,9 @@ Cc: Rik van Riel <riel@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
         Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
         Hugh Dickins <hughd@google.com>
-Subject: [PATCH v4 7/7] Prevent activation of page in madvise_dontneed
-Date: Mon,  6 Dec 2010 02:29:15 +0900
-Message-Id: <ca25c4e33beceeb3a96e8437671e5e0a188602fa.1291568905.git.minchan.kim@gmail.com>
+Subject: [PATCH v4 6/7] Remove zap_details NULL dependency
+Date: Mon,  6 Dec 2010 02:29:14 +0900
+Message-Id: <807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1291568905.git.minchan.kim@gmail.com>
 References: <cover.1291568905.git.minchan.kim@gmail.com>
@@ -34,111 +34,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now zap_pte_range alwayas activates pages which are pte_young &&
-!VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
-it's unnecessary since the page wouldn't use any more.
+Some functions used zap_details depends on assumption that
+zap_details parameter should be NULLed if some fields are 0.
+
+This patch removes that dependency for next patch easy review/merge.
+It should not chanage behavior.
 
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Nick Piggin <npiggin@kernel.dk>
 Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Wu Fengguang <fengguang.wu@intel.com>
 Cc: Hugh Dickins <hughd@google.com>
-
-Changelog since v3:
- - Change variable name - suggested by Johannes
- - Union ignore_references with zap_details - suggested by Hugh
-
-Changelog since v2:
- - remove unnecessary description
-
-Changelog since v1:
- - change word from promote to activate
- - add activate argument to zap_pte_range and family function
 ---
- include/linux/mm.h |    4 +++-
- mm/madvise.c       |    6 +++---
- mm/memory.c        |    5 ++++-
- 3 files changed, 10 insertions(+), 5 deletions(-)
+ include/linux/mm.h |    8 ++++++++
+ mm/madvise.c       |   15 +++++++++------
+ mm/memory.c        |   14 ++++++++------
+ mm/mmap.c          |    6 ++++--
+ 4 files changed, 29 insertions(+), 14 deletions(-)
 
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 6522ae4..e57190f 100644
+index e097df6..6522ae4 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -771,12 +771,14 @@ struct zap_details {
- 	pgoff_t last_index;			/* Highest page->index to unmap */
- 	spinlock_t *i_mmap_lock;		/* For unmap_mapping_range: */
+@@ -773,6 +773,14 @@ struct zap_details {
  	unsigned long truncate_count;		/* Compare vm_truncate_count */
-+	bool ignore_references;			/* For page activation */
  };
  
- #define __ZAP_DETAILS_INITIALIZER(name) \
-                 { .nonlinear_vma = NULL \
- 		, .check_mapping = NULL \
--		, .i_mmap_lock = NULL }
-+		, .i_mmap_lock = NULL	\
-+		, .ignore_references = false }
++#define __ZAP_DETAILS_INITIALIZER(name) \
++		{ .nonlinear_vma = NULL \
++		, .check_mapping = NULL \
++		, .i_mmap_lock = NULL }
++
++#define DEFINE_ZAP_DETAILS(name)		\
++	struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
++
+ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 		pte_t pte);
  
- #define DEFINE_ZAP_DETAILS(name)		\
- 	struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
 diff --git a/mm/madvise.c b/mm/madvise.c
-index bfa17aa..8e7aba3 100644
+index 319528b..bfa17aa 100644
 --- a/mm/madvise.c
 +++ b/mm/madvise.c
-@@ -163,6 +163,7 @@ static long madvise_dontneed(struct vm_area_struct * vma,
+@@ -162,18 +162,21 @@ static long madvise_dontneed(struct vm_area_struct * vma,
+ 			     struct vm_area_struct ** prev,
  			     unsigned long start, unsigned long end)
  {
- 	DEFINE_ZAP_DETAILS(details);
-+	details.ignore_references = true;
- 
++	DEFINE_ZAP_DETAILS(details);
++
  	*prev = vma;
  	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
-@@ -173,10 +174,9 @@ static long madvise_dontneed(struct vm_area_struct * vma,
- 		details.last_index = ULONG_MAX;
+ 		return -EINVAL;
  
- 		zap_page_range(vma, start, end - start, &details);
--	} else {
--
-+	} else
- 		zap_page_range(vma, start, end - start, &details);
--	}
+ 	if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
+-		struct zap_details details = {
+-			.nonlinear_vma = vma,
+-			.last_index = ULONG_MAX,
+-		};
++		details.nonlinear_vma = vma;
++		details.last_index = ULONG_MAX;
 +
+ 		zap_page_range(vma, start, end - start, &details);
+-	} else
+-		zap_page_range(vma, start, end - start, NULL);
++	} else {
++
++		zap_page_range(vma, start, end - start, &details);
++	}
  	return 0;
  }
  
 diff --git a/mm/memory.c b/mm/memory.c
-index c0879bb..44d87e1 100644
+index ebfeedf..c0879bb 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -897,6 +897,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 	int rss[NR_MM_COUNTERS];
-+	bool ignore_references = details->ignore_references;
+@@ -900,6 +900,9 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
  
  	init_rss_vec(rss);
  
-@@ -952,7 +953,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 				if (pte_dirty(ptent))
- 					set_page_dirty(page);
- 				if (pte_young(ptent) &&
--				    likely(!VM_SequentialReadHint(vma)))
-+				    likely(!VM_SequentialReadHint(vma)) &&
-+					!ignore_references)
- 					mark_page_accessed(page);
- 				rss[MM_FILEPAGES]--;
- 			}
-@@ -1218,6 +1220,7 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
++	if (!details->check_mapping && !details->nonlinear_vma)
++		details = NULL;
++
+ 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+ 	arch_enter_lazy_mmu_mode();
+ 	do {
+@@ -1038,9 +1041,6 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
+ 	pgd_t *pgd;
+ 	unsigned long next;
+ 
+-	if (details && !details->check_mapping && !details->nonlinear_vma)
+-		details = NULL;
+-
+ 	BUG_ON(addr >= end);
+ 	mem_cgroup_uncharge_start();
+ 	tlb_start_vma(tlb, vma);
+@@ -1102,7 +1102,7 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
+ 	unsigned long tlb_start = 0;	/* For tlb_finish_mmu */
+ 	int tlb_start_valid = 0;
+ 	unsigned long start = start_addr;
+-	spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
++	spinlock_t *i_mmap_lock = details->i_mmap_lock;
+ 	int fullmm = (*tlbp)->fullmm;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 
+@@ -1217,10 +1217,11 @@ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
+ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
  		unsigned long size)
  {
- 	DEFINE_ZAP_DETAILS(details);
-+	details.ignore_references = true;
++	DEFINE_ZAP_DETAILS(details);
  	if (address < vma->vm_start || address + size > vma->vm_end ||
  	    		!(vma->vm_flags & VM_PFNMAP))
  		return -1;
+-	zap_page_range(vma, address, size, NULL);
++	zap_page_range(vma, address, size, &details);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(zap_vma_ptes);
+@@ -2577,7 +2578,8 @@ restart:
+ void unmap_mapping_range(struct address_space *mapping,
+ 		loff_t const holebegin, loff_t const holelen, int even_cows)
+ {
+-	struct zap_details details;
++	DEFINE_ZAP_DETAILS(details);
++
+ 	pgoff_t hba = holebegin >> PAGE_SHIFT;
+ 	pgoff_t hlen = (holelen + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index b179abb..31d2594 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1900,11 +1900,12 @@ static void unmap_region(struct mm_struct *mm,
+ 	struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
+ 	struct mmu_gather *tlb;
+ 	unsigned long nr_accounted = 0;
++	DEFINE_ZAP_DETAILS(details);
+ 
+ 	lru_add_drain();
+ 	tlb = tlb_gather_mmu(mm, 0);
+ 	update_hiwater_rss(mm);
+-	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
++	unmap_vmas(&tlb, vma, start, end, &nr_accounted, &details);
+ 	vm_unacct_memory(nr_accounted);
+ 	free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
+ 				 next? next->vm_start: 0);
+@@ -2254,6 +2255,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	struct vm_area_struct *vma;
+ 	unsigned long nr_accounted = 0;
+ 	unsigned long end;
++	DEFINE_ZAP_DETAILS(details);
+ 
+ 	/* mm's last user has gone, and its about to be pulled down */
+ 	mmu_notifier_release(mm);
+@@ -2278,7 +2280,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	tlb = tlb_gather_mmu(mm, 1);
+ 	/* update_hiwater_rss(mm) here? but nobody should be looking */
+ 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+-	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
++	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, &details);
+ 	vm_unacct_memory(nr_accounted);
+ 
+ 	free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
 -- 
 1.7.0.4
 
