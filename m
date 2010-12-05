@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab0LEM2h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 07:28:37 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:37396 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932Ab0LEM2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 07:28:36 -0500
-Date: Sun, 5 Dec 2010 13:27:43 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 2/2] drm: record monitor status in
- output_poll_execute
-Message-ID: <20101205132743.3b3458ab@schatten.dmk.lab>
-In-Reply-To: <1290797159-3977-2-git-send-email-keithp@keithp.com>
-References: <1290797159-3977-1-git-send-email-keithp@keithp.com>
-	<1290797159-3977-2-git-send-email-keithp@keithp.com>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755479Ab0LEM3F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 07:29:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65472 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab0LEM3D convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 07:29:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=X3ht8rC59OD8Ie+RKTbP7lZaeZhn722JMAGS9DbswTQJBMebxmXDWnR3BH+rAudM5k
+         Il7fXPHiVuFhPtE3bKDf3Kwg/V02MqPwexuu2lASMgVgYYFwgd62bv2VtCxZnk3lc6Fg
+         /FBrPkbSRWROsgsuytU1xqwOZ+eS65fokSW+E=
+MIME-Version: 1.0
+In-Reply-To: <1291432752-2466-1-git-send-email-bookjovi@gmail.com>
+References: <1291432752-2466-1-git-send-email-bookjovi@gmail.com>
+Date: Sun, 5 Dec 2010 10:29:02 -0200
+Message-ID: <AANLkTimnSPSEx+B+wgxJaaAO8-HxcnLW+Nob4O3mjxBn@mail.gmail.com>
+Subject: Re: [PATCH] perf_event: fix error handling path
+From: Thiago Farina <tfransosi@gmail.com>
+To: bookjovi@gmail.com
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Nov 2010 10:45:59 -0800
-Keith Packard <keithp@keithp.com> wrote:
+On Sat, Dec 4, 2010 at 1:19 AM,  <bookjovi@gmail.com> wrote:
+> fix error handling path
+>
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+>  kernel/perf_event.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index cb6c0d2..62f9e9d 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -1918,8 +1918,6 @@ static int get_callchain_buffers(void)
+>        }
+>
+>        err = alloc_callchain_buffers();
+> -       if (err)
+> -               release_callchain_buffers();
 
-> In order to correctly report monitor connected status changes, the
-> previous monitor status must be recorded in the connector->status
-> value instead of being discarded.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-
-Keith, am I right to assume that these address 
-https://bugzilla.kernel.org/show_bug.cgi?id=22672
-and probably:
-https://bugzilla.kernel.org/show_bug.cgi?id=23472 
-
-Regards,
-Flo
-
-> ---
->  drivers/gpu/drm/drm_crtc_helper.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
-> index 232ee93..7ca5935 100644
-> --- a/drivers/gpu/drm/drm_crtc_helper.c
-> +++ b/drivers/gpu/drm/drm_crtc_helper.c
-> @@ -848,7 +848,7 @@ static void output_poll_execute(struct work_struct *work)
->  	struct delayed_work *delayed_work = to_delayed_work(work);
->  	struct drm_device *dev = container_of(delayed_work, struct drm_device, mode_config.output_poll_work);
->  	struct drm_connector *connector;
-> -	enum drm_connector_status old_status, status;
-> +	enum drm_connector_status old_status;
->  	bool repoll = false, changed = false;
->  
->  	if (!drm_kms_helper_poll)
-> @@ -873,8 +873,9 @@ static void output_poll_execute(struct work_struct *work)
->  		    !(connector->polled & DRM_CONNECTOR_POLL_HPD))
->  			continue;
->  
-> -		status = connector->funcs->detect(connector, false);
-> -		if (old_status != status)
-> +		connector->status = connector->funcs->detect(connector, false);
-> +		DRM_DEBUG_KMS("connector status updated to %d\n", connector->status);
-> +		if (old_status != connector->status)
->  			changed = true;
->  	}
->  
+Care to explain in the change log message? As I reader, is not clear
+to me what is wrong with this.
