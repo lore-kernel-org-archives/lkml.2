@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab0LER0o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:26:44 -0500
-Received: from smtprelay01.ispgateway.de ([80.67.31.28]:36599 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130Ab0LER0n (ORCPT
+	id S1756387Ab0LER2R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:28:17 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:54356 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab0LER2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:26:43 -0500
-X-Greylist: delayed 1137 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Dec 2010 12:26:42 EST
-From: Bernhard Walle <bernhard@bwalle.de>
-To: sfrench@samba.org
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cifs: Add information about noserverino
-Date: Sun,  5 Dec 2010 18:07:35 +0100
-Message-Id: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-X-Mailer: git-send-email 1.7.3.2
-X-Df-Sender: 1227806
+	Sun, 5 Dec 2010 12:28:16 -0500
+Message-ID: <a07a23e9b233db5f3095b8658198311c.squirrel@webmail.greenhost.nl>
+In-Reply-To: <AANLkTikbjZXMio0CZ_AYGpi_8784EyWStK9sD23jSZzD@mail.gmail.com>
+References: <AANLkTikbjZXMio0CZ_AYGpi_8784EyWStK9sD23jSZzD@mail.gmail.com>
+Date: Sun, 5 Dec 2010 18:28:12 +0100 (CET)
+Subject: Re: Linux 2.6.37-rc4
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 897836312160ed0141c32cdc6ac56212
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In my case I had the problem that 32 bit userspace applications in an
-amd64 environment was not able to list the directories of a CIFS-mounted
-share. The simple userspace code
+Hello,
 
-    int main(int argc, char *argv[])
-    {
-        DIR *dir;
-        struct dirent *dirent;
+On Tue, November 30, 2010 06:36, Linus Torvalds wrote:
+>
+> So give it a try, and report any regressions you see,
 
-        if (!argv[1]) {
-            fprintf(stderr, "Usage: %s <directory>\n", argv[0]);
-            return -1;
-        }
+For everyone trying to bisect regressions, beware of the following:
 
-        dir = opendir(argv[1]);
-        if (!dir) {
-            perror("Unable to open directory");
-            return -1;
-        }
+- Bisect doesn't save your old .config.
 
-        while ((dirent = readdir(dir)) != NULL)
-            puts(dirent->d_name);
+- When bisecting between 2.6.36 and HEAD there are enough config
+  options changed so you have to manually choose new (old) options.
+  This means you can't run it fully automatic, because user input
+  is needed.
 
-        closedir(dir);
+- Somewhere between there and here, the kernel will stop updating
+  arch/x86/boot/bzImage. Maybe only if you have CONFIG_KERNEL_LZMA
+  set, but still. The result is that you'll be testing the same
+  kernel over and over while recompiling for naught, messing up the
+  whole bisecting thing. Or something else weird may be going on.
 
-        return 0;
-    }
+The latter is fixed at least in rc4 (haven't tried earlier kernels),
+but it still bites you when bisecting. (Or only me)
 
-was sufficient to trigger the problem.
+Other than, it takes ages to bisect on a slow laptop with an even
+slower hard disk, because you throw the whole file cache away after
+each reboot. Perhaps I should have installed ccache.
 
-I discovered that the problem was that the inodes were too large to fit
-in a 32 bit (unsigned long) integer, so the compat_filldir() function
-returned -EOVERFLOW.
+I've also seen internal compiler errors a couple of times. Retrying
+did seem to get past it, and I think I only got it with higher -j
+options (2, 3, 4), so maybe it's just something running out of memory.
+Or it's my laptop getting too stressed out and giving hardware errors,
+but I'd say that's unlikely. Could also just be a bug in newer gcc.
+Or it's related to whatever causes the bugs I see. I'm too grumpy
+to find out.
 
-While that is okay it would have saved me a some hours of debugging if
-the message below would have appeared in my kernel log.
+The regressions I hit are:
 
-The target was a Samba server (I guess) of a Buffalo LinkStation Duo
-with the unmodified vendor firmware 1.34.
+https://bugzilla.kernel.org/show_bug.cgi?id=23472
+https://bugzilla.kernel.org/show_bug.cgi?id=22672
 
-Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
----
- fs/cifs/readdir.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+This on a Thinkpad X40 with Intel 855GM chipset.
 
-diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
-index d5e591f..d979826 100644
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -773,6 +773,7 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
- 	char *tmp_buf = NULL;
- 	char *end_of_smb;
- 	unsigned int max_len;
-+	int err;
- 
- 	xid = GetXid();
- 
-@@ -783,17 +784,31 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
- 
- 	switch ((int) file->f_pos) {
- 	case 0:
--		if (filldir(direntry, ".", 1, file->f_pos,
--		     file->f_path.dentry->d_inode->i_ino, DT_DIR) < 0) {
-+		err = filldir(direntry, ".", 1, file->f_pos,
-+		     file->f_path.dentry->d_inode->i_ino, DT_DIR);
-+		if (err < 0) {
- 			cERROR(1, "Filldir for current dir failed");
-+			if (err == -EOVERFLOW) {
-+				cERROR(1, "Server inodes are too large for 32 "
-+						"bit userspace. You might "
-+						"consider using 'noserverino' "
-+						"mount option for this mount.");
-+			}
- 			rc = -ENOMEM;
- 			break;
- 		}
- 		file->f_pos++;
- 	case 1:
--		if (filldir(direntry, "..", 2, file->f_pos,
--		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR) < 0) {
-+		err = filldir(direntry, "..", 2, file->f_pos,
-+		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR);
-+		if (err < 0) {
- 			cERROR(1, "Filldir for parent dir failed");
-+			if (err == -EOVERFLOW) {
-+				cERROR(1, "Server inodes are too large for 32 "
-+						"bit userspace. You might "
-+						"consider using 'noserverino' "
-+						"mount option for this mount.");
-+			}
- 			rc = -ENOMEM;
- 			break;
- 		}
--- 
-1.7.3.2
+As far as I know, the BIOS is the one controlling the backlight on
+this laptop, and everything always worked fine. Now the backlight
+gets messed up when resuming, and it doesn't turn on until a s2ram
+cycle after a "xset dpms force suspend". So it seems that something
+started messing with the backlight control while it didn't before,
+and it does it wrong.
+
+I'll add a "me too" to those bugzilla's.
+
+xf86-video-intel 2.13 has major problems, so I'm running 2.12, but
+that's another problem for another day, and off-topic here.
+
+Good day,
+
+Indan
+
 
