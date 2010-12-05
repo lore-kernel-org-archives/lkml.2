@@ -1,137 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0LFBMO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 20:12:14 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41029 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab0LFBMM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 20:12:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kBFMOWWCbtmiU0BC/r40hT/QMzJm/MKTWQhZI3v4a+rpOh75TzLafTpNFy2/GkxIwz
-         J54C93I8nac9ymIPLd4rwR4KLr/pXttRsYvxXx81sTvKqNcwzs2UpX4xFdukLG5FAcLo
-         3LnKfdkTba7DSgEM77KNoGY6jCSSawTbErTik=
+	id S1753243Ab0LFBPd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 20:15:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2835 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab0LFBPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 20:15:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,303,1288594800"; 
+   d="scan'208";a="864790946"
+Date: Mon, 6 Dec 2010 07:50:57 +0800
+From: Shaohui Zheng <shaohui.zheng@linux.intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Shaohui Zheng <shaohui.zheng@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, dave@linux.vnet.ibm.com,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [patch 7/7, v7] NUMA Hotplug Emulator: Implement
+ mem_hotplug/add_memory debugfs interface
+Message-ID: <20101205235057.GA27820@shaohui>
+References: <20101202050518.819599911@intel.com>
+ <20101202050737.651398415@intel.com>
+ <alpine.DEB.2.00.1012021534140.6878@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20101203121338.GB18655@intel.com>
-References: <20101203121338.GB18655@intel.com>
-Date: Mon, 6 Dec 2010 10:12:10 +0900
-X-Google-Sender-Auth: iOgvpePKdyJH58ldQ-TNV0OiefQ
-Message-ID: <AANLkTikPAmpJq7Q7riDPGq5UkhAa9cuXRW7kjuNGv6oB@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4]enable background operations for supported eMMC card
-From: Kyungmin Park <kmpark@infradead.org>
-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org, cjb@laptop.org,
-        akpm@linux-foundation.org, arjan@linux.intel.com, alan@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1012021534140.6878@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<Tested-by: Kyungmin Park <kyungmin.park@samsung.com>
+On Thu, Dec 02, 2010 at 03:37:03PM -0800, David Rientjes wrote:
+> On Thu, 2 Dec 2010, shaohui.zheng@intel.com wrote:
+> 
+> > From:  Shaohui Zheng <shaohui.zheng@intel.com>
+> > 
+> > Add mem_hotplug/add_memory interface to support to memory hotplug emulation.
+> > the reserved memory can be added into desired node with this interface.
+> > 
+> > Add a memory section(128M) to node 3(boots with mem=1024m)
+> > 
+> > 	echo 0x40000000,3 > mem_hotplug/add_memory
+> > 
+> > And more we make it friendly, it is possible to add memory to do
+> > 
+> > 	echo 3g > mem_hotplug/add_memory
+> > 	echo 1024m,3 > mem_hotplug/add_memory
+> > 
+> > Another format suggested by Dave Hansen:
+> > 
+> > 	echo physical_address=0x40000000 numa_node=3 > mem_hotplug/add_memory
+> > 
+> > it is more explicit to show meaning of the parameters.
+> > 
+> 
+> NACK, we don't need such convoluted definitions if debugfs were extended 
+> with per-node triggers to add_memory as I suggested in v6 of your 
+> proposal:
+> 
+> 	/sys/kernel/debug/mem_hotplug/add_node (already exists)
+> 	/sys/kernel/debug/mem_hotplug/node0/add_memory
+> 	/sys/kernel/debug/mem_hotplug/node1/add_memory
+> 	...
+> 
+> You can then write a physical starting address to the add_memory files to 
+> hotadd memory to a node other than the one to which it has physical 
+> affinity.  This is much more extendable if we add additional per-node 
+> triggers later.
+> 
+> It would also be helpful if you were to reach consensus on the matters 
+> under discussion before posting a new version of your patchset everyday.
 
-Note that I'm not yet see any performance improvements :)
+After consider your proposal again, the new add_memory interface under each 
+nodes follow the rule "one file one parameter" better. it make the parser
+much simpler.
 
-On Fri, Dec 3, 2010 at 9:13 PM, Chuanxiao Dong <chuanxiao.dong@intel.com> wrote:
-> From 984adc755cf2f7966a89e510a50f085e314fe347 Mon Sep 17 00:00:00 2001
-> From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> Date: Mon, 22 Nov 2010 16:31:12 +0800
-> Subject: [PATCH 1/4] mmc: Enabled background operations feature if eMMC card supports
->
-> Background operations is a new feature defined in eMMC4.41 standard.
-> Since this feature is opertional for eMMC card, so driver only enable
-> for those eMMC card which supports this feature
->
-> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> ---
->  drivers/mmc/core/mmc.c   |   26 ++++++++++++++++++++++++++
->  include/linux/mmc/card.h |    2 ++
->  include/linux/mmc/mmc.h  |    3 +++
->  3 files changed, 31 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 77f93c3..471ed82 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -310,6 +310,14 @@ static int mmc_read_ext_csd(struct mmc_card *card)
->                        ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
->                card->ext_csd.trim_timeout = 300 *
->                        ext_csd[EXT_CSD_TRIM_MULT];
-> +
-> +               /* detect whether the eMMC card support BKOPS */
-> +               if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
-> +                       card->ext_csd.bkops = 1;
-> +                       card->ext_csd.bkops_en =
-> +                               ext_csd[EXT_CSD_BKOPS_EN];
-> +               }
-> +
->        }
->
->        if (ext_csd[EXT_CSD_ERASED_MEM_CONT])
-> @@ -484,6 +492,24 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
->        }
->
->        /*
-> +        * enable BKOPS if eMMC card supports.
-> +        */
-> +       if (card->ext_csd.bkops) {
-> +               if (!card->ext_csd.bkops_en) {
-> +                       err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> +                                       EXT_CSD_BKOPS_EN, 1);
-> +                       if (err && err != -EBADMSG)
-> +                               goto free_card;
-> +
-> +                       if (err) {
-> +                               card->ext_csd.bkops_en = 0;
-> +                               err = 0;
-> +                       } else
-> +                               card->ext_csd.bkops_en = 1;
-> +               }
-> +       }
-> +
-> +       /*
->         * Activate high speed (if supported)
->         */
->        if ((card->ext_csd.hs_max_dtr != 0) &&
-> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> index 8ce0827..9b755cb 100644
-> --- a/include/linux/mmc/card.h
-> +++ b/include/linux/mmc/card.h
-> @@ -54,6 +54,8 @@ struct mmc_ext_csd {
->        unsigned int            sec_trim_mult;  /* Secure trim multiplier  */
->        unsigned int            sec_erase_mult; /* Secure erase multiplier */
->        unsigned int            trim_timeout;           /* In milliseconds */
-> +       unsigned int            bkops:1; /* background support bit */
-> +       unsigned int            bkops_en:1; /* background enable bit */
->  };
->
->  struct sd_scr {
-> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> index 956fbd8..14f7813 100644
-> --- a/include/linux/mmc/mmc.h
-> +++ b/include/linux/mmc/mmc.h
-> @@ -251,6 +251,8 @@ struct _mmc_csd {
->  * EXT_CSD fields
->  */
->
-> +#define EXT_CSD_BKOPS_EN               163     /* R/W */
-> +#define EXT_CSD_BKOPS_START            164     /* W */
->  #define EXT_CSD_ERASE_GROUP_DEF                175     /* R/W */
->  #define EXT_CSD_ERASED_MEM_CONT                181     /* RO */
->  #define EXT_CSD_BUS_WIDTH              183     /* R/W */
-> @@ -266,6 +268,7 @@ struct _mmc_csd {
->  #define EXT_CSD_SEC_ERASE_MULT         230     /* RO */
->  #define EXT_CSD_SEC_FEATURE_SUPPORT    231     /* RO */
->  #define EXT_CSD_TRIM_MULT              232     /* RO */
-> +#define EXT_CSD_BKOPS_SUPPORT  502     /* RO */
->
->  /*
->  * EXT_CSD field definitions
-> --
-> 1.6.6.1
->
->
+I work out a patch for this proposal, and it works on my side.
+Any more comments?
+
+Subject: NUMA Hotplug Emulator: Implement add_memory debugfs interface
+
+From:  Shaohui Zheng <shaohui.zheng@intel.com>
+
+Add add_memory interface to support to memory hotplug emulation for each online
+node under debugfs. The reserved memory can be added into desired node with
+this interface.
+
+The layout on debufs:
+	mem_hotplug/node0/add_memory
+	mem_hotplug/node1/add_memory
+	mem_hotplug/node2/add_memory
+	...
+
+Add a memory section(128M) to node 3(boots with mem=1024m)
+
+	echo 0x40000000 > mem_hotplug/node3/add_memory
+
+And more we make it friendly, it is possible to add memory to do
+
+	echo 1024m > mem_hotplug/node3/add_memory
+
+CC: David Rientjes <rientjes@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+---
+Index: linux-hpe4/mm/memory_hotplug.c
+===================================================================
+--- linux-hpe4.orig/mm/memory_hotplug.c	2010-12-02 12:35:31.557622002 +0800
++++ linux-hpe4/mm/memory_hotplug.c	2010-12-06 07:30:36.067622001 +0800
+@@ -930,6 +930,80 @@
+ 
+ static struct dentry *memhp_debug_root;
+ 
++#ifdef CONFIG_ARCH_MEMORY_PROBE
++
++static ssize_t add_memory_store(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	u64 phys_addr = 0;
++	int nid = file->private_data - NULL;
++	int ret;
++
++	phys_addr = simple_strtoull(buf, NULL, 0);
++	printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
++	phys_addr = memparse(buf, NULL);
++	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++
++	if (ret)
++		count = ret;
++
++	return count;
++}
++
++static int add_memory_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static const struct file_operations add_memory_file_ops = {
++	.open		= add_memory_open,
++	.write		= add_memory_store,
++	.llseek		= generic_file_llseek,
++};
++
++/*
++ * Create add_memory debugfs entry under specified node
++ */
++static int debugfs_create_add_memory_entry(int nid)
++{
++	char buf[32];
++	static struct dentry *node_debug_root;
++
++	snprintf(buf, sizeof(buf), "node%d", nid);
++	node_debug_root = debugfs_create_dir(buf, memhp_debug_root);
++
++	/* the nid information was represented by the offset of pointer(NULL+nid) */
++	if (!debugfs_create_file("add_memory", S_IWUSR, node_debug_root,
++			NULL + nid, &add_memory_file_ops))
++		return -ENOMEM;
++
++	return 0;
++}
++
++static int __init memory_debug_init(void)
++{
++	int nid;
++
++	if (!memhp_debug_root)
++		memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
++	if (!memhp_debug_root)
++		return -ENOMEM;
++
++	for_each_online_node(nid)
++		 debugfs_create_add_memory_entry(nid);
++
++	return 0;
++}
++
++module_init(memory_debug_init);
++#else
++static debugfs_create_add_memory_entry(int nid)
++{
++	return 0;
++}
++#endif /* CONFIG_ARCH_MEMORY_PROBE */
++
+ static ssize_t add_node_store(struct file *file, const char __user *buf,
+ 				size_t count, loff_t *ppos)
+ {
+@@ -960,6 +1034,8 @@
+ 		return -ENOMEM;
+ 
+ 	ret = add_memory(nid, start, size);
++
++	debugfs_create_add_memory_entry(nid);
+ 	return ret ? ret : count;
+ }
+ 
+Index: linux-hpe4/Documentation/memory-hotplug.txt
+===================================================================
+--- linux-hpe4.orig/Documentation/memory-hotplug.txt	2010-12-02 12:35:31.557622002 +0800
++++ linux-hpe4/Documentation/memory-hotplug.txt	2010-12-06 07:39:36.007622000 +0800
+@@ -19,6 +19,7 @@
+   4.1 Hardware(Firmware) Support
+   4.2 Notify memory hot-add event by hand
+   4.3 Node hotplug emulation
++  4.4 Memory hotplug emulation
+ 5. Logical Memory hot-add phase
+   5.1. State of memory
+   5.2. How to online memory
+@@ -239,6 +240,29 @@
+ Once the new node has been added, it is possible to online the memory by
+ toggling the "state" of its memory section(s) as described in section 5.1.
+ 
++4.4 Memory hotplug emulation
++------------
++With debugfs, it is possible to test memory hotplug with software method, we
++can add memory section to desired node with add_memory interface. It is a much
++more powerful interface than "probe" described in section 4.2.
++
++There is an add_memory interface for each online node at the debugfs mount
++point.
++	mem_hotplug/node0/add_memory
++	mem_hotplug/node1/add_memory
++	mem_hotplug/node2/add_memory
++	...
++
++Add a memory section(128M) to node 3(boots with mem=1024m)
++
++	echo 0x40000000 > mem_hotplug/node3/add_memory
++
++And more we make it friendly, it is possible to add memory to do
++
++	echo 1024m > mem_hotplug/node3/add_memory
++
++Once the new memory section has been added, it is possible to online the memory
++by toggling the "state" described in section 5.1.
+ 
+ ------------------------------
+ 5. Logical Memory hot-add phase
+
+
+-- 
+Thanks & Regards,
+Shaohui
+
