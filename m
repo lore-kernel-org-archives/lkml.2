@@ -1,152 +1,500 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320Ab0LEXMn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:12:43 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:58556 "EHLO
+	id S1756479Ab0LEXNH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:13:07 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37682 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755961Ab0LEXKN (ORCPT
+	with ESMTP id S1755953Ab0LEXKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:10:13 -0500
+	Sun, 5 Dec 2010 18:10:12 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Gary King <gking@nvidia.com>,
+Cc: linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@google.com>,
         Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
         Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 18/21] ARM: tegra: iomap: Add missing devices, fix use of SZ_8, SZ_64
-Date: Sun,  5 Dec 2010 15:09:05 -0800
-Message-Id: <1291590548-7341-19-git-send-email-ccross@android.com>
+Subject: [PATCH 21/21] ARM: tegra: dma: Fix critical data corruption bugs
+Date: Sun,  5 Dec 2010 15:09:08 -0800
+Message-Id: <1291590548-7341-22-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1291590548-7341-1-git-send-email-ccross@android.com>
 References: <1291590548-7341-1-git-send-email-ccross@android.com>
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gary King <gking@nvidia.com>
+From: Colin Cross <ccross@google.com>
 
-Adds gart, hdmi, avp, host1x, and pwm controllers to mach/iomap.h
-There is no SZ_8 or SZ_64, replace them with constants
+Sometimes, due to high interrupt latency in the continuous mode
+of DMA transfer, the half buffer complete interrupt is handled
+after DMA has transferred the full buffer.  When this is detected,
+stop DMA immediately and restart with the next buffer if the next
+buffer is ready.
 
-Signed-off-by: Gary King <gking@nvidia.com>
+originally fixed by Victor(Weiguo) Pan <wpan@nvidia.com>
+
+In place of using the simple spin_lock()/spi_unlock() in the
+interrupt thread, using the spin_lock_irqsave() and
+spin_unlock_irqrestore(). The lock is shared between the normal
+process context and interrupt context.
+
+originally fixed by Laxman Dewangan (ldewangan@nvidia.com)
+
+The use of shadow registers caused memory corruption at physical
+address 0 because the enable bit was not shadowed, and assuming it
+needed to be set would enable an unconfigured dma block.  Most of the
+register accesses don't need to know the previous state of the
+registers, and the few places that do need to modify only a few bits
+in the registers are the same ones that were sometimes incorrectly
+setting the enable bit.  This patch convert tegra_dma_update_hardware
+to set the entire register, and the other users to read-modify-write,
+and drops the shadow registers completely.
+
+Also fixes missing locking in tegra_dma_allocate_channel
+
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/include/mach/iomap.h |   55 ++++++++++++++++++++++++------
- 1 files changed, 44 insertions(+), 11 deletions(-)
+ arch/arm/mach-tegra/dma.c |  197 +++++++++++++++++++++++++--------------------
+ 1 files changed, 108 insertions(+), 89 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/include/mach/iomap.h b/arch/arm/mach-tegra/include/mach/iomap.h
-index 325eca3..26f2363 100644
---- a/arch/arm/mach-tegra/include/mach/iomap.h
-+++ b/arch/arm/mach-tegra/include/mach/iomap.h
-@@ -26,6 +26,9 @@
- #define TEGRA_IRAM_BASE			0x40000000
- #define TEGRA_IRAM_SIZE			SZ_256K
+diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
+index a2a252d..c2bb582 100644
+--- a/arch/arm/mach-tegra/dma.c
++++ b/arch/arm/mach-tegra/dma.c
+@@ -121,17 +121,13 @@ struct tegra_dma_channel {
+ 	void  __iomem		*addr;
+ 	int			mode;
+ 	int			irq;
+-
+-	/* Register shadow */
+-	u32			csr;
+-	u32			ahb_seq;
+-	u32			ahb_ptr;
+-	u32			apb_seq;
+-	u32			apb_ptr;
++	int			req_transfer_count;
+ };
  
-+#define TEGRA_HOST1X_BASE		0x50000000
-+#define TEGRA_HOST1X_SIZE		0x24000
+ #define  NV_DMA_MAX_CHANNELS  32
+ 
++static DEFINE_MUTEX(tegra_dma_lock);
 +
- #define TEGRA_ARM_PERIF_BASE		0x50040000
- #define TEGRA_ARM_PERIF_SIZE		SZ_8K
+ static DECLARE_BITMAP(channel_usage, NV_DMA_MAX_CHANNELS);
+ static struct tegra_dma_channel dma_channels[NV_DMA_MAX_CHANNELS];
  
-@@ -35,38 +38,56 @@
- #define TEGRA_ARM_INT_DIST_BASE		0x50041000
- #define TEGRA_ARM_INT_DIST_SIZE		SZ_4K
+@@ -139,7 +135,6 @@ static void tegra_dma_update_hw(struct tegra_dma_channel *ch,
+ 	struct tegra_dma_req *req);
+ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
+ 	struct tegra_dma_req *req);
+-static void tegra_dma_init_hw(struct tegra_dma_channel *ch);
+ static void tegra_dma_stop(struct tegra_dma_channel *ch);
  
-+#define TEGRA_MPE_BASE			0x54040000
-+#define TEGRA_MPE_SIZE			SZ_256K
+ void tegra_dma_flush(struct tegra_dma_channel *ch)
+@@ -151,6 +146,9 @@ void tegra_dma_dequeue(struct tegra_dma_channel *ch)
+ {
+ 	struct tegra_dma_req *req;
+ 
++	if (tegra_dma_is_empty(ch))
++		return;
 +
-+#define TEGRA_VI_BASE			0x54080000
-+#define TEGRA_VI_SIZE			SZ_256K
+ 	req = list_entry(ch->list.next, typeof(*req), node);
+ 
+ 	tegra_dma_dequeue_req(ch, req);
+@@ -159,10 +157,10 @@ void tegra_dma_dequeue(struct tegra_dma_channel *ch)
+ 
+ void tegra_dma_stop(struct tegra_dma_channel *ch)
+ {
+-	unsigned int csr;
+-	unsigned int status;
++	u32 csr;
++	u32 status;
+ 
+-	csr = ch->csr;
++	csr = readl(ch->addr + APB_DMA_CHAN_CSR);
+ 	csr &= ~CSR_IE_EOC;
+ 	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
+ 
+@@ -176,19 +174,16 @@ void tegra_dma_stop(struct tegra_dma_channel *ch)
+ 
+ int tegra_dma_cancel(struct tegra_dma_channel *ch)
+ {
+-	unsigned int csr;
++	u32 csr;
+ 	unsigned long irq_flags;
+ 
+ 	spin_lock_irqsave(&ch->lock, irq_flags);
+ 	while (!list_empty(&ch->list))
+ 		list_del(ch->list.next);
+ 
+-	csr = ch->csr;
++	csr = readl(ch->addr + APB_DMA_CHAN_CSR);
+ 	csr &= ~CSR_REQ_SEL_MASK;
+ 	csr |= CSR_REQ_SEL_INVALID;
+-
+-	/* Set the enable as that is not shadowed */
+-	csr |= CSR_ENB;
+ 	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
+ 
+ 	tegra_dma_stop(ch);
+@@ -230,18 +225,15 @@ int tegra_dma_dequeue_req(struct tegra_dma_channel *ch,
+ 	 *  - Finally stop or program the DMA to the next buffer in the
+ 	 *    list.
+ 	 */
+-	csr = ch->csr;
++	csr = readl(ch->addr + APB_DMA_CHAN_CSR);
+ 	csr &= ~CSR_REQ_SEL_MASK;
+ 	csr |= CSR_REQ_SEL_INVALID;
+-
+-	/* Set the enable as that is not shadowed */
+-	csr |= CSR_ENB;
+ 	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
+ 
+ 	/* Get the transfer count */
+ 	status = readl(ch->addr + APB_DMA_CHAN_STA);
+ 	to_transfer = (status & STA_COUNT_MASK) >> STA_COUNT_SHIFT;
+-	req_transfer_count = (ch->csr & CSR_WCOUNT_MASK) >> CSR_WCOUNT_SHIFT;
++	req_transfer_count = ch->req_transfer_count;
+ 	req_transfer_count += 1;
+ 	to_transfer += 1;
+ 
+@@ -349,7 +341,9 @@ EXPORT_SYMBOL(tegra_dma_enqueue_req);
+ struct tegra_dma_channel *tegra_dma_allocate_channel(int mode)
+ {
+ 	int channel;
+-	struct tegra_dma_channel *ch;
++	struct tegra_dma_channel *ch = NULL;;
 +
-+#define TEGRA_ISP_BASE			0x54100000
-+#define TEGRA_ISP_SIZE			SZ_256K
++	mutex_lock(&tegra_dma_lock);
+ 
+ 	/* first channel is the shared channel */
+ 	if (mode & TEGRA_DMA_SHARED) {
+@@ -358,11 +352,14 @@ struct tegra_dma_channel *tegra_dma_allocate_channel(int mode)
+ 		channel = find_first_zero_bit(channel_usage,
+ 			ARRAY_SIZE(dma_channels));
+ 		if (channel >= ARRAY_SIZE(dma_channels))
+-			return NULL;
++			goto out;
+ 	}
+ 	__set_bit(channel, channel_usage);
+ 	ch = &dma_channels[channel];
+ 	ch->mode = mode;
 +
- #define TEGRA_DISPLAY_BASE		0x54200000
- #define TEGRA_DISPLAY_SIZE		SZ_256K
++out:
++	mutex_unlock(&tegra_dma_lock);
+ 	return ch;
+ }
+ EXPORT_SYMBOL(tegra_dma_allocate_channel);
+@@ -372,22 +369,27 @@ void tegra_dma_free_channel(struct tegra_dma_channel *ch)
+ 	if (ch->mode & TEGRA_DMA_SHARED)
+ 		return;
+ 	tegra_dma_cancel(ch);
++	mutex_lock(&tegra_dma_lock);
+ 	__clear_bit(ch->id, channel_usage);
++	mutex_unlock(&tegra_dma_lock);
+ }
+ EXPORT_SYMBOL(tegra_dma_free_channel);
  
- #define TEGRA_DISPLAY2_BASE		0x54240000
- #define TEGRA_DISPLAY2_SIZE		SZ_256K
- 
-+#define TEGRA_HDMI_BASE			0x54280000
-+#define TEGRA_HDMI_SIZE			SZ_256K
+ static void tegra_dma_update_hw_partial(struct tegra_dma_channel *ch,
+ 	struct tegra_dma_req *req)
+ {
++	u32 apb_ptr;
++	u32 ahb_ptr;
 +
-+#define TEGRA_GART_BASE			0x58000000
-+#define TEGRA_GART_SIZE			SZ_32M
+ 	if (req->to_memory) {
+-		ch->apb_ptr = req->source_addr;
+-		ch->ahb_ptr = req->dest_addr;
++		apb_ptr = req->source_addr;
++		ahb_ptr = req->dest_addr;
+ 	} else {
+-		ch->apb_ptr = req->dest_addr;
+-		ch->ahb_ptr = req->source_addr;
++		apb_ptr = req->dest_addr;
++		ahb_ptr = req->source_addr;
+ 	}
+-	writel(ch->apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
+-	writel(ch->ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
++	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
++	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
+ 
+ 	req->status = TEGRA_DMA_REQ_INFLIGHT;
+ 	return;
+@@ -401,38 +403,39 @@ static void tegra_dma_update_hw(struct tegra_dma_channel *ch,
+ 	int ahb_bus_width;
+ 	int apb_bus_width;
+ 	int index;
+-	unsigned long csr;
+ 
++	u32 ahb_seq;
++	u32 apb_seq;
++	u32 ahb_ptr;
++	u32 apb_ptr;
++	u32 csr;
 +
-+#define TEGRA_RES_SEMA_BASE		0x60001000
-+#define TEGRA_RES_SEMA_SIZE		SZ_4K
++	csr = CSR_IE_EOC | CSR_FLOW;
++	ahb_seq = AHB_SEQ_INTR_ENB | AHB_SEQ_BURST_1;
++	apb_seq = 0;
+ 
+-	ch->csr |= CSR_FLOW;
+-	ch->csr &= ~CSR_REQ_SEL_MASK;
+-	ch->csr |= req->req_sel << CSR_REQ_SEL_SHIFT;
+-	ch->ahb_seq &= ~AHB_SEQ_BURST_MASK;
+-	ch->ahb_seq |= AHB_SEQ_BURST_1;
++	csr |= req->req_sel << CSR_REQ_SEL_SHIFT;
+ 
+ 	/* One shot mode is always single buffered,
+ 	 * continuous mode is always double buffered
+ 	 * */
+ 	if (ch->mode & TEGRA_DMA_MODE_ONESHOT) {
+-		ch->csr |= CSR_ONCE;
+-		ch->ahb_seq &= ~AHB_SEQ_DBL_BUF;
+-		ch->csr &= ~CSR_WCOUNT_MASK;
+-		ch->csr |= ((req->size>>2) - 1) << CSR_WCOUNT_SHIFT;
++		csr |= CSR_ONCE;
++		ch->req_transfer_count = (req->size >> 2) - 1;
+ 	} else {
+-		ch->csr &= ~CSR_ONCE;
+-		ch->ahb_seq |= AHB_SEQ_DBL_BUF;
++		ahb_seq |= AHB_SEQ_DBL_BUF;
+ 
+ 		/* In double buffered mode, we set the size to half the
+ 		 * requested size and interrupt when half the buffer
+ 		 * is full */
+-		ch->csr &= ~CSR_WCOUNT_MASK;
+-		ch->csr |= ((req->size>>3) - 1) << CSR_WCOUNT_SHIFT;
++		ch->req_transfer_count = (req->size >> 3) - 1;
+ 	}
+ 
++	csr |= ch->req_transfer_count << CSR_WCOUNT_SHIFT;
 +
- #define TEGRA_PRIMARY_ICTLR_BASE	0x60004000
--#define TEGRA_PRIMARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_PRIMARY_ICTLR_SIZE	64
+ 	if (req->to_memory) {
+-		ch->csr &= ~CSR_DIR;
+-		ch->apb_ptr = req->source_addr;
+-		ch->ahb_ptr = req->dest_addr;
++		apb_ptr = req->source_addr;
++		ahb_ptr = req->dest_addr;
  
- #define TEGRA_SECONDARY_ICTLR_BASE	0x60004100
--#define TEGRA_SECONDARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_SECONDARY_ICTLR_SIZE	64
+ 		apb_addr_wrap = req->source_wrap;
+ 		ahb_addr_wrap = req->dest_wrap;
+@@ -440,9 +443,9 @@ static void tegra_dma_update_hw(struct tegra_dma_channel *ch,
+ 		ahb_bus_width = req->dest_bus_width;
  
- #define TEGRA_TERTIARY_ICTLR_BASE	0x60004200
--#define TEGRA_TERTIARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_TERTIARY_ICTLR_SIZE	64
+ 	} else {
+-		ch->csr |= CSR_DIR;
+-		ch->apb_ptr = req->dest_addr;
+-		ch->ahb_ptr = req->source_addr;
++		csr |= CSR_DIR;
++		apb_ptr = req->dest_addr;
++		ahb_ptr = req->source_addr;
  
- #define TEGRA_QUATERNARY_ICTLR_BASE	0x60004300
--#define TEGRA_QUATERNARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_QUATERNARY_ICTLR_SIZE	64
+ 		apb_addr_wrap = req->dest_wrap;
+ 		ahb_addr_wrap = req->source_wrap;
+@@ -461,8 +464,7 @@ static void tegra_dma_update_hw(struct tegra_dma_channel *ch,
+ 		index++;
+ 	} while (index < ARRAY_SIZE(apb_addr_wrap_table));
+ 	BUG_ON(index == ARRAY_SIZE(apb_addr_wrap_table));
+-	ch->apb_seq &= ~APB_SEQ_WRAP_MASK;
+-	ch->apb_seq |= index << APB_SEQ_WRAP_SHIFT;
++	apb_seq |= index << APB_SEQ_WRAP_SHIFT;
  
- #define TEGRA_TMR1_BASE			0x60005000
--#define TEGRA_TMR1_SIZE			SZ_8
-+#define TEGRA_TMR1_SIZE			8
+ 	/* set address wrap for AHB size */
+ 	index = 0;
+@@ -472,55 +474,42 @@ static void tegra_dma_update_hw(struct tegra_dma_channel *ch,
+ 		index++;
+ 	} while (index < ARRAY_SIZE(ahb_addr_wrap_table));
+ 	BUG_ON(index == ARRAY_SIZE(ahb_addr_wrap_table));
+-	ch->ahb_seq &= ~AHB_SEQ_WRAP_MASK;
+-	ch->ahb_seq |= index << AHB_SEQ_WRAP_SHIFT;
++	ahb_seq |= index << AHB_SEQ_WRAP_SHIFT;
  
- #define TEGRA_TMR2_BASE			0x60005008
--#define TEGRA_TMR2_SIZE			SZ_8
-+#define TEGRA_TMR2_SIZE			8
+ 	for (index = 0; index < ARRAY_SIZE(bus_width_table); index++) {
+ 		if (bus_width_table[index] == ahb_bus_width)
+ 			break;
+ 	}
+ 	BUG_ON(index == ARRAY_SIZE(bus_width_table));
+-	ch->ahb_seq &= ~AHB_SEQ_BUS_WIDTH_MASK;
+-	ch->ahb_seq |= index << AHB_SEQ_BUS_WIDTH_SHIFT;
++	ahb_seq |= index << AHB_SEQ_BUS_WIDTH_SHIFT;
  
- #define TEGRA_TMRUS_BASE		0x60005010
--#define TEGRA_TMRUS_SIZE		SZ_64
-+#define TEGRA_TMRUS_SIZE		64
+ 	for (index = 0; index < ARRAY_SIZE(bus_width_table); index++) {
+ 		if (bus_width_table[index] == apb_bus_width)
+ 			break;
+ 	}
+ 	BUG_ON(index == ARRAY_SIZE(bus_width_table));
+-	ch->apb_seq &= ~APB_SEQ_BUS_WIDTH_MASK;
+-	ch->apb_seq |= index << APB_SEQ_BUS_WIDTH_SHIFT;
+-
+-	ch->csr |= CSR_IE_EOC;
++	apb_seq |= index << APB_SEQ_BUS_WIDTH_SHIFT;
  
- #define TEGRA_TMR3_BASE			0x60005050
--#define TEGRA_TMR3_SIZE			SZ_8
-+#define TEGRA_TMR3_SIZE			8
+-	/* update hw registers with the shadow */
+-	writel(ch->csr, ch->addr + APB_DMA_CHAN_CSR);
+-	writel(ch->apb_seq, ch->addr + APB_DMA_CHAN_APB_SEQ);
+-	writel(ch->apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
+-	writel(ch->ahb_seq, ch->addr + APB_DMA_CHAN_AHB_SEQ);
+-	writel(ch->ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
++	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
++	writel(apb_seq, ch->addr + APB_DMA_CHAN_APB_SEQ);
++	writel(apb_ptr, ch->addr + APB_DMA_CHAN_APB_PTR);
++	writel(ahb_seq, ch->addr + APB_DMA_CHAN_AHB_SEQ);
++	writel(ahb_ptr, ch->addr + APB_DMA_CHAN_AHB_PTR);
  
- #define TEGRA_TMR4_BASE			0x60005058
--#define TEGRA_TMR4_SIZE			SZ_8
-+#define TEGRA_TMR4_SIZE			8
+-	csr = ch->csr | CSR_ENB;
++	csr |= CSR_ENB;
+ 	writel(csr, ch->addr + APB_DMA_CHAN_CSR);
  
- #define TEGRA_CLK_RESET_BASE		0x60006000
- #define TEGRA_CLK_RESET_SIZE		SZ_4K
-@@ -114,10 +135,10 @@
- #define TEGRA_I2S2_SIZE			SZ_256
+ 	req->status = TEGRA_DMA_REQ_INFLIGHT;
+ }
  
- #define TEGRA_UARTA_BASE		0x70006000
--#define TEGRA_UARTA_SIZE		SZ_64
-+#define TEGRA_UARTA_SIZE		64
+-static void tegra_dma_init_hw(struct tegra_dma_channel *ch)
+-{
+-	/* One shot with an interrupt to CPU after transfer */
+-	ch->csr = CSR_ONCE | CSR_IE_EOC;
+-	ch->ahb_seq = AHB_SEQ_BUS_WIDTH_32 | AHB_SEQ_INTR_ENB;
+-	ch->apb_seq = APB_SEQ_BUS_WIDTH_32 | 1 << APB_SEQ_WRAP_SHIFT;
+-}
+-
+ static void handle_oneshot_dma(struct tegra_dma_channel *ch)
+ {
+ 	struct tegra_dma_req *req;
++	unsigned long irq_flags;
  
- #define TEGRA_UARTB_BASE		0x70006040
--#define TEGRA_UARTB_SIZE		SZ_64
-+#define TEGRA_UARTB_SIZE		64
+-	spin_lock(&ch->lock);
++	spin_lock_irqsave(&ch->lock, irq_flags);
+ 	if (list_empty(&ch->list)) {
+-		spin_unlock(&ch->lock);
++		spin_unlock_irqrestore(&ch->lock, irq_flags);
+ 		return;
+ 	}
  
- #define TEGRA_UARTC_BASE		0x70006200
- #define TEGRA_UARTC_SIZE		SZ_256
-@@ -140,6 +161,18 @@
- #define TEGRA_PWFM_BASE			0x7000A000
- #define TEGRA_PWFM_SIZE			SZ_256
+@@ -528,8 +517,7 @@ static void handle_oneshot_dma(struct tegra_dma_channel *ch)
+ 	if (req) {
+ 		int bytes_transferred;
  
-+#define TEGRA_PWFM0_BASE		0x7000A000
-+#define TEGRA_PWFM0_SIZE		4
+-		bytes_transferred =
+-			(ch->csr & CSR_WCOUNT_MASK) >> CSR_WCOUNT_SHIFT;
++		bytes_transferred = ch->req_transfer_count;
+ 		bytes_transferred += 1;
+ 		bytes_transferred <<= 2;
+ 
+@@ -537,12 +525,12 @@ static void handle_oneshot_dma(struct tegra_dma_channel *ch)
+ 		req->bytes_transferred = bytes_transferred;
+ 		req->status = TEGRA_DMA_REQ_SUCCESS;
+ 
+-		spin_unlock(&ch->lock);
++		spin_unlock_irqrestore(&ch->lock, irq_flags);
+ 		/* Callback should be called without any lock */
+ 		pr_debug("%s: transferred %d bytes\n", __func__,
+ 			req->bytes_transferred);
+ 		req->complete(req);
+-		spin_lock(&ch->lock);
++		spin_lock_irqsave(&ch->lock, irq_flags);
+ 	}
+ 
+ 	if (!list_empty(&ch->list)) {
+@@ -552,22 +540,55 @@ static void handle_oneshot_dma(struct tegra_dma_channel *ch)
+ 		if (req->status != TEGRA_DMA_REQ_INFLIGHT)
+ 			tegra_dma_update_hw(ch, req);
+ 	}
+-	spin_unlock(&ch->lock);
++	spin_unlock_irqrestore(&ch->lock, irq_flags);
+ }
+ 
+ static void handle_continuous_dma(struct tegra_dma_channel *ch)
+ {
+ 	struct tegra_dma_req *req;
++	unsigned long irq_flags;
+ 
+-	spin_lock(&ch->lock);
++	spin_lock_irqsave(&ch->lock, irq_flags);
+ 	if (list_empty(&ch->list)) {
+-		spin_unlock(&ch->lock);
++		spin_unlock_irqrestore(&ch->lock, irq_flags);
+ 		return;
+ 	}
+ 
+ 	req = list_entry(ch->list.next, typeof(*req), node);
+ 	if (req) {
+ 		if (req->buffer_status == TEGRA_DMA_REQ_BUF_STATUS_EMPTY) {
++			bool is_dma_ping_complete;
++			is_dma_ping_complete = (readl(ch->addr + APB_DMA_CHAN_STA)
++						& STA_PING_PONG) ? true : false;
++			if( req->to_memory )
++				is_dma_ping_complete = !is_dma_ping_complete;
++			/* Out of sync - Release current buffer */
++			if( !is_dma_ping_complete ) {
++				int bytes_transferred;
 +
-+#define TEGRA_PWFM1_BASE		0x7000A010
-+#define TEGRA_PWFM1_SIZE		4
++				bytes_transferred = ch->req_transfer_count;
++				bytes_transferred += 1;
++				bytes_transferred <<= 3;
++				req->buffer_status = TEGRA_DMA_REQ_BUF_STATUS_FULL;
++				req->bytes_transferred = bytes_transferred;
++				req->status = TEGRA_DMA_REQ_SUCCESS;
++				tegra_dma_stop(ch);
 +
-+#define TEGRA_PWFM2_BASE		0x7000A020
-+#define TEGRA_PWFM2_SIZE		4
++				if (!list_is_last(&req->node, &ch->list)) {
++					struct tegra_dma_req *next_req;
 +
-+#define TEGRA_PWFM3_BASE		0x7000A030
-+#define TEGRA_PWFM3_SIZE		4
++					next_req = list_entry(req->node.next,
++						typeof(*next_req), node);
++					tegra_dma_update_hw(ch, next_req);
++				}
 +
- #define TEGRA_MIPI_BASE			0x7000B000
- #define TEGRA_MIPI_SIZE			SZ_256
++				list_del(&req->node);
++
++				/* DMA lock is NOT held when callbak is called */
++				spin_unlock_irqrestore(&ch->lock, irq_flags);
++				req->complete(req);
++				return;
++			}
+ 			/* Load the next request into the hardware, if available
+ 			 * */
+ 			if (!list_is_last(&req->node, &ch->list)) {
+@@ -580,7 +601,7 @@ static void handle_continuous_dma(struct tegra_dma_channel *ch)
+ 			req->buffer_status = TEGRA_DMA_REQ_BUF_STATUS_HALF_FULL;
+ 			req->status = TEGRA_DMA_REQ_SUCCESS;
+ 			/* DMA lock is NOT held when callback is called */
+-			spin_unlock(&ch->lock);
++			spin_unlock_irqrestore(&ch->lock, irq_flags);
+ 			if (likely(req->threshold))
+ 				req->threshold(req);
+ 			return;
+@@ -591,8 +612,7 @@ static void handle_continuous_dma(struct tegra_dma_channel *ch)
+ 			 * the second  interrupt */
+ 			int bytes_transferred;
  
+-			bytes_transferred =
+-				(ch->csr & CSR_WCOUNT_MASK) >> CSR_WCOUNT_SHIFT;
++			bytes_transferred = ch->req_transfer_count;
+ 			bytes_transferred += 1;
+ 			bytes_transferred <<= 3;
+ 
+@@ -602,7 +622,7 @@ static void handle_continuous_dma(struct tegra_dma_channel *ch)
+ 			list_del(&req->node);
+ 
+ 			/* DMA lock is NOT held when callbak is called */
+-			spin_unlock(&ch->lock);
++			spin_unlock_irqrestore(&ch->lock, irq_flags);
+ 			req->complete(req);
+ 			return;
+ 
+@@ -610,7 +630,7 @@ static void handle_continuous_dma(struct tegra_dma_channel *ch)
+ 			BUG();
+ 		}
+ 	}
+-	spin_unlock(&ch->lock);
++	spin_unlock_irqrestore(&ch->lock, irq_flags);
+ }
+ 
+ static irqreturn_t dma_isr(int irq, void *data)
+@@ -674,7 +694,6 @@ int __init tegra_dma_init(void)
+ 
+ 		spin_lock_init(&ch->lock);
+ 		INIT_LIST_HEAD(&ch->list);
+-		tegra_dma_init_hw(ch);
+ 
+ 		irq = INT_APB_DMA_CH0 + i;
+ 		ret = request_threaded_irq(irq, dma_isr, dma_thread_fn, 0,
 -- 
 1.7.3.1
 
