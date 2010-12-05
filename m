@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab0LERuU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:50:20 -0500
+	id S1756685Ab0LERub (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:50:31 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab0LERuN (ORCPT
+	with ESMTP id S1756603Ab0LERu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:13 -0500
+	Sun, 5 Dec 2010 12:50:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=UqwaR4eDMHW1eHfc3ag4EXq57pkCsmRxgxBNxJ1WxC64wqngzIIe7KRaBWhoj9Ey35
-         GyHAlW97RqgVP3CQ6ZFjRKORbySZZRmhPRq9jFffxoXB4I7fzzIAcy/asinimNYVIuQa
-         x+jjePyl7WU8wQUMTnDbxIkHBmu1BGYIGnCzM=
+        b=WFHnQyGdALsBYGBh+OFO9dFtLva/ILf4lVkIAGu7I4YpR8oxK3mRw8NrYYFE5FYFRM
+         4+gzwXtQ+5c1pu1/GJ4sb6VCq8rKxvs7mcS9VLNYQN7AgNGfFAyXRGTigmk+isK5N1NT
+         D6Lux4JHYxhBRnuoB1u4wdexfLs3r3I6e4M3w=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 03/45] kstrtox: convert arch/arm/
-Date: Sun,  5 Dec 2010 19:49:00 +0200
-Message-Id: <1291571382-2719-3-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 08/45] kstrtox: convert fs/nfs/
+Date: Sun,  5 Dec 2010 19:49:05 +0200
+Message-Id: <1291571382-2719-8-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -26,224 +26,298 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In arch/arm/mach-omap2/board-omap3touchbook.c:
-remove "tbr" parameter, it's unused.
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- arch/arm/mach-omap2/board-omap3touchbook.c |   11 -----------
- arch/arm/mach-omap2/mux.c                  |   15 ++++++---------
- arch/arm/mach-pxa/balloon3.c               |    2 +-
- arch/arm/mach-pxa/viper.c                  |    3 +--
- arch/arm/mach-s3c2412/mach-jive.c          |    2 +-
- arch/arm/mach-ux500/mbox.c                 |   27 ++++++++-------------------
- arch/arm/mach-w90x900/cpu.c                |    5 +++--
- arch/arm/plat-omap/mcbsp.c                 |    4 ++--
- 8 files changed, 22 insertions(+), 47 deletions(-)
+ fs/nfs/callback.c |    8 +++--
+ fs/nfs/idmap.c    |   12 +++------
+ fs/nfs/internal.h |    8 +++---
+ fs/nfs/super.c    |   73 ++++++++++++++++++++++++-----------------------------
+ 4 files changed, 46 insertions(+), 55 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
-index 41104bb..6e57bda 100644
---- a/arch/arm/mach-omap2/board-omap3touchbook.c
-+++ b/arch/arm/mach-omap2/board-omap3touchbook.c
-@@ -62,8 +62,6 @@
- #define TB_BL_PWM_TIMER		9
- #define TB_KILL_POWER_GPIO	168
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index 93a8b3b..05a9f3d 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -46,13 +46,15 @@ unsigned short nfs_callback_tcpport6;
  
--static unsigned long touchbook_revision;
--
- static struct mtd_partition omap3touchbook_nand_partitions[] = {
- 	/* All the partition sizes are listed in terms of NAND block size */
- 	{
-@@ -495,15 +493,6 @@ static void omap3_touchbook_poweroff(void)
- 	gpio_direction_output(TB_KILL_POWER_GPIO, 0);
- }
- 
--static int __init early_touchbook_revision(char *p)
--{
--	if (!p)
--		return 0;
--
--	return strict_strtoul(p, 10, &touchbook_revision);
--}
--early_param("tbr", early_touchbook_revision);
--
- static struct omap_musb_board_data musb_board_data = {
- 	.interface_type		= MUSB_INTERFACE_ULPI,
- 	.mode			= MUSB_OTG,
-diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
-index 074536a..5e2886d 100644
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -336,7 +336,7 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
- 	char buf[OMAP_MUX_MAX_ARG_CHAR];
- 	struct seq_file *seqf;
- 	struct omap_mux *m;
--	unsigned long val;
-+	u16 val;
- 	int buf_size, ret;
- 
- 	if (count > OMAP_MUX_MAX_ARG_CHAR)
-@@ -348,17 +348,14 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
- 	if (copy_from_user(buf, user_buf, buf_size))
- 		return -EFAULT;
- 
--	ret = strict_strtoul(buf, 0x10, &val);
-+	ret = kstrtou16(buf, 0x10, &val);
- 	if (ret < 0)
- 		return ret;
- 
--	if (val > 0xffff)
--		return -EINVAL;
--
- 	seqf = file->private_data;
- 	m = seqf->private;
- 
--	omap_mux_write((u16)val, m->reg_offset);
-+	omap_mux_write(val, m->reg_offset);
- 	*ppos += count;
- 
- 	return count;
-@@ -535,18 +532,18 @@ static void __init omap_mux_set_cmdline_signals(void)
- 
- 	while ((token = strsep(&next_opt, ",")) != NULL) {
- 		char *keyval, *name;
--		unsigned long val;
- 
- 		keyval = token;
- 		name = strsep(&keyval, "=");
- 		if (name) {
-+			u16 val;
- 			int res;
- 
--			res = strict_strtoul(keyval, 0x10, &val);
-+			res = kstrtou16(keyval, 0x10, &val);
- 			if (res < 0)
- 				continue;
- 
--			omap_mux_init_signal(name, (u16)val);
-+			omap_mux_init_signal(name, val);
- 		}
- 	}
- 
-diff --git a/arch/arm/mach-pxa/balloon3.c b/arch/arm/mach-pxa/balloon3.c
-index 21e1889..3748d65 100644
---- a/arch/arm/mach-pxa/balloon3.c
-+++ b/arch/arm/mach-pxa/balloon3.c
-@@ -91,7 +91,7 @@ int __init parse_balloon3_features(char *arg)
- 	if (!arg)
- 		return 0;
- 
--	return strict_strtoul(arg, 0, &balloon3_features_present);
-+	return kstrtoul(arg, 0, &balloon3_features_present);
- }
- early_param("balloon3_features", parse_balloon3_features);
- 
-diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
-index 438fc9a..d99ee1b 100644
---- a/arch/arm/mach-pxa/viper.c
-+++ b/arch/arm/mach-pxa/viper.c
-@@ -767,8 +767,7 @@ static unsigned long viper_tpm;
- 
- static int __init viper_tpm_setup(char *str)
+ static int param_set_portnr(const char *val, const struct kernel_param *kp)
  {
--	strict_strtoul(str, 10, &viper_tpm);
--	return 1;
-+	return !kstrtoul(str, 10, &viper_tpm);
+-	unsigned long num;
++	unsigned int num;
+ 	int ret;
+ 
+ 	if (!val)
+ 		return -EINVAL;
+-	ret = strict_strtoul(val, 0, &num);
+-	if (ret == -EINVAL || num > NFS_CALLBACK_MAXPORTNR)
++	ret = kstrtouint(val, 0, &num);
++	if (ret < 0)
++		return ret;
++	if (num > NFS_CALLBACK_MAXPORTNR)
+ 		return -EINVAL;
+ 	*((unsigned int *)kp->arg) = num;
+ 	return 0;
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 4e2d9b6..b3a915a 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -205,17 +205,13 @@ static int nfs_idmap_lookup_id(const char *name, size_t namelen,
+ 				const char *type, __u32 *id)
+ {
+ 	char id_str[NFS_UINT_MAXLEN];
+-	long id_long;
+ 	ssize_t data_size;
+-	int ret = 0;
++	int ret;
+ 
+ 	data_size = nfs_idmap_request_key(name, namelen, type, id_str, NFS_UINT_MAXLEN);
+-	if (data_size <= 0) {
+-		ret = -EINVAL;
+-	} else {
+-		ret = strict_strtol(id_str, 10, &id_long);
+-		*id = (__u32)id_long;
+-	}
++	ret = -EINVAL;
++	if (data_size > 0)
++		ret = kstrtou32(id_str, 10, id);
+ 	return ret;
  }
  
- __setup("tpm=", viper_tpm_setup);
-diff --git a/arch/arm/mach-s3c2412/mach-jive.c b/arch/arm/mach-s3c2412/mach-jive.c
-index 923e01b..a21b119 100644
---- a/arch/arm/mach-s3c2412/mach-jive.c
-+++ b/arch/arm/mach-s3c2412/mach-jive.c
-@@ -240,7 +240,7 @@ static int __init jive_mtdset(char *options)
- 	if (options == NULL || options[0] == '\0')
- 		return 0;
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index e6356b7..f12ef9f 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -73,11 +73,11 @@ struct nfs_clone_mount {
+  */
+ struct nfs_parsed_mount_data {
+ 	int			flags;
+-	int			rsize, wsize;
+-	int			timeo, retrans;
+-	int			acregmin, acregmax,
++	unsigned int		rsize, wsize;
++	unsigned int		timeo, retrans;
++	unsigned int		acregmin, acregmax,
+ 				acdirmin, acdirmax;
+-	int			namlen;
++	unsigned int		namlen;
+ 	unsigned int		options;
+ 	unsigned int		bsize;
+ 	unsigned int		auth_flavor_len;
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 3c04504..ddfdc3c 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1013,7 +1013,8 @@ static int nfs_parse_mount_options(char *raw,
  
--	if (strict_strtoul(options, 10, &set)) {
-+	if (kstrtoul(options, 10, &set)) {
- 		printk(KERN_ERR "failed to parse mtdset=%s\n", options);
- 		return 0;
- 	}
-diff --git a/arch/arm/mach-ux500/mbox.c b/arch/arm/mach-ux500/mbox.c
-index 6343538..946a6f5 100644
---- a/arch/arm/mach-ux500/mbox.c
-+++ b/arch/arm/mach-ux500/mbox.c
-@@ -122,29 +122,18 @@ static ssize_t mbox_write_fifo(struct device *dev,
- 			       const char *buf,
- 			       size_t count)
- {
--	unsigned long mbox_mess;
--	unsigned long nbr_sends;
--	unsigned long i;
--	char int_buf[16];
--	char *token;
--	char *val;
--
- 	struct mbox *mbox = (struct mbox *) dev->platform_data;
-+	unsigned int mbox_mess, nbr_sends;
-+	unsigned int i;
+ 	while ((p = strsep(&raw, ",")) != NULL) {
+ 		substring_t args[MAX_OPT_ARGS];
+-		unsigned long option;
++		unsigned int val_uint;
++		u16 val_u16;
+ 		int token;
  
--	strncpy((char *) &int_buf, buf, sizeof(int_buf));
--	token = (char *) &int_buf;
--
--	/* Parse message */
--	val = strsep(&token, " ");
--	if ((val == NULL) || (strict_strtoul(val, 16, &mbox_mess) != 0))
--		mbox_mess = 0xDEADBEEF;
--
--	val = strsep(&token, " ");
--	if ((val == NULL) || (strict_strtoul(val, 10, &nbr_sends) != 0))
-+	if (sscanf(buf, "%u %u", &mbox_mess, &nbr_sends) != 2) {
- 		nbr_sends = 1;
-+		if (sscanf(buf, "%u", &mbox_mess) != 1)
-+			return -EINVAL;
-+	}
+ 		if (!*p)
+@@ -1130,154 +1131,146 @@ static int nfs_parse_mount_options(char *raw,
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtou16(string, 10, &val_u16);
+ 			kfree(string);
+-			if (rc != 0 || option > USHRT_MAX)
++			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->nfs_server.port = option;
++			mnt->nfs_server.port = val_u16;
+ 			break;
+ 		case Opt_rsize:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->rsize);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->rsize = option;
+ 			break;
+ 		case Opt_wsize:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->wsize);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->wsize = option;
+ 			break;
+ 		case Opt_bsize:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->bsize);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->bsize = option;
+ 			break;
+ 		case Opt_timeo:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &val_uint);
+ 			kfree(string);
+-			if (rc != 0 || option == 0)
++			if (rc != 0 || val_uint == 0)
+ 				goto out_invalid_value;
+-			mnt->timeo = option;
++			mnt->timeo = val_uint;
+ 			break;
+ 		case Opt_retrans:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &val_uint);
+ 			kfree(string);
+-			if (rc != 0 || option == 0)
++			if (rc != 0 || val_uint == 0)
+ 				goto out_invalid_value;
+-			mnt->retrans = option;
++			mnt->retrans = val_uint;
+ 			break;
+ 		case Opt_acregmin:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->acregmin);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->acregmin = option;
+ 			break;
+ 		case Opt_acregmax:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->acregmax);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->acregmax = option;
+ 			break;
+ 		case Opt_acdirmin:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->acdirmin);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->acdirmin = option;
+ 			break;
+ 		case Opt_acdirmax:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->acdirmax);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->acdirmax = option;
+ 			break;
+ 		case Opt_actimeo:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &val_uint);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+ 			mnt->acregmin = mnt->acregmax =
+-			mnt->acdirmin = mnt->acdirmax = option;
++			mnt->acdirmin = mnt->acdirmax = val_uint;
+ 			break;
+ 		case Opt_namelen:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &mnt->namlen);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->namlen = option;
+ 			break;
+ 		case Opt_mountport:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtou16(string, 10, &val_u16);
+ 			kfree(string);
+-			if (rc != 0 || option > USHRT_MAX)
++			if (rc != 0)
+ 				goto out_invalid_value;
+-			mnt->mount_server.port = option;
++			mnt->mount_server.port = val_u16;
+ 			break;
+ 		case Opt_mountvers:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &val_uint);
+ 			kfree(string);
+ 			if (rc != 0 ||
+-			    option < NFS_MNT_VERSION ||
+-			    option > NFS_MNT3_VERSION)
++			    val_uint < NFS_MNT_VERSION ||
++			    val_uint > NFS_MNT3_VERSION)
+ 				goto out_invalid_value;
+-			mnt->mount_server.version = option;
++			mnt->mount_server.version = val_uint;
+ 			break;
+ 		case Opt_nfsvers:
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &val_uint);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			switch (option) {
++			switch (val_uint) {
+ 			case NFS2_VERSION:
+ 				mnt->flags &= ~NFS_MOUNT_VER3;
+ 				mnt->version = 2;
+@@ -1300,13 +1293,13 @@ static int nfs_parse_mount_options(char *raw,
+ 			string = match_strdup(args);
+ 			if (string == NULL)
+ 				goto out_nomem;
+-			rc = strict_strtoul(string, 10, &option);
++			rc = kstrtouint(string, 10, &val_uint);
+ 			kfree(string);
+ 			if (rc != 0)
+ 				goto out_invalid_value;
+-			if (option > NFS4_MAX_MINOR_VERSION)
++			if (val_uint > NFS4_MAX_MINOR_VERSION)
+ 				goto out_invalid_value;
+-			mnt->minorversion = option;
++			mnt->minorversion = val_uint;
+ 			break;
  
--	dev_dbg(dev, "Will write 0x%lX %ld times using data struct at 0x%X\n",
--		mbox_mess, nbr_sends, (u32) mbox);
-+	dev_dbg(dev, "Will write 0x%X %u times using data struct at %p\n",
-+		mbox_mess, nbr_sends, mbox);
- 
- 	for (i = 0; i < nbr_sends; i++)
- 		mbox_send(mbox, mbox_mess, true);
-diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
-index 83c5632..67f015c 100644
---- a/arch/arm/mach-w90x900/cpu.c
-+++ b/arch/arm/mach-w90x900/cpu.c
-@@ -170,12 +170,13 @@ static int __init nuc900_set_clkval(unsigned int cpufreq)
- }
- static int __init nuc900_set_cpufreq(char *str)
- {
--	unsigned long cpufreq, val;
-+	unsigned int cpufreq, val;
- 
- 	if (!*str)
- 		return 0;
- 
--	strict_strtoul(str, 0, &cpufreq);
-+	if (kstrtouint(str, 0, &cpufreq) < 0)
-+		return 0;
- 
- 	nuc900_clock_source(NULL, "ext");
- 
-diff --git a/arch/arm/plat-omap/mcbsp.c b/arch/arm/plat-omap/mcbsp.c
-index eac4b97..e049ad3 100644
---- a/arch/arm/plat-omap/mcbsp.c
-+++ b/arch/arm/plat-omap/mcbsp.c
-@@ -1483,10 +1483,10 @@ static ssize_t prop##_store(struct device *dev,				\
- 				const char *buf, size_t size)		\
- {									\
- 	struct omap_mcbsp *mcbsp = dev_get_drvdata(dev);		\
--	unsigned long val;						\
-+	u16 val;							\
- 	int status;							\
- 									\
--	status = strict_strtoul(buf, 0, &val);				\
-+	status = kstrtou16(buf, 0, &val);				\
- 	if (status)							\
- 		return status;						\
- 									\
+ 		/*
 -- 
 1.7.2.2
 
