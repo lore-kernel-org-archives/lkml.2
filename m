@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab0LERaY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:30:24 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44789 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530Ab0LERaV (ORCPT
+	id S1756502Ab0LERaO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:30:14 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43103 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab0LERaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:30:21 -0500
+	Sun, 5 Dec 2010 12:30:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=XV6B8t7irSYJvSsus+B9OOZBSotj7gsUCB/26NIrMCdMzzy0bDf3J74szDYq/sQxTc
-         uusJq5BWzZUJ3eENFUvTKsWMOekLwFk0+lonBztvuEIBnsoDiK0u1Ix6PzsqaQb9mv04
-         OFVZOfgiDWSEbUmWkE+D/TvZCkF+huM6w7qJM=
+        b=K2lxr8QwhoDkvszhsXtX/gvm6Z8iQDmHhv43wMmnu6Mutv8lpR8sZWa6ri+kIQ7KtG
+         dQs9Hnbm46hc1f5DCAY+zNcmV4Oh67Ex20+JvMle9AHx01U3VAVOTOknLE5gbhT7pPfJ
+         HqfubwESW4kZBMwtuFFET6HDo9suAomk6EEyQ=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH v4 6/7] Remove zap_details NULL dependency
-Date: Mon,  6 Dec 2010 02:29:14 +0900
-Message-Id: <807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: [PATCH v4 4/7] Reclaim invalidated page ASAP
+Date: Mon,  6 Dec 2010 02:29:12 +0900
+Message-Id: <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1291568905.git.minchan.kim@gmail.com>
 References: <cover.1291568905.git.minchan.kim@gmail.com>
@@ -34,169 +33,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some functions used zap_details depends on assumption that
-zap_details parameter should be NULLed if some fields are 0.
+invalidate_mapping_pages is very big hint to reclaimer.
+It means user doesn't want to use the page any more.
+So in order to prevent working set page eviction, this patch
+move the page into tail of inactive list by PG_reclaim.
 
-This patch removes that dependency for next patch easy review/merge.
-It should not chanage behavior.
+Please, remember that pages in inactive list are working set
+as well as active list. If we don't move pages into inactive list's
+tail, pages near by tail of inactive list can be evicted although
+we have a big clue about useless pages. It's totally bad.
+
+Now PG_readahead/PG_reclaim is shared.
+fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+preventing fast reclaiming readahead marker page.
+
+In this series, PG_reclaim is used by invalidated page, too.
+If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+to reclaim asap. Then, when the dirty page will be writeback,
+clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+It disturbs this serie's goal.
+
+I think it's okay to clear PG_readahead when the page is dirty, not
+writeback time. So this patch moves ClearPageReadahead.
 
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Hugh Dickins <hughd@google.com>
----
- include/linux/mm.h |    8 ++++++++
- mm/madvise.c       |   15 +++++++++------
- mm/memory.c        |   14 ++++++++------
- mm/mmap.c          |    6 ++++--
- 4 files changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e097df6..6522ae4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -773,6 +773,14 @@ struct zap_details {
- 	unsigned long truncate_count;		/* Compare vm_truncate_count */
- };
- 
-+#define __ZAP_DETAILS_INITIALIZER(name) \
-+		{ .nonlinear_vma = NULL \
-+		, .check_mapping = NULL \
-+		, .i_mmap_lock = NULL }
-+
-+#define DEFINE_ZAP_DETAILS(name)		\
-+	struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
-+
- struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
- 		pte_t pte);
- 
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 319528b..bfa17aa 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -162,18 +162,21 @@ static long madvise_dontneed(struct vm_area_struct * vma,
- 			     struct vm_area_struct ** prev,
- 			     unsigned long start, unsigned long end)
+Changelog since v3:
+ - move page which ends up writeback in pagevec on inactive's tail
+	- suggested by Johannes
+
+Changelog since v2:
+ - put ClearPageReclaim in set_page_dirty - suggested by Wu.
+
+Changelog since v1:
+ - make the invalidated page reclaim asap - suggested by Andrew.
+---
+ mm/page-writeback.c |   12 +++++++++++-
+ mm/swap.c           |   39 ++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 47 insertions(+), 4 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index fc93802..88587a5 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1250,6 +1250,17 @@ int set_page_dirty(struct page *page)
  {
-+	DEFINE_ZAP_DETAILS(details);
-+
- 	*prev = vma;
- 	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
- 		return -EINVAL;
+ 	struct address_space *mapping = page_mapping(page);
  
- 	if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
--		struct zap_details details = {
--			.nonlinear_vma = vma,
--			.last_index = ULONG_MAX,
--		};
-+		details.nonlinear_vma = vma;
-+		details.last_index = ULONG_MAX;
++	/*
++	 * readahead/lru_deactivate_page could remain
++	 * PG_readahead/PG_reclaim due to race with end_page_writeback
++	 * About readahead, if the page is written, the flags would be
++	 * reset. So no problem.
++	 * About lru_deactivate_page, if the page is redirty, the flag
++	 * will be reset. So no problem. but if the page is used by readahead
++	 * it will confuse readahead and  make it restart the size rampup
++	 * process. But it's a trivial problem.
++	 */
++	ClearPageReclaim(page);
+ 	if (likely(mapping)) {
+ 		int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
+ #ifdef CONFIG_BLOCK
+@@ -1307,7 +1318,6 @@ int clear_page_dirty_for_io(struct page *page)
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+-	ClearPageReclaim(page);
+ 	if (mapping && mapping_cap_account_dirty(mapping)) {
+ 		/*
+ 		 * Yes, Virginia, this is indeed insane.
+diff --git a/mm/swap.c b/mm/swap.c
+index 0fe98e7..0f23998 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -275,26 +275,59 @@ void add_page_to_unevictable_list(struct page *page)
+  * head of the list, rather than the tail, to give the flusher
+  * threads some time to write it out, as this is much more
+  * effective than the single-page writeout from reclaim.
++ *
++ * If the page isn't page_mapped and dirty/writeback, the page
++ * could reclaim asap using PG_reclaim.
++ *
++ * 1. active, mapped page -> none
++ * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
++ * 3. inactive, mapped page -> none
++ * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
++ * 5. Others -> none
++ *
++ * In 4, why it moves inactive's head, the VM expects the page would
++ * be write it out by flusher threads as this is much more effective
++ * than the single-page writeout from reclaim.
+  */
+ static void lru_deactivate(struct page *page, struct zone *zone)
+ {
+ 	int lru, file;
++	bool active;
+ 
+-	if (!PageLRU(page) || !PageActive(page))
++	if (!PageLRU(page))
+ 		return;
+ 
+ 	/* Some processes are using the page */
+ 	if (page_mapped(page))
+ 		return;
+ 
++	active = PageActive(page);
 +
- 		zap_page_range(vma, start, end - start, &details);
--	} else
--		zap_page_range(vma, start, end - start, NULL);
+ 	file = page_is_file_cache(page);
+ 	lru = page_lru_base_type(page);
+-	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
++	del_page_from_lru_list(zone, page, lru + active);
+ 	ClearPageActive(page);
+ 	ClearPageReferenced(page);
+ 	add_page_to_lru_list(zone, page, lru);
+-	__count_vm_event(PGDEACTIVATE);
+ 
++	if (PageWriteback(page) || PageDirty(page)) {
++		/*
++		 * PG_reclaim could be raced with end_page_writeback
++		 * It can make readahead confusing.  But race window
++		 * is _really_ small and  it's non-critical problem.
++		 */
++		SetPageReclaim(page);
 +	} else {
-+
-+		zap_page_range(vma, start, end - start, &details);
++		/*
++		 * The page's writeback ends up during pagevec
++		 * We moves tha page into tail of inactive.
++		 */
++		list_move_tail(&page->lru, &zone->lru[lru].list);
++		mem_cgroup_rotate_reclaimable_page(page);
 +	}
- 	return 0;
++
++	if (active)
++		__count_vm_event(PGDEACTIVATE);
+ 	update_page_reclaim_stat(zone, page, file, 0);
  }
  
-diff --git a/mm/memory.c b/mm/memory.c
-index ebfeedf..c0879bb 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -900,6 +900,9 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 
- 	init_rss_vec(rss);
- 
-+	if (!details->check_mapping && !details->nonlinear_vma)
-+		details = NULL;
-+
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	arch_enter_lazy_mmu_mode();
- 	do {
-@@ -1038,9 +1041,6 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
- 	pgd_t *pgd;
- 	unsigned long next;
- 
--	if (details && !details->check_mapping && !details->nonlinear_vma)
--		details = NULL;
--
- 	BUG_ON(addr >= end);
- 	mem_cgroup_uncharge_start();
- 	tlb_start_vma(tlb, vma);
-@@ -1102,7 +1102,7 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
- 	unsigned long tlb_start = 0;	/* For tlb_finish_mmu */
- 	int tlb_start_valid = 0;
- 	unsigned long start = start_addr;
--	spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
-+	spinlock_t *i_mmap_lock = details->i_mmap_lock;
- 	int fullmm = (*tlbp)->fullmm;
- 	struct mm_struct *mm = vma->vm_mm;
- 
-@@ -1217,10 +1217,11 @@ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
- int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
- 		unsigned long size)
- {
-+	DEFINE_ZAP_DETAILS(details);
- 	if (address < vma->vm_start || address + size > vma->vm_end ||
- 	    		!(vma->vm_flags & VM_PFNMAP))
- 		return -1;
--	zap_page_range(vma, address, size, NULL);
-+	zap_page_range(vma, address, size, &details);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(zap_vma_ptes);
-@@ -2577,7 +2578,8 @@ restart:
- void unmap_mapping_range(struct address_space *mapping,
- 		loff_t const holebegin, loff_t const holelen, int even_cows)
- {
--	struct zap_details details;
-+	DEFINE_ZAP_DETAILS(details);
-+
- 	pgoff_t hba = holebegin >> PAGE_SHIFT;
- 	pgoff_t hlen = (holelen + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index b179abb..31d2594 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1900,11 +1900,12 @@ static void unmap_region(struct mm_struct *mm,
- 	struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
- 	struct mmu_gather *tlb;
- 	unsigned long nr_accounted = 0;
-+	DEFINE_ZAP_DETAILS(details);
- 
- 	lru_add_drain();
- 	tlb = tlb_gather_mmu(mm, 0);
- 	update_hiwater_rss(mm);
--	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
-+	unmap_vmas(&tlb, vma, start, end, &nr_accounted, &details);
- 	vm_unacct_memory(nr_accounted);
- 	free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
- 				 next? next->vm_start: 0);
-@@ -2254,6 +2255,7 @@ void exit_mmap(struct mm_struct *mm)
- 	struct vm_area_struct *vma;
- 	unsigned long nr_accounted = 0;
- 	unsigned long end;
-+	DEFINE_ZAP_DETAILS(details);
- 
- 	/* mm's last user has gone, and its about to be pulled down */
- 	mmu_notifier_release(mm);
-@@ -2278,7 +2280,7 @@ void exit_mmap(struct mm_struct *mm)
- 	tlb = tlb_gather_mmu(mm, 1);
- 	/* update_hiwater_rss(mm) here? but nobody should be looking */
- 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
--	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
-+	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, &details);
- 	vm_unacct_memory(nr_accounted);
- 
- 	free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
 -- 
 1.7.0.4
 
