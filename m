@@ -1,122 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0LEXOc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:14:32 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37593 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab0LEXJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:09:58 -0500
-From: Colin Cross <ccross@android.com>
-To: linux-tegra@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@google.com>,
-        Gary King <gking@nvidia.com>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/21] ARM: tegra: pinmux: Add missing drive pingroups and fix suspend
-Date: Sun,  5 Dec 2010 15:08:56 -0800
-Message-Id: <1291590548-7341-10-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1291590548-7341-1-git-send-email-ccross@android.com>
-References: <1291590548-7341-1-git-send-email-ccross@android.com>
+	id S1754941Ab0LEXTm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:19:42 -0500
+Received: from sh.osrg.net ([192.16.179.4]:60549 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751732Ab0LEXTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 18:19:41 -0500
+Date: Mon, 6 Dec 2010 08:19:10 +0900
+To: linus.ml.walleij@gmail.com
+Cc: linux-kernel@vger.kernel.org, david-b@pacbell.net, linux@arm.linux.org.uk,
+        per.forlin@linaro.org, Ulf.Hansson@stericsson.com
+Subject: Re: dma_unmap_sg - what number of entries is to be passed as
+ parameter really?
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <AANLkTimL=UX-FpNL7gqPnThmqK-BuZQJStGLrwwq2O0w@mail.gmail.com>
+References: <AANLkTimL=UX-FpNL7gqPnThmqK-BuZQJStGLrwwq2O0w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101206081830B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 06 Dec 2010 08:19:12 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@google.com>
+On Fri, 3 Dec 2010 14:40:56 +0100
+Linus Walleij <linus.ml.walleij@gmail.com> wrote:
 
-Adds missing drive pingroups, saves all drive pingroups in
-suspend, and restores the pinmux registers in the proper order.
+> Now we have a contradiction between two pieces of documentation,
+> in Documentation/DMA-API.txt
+> 
+> 
+>         void
+>         dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+>                 int nhwentries, enum dma_data_direction direction)
+> 
+>   Unmap the previously mapped scatter/gather list.  All the parameters
+>   must be the same as those and passed in to the scatter/gather mapping
+>   API.
+> 
+>   Note: <nents> must be the number you passed in, *not* the number of
+>   physical entries returned.
+> 
+> 
+> Note the last paragraph! But in arch/arm/mm/dma-mapping.c;
+> 
+> 
+> /**
+>  * dma_unmap_sg - unmap a set of SG buffers mapped by dma_map_sg
+>  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+>  * @sg: list of buffers
+>  * @nents: number of buffers to unmap (returned from dma_map_sg)
+>    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  * @dir: DMA transfer direction (same as was passed to dma_map_sg)
+>  *
+>  * Unmap a set of streaming mode DMA translations.  Again, CPU access
+>  * rules concerning calls here are the same as for dma_unmap_single().
+>  */
+> 
+> So the documentation in Documentation/ says one thing, whereas
+> the ARM implementation documentation says something else.
 
-Signed-off-by: Gary King <gking@nvidia.com>
-Signed-off-by: Colin Cross <ccross@android.com>
----
- arch/arm/mach-tegra/include/mach/pinmux-t2.h |   10 ++++++++++
- arch/arm/mach-tegra/pinmux-t2-tables.c       |   25 +++++++++++++++++++++----
- 2 files changed, 31 insertions(+), 4 deletions(-)
+Can you remove DMA-API comments in arch? They simply lead to
+confusion.
 
-diff --git a/arch/arm/mach-tegra/include/mach/pinmux-t2.h b/arch/arm/mach-tegra/include/mach/pinmux-t2.h
-index e5b9d74..4c26263 100644
---- a/arch/arm/mach-tegra/include/mach/pinmux-t2.h
-+++ b/arch/arm/mach-tegra/include/mach/pinmux-t2.h
-@@ -167,6 +167,16 @@ enum tegra_drive_pingroup {
- 	TEGRA_DRIVE_PINGROUP_XM2D,
- 	TEGRA_DRIVE_PINGROUP_XM2CLK,
- 	TEGRA_DRIVE_PINGROUP_MEMCOMP,
-+	TEGRA_DRIVE_PINGROUP_SDIO1,
-+	TEGRA_DRIVE_PINGROUP_CRT,
-+	TEGRA_DRIVE_PINGROUP_DDC,
-+	TEGRA_DRIVE_PINGROUP_GMA,
-+	TEGRA_DRIVE_PINGROUP_GMB,
-+	TEGRA_DRIVE_PINGROUP_GMC,
-+	TEGRA_DRIVE_PINGROUP_GMD,
-+	TEGRA_DRIVE_PINGROUP_GME,
-+	TEGRA_DRIVE_PINGROUP_OWR,
-+	TEGRA_DRIVE_PINGROUP_UAD,
- 	TEGRA_MAX_DRIVE_PINGROUP,
- };
- 
-diff --git a/arch/arm/mach-tegra/pinmux-t2-tables.c b/arch/arm/mach-tegra/pinmux-t2-tables.c
-index 4d97d5c..a475367 100644
---- a/arch/arm/mach-tegra/pinmux-t2-tables.c
-+++ b/arch/arm/mach-tegra/pinmux-t2-tables.c
-@@ -66,6 +66,16 @@ const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[TEGRA_MAX_DRIVE
- 	DRIVE_PINGROUP(XM2D,		0x8cc),
- 	DRIVE_PINGROUP(XM2CLK,		0x8d0),
- 	DRIVE_PINGROUP(MEMCOMP,		0x8d4),
-+	DRIVE_PINGROUP(SDIO1,		0x8e0),
-+	DRIVE_PINGROUP(CRT,		0x8ec),
-+	DRIVE_PINGROUP(DDC,		0x8f0),
-+	DRIVE_PINGROUP(GMA,		0x8f4),
-+	DRIVE_PINGROUP(GMB,		0x8f8),
-+	DRIVE_PINGROUP(GMC,		0x8fc),
-+	DRIVE_PINGROUP(GMD,		0x900),
-+	DRIVE_PINGROUP(GME,		0x904),
-+	DRIVE_PINGROUP(OWR,		0x908),
-+	DRIVE_PINGROUP(UAD,		0x90c),
- };
- 
- #define PINGROUP(pg_name, vdd, f0, f1, f2, f3, f_safe,		\
-@@ -217,7 +227,8 @@ const struct tegra_pingroup_desc tegra_soc_pingroups[TEGRA_MAX_PINGROUP] = {
- #define PULLUPDOWN_REG_NUM     5
- 
- static u32 pinmux_reg[TRISTATE_REG_NUM + PIN_MUX_CTL_REG_NUM +
--		     PULLUPDOWN_REG_NUM];
-+		      PULLUPDOWN_REG_NUM +
-+		      ARRAY_SIZE(tegra_soc_drive_pingroups)];
- 
- static inline unsigned long pg_readl(unsigned long offset)
- {
-@@ -234,14 +245,17 @@ void tegra_pinmux_suspend(void)
- 	unsigned int i;
- 	u32 *ctx = pinmux_reg;
- 
--	for (i = 0; i < TRISTATE_REG_NUM; i++)
--		*ctx++ = pg_readl(TRISTATE_REG_A + i*4);
--
- 	for (i = 0; i < PIN_MUX_CTL_REG_NUM; i++)
- 		*ctx++ = pg_readl(PIN_MUX_CTL_REG_A + i*4);
- 
- 	for (i = 0; i < PULLUPDOWN_REG_NUM; i++)
- 		*ctx++ = pg_readl(PULLUPDOWN_REG_A + i*4);
-+
-+	for (i = 0; i < TRISTATE_REG_NUM; i++)
-+		*ctx++ = pg_readl(TRISTATE_REG_A + i*4);
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_soc_drive_pingroups); i++)
-+		*ctx++ = pg_readl(tegra_soc_drive_pingroups[i].reg);
- }
- 
- void tegra_pinmux_resume(void)
-@@ -257,5 +271,8 @@ void tegra_pinmux_resume(void)
- 
- 	for (i = 0; i < TRISTATE_REG_NUM; i++)
- 		pg_writel(*ctx++, TRISTATE_REG_A + i*4);
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_soc_drive_pingroups); i++)
-+		pg_writel(*ctx++, tegra_soc_drive_pingroups[i].reg);
- }
- #endif
--- 
-1.7.3.1
-
+DMA-API.txt and DMA-API-HOWTO.txt in Documentation should be always
+used.
