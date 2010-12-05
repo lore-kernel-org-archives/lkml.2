@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab0LERub (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:50:31 -0500
+	id S1756726Ab0LERug (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:50:36 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab0LERu1 (ORCPT
+	with ESMTP id S1756603Ab0LERuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:27 -0500
+	Sun, 5 Dec 2010 12:50:32 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=WFHnQyGdALsBYGBh+OFO9dFtLva/ILf4lVkIAGu7I4YpR8oxK3mRw8NrYYFE5FYFRM
-         4+gzwXtQ+5c1pu1/GJ4sb6VCq8rKxvs7mcS9VLNYQN7AgNGfFAyXRGTigmk+isK5N1NT
-         D6Lux4JHYxhBRnuoB1u4wdexfLs3r3I6e4M3w=
+        b=m5XJAxFBpm+fDXduydmeySybyvPP5eG3ehGrxbe1kMpCrWA4Kzp9AZSbZZadmfM/eP
+         RKzEdmgBkymawUe9PUjxVSxrJ2Hmcw+qWmP7r5a8sd1xVTu0ayQoVVt2EVqG4uDwa2V8
+         wnZ6Q+7w1M4lzBHGkiY3lqsgNjHzApsidrq9s=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 08/45] kstrtox: convert fs/nfs/
-Date: Sun,  5 Dec 2010 19:49:05 +0200
-Message-Id: <1291571382-2719-8-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 10/45] kstrtox: convert security/
+Date: Sun,  5 Dec 2010 19:49:07 +0200
+Message-Id: <1291571382-2719-10-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,295 +29,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- fs/nfs/callback.c |    8 +++--
- fs/nfs/idmap.c    |   12 +++------
- fs/nfs/internal.h |    8 +++---
- fs/nfs/super.c    |   73 ++++++++++++++++++++++++-----------------------------
- 4 files changed, 46 insertions(+), 55 deletions(-)
+ security/apparmor/lsm.c             |    2 +-
+ security/integrity/ima/ima_audit.c  |    2 +-
+ security/integrity/ima/ima_policy.c |   15 ++++-----------
+ security/selinux/hooks.c            |    4 ++--
+ security/selinux/selinuxfs.c        |    2 +-
+ security/tomoyo/common.c            |    8 +++++---
+ 6 files changed, 14 insertions(+), 19 deletions(-)
 
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 93a8b3b..05a9f3d 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -46,13 +46,15 @@ unsigned short nfs_callback_tcpport6;
- 
- static int param_set_portnr(const char *val, const struct kernel_param *kp)
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index b7106f1..990ff86 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -754,7 +754,7 @@ module_param_named(enabled, apparmor_enabled, aabool, S_IRUSR);
+ static int __init apparmor_enabled_setup(char *str)
  {
--	unsigned long num;
-+	unsigned int num;
- 	int ret;
- 
- 	if (!val)
- 		return -EINVAL;
--	ret = strict_strtoul(val, 0, &num);
--	if (ret == -EINVAL || num > NFS_CALLBACK_MAXPORTNR)
-+	ret = kstrtouint(val, 0, &num);
-+	if (ret < 0)
-+		return ret;
-+	if (num > NFS_CALLBACK_MAXPORTNR)
- 		return -EINVAL;
- 	*((unsigned int *)kp->arg) = num;
- 	return 0;
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 4e2d9b6..b3a915a 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -205,17 +205,13 @@ static int nfs_idmap_lookup_id(const char *name, size_t namelen,
- 				const char *type, __u32 *id)
+ 	unsigned long enabled;
+-	int error = strict_strtoul(str, 0, &enabled);
++	int error = kstrtoul(str, 0, &enabled);
+ 	if (!error)
+ 		apparmor_enabled = enabled ? 1 : 0;
+ 	return 1;
+diff --git a/security/integrity/ima/ima_audit.c b/security/integrity/ima/ima_audit.c
+index c5c5a72..b4a203c 100644
+--- a/security/integrity/ima/ima_audit.c
++++ b/security/integrity/ima/ima_audit.c
+@@ -24,7 +24,7 @@ static int __init ima_audit_setup(char *str)
  {
- 	char id_str[NFS_UINT_MAXLEN];
--	long id_long;
- 	ssize_t data_size;
--	int ret = 0;
-+	int ret;
+ 	unsigned long audit;
  
- 	data_size = nfs_idmap_request_key(name, namelen, type, id_str, NFS_UINT_MAXLEN);
--	if (data_size <= 0) {
--		ret = -EINVAL;
--	} else {
--		ret = strict_strtol(id_str, 10, &id_long);
--		*id = (__u32)id_long;
--	}
-+	ret = -EINVAL;
-+	if (data_size > 0)
-+		ret = kstrtou32(id_str, 10, id);
- 	return ret;
+-	if (!strict_strtoul(str, 0, &audit))
++	if (!kstrtoul(str, 0, &audit))
+ 		ima_audit = audit ? 1 : 0;
+ 	return 1;
  }
- 
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index e6356b7..f12ef9f 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -73,11 +73,11 @@ struct nfs_clone_mount {
-  */
- struct nfs_parsed_mount_data {
- 	int			flags;
--	int			rsize, wsize;
--	int			timeo, retrans;
--	int			acregmin, acregmax,
-+	unsigned int		rsize, wsize;
-+	unsigned int		timeo, retrans;
-+	unsigned int		acregmin, acregmax,
- 				acdirmin, acdirmax;
--	int			namlen;
-+	unsigned int		namlen;
- 	unsigned int		options;
- 	unsigned int		bsize;
- 	unsigned int		auth_flavor_len;
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 3c04504..ddfdc3c 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1013,7 +1013,8 @@ static int nfs_parse_mount_options(char *raw,
- 
- 	while ((p = strsep(&raw, ",")) != NULL) {
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index aef8c0a..7958938 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -276,7 +276,6 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+ 	while ((p = strsep(&rule, " \t")) != NULL) {
  		substring_t args[MAX_OPT_ARGS];
--		unsigned long option;
-+		unsigned int val_uint;
-+		u16 val_u16;
  		int token;
+-		unsigned long lnum;
  
- 		if (!*p)
-@@ -1130,154 +1131,146 @@ static int nfs_parse_mount_options(char *raw,
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtou16(string, 10, &val_u16);
- 			kfree(string);
--			if (rc != 0 || option > USHRT_MAX)
-+			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->nfs_server.port = option;
-+			mnt->nfs_server.port = val_u16;
+ 		if (result < 0)
  			break;
- 		case Opt_rsize:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->rsize);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->rsize = option;
- 			break;
- 		case Opt_wsize:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->wsize);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->wsize = option;
- 			break;
- 		case Opt_bsize:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->bsize);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->bsize = option;
- 			break;
- 		case Opt_timeo:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
--			if (rc != 0 || option == 0)
-+			if (rc != 0 || val_uint == 0)
- 				goto out_invalid_value;
--			mnt->timeo = option;
-+			mnt->timeo = val_uint;
- 			break;
- 		case Opt_retrans:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
--			if (rc != 0 || option == 0)
-+			if (rc != 0 || val_uint == 0)
- 				goto out_invalid_value;
--			mnt->retrans = option;
-+			mnt->retrans = val_uint;
- 			break;
- 		case Opt_acregmin:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acregmin);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acregmin = option;
- 			break;
- 		case Opt_acregmax:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acregmax);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acregmax = option;
- 			break;
- 		case Opt_acdirmin:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acdirmin);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acdirmin = option;
- 			break;
- 		case Opt_acdirmax:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acdirmax);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acdirmax = option;
- 			break;
- 		case Opt_actimeo:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
- 			mnt->acregmin = mnt->acregmax =
--			mnt->acdirmin = mnt->acdirmax = option;
-+			mnt->acdirmin = mnt->acdirmax = val_uint;
- 			break;
- 		case Opt_namelen:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->namlen);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->namlen = option;
- 			break;
- 		case Opt_mountport:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtou16(string, 10, &val_u16);
- 			kfree(string);
--			if (rc != 0 || option > USHRT_MAX)
-+			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->mount_server.port = option;
-+			mnt->mount_server.port = val_u16;
- 			break;
- 		case Opt_mountvers:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0 ||
--			    option < NFS_MNT_VERSION ||
--			    option > NFS_MNT3_VERSION)
-+			    val_uint < NFS_MNT_VERSION ||
-+			    val_uint > NFS_MNT3_VERSION)
- 				goto out_invalid_value;
--			mnt->mount_server.version = option;
-+			mnt->mount_server.version = val_uint;
- 			break;
- 		case Opt_nfsvers:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			switch (option) {
-+			switch (val_uint) {
- 			case NFS2_VERSION:
- 				mnt->flags &= ~NFS_MOUNT_VER3;
- 				mnt->version = 2;
-@@ -1300,13 +1293,13 @@ static int nfs_parse_mount_options(char *raw,
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			if (option > NFS4_MAX_MINOR_VERSION)
-+			if (val_uint > NFS4_MAX_MINOR_VERSION)
- 				goto out_invalid_value;
--			mnt->minorversion = option;
-+			mnt->minorversion = val_uint;
- 			break;
+@@ -347,8 +346,7 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+ 				break;
+ 			}
  
- 		/*
+-			result = strict_strtoul(args[0].from, 16,
+-						&entry->fsmagic);
++			result = kstrtoul(args[0].from, 16, &entry->fsmagic);
+ 			if (!result)
+ 				entry->flags |= IMA_FSMAGIC;
+ 			break;
+@@ -360,14 +358,9 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+ 				break;
+ 			}
+ 
+-			result = strict_strtoul(args[0].from, 10, &lnum);
+-			if (!result) {
+-				entry->uid = (uid_t) lnum;
+-				if (entry->uid != lnum)
+-					result = -EINVAL;
+-				else
+-					entry->flags |= IMA_UID;
+-			}
++			result = kstrtou32(args[0].from, 10, &entry->uid);
++			if (!result)
++				entry->flags |= IMA_UID;
+ 			break;
+ 		case Opt_obj_user:
+ 			ima_log_string(ab, "obj_user", args[0].from);
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 65fa8bf..4ee09bd 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -101,7 +101,7 @@ int selinux_enforcing;
+ static int __init enforcing_setup(char *str)
+ {
+ 	unsigned long enforcing;
+-	if (!strict_strtoul(str, 0, &enforcing))
++	if (!kstrtoul(str, 0, &enforcing))
+ 		selinux_enforcing = enforcing ? 1 : 0;
+ 	return 1;
+ }
+@@ -114,7 +114,7 @@ int selinux_enabled = CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE;
+ static int __init selinux_enabled_setup(char *str)
+ {
+ 	unsigned long enabled;
+-	if (!strict_strtoul(str, 0, &enabled))
++	if (!kstrtoul(str, 0, &enabled))
+ 		selinux_enabled = enabled ? 1 : 0;
+ 	return 1;
+ }
+diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+index 073fd5b..cdaf958 100644
+--- a/security/selinux/selinuxfs.c
++++ b/security/selinux/selinuxfs.c
+@@ -50,7 +50,7 @@ unsigned int selinux_checkreqprot = CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE;
+ static int __init checkreqprot_setup(char *str)
+ {
+ 	unsigned long checkreqprot;
+-	if (!strict_strtoul(str, 0, &checkreqprot))
++	if (!kstrtoul(str, 0, &checkreqprot))
+ 		selinux_checkreqprot = checkreqprot ? 1 : 0;
+ 	return 1;
+ }
+diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
+index 7556315..1096c81 100644
+--- a/security/tomoyo/common.c
++++ b/security/tomoyo/common.c
+@@ -1091,14 +1091,16 @@ static int tomoyo_write_domain_profile(struct tomoyo_io_buffer *head)
+ 	char *data = head->write_buf;
+ 	char *cp = strchr(data, ' ');
+ 	struct tomoyo_domain_info *domain;
+-	unsigned long profile;
++	unsigned int profile;
++	int rv;
+ 
+ 	if (!cp)
+ 		return -EINVAL;
+ 	*cp = '\0';
+ 	domain = tomoyo_find_domain(cp + 1);
+-	if (strict_strtoul(data, 10, &profile))
+-		return -EINVAL;
++	rv = kstrtouint(data, 10, &profile);
++	if (rv < 0)
++		return rv;
+ 	if (domain && profile < TOMOYO_MAX_PROFILES
+ 	    && (tomoyo_profile_ptr[profile] || !tomoyo_policy_loaded))
+ 		domain->profile = (u8) profile;
 -- 
 1.7.2.2
 
