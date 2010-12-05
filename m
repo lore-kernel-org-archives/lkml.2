@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0LEUxx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:53:53 -0500
-Received: from web31807.mail.mud.yahoo.com ([68.142.207.70]:37793 "HELO
-	web31807.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753896Ab0LEUxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 15:53:51 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type;
-  b=sObzqSM/QMrJLd5BvCFlqTFH8R2c34WOwpGFxTaRHyI7xAuKJr6CGi9JG1KySG33jXdw+spHcgWONpkdXvKCADLILi63A6/HFwnZpaZyo2De/C/OV/eBDAXCpaIEimPDvpAaW7oboOGiTYPl/LOg372yHYu5+0BEwr1280TuY8E=;
-Message-ID: <874800.41815.qm@web31807.mail.mud.yahoo.com>
-X-YMail-OSG: qzOuMBIVM1kj7G8Ej.PAu6tpsyB7OWsyuoGAbn2edoOFR9_
- GgF2mhLv4ZAYYyMvJMvhvOQykNybpYhLtIZjAHrLTUF7d5g3OaOPIeJLmpgD
- CH1bBDDgTK0UoX8ehLE_z0XCt91cHXBEygz8IHpqIzvPRCsPfZ_fd08wkhK4
- bXXRZ63DP_M8_364i5Pg4YXMEy0R3LCZzLpQiGfN0lmzlW0r9KonemjBUPPj
- rpgSaCsVNxLwThgntcbAfPvNmCsL2zf9YwJnp9Uv16Q35tBoGaA3aCM.ZNXw
- Oci333mhC__Nef7Pb1BPeXDgfmNodpQixyCuy_bhHHmIyMV.YtPLrgxs9XXj
- mKtrHwPI.VI4QA_mxZw90r4djDK.7H98ZsmN.2vzSvWl6Vw--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
-Date: Sun, 5 Dec 2010 12:53:50 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+	id S1755180Ab0LEU7K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:59:10 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44658 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753896Ab0LEU7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 15:59:08 -0500
+Date: Sun, 5 Dec 2010 21:58:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: Colin Walters <walters@verbum.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Message-ID: <20101205205844.GA7902@elte.hu>
+References: <1289783580.495.58.camel@maggy.simson.net>
+ <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
+ <201012052118.43843.kernel@kolivas.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012052118.43843.kernel@kolivas.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Wed, 11/24/10, Luben Tuikov <ltuikov@yahoo.com> wrote:
-> 
-> CBI/BBB isn't supposed to be, nor is designed to support
-> SAM-modern devices. So while REQUEST LUN /may/ work on some
-> devices which implement it in their firmware, it is NOT a
-> requirement for those devices as they are not required to
-> adhere to any SAM version. Those transport protocols define
-> a class-specific request to get the maximum LUN, and another
-> to reset the target port (instead of I_T Reset or LU Reset).
-> They also do not support SCSI Status completion of the
-> command, nor Autosense. They also do not provide TMFs. They
-> provide none of the SCSI transport protocol services in
-> support of the Execute Command procedure call. The SCSI
-> layer shouldn't be trying to guess their "SCSI version", and
-> or treat them as real SCSI devices sending REPORT LUNs, etc.
-> commands.
-> 
-> Newer, modern transport protocols over USB, are part of
-> SAM, and it is devices who connect via those protocols that
-> are being disadvantaged, due to the adoption (assumption) of
-> CBI/BBB well into the SCSI layer.
-> 
-> To this effect, the transport protocol can tell upper
-> layers if the device is true SCSI (new usb transports or
-> other) or hybrid (usb-storage). In the former case, the
-> device is a SCSI device, in the latter, only basic commands
-> should be attempted.
-> 
-> This isn't to say that firmware for those devices wouldn't
-> be buggy. Of course it will, and most will probably port
-> their legacy FW over to the new SPTL, but the protocol
-> requirements are there by design (i.e. there is no longer
-> Get Max Lun class-specific request, the application client
-> has to send REPORT LUNS, and FW has to answer it) and we
-> have to accommodate that.
-> 
-> It is in this spirit that this patch doesn't change wire
-> behavior, but simply parses data returned by a command
-> already supported by older protocols.
 
-Did anyone pick up this patch?
+* Con Kolivas <kernel@kolivas.org> wrote:
 
-    Luben
+> Greets.
+> 
+> I applaud your efforts to continue addressing interactivity and responsiveness 
+> but, I know I'm going to regret this, I feel strongly enough to speak up about 
+> this change.
+> 
+> On Sun, 5 Dec 2010 10:43:44 Colin Walters wrote:
+> > On Sat, Dec 4, 2010 at 5:39 PM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > > What's your point again? It's a heuristic.
+> > 
+> > So if it's a heuristic the OS can get wrong,
+> 
+> This is precisely what I see as the flaw in this approach. [...]
 
+I think you are misunderstanding Mike's auto-group scheduling feature.
+
+The scheduling itself is not 'heuristics'.
+
+It is the _composition of a group_ that has a heuristic default. (We use the 'tty' 
+to act as the grouping)
+
+But that can be changed: the cgroup interfaces can be (and are) used by Gnome to 
+create different groups. They can be used by users as well, using cgroup tooling.
+
+What the kernel does is that it provides sane defaults.
+
+> [...]
+>
+> Move away from the fragile heuristic tweaks and find a longer term robust 
+> solution.
+
+This is not some kernel heuristic that cannot be modified - which was the main 
+problem of the O(1) scheduler. This is a common-sense default that can be overriden 
+by user-space if it wants to.
+
+So i definitely think you are confusing the two cases.
+
+Thanks,
+
+	Ingo
