@@ -1,241 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab0LEXLs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:11:48 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:58654 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939Ab0LEXKV (ORCPT
+	id S1756294Ab0LEXMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:12:16 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17353 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab0LEXMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:10:21 -0500
-From: Colin Cross <ccross@android.com>
-To: linux-tegra@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
-        Gary King <gking@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/21] ARM: gic: Add functions to save and restore gic state
-Date: Sun,  5 Dec 2010 15:08:49 -0800
-Message-Id: <1291590548-7341-3-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1291590548-7341-1-git-send-email-ccross@android.com>
-References: <1291590548-7341-1-git-send-email-ccross@android.com>
-X-System-Of-Record: true
+	Sun, 5 Dec 2010 18:12:13 -0500
+Date: Mon, 6 Dec 2010 00:05:17 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Colin Walters <walters@verbum.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ray Lee <ray-lk@madrabbit.org>, Mike Galbraith <efault@gmx.de>,
+        Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+In-Reply-To: <alpine.LNX.2.00.1012052348400.16078@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1012060001520.16078@swampdragon.chaosbits.net>
+References: <1289783580.495.58.camel@maggy.simson.net> <1289856350.14719.135.camel@maggy.simson.net> <20101116130413.GA29368@redhat.com> <1289917109.5169.131.camel@maggy.simson.net> <20101116150319.GA3475@redhat.com> <1289922108.5169.185.camel@maggy.simson.net>
+ <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net> <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com> <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com> <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
+ <AANLkTikFXv042qg4uzXF--9_co6-b_UgJF7Jeo2bVA=f@mail.gmail.com> <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com> <AANLkTiniEUdADMHUE1a9Fs1bGsWn6F6yeJX_NO4L94JK@mail.gmail.com> <AANLkTi=7FRCK9R2PVCTdtSqKo9FZemD5cXQTFoOKLEFB@mail.gmail.com>
+ <AANLkTinOQ5sWigfW844dSBc2PvVwFj5c7yu+scNXxMcv@mail.gmail.com> <AANLkTi=jN83+w8AC8bOMtmqmgp3SLpTvtfoAYE9nR=H0@mail.gmail.com> <alpine.LNX.2.00.1012052348400.16078@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on systems with idle states which power-gate the logic including
-the gic, such as tegra, the gic distributor needs to be shut down
-and restored on entry and exit from the architecture idle code
+On Sun, 5 Dec 2010, Jesper Juhl wrote:
 
-Original-author: Gary King <gking@nvidia.com>
-Signed-off-by: Gary King <gking@nvidia.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
----
- arch/arm/common/gic.c               |  136 ++++++++++++++++++++++++++++++++--
- arch/arm/include/asm/hardware/gic.h |    4 +
- 2 files changed, 132 insertions(+), 8 deletions(-)
+> On Sun, 5 Dec 2010, Colin Walters wrote:
+> 
+> > On Sun, Dec 5, 2010 at 3:47 PM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >
+> > > The semantics of "nice" are not - and have never been - to put things
+> > > into process scheduling groups of their own.
+> > 
+> > Again, I obviously understand that - the point is to explore the space
+> > of changes here and consider what would (and wouldn't) break.  And
+> > actually, what would improve.
+> > 
+> > > This is very much documented. People rely on it.
+> > 
+> > Well, we established my Fedora 14 system doesn't.  You said "no one"
+> > uses "nice" interactively.  So...that leaves - who?  If you were
+> > saying to me something like "I know Yahoo has some code in their data
+> > centers which uses a range of nice values; if we made this change, all
+> > of a sudden they'd get more CPU contention..."  Or like, "I'm pretty
+> > sure Maemo uses very low nice values for some UI code".  But you so
+> > far haven't really done that, it's just been (mostly)
+> > assertions/handwaving.  Now you obviously have a lot more experience
+> > that gives those assertions and handwaving a lot of credibility - but
+> > all we need is one concrete example to shut me up =)
+> > 
+> [...]
+> 
+> I'll give you two re-world examples from two (closed source, but 
+> still) apps we develop at my current employer.
+> 
+> The first one is a server/network monitoring app where there are lots of 
+> child processes devoted to performing checks, storing data, displaying 
+> results etc. Most of these processes just run at the default nice level. 
+> One of the processes sometimes has a need for a cryptographic key pair and 
+> it can generate this when it needs it, but it's better if one is reaily 
+> available, so we have a seperate child process running that maintains a 
+> small pool of new key pairs - this process runs at a high nice level since 
+> it should not take CPU time away from the rest of the processes (it's not 
+> important, it's just a small optimization), the need for key pairs comes 
+> at large intervals, so the pool will almost never be depleted even if 
+> this process doesn't get very much CPU time for a long time and besides, 
+> if the pool ever gets depleted its no disaster since the consumer will 
+> then just generate a key pair when needed and burn the required CPU.
+> 
+> The second is a backup aplication where one child process is in charge of 
+> doing background disk scanning, compression and encryption. This process 
+> is not interactive, it must result in minimal interference with whatever 
+> the user is currently using the machine for as his primary task and 
+> time-to-completion is not really that important. So, this process runs at 
+> a rather high nice level to avoid stealing CPU from the users primary 
+> task(s).
+> 
 
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 772f95f..9deb34f 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -39,6 +39,13 @@ struct gic_chip_data {
- 	unsigned int irq_offset;
- 	void __iomem *dist_base;
- 	void __iomem *cpu_base;
-+#ifdef CONFIG_PM
-+	u32 saved_enable[DIV_ROUND_UP(1020, 32)];
-+	u32 saved_conf[DIV_ROUND_UP(1020, 16)];
-+	u32 saved_pri[DIV_ROUND_UP(1020, 4)];
-+	u32 saved_target[DIV_ROUND_UP(1020, 4)];
-+#endif
-+	unsigned int max_irq;
- };
- 
- #ifndef MAX_GIC_NR
-@@ -207,21 +214,15 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
- 	set_irq_chained_handler(irq, gic_handle_cascade_irq);
- }
- 
--void __init gic_dist_init(unsigned int gic_nr, void __iomem *base,
--			  unsigned int irq_start)
-+static unsigned int _gic_dist_init(unsigned int gic_nr)
- {
- 	unsigned int max_irq, i;
-+	void __iomem *base = gic_data[gic_nr].dist_base;
- 	u32 cpumask = 1 << smp_processor_id();
- 
--	if (gic_nr >= MAX_GIC_NR)
--		BUG();
--
- 	cpumask |= cpumask << 8;
- 	cpumask |= cpumask << 16;
- 
--	gic_data[gic_nr].dist_base = base;
--	gic_data[gic_nr].irq_offset = (irq_start - 1) & ~31;
--
- 	writel(0, base + GIC_DIST_CTRL);
- 
- 	/*
-@@ -263,6 +264,109 @@ void __init gic_dist_init(unsigned int gic_nr, void __iomem *base,
- 	for (i = 32; i < max_irq; i += 32)
- 		writel(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
- 
-+	return max_irq;
-+}
-+
-+static void _gic_dist_exit(unsigned int gic_nr)
-+{
-+	writel(0, gic_data[gic_nr].dist_base + GIC_DIST_CTRL);
-+}
-+
-+#ifdef CONFIG_PM
-+/*
-+ * Saves the GIC distributor registers during suspend or idle.  Must be called
-+ * with interrupts disabled but before powering down the GIC.  After calling
-+ * this function, no interrupts will be delivered by the GIC, and another
-+ * platform-specific wakeup source must be enabled.
-+ */
-+void gic_dist_save(unsigned int gic_nr)
-+{
-+	unsigned int max_irq = gic_data[gic_nr].max_irq;
-+	void __iomem *dist_base = gic_data[gic_nr].dist_base;
-+	int i;
-+
-+	if (gic_nr >= MAX_GIC_NR)
-+		BUG();
-+
-+	_gic_dist_exit(gic_nr);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 16); i++)
-+		gic_data[gic_nr].saved_conf[i] =
-+			readl(dist_base + GIC_DIST_CONFIG + i * 4);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
-+		gic_data[gic_nr].saved_pri[i] =
-+			readl(dist_base + GIC_DIST_PRI + i * 4);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
-+		gic_data[gic_nr].saved_target[i] =
-+			readl(dist_base + GIC_DIST_TARGET + i * 4);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 32); i++)
-+		gic_data[gic_nr].saved_enable[i] =
-+			readl(dist_base + GIC_DIST_ENABLE_SET + i * 4);
-+}
-+
-+/*
-+ * Restores the GIC distributor registers during resume or when coming out of
-+ * idle.  Must be called before enabling interrupts.  If a level interrupt
-+ * that occured while the GIC was suspended is still present, it will be
-+ * handled normally, but any edge interrupts that occured will not be seen by
-+ * the GIC and need to be handled by the platform-specific wakeup source.
-+ */
-+void gic_dist_restore(unsigned int gic_nr)
-+{
-+	unsigned int max_irq;
-+	unsigned int i;
-+	void __iomem *dist_base;
-+	void __iomem *cpu_base;
-+
-+	if (gic_nr >= MAX_GIC_NR)
-+		BUG();
-+
-+	_gic_dist_init(gic_nr);
-+
-+	max_irq = gic_data[gic_nr].max_irq;
-+	dist_base = gic_data[gic_nr].dist_base;
-+	cpu_base = gic_data[gic_nr].cpu_base;
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 16); i++)
-+		writel(gic_data[gic_nr].saved_conf[i],
-+			dist_base + GIC_DIST_CONFIG + i * 4);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
-+		writel(gic_data[gic_nr].saved_pri[i],
-+			dist_base + GIC_DIST_PRI + i * 4);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
-+		writel(gic_data[gic_nr].saved_target[i],
-+			dist_base + GIC_DIST_TARGET + i * 4);
-+
-+	for (i = 0; i < DIV_ROUND_UP(max_irq, 32); i++)
-+		writel(gic_data[gic_nr].saved_enable[i],
-+			dist_base + GIC_DIST_ENABLE_SET + i * 4);
-+
-+	writel(1, dist_base + GIC_DIST_CTRL);
-+	writel(0xf0, cpu_base + GIC_CPU_PRIMASK);
-+	writel(1, cpu_base + GIC_CPU_CTRL);
-+}
-+#endif
-+
-+void __init gic_dist_init(unsigned int gic_nr, void __iomem *base,
-+			  unsigned int irq_start)
-+{
-+	unsigned int max_irq;
-+	unsigned int i;
-+
-+	if (gic_nr >= MAX_GIC_NR)
-+		BUG();
-+
-+	gic_data[gic_nr].dist_base = base;
-+	gic_data[gic_nr].irq_offset = (irq_start - 1) & ~31;
-+
-+	max_irq = _gic_dist_init(gic_nr);
-+	gic_data[gic_nr].max_irq = max_irq;
-+
- 	/*
- 	 * Setup the Linux IRQ subsystem.
- 	 */
-@@ -276,6 +380,14 @@ void __init gic_dist_init(unsigned int gic_nr, void __iomem *base,
- 	writel(1, base + GIC_DIST_CTRL);
- }
- 
-+void gic_dist_exit(unsigned int gic_nr)
-+{
-+	if (gic_nr >= MAX_GIC_NR)
-+		BUG();
-+
-+	_gic_dist_exit(gic_nr);
-+}
-+
- void __cpuinit gic_cpu_init(unsigned int gic_nr, void __iomem *base)
- {
- 	void __iomem *dist_base;
-@@ -306,6 +418,14 @@ void __cpuinit gic_cpu_init(unsigned int gic_nr, void __iomem *base)
- 	writel(1, base + GIC_CPU_CTRL);
- }
- 
-+void gic_cpu_exit(unsigned int gic_nr)
-+{
-+	if (gic_nr >= MAX_GIC_NR)
-+		BUG();
-+
-+	writel(0, gic_data[gic_nr].cpu_base + GIC_CPU_CTRL);
-+}
-+
- #ifdef CONFIG_SMP
- void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- {
-diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
-index 7f34333..0a198b0 100644
---- a/arch/arm/include/asm/hardware/gic.h
-+++ b/arch/arm/include/asm/hardware/gic.h
-@@ -34,7 +34,11 @@
- 
- #ifndef __ASSEMBLY__
- void gic_dist_init(unsigned int gic_nr, void __iomem *base, unsigned int irq_start);
-+void gic_dist_save(unsigned int gic_nr);
-+void gic_dist_restore(unsigned int gic_nr);
-+void gic_dist_exit(unsigned int gic_nr);
- void gic_cpu_init(unsigned int gic_nr, void __iomem *base);
-+void gic_cpu_exit(unsigned int gic_nr);
- void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
- void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
- #endif
+Ohh and a third example. On my home laptop I got sufficiently annoyed with 
+'updatedb' starting up from cron while I was in the middle of something 
+so that cron job now runs updatedb with 'nice 19' and also uses ionice so 
+it runs at the 'best effort' class and with priority 7 (lowest).
+
+
 -- 
-1.7.3.1
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
