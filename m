@@ -1,132 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab0LELgk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 06:36:40 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:46356 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754777Ab0LELgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 06:36:39 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18S7NtJ89QS+GQI8OsxPBjeVZB8oEMFPaucro9IMy
-	iFHkHYa+Zdi5B8
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Con Kolivas <kernel@kolivas.org>
-Cc: Colin Walters <walters@verbum.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201012052118.43843.kernel@kolivas.org>
-References: <1289783580.495.58.camel@maggy.simson.net>
-	 <201 <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
-	 <201012052118.43843.kernel@kolivas.org>
-Content-Type: text/plain
-Date: Sun, 05 Dec 2010 12:36:33 +0100
-Message-Id: <1291548993.7581.65.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1755315Ab0LELtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 06:49:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25401 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753323Ab0LELtK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 06:49:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,302,1288594800"; 
+   d="scan'208";a="684051197"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "adrian.hunter@nokia.com" <adrian.hunter@nokia.com>,
+        "prakity@marvell.com" <prakity@marvell.com>
+Date: Sun, 5 Dec 2010 19:48:51 +0800
+Subject: RE: [PATCH v3 2/3]set timeout control reg for such SDHCI host
+Thread-Topic: [PATCH v3 2/3]set timeout control reg for such SDHCI host
+Thread-Index: AcuT+vb+/wq8m0KFQH+1IfsPb0re8gAcoGGg
+Message-ID: <5D8008F58939784290FAB48F54975198320B3E4508@shsmsx502.ccr.corp.intel.com>
+References: <20101202112613.GC10358@intel.com>
+ <20101202115329.GE3345@pengutronix.de>
+ <5D8008F58939784290FAB48F54975198320B3E41F7@shsmsx502.ccr.corp.intel.com>
+ <20101204213348.GE671@pengutronix.de>
+In-Reply-To: <20101204213348.GE671@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-05 at 21:18 +1100, Con Kolivas wrote:
-> Greets.
+> -----Original Message-----
+> From: linux-mmc-owner@vger.kernel.org
+> [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Wolfram Sang
+> Sent: Sunday, December 05, 2010 5:34 AM
+> To: Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; cjb@laptop.org;
+> arjan@linux.intel.com; alan@linux.intel.com; akpm@linux-foundation.org;
+> adrian.hunter@nokia.com; prakity@marvell.com
+> Subject: Re: [PATCH v3 2/3]set timeout control reg for such SDHCI host
 > 
-> I applaud your efforts to continue addressing interactivity and responsiveness 
-> but, I know I'm going to regret this, I feel strongly enough to speak up about 
-> this change.
+> On Fri, Dec 03, 2010 at 10:38:59AM +0800, Dong, Chuanxiao wrote:
+> >  >
+> > > On Thu, Dec 02, 2010 at 07:26:13PM +0800, Chuanxiao Dong wrote:
+> > >
+> > > > +	if (host->quirks & SDHCI_QUIRK_FORCE_ERASE_SINGLE) {
+> > > > +		/* Set the timeout to be the maximum value */
+> > > > +		if (cmd->erase_timeout)
+> > > > +			sdhci_writeb(host, 0xE, SDHCI_TIMEOUT_CONTROL);
+> > > > +	}
+> > > > +
+> > > >  	sdhci_writew(host, SDHCI_MAKE_CMD(cmd->opcode, flags),
+> > > > SDHCI_COMMAND);
+> > >
+> > > Hmm, this looks like another argument for Philip's idea to always
+> > > use the maximum timeout value and skip the quirks related to it?
+> >
+> > Yes, if always using the maximum timeout value is OK for other command, the
+> patch2 can be removed I think.
+> > The new added quirk in the serials patches is used to set the limitation of request
+> queue, not only just to set the timeout control reg.
+> > Even the timeout value was set to be 0xE (the maximum value), erasing too many
+> sectors can still be failed since the timeout time was still not longer enough.
+> > So the count of erased sectors passed down by request queue should be reduced
+> by using this quirk.
 > 
-> On Sun, 5 Dec 2010 10:43:44 Colin Walters wrote:
-> > On Sat, Dec 4, 2010 at 5:39 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > > What's your point again? It's a heuristic.
-> > 
-> > So if it's a heuristic the OS can get wrong,
-> 
-> This is precisely what I see as the flaw in this approach. The whole reason 
-> you have CFS now is that we had a scheduler which was pretty good for all the 
-> other things in the O(1) scheduler, but needed heuristics to get interactivity 
-> right. I put them there.
+> Yes, I think I understand the issue. Have you tried adding a callback, so we don't
+> have the options between MAX_UINT and '1' but rather MAX_UINT and return
+> value of the callback?
 
-Actually, Linus laid the foundation with sleeper fairness, Ingo expanded
-it to requeue "interactive" tasks in the active array, and you tweaked
-the result.
+I added a function to calculate a more suitable max_discard_sectors value for SDHCI host controller in version 1 patches. This value was calculated by the timeout time host controller can wait and the erase timeout. Is that the callback you mean?
+In this version, I added a function called mmc_set_discard_limit to detect whether the host has a new cap called MMC_CAP_ERASE_SINGLE. They can be found in patch1. If host has been set MMC_CAP_ERASE_SINGLE cap, just returns '1'. And if not, return MAX_UINT.
+I used this way in version 3 patches instead of the calculated way since I thought using an easier way to work around a hardware issue was better. Any suggestion about solving this kind of problem?
 
->  Then I spent the next few years trying to find a way 
-> to get rid of them. The reason is precisely what Colin says above. Heuristics 
-> get it wrong sometimes. So no matter how smart you think your heuristics are, 
-> it is impossible to get it right 100% of the time. If the heuristics make it 
-> better 99% of the time, and introduce disastrous corner cases, regressions and 
-> exploits 1% of the time, that's unforgivable. That's precisely what we had 
-> with the old O(1) scheduler and that's what you got rid of when you put CFS 
-> into mainline. The whole reason CFS was better was it was mostly fair and 
-> concentrated on ensuring decent latency rather than trying to guess what would 
-> be right, so it was predictable and reliable.
-
-And it still is Con.  I didn't rewrite the thing, I just added an
-automated task grouping.  Session to session fairness is just as holy as
-any sacred cow definition of fair you care to trot out.
-
-> So if you introduce heuristics once again into the scheduler to try and 
-> improve the desktop by unfairly distributing CPU, you will go back to where 
-> you once were. Mostly better but sometimes really badly wrong. No matter how 
-> smart you think you can be with heuristics they cannot be right all the time. 
-> And there are regressions with these tty followed by per session group 
-> patches. Search forums where desktop users go and you'll see that people are 
-> afraid to speak up on lkml but some users are having mplayer and amarok 
-> skipping under light load when trying them.
-
-Shrug. I can't debug what isn't reported.
-
->  You want to program more 
-> intelligence in to work around these regressions, you'll just get yourself 
-> deeper and deeper into the same quagmire. The 'quick fix' you seek now is not 
-> something you should be defending so vehemently. The "I have a solution now" 
-> just doesn't make sense in this light. I for one do not welcome our new 
-> heuristic overlords.
-
-I for one don't welcome childish name calling.
-
-> If you're serious about really improving the desktop from within the kernel, 
-> as you seem to be with this latest change, then make a change that's 
-> predictable and gets it right ALL the time and is robust for the future. Stop 
-> working within all the old fashioned concepts and allow userspace to tell the 
-> kernel what it wants, and give the user the power to choose. If you think this 
-> is too hard and not doable, or that the user is too uninformed or want to 
-> modify things themselves, then allow me to propose a relatively simple change 
-> that can expedite this.
-> 
-> There are two aspects to getting good desktop behaviour, enough CPU and low 
-> latency. 'nice' by your own admission is too crude and doesn't really describe 
-> how either of these should really be modified. Furthermore there are 40 levels 
-> of it and only about 4 or 5 are ever used. We also know that users don't even 
-> bother using it. 
-> 
-> What I propose is a new syscall latnice for "latency nice". It only need have 
-> 4 levels, 1 for default, 0 for latency insensitive, 2 for relatively latency 
-> sensitive gui apps, and 3 for exquisitely latency sensitive uses such as 
-> audio. These should not require extra privileges to use and thus should also 
-> not be usable for "exploiting" extra CPU by default. It's simply a matter of 
-> working with lower latencies yet shorter quota (or timeslices) which would 
-> mean throughput on these apps is sacrificed due to cache trashing but then 
-> that's not what latency sensitive applications need. These can then be 
-> encouraged to be included within the applications themselves, making this a 
-> more long term change. 'Firefox' could set itself 2, 'Amarok' and 'mplayer' 3, 
-> and 'make' - bless its soul - 0, and so on. Keeping the range simple and 
-> defined will make it easy for userspace developers to cope with, and users to 
-> fiddle with.
-
-An automated per session task group is an evil heuristic, so we should
-use kinda sorta sensitive, really REALLY sensitive, don't give a damn,
-or no frickin' clue... to make 100% accurate non-heuristic scheduling
-decisions instead?  Did I get that right?
-
-Goodbye.
-
-	-Mike
-
+Thanks
+Chuanxiao
