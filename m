@@ -1,137 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab0LEWCF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 17:02:05 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16317 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0LEWCE (ORCPT
+	id S1753310Ab0LEWN1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 17:13:27 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33853 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0LEWNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 17:02:04 -0500
-Date: Sun, 5 Dec 2010 22:55:07 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Charles Manning <cdhmanning@gmail.com>
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] Add yaffs2 file system: checkpoint and ecc code
-In-Reply-To: <1291154254-22533-3-git-send-email-cdhmanning@gmail.com>
-Message-ID: <alpine.LNX.2.00.1012052242130.16078@swampdragon.chaosbits.net>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com> <1291154254-22533-3-git-send-email-cdhmanning@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 5 Dec 2010 17:13:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kQs8528ZQnnN2OsRm3cU+mZtIg7Ttz4KiL6zJmMValjboR2GDNKoW+D86lJbYstuoC
+         N1SX6HF0JQCeRHfNxGVwvBB0AWcCugwAzg0HZZUUdMjl0eBLWjGWtSegfy8J0mM+313l
+         BKu+TcWPIHp1adNuWCeSdEbvHeDs3kFiGt2Ro=
+Date: Mon, 6 Dec 2010 01:13:21 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC] perf: Prevent potential null dereference
+Message-ID: <20101205221321.GD7799@lenovo>
+References: <20101202222605.GA6471@lenovo> <20101202224104.GA1639@nowhere> <20101202224609.GA31473@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101202224609.GA31473@ghostprotocols.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Dec 2010, Charles Manning wrote:
-
-> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
-> ---
->  fs/yaffs2/yaffs_checkptrw.c |  420 +++++++++++++++++++++++++++++++++++++++++++
->  fs/yaffs2/yaffs_checkptrw.h |   33 ++++
->  fs/yaffs2/yaffs_ecc.c       |  298 ++++++++++++++++++++++++++++++
->  fs/yaffs2/yaffs_ecc.h       |   44 +++++
->  4 files changed, 795 insertions(+), 0 deletions(-)
->  create mode 100644 fs/yaffs2/yaffs_checkptrw.c
->  create mode 100644 fs/yaffs2/yaffs_checkptrw.h
->  create mode 100644 fs/yaffs2/yaffs_ecc.c
->  create mode 100644 fs/yaffs2/yaffs_ecc.h
+On Thu, Dec 02, 2010 at 08:46:10PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Dec 02, 2010 at 11:41:08PM +0100, Frederic Weisbecker escreveu:
+> > On Fri, Dec 03, 2010 at 01:26:05AM +0300, Cyrill Gorcunov wrote:
+> > > In case if there is no memory we might hit null
+> > > dereference on accessing calloc'ed data.
+> > > 
+> > > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > > CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > CC: Peter Zijlstra <peterz@infradead.org>
+> > > CC: Ingo Molnar <mingo@elte.hu>
+> > > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > > ---
+...
+> > 
+> > Good.
+> > 
+> > As a nit, not that it matters that much because we are very close to the starting code
+> > anyway, but it would be better to propagate the error to the callers.
+> 
+> I'm of the opinion that main() should be where exit() is allowed, and
+> even there... return would be better. 8-)
+> 
+> - Arnaldo
 > 
 
-Just a few small comments below.
+ok, sorry for delay, it seems the following would be liked
+more than first version ;)
 
+  Cyrill
+---
+[PATCH] perf: Prevent potential null dereference v2
 
-[...]
-> +int yaffs2_get_checkpt_sum(struct yaffs_dev *dev, u32 * sum)
-> +{
-> +	u32 composite_sum;
-> +	composite_sum = (dev->checkpt_sum << 8) | (dev->checkpt_xor & 0xFF);
-> +	*sum = composite_sum;
-> +	return 1;
-> +}
+In case if there is no memory we might hit null
+dereference on accessing calloc'ed data.
 
-Why not get rid of the redundant local variable and simply do
+v2: propagate error to a caller
 
-  *sum = (dev->checkpt_sum << 8) | (dev->checkpt_xor & 0xFF);
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+---
 
-??
+NB it's unclear for me why don't we yield any message on
+too long command line, but anyway even then it should not
+be messed with this particular patch.
 
+Arnaldo, I'll check builtin-kmem.c next time i be able to,
+though if there anyone would like to beat me on this -- feel
+free ;)
 
-[...]
-> +int yaffs2_checkpt_wr(struct yaffs_dev *dev, const void *data, int n_bytes)
-> +{
-> +	int i = 0;
-> +	int ok = 1;
-> +
-> +	u8 *data_bytes = (u8 *) data;
+ tools/perf/builtin-record.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-'data' is a 'const void *' and this casts away const. Probably fine, just 
-makes my toes curl.
-
-
-[...]
-> +int yaffs2_checkpt_rd(struct yaffs_dev *dev, void *data, int n_bytes)
-> +{
-> +	int i = 0;
-> +	int ok = 1;
-> +	struct yaffs_ext_tags tags;
-> +
-> +	int chunk;
-> +	int realigned_chunk;
-> +
-> +	u8 *data_bytes = (u8 *) data;
-
-here you are not casting away const, but since 'data' is a void pointer 
-the cast is just completely superfluous and should just go away.
-
-
-[...]
-> +			if (dev->checkpt_cur_block < 0)
-> +				ok = 0;
-> +			else {
-
-Nitpicking, but this should be 
-
-  if (dev->checkpt_cur_block < 0) {
-    ok = 0;
-  } else {
-  ...
-
-curly brace on both branches since it's used on one of them (according to 
-CodingStyle).
-
-
-[...]
-> +int yaffs_checkpt_close(struct yaffs_dev *dev)
-> +{
-> +
-> +	if (dev->checkpt_open_write) {
-> +		if (dev->checkpt_byte_offs != 0)
-> +			yaffs2_checkpt_flush_buffer(dev);
-> +	} else if (dev->checkpt_block_list) {
-> +		int i;
-> +		for (i = 0;
-> +		     i < dev->blocks_in_checkpt
-> +		     && dev->checkpt_block_list[i] >= 0; i++) {
-> +			int blk = dev->checkpt_block_list[i];
-> +			struct yaffs_block_info *bi = NULL;
-> +			if (dev->internal_start_block <= blk
-> +			    && blk <= dev->internal_end_block)
-> +				bi = yaffs_get_block_info(dev, blk);
-> +			if (bi && bi->block_state == YAFFS_BLOCK_STATE_EMPTY)
-> +				bi->block_state = YAFFS_BLOCK_STATE_CHECKPOINT;
-> +			else {
-> +				/* Todo this looks odd... */
-> +			}
-
-1) nitpicking about curly braces again (see above).
-2) try grep'ing the source for "todo", "xxx", "fixme" and similar, then 
-check the age of those comments. If things like this are not addressed (by 
-other than a "todo" comment) on initial commit they stand a good chance of 
-never getting addressed...
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Index: linux-2.6.git/tools/perf/builtin-record.c
+=====================================================================
+--- linux-2.6.git.orig/tools/perf/builtin-record.c
++++ linux-2.6.git/tools/perf/builtin-record.c
+@@ -507,7 +507,7 @@ static void mmap_read_all(void)
+ 		write_output(&finished_round_event, sizeof(finished_round_event));
+ }
+ 
+-static void comm__construct(int argc, const char **argv)
++static int comm__construct(int argc, const char **argv)
+ {
+ 	char *comm, *tmp;
+ 	size_t size;
+@@ -521,9 +521,13 @@ static void comm__construct(int argc, co
+ 	}
+ 
+ 	if ((long)size < 0)
+-		return;
++		return 0;
+ 
+ 	comm = calloc(1, size);
++	if (!comm) {
++		pr_err("Not enough memory to construct internal command line.\n");
++		return -ENOMEM;
++	}
+ 
+ 	tmp = comm;
+ 	for (i = 0; i < argc; i++) {
+@@ -533,6 +537,7 @@ static void comm__construct(int argc, co
+ 	}
+ 
+ 	session->command_line = comm;
++	return 0;
+ }
+ 
+ static int __cmd_record(int argc, const char **argv)
+@@ -597,7 +602,10 @@ static int __cmd_record(int argc, const 
+ 	if (!no_buildid)
+ 		perf_header__set_feat(&session->header, HEADER_BUILD_ID);
+ 
+-	comm__construct(argc, argv);
++	err = comm__construct(argc, argv);
++	if (err < 0)
++		goto out_delete_session;
++
+ 
+ 	if (!file_new) {
+ 		err = perf_header__read(session, output);
