@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab0LERvG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:51:06 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
+	id S932077Ab0LERvN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:51:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877Ab0LERvB (ORCPT
+	with ESMTP id S1756930Ab0LERvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:51:01 -0500
+	Sun, 5 Dec 2010 12:51:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HrTvyMv6u+yGuCLHJBczMzqHVig6jZnQ2Nkfqz75AJu89u+NhfZK4YyKUS1cl/V9Jp
-         2KS+aEOUDbMqUuu6v9GusgvjGK4n5aW+S75GqxxSLKuBxrt2eVbISsK8zqoGw7U7uJd6
-         S8JZuxVGn/VD1IYy8VsOGE2uuueGaOc7BbY3E=
+        b=lLqo/4Xc8+XgGOYJFbrOJRATM90N/hSEgHFtiJ/l5h8KNKXfFsACw4O6CosHUG52vi
+         /1J22rS33MoISNWJ3Syf7THGs96u6ugwFm/jLAliQJlewG208c47zKQoiH6f5xztPRZ9
+         C19mch3nkSDdaajIa4dKCkkOb5shPsGKiHB6Y=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 20/45] kstrtox: convert drivers/gpu/drm/nouveau/
-Date: Sun,  5 Dec 2010 19:49:17 +0200
-Message-Id: <1291571382-2719-20-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 23/45] kstrtox: convert drivers/ide/
+Date: Sun,  5 Dec 2010 19:49:20 +0200
+Message-Id: <1291571382-2719-23-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,45 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_pm.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ drivers/ide/ide-park.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_pm.c b/drivers/gpu/drm/nouveau/nouveau_pm.c
-index 9f7b158..a2cdef5 100644
---- a/drivers/gpu/drm/nouveau/nouveau_pm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_pm.c
-@@ -315,10 +315,12 @@ nouveau_hwmon_set_max_temp(struct device *d, struct device_attribute *a,
- 	struct drm_nouveau_private *dev_priv = dev->dev_private;
- 	struct nouveau_pm_engine *pm = &dev_priv->engine.pm;
- 	struct nouveau_pm_threshold_temp *temp = &pm->threshold_temp;
--	long value;
-+	int value;
-+	int rv;
+diff --git a/drivers/ide/ide-park.c b/drivers/ide/ide-park.c
+index 88a380c..436ca71 100644
+--- a/drivers/ide/ide-park.c
++++ b/drivers/ide/ide-park.c
+@@ -113,11 +113,13 @@ ssize_t ide_park_store(struct device *dev, struct device_attribute *attr,
+ {
+ #define MAX_PARK_TIMEOUT 30000
+ 	ide_drive_t *drive = to_ide_device(dev);
+-	long int input;
++	int input;
+ 	int rc;
  
--	if (strict_strtol(buf, 10, &value) == -EINVAL)
--		return count;
-+	rv = kstrtoint(buf, 10, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	temp->down_clock = value/1000;
- 
-@@ -350,10 +352,12 @@ nouveau_hwmon_set_critical_temp(struct device *d, struct device_attribute *a,
- 	struct drm_nouveau_private *dev_priv = dev->dev_private;
- 	struct nouveau_pm_engine *pm = &dev_priv->engine.pm;
- 	struct nouveau_pm_threshold_temp *temp = &pm->threshold_temp;
--	long value;
-+	int value;
-+	int rv;
- 
--	if (strict_strtol(buf, 10, &value) == -EINVAL)
--		return count;
-+	rv = kstrtoint(buf, 10, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	temp->critical = value/1000;
- 
+-	rc = strict_strtol(buf, 10, &input);
+-	if (rc || input < -2)
++	rc = kstrtoint(buf, 10, &input);
++	if (rc < 0)
++		return rc;
++	if (input < -2)
+ 		return -EINVAL;
+ 	if (input > MAX_PARK_TIMEOUT) {
+ 		input = MAX_PARK_TIMEOUT;
 -- 
 1.7.2.2
 
