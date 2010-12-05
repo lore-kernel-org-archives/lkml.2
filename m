@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab0LEUhs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:37:48 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55476 "EHLO ogre.sisk.pl"
+	id S1756450Ab0LEUhq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:37:46 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55473 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303Ab0LEUhQ convert rfc822-to-8bit (ORCPT
+	id S1756316Ab0LEUhQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Dec 2010 15:37:16 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Bjorn Helgaas" <bjorn.helgaas@hp.com>
+        "nik@linuxbox.cz" <nik@linuxbox.cz>
 References: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
 In-Reply-To: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <z3LGq_ncuOB.A.R4D.7_--MB@chimera>
-Subject: [Bug #23132] without "pci=nocrs", Dell Inspiron 1545 hangs
+Message-ID: <z3LGq_ncuOB.A.J8D.GA_-MB@chimera>
+Subject: [Bug #22782] 2.6.36: general protection fault during lockfs lockspace removal
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun,  5 Dec 2010 21:34:33 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,9 +34,9 @@ introduced between 2.6.35 and 2.6.36.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23132
-Subject		: without "pci=nocrs", Dell Inspiron 1545 hangs
-Submitter	: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Date		: 2010-11-17 19:18 (19 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22782
+Subject		: 2.6.36: general protection fault during lockfs lockspace removal
+Submitter	: nik@linuxbox.cz <nik@linuxbox.cz>
+Date		: 2010-11-12 12:05 (24 days old)
 
 
