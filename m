@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab0LERyu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:54:50 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
+	id S1756965Ab0LERvW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:51:22 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932214Ab0LERvb (ORCPT
+	with ESMTP id S932109Ab0LERvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:51:31 -0500
+	Sun, 5 Dec 2010 12:51:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=oG/1AQOGM8hR9ZmLdqfh2mBwDvHf8J0ZPnEZ8KHnCzzbdRRUrisaE8K4Q670jEiCSs
-         oA1UQb2JoL4mVAQAnoykz+dw2svfIMx1qhrW/GbtH254cC32Epfbm9X978tWNgHkRr4L
-         yOQ7TEhSyiVucoW027AFlil3XYLQM1YL/4lk4=
+        b=BiZw/+HEu9G49FZoLhQ5gsChC3A6j1tCsBQswwwWmDX63NdmuiEJSkPz3/GCndiGQH
+         eA2eVr1BPWugG5I2CraxR3Q2niXnOO5/zU7HHkdBP2X7P8px7v2UpRVNQub9dYLqhhJq
+         zxbno7hEys5PLUSIYxaKrLWC0gVPqLtdT86hw=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 30/45] kstrtox: convert drivers/misc/
-Date: Sun,  5 Dec 2010 19:49:27 +0200
-Message-Id: <1291571382-2719-30-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 25/45] kstrtox: convert drivers/input/
+Date: Sun,  5 Dec 2010 19:49:22 +0200
+Message-Id: <1291571382-2719-25-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,779 +29,910 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/misc/ad525x_dpot.c       |    2 +-
- drivers/misc/apds9802als.c       |    7 ++-
- drivers/misc/apds990x.c          |   45 +++++++++++++---------
- drivers/misc/bh1770glc.c         |   72 ++++++++++++++++++++++--------------
- drivers/misc/bh1780gli.c         |    4 +-
- drivers/misc/bmp085.c            |   31 ++++++---------
- drivers/misc/ep93xx_pwm.c        |   33 ++++++++--------
- drivers/misc/hmc6352.c           |    7 ++-
- drivers/misc/isl29003.c          |   28 ++++++++++----
- drivers/misc/isl29020.c          |    7 ++-
- drivers/misc/iwmc3200top/log.c   |   76 ++++++++++++++++----------------------
- drivers/misc/sgi-gru/gruprocfs.c |    7 ++-
- drivers/misc/ti_dac7512.c        |   10 +++--
- 13 files changed, 175 insertions(+), 154 deletions(-)
+ drivers/input/input-polldev.c       |    8 ++-
+ drivers/input/keyboard/atkbd.c      |   33 ++++++++++----
+ drivers/input/keyboard/lm8323.c     |   20 ++++-----
+ drivers/input/misc/adxl34x.c        |   14 +++---
+ drivers/input/misc/ati_remote2.c    |   31 +++++++------
+ drivers/input/mouse/elantech.c      |   10 +---
+ drivers/input/mouse/hgpk.c          |   18 +++++---
+ drivers/input/mouse/logips2pp.c     |    8 +++-
+ drivers/input/mouse/psmouse-base.c  |   31 ++++++-------
+ drivers/input/mouse/sentelic.c      |   79 ++++++++++++++++++----------------
+ drivers/input/mouse/sentelic.h      |   10 ++--
+ drivers/input/mouse/trackpoint.c    |   19 +++++----
+ drivers/input/tablet/aiptek.c       |   34 +++++++--------
+ drivers/input/touchscreen/ad7877.c  |   16 ++++----
+ drivers/input/touchscreen/ad7879.c  |    4 +-
+ drivers/input/touchscreen/ads7846.c |    6 ++-
+ 16 files changed, 182 insertions(+), 159 deletions(-)
 
-diff --git a/drivers/misc/ad525x_dpot.c b/drivers/misc/ad525x_dpot.c
-index 7cb9110..d0de26a 100644
---- a/drivers/misc/ad525x_dpot.c
-+++ b/drivers/misc/ad525x_dpot.c
-@@ -472,7 +472,7 @@ static ssize_t sysfs_set_reg(struct device *dev,
- 		!test_bit(DPOT_RDAC_MASK & reg, data->otp_en_mask))
- 		return -EPERM;
- 
--	err = strict_strtoul(buf, 10, &value);
-+	err = kstrtoul(buf, 10, &value);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-index 644d4cd..e6d0ebc 100644
---- a/drivers/misc/apds9802als.c
-+++ b/drivers/misc/apds9802als.c
-@@ -123,11 +123,12 @@ static ssize_t als_sensing_range_store(struct device *dev,
+diff --git a/drivers/input/input-polldev.c b/drivers/input/input-polldev.c
+index 10c9b0a..9003ad1 100644
+--- a/drivers/input/input-polldev.c
++++ b/drivers/input/input-polldev.c
+@@ -129,10 +129,12 @@ static ssize_t input_polldev_set_poll(struct device *dev,
  {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct als_data *data = i2c_get_clientdata(client);
-+	unsigned int val;
- 	int ret_val;
--	unsigned long val;
- 
--	if (strict_strtoul(buf, 10, &val))
--		return -EINVAL;
-+	ret_val = kstrtouint(buf, 10, &val);
-+	if (ret_val < 0)
-+		return ret_val;
- 
- 	if (val < 4096)
- 		val = 1;
-diff --git a/drivers/misc/apds990x.c b/drivers/misc/apds990x.c
-index 200311f..411ab79 100644
---- a/drivers/misc/apds990x.c
-+++ b/drivers/misc/apds990x.c
-@@ -694,11 +694,12 @@ static ssize_t apds990x_lux_calib_store(struct device *dev,
- {
- 	struct apds990x_chip *chip = dev_get_drvdata(dev);
- 	unsigned long value;
+ 	struct input_polled_dev *polldev = dev_get_drvdata(dev);
+ 	struct input_dev *input = polldev->input;
+-	unsigned long interval;
++	unsigned int interval;
 +	int rv;
  
--	if (strict_strtoul(buf, 0, &value))
+-	if (strict_strtoul(buf, 0, &interval))
 -		return -EINVAL;
--
--	if (chip->lux_calib > APDS_RANGE)
-+	rv = kstrtoul(buf, 0, &value);
++	rv = kstrtouint(buf, 0, &interval);
 +	if (rv < 0)
 +		return rv;
-+	if (value > APDS_RANGE)
- 		return -EINVAL;
  
- 	chip->lux_calib = value;
-@@ -757,11 +758,12 @@ static ssize_t apds990x_rate_store(struct device *dev,
- 				  const char *buf, size_t len)
+ 	if (interval < polldev->poll_interval_min)
+ 		return -EINVAL;
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index 11478eb..b01c7e7 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -1305,7 +1305,7 @@ static ssize_t atkbd_show_extra(struct atkbd *atkbd, char *buf)
+ static ssize_t atkbd_set_extra(struct atkbd *atkbd, const char *buf, size_t count)
  {
- 	struct apds990x_chip *chip =  dev_get_drvdata(dev);
+ 	struct input_dev *old_dev, *new_dev;
 -	unsigned long value;
 +	unsigned int value;
- 	int ret;
+ 	int err;
+ 	bool old_extra;
+ 	unsigned char old_set;
+@@ -1313,7 +1313,10 @@ static ssize_t atkbd_set_extra(struct atkbd *atkbd, const char *buf, size_t coun
+ 	if (!atkbd->write)
+ 		return -EIO;
  
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	ret = kstrtouint(buf, 0, &value);
-+	if (ret < 0)
-+		return ret;
- 
- 	mutex_lock(&chip->mutex);
- 	ret = apds990x_set_arate(chip, value);
-@@ -814,9 +816,11 @@ static ssize_t apds990x_prox_enable_store(struct device *dev,
- {
- 	struct apds990x_chip *chip =  dev_get_drvdata(dev);
- 	unsigned long value;
-+	int rv;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtoul(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	mutex_lock(&chip->mutex);
- 
-@@ -893,12 +897,12 @@ static ssize_t apds990x_lux_thresh_below_show(struct device *dev,
- static ssize_t apds990x_set_lux_thresh(struct apds990x_chip *chip, u32 *target,
- 				const char *buf)
- {
--	int ret = 0;
- 	unsigned long thresh;
-+	int ret;
- 
--	if (strict_strtoul(buf, 0, &thresh))
--		return -EINVAL;
--
-+	ret = kstrtoul(buf, 0, &thresh);
-+	if (ret < 0)
-+		return ret;
- 	if (thresh > APDS_RANGE)
+-	if (strict_strtoul(buf, 10, &value) || value > 1)
++	err = kstrtouint(buf, 10, &value);
++	if (err < 0)
++		return err;
++	if (value > 1)
  		return -EINVAL;
  
-@@ -957,11 +961,12 @@ static ssize_t apds990x_prox_threshold_store(struct device *dev,
- 				  const char *buf, size_t len)
+ 	if (atkbd->extra != value) {
+@@ -1389,11 +1392,14 @@ static ssize_t atkbd_show_scroll(struct atkbd *atkbd, char *buf)
+ static ssize_t atkbd_set_scroll(struct atkbd *atkbd, const char *buf, size_t count)
  {
- 	struct apds990x_chip *chip =  dev_get_drvdata(dev);
+ 	struct input_dev *old_dev, *new_dev;
 -	unsigned long value;
--
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
 +	unsigned int value;
-+	int rv;
+ 	int err;
+ 	bool old_scroll;
  
-+	rv = kstrtouint(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 	if ((value > APDS_RANGE) || (value == 0) ||
- 		(value < APDS_PROX_HYSTERESIS))
+-	if (strict_strtoul(buf, 10, &value) || value > 1)
++	err = kstrtouint(buf, 10, &value);
++	if (err < 0)
++		return err;
++	if (value > 1)
  		return -EINVAL;
-@@ -991,9 +996,11 @@ static ssize_t apds990x_power_state_store(struct device *dev,
+ 
+ 	if (atkbd->scroll != value) {
+@@ -1433,7 +1439,7 @@ static ssize_t atkbd_show_set(struct atkbd *atkbd, char *buf)
+ static ssize_t atkbd_set_set(struct atkbd *atkbd, const char *buf, size_t count)
  {
- 	struct apds990x_chip *chip =  dev_get_drvdata(dev);
- 	unsigned long value;
-+	int rv;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtoul(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 	if (value) {
- 		pm_runtime_get_sync(dev);
- 		mutex_lock(&chip->mutex);
-diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
-index d79a972..e9bd722 100644
---- a/drivers/misc/bh1770glc.c
-+++ b/drivers/misc/bh1770glc.c
-@@ -649,10 +649,11 @@ static ssize_t bh1770_power_state_store(struct device *dev,
- {
- 	struct bh1770_chip *chip =  dev_get_drvdata(dev);
- 	unsigned long value;
--	ssize_t ret;
-+	int ret;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &value);
-+	if (ret < 0)
-+		return ret;
- 
- 	mutex_lock(&chip->mutex);
- 	if (value) {
-@@ -726,9 +727,11 @@ static ssize_t bh1770_prox_enable_store(struct device *dev,
- {
- 	struct bh1770_chip *chip =  dev_get_drvdata(dev);
- 	unsigned long value;
-+	int rv;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtoul(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	mutex_lock(&chip->mutex);
- 	/* Assume no proximity. Sensor will tell real state soon */
-@@ -823,10 +826,12 @@ static ssize_t bh1770_set_prox_rate_above(struct device *dev,
- 					const char *buf, size_t count)
- {
- 	struct bh1770_chip *chip =  dev_get_drvdata(dev);
+ 	struct input_dev *old_dev, *new_dev;
 -	unsigned long value;
 +	int value;
-+	int rv;
+ 	int err;
+ 	unsigned char old_set;
+ 	bool old_extra;
+@@ -1441,7 +1447,10 @@ static ssize_t atkbd_set_set(struct atkbd *atkbd, const char *buf, size_t count)
+ 	if (!atkbd->write)
+ 		return -EIO;
  
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtoint(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
+-	if (strict_strtoul(buf, 10, &value) || (value != 2 && value != 3))
++	err = kstrtoint(buf, 10, &value);
++	if (err < 0)
++		return err;
++	if (value != 2 && value != 3)
+ 		return -EINVAL;
  
- 	mutex_lock(&chip->mutex);
- 	chip->prox_rate_threshold = bh1770_prox_rate_validate(value);
-@@ -839,10 +844,12 @@ static ssize_t bh1770_set_prox_rate_below(struct device *dev,
- 					const char *buf, size_t count)
+ 	if (atkbd->set != value) {
+@@ -1484,14 +1493,17 @@ static ssize_t atkbd_show_softrepeat(struct atkbd *atkbd, char *buf)
+ static ssize_t atkbd_set_softrepeat(struct atkbd *atkbd, const char *buf, size_t count)
  {
- 	struct bh1770_chip *chip =  dev_get_drvdata(dev);
--	unsigned long value;
-+	int value;
-+	int rv;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtoint(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	mutex_lock(&chip->mutex);
- 	chip->prox_rate = bh1770_prox_rate_validate(value);
-@@ -862,11 +869,12 @@ static ssize_t bh1770_set_prox_thres(struct device *dev,
- 				      const char *buf, size_t count)
- {
- 	struct bh1770_chip *chip =  dev_get_drvdata(dev);
+ 	struct input_dev *old_dev, *new_dev;
 -	unsigned long value;
 +	unsigned int value;
+ 	int err;
+ 	bool old_softrepeat, old_softraw;
+ 
+ 	if (!atkbd->write)
+ 		return -EIO;
+ 
+-	if (strict_strtoul(buf, 10, &value) || value > 1)
++	err = kstrtouint(buf, 10, &value);
++	if (err < 0)
++		return err;
++	if (value > 1)
+ 		return -EINVAL;
+ 
+ 	if (atkbd->softrepeat != value) {
+@@ -1534,11 +1546,12 @@ static ssize_t atkbd_show_softraw(struct atkbd *atkbd, char *buf)
+ static ssize_t atkbd_set_softraw(struct atkbd *atkbd, const char *buf, size_t count)
+ {
+ 	struct input_dev *old_dev, *new_dev;
+-	unsigned long value;
++	unsigned int value;
+ 	int err;
+ 	bool old_softraw;
+ 
+-	if (strict_strtoul(buf, 10, &value) || value > 1)
++	err = kstrtouint(buf, 10, &value);
++	if (value > 1)
+ 		return -EINVAL;
+ 
+ 	if (atkbd->softraw != value) {
+diff --git a/drivers/input/keyboard/lm8323.c b/drivers/input/keyboard/lm8323.c
+index f7c2a16..79ca455 100644
+--- a/drivers/input/keyboard/lm8323.c
++++ b/drivers/input/keyboard/lm8323.c
+@@ -557,15 +557,10 @@ static ssize_t lm8323_pwm_store_time(struct device *dev,
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+ 	struct lm8323_pwm *pwm = cdev_to_pwm(led_cdev);
  	int ret;
- 
--	if (strict_strtoul(buf, 0, &value))
+-	unsigned long time;
+-
+-	ret = strict_strtoul(buf, 10, &time);
+-	/* Numbers only, please. */
+-	if (ret)
 -		return -EINVAL;
-+	ret = kstrtouint(buf, 0, &value);
+-
+-	pwm->fade_time = time;
+ 
++	ret = kstrtoint(buf, 10, &pwm->fade_time);
 +	if (ret < 0)
 +		return ret;
- 	if (value > BH1770_PROX_RANGE)
- 		return -EINVAL;
- 
-@@ -892,10 +900,12 @@ static ssize_t bh1770_prox_persistence_store(struct device *dev,
- 				const char *buf, size_t len)
+ 	return strlen(buf);
+ }
+ static DEVICE_ATTR(time, 0644, lm8323_pwm_show_time, lm8323_pwm_store_time);
+@@ -623,13 +618,14 @@ static ssize_t lm8323_set_disable(struct device *dev,
+ 				  const char *buf, size_t count)
  {
- 	struct bh1770_chip *chip = dev_get_drvdata(dev);
--	unsigned long value;
-+	unsigned int value;
-+	int rv;
+ 	struct lm8323_chip *lm = dev_get_drvdata(dev);
++	unsigned int kp_enabled;
+ 	int ret;
+-	unsigned long i;
+-
+-	ret = strict_strtoul(buf, 10, &i);
  
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtouint(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	if (value > BH1770_PROX_MAX_PERSISTENCE)
- 		return -EINVAL;
-@@ -917,10 +927,12 @@ static ssize_t bh1770_prox_abs_thres_store(struct device *dev,
- 				const char *buf, size_t len)
- {
- 	struct bh1770_chip *chip = dev_get_drvdata(dev);
--	unsigned long value;
-+	unsigned int value;
-+	int rv;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtouint(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	if (value > BH1770_PROX_RANGE)
- 		return -EINVAL;
-@@ -960,12 +972,14 @@ static ssize_t bh1770_lux_calib_store(struct device *dev,
- 				  const char *buf, size_t len)
- {
- 	struct bh1770_chip *chip = dev_get_drvdata(dev);
--	unsigned long value;
-+	u32 value;
- 	u32 old_calib;
- 	u32 new_corr;
-+	int rv;
- 
--	if (strict_strtoul(buf, 0, &value))
--		return -EINVAL;
-+	rv = kstrtou32(buf, 0, &value);
-+	if (rv < 0)
-+		return rv;
- 
- 	mutex_lock(&chip->mutex);
- 	old_calib = chip->lux_calib;
-@@ -1012,8 +1026,9 @@ static ssize_t bh1770_set_lux_rate(struct device *dev,
- 	unsigned long rate_hz;
- 	int ret, i;
- 
--	if (strict_strtoul(buf, 0, &rate_hz))
--		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &rate_hz);
++	ret = kstrtouint(buf, 10, &kp_enabled);
 +	if (ret < 0)
 +		return ret;
+ 	mutex_lock(&lm->lock);
+-	lm->kp_enabled = !i;
++	lm->kp_enabled = !kp_enabled;
+ 	mutex_unlock(&lm->lock);
  
- 	for (i = 0; i < ARRAY_SIZE(lux_rates_hz) - 1; i++)
- 		if (rate_hz >= lux_rates_hz[i])
-@@ -1047,11 +1062,12 @@ static ssize_t bh1770_get_lux_thresh_below(struct device *dev,
- static ssize_t bh1770_set_lux_thresh(struct bh1770_chip *chip, u16 *target,
- 				const char *buf)
- {
--	int ret = 0;
- 	unsigned long thresh;
-+	int ret;
- 
--	if (strict_strtoul(buf, 0, &thresh))
--		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &thresh);
-+	if (ret < 0)
-+		return ret;
- 
- 	if (thresh > BH1770_LUX_RANGE)
- 		return -EINVAL;
-diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
-index d5f3a3f..5faca8e 100644
---- a/drivers/misc/bh1780gli.c
-+++ b/drivers/misc/bh1780gli.c
-@@ -103,10 +103,10 @@ static ssize_t bh1780_store_power_state(struct device *dev,
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct bh1780_data *ddata = platform_get_drvdata(pdev);
--	unsigned long val;
-+	int val;
+ 	return count;
+diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
+index de5900d..03b284a 100644
+--- a/drivers/input/misc/adxl34x.c
++++ b/drivers/input/misc/adxl34x.c
+@@ -454,8 +454,8 @@ static ssize_t adxl34x_disable_store(struct device *dev,
+ 	unsigned long val;
  	int error;
  
--	error = strict_strtoul(buf, 0, &val);
-+	error = kstrtoint(buf, 0, &val);
+-	error = strict_strtoul(buf, 10, &val);
+-	if (error)
++	error = kstrtoul(buf, 10, &val);
++	if (error < 0)
+ 		return error;
+ 
+ 	mutex_lock(&ac->mutex);
+@@ -543,7 +543,7 @@ static ssize_t adxl34x_rate_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
++	error = kstrtoul(buf, 10, &val);
  	if (error)
  		return error;
  
-diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
-index 63ee4c1..b656c36 100644
---- a/drivers/misc/bmp085.c
-+++ b/drivers/misc/bmp085.c
-@@ -86,7 +86,7 @@ struct bmp085_data {
- 	struct bmp085_calibration_data calibration;
- 	u32 raw_temperature;
- 	u32 raw_pressure;
--	unsigned char oversampling_setting;
-+	u8 oversampling_setting; /* [0, 3] */
- 	u32 last_temp_measurement;
- 	s32 b6; /* calculated temperature correction coefficient */
- };
-@@ -284,22 +284,13 @@ exit:
-  * increase both. The datasheet gives on overview on how measurement time,
-  * accuracy and noise correlate.
-  */
--static void bmp085_set_oversampling(struct bmp085_data *data,
--						unsigned char oversampling)
-+static void bmp085_set_oversampling(struct bmp085_data *data, u8 oversampling)
+@@ -578,7 +578,7 @@ static ssize_t adxl34x_autosleep_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
++	error = kstrtoul(buf, 10, &val);
+ 	if (error)
+ 		return error;
+ 
+@@ -622,13 +622,13 @@ static ssize_t adxl34x_write_store(struct device *dev,
+ 				   const char *buf, size_t count)
  {
- 	if (oversampling > 3)
- 		oversampling = 3;
- 	data->oversampling_setting = oversampling;
+ 	struct adxl34x *ac = dev_get_drvdata(dev);
+-	unsigned long val;
++	u16 val;
+ 	int error;
+ 
+ 	/*
+ 	 * This allows basic ADXL register write access for debug purposes.
+ 	 */
+-	error = strict_strtoul(buf, 16, &val);
++	error = kstrtou16(buf, 16, &val);
+ 	if (error)
+ 		return error;
+ 
+@@ -639,7 +639,7 @@ static ssize_t adxl34x_write_store(struct device *dev,
+ 	return count;
  }
  
--/*
-- * Returns the currently selected oversampling. Range: 0..3
-- */
--static unsigned char bmp085_get_oversampling(struct bmp085_data *data)
--{
--	return data->oversampling_setting;
--}
--
- /* sysfs callbacks */
- static ssize_t set_oversampling(struct device *dev,
- 				struct device_attribute *attr,
-@@ -307,13 +298,14 @@ static ssize_t set_oversampling(struct device *dev,
+-static DEVICE_ATTR(write, 0664, NULL, adxl34x_write_store);
++static DEVICE_ATTR(write, 0220, NULL, adxl34x_write_store);
+ #endif
+ 
+ static struct attribute *adxl34x_attributes[] = {
+diff --git a/drivers/input/misc/ati_remote2.c b/drivers/input/misc/ati_remote2.c
+index 0b0e9be..3226c9a 100644
+--- a/drivers/input/misc/ati_remote2.c
++++ b/drivers/input/misc/ati_remote2.c
+@@ -41,14 +41,14 @@ static int ati_remote2_set_mask(const char *val,
+ 				const struct kernel_param *kp,
+ 				unsigned int max)
  {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct bmp085_data *data = i2c_get_clientdata(client);
--	unsigned long oversampling;
--	int success = strict_strtoul(buf, 10, &oversampling);
--	if (success == 0) {
--		bmp085_set_oversampling(data, oversampling);
--		return count;
--	}
--	return success;
-+	u8 oversampling;
+-	unsigned long mask;
++	unsigned int mask;
+ 	int ret;
+ 
+ 	if (!val)
+ 		return -EINVAL;
+ 
+-	ret = strict_strtoul(val, 0, &mask);
+-	if (ret)
++	ret = kstrtouint(val, 0, &mask);
++	if (ret < 0)
+ 		return ret;
+ 
+ 	if (mask & ~max)
+@@ -719,20 +719,21 @@ static ssize_t ati_remote2_store_channel_mask(struct device *dev,
+ 	struct usb_device *udev = to_usb_device(dev);
+ 	struct usb_interface *intf = usb_ifnum_to_if(udev, 0);
+ 	struct ati_remote2 *ar2 = usb_get_intfdata(intf);
+-	unsigned long mask;
+-	int r;
++	unsigned int mask;
 +	int rv;
-+
-+	rv = kstrtou8(buf, 10, &oversampling);
+ 
+-	if (strict_strtoul(buf, 0, &mask))
+-		return -EINVAL;
++	rv = kstrtouint(buf, 0, &mask);
 +	if (rv < 0)
 +		return rv;
-+	bmp085_set_oversampling(data, oversampling);
-+	return count;
- }
  
- static ssize_t show_oversampling(struct device *dev,
-@@ -321,7 +313,8 @@ static ssize_t show_oversampling(struct device *dev,
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct bmp085_data *data = i2c_get_clientdata(client);
--	return sprintf(buf, "%u\n", bmp085_get_oversampling(data));
-+
-+	return sprintf(buf, "%hhu\n", data->oversampling_setting);
- }
- static DEVICE_ATTR(oversampling, S_IWUSR | S_IRUGO,
- 					show_oversampling, set_oversampling);
-diff --git a/drivers/misc/ep93xx_pwm.c b/drivers/misc/ep93xx_pwm.c
-index 46b3439..b7a653e 100644
---- a/drivers/misc/ep93xx_pwm.c
-+++ b/drivers/misc/ep93xx_pwm.c
-@@ -149,9 +149,9 @@ static ssize_t ep93xx_pwm_set_freq(struct device *dev,
- 	long val;
- 	int err;
- 
--	err = strict_strtol(buf, 10, &val);
-+	err = kstrtol(buf, 10, &val);
- 	if (err)
--		return -EINVAL;
-+		return err;
- 
- 	if (val == 0) {
- 		ep93xx_pwm_disable(pwm);
-@@ -191,7 +191,7 @@ static ssize_t ep93xx_pwm_get_duty_percent(struct device *dev,
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct ep93xx_pwm *pwm = platform_get_drvdata(pdev);
- 
--	return sprintf(buf, "%d\n", pwm->duty_percent);
-+	return sprintf(buf, "%u\n", pwm->duty_percent);
- }
- 
- static ssize_t ep93xx_pwm_set_duty_percent(struct device *dev,
-@@ -199,21 +199,20 @@ static ssize_t ep93xx_pwm_set_duty_percent(struct device *dev,
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct ep93xx_pwm *pwm = platform_get_drvdata(pdev);
--	long val;
-+	u32 term;
-+	unsigned int val;
- 	int err;
- 
--	err = strict_strtol(buf, 10, &val);
--	if (err)
-+	err = kstrtouint(buf, 10, &val);
-+	if (err < 0)
-+		return err;
-+	if (val >= 100)
+ 	if (mask & ~ATI_REMOTE2_MAX_CHANNEL_MASK)
  		return -EINVAL;
  
--	if (val > 0 && val < 100) {
--		u32 term = ep93xx_pwm_read_tc(pwm);
--		ep93xx_pwm_write_dc(pwm, ((term + 1) * val / 100) - 1);
--		pwm->duty_percent = val;
--		return count;
--	}
--
--	return -EINVAL;
-+	term = ep93xx_pwm_read_tc(pwm);
-+	ep93xx_pwm_write_dc(pwm, ((term + 1) * val / 100) - 1);
-+	pwm->duty_percent = val;
-+	return count;
- }
- 
- static ssize_t ep93xx_pwm_get_invert(struct device *dev,
-@@ -230,12 +229,12 @@ static ssize_t ep93xx_pwm_set_invert(struct device *dev,
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct ep93xx_pwm *pwm = platform_get_drvdata(pdev);
--	long val;
-+	int val;
- 	int err;
- 
--	err = strict_strtol(buf, 10, &val);
-+	err = kstrtoint(buf, 10, &val);
- 	if (err)
--		return -EINVAL;
-+		return err;
- 
- 	if (val == 0)
- 		ep93xx_pwm_normal(pwm);
-diff --git a/drivers/misc/hmc6352.c b/drivers/misc/hmc6352.c
-index 234bfca..8503368 100644
---- a/drivers/misc/hmc6352.c
-+++ b/drivers/misc/hmc6352.c
-@@ -43,11 +43,12 @@ static int compass_store(struct device *dev, const char *buf, size_t count,
- 			const char *map)
- {
- 	struct i2c_client *c = to_i2c_client(dev);
-+	unsigned int val;
- 	int ret;
--	unsigned long val;
- 
--	if (strict_strtoul(buf, 10, &val))
--		return -EINVAL;
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
- 	if (val >= strlen(map))
- 		return -EINVAL;
- 	mutex_lock(&compass_mutex);
-diff --git a/drivers/misc/isl29003.c b/drivers/misc/isl29003.c
-index a71e245..f66cda4 100644
---- a/drivers/misc/isl29003.c
-+++ b/drivers/misc/isl29003.c
-@@ -205,10 +205,13 @@ static ssize_t isl29003_store_range(struct device *dev,
- 				    const char *buf, size_t count)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
--	unsigned long val;
-+	unsigned int val;
- 	int ret;
- 
--	if ((strict_strtoul(buf, 10, &val) < 0) || (val > 3))
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
-+	if (val > 3)
- 		return -EINVAL;
- 
- 	ret = isl29003_set_range(client, val);
-@@ -236,10 +239,13 @@ static ssize_t isl29003_store_resolution(struct device *dev,
- 					 const char *buf, size_t count)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
--	unsigned long val;
-+	unsigned int val;
- 	int ret;
- 
--	if ((strict_strtoul(buf, 10, &val) < 0) || (val > 3))
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
-+	if (val > 3)
- 		return -EINVAL;
- 
- 	ret = isl29003_set_resolution(client, val);
-@@ -264,10 +270,13 @@ static ssize_t isl29003_store_mode(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
--	unsigned long val;
-+	unsigned int val;
- 	int ret;
- 
--	if ((strict_strtoul(buf, 10, &val) < 0) || (val > 2))
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
-+	if (val > 2)
- 		return -EINVAL;
- 
- 	ret = isl29003_set_mode(client, val);
-@@ -295,10 +304,13 @@ static ssize_t isl29003_store_power_state(struct device *dev,
- 					  const char *buf, size_t count)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
--	unsigned long val;
-+	unsigned int val;
- 	int ret;
- 
--	if ((strict_strtoul(buf, 10, &val) < 0) || (val > 1))
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
-+	if (val > 1)
- 		return -EINVAL;
- 
- 	ret = isl29003_set_power_state(client, val);
-diff --git a/drivers/misc/isl29020.c b/drivers/misc/isl29020.c
-index 307aada..4d63b37 100644
---- a/drivers/misc/isl29020.c
-+++ b/drivers/misc/isl29020.c
-@@ -87,11 +87,12 @@ static ssize_t als_sensing_range_store(struct device *dev,
- 		struct device_attribute *attr, const  char *buf, size_t count)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned int val;
- 	int ret_val;
--	unsigned long val;
- 
--	if (strict_strtoul(buf, 10, &val))
--		return -EINVAL;
-+	ret_val = kstrtouint(buf, 10, &val);
-+	if (ret_val < 0)
-+		return ret_val;
- 	if (val < 1 || val > 64000)
- 		return -EINVAL;
- 
-diff --git a/drivers/misc/iwmc3200top/log.c b/drivers/misc/iwmc3200top/log.c
-index a36a55a..9df9391 100644
---- a/drivers/misc/iwmc3200top/log.c
-+++ b/drivers/misc/iwmc3200top/log.c
-@@ -169,7 +169,6 @@ int log_get_fw_filter_str(char *buf, int size)
- 	return _log_get_filter_str(iwmct_fw_logdefs, FW_LOG_SRC_MAX, buf, size);
- }
- 
--#define HEXADECIMAL_RADIX	16
- #define LOG_SRC_FORMAT		7 /* log level is in format of "0xXXXX," */
- 
- ssize_t show_iwmct_log_level(struct device *d,
-@@ -206,40 +205,34 @@ ssize_t store_iwmct_log_level(struct device *d,
- 			const char *buf, size_t count)
- {
- 	struct iwmct_priv *priv = dev_get_drvdata(d);
--	char *token, *str_buf = NULL;
--	long val;
--	ssize_t ret = count;
--	u8 src, mask;
-+	char *token, *str_buf, *p;
-+	int ret;
- 
- 	if (!count)
--		goto exit;
-+		return -EINVAL;
- 
--	str_buf = kzalloc(count, GFP_KERNEL);
-+	p = str_buf = kstrdup(buf, GFP_KERNEL);
- 	if (!str_buf) {
- 		LOG_ERROR(priv, DEBUGFS,
- 			"failed to allocate %zd bytes\n", count);
--		ret = -ENOMEM;
--		goto exit;
-+		return -ENOMEM;
+-	r = usb_autopm_get_interface(ar2->intf[0]);
+-	if (r) {
++	rv = usb_autopm_get_interface(ar2->intf[0]);
++	if (rv) {
+ 		dev_err(&ar2->intf[0]->dev,
+-			"%s(): usb_autopm_get_interface() = %d\n", __func__, r);
+-		return r;
++			"%s(): usb_autopm_get_interface() = %d\n", __func__, rv);
++		return rv;
  	}
  
--	memcpy(str_buf, buf, count);
-+	while ((token = strsep(&p, ",")) != NULL) {
-+		u16 val;
- 
--	while ((token = strsep(&str_buf, ",")) != NULL) {
- 		while (isspace(*token))
- 			++token;
--		if (strict_strtol(token, HEXADECIMAL_RADIX, &val)) {
-+		ret = kstrtou16(token, 16, &val);
-+		if (ret < 0) {
- 			LOG_ERROR(priv, DEBUGFS,
--				  "failed to convert string to long %s\n",
-+				  "invalid integer \"%s\"\n",
- 				  token);
--			ret = -EINVAL;
- 			goto exit;
- 		}
--
--		mask  = val & 0xFF;
--		src = (val & 0XFF00) >> 8;
--		iwmct_log_set_filter(src, mask);
-+		iwmct_log_set_filter(val >> 8, val & 0xFF);
- 	}
--
-+	ret = count;
- exit:
- 	kfree(str_buf);
- 	return ret;
-@@ -281,51 +274,50 @@ ssize_t store_iwmct_log_level_fw(struct device *d,
- {
- 	struct iwmct_priv *priv = dev_get_drvdata(d);
- 	struct top_msg cmd;
--	char *token, *str_buf = NULL;
--	ssize_t ret = count;
-+	char *token, *str_buf, *p;
- 	u16 cmdlen = 0;
- 	int i;
--	long val;
--	u8 src, mask;
-+	int ret;
- 
- 	if (!count)
--		goto exit;
-+		return -EINVAL;
- 
--	str_buf = kzalloc(count, GFP_KERNEL);
-+	p = str_buf = kstrdup(buf, GFP_KERNEL);
- 	if (!str_buf) {
- 		LOG_ERROR(priv, DEBUGFS,
- 			"failed to allocate %zd bytes\n", count);
--		ret = -ENOMEM;
--		goto exit;
-+		return -ENOMEM;
- 	}
- 
--	memcpy(str_buf, buf, count);
--
- 	cmd.hdr.type = COMM_TYPE_H2D;
- 	cmd.hdr.category = COMM_CATEGORY_DEBUG;
- 	cmd.hdr.opcode = CMD_DBG_LOG_LEVEL;
- 
--	for (i = 0; ((token = strsep(&str_buf, ",")) != NULL) &&
-+	for (i = 0; ((token = strsep(&p, ",")) != NULL) &&
- 		     (i < FW_LOG_SRC_MAX); i++) {
-+		u16 val;
-+		u8 src, mask;
- 
- 		while (isspace(*token))
- 			++token;
- 
--		if (strict_strtol(token, HEXADECIMAL_RADIX, &val)) {
-+		ret = kstrtou16(token, 16, &val);
-+		if (ret < 0) {
- 			LOG_ERROR(priv, DEBUGFS,
- 				  "failed to convert string to long %s\n",
- 				  token);
--			ret = -EINVAL;
--			goto exit;
-+			kfree(str_buf);
-+			return ret;
- 		}
-+		src = val >> 8;
-+		mask = val & 0xFF;
- 
--		mask  = val & 0xFF; /* LSB */
--		src = (val & 0XFF00) >> 8; /* 2nd least significant byte. */
- 		iwmct_log_set_fw_filter(src, mask);
- 
- 		cmd.u.logdefs[i].logsource = src;
- 		cmd.u.logdefs[i].sevmask = mask;
- 	}
-+	kfree(str_buf);
- 
- 	cmd.hdr.length = cpu_to_le16(i * sizeof(cmd.u.logdefs[0]));
- 	cmdlen = (i * sizeof(cmd.u.logdefs[0]) + sizeof(cmd.hdr));
-@@ -333,16 +325,12 @@ ssize_t store_iwmct_log_level_fw(struct device *d,
- 	ret = iwmct_send_hcmd(priv, (u8 *)&cmd, cmdlen);
- 	if (ret) {
- 		LOG_ERROR(priv, DEBUGFS,
--			  "Failed to send %d bytes of fwcmd, ret=%zd\n",
-+			  "Failed to send %d bytes of fwcmd, ret=%d\n",
- 			  cmdlen, ret);
--		goto exit;
--	} else
--		LOG_INFO(priv, DEBUGFS, "fwcmd sent (%d bytes)\n", cmdlen);
--
--	ret = count;
-+		return ret;
-+	}
-+	LOG_INFO(priv, DEBUGFS, "fwcmd sent (%d bytes)\n", cmdlen);
- 
--exit:
--	kfree(str_buf);
--	return ret;
-+	return count;
- }
- 
-diff --git a/drivers/misc/sgi-gru/gruprocfs.c b/drivers/misc/sgi-gru/gruprocfs.c
-index 7768b87..c29500c 100644
---- a/drivers/misc/sgi-gru/gruprocfs.c
-+++ b/drivers/misc/sgi-gru/gruprocfs.c
-@@ -161,15 +161,16 @@ static ssize_t options_write(struct file *file, const char __user *userbuf,
- 			     size_t count, loff_t *data)
- {
- 	char buf[20];
+ 	mutex_lock(&ati_remote2_mutex);
+@@ -765,10 +766,12 @@ static ssize_t ati_remote2_store_mode_mask(struct device *dev,
+ 	struct usb_device *udev = to_usb_device(dev);
+ 	struct usb_interface *intf = usb_ifnum_to_if(udev, 0);
+ 	struct ati_remote2 *ar2 = usb_get_intfdata(intf);
+-	unsigned long mask;
++	unsigned int mask;
 +	int rv;
  
- 	if (count >= sizeof(buf))
+-	if (strict_strtoul(buf, 0, &mask))
+-		return -EINVAL;
++	rv = kstrtouint(buf, 0, &mask);
++	if (rv < 0)
++		return rv;
+ 
+ 	if (mask & ~ATI_REMOTE2_MAX_MODE_MASK)
  		return -EINVAL;
- 	if (copy_from_user(buf, userbuf, count))
- 		return -EFAULT;
- 	buf[count] = '\0';
--	if (strict_strtoul(buf, 0, &gru_options))
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 04d9bf3..b3c788b 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -517,16 +517,12 @@ static ssize_t elantech_set_int_attr(struct psmouse *psmouse,
+ 	struct elantech_data *etd = psmouse->private;
+ 	struct elantech_attr_data *attr = data;
+ 	unsigned char *reg = (unsigned char *) etd + attr->field_offset;
+-	unsigned long value;
++	u8 value;
+ 	int err;
+ 
+-	err = strict_strtoul(buf, 16, &value);
+-	if (err)
++	err = kstrtou8(buf, 16, &value);
++	if (err < 0)
+ 		return err;
+-
+-	if (value > 0xff)
 -		return -EINVAL;
 -
-+	rv = kstrtoul(buf, 0, &gru_options);
+ 	/* Do we need to preserve some bits for version 2 hardware too? */
+ 	if (etd->hw_version == 1) {
+ 		if (attr->reg == 0x10)
+diff --git a/drivers/input/mouse/hgpk.c b/drivers/input/mouse/hgpk.c
+index 1d2205b..aea82af 100644
+--- a/drivers/input/mouse/hgpk.c
++++ b/drivers/input/mouse/hgpk.c
+@@ -343,11 +343,13 @@ static ssize_t hgpk_set_powered(struct psmouse *psmouse, void *data,
+ 				const char *buf, size_t count)
+ {
+ 	struct hgpk_data *priv = psmouse->private;
+-	unsigned long value;
++	unsigned int value;
+ 	int err;
+ 
+-	err = strict_strtoul(buf, 10, &value);
+-	if (err || value > 1)
++	err = kstrtouint(buf, 10, &value);
++	if (err < 0)
++		return err;
++	if (value > 1)
+ 		return -EINVAL;
+ 
+ 	if (value != priv->powered) {
+@@ -376,11 +378,13 @@ static ssize_t hgpk_trigger_recal(struct psmouse *psmouse, void *data,
+ 				const char *buf, size_t count)
+ {
+ 	struct hgpk_data *priv = psmouse->private;
+-	unsigned long value;
++	unsigned int value;
+ 	int err;
+ 
+-	err = strict_strtoul(buf, 10, &value);
+-	if (err || value != 1)
++	err = kstrtouint(buf, 10, &value);
++	if (err < 0)
++		return err;
++	if (value != 1)
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -392,7 +396,7 @@ static ssize_t hgpk_trigger_recal(struct psmouse *psmouse, void *data,
+ 	return count;
+ }
+ 
+-__PSMOUSE_DEFINE_ATTR(recalibrate, S_IWUSR | S_IRUGO, NULL,
++__PSMOUSE_DEFINE_ATTR(recalibrate, S_IWUSR, NULL,
+ 		      hgpk_trigger_recal_show, hgpk_trigger_recal, false);
+ 
+ static void hgpk_disconnect(struct psmouse *psmouse)
+diff --git a/drivers/input/mouse/logips2pp.c b/drivers/input/mouse/logips2pp.c
+index c9983ae..c977ea9 100644
+--- a/drivers/input/mouse/logips2pp.c
++++ b/drivers/input/mouse/logips2pp.c
+@@ -155,9 +155,13 @@ static ssize_t ps2pp_attr_show_smartscroll(struct psmouse *psmouse,
+ static ssize_t ps2pp_attr_set_smartscroll(struct psmouse *psmouse, void *data,
+ 					  const char *buf, size_t count)
+ {
+-	unsigned long value;
++	unsigned int value;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 10, &value) || value > 1)
++	rv = kstrtouint(buf, 10, &value);
++	if (rv < 0)
++		return rv;
++	if (value > 1)
+ 		return -EINVAL;
+ 
+ 	ps2pp_set_smartscroll(psmouse, value);
+diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
+index cd9d0c9..a53978c 100644
+--- a/drivers/input/mouse/psmouse-base.c
++++ b/drivers/input/mouse/psmouse-base.c
+@@ -1546,16 +1546,11 @@ static ssize_t psmouse_show_int_attr(struct psmouse *psmouse, void *offset, char
+ static ssize_t psmouse_set_int_attr(struct psmouse *psmouse, void *offset, const char *buf, size_t count)
+ {
+ 	unsigned int *field = (unsigned int *)((char *)psmouse + (size_t)offset);
+-	unsigned long value;
+-
+-	if (strict_strtoul(buf, 10, &value))
+-		return -EINVAL;
+-
+-	if ((unsigned int)value != value)
+-		return -EINVAL;
+-
+-	*field = value;
++	int rv;
+ 
++	rv = kstrtouint(buf, 10, field);
 +	if (rv < 0)
 +		return rv;
  	return count;
  }
  
-diff --git a/drivers/misc/ti_dac7512.c b/drivers/misc/ti_dac7512.c
-index d3f229a..ef9fd33 100644
---- a/drivers/misc/ti_dac7512.c
-+++ b/drivers/misc/ti_dac7512.c
-@@ -31,11 +31,13 @@ static ssize_t dac7512_store_val(struct device *dev,
- 				 const char *buf, size_t count)
+@@ -1660,22 +1655,24 @@ static ssize_t psmouse_attr_set_protocol(struct psmouse *psmouse, void *data, co
+ 
+ static ssize_t psmouse_attr_set_rate(struct psmouse *psmouse, void *data, const char *buf, size_t count)
  {
- 	struct spi_device *spi = to_spi_device(dev);
--	unsigned char tmp[2];
--	unsigned long val;
-+	u8 tmp[2];
-+	u16 val;
+-	unsigned long value;
+-
+-	if (strict_strtoul(buf, 10, &value))
+-		return -EINVAL;
++	unsigned int value;
 +	int rv;
  
--	if (strict_strtoul(buf, 10, &val) < 0)
++	rv = kstrtouint(buf, 10, &value);
++	if (rv < 0)
++		return rv;
+ 	psmouse->set_rate(psmouse, value);
+ 	return count;
+ }
+ 
+ static ssize_t psmouse_attr_set_resolution(struct psmouse *psmouse, void *data, const char *buf, size_t count)
+ {
+-	unsigned long value;
+-
+-	if (strict_strtoul(buf, 10, &value))
 -		return -EINVAL;
-+	rv = kstrtou16(buf, 10, &val);
++	unsigned int value;
++	int rv;
+ 
++	rv = kstrtouint(buf, 10, &value);
++	if (rv < 0)
++		return rv;
+ 	psmouse->set_resolution(psmouse, value);
+ 	return count;
+ }
+diff --git a/drivers/input/mouse/sentelic.c b/drivers/input/mouse/sentelic.c
+index 1242775..baaa141 100644
+--- a/drivers/input/mouse/sentelic.c
++++ b/drivers/input/mouse/sentelic.c
+@@ -78,7 +78,7 @@ static unsigned char fsp_test_invert_cmd(unsigned char reg_val)
+ 	}
+ }
+ 
+-static int fsp_reg_read(struct psmouse *psmouse, int reg_addr, int *reg_val)
++static int fsp_reg_read(struct psmouse *psmouse, u8 reg_addr, u8 *reg_val)
+ {
+ 	struct ps2dev *ps2dev = &psmouse->ps2dev;
+ 	unsigned char param[3];
+@@ -136,7 +136,7 @@ static int fsp_reg_read(struct psmouse *psmouse, int reg_addr, int *reg_val)
+ 	return rc;
+ }
+ 
+-static int fsp_reg_write(struct psmouse *psmouse, int reg_addr, int reg_val)
++static int fsp_reg_write(struct psmouse *psmouse, u8 reg_addr, u8 reg_val)
+ {
+ 	struct ps2dev *ps2dev = &psmouse->ps2dev;
+ 	unsigned char v;
+@@ -190,7 +190,7 @@ static int fsp_reg_write(struct psmouse *psmouse, int reg_addr, int reg_val)
+ /* Enable register clock gating for writing certain registers */
+ static int fsp_reg_write_enable(struct psmouse *psmouse, bool enable)
+ {
+-	int v, nv;
++	u8 v, nv;
+ 
+ 	if (fsp_reg_read(psmouse, FSP_REG_SYSCTL1, &v) == -1)
+ 		return -1;
+@@ -284,7 +284,7 @@ static int fsp_page_reg_write(struct psmouse *psmouse, int reg_val)
+ 	return rc;
+ }
+ 
+-static int fsp_get_version(struct psmouse *psmouse, int *version)
++static int fsp_get_version(struct psmouse *psmouse, u8 *version)
+ {
+ 	if (fsp_reg_read(psmouse, FSP_REG_VERSION, version))
+ 		return -EIO;
+@@ -292,7 +292,7 @@ static int fsp_get_version(struct psmouse *psmouse, int *version)
+ 	return 0;
+ }
+ 
+-static int fsp_get_revision(struct psmouse *psmouse, int *rev)
++static int fsp_get_revision(struct psmouse *psmouse, u8 *rev)
+ {
+ 	if (fsp_reg_read(psmouse, FSP_REG_REVISION, rev))
+ 		return -EIO;
+@@ -300,7 +300,7 @@ static int fsp_get_revision(struct psmouse *psmouse, int *rev)
+ 	return 0;
+ }
+ 
+-static int fsp_get_buttons(struct psmouse *psmouse, int *btn)
++static int fsp_get_buttons(struct psmouse *psmouse, u8 *btn)
+ {
+ 	static const int buttons[] = {
+ 		0x16, /* Left/Middle/Right/Forward/Backward & Scroll Up/Down */
+@@ -308,7 +308,7 @@ static int fsp_get_buttons(struct psmouse *psmouse, int *btn)
+ 		0x04, /* Left/Middle/Right & Scroll Up/Down */
+ 		0x02, /* Left/Middle/Right */
+ 	};
+-	int val;
++	u8 val;
+ 
+ 	if (fsp_reg_read(psmouse, FSP_REG_TMOD_STATUS1, &val) == -1)
+ 		return -EIO;
+@@ -320,7 +320,7 @@ static int fsp_get_buttons(struct psmouse *psmouse, int *btn)
+ /* Enable on-pad command tag output */
+ static int fsp_opc_tag_enable(struct psmouse *psmouse, bool enable)
+ {
+-	int v, nv;
++	u8 v, nv;
+ 	int res = 0;
+ 
+ 	if (fsp_reg_read(psmouse, FSP_REG_OPC_QDOWN, &v) == -1) {
+@@ -352,7 +352,7 @@ static int fsp_opc_tag_enable(struct psmouse *psmouse, bool enable)
+ static int fsp_onpad_vscr(struct psmouse *psmouse, bool enable)
+ {
+ 	struct fsp_data *pad = psmouse->private;
+-	int val;
++	u8 val;
+ 
+ 	if (fsp_reg_read(psmouse, FSP_REG_ONPAD_CTL, &val))
+ 		return -EIO;
+@@ -373,7 +373,7 @@ static int fsp_onpad_vscr(struct psmouse *psmouse, bool enable)
+ static int fsp_onpad_hscr(struct psmouse *psmouse, bool enable)
+ {
+ 	struct fsp_data *pad = psmouse->private;
+-	int val, v2;
++	u8 val, v2;
+ 
+ 	if (fsp_reg_read(psmouse, FSP_REG_ONPAD_CTL, &val))
+ 		return -EIO;
+@@ -409,24 +409,18 @@ static int fsp_onpad_hscr(struct psmouse *psmouse, bool enable)
+ static ssize_t fsp_attr_set_setreg(struct psmouse *psmouse, void *data,
+ 				   const char *buf, size_t count)
+ {
+-	unsigned long reg, val;
+-	char *rest;
+-	ssize_t retval;
++	u8 reg, val;
++	int rv;
+ 
+-	reg = simple_strtoul(buf, &rest, 16);
+-	if (rest == buf || *rest != ' ' || reg > 0xff)
+-		return -EINVAL;
+-
+-	if (strict_strtoul(rest + 1, 16, &val) || val > 0xff)
++	if (sscanf(buf, "%hhu %hhu", &reg, &val) != 2)
+ 		return -EINVAL;
+ 
+ 	if (fsp_reg_write_enable(psmouse, true))
+ 		return -EIO;
+-
+-	retval = fsp_reg_write(psmouse, reg, val) < 0 ? -EIO : count;
+-
++	rv = fsp_reg_write(psmouse, reg, val);
+ 	fsp_reg_write_enable(psmouse, false);
+-
++	if (rv < 0)
++		return -EIO;
+ 	return count;
+ }
+ 
+@@ -449,11 +443,12 @@ static ssize_t fsp_attr_set_getreg(struct psmouse *psmouse, void *data,
+ 					const char *buf, size_t count)
+ {
+ 	struct fsp_data *pad = psmouse->private;
+-	unsigned long reg;
+-	int val;
++	u8 reg, val;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 16, &reg) || reg > 0xff)
+-		return -EINVAL;
++	rv = kstrtou8(buf, 16, &reg);
 +	if (rv < 0)
 +		return rv;
  
- 	tmp[0] = val >> 8;
- 	tmp[1] = val & 0xff;
+ 	if (fsp_reg_read(psmouse, reg, &val))
+ 		return -EIO;
+@@ -481,10 +476,12 @@ static ssize_t fsp_attr_show_pagereg(struct psmouse *psmouse,
+ static ssize_t fsp_attr_set_pagereg(struct psmouse *psmouse, void *data,
+ 					const char *buf, size_t count)
+ {
+-	unsigned long val;
++	u8 val;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 16, &val) || val > 0xff)
+-		return -EINVAL;
++	rv = kstrtou8(buf, 16, &val);
++	if (rv < 0)
++		return rv;
+ 
+ 	if (fsp_page_reg_write(psmouse, val))
+ 		return -EIO;
+@@ -506,9 +503,13 @@ static ssize_t fsp_attr_show_vscroll(struct psmouse *psmouse,
+ static ssize_t fsp_attr_set_vscroll(struct psmouse *psmouse, void *data,
+ 					const char *buf, size_t count)
+ {
+-	unsigned long val;
++	unsigned int val;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 10, &val) || val > 1)
++	rv = kstrtouint(buf, 10, &val);
++	if (rv < 0)
++		return rv;
++	if (val > 1)
+ 		return -EINVAL;
+ 
+ 	fsp_onpad_vscr(psmouse, val);
+@@ -530,9 +531,13 @@ static ssize_t fsp_attr_show_hscroll(struct psmouse *psmouse,
+ static ssize_t fsp_attr_set_hscroll(struct psmouse *psmouse, void *data,
+ 					const char *buf, size_t count)
+ {
+-	unsigned long val;
++	unsigned int val;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 10, &val) || val > 1)
++	rv = kstrtouint(buf, 10, &val);
++	if (rv < 0)
++		return rv;
++	if (val > 1)
+ 		return -EINVAL;
+ 
+ 	fsp_onpad_hscr(psmouse, val);
+@@ -704,7 +709,7 @@ static int fsp_activate_protocol(struct psmouse *psmouse)
+ 	struct fsp_data *pad = psmouse->private;
+ 	struct ps2dev *ps2dev = &psmouse->ps2dev;
+ 	unsigned char param[2];
+-	int val;
++	u8 val;
+ 
+ 	/*
+ 	 * Standard procedure to enter FSP Intellimouse mode
+@@ -761,7 +766,7 @@ static int fsp_activate_protocol(struct psmouse *psmouse)
+ 
+ int fsp_detect(struct psmouse *psmouse, bool set_properties)
+ {
+-	int id;
++	u8 id;
+ 
+ 	if (fsp_reg_read(psmouse, FSP_REG_DEVICE_ID, &id))
+ 		return -EIO;
+@@ -795,7 +800,7 @@ static void fsp_disconnect(struct psmouse *psmouse)
+ 
+ static int fsp_reconnect(struct psmouse *psmouse)
+ {
+-	int version;
++	u8 version;
+ 
+ 	if (fsp_detect(psmouse, 0))
+ 		return -ENODEV;
+@@ -812,7 +817,7 @@ static int fsp_reconnect(struct psmouse *psmouse)
+ int fsp_init(struct psmouse *psmouse)
+ {
+ 	struct fsp_data *priv;
+-	int ver, rev, buttons;
++	u8 ver, rev, buttons;
+ 	int error;
+ 
+ 	if (fsp_get_version(psmouse, &ver) ||
+diff --git a/drivers/input/mouse/sentelic.h b/drivers/input/mouse/sentelic.h
+index ed1395a..363df999 100644
+--- a/drivers/input/mouse/sentelic.h
++++ b/drivers/input/mouse/sentelic.h
+@@ -66,17 +66,17 @@
+ #ifdef __KERNEL__
+ 
+ struct fsp_data {
+-	unsigned char	ver;		/* hardware version */
+-	unsigned char	rev;		/* hardware revison */
+-	unsigned char	buttons;	/* Number of buttons */
++	u8		ver;		/* hardware version */
++	u8		rev;		/* hardware revison */
++	u8		buttons;	/* Number of buttons */
+ 	unsigned int	flags;
+ #define	FSPDRV_FLAG_EN_OPC	(0x001)	/* enable on-pad clicking */
+ 
+ 	bool		vscroll;	/* Vertical scroll zone enabled */
+ 	bool		hscroll;	/* Horizontal scroll zone enabled */
+ 
+-	unsigned char	last_reg;	/* Last register we requested read from */
+-	unsigned char	last_val;
++	u8		last_reg;	/* Last register we requested read from */
++	u8		last_val;
+ };
+ 
+ #ifdef CONFIG_MOUSE_PS2_SENTELIC
+diff --git a/drivers/input/mouse/trackpoint.c b/drivers/input/mouse/trackpoint.c
+index 54b2fa8..daf74c4 100644
+--- a/drivers/input/mouse/trackpoint.c
++++ b/drivers/input/mouse/trackpoint.c
+@@ -89,13 +89,12 @@ static ssize_t trackpoint_set_int_attr(struct psmouse *psmouse, void *data,
+ 	struct trackpoint_data *tp = psmouse->private;
+ 	struct trackpoint_attr_data *attr = data;
+ 	unsigned char *field = (unsigned char *)((char *)tp + attr->field_offset);
+-	unsigned long value;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 10, &value) || value > 255)
+-		return -EINVAL;
+-
+-	*field = value;
+-	trackpoint_write(&psmouse->ps2dev, attr->command, value);
++	rv = kstrtou8(buf, 10, field);
++	if (rv < 0)
++		return rv;
++	trackpoint_write(&psmouse->ps2dev, attr->command, *field);
+ 
+ 	return count;
+ }
+@@ -115,9 +114,13 @@ static ssize_t trackpoint_set_bit_attr(struct psmouse *psmouse, void *data,
+ 	struct trackpoint_data *tp = psmouse->private;
+ 	struct trackpoint_attr_data *attr = data;
+ 	unsigned char *field = (unsigned char *)((char *)tp + attr->field_offset);
+-	unsigned long value;
++	u8 value;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 10, &value) || value > 1)
++	rv = kstrtou8(buf, 10, &value);
++	if (rv < 0)
++		return rv;
++	if (value > 1)
+ 		return -EINVAL;
+ 
+ 	if (attr->inverted)
+diff --git a/drivers/input/tablet/aiptek.c b/drivers/input/tablet/aiptek.c
+index 0a619c5..6fb2ac2 100644
+--- a/drivers/input/tablet/aiptek.c
++++ b/drivers/input/tablet/aiptek.c
+@@ -1199,9 +1199,9 @@ static ssize_t
+ store_tabletXtilt(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct aiptek *aiptek = dev_get_drvdata(dev);
+-	long x;
++	int x;
+ 
+-	if (strict_strtol(buf, 10, &x)) {
++	if (kstrtoint(buf, 10, &x)) {
+ 		size_t len = buf[count - 1] == '\n' ? count - 1 : count;
+ 
+ 		if (strncmp(buf, "disable", len))
+@@ -1241,9 +1241,9 @@ static ssize_t
+ store_tabletYtilt(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct aiptek *aiptek = dev_get_drvdata(dev);
+-	long y;
++	int y;
+ 
+-	if (strict_strtol(buf, 10, &y)) {
++	if (kstrtoint(buf, 10, &y)) {
+ 		size_t len = buf[count - 1] == '\n' ? count - 1 : count;
+ 
+ 		if (strncmp(buf, "disable", len))
+@@ -1278,12 +1278,11 @@ static ssize_t
+ store_tabletJitterDelay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct aiptek *aiptek = dev_get_drvdata(dev);
+-	long j;
++	int rv;
+ 
+-	if (strict_strtol(buf, 10, &j))
+-		return -EINVAL;
+-
+-	aiptek->newSetting.jitterDelay = (int)j;
++	rv = kstrtoint(buf, 10, &aiptek->newSetting.jitterDelay);
++	if (rv < 0)
++		return rv;
+ 	return count;
+ }
+ 
+@@ -1307,12 +1306,11 @@ static ssize_t
+ store_tabletProgrammableDelay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct aiptek *aiptek = dev_get_drvdata(dev);
+-	long d;
++	int rv;
+ 
+-	if (strict_strtol(buf, 10, &d))
+-		return -EINVAL;
+-
+-	aiptek->newSetting.programmableDelay = (int)d;
++	rv = kstrtoint(buf, 10, &aiptek->newSetting.programmableDelay);
++	if (rv < 0)
++		return rv;
+ 	return count;
+ }
+ 
+@@ -1558,11 +1556,11 @@ static ssize_t
+ store_tabletWheel(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct aiptek *aiptek = dev_get_drvdata(dev);
+-	long w;
+-
+-	if (strict_strtol(buf, 10, &w)) return -EINVAL;
++	int rv;
+ 
+-	aiptek->newSetting.wheel = (int)w;
++	rv = kstrtoint(buf, 10, &aiptek->newSetting.wheel);
++	if (rv < 0)
++		return rv;
+ 	return count;
+ }
+ 
+diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
+index a1952fc..dac8711 100644
+--- a/drivers/input/touchscreen/ad7877.c
++++ b/drivers/input/touchscreen/ad7877.c
+@@ -489,8 +489,8 @@ static ssize_t ad7877_disable_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
+-	if (error)
++	error = kstrtoul(buf, 10, &val);
++	if (error < 0)
+ 		return error;
+ 
+ 	if (val)
+@@ -519,8 +519,8 @@ static ssize_t ad7877_dac_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
+-	if (error)
++	error = kstrtoul(buf, 10, &val);
++	if (error < 0)
+ 		return error;
+ 
+ 	mutex_lock(&ts->mutex);
+@@ -549,8 +549,8 @@ static ssize_t ad7877_gpio3_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
+-	if (error)
++	error = kstrtoul(buf, 10, &val);
++	if (error < 0)
+ 		return error;
+ 
+ 	mutex_lock(&ts->mutex);
+@@ -580,8 +580,8 @@ static ssize_t ad7877_gpio4_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
+-	if (error)
++	error = kstrtoul(buf, 10, &val);
++	if (error < 0)
+ 		return error;
+ 
+ 	mutex_lock(&ts->mutex);
+diff --git a/drivers/input/touchscreen/ad7879.c b/drivers/input/touchscreen/ad7879.c
+index bc3b518..d3e0b9c 100644
+--- a/drivers/input/touchscreen/ad7879.c
++++ b/drivers/input/touchscreen/ad7879.c
+@@ -340,8 +340,8 @@ static ssize_t ad7879_disable_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
+-	if (error)
++	error = kstrtoul(buf, 10, &val);
++	if (error < 0)
+ 		return error;
+ 
+ 	ad7879_toggle(ts, val);
+diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+index 14ea54b..3a02113 100644
+--- a/drivers/input/touchscreen/ads7846.c
++++ b/drivers/input/touchscreen/ads7846.c
+@@ -590,9 +590,11 @@ static ssize_t ads7846_disable_store(struct device *dev,
+ {
+ 	struct ads7846 *ts = dev_get_drvdata(dev);
+ 	unsigned long i;
++	int rv;
+ 
+-	if (strict_strtoul(buf, 10, &i))
+-		return -EINVAL;
++	rv = kstrtoul(buf, 10, &i);
++	if (rv < 0)
++		return rv;
+ 
+ 	if (i)
+ 		ads7846_disable(ts);
 -- 
 1.7.2.2
 
