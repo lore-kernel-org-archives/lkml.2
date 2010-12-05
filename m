@@ -1,82 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab0LELeg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 06:34:36 -0500
-Received: from cable-static-49-187.intergga.ch ([157.161.49.187]:41253 "EHLO
-	mail.ffwll.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991Ab0LELed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 06:34:33 -0500
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Dec 2010 06:34:33 EST
-X-Spam-ASN: 
-X-Spam-Hammy: 0.000-+--H*Ad:U*dri-devel, 0.000-+--HCc:D*freedesktop.org,
-	0.000-+--HCc:D*lists.freedesktop.org
-X-Spam-Spammy: 0.997-1--discovery, 0.963-+--H*r:mail.ffwll.ch,
-	0.867-+--H*F:D*ffwll.ch
-Date: Sun, 5 Dec 2010 12:28:14 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-Message-ID: <20101205112813.GB12542@viiv.ffwll.ch>
-Mail-Followup-To: Alex Deucher <alexdeucher@gmail.com>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-	Dan JOHANSSON <dan.johansson@stericsson.com>,
-	Linus WALLEIJ <linus.walleij@stericsson.com>,
-	Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local>
- <201011251747.48365.arnd@arndb.de>
- <C832F8F5D375BD43BFA11E82E0FE9FE0082586F430@EXDCVYMBSTM005.EQ1STM.local>
- <201011261224.59490.arnd@arndb.de>
- <AANLkTinSb-9=xzX3LfZVYcKiDt5Qkm=qV6CiFGUyq+fC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinSb-9=xzX3LfZVYcKiDt5Qkm=qV6CiFGUyq+fC@mail.gmail.com>
-X-Operating-System: Linux viiv 2.6.37-rc3-00243-g01b64cf 
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755307Ab0LELgk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 06:36:40 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:46356 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754777Ab0LELgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 06:36:39 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18S7NtJ89QS+GQI8OsxPBjeVZB8oEMFPaucro9IMy
+	iFHkHYa+Zdi5B8
+Subject: Re: [PATCH v4] sched: automated per session task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: Colin Walters <walters@verbum.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <201012052118.43843.kernel@kolivas.org>
+References: <1289783580.495.58.camel@maggy.simson.net>
+	 <201 <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
+	 <201012052118.43843.kernel@kolivas.org>
+Content-Type: text/plain
+Date: Sun, 05 Dec 2010 12:36:33 +0100
+Message-Id: <1291548993.7581.65.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 04, 2010 at 04:34:22PM -0500, Alex Deucher wrote:
-> This doesn't seem that different from the graphics chips we support
-> with kms.  I don't think it would require much work to use KMS.  One
-> thing we considered, but never ended up implementing was a generic
-> overlay API for KMS.  Most PC hardware still has overlays, but we
-> don't use them much any more on the desktop side.  It may be
-> worthwhile to design an appropriate API for them for these type of
-> hardware.
+On Sun, 2010-12-05 at 21:18 +1100, Con Kolivas wrote:
+> Greets.
+> 
+> I applaud your efforts to continue addressing interactivity and responsiveness 
+> but, I know I'm going to regret this, I feel strongly enough to speak up about 
+> this change.
+> 
+> On Sun, 5 Dec 2010 10:43:44 Colin Walters wrote:
+> > On Sat, Dec 4, 2010 at 5:39 PM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > > What's your point again? It's a heuristic.
+> > 
+> > So if it's a heuristic the OS can get wrong,
+> 
+> This is precisely what I see as the flaw in this approach. The whole reason 
+> you have CFS now is that we had a scheduler which was pretty good for all the 
+> other things in the O(1) scheduler, but needed heuristics to get interactivity 
+> right. I put them there.
 
-Just fyi about a generic overlay api: I've looked a bit into this when
-doing the intel overlay support and I think adding special overlay crtcs
-that can be attached real crtcs gives a nice clean api. We could the reuse
-the existing framebuffer/pageflipping api to get the buffers to the
-overlay engine.
+Actually, Linus laid the foundation with sleeper fairness, Ingo expanded
+it to requeue "interactive" tasks in the active array, and you tweaked
+the result.
 
-The real pain starts when we want format discovery from userspace with all
-the alignement/size/layout constrains. Add in tiling support and its
-almost impossible to do in a generic way. But also for kms userspace needs
-to know these constrains (implemented for generic use in libkms). I favor
-such an approach for overlays, too (if it ever happens) - i.e. a few
-helpers in libkms that allocate an appropriate buffer for a given format
-and size and returns the buffer, strides and offsets for the different
-planes.
+>  Then I spent the next few years trying to find a way 
+> to get rid of them. The reason is precisely what Colin says above. Heuristics 
+> get it wrong sometimes. So no matter how smart you think your heuristics are, 
+> it is impossible to get it right 100% of the time. If the heuristics make it 
+> better 99% of the time, and introduce disastrous corner cases, regressions and 
+> exploits 1% of the time, that's unforgivable. That's precisely what we had 
+> with the old O(1) scheduler and that's what you got rid of when you put CFS 
+> into mainline. The whole reason CFS was better was it was mostly fair and 
+> concentrated on ensuring decent latency rather than trying to guess what would 
+> be right, so it was predictable and reliable.
 
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+And it still is Con.  I didn't rewrite the thing, I just added an
+automated task grouping.  Session to session fairness is just as holy as
+any sacred cow definition of fair you care to trot out.
+
+> So if you introduce heuristics once again into the scheduler to try and 
+> improve the desktop by unfairly distributing CPU, you will go back to where 
+> you once were. Mostly better but sometimes really badly wrong. No matter how 
+> smart you think you can be with heuristics they cannot be right all the time. 
+> And there are regressions with these tty followed by per session group 
+> patches. Search forums where desktop users go and you'll see that people are 
+> afraid to speak up on lkml but some users are having mplayer and amarok 
+> skipping under light load when trying them.
+
+Shrug. I can't debug what isn't reported.
+
+>  You want to program more 
+> intelligence in to work around these regressions, you'll just get yourself 
+> deeper and deeper into the same quagmire. The 'quick fix' you seek now is not 
+> something you should be defending so vehemently. The "I have a solution now" 
+> just doesn't make sense in this light. I for one do not welcome our new 
+> heuristic overlords.
+
+I for one don't welcome childish name calling.
+
+> If you're serious about really improving the desktop from within the kernel, 
+> as you seem to be with this latest change, then make a change that's 
+> predictable and gets it right ALL the time and is robust for the future. Stop 
+> working within all the old fashioned concepts and allow userspace to tell the 
+> kernel what it wants, and give the user the power to choose. If you think this 
+> is too hard and not doable, or that the user is too uninformed or want to 
+> modify things themselves, then allow me to propose a relatively simple change 
+> that can expedite this.
+> 
+> There are two aspects to getting good desktop behaviour, enough CPU and low 
+> latency. 'nice' by your own admission is too crude and doesn't really describe 
+> how either of these should really be modified. Furthermore there are 40 levels 
+> of it and only about 4 or 5 are ever used. We also know that users don't even 
+> bother using it. 
+> 
+> What I propose is a new syscall latnice for "latency nice". It only need have 
+> 4 levels, 1 for default, 0 for latency insensitive, 2 for relatively latency 
+> sensitive gui apps, and 3 for exquisitely latency sensitive uses such as 
+> audio. These should not require extra privileges to use and thus should also 
+> not be usable for "exploiting" extra CPU by default. It's simply a matter of 
+> working with lower latencies yet shorter quota (or timeslices) which would 
+> mean throughput on these apps is sacrificed due to cache trashing but then 
+> that's not what latency sensitive applications need. These can then be 
+> encouraged to be included within the applications themselves, making this a 
+> more long term change. 'Firefox' could set itself 2, 'Amarok' and 'mplayer' 3, 
+> and 'make' - bless its soul - 0, and so on. Keeping the range simple and 
+> defined will make it easy for userspace developers to cope with, and users to 
+> fiddle with.
+
+An automated per session task group is an evil heuristic, so we should
+use kinda sorta sensitive, really REALLY sensitive, don't give a damn,
+or no frickin' clue... to make 100% accurate non-heuristic scheduling
+decisions instead?  Did I get that right?
+
+Goodbye.
+
+	-Mike
+
