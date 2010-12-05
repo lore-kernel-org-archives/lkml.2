@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab0LDXz7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 18:55:59 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55966 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab0LDXz6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 18:55:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wla8bkHn+8wDv8kPGKX0HUt0MU/FGLL3/W1Z10zi8LRWof+z2UTCmJBjK7DFDHhGen
-         pRwfj+L27F52KuFdjPLu4dLBqBT1ZQCSPhbAMP7nfWblNYRGUBx/X/CMp3mKi4H2XRKk
-         f6KHFq0SRmn5xB0D87Ydvly+szbp/BGe/zp0E=
+	id S1755513Ab0LEAcj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 19:32:39 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38383 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754372Ab0LEAci convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 19:32:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <4CF87C14.8000708@google.com>
-References: <20101121133744.GA10765@elte.hu>
-	<1290700829.4759.16.camel@maggy.simson.net>
-	<1290954299.30515.15.camel@marge.simson.net>
-	<4CF5C379.8030204@google.com>
-	<1291184173.7466.147.camel@marge.simson.net>
-	<4CF87C14.8000708@google.com>
-Date: Sat, 4 Dec 2010 23:55:57 +0000
-Message-ID: <AANLkTimmZE0QROje3vLKJOa+uVFfNqiGNF_MJ9vt9xHW@mail.gmail.com>
+In-Reply-To: <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
+References: <1289783580.495.58.camel@maggy.simson.net> <1289811438.2109.474.camel@laptop>
+ <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116130413.GA29368@redhat.com> <1289917109.5169.131.camel@maggy.simson.net>
+ <20101116150319.GA3475@redhat.com> <1289922108.5169.185.camel@maggy.simson.net>
+ <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net>
+ <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com>
+ <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com>
+ <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
+ <AANLkTikFXv042qg4uzXF--9_co6-b_UgJF7Jeo2bVA=f@mail.gmail.com> <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 4 Dec 2010 16:31:42 -0800
+Message-ID: <AANLkTin1PkoBtsXjipce5kUPMoEvRdaBomYjijC4goVM@mail.gmail.com>
 Subject: Re: [PATCH v4] sched: automated per session task groups
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Paul Turner <pjt@google.com>
+To: Colin Walters <walters@verbum.org>
 Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
         Oleg Nesterov <oleg@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 December 2010 05:11, Paul Turner <pjt@google.com> wrote:
+On Sat, Dec 4, 2010 at 3:43 PM, Colin Walters <walters@verbum.org> wrote:
+> On Sat, Dec 4, 2010 at 5:39 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
 >
-> I actually don't have a desktop setup handy to test "interactivity" (sad but
-> true -- working on grabbing one). Â But it looks better on under synthetic
-> load.
+>> And it doesn't hurt you. If you're happy with "nice", go on and use
+>> it. Why are you even discussing it?
 >
+> Because it seems to me like a bug if it isn't as good as group
+> scheduling?  Most of your message is saying it's worthless, and I
+> don't disagree that it's not very good *right now*.  I guess where we
+> disagree is whether it's worth fixing.
 
-What tools are actually used to test "interactivity" ?
-I posted a tool to the list some time ago, but I don't think anyone noticed.
-My tool is very simple.
-When you hold a key down, it should repeat. It should repeat at a
-constant predictable interval.
-So, my tool just waits for key presses and times when each one occurred.
-The tester simply presses a key and holds it down.
-If the time between each key press is constant, it indicates good
-"interactivity". If the time between each key press varies a lot, it
-indicates bad "interactivity".
-You can reliably test if one kernel is better than the next using
-actual measurable figures.
+It's not worth 'fixing", because it works exactly like it's designed -
+and supposed - to work.
 
-Kind Regards
+There really isn't anything to fix. 'nice' is what it is. It's a
+simple legacy interface to scheduler priority. The fact that it's also
+almost totally useless is irrelevant. It's like male nipples. We
+wouldn't be better off lactating, and they look like some odd wart
+that doesn't do much good. But it would be worse to remove it.
 
-James
+'nice' is a bad idea. It's a bad idea that has perfectly
+understandable historical reasons for it, but it's an _unfixably_ bad
+idea.
+
+                      Linus
