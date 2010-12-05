@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab0LER5b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:57:31 -0500
+	id S1756829Ab0LER5r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:57:47 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab0LERuf (ORCPT
+	with ESMTP id S1756546Ab0LERua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:35 -0500
+	Sun, 5 Dec 2010 12:50:30 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=f+nEhpj5Oyeby6nZqymJg0BEkqrzF1MV0WLN0VIEEMCc49/ApVEZnQFSQ3L6WcH/Wh
-         lW7jKSU0vf5Giu6ZceYLd6RQJwsVzBFuphfEUXYaoyQII/VWaC8jaP4il3L9H4oAn6bR
-         MUsfEg9GlvqwT/S3aYxiLueCAutxJyUKjsI+c=
+        b=u+7tx/BHHUaSoJxyZyv5GCfonA5bfjSXU9iHVi4hxdjTahBaeed71/+JrjoNahcHu5
+         +BKF1Q1gDQZh3LE2Zflmb9SKYrcUgeRkye1IoGzZQ1dHUwfBK/Cqq/mIpWaJA1pJ7LdZ
+         VTLvDi5ggQ9W6HAqh/ARJH0yqDETh5AqJuwdw=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 11/45] kstrtox: convert block/
-Date: Sun,  5 Dec 2010 19:49:08 +0200
-Message-Id: <1291571382-2719-11-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 09/45] kstrtox: convert fs/proc/
+Date: Sun,  5 Dec 2010 19:49:06 +0200
+Message-Id: <1291571382-2719-9-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,105 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- block/blk-cgroup.c |   47 ++++++++++++++++++++++++-----------------------
- 1 files changed, 24 insertions(+), 23 deletions(-)
+ fs/proc/base.c     |   12 ++++++------
+ fs/proc/task_mmu.c |    8 +++++---
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b1febd0..a18532a 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -656,10 +656,9 @@ static int blkio_policy_parse_and_set(char *buf,
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index f3d02ca..4469398 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1018,7 +1018,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
  {
- 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
- 	int ret;
--	unsigned long major, minor, temp;
-+	unsigned int major, minor;
- 	int i = 0;
- 	dev_t dev;
--	u64 bps, iops;
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+-	long oom_adjust;
++	int oom_adjust;
+ 	unsigned long flags;
+ 	int err;
  
- 	memset(s, 0, sizeof(s));
+@@ -1030,8 +1030,8 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
  
-@@ -687,15 +686,15 @@ static int blkio_policy_parse_and_set(char *buf,
- 	if (!minor_s)
- 		return -EINVAL;
+-	err = strict_strtol(strstrip(buffer), 0, &oom_adjust);
+-	if (err)
++	err = kstrtoint(strstrip(buffer), 0, &oom_adjust);
++	if (err < 0)
+ 		goto out;
+ 	if ((oom_adjust < OOM_ADJUST_MIN || oom_adjust > OOM_ADJUST_MAX) &&
+ 	     oom_adjust != OOM_DISABLE) {
+@@ -1127,7 +1127,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+ 	unsigned long flags;
+-	long oom_score_adj;
++	int oom_score_adj;
+ 	int err;
  
--	ret = strict_strtoul(major_s, 10, &major);
--	if (ret)
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -1138,8 +1138,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
+-	if (err)
++	err = kstrtoint(strstrip(buffer), 0, &oom_score_adj);
++	if (err < 0)
+ 		goto out;
+ 	if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
+ 			oom_score_adj > OOM_SCORE_ADJ_MAX) {
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index c126c83..d6cd94a 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -493,15 +493,17 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 	char buffer[PROC_NUMBUF];
+ 	struct mm_struct *mm;
+ 	struct vm_area_struct *vma;
+-	long type;
++	int type;
++	int rv;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+ 	if (count > sizeof(buffer) - 1)
+ 		count = sizeof(buffer) - 1;
+ 	if (copy_from_user(buffer, buf, count))
+ 		return -EFAULT;
+-	if (strict_strtol(strstrip(buffer), 10, &type))
 -		return -EINVAL;
--
--	ret = strict_strtoul(minor_s, 10, &minor);
-+	ret = kstrtouint(major_s, 10, &major);
-+	if (ret < 0)
-+		return ret;
-+	ret = kstrtouint(minor_s, 10, &minor);
- 	if (ret)
--		return -EINVAL;
--
-+		return ret;
- 	dev = MKDEV(major, minor);
-+	if (MAJOR(dev) != major || MINOR(dev) != minor)
-+		return -EINVAL;
- 
- 	ret = blkio_check_dev_num(dev);
- 	if (ret)
-@@ -707,40 +706,42 @@ static int blkio_policy_parse_and_set(char *buf,
++	rv = kstrtoint(strstrip(buffer), 10, &type);
++	if (rv < 0)
++		return rv;
+ 	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
  		return -EINVAL;
- 
- 	switch (plid) {
-+		unsigned int weigth;
-+
- 	case BLKIO_POLICY_PROP:
--		ret = strict_strtoul(s[1], 10, &temp);
--		if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
--			temp > BLKIO_WEIGHT_MAX)
-+		ret = kstrtouint(s[1], 10, &weigth);
-+		if (ret < 0)
-+			return ret;
-+		if (weigth < BLKIO_WEIGHT_MIN || weigth > BLKIO_WEIGHT_MAX)
- 			return -EINVAL;
- 
- 		newpn->plid = plid;
- 		newpn->fileid = fileid;
--		newpn->val.weight = temp;
-+		newpn->val.weight = weigth;
- 		break;
- 	case BLKIO_POLICY_THROTL:
- 		switch(fileid) {
-+			unsigned int iops;
-+
- 		case BLKIO_THROTL_read_bps_device:
- 		case BLKIO_THROTL_write_bps_device:
--			ret = strict_strtoull(s[1], 10, &bps);
--			if (ret)
--				return -EINVAL;
--
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
--			newpn->val.bps = bps;
-+			ret = kstrtou64(s[1], 10, &newpn->val.bps);
-+			if (ret < 0)
-+				return ret;
- 			break;
- 		case BLKIO_THROTL_read_iops_device:
- 		case BLKIO_THROTL_write_iops_device:
--			ret = strict_strtoull(s[1], 10, &iops);
--			if (ret)
--				return -EINVAL;
--
-+			ret = kstrtouint(s[1], 10, &iops);
-+			if (ret < 0)
-+				return ret;
- 			if (iops > THROTL_IOPS_MAX)
- 				return -EINVAL;
- 
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
--			newpn->val.iops = (unsigned int)iops;
-+			newpn->val.iops = iops;
- 			break;
- 		}
- 		break;
+ 	task = get_proc_task(file->f_path.dentry->d_inode);
 -- 
 1.7.2.2
 
