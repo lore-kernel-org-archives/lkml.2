@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab0LEHrd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 02:47:33 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57542 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab0LEHrb (ORCPT
+	id S1754439Ab0LEIEF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 03:04:05 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:56997 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab0LEIEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 02:47:31 -0500
+	Sun, 5 Dec 2010 03:04:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=pS9VyE6KyRFkUqS9Gd5HBFe71hDO2eTX+uiGSDLmYsExWLcN92lLGCzcETij7Oz3Pk
-         HxhFsq9N/35BxX5yIKRRI7JgzLOMp0m/L+eOtfxDtCmB+CPF0RD988XvUCm9uup0OALB
-         qWSNrSSgrs4Y+p2QDowuQj1tNnOwYFPqm6YHY=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
-References: <1289783580.495.58.camel@maggy.simson.net> <1289811438.2109.474.camel@laptop>
- <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
- <20101116130413.GA29368@redhat.com> <1289917109.5169.131.camel@maggy.simson.net>
- <20101116150319.GA3475@redhat.com> <1289922108.5169.185.camel@maggy.simson.net>
- <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net>
- <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com>
- <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com>
- <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
- <AANLkTikFXv042qg4uzXF--9_co6-b_UgJF7Jeo2bVA=f@mail.gmail.com> <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
-From: Ray Lee <ray-lk@madrabbit.org>
-Date: Sat, 4 Dec 2010 23:47:10 -0800
-X-Google-Sender-Auth: K27RjdzxJcl6qNvXdKU3l4xt9Q8
-Message-ID: <AANLkTiniEUdADMHUE1a9Fs1bGsWn6F6yeJX_NO4L94JK@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-To: Colin Walters <walters@verbum.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=jSKraeKQ2IVcaW5/RiZGdcDWFKyfATbuCeM9A47cvkHDPsYHy8aiHIZFLirmHt/r3x
+         CP5z2L8wxXWoch4FniciI+8eAUGlyAC/wHKVgzTwBiZC0flLZhHigw2jz4dXOH2OpRCq
+         w0C7ZuvPOatrvgrxRQtrEPwQBtgBuqSm/OvfY=
+Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
+ used
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Michael Leun <lkml20101129@newton.leun.net>
+Cc: David Miller <davem@davemloft.net>, Ben Greear <greearb@candelatech.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Gross <jesse@nicira.com>, stable@kernel.org
+In-Reply-To: <20101205030712.36149bc2@xenia.leun.net>
+References: <20101129201716.1d0257c4@xenia.leun.net>
+	 <4CF442FA.4070701@candelatech.com> <20101130095944.41b5f7b6@xenia.leun.net>
+	 <1291108809.2904.3.camel@edumazet-laptop>
+	 <20101201111716.424fb771@xenia.leun.net>
+	 <1291200914.2856.546.camel@edumazet-laptop>
+	 <20101205030712.36149bc2@xenia.leun.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 05 Dec 2010 09:03:53 +0100
+Message-ID: <1291536233.2806.102.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 4, 2010 at 3:43 PM, Colin Walters <walters@verbum.org> wrote:
-> So if it's a heuristic the OS can get wrong, wouldn't it be a good
-> idea to support a way for programs and/or interactive users to
-> explicitly specify things?
+Le dimanche 05 décembre 2010 à 03:07 +0100, Michael Leun a écrit :
+> On Wed, 01 Dec 2010 11:55:14 +0100
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> 
+> > Le mercredi 01 décembre 2010 à 11:17 +0100, Michael Leun a écrit :
+> > 
+> > > Yup, from what I've tested this works (and tcpdump sees broadcast
+> > > packets even for vlans not configured at the moment including vlan
+> > > tag
+> > > - yipee!).
+> > >
+> 
+> This was tested on machine with
+> root@tp_z61m:~/src/tcpdump-4.1.1# lspci|grep Eth
+> 02:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752M Gigabit Ethernet PCI Express (rev 02)
+> 
+> There it works as I said.
+> 
+> But on
+> 
+> hpdl320g5:/home/ml # lspci | grep Eth
+> 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev a3)
+> 03:04.1 Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev a3)
+> 
+> the good message is that it also does not crash, but with tcpdump I see
+> vlan tags when no vlan devices configured on the respective eth, if so
+> I do not see tags anymore vlan tags on the trunk interface.
+> 
 
-Consider a multi-user machine. `nice` is an orthogonal concern in that
-case. Therefore, fixing nice doesn't address all issues. Also: Most
-linux systems are multi-user (root and the physical tty user.)
-Further, even a single user wears multiple hats on a single system.
-The idea is to infer those hats, and deal with them fairly.
+For all these very specific needs, you'll have to try 2.6.37 I am
+afraid. Jesse did huge changes to exactly make this working, we wont
+backport this to 2.6.36, but only avoid crashes.
 
-No one is taking nice away from you. Keep using it if you like.
 
-If you want to allow users to explicitly specify group scheduling,
-then good news: we already have that feature. You just seem to not be
-using it. Much like the other 99.993% of us.
+> hpdl320g5:/home/ml # ifconfig -a
+> [...]
+> eth1      Link encap:Ethernet  Hardware Adresse xx:xx:xx:xx:xx:xx  
+>           UP BROADCAST MULTICAST  MTU:1500  Metric:1
+>           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 Sendewarteschlangenlänge:1000 
+>           RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+>           Interrupt:17 
+> [...]
+> 
+> hpdl320g5:/home/ml # tcpdump -i eth1 -n -e
+> tcpdump: WARNING: eth1: no IPv4 address assigned
+> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+> listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
+> [...]
+> 02:45:57.597640 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
+> 02:45:57.622654 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
+> [...]
+> 
+> hpdl320g5:/home/ml # vconfig add eth1 2
+> WARNING:  Could not open /proc/net/vlan/config.  Maybe you need to load the 8021q module, or maybe you are not using PROCFS??
+> Added VLAN with VID == 2 to IF -:eth1:-
+> hpdl320g5:/home/ml # cat /proc/net/vlan/config 
+> VLAN Dev name    | VLAN ID
+> Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
+> eth1.2         | 2  | eth1
+> hpdl320g5:/home/ml # tcpdump -i eth1 -n -e
+> tcpdump: WARNING: eth1: no IPv4 address assigned
+> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+> listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
+> [...]
+> 02:50:18.095959 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 60: vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
+> 02:50:18.120989 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 60: vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
+> [...]
+> 
+> The same packages we saw double vlan tagged a few minutes ago now appear single vlan tagged (and of course, other packets that were shown single vlan tagged before are now shown without vlan tag / eth type 0x0800).
+> 
+> 
+> On the other machine:
+> 
+> root@tp_z61m:~# cat /proc/net/vlan/config 
+> VLAN Dev name    | VLAN ID
+> Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
+> eth0.741       | 741  | eth0
+> eth0.2         | 2  | eth0
+> root@tp_z61m:~/src/tcpdump-4.1.1# ./tcpdump -i eth0 -n -e not port 22
+> tcpdump: WARNING: eth0: no IPv4 address assigned
+> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+> listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+> 03:06:51.859016 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, Request who-has 10.0.0.1 tell 10.0.0.2, length 42
+> 03:06:51.883956 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, Request who-has 10.0.0.1 tell 10.0.0.2, length 42
+> 
+> 
+> 
+> [...]
+> > Here is the revised patch again then for stable team, via David Miller
+> > agreement.
+> [...]
+> 
 
-The kernel is supposed to have *sane defaults*. That's what is under
-discussion here.
 
-~r.
