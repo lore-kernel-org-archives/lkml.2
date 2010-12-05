@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab0LETs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 14:48:59 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39879 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752458Ab0LETs6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 14:48:58 -0500
-Date: Sun, 5 Dec 2010 19:48:11 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Florian Mickler <florian@mickler.org>
-Cc: Nikos Chantziaras <realnc@arcor.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] Regression: sched: automated per session task groups
-Message-ID: <20101205194811.3df4e8bd@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101205171607.770a7810@schatten.dmk.lab>
-References: <1289783580.495.58.camel@maggy.simson.net>
-	<1289811438.2109.474.camel@laptop>
-	<1289820766.16406.45.camel@maggy.simson.net>
-	<1289821590.16406.47.camel@maggy.simson.net>
-	<20101115125716.GA22422@redhat.com>
-	<1289856350.14719.135.camel@maggy.simson.net>
-	<20101116130413.GA29368@redhat.com>
-	<1289917109.5169.131.camel@maggy.simson.net>
-	<20101116150319.GA3475@redhat.com>
-	<1289922108.5169.185.camel@maggy.simson.net>
-	<20101116172804.GA9930@elte.hu>
-	<1290281700.28711.9.camel@maggy.simson.net>
-	<AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com>
-	<AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com>
-	<AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
-	<idfrvp$l4o$1@dough.gmane.org>
-	<20101205151220.0c532c94@pyx>
-	<20101205171607.770a7810@schatten.dmk.lab>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	id S1754233Ab0LEUCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:02:09 -0500
+Received: from tomasu.net ([64.85.170.234]:56132 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab0LEUCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 15:02:08 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: "jack_wang" <jack_wang@usish.com>
+Subject: Re: mvsas errors in 2.6.36
+Date: Sun, 5 Dec 2010 13:01:59 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: "David Milburn" <dmilburn@redhat.com>, "Andre Tomt" <andre@tomt.net>,
+        "Linux Kernel List" <linux-kernel@vger.kernel.org>,
+        "linux-scsi" <linux-scsi@vger.kernel.org>
+References: <201010290650.32892.thomas@fjellstrom.ca> <201012040844.47337.thomas@fjellstrom.ca> <201012051008390934167@usish.com>
+In-Reply-To: <201012051008390934167@usish.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="gb2312"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012051301.59223.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Your rant about big bloated GNOME is... well just a rant. You will
-> never be able to change it. You can just hope, that over time the
-> evolutionary aspects of open source development will fix it. 
+On December 4, 2010, jack_wang wrote:
+> On December 4, 2010, Thomas Fjellstrom wrote:
+> > On December 4, 2010, Thomas Fjellstrom wrote:
+> > > On December 4, 2010, jack_wang wrote:
+> > > > 
+> [snip]
+> > 
+> > Even after the reboot it still happens, though with that change, it 
+/seems/
+> > as if the pause is gone, but I can't be sure yet.
+> > 
+> Nope, pauses are still here, but they are shorter.
+> 
+> [Jack] Yes , once the host enter error handle , the scsi core will hold on 
+the host(not sen IOs to the host as you see pause utill 
+>  the error are corrected). The main reason of the host go into error host is 
+there are commands have no response utill the command
+> timer timeout, this maybe the disks need more time or the host lost interupt 
+or some other reason.  You may need to change disks
+> and host part by part to see what cause the command timeout.
+> 
 
-They already are - its dying slowly but surely.
+Well so far I see errors from 4 of my 6 disks since I rebooted 30 hours ago. 
+And in the past I've seen these errors come from all disks. I'm more inclined 
+to believe its some kind of handling issue than that all of those drives are 
+in some way bad. Especially since that older driver I got from Andy Yan did 
+not suffer from any of these issues. Of course it had other problems, like 
+hotswap oopsing the kernel, but I almost never use hotswap, so it was never an 
+issue for me.
 
-> There is nothing wrong with trying to provide ease of use. Graphical
-> interfaces that are well designed are easier to use. 
+Now I'm not sure its related, but I do see this:
+[  342.353646] hrtimer: interrupt took 61135 ns
+in my dmesg. But that really isn't that long of a pause least not by human 
+standards. And theres only the one. It happens once just after boot up, and 
+then never again (I assume because at bootup the machine is starting up 4 kvm 
+VMs /at the same time/).
 
-Interesting how you associate ease of use with being bloated and oversize.
-
-> Most command-line people just can't cope with the unstable nature of
-> interfaces in the graphical world.
-
-Ah of course. How sweet, your response to a point about the arrogance of
-certain desktop attitudes is to lecture, and make bogus pronouncements
-about command-line people. You might want to put the shovel away instead.
-
-> CLI's are mostly better from an ergonomic view (old people,
-> heavy working hackers and other power users) because they provide
-> a stable focus point.
-
-And a bit of pop psychology to go with it. I assume you are trying to
-talk about internalised and externalised models ?
-
-> Most hackers probably don't realize this, but images/icons and other
-
-No of course not we are all dim, thank you for using small words. I am
-actually familiar with the real models here btw and there are a couple of
-rather important basics you are missing
-
-- Different people have different strengths in different areas - these
-  don't specifically line up with the senses. There isn't vast amounts of
-  evidence to support computing people are all strong in a particular
-  area either. You'll see in studies that some of them prefer to
-  diagram and flowchart, some write text, some have kinesthetic models
-  (movement and flow). I don't doubt there are others who sense it in
-  different ways.
-
-- Visual and textual data communicate different things more effectively
-  (as do sounds, smells, movements, ....) and are processed with
-  different natural preferences by different people
-
-- Oh and there is no evidence I've ever seen to suggest old people are
-  more text oriented.
-
-So any notion of CLI's or GUI's being better for [class of people] is
-generally naïve. It depends what is being done, who is doing it and the
-situation. 
-
-If you really want to understand the trade-offs in a graphical world
-watch some good CAD operators for an hour. They'll use the same tools in
-very different ways - some very command line, some heavily
-mouse/trackball, others graphical but with hotkeys, and they'll often
-shift approach according to task.
-
-> graphical interfaces are more similar to real life and are thus easier
-> to use for 'unadapted' people.
-
-If you wish to see an unadapted person you probably want to go look at
-amazonian tribes. Bit different.
-
-But then the GUI world is the world that put "logout" under "start" 8)
-and thinks that "Insert OLE Object" is a good thing to put on a menu.
-
-Alan
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
