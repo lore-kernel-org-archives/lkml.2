@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab0LEXKX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:10:23 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:58635 "EHLO
+	id S1756393Ab0LEXL1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:11:27 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37756 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0LEXKU (ORCPT
+	with ESMTP id S1756173Ab0LEXKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:10:20 -0500
+	Sun, 5 Dec 2010 18:10:23 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@google.com>,
         Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
         Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>, Gary King <gking@nvidia.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 19/21] ARM: tegra: cpufreq: Disable cpufreq during suspend
-Date: Sun,  5 Dec 2010 15:09:06 -0800
-Message-Id: <1291590548-7341-20-git-send-email-ccross@android.com>
+Subject: [PATCH 04/21] ARM: tegra: Centralize macros to define debug uart base
+Date: Sun,  5 Dec 2010 15:08:51 -0800
+Message-Id: <1291590548-7341-5-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1291590548-7341-1-git-send-email-ccross@android.com>
 References: <1291590548-7341-1-git-send-email-ccross@android.com>
@@ -25,157 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@google.com>
 
-Adds a SUSPEND_PREPARE notification hook to drop the frequency to
-the lowest possible during suspend.  This prevents the cpufreq driver
-from attempting regulator calls after suspend has started - the
-regulator api can call into drivers that have already been suspended.
-Also adds 216MHz (off of PLLP) as the lowest CPU frequency, which
-allows PLLX to be turned off.
-
 Signed-off-by: Colin Cross <ccross@google.com>
 ---
- arch/arm/mach-tegra/cpu-tegra.c |   74 +++++++++++++++++++++++++++++++--------
- 1 files changed, 59 insertions(+), 15 deletions(-)
+ arch/arm/mach-tegra/include/mach/debug-macro.S |   31 ++++++-----------------
+ arch/arm/mach-tegra/include/mach/iomap.h       |   14 ++++++++++
+ arch/arm/mach-tegra/include/mach/uncompress.h  |   18 +------------
+ 3 files changed, 24 insertions(+), 39 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/cpu-tegra.c b/arch/arm/mach-tegra/cpu-tegra.c
-index fea5719..8363a21 100644
---- a/arch/arm/mach-tegra/cpu-tegra.c
-+++ b/arch/arm/mach-tegra/cpu-tegra.c
-@@ -28,6 +28,7 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-+#include <linux/suspend.h>
+diff --git a/arch/arm/mach-tegra/include/mach/debug-macro.S b/arch/arm/mach-tegra/include/mach/debug-macro.S
+index 8ea3bff..2e3b8e3 100644
+--- a/arch/arm/mach-tegra/include/mach/debug-macro.S
++++ b/arch/arm/mach-tegra/include/mach/debug-macro.S
+@@ -19,30 +19,15 @@
+  */
  
- #include <asm/system.h>
+ #include <mach/io.h>
++#include <mach/iomap.h>
  
-@@ -36,14 +37,15 @@
+-	.macro  addruart, rp, rv
+-        ldreq   \rp, =IO_APB_PHYS       @ physical
+-        ldrne   \rv, =IO_APB_VIRT        @ virtual
+-#if defined(CONFIG_TEGRA_DEBUG_UART_NONE)
+-#error "A debug UART must be selected in the kernel config to use DEBUG_LL"
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTA)
+-        orr     \rp, \rp, #0x6000
+-        orr     \rv, \rv, #0x6000
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTB)
+-        orr     \rp, \rp, #0x6000
+-	orr	\rp, \rp, #0x40
+-        orr     \rv, \rv, #0x6000
+-	orr	\rv, \rv, #0x40
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTC)
+-        orr     \rp, \rp, #0x6200
+-        orr     \rv, \rv, #0x6200
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTD)
+-        orr     \rp, \rp, #0x6300
+-        orr     \rv, \rv, #0x6300
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTE)
+-        orr     \rp, \rp, #0x6400
+-        orr     \rv, \rv, #0x6400
+-#endif
++	.macro	addruart, rp, rv
++	ldr	\rp, =IO_APB_PHYS	@ physical
++	ldr	\rv, =IO_APB_VIRT	@ virtual
++	orr	\rp, \rp, #(TEGRA_DEBUG_UART_BASE & 0xFF00)
++	orr	\rp, \rp, #(TEGRA_DEBUG_UART_BASE & 0x00FF)
++	orr	\rv, \rv, #(TEGRA_DEBUG_UART_BASE & 0xFF00)
++	orr	\rv, \rv, #(TEGRA_DEBUG_UART_BASE & 0x00FF)
+ 	.endm
  
- /* Frequency table index must be sequential starting at 0 */
- static struct cpufreq_frequency_table freq_table[] = {
--	{ 0, 312000 },
--	{ 1, 456000 },
--	{ 2, 608000 },
--	{ 3, 760000 },
--	{ 4, 816000 },
--	{ 5, 912000 },
--	{ 6, 1000000 },
--	{ 7, CPUFREQ_TABLE_END },
-+	{ 0, 216000 },
-+	{ 1, 312000 },
-+	{ 2, 456000 },
-+	{ 3, 608000 },
-+	{ 4, 760000 },
-+	{ 5, 816000 },
-+	{ 6, 912000 },
-+	{ 7, 1000000 },
-+	{ 8, CPUFREQ_TABLE_END },
- };
+ #define UART_SHIFT	2
+diff --git a/arch/arm/mach-tegra/include/mach/iomap.h b/arch/arm/mach-tegra/include/mach/iomap.h
+index 44a4f4b..325eca3 100644
+--- a/arch/arm/mach-tegra/include/mach/iomap.h
++++ b/arch/arm/mach-tegra/include/mach/iomap.h
+@@ -221,4 +221,18 @@
+ #define TEGRA_SDMMC4_BASE		0xC8000600
+ #define TEGRA_SDMMC4_SIZE		SZ_512
  
- #define NUM_CPUS	2
-@@ -51,6 +53,8 @@ static struct cpufreq_frequency_table freq_table[] = {
- static struct clk *cpu_clk;
++#if defined(CONFIG_TEGRA_DEBUG_UART_NONE)
++# define TEGRA_DEBUG_UART_BASE 0
++#elif defined(CONFIG_TEGRA_DEBUG_UARTA)
++# define TEGRA_DEBUG_UART_BASE TEGRA_UARTA_BASE
++#elif defined(CONFIG_TEGRA_DEBUG_UARTB)
++# define TEGRA_DEBUG_UART_BASE TEGRA_UARTB_BASE
++#elif defined(CONFIG_TEGRA_DEBUG_UARTC)
++# define TEGRA_DEBUG_UART_BASE TEGRA_UARTC_BASE
++#elif defined(CONFIG_TEGRA_DEBUG_UARTD)
++# define TEGRA_DEBUG_UART_BASE TEGRA_UARTD_BASE
++#elif defined(CONFIG_TEGRA_DEBUG_UARTE)
++# define TEGRA_DEBUG_UART_BASE TEGRA_UARTE_BASE
++#endif
++
+ #endif
+diff --git a/arch/arm/mach-tegra/include/mach/uncompress.h b/arch/arm/mach-tegra/include/mach/uncompress.h
+index 6c4dd81..4e83237 100644
+--- a/arch/arm/mach-tegra/include/mach/uncompress.h
++++ b/arch/arm/mach-tegra/include/mach/uncompress.h
+@@ -26,23 +26,9 @@
  
- static unsigned long target_cpu_speed[NUM_CPUS];
-+static DEFINE_MUTEX(tegra_cpu_lock);
-+static bool is_suspended;
+ #include <mach/iomap.h>
  
- int tegra_verify_speed(struct cpufreq_policy *policy)
- {
-@@ -68,16 +72,11 @@ unsigned int tegra_getspeed(unsigned int cpu)
- 	return rate;
- }
- 
--static int tegra_update_cpu_speed(void)
-+static int tegra_update_cpu_speed(unsigned long rate)
- {
--	int i;
--	unsigned long rate = 0;
- 	int ret = 0;
- 	struct cpufreq_freqs freqs;
- 
--	for_each_online_cpu(i)
--		rate = max(rate, target_cpu_speed[i]);
+-#if defined(CONFIG_TEGRA_DEBUG_UARTA)
+-#define DEBUG_UART_BASE TEGRA_UARTA_BASE
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTB)
+-#define DEBUG_UART_BASE TEGRA_UARTB_BASE
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTC)
+-#define DEBUG_UART_BASE TEGRA_UARTC_BASE
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTD)
+-#define DEBUG_UART_BASE TEGRA_UARTD_BASE
+-#elif defined(CONFIG_TEGRA_DEBUG_UARTE)
+-#define DEBUG_UART_BASE TEGRA_UARTE_BASE
+-#else
+-#define DEBUG_UART_BASE NULL
+-#endif
 -
- 	freqs.old = tegra_getspeed(0);
- 	freqs.new = rate;
- 
-@@ -105,12 +104,29 @@ static int tegra_update_cpu_speed(void)
- 	return 0;
- }
- 
-+static unsigned long tegra_cpu_highest_speed(void) {
-+	unsigned long rate = 0;
-+	int i;
-+
-+	for_each_online_cpu(i)
-+		rate = max(rate, target_cpu_speed[i]);
-+	return rate;
-+}
-+
- static int tegra_target(struct cpufreq_policy *policy,
- 		       unsigned int target_freq,
- 		       unsigned int relation)
+ static void putc(int c)
  {
- 	int idx;
- 	unsigned int freq;
-+	int ret = 0;
-+
-+	mutex_lock(&tegra_cpu_lock);
-+
-+	if (is_suspended) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
+-	volatile u8 *uart = (volatile u8 *)DEBUG_UART_BASE;
++	volatile u8 *uart = (volatile u8 *)TEGRA_DEBUG_UART_BASE;
+ 	int shift = 2;
  
- 	cpufreq_frequency_table_target(policy, freq_table, target_freq,
- 		relation, &idx);
-@@ -119,9 +135,34 @@ static int tegra_target(struct cpufreq_policy *policy,
+ 	if (uart == NULL)
+@@ -59,7 +45,7 @@ static inline void flush(void)
  
- 	target_cpu_speed[policy->cpu] = freq;
- 
--	return tegra_update_cpu_speed();
-+	ret = tegra_update_cpu_speed(tegra_cpu_highest_speed());
-+
-+out:
-+	mutex_unlock(&tegra_cpu_lock);
-+	return ret;
- }
- 
-+static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
-+	void *dummy)
-+{
-+	mutex_lock(&tegra_cpu_lock);
-+	if (event == PM_SUSPEND_PREPARE) {
-+		is_suspended = true;
-+		pr_info("Tegra cpufreq suspend: setting frequency to %d kHz\n",
-+			freq_table[0].frequency);
-+		tegra_update_cpu_speed(freq_table[0].frequency);
-+	} else if (event == PM_POST_SUSPEND) {
-+		is_suspended = false;
-+	}
-+	mutex_unlock(&tegra_cpu_lock);
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block tegra_cpu_pm_notifier = {
-+	.notifier_call = tegra_pm_notify,
-+};
-+
- static int tegra_cpu_init(struct cpufreq_policy *policy)
+ static inline void arch_decomp_setup(void)
  {
- 	if (policy->cpu >= NUM_CPUS)
-@@ -142,6 +183,9 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- 	policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
- 	cpumask_copy(policy->related_cpus, cpu_possible_mask);
+-	volatile u8 *uart = (volatile u8 *)DEBUG_UART_BASE;
++	volatile u8 *uart = (volatile u8 *)TEGRA_DEBUG_UART_BASE;
+ 	int shift = 2;
  
-+	if (policy->cpu == 0)
-+		register_pm_notifier(&tegra_cpu_pm_notifier);
-+
- 	return 0;
- }
- 
+ 	if (uart == NULL)
 -- 
 1.7.3.1
 
