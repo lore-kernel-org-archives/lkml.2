@@ -1,141 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0LER6s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:58:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756328Ab0LERuQ (ORCPT
+	id S1756594Ab0LESHl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 13:07:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52299 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755715Ab0LESHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=TwbGDm+mB0V400mdlCG48n/AgujYn0JJWYVkrn0Rdrmr/Q4LZCXHnUzZN6aNsYCZRC
-         CQAKUOM0deZHWhC2PXvNjexZ2hEzQb/e777p2JUHLwsM2Y7TlSSBHacXP2P6RZgXBfQI
-         8RNXOrNTXLutJTl7mjEtmNBreAFrOhtGsb7Nk=
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 04/45] kstrtox: convert kernel/
-Date: Sun,  5 Dec 2010 19:49:01 +0200
-Message-Id: <1291571382-2719-4-git-send-email-adobriyan@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
-References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
+	Sun, 5 Dec 2010 13:07:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <m1oc90n6qp.fsf@fess.ebiederm.org>
+References: <m1oc90n6qp.fsf@fess.ebiederm.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 5 Dec 2010 10:06:57 -0800
+Message-ID: <AANLkTikCXV_y2fmv0wTPXvxEad3Sqs_Vr4S+6_pZFDoo@mail.gmail.com>
+Subject: Re: [PATCH]: Revert 2.6.36 chroot ttyname regression
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Dec 4, 2010 at 9:11 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>
+> As of 2.6.36 ttyname does not work in a chroot.
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
- kernel/gcov/fs.c    |    5 +----
- kernel/ksysfs.c     |    5 +++--
- kernel/params.c     |   24 +++++++++++-------------
- kernel/power/main.c |    8 +++++---
- 4 files changed, 20 insertions(+), 22 deletions(-)
+I'll happily revert, but even for trivial stuff like this I'd like to
+get the sign-off, just so that we always have it.
 
-diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
-index 9bd0934..347c2b3 100644
---- a/kernel/gcov/fs.c
-+++ b/kernel/gcov/fs.c
-@@ -72,13 +72,10 @@ static int gcov_persist = 1;
- 
- static int __init gcov_persist_setup(char *str)
- {
--	unsigned long val;
--
--	if (strict_strtoul(str, 0, &val)) {
-+	if (kstrtoint(str, 0, &gcov_persist) < 0) {
- 		pr_warning("invalid gcov_persist parameter '%s'\n", str);
- 		return 0;
- 	}
--	gcov_persist = val;
- 	pr_info("setting gcov_persist to %d\n", gcov_persist);
- 
- 	return 1;
-diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index 0b624e7..b0b4681 100644
---- a/kernel/ksysfs.c
-+++ b/kernel/ksysfs.c
-@@ -112,8 +112,9 @@ static ssize_t kexec_crash_size_store(struct kobject *kobj,
- 	unsigned long cnt;
- 	int ret;
- 
--	if (strict_strtoul(buf, 0, &cnt))
--		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &cnt);
-+	if (ret < 0)
-+		return ret;
- 
- 	ret = crash_shrink_memory(cnt);
- 	return ret < 0 ? ret : count;
-diff --git a/kernel/params.c b/kernel/params.c
-index 08107d1..7c3ecec 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -218,16 +218,14 @@ int parse_args(const char *name,
- }
- 
- /* Lazy bastard, eh? */
--#define STANDARD_PARAM_DEF(name, type, format, tmptype, strtolfn)      	\
-+#define STANDARD_PARAM_DEF(name, type, format, strtolfn)		\
- 	int param_set_##name(const char *val, const struct kernel_param *kp) \
- 	{								\
--		tmptype l;						\
- 		int ret;						\
- 									\
--		ret = strtolfn(val, 0, &l);				\
--		if (ret == -EINVAL || ((type)l != l))			\
--			return -EINVAL;					\
--		*((type *)kp->arg) = l;					\
-+		ret = strtolfn(val, 0, (type *)kp->arg);		\
-+		if (ret < 0)						\
-+			return ret;					\
- 		return 0;						\
- 	}								\
- 	int param_get_##name(char *buffer, const struct kernel_param *kp) \
-@@ -243,13 +241,13 @@ int parse_args(const char *name,
- 	EXPORT_SYMBOL(param_ops_##name)
- 
- 
--STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, strict_strtoul);
--STANDARD_PARAM_DEF(short, short, "%hi", long, strict_strtol);
--STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, strict_strtoul);
--STANDARD_PARAM_DEF(int, int, "%i", long, strict_strtol);
--STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, strict_strtoul);
--STANDARD_PARAM_DEF(long, long, "%li", long, strict_strtol);
--STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_strtoul);
-+STANDARD_PARAM_DEF(byte, u8, "%c", kstrtou8);
-+STANDARD_PARAM_DEF(short, s16, "%hi", kstrtos16);
-+STANDARD_PARAM_DEF(ushort, u16, "%hu", kstrtou16);
-+STANDARD_PARAM_DEF(int, int, "%i", kstrtoint);
-+STANDARD_PARAM_DEF(uint, unsigned int, "%u", kstrtouint);
-+STANDARD_PARAM_DEF(long, long, "%li", kstrtol);
-+STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", kstrtoul);
- 
- int param_set_charp(const char *val, const struct kernel_param *kp)
- {
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 7b5db6a..c53c77e 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -56,10 +56,12 @@ static ssize_t pm_async_show(struct kobject *kobj, struct kobj_attribute *attr,
- static ssize_t pm_async_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			      const char *buf, size_t n)
- {
--	unsigned long val;
-+	unsigned int val;
-+	int rv;
- 
--	if (strict_strtoul(buf, 10, &val))
--		return -EINVAL;
-+	rv = kstrtouint(buf, 10, &val);
-+	if (rv < 0)
-+		return rv;
- 
- 	if (val > 1)
- 		return -EINVAL;
--- 
-1.7.2.2
-
+                    Linus
