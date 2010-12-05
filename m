@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab0LEUF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:05:56 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65326 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab0LEUFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 15:05:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lMbGkd6dBm8U1E0VfRmeRTk+Aked4XXj1e8HQP9DvCgCUgAtHOs09VuYgMNSISA6uG
-         u57jIheYO94Arb756x9VQU834E1YI5dc5Ne1LqFog5n/HIttyBsnmmFLumS8Idrx65UG
-         LnqMcegZDwhHgeY+1l+AyBzuK9Przo+NHnxoM=
+	id S1754532Ab0LEUGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:06:20 -0500
+Received: from bd4.citechco.net ([203.191.33.4]:52757 "EHLO bd4.citechco.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752949Ab0LEUGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 15:06:17 -0500
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Dec 2010 15:06:16 EST
+Date: Mon, 6 Dec 2010 02:02:43 +0700 (BDST)
+From: Western Union <rupayan@citechco.net>
+Reply-To: Webmail Help Desk <upgradeteam11@qatar.io>
+Message-ID: <11558770.29078.1291575763182.JavaMail.root@pop3>
+Subject: ***IMPORTANT FINAL NOTICE***
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimjWEDWaz75-DSemfyNBUU7VLVhd7qzPpD-Lk5N@mail.gmail.com>
-References: <1290510371-23077-1-git-send-email-jamie@jamieiles.com>
-	<AANLkTimjWEDWaz75-DSemfyNBUU7VLVhd7qzPpD-Lk5N@mail.gmail.com>
-Date: Sun, 5 Dec 2010 12:05:54 -0800
-Message-ID: <AANLkTikYy2iVbVkR5koagNiuD2GdoPhPniWshRAHoCKQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] dmaengine/dw_dmac: enhancements to allow use on other platforms
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.220.69.4]
+X-Mailer: Zimbra 6.0.6_GA_2330.DEBIAN4.0 (zclient/6.0.6_GA_2330.DEBIAN4.0)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Dear Webmail Account Owner:
 
-On Fri, Dec 3, 2010 at 3:34 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> Looks like this whole series needs to go through the dmaengine tree
-> but you missed cc'ing me on patch 4/4, found it now.
->
-> I'd like an acked-by from Haavard, but otherwise looks good.
 
-Looks good to me, but since I'm no longer working for Atmel, I think
-it's best if you ask Hans-Christian.
+It has come to our notice that your email has not passed the verification/Update process that we are presently working on.
 
-But since you asked:
+We are currently upgrading our data base and e-mail account center, thereby deleting all Old Web mail email account to create more space for new accounts.To prevent your account from closing you will have to update it so that we will know that it's a presently used account. To complete your account re-confirmation, you must reply to this email immediately
+and enter your account details as requested below.
 
-Acked-by: Haavard Skinnemoen <hskinnemoen@gmail.com>
+***********************************************
+Email User-name :........ .....
+EMAIL Password :...............
+Date of Birth :...............
+Country or Territory :........
+************************************************
+
+****IMPORTANT :
+
+This updating is compulsory as a result of our recent server changes. If you fail to update your email address you will soon be unable to receive/send mails.Also your email will not be equipped with the latest anti-virus system on our new servers.This will make your email and PC vulnerable to virus attacks from the internet.
+
+**** HOW TO UPDATE***
+To update simply reply the above to upgrading admin as appropriate.Failure to do so immediately will lead to SUSPENSION OF YOUR ACCOUNT.
+
+
+Thanks for your co-operation,
+Web-mail Administrator
