@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab0LER6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:58:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
+	id S1756797Ab0LER6s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:58:48 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756435Ab0LERuT (ORCPT
+	with ESMTP id S1756328Ab0LERuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:19 -0500
+	Sun, 5 Dec 2010 12:50:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=oMvCiVrDf1HU1AnD8MyIpMiGWAnikkpO9Xq3Fh9TFOmipW/gpYVEBuo9xgUEJVRlDl
-         XZJVZ0uOfwY632w0+zYS/IvYuPqwnTngacidZAe9+0I9WqyRRHvt5vhPyrABfsp7O9in
-         BYSlXkw9LINx0qs5ozrWSMJ+C6s9AXbJZSGoA=
+        b=TwbGDm+mB0V400mdlCG48n/AgujYn0JJWYVkrn0Rdrmr/Q4LZCXHnUzZN6aNsYCZRC
+         CQAKUOM0deZHWhC2PXvNjexZ2hEzQb/e777p2JUHLwsM2Y7TlSSBHacXP2P6RZgXBfQI
+         8RNXOrNTXLutJTl7mjEtmNBreAFrOhtGsb7Nk=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 05/45] kstrtox: kernel/trace/
-Date: Sun,  5 Dec 2010 19:49:02 +0200
-Message-Id: <1291571382-2719-5-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 04/45] kstrtox: convert kernel/
+Date: Sun,  5 Dec 2010 19:49:01 +0200
+Message-Id: <1291571382-2719-4-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,295 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- kernel/trace/ftrace.c              |    6 +++---
- kernel/trace/ring_buffer.c         |    2 +-
- kernel/trace/trace.c               |   16 ++++++++--------
- kernel/trace/trace_events.c        |    8 ++++----
- kernel/trace/trace_events_filter.c |    4 ++--
- kernel/trace/trace_functions.c     |    4 ++--
- kernel/trace/trace_kprobe.c        |   25 ++++++++++++-------------
- kernel/trace/trace_stack.c         |    4 ++--
- 8 files changed, 34 insertions(+), 35 deletions(-)
+ kernel/gcov/fs.c    |    5 +----
+ kernel/ksysfs.c     |    5 +++--
+ kernel/params.c     |   24 +++++++++++-------------
+ kernel/power/main.c |    8 +++++---
+ 4 files changed, 20 insertions(+), 22 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index f3dadae..537fd31 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -747,7 +747,7 @@ ftrace_profile_write(struct file *filp, const char __user *ubuf,
+diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
+index 9bd0934..347c2b3 100644
+--- a/kernel/gcov/fs.c
++++ b/kernel/gcov/fs.c
+@@ -72,13 +72,10 @@ static int gcov_persist = 1;
  
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoul(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -3053,7 +3053,7 @@ ftrace_pid_write(struct file *filp, const char __user *ubuf,
- 		   size_t cnt, loff_t *ppos)
+ static int __init gcov_persist_setup(char *str)
  {
- 	char buf[64], *tmp;
--	long val;
-+	int val;
- 	int ret;
- 
- 	if (cnt >= sizeof(buf))
-@@ -3072,7 +3072,7 @@ ftrace_pid_write(struct file *filp, const char __user *ubuf,
- 	if (strlen(tmp) == 0)
- 		return 1;
- 
--	ret = strict_strtol(tmp, 10, &val);
-+	ret = kstrtoint(tmp, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 9ed509a..9ad99a6 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3965,7 +3965,7 @@ rb_simple_write(struct file *filp, const char __user *ubuf,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoul(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index c380612..8509b20 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -389,7 +389,7 @@ static int __init set_tracing_thresh(char *str)
- 
- 	if (!str)
+-	unsigned long val;
+-
+-	if (strict_strtoul(str, 0, &val)) {
++	if (kstrtoint(str, 0, &gcov_persist) < 0) {
+ 		pr_warning("invalid gcov_persist parameter '%s'\n", str);
  		return 0;
--	ret = strict_strtoul(str, 0, &threshhold);
-+	ret = kstrtoul(str, 0, &threshhold);
- 	if (ret < 0)
- 		return 0;
- 	tracing_thresh = threshhold * 1000;
-@@ -2696,7 +2696,7 @@ tracing_ctrl_write(struct file *filp, const char __user *ubuf,
+ 	}
+-	gcov_persist = val;
+ 	pr_info("setting gcov_persist to %d\n", gcov_persist);
  
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoul(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -2957,7 +2957,7 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoul(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -3416,7 +3416,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoul(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -4069,7 +4069,7 @@ trace_options_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 			 loff_t *ppos)
- {
- 	struct trace_option_dentry *topt = filp->private_data;
--	unsigned long val;
-+	unsigned int val;
- 	char buf[64];
+ 	return 1;
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index 0b624e7..b0b4681 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -112,8 +112,9 @@ static ssize_t kexec_crash_size_store(struct kobject *kobj,
+ 	unsigned long cnt;
  	int ret;
  
-@@ -4081,7 +4081,7 @@ trace_options_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtouint(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -4131,7 +4131,7 @@ trace_options_core_write(struct file *filp, const char __user *ubuf, size_t cnt,
- {
- 	long index = (long)filp->private_data;
- 	char buf[64];
--	unsigned long val;
-+	unsigned int val;
- 	int ret;
- 
- 	if (cnt >= sizeof(buf))
-@@ -4142,7 +4142,7 @@ trace_options_core_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtouint(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 0725eea..c7039a2 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -480,7 +480,7 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- {
- 	struct ftrace_event_call *call = filp->private_data;
- 	char buf[64];
--	unsigned long val;
-+	int val;
- 	int ret;
- 
- 	if (cnt >= sizeof(buf))
-@@ -491,7 +491,7 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoint(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -563,8 +563,8 @@ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		    loff_t *ppos)
- {
- 	const char *system = filp->private_data;
--	unsigned long val;
- 	char buf[64];
-+	int val;
- 	ssize_t ret;
- 
- 	if (cnt >= sizeof(buf))
-@@ -575,7 +575,7 @@ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 
- 	buf[cnt] = 0;
- 
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoint(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 36d4010..f17f6a0 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -807,9 +807,9 @@ static int filter_add_pred(struct filter_parse_state *ps,
- 			fn = filter_pred_pchar;
- 	} else {
- 		if (field->is_signed)
--			ret = strict_strtoll(pred->regex.pattern, 0, &val);
-+			ret = kstrtoll(pred->regex.pattern, 0, &val);
- 		else
--			ret = strict_strtoull(pred->regex.pattern, 0, &val);
-+			ret = kstrtoull(pred->regex.pattern, 0, &val);
- 		if (ret) {
- 			parse_error(ps, FILT_ERR_ILLEGAL_INTVAL, 0);
- 			return -EINVAL;
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 16aee4d..2f0dab3 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -354,8 +354,8 @@ ftrace_trace_onoff_callback(char *glob, char *cmd, char *param, int enable)
- 	 * We use the callback data field (which is a pointer)
- 	 * as our counter.
- 	 */
--	ret = strict_strtoul(number, 0, (unsigned long *)&count);
--	if (ret)
-+	ret = kstrtoul(number, 0, (unsigned long *)&count);
+-	if (strict_strtoul(buf, 0, &cnt))
+-		return -EINVAL;
++	ret = kstrtoul(buf, 0, &cnt);
 +	if (ret < 0)
- 		return ret;
++		return ret;
  
-  out_reg:
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 2dec9bc..e29849d 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -684,9 +684,8 @@ static int split_symbol_offset(char *symbol, unsigned long *offset)
+ 	ret = crash_shrink_memory(cnt);
+ 	return ret < 0 ? ret : count;
+diff --git a/kernel/params.c b/kernel/params.c
+index 08107d1..7c3ecec 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -218,16 +218,14 @@ int parse_args(const char *name,
+ }
  
- 	tmp = strchr(symbol, '+');
- 	if (tmp) {
--		/* skip sign because strict_strtol doesn't accept '+' */
--		ret = strict_strtoul(tmp + 1, 0, offset);
--		if (ret)
-+		ret = kstrtoul(tmp, 0, offset);
-+		if (ret < 0)
- 			return ret;
- 		*tmp = '\0';
- 	} else
-@@ -715,8 +714,10 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- 			else
- 				ret = -EINVAL;
- 		} else if (isdigit(arg[5])) {
--			ret = strict_strtoul(arg + 5, 10, &param);
--			if (ret || param > PARAM_MAX_STACK)
-+			ret = kstrtoul(arg + 5, 10, &param);
-+			if (ret < 0)
-+				return ret;
-+			if (param > PARAM_MAX_STACK)
- 				ret = -EINVAL;
- 			else {
- 				f->fn = t->fetch[FETCH_MTD_stack];
-@@ -752,8 +753,8 @@ static int __parse_probe_arg(char *arg, const struct fetch_type *t,
- 		break;
- 	case '@':	/* memory or symbol */
- 		if (isdigit(arg[1])) {
--			ret = strict_strtoul(arg + 1, 0, &param);
--			if (ret)
-+			ret = kstrtoul(arg + 1, 0, &param);
-+			if (ret < 0)
- 				break;
- 			f->fn = t->fetch[FETCH_MTD_memory];
- 			f->data = (void *)param;
-@@ -772,11 +773,9 @@ static int __parse_probe_arg(char *arg, const struct fetch_type *t,
- 		if (!tmp)
- 			break;
- 		*tmp = '\0';
--		ret = strict_strtol(arg + 1, 0, &offset);
--		if (ret)
-+		ret = kstrtol(arg, 0, &offset);
-+		if (ret < 0)
- 			break;
--		if (arg[0] == '-')
--			offset = -offset;
- 		arg = tmp + 1;
- 		tmp = strrchr(arg, ')');
- 		if (tmp) {
-@@ -948,8 +947,8 @@ static int create_trace_probe(int argc, char **argv)
- 			return -EINVAL;
- 		}
- 		/* an address specified */
--		ret = strict_strtoul(&argv[1][0], 0, (unsigned long *)&addr);
--		if (ret) {
-+		ret = kstrtoul(&argv[1][0], 0, (unsigned long *)&addr);
-+		if (ret < 0) {
- 			pr_info("Failed to parse address.\n");
- 			return ret;
- 		}
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 4c5dead..36ebd3b 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -153,7 +153,7 @@ static ssize_t
- stack_max_size_write(struct file *filp, const char __user *ubuf,
- 		     size_t count, loff_t *ppos)
+ /* Lazy bastard, eh? */
+-#define STANDARD_PARAM_DEF(name, type, format, tmptype, strtolfn)      	\
++#define STANDARD_PARAM_DEF(name, type, format, strtolfn)		\
+ 	int param_set_##name(const char *val, const struct kernel_param *kp) \
+ 	{								\
+-		tmptype l;						\
+ 		int ret;						\
+ 									\
+-		ret = strtolfn(val, 0, &l);				\
+-		if (ret == -EINVAL || ((type)l != l))			\
+-			return -EINVAL;					\
+-		*((type *)kp->arg) = l;					\
++		ret = strtolfn(val, 0, (type *)kp->arg);		\
++		if (ret < 0)						\
++			return ret;					\
+ 		return 0;						\
+ 	}								\
+ 	int param_get_##name(char *buffer, const struct kernel_param *kp) \
+@@ -243,13 +241,13 @@ int parse_args(const char *name,
+ 	EXPORT_SYMBOL(param_ops_##name)
+ 
+ 
+-STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, strict_strtoul);
+-STANDARD_PARAM_DEF(short, short, "%hi", long, strict_strtol);
+-STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, strict_strtoul);
+-STANDARD_PARAM_DEF(int, int, "%i", long, strict_strtol);
+-STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, strict_strtoul);
+-STANDARD_PARAM_DEF(long, long, "%li", long, strict_strtol);
+-STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_strtoul);
++STANDARD_PARAM_DEF(byte, u8, "%c", kstrtou8);
++STANDARD_PARAM_DEF(short, s16, "%hi", kstrtos16);
++STANDARD_PARAM_DEF(ushort, u16, "%hu", kstrtou16);
++STANDARD_PARAM_DEF(int, int, "%i", kstrtoint);
++STANDARD_PARAM_DEF(uint, unsigned int, "%u", kstrtouint);
++STANDARD_PARAM_DEF(long, long, "%li", kstrtol);
++STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", kstrtoul);
+ 
+ int param_set_charp(const char *val, const struct kernel_param *kp)
  {
--	long *ptr = filp->private_data;
-+	unsigned long *ptr = filp->private_data;
- 	unsigned long val, flags;
- 	char buf[64];
- 	int ret;
-@@ -167,7 +167,7 @@ stack_max_size_write(struct file *filp, const char __user *ubuf,
+diff --git a/kernel/power/main.c b/kernel/power/main.c
+index 7b5db6a..c53c77e 100644
+--- a/kernel/power/main.c
++++ b/kernel/power/main.c
+@@ -56,10 +56,12 @@ static ssize_t pm_async_show(struct kobject *kobj, struct kobj_attribute *attr,
+ static ssize_t pm_async_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 			      const char *buf, size_t n)
+ {
+-	unsigned long val;
++	unsigned int val;
++	int rv;
  
- 	buf[count] = 0;
+-	if (strict_strtoul(buf, 10, &val))
+-		return -EINVAL;
++	rv = kstrtouint(buf, 10, &val);
++	if (rv < 0)
++		return rv;
  
--	ret = strict_strtoul(buf, 10, &val);
-+	ret = kstrtoul(buf, 10, &val);
- 	if (ret < 0)
- 		return ret;
- 
+ 	if (val > 1)
+ 		return -EINVAL;
 -- 
 1.7.2.2
 
