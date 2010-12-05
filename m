@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab0LEU3C (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:29:02 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:48338 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab0LEU3A (ORCPT
+	id S1755317Ab0LEUfT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:35:19 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55340 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754692Ab0LEUfQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 15:29:00 -0500
-Date: Sun, 5 Dec 2010 21:28:55 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Heinz Diehl <htd@fritha.org>, Jon Nelson <jnelson@jamponi.net>,
-        htejun@gmail.com, Matt <jackdachef@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Chris Mason <chris.mason@oracle.com>,
-        htd <htd@fancy-poultry.org>, linux-ext4@vger.kernel.org,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: [dm-devel] hunt for 2.6.37 dm-crypt+ext4 corruption?
-Message-ID: <20101205202855.GA7668@basil.fritz.box>
-References: <4CF692D1.1010906@redhat.com>
- <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com>
- <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com>
- <AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>
- <20101205100954.GA6564@fritha.org>
- <4CFB679D.5030900@redhat.com>
- <1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu>
+	Sun, 5 Dec 2010 15:35:16 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, "Pavel Machek" <pavel@ucw.cz>
+References: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
+In-Reply-To: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <z3LGq_ncuOB.A.8JG.VD_-MB@chimera>
+Subject: [Bug #17061] 2.6.36-rc1 on zaurus: bluetooth regression
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun,  5 Dec 2010 21:34:24 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I've been using a kernel which is between 2.6.37-rc2 and -rc3 with a LUKS / dm-crypt / LVM / ext4 setup for my primary file systems, and I haven't observed any corruption for the last two weeks or so.   It's on my todo list to upgrade to top of Linus's tree, but perhaps this is a useful data point.
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.35 and 2.6.36.
 
-The reported corruptions are with a .37 forward port someone did of my parallel 
-kcryptd patch.  The 2.6.36 (and earlier) versions are rock solid with many users.
+The following bug entry is on the current list of known regressions
+introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-The classic dmcrypt is single threaded and very slow.
 
-> As another thought, what version of GCC are people using who are having difficulty?   Could this perhaps be a compiler-related issue?
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17061
+Subject		: 2.6.36-rc1 on zaurus: bluetooth regression
+Submitter	: Pavel Machek <pavel@ucw.cz>
+Date		: 2010-08-21 15:24 (107 days old)
+Message-ID	: <20100821152445.GA1536@ucw.cz>
+References	: http://marc.info/?l=linux-kernel&m=128240433828087&w=2
 
-A compiler problem seems very unlikely here.
 
-What may be an useful experiment would be to test 2.6.37-rc + ext4 over
-device mapper, but not dmcrypt. If that fails too then it's likely
-some generic device mapper problem.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
