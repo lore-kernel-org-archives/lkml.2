@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab0LEMlL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 07:41:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58200 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab0LEMlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 07:41:10 -0500
-Message-ID: <4CFB8842.4010003@redhat.com>
-Date: Sun, 05 Dec 2010 14:40:34 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755600Ab0LEMuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 07:50:12 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58382 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356Ab0LEMuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 07:50:10 -0500
+Date: Sun, 5 Dec 2010 13:49:49 +0100
+From: Heinz Diehl <htd@fritha.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
+        htejun@gmail.com, linux-ext4@vger.kernel.org,
+        Jon Nelson <jnelson@jamponi.net>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption?
+Message-ID: <20101205124949.GA8266@fritha.org>
+References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com>
+ <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com>
+ <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com>
+ <AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>
+ <20101205100954.GA6564@fritha.org>
+ <4CFB679D.5030900@redhat.com>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Chris Wright <chrisw@sous-sol.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 1/3] kvm: keep track of which task is running a KVM
- vcpu
-References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144324.4a79263b@annuminas.surriel.com> <20101203011810.GV10050@sequoia.sous-sol.org> <4CF903A6.5050209@redhat.com>
-In-Reply-To: <4CF903A6.5050209@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CFB679D.5030900@redhat.com>
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+20101028 (GNU/Linux)
+X-Provags-ID: V02:K0:V0+VhUNMgTIQdBDU1N98MlwsLoI2fQ4Q6gOiWEIUJHb
+ ZUoTVHtcJlvRC89i3i/1sa5OkgxBbjTWVMjdq16ogklAHtobZV
+ xGBGwE4i2hyY7Gwn7Izgb8tE5AHuy09q6zAPwU6xWhu8Dgy7an
+ Nfd6ITWQSZFZIBlunvRE23A3pPEDGficd6cFgMmWnDft5ZA9Oy
+ yXIvIo6WPORP7NL0n7e5A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2010 04:50 PM, Rik van Riel wrote:
-> On 12/02/2010 08:18 PM, Chris Wright wrote:
->> * Rik van Riel (riel@redhat.com) wrote:
->>> Keep track of which task is running a KVM vcpu.  This helps us
->>> figure out later what task to wake up if we want to boost a
->>> vcpu that got preempted.
->>>
->>> Unfortunately there are no guarantees that the same task
->>> always keeps the same vcpu, so we can only track the task
->>> across a single "run" of the vcpu.
->>
->> So shouldn't it confine to KVM_RUN?  The other vcpu_load callers aren't
->> always a vcpu in a useful runnable state.
->
-> Yeah, probably.  If you want I can move the setting of
-> vcpu->task to kvm_vcpu_ioctl.
->
+On 05.12.2010, Milan Broz wrote: 
 
-No need, it's not like something bad will happen.
+> Which kernel? 2.6.37-rc?
 
-What I'd really like to see is a soft binding between a vcpu and its 
-thread, so directed yield works even if we're in qemu while we were 
-scheduled out.  In fact it's not an unlikely pattern:
+2.6.37-rc4 on one and 2.6.37-rc3-git2 on the other machine.
 
-   spin_lock(&lock)
-   ...
-   writel(some_port_handled_by_qemu)
-   ...
-   spin_unlock(&lock)
+> Anyone seen this with 2.6.36 and the same dmcrypt patch?
+> (All info I had is that is is stable with here.)
 
-but that can wait.
+Both 2.6.36 and 2.6.36.1 with your patch have been running flawlessly.
+Not a single problem at all, over several weeks. 24/7.
 
--- 
-error compiling committee.c: too many arguments to function
+> It still seems to like dmcrypt with its parallel processing is just
+> trigger to another bug in 37-rc.
+
+That's the impression I got, too.
 
