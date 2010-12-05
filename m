@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab0LEVmd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 16:42:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28057 "EHLO mx1.redhat.com"
+	id S1755449Ab0LEVnH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 16:43:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20062 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab0LEVmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 16:42:32 -0500
-Message-ID: <4CFC072F.8090302@redhat.com>
-Date: Sun, 05 Dec 2010 22:42:07 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101110 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>, Theodore Tso <tytso@MIT.EDU>,
-        Jon Nelson <jnelson@jamponi.net>, htejun@gmail.com,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Matt <jackdachef@gmail.com>, htd <htd@fancy-poultry.org>,
-        Heinz Diehl <htd@fritha.org>, linux-ext4@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [dm-devel] hunt for 2.6.37 dm-crypt+ext4 corruption?
-References: <4CF692D1.1010906@redhat.com>	<AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>	<4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>	<AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>	<20101204193828.GB13871@redhat.com>	<AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>	<20101205100954.GA6564@fritha.org> <4CFB679D.5030900@redhat.com>	<1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu> <20101205202855.GA7668@basil.fritz.box>
-In-Reply-To: <20101205202855.GA7668@basil.fritz.box>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752998Ab0LEVnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 16:43:06 -0500
+Message-Id: <b9dded$h9rt4c@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,302,1288594800"; 
+   d="scan'208";a="580777100"
+Date: Sun, 05 Dec 2010 21:43:02 +0000
+To: Sriram <sri.kmb@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [drm:init_ring_common] *ERROR* render ring head not reset to zero
+In-Reply-To: <loom.20101205T072655-971@post.gmane.org>
+References: <201010042231.20320.thomas@m3y3r.de> <8u3s8d$jp78ts@orsmga001.jf.intel.com> <loom.20101205T072655-971@post.gmane.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2010 09:28 PM, Andi Kleen wrote:
->> I've been using a kernel which is between 2.6.37-rc2 and -rc3 with
->> a LUKS / dm-crypt / LVM / ext4 setup for my primary file systems,
->> and I haven't observed any corruption for the last two weeks or so.
->> It's on my todo list to upgrade to top of Linus's tree, but perhaps
->> this is a useful data point.
-> 
-> The reported corruptions are with a .37 forward port someone did of
-> my parallel kcryptd patch.  The 2.6.36 (and earlier) versions are
-> rock solid with many users.
+On Sun, 5 Dec 2010 06:28:25 +0000 (UTC), Sriram <sri.kmb@gmail.com> wrote:
+> Please explain what this error means & why it is happening...
 
-ok, to not confuse which patch version people are testing,
-let's use the version in Alasdair's DM repo now (upstream queue):
-http://www.kernel.org/pub/linux/kernel/people/agk/patches/2.6/editing/dm-crypt-scale-to-multiple-CPUs.patch
-(it should be the same as v5/v6 here on dm-devel -
-Andi's patch + my changes for device stacking deadlock)
+We wrote a zero into the register (whilst the ring is completely idle,
+supposedly anyway) and read back a non-zero value. We believe the silicon
+is doing evil things, we workaround it by writing the value again, and
+continue on our merry way.
 
-The same patch (just with minor define fix) is reported rock solid for 2.6.36.
+The dance only gets more complex as the hardware evolves.
+-Chris
 
-Milan
+-- 
+Chris Wilson, Intel Open Source Technology Centre
