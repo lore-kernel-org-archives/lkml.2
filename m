@@ -1,182 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab0LEVhI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 16:37:08 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:35451 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751768Ab0LEVhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 16:37:06 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+gRmYZdeygFuk+I/f7CYg0ZJKtYjCbXbUUGRJkkc
-	ncivCZze6QdhIi
-Message-ID: <4CFC05FC.90909@gmx.de>
-Date: Sun, 05 Dec 2010 22:37:00 +0100
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1754908Ab0LEVmd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 16:42:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28057 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149Ab0LEVmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 16:42:32 -0500
+Message-ID: <4CFC072F.8090302@redhat.com>
+Date: Sun, 05 Dec 2010 22:42:07 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101110 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Thiago Farina <tfransosi@gmail.com>
-CC: linux-kernel@vger.kernel.org, Joseph Chan <JosephChan@via.com.tw>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] drivers/video/via/viafbdev.c: Check return value of strict_strtoul().
-References: <1dda71ee1b12baa2366520b894d83d7b0abefc5c.1291433779.git.tfransosi@gmail.com> <0b32968e295b04d3ced937e2e17771ad1fd0f633.1291434520.git.tfransosi@gmail.com>
-In-Reply-To: <0b32968e295b04d3ced937e2e17771ad1fd0f633.1291434520.git.tfransosi@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+To: device-mapper development <dm-devel@redhat.com>
+CC: Andi Kleen <andi@firstfloor.org>, Theodore Tso <tytso@MIT.EDU>,
+        Jon Nelson <jnelson@jamponi.net>, htejun@gmail.com,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Matt <jackdachef@gmail.com>, htd <htd@fancy-poultry.org>,
+        Heinz Diehl <htd@fritha.org>, linux-ext4@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [dm-devel] hunt for 2.6.37 dm-crypt+ext4 corruption?
+References: <4CF692D1.1010906@redhat.com>	<AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>	<4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>	<AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>	<20101204193828.GB13871@redhat.com>	<AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>	<20101205100954.GA6564@fritha.org> <4CFB679D.5030900@redhat.com>	<1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu> <20101205202855.GA7668@basil.fritz.box>
+In-Reply-To: <20101205202855.GA7668@basil.fritz.box>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Thiago Farina schrieb:
-> This fix the following warnings:
-
-You could have made my job easier by
-(1) mentioning that the first and the second email you sent are different
-(2) highlighting the difference
-
-I think your patch is correct, but I just saw a huge patch series by Alexey 
-Dobriyan on the LKML with much more invasive changes in this area (basically 
-eliminating strict_strtoul). I'll keep your second email as a backup but won't 
-apply it now as it would conflict with the series which obsolates it anyway.
-
-
-Thanks,
-
-Florian Tobias Schandinat
-
+On 12/05/2010 09:28 PM, Andi Kleen wrote:
+>> I've been using a kernel which is between 2.6.37-rc2 and -rc3 with
+>> a LUKS / dm-crypt / LVM / ext4 setup for my primary file systems,
+>> and I haven't observed any corruption for the last two weeks or so.
+>> It's on my todo list to upgrade to top of Linus's tree, but perhaps
+>> this is a useful data point.
 > 
-> drivers/video/via/viafbdev.c:1144: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
-> drivers/video/via/viafbdev.c:1214: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
-> drivers/video/via/viafbdev.c:1272: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
-> drivers/video/via/viafbdev.c:1311: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
-> drivers/video/via/viafbdev.c:1380: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
-> drivers/video/via/viafbdev.c:1417: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
-> 
-> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
-> ---
->  drivers/video/via/viafbdev.c |   40 +++++++++++++++++++++++++++++++++-------
->  1 files changed, 33 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-> index d298cfc..9a53ec3 100644
-> --- a/drivers/video/via/viafbdev.c
-> +++ b/drivers/video/via/viafbdev.c
-> @@ -1131,6 +1131,8 @@ static ssize_t viafb_dvp0_proc_write(struct file *file,
->  	char buf[20], *value, *pbuf;
->  	u8 reg_val = 0;
->  	unsigned long length, i;
-> +	int ret;
-> +
->  	if (count < 1)
->  		return -EINVAL;
->  	length = count > 20 ? 20 : count;
-> @@ -1141,7 +1143,10 @@ static ssize_t viafb_dvp0_proc_write(struct file *file,
->  	for (i = 0; i < 3; i++) {
->  		value = strsep(&pbuf, " ");
->  		if (value != NULL) {
-> -			strict_strtoul(value, 0, (unsigned long *)&reg_val);
-> +			ret = strict_strtoul(value, 0, (unsigned long *)&reg_val);
-> +			if (ret < 0)
-> +				return ret;
-> +
->  			DEBUG_MSG(KERN_INFO "DVP0:reg_val[%l]=:%x\n", i,
->  				  reg_val);
->  			switch (i) {
-> @@ -1201,6 +1206,8 @@ static ssize_t viafb_dvp1_proc_write(struct file *file,
->  	char buf[20], *value, *pbuf;
->  	u8 reg_val = 0;
->  	unsigned long length, i;
-> +	int ret;
-> +
->  	if (count < 1)
->  		return -EINVAL;
->  	length = count > 20 ? 20 : count;
-> @@ -1211,7 +1218,10 @@ static ssize_t viafb_dvp1_proc_write(struct file *file,
->  	for (i = 0; i < 3; i++) {
->  		value = strsep(&pbuf, " ");
->  		if (value != NULL) {
-> -			strict_strtoul(value, 0, (unsigned long *)&reg_val);
-> +			ret = strict_strtoul(value, 0, (unsigned long *)&reg_val);
-> +			if (ret < 0)
-> +				return ret;
-> +
->  			switch (i) {
->  			case 0:
->  				viafb_write_reg_mask(CR9B, VIACR,
-> @@ -1263,13 +1273,17 @@ static ssize_t viafb_dfph_proc_write(struct file *file,
->  	char buf[20];
->  	u8 reg_val = 0;
->  	unsigned long length;
-> +	int ret;
-> +
->  	if (count < 1)
->  		return -EINVAL;
->  	length = count > 20 ? 20 : count;
->  	if (copy_from_user(&buf[0], buffer, length))
->  		return -EFAULT;
->  	buf[length - 1] = '\0';	/*Ensure end string */
-> -	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
-> +	ret = strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
-> +	if (ret < 0)
-> +		return ret;
->  	viafb_write_reg_mask(CR97, VIACR, reg_val, 0x0f);
->  	return count;
->  }
-> @@ -1302,13 +1316,17 @@ static ssize_t viafb_dfpl_proc_write(struct file *file,
->  	char buf[20];
->  	u8 reg_val = 0;
->  	unsigned long length;
-> +	int ret;
-> +
->  	if (count < 1)
->  		return -EINVAL;
->  	length = count > 20 ? 20 : count;
->  	if (copy_from_user(&buf[0], buffer, length))
->  		return -EFAULT;
->  	buf[length - 1] = '\0';	/*Ensure end string */
-> -	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
-> +	ret = strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
-> +	if (ret < 0)
-> +		return ret;
->  	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
->  	return count;
->  }
-> @@ -1365,6 +1383,8 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
->  	char buf[30], *value, *pbuf;
->  	struct IODATA reg_val;
->  	unsigned long length, i;
-> +	int ret;
-> +
->  	if (count < 1)
->  		return -EINVAL;
->  	length = count > 30 ? 30 : count;
-> @@ -1377,8 +1397,11 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
->  		for (i = 0; i < 2; i++) {
->  			value = strsep(&pbuf, " ");
->  			if (value != NULL) {
-> -				strict_strtoul(value, 0,
-> -					(unsigned long *)&reg_val.Data);
-> +				ret = strict_strtoul(value, 0,
-> +						(unsigned long *)&reg_val.Data);
-> +				if (ret < 0)
-> +					return ret;
-> +
->  				switch (i) {
->  				case 0:
->  					reg_val.Index = 0x08;
-> @@ -1414,8 +1437,11 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
->  		for (i = 0; i < 2; i++) {
->  			value = strsep(&pbuf, " ");
->  			if (value != NULL) {
-> -				strict_strtoul(value, 0,
-> +				ret = strict_strtoul(value, 0,
->  					(unsigned long *)&reg_val.Data);
-> +				if (ret < 0)
-> +					return ret;
-> +
->  				switch (i) {
->  				case 0:
->  					reg_val.Index = 0x08;
+> The reported corruptions are with a .37 forward port someone did of
+> my parallel kcryptd patch.  The 2.6.36 (and earlier) versions are
+> rock solid with many users.
 
+ok, to not confuse which patch version people are testing,
+let's use the version in Alasdair's DM repo now (upstream queue):
+http://www.kernel.org/pub/linux/kernel/people/agk/patches/2.6/editing/dm-crypt-scale-to-multiple-CPUs.patch
+(it should be the same as v5/v6 here on dm-devel -
+Andi's patch + my changes for device stacking deadlock)
+
+The same patch (just with minor define fix) is reported rock solid for 2.6.36.
+
+Milan
