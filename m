@@ -1,318 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab0LEW12 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 17:27:28 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16790 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab0LEW10 (ORCPT
+	id S1753605Ab0LEWeW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 17:34:22 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50394 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab0LEWeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 17:27:26 -0500
-Date: Sun, 5 Dec 2010 23:20:30 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Charles Manning <cdhmanning@gmail.com>
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] Add yaffs2 file system: xattrib code
-In-Reply-To: <1291154254-22533-7-git-send-email-cdhmanning@gmail.com>
-Message-ID: <alpine.LNX.2.00.1012052314400.16078@swampdragon.chaosbits.net>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com> <1291154254-22533-7-git-send-email-cdhmanning@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 5 Dec 2010 17:34:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=hNhTqq/APB794MnUxVwU5EHfov9/qP61rpZ1378W+tOWZwmQfPdaK2y/iXEhQUIEc7
+         h3wfFQQHqTNwtRqK3/EYad5r3bV70/GOAAkU2HofgctxQcezEkmvo7kXfFODwnDNwRc4
+         RoUR5l0AffT/BK5QoN7II65XYxOhjdgSxBBMQ=
+Date: Mon, 6 Dec 2010 01:34:19 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf, x86: P4 PMU - Fix unflagged overflows handling v4
+Message-ID: <20101205223419.GE7799@lenovo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few minor comments can be found below.
+Don found that P4 PMU reads CCCR register instead of counter
+itself (in attempt to catch unflagged event) this makes P4
+NMI handler to consume all NMIs it observes. So the other
+NMI users such as kgdb simply have no chance to get NMI
+on their hands.
 
+v2: Call checking_wrmsrl only if needed.
+v3: Check the valuable bits.
+v4: Leave p4_pmu_clear_cccr_ovf early if P4_CCCR_OVF flag is set.
 
-On Wed, 1 Dec 2010, Charles Manning wrote:
+Reported-by: Jason Wessel <jason.wessel@windriver.com>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Lin Ming <ming.m.lin@intel.com>
+CC: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+---
 
-> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
-> ---
->  fs/yaffs2/yaffs_nameval.c |  201 +++++++++++++++++++++++++++++++++++++++++++++
->  fs/yaffs2/yaffs_nameval.h |   28 ++++++
->  2 files changed, 229 insertions(+), 0 deletions(-)
->  create mode 100644 fs/yaffs2/yaffs_nameval.c
->  create mode 100644 fs/yaffs2/yaffs_nameval.h
-> 
-> diff --git a/fs/yaffs2/yaffs_nameval.c b/fs/yaffs2/yaffs_nameval.c
-> new file mode 100644
-> index 0000000..d8c548a
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_nameval.c
-> @@ -0,0 +1,201 @@
-> +/*
-> + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +/*
-> + * This simple implementation of a name-value store assumes a small number of values and fits
-> + * into a small finite buffer.
-> + *
-> + * Each attribute is stored as a record:
-> + *  sizeof(int) bytes   record size.
-> + *  strnlen+1 bytes name null terminated.
-> + *  nbytes    value.
-> + *  ----------
-> + *  total size  stored in record size 
-> + *
-> + * This code has not been tested with unicode yet.
-> + */
-> +
-> +#include "yaffs_nameval.h"
-> +
-> +#include "yportenv.h"
-> +
-> +static int nval_find(const char *xb, int xb_size, const YCHAR * name,
-> +		     int *exist_size)
-> +{
-> +	int pos = 0;
-> +	int size;
-> +
-> +	memcpy(&size, xb, sizeof(int));
-> +	while (size > 0 && (size < xb_size) && (pos + size < xb_size)) {
-> +		if (yaffs_strncmp
-> +		    ((YCHAR *) (xb + pos + sizeof(int)), name, size) == 0) {
-> +			if (exist_size)
-> +				*exist_size = size;
-> +			return pos;
-> +		}
-> +		pos += size;
-> +		if (pos < xb_size - sizeof(int))
-> +			memcpy(&size, xb + pos, sizeof(int));
-> +		else
-> +			size = 0;
-> +	}
-> +	if (exist_size)
-> +		*exist_size = 0;
-> +	return -1;
-> +}
-> +
-> +static int nval_used(const char *xb, int xb_size)
-> +{
-> +	int pos = 0;
-> +	int size;
-> +
-> +	memcpy(&size, xb + pos, sizeof(int));
-> +	while (size > 0 && (size < xb_size) && (pos + size < xb_size)) {
-> +		pos += size;
-> +		if (pos < xb_size - sizeof(int))
-> +			memcpy(&size, xb + pos, sizeof(int));
-> +		else
-> +			size = 0;
-> +	}
-> +	return pos;
-> +}
-> +
-> +int nval_del(char *xb, int xb_size, const YCHAR * name)
-> +{
-> +	int pos = nval_find(xb, xb_size, name, NULL);
-> +	int size;
-> +
-> +	if (pos >= 0 && pos < xb_size) {
-> +		/* Find size, shift rest over this record, then zero out the rest of buffer */
-> +		memcpy(&size, xb + pos, sizeof(int));
-> +		memcpy(xb + pos, xb + pos + size, xb_size - (pos + size));
-> +		memset(xb + (xb_size - size), 0, size);
-> +		return 0;
-> +	} else {
-> +		return -ENODATA;
-> +        }
-> +}
+Ming, Jason, mind to give this patch a shot? Note that it
+seems you have to disable nmi-watchdog at bootstrap to be
+able to run perf top. I believe it's a different issue
+unrelated to this particular nit.
 
-Why not get rid of the 'else' branch and simply write this as 
+ arch/x86/include/asm/perf_event_p4.h |    3 +++
+ arch/x86/kernel/cpu/perf_event_p4.c  |   28 +++++++++++++++-------------
+ 2 files changed, 18 insertions(+), 13 deletions(-)
 
-int nval_del(char *xb, int xb_size, const YCHAR *name)
-{
-     int pos = nval_find(xb, xb_size, name, NULL);
-     int size;  
-     
-     if (pos >= 0 && pos < xb_size) {
-             /* Find size, shift rest over this record, then zero out the rest of buffer */
-             memcpy(&size, xb + pos, sizeof(int));
-             memcpy(xb + pos, xb + pos + size, xb_size - (pos + size));
-             memset(xb + (xb_size - size), 0, size);
-             return 0;
-     }
-     return -ENODATA;
-}
-
-
-> +
-> +int nval_set(char *xb, int xb_size, const YCHAR * name, const char *buf,
-                                                 ^^^^^
-
-Why this insistance on making pointer variables look like 
-multiplication...?
-  int* foo; // prefered by many C++ people
-  int *foo; // prefered by many C people
-  int * foo; // just plain ugly
-(this is not the only location, but I'm not going to point out any more)
-
-
-> +	     int bsize, int flags)
-> +{
-> +	int pos;
-> +	int namelen = yaffs_strnlen(name, xb_size);
-> +	int reclen;
-> +	int size_exist = 0;
-> +	int space;
-> +	int start;
-> +
-> +	pos = nval_find(xb, xb_size, name, &size_exist);
-> +
-> +	if (flags & XATTR_CREATE && pos >= 0)
-> +		return -EEXIST;
-> +	if (flags & XATTR_REPLACE && pos < 0)
-> +		return -ENODATA;
-> +
-> +	start = nval_used(xb, xb_size);
-> +	space = xb_size - start + size_exist;
-> +
-> +	reclen = (sizeof(int) + namelen + 1 + bsize);
-> +
-> +	if (reclen > space)
-> +		return -ENOSPC;
-> +
-> +	if (pos >= 0) {
-> +		nval_del(xb, xb_size, name);
-> +		start = nval_used(xb, xb_size);
-> +	}
-> +
-> +	pos = start;
-> +
-> +	memcpy(xb + pos, &reclen, sizeof(int));
-> +	pos += sizeof(int);
-> +	yaffs_strncpy((YCHAR *) (xb + pos), name, reclen);
-> +	pos += (namelen + 1);
-> +	memcpy(xb + pos, buf, bsize);
-> +	return 0;
-> +}
-> +
-> +int nval_get(const char *xb, int xb_size, const YCHAR * name, char *buf,
-> +	     int bsize)
-> +{
-> +	int pos = nval_find(xb, xb_size, name, NULL);
-> +	int size;
-> +
-> +	if (pos >= 0 && pos < xb_size) {
-> +
-> +		memcpy(&size, xb + pos, sizeof(int));
-> +		pos += sizeof(int);	/* advance past record length */
-> +		size -= sizeof(int);
-> +
-> +		/* Advance over name string */
-> +		while (xb[pos] && size > 0 && pos < xb_size) {
-> +			pos++;
-> +			size--;
-> +		}
-> +		/*Advance over NUL */
-> +		pos++;
-> +		size--;
-> +
-> +		if (size <= bsize) {
-> +			memcpy(buf, xb + pos, size);
-> +			return size;
-> +		}
-> +
-> +	}
-> +	if (pos >= 0)
-> +		return -ERANGE;
-> +	else
-> +		return -ENODATA;
-> +}
-> +
-> +int nval_list(const char *xb, int xb_size, char *buf, int bsize)
-> +{
-> +	int pos = 0;
-> +	int size;
-> +	int name_len;
-> +	int ncopied = 0;
-> +	int filled = 0;
-> +
-> +	memcpy(&size, xb + pos, sizeof(int));
-> +	while (size > sizeof(int) && size <= xb_size && (pos + size) < xb_size
-> +	       && !filled) {
-> +		pos += sizeof(int);
-> +		size -= sizeof(int);
-> +		name_len = yaffs_strnlen((YCHAR *) (xb + pos), size);
-> +		if (ncopied + name_len + 1 < bsize) {
-> +			memcpy(buf, xb + pos, name_len * sizeof(YCHAR));
-> +			buf += name_len;
-> +			*buf = '\0';
-> +			buf++;
-> +			if (sizeof(YCHAR) > 1) {
-> +				*buf = '\0';
-> +				buf++;
-> +			}
-> +			ncopied += (name_len + 1);
-> +		} else {
-> +			filled = 1;
-> +                }
-Trivial little nit. The line above this comment is indented with spaces, 
-not tabs as it should be.
-
-
-> +		pos += size;
-> +		if (pos < xb_size - sizeof(int))
-> +			memcpy(&size, xb + pos, sizeof(int));
-> +		else
-> +			size = 0;
-> +	}
-> +	return ncopied;
-> +}
-> +
-> +int nval_hasvalues(const char *xb, int xb_size)
-> +{
-> +	return nval_used(xb, xb_size) > 0;
-> +}
-> diff --git a/fs/yaffs2/yaffs_nameval.h b/fs/yaffs2/yaffs_nameval.h
-> new file mode 100644
-> index 0000000..2bb02b6
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_nameval.h
-> @@ -0,0 +1,28 @@
-> +/*
-> + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU Lesser General Public License version 2.1 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-> + */
-> +
-> +#ifndef __NAMEVAL_H__
-> +#define __NAMEVAL_H__
-> +
-> +#include "yportenv.h"
-> +
-> +int nval_del(char *xb, int xb_size, const YCHAR * name);
-> +int nval_set(char *xb, int xb_size, const YCHAR * name, const char *buf,
-> +	     int bsize, int flags);
-> +int nval_get(const char *xb, int xb_size, const YCHAR * name, char *buf,
-> +	     int bsize);
-> +int nval_list(const char *xb, int xb_size, char *buf, int bsize);
-> +int nval_hasvalues(const char *xb, int xb_size);
-> +#endif
-> 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
++++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+@@ -20,6 +20,9 @@
+ #define ARCH_P4_MAX_ESCR	(ARCH_P4_TOTAL_ESCR - ARCH_P4_RESERVED_ESCR)
+ #define ARCH_P4_MAX_CCCR	(18)
+ 
++#define ARCH_P4_CNTRVAL_BITS	(40)
++#define ARCH_P4_CNTRVAL_MASK	((1ULL << ARCH_P4_CNTRVAL_BITS) - 1)
++
+ #define P4_ESCR_EVENT_MASK	0x7e000000U
+ #define P4_ESCR_EVENT_SHIFT	25
+ #define P4_ESCR_EVENTMASK_MASK	0x01fffe00U
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -753,19 +753,21 @@ out:
+ 
+ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
+ {
+-	int overflow = 0;
+-	u32 low, high;
++	u64 v;
+ 
+-	rdmsr(hwc->config_base + hwc->idx, low, high);
+-
+-	/* we need to check high bit for unflagged overflows */
+-	if ((low & P4_CCCR_OVF) || !(high & (1 << 31))) {
+-		overflow = 1;
+-		(void)checking_wrmsrl(hwc->config_base + hwc->idx,
+-			((u64)low) & ~P4_CCCR_OVF);
++	/* an official way for overflow indication */
++	rdmsrl(hwc->config_base + hwc->idx, v);
++	if (v & P4_CCCR_OVF) {
++		wrmsrl(hwc->config_base + hwc->idx, v & ~P4_CCCR_OVF);
++		return 1;
+ 	}
+ 
+-	return overflow;
++	/* it might be unflagged overflow */
++	rdmsrl(hwc->event_base + hwc->idx, v);
++	if (!(v & ARCH_P4_CNTRVAL_MASK))
++		return 1;
++
++	return 0;
+ }
+ 
+ static void p4_pmu_disable_pebs(void)
+@@ -1152,9 +1154,9 @@ static __initconst const struct x86_pmu 
+ 	 */
+ 	.num_counters		= ARCH_P4_MAX_CCCR,
+ 	.apic			= 1,
+-	.cntval_bits		= 40,
+-	.cntval_mask		= (1ULL << 40) - 1,
+-	.max_period		= (1ULL << 39) - 1,
++	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
++	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
++	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
+ 	/*
