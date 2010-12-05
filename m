@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab0LERv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:51:29 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
+	id S932097Ab0LERvd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:51:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932214Ab0LERvZ (ORCPT
+	with ESMTP id S932218Ab0LERv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:51:25 -0500
+	Sun, 5 Dec 2010 12:51:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=FO1r+seb1691wlxSvAUtu6Kl0FlDY3Ukx0chZZQE3HDWR33k5Q1hSlPjkHbvlsktzR
-         mDrb9maevlQOnPwfiyyj8DWflBNm5DPRCAdb5G3D/TtrXdOLiKAm9+wzUHQeduTEGXUf
-         r4CoLXW3JvUdyGomqcQt+047EWsDmaP8KlxE8=
+        b=nlLplXWoBwEc+ak6QkL/6yAiq2Do/ZNWEXq4vjyT3rPOeMbCK+JjybKO+4JPxyCk/7
+         sfSF0Xb2/X//6AjS+OyZ3W21OVxUCTlA6UYIIdCDKvZFw7st2V/p7djqlYX7IrobocG1
+         Ida6O4QpvEQBmF0ZCXLPGCds6+rcOvGHdj9rc=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 28/45] kstrtox: convert drivers/md/
-Date: Sun,  5 Dec 2010 19:49:25 +0200
-Message-Id: <1291571382-2719-28-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 29/45] kstrtox: convert drivers/mfd/
+Date: Sun,  5 Dec 2010 19:49:26 +0200
+Message-Id: <1291571382-2719-29-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,266 +29,320 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/md/bitmap.c |   12 ++++----
- drivers/md/md.c     |   82 ++++++++++++++++++++++++++++++++++----------------
- drivers/md/raid5.c  |   16 ++++++----
- 3 files changed, 72 insertions(+), 38 deletions(-)
+ drivers/mfd/ab3100-core.c    |   16 +++----------
+ drivers/mfd/ab3550-core.c    |   48 +++++++++++++++--------------------------
+ drivers/mfd/ab8500-debugfs.c |   41 +++++++++++++----------------------
+ 3 files changed, 37 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
-index 5a1ffe3..99ad322 100644
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -1881,10 +1881,8 @@ location_store(mddev_t *mddev, const char *buf, size_t len)
- 			return -EINVAL;
- 		} else {
- 			int rv;
--			if (buf[0] == '+')
--				rv = strict_strtoll(buf+1, 10, &offset);
--			else
--				rv = strict_strtoll(buf, 10, &offset);
-+
-+			rv = kstrtoll(buf, 10, &offset);
- 			if (rv)
- 				return rv;
- 			if (offset == 0)
-@@ -1980,7 +1978,9 @@ static ssize_t
- backlog_store(mddev_t *mddev, const char *buf, size_t len)
- {
- 	unsigned long backlog;
--	int rv = strict_strtoul(buf, 10, &backlog);
-+	int rv;
-+
-+	rv = kstrtoul(buf, 10, &backlog);
- 	if (rv)
- 		return rv;
- 	if (backlog > COUNTER_MAX)
-@@ -2006,7 +2006,7 @@ chunksize_store(mddev_t *mddev, const char *buf, size_t len)
- 	unsigned long csize;
- 	if (mddev->bitmap)
- 		return -EBUSY;
--	rv = strict_strtoul(buf, 10, &csize);
-+	rv = kstrtoul(buf, 10, &csize);
- 	if (rv)
- 		return rv;
- 	if (csize < 512 ||
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 84c46a1..86dd989 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -2549,13 +2549,15 @@ static int overlaps(sector_t s1, sector_t l1, sector_t s2, sector_t l2)
- 	return 1;
- }
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index 4193af5..5b1c8ac 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -497,7 +497,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	char buf[32];
+ 	ssize_t buf_size;
+ 	int regp;
+-	unsigned long user_reg;
++	u8 reg;
+ 	int err;
+ 	int i = 0;
  
--static int strict_blocks_to_sectors(const char *buf, sector_t *sectors)
-+static int kstr_blocks_to_sector_t(const char *buf, sector_t *sectors)
- {
- 	unsigned long long blocks;
- 	sector_t new;
-+	int rv;
+@@ -520,22 +520,19 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	/*
+ 	 * Advance pointer to end of string then terminate
+ 	 * the register string. This is needed to satisfy
+-	 * the strict_strtoul() function.
++	 * the kstrtou8() function.
+ 	 */
+ 	while ((i < buf_size) && (buf[i] != ' '))
+ 		i++;
+ 	buf[i] = '\0';
  
--	if (strict_strtoull(buf, 10, &blocks) < 0)
+-	err = strict_strtoul(&buf[regp], 16, &user_reg);
++	err = kstrtou8(&buf[regp], 16, &reg);
+ 	if (err)
+ 		return err;
+-	if (user_reg > 0xff)
 -		return -EINVAL;
-+	rv = kstrtoull(buf, 10, &blocks);
-+	if (rv < 0)
-+		return rv;
  
- 	if (blocks & 1ULL << (8 * sizeof(blocks) - 1))
- 		return -EINVAL; /* sector conversion overflow */
-@@ -2568,15 +2570,31 @@ static int strict_blocks_to_sectors(const char *buf, sector_t *sectors)
+ 	/* Either we read or we write a register here */
+ 	if (!priv->mode) {
+ 		/* Reading */
+-		u8 reg = (u8) user_reg;
+ 		u8 regvalue;
+ 
+ 		ab3100_get_register_interruptible(ab3100, reg, &regvalue);
+@@ -545,8 +542,6 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 			 reg, regvalue);
+ 	} else {
+ 		int valp;
+-		unsigned long user_value;
+-		u8 reg = (u8) user_reg;
+ 		u8 value;
+ 		u8 regvalue;
+ 
+@@ -563,13 +558,10 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 			i++;
+ 		buf[i] = '\0';
+ 
+-		err = strict_strtoul(&buf[valp], 16, &user_value);
++		err = kstrtou8(&buf[valp], 16, &value);
+ 		if (err)
+ 			return err;
+-		if (user_reg > 0xff)
+-			return -EINVAL;
+ 
+-		value = (u8) user_value;
+ 		ab3100_set_register_interruptible(ab3100, reg, value);
+ 		ab3100_get_register_interruptible(ab3100, reg, &regvalue);
+ 
+diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
+index 8a98739..7e471d9 100644
+--- a/drivers/mfd/ab3550-core.c
++++ b/drivers/mfd/ab3550-core.c
+@@ -73,8 +73,8 @@ struct ab3550 {
+ 	u8 startup_events[AB3550_NUM_EVENT_REG];
+ 	bool startup_events_read;
+ #ifdef CONFIG_DEBUG_FS
+-	unsigned int debug_bank;
+-	unsigned int debug_address;
++	u8 debug_bank;
++	u8 debug_address;
+ #endif
+ };
+ 
+@@ -865,7 +865,7 @@ static int ab3550_bank_print(struct seq_file *s, void *p)
+ {
+ 	struct ab3550 *ab = s->private;
+ 
+-	seq_printf(s, "%d\n", ab->debug_bank);
++	seq_printf(s, "%hhu\n", ab->debug_bank);
  	return 0;
  }
  
-+static int kstrto_sector_t(const char *buf, unsigned int base, sector_t *res)
-+{
-+	unsigned long long tmp;
-+	int rv;
-+
-+	rv = kstrtoull(buf, base, &tmp);
-+	if (rv < 0)
-+		return rv;
-+	if (tmp != (unsigned long long)(sector_t)tmp)
-+		return -EINVAL;
-+	*res = tmp;
-+	return 0;
-+}
-+
- static ssize_t
- rdev_size_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- {
- 	mddev_t *my_mddev = rdev->mddev;
- 	sector_t oldsectors = rdev->sectors;
- 	sector_t sectors;
-+	int rv;
- 
--	if (strict_blocks_to_sectors(buf, &sectors) < 0)
--		return -EINVAL;
-+	rv = kstr_blocks_to_sector_t(buf, &sectors);
-+	if (rv < 0)
-+		return rv;
- 	if (my_mddev->pers && rdev->raid_disk >= 0) {
- 		if (my_mddev->persistent) {
- 			sectors = super_types[my_mddev->major_version].
-@@ -2654,12 +2672,17 @@ static ssize_t recovery_start_show(mdk_rdev_t *rdev, char *page)
- 
- static ssize_t recovery_start_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- {
--	unsigned long long recovery_start;
-+	sector_t recovery_start;
- 
- 	if (cmd_match(buf, "none"))
- 		recovery_start = MaxSector;
--	else if (strict_strtoull(buf, 10, &recovery_start))
--		return -EINVAL;
-+	else {
-+		int rv;
-+
-+		rv = kstrto_sector_t(buf, 10, &recovery_start);
-+		if (rv < 0)
-+			return rv;
-+	}
- 
- 	if (rdev->mddev->pers &&
- 	    rdev->raid_disk >= 0)
-@@ -2992,7 +3015,7 @@ level_store(mddev_t *mddev, const char *buf, size_t len)
- 	char clevel[16];
- 	ssize_t rv = len;
- 	struct mdk_personality *pers;
--	long level;
-+	int level;
- 	void *priv;
- 	mdk_rdev_t *rdev;
- 
-@@ -3029,11 +3052,8 @@ level_store(mddev_t *mddev, const char *buf, size_t len)
- 	/* Now find the new personality */
- 	if (len == 0 || len >= sizeof(clevel))
- 		return -EINVAL;
--	strncpy(clevel, buf, len);
--	if (clevel[len-1] == '\n')
--		len--;
--	clevel[len] = 0;
--	if (strict_strtol(clevel, 10, &level))
-+	strlcpy(clevel, buf, sizeof(clevel));
-+	if (kstrtoint(clevel, 10, &level))
- 		level = LEVEL_NONE;
- 
- 	if (request_module("md-%s", clevel) != 0)
-@@ -3629,8 +3649,9 @@ size_store(mddev_t *mddev, const char *buf, size_t len)
- 	 * If array is active, we can try an on-line resize
- 	 */
- 	sector_t sectors;
--	int err = strict_blocks_to_sectors(buf, &sectors);
-+	int err;
- 
-+	err = kstr_blocks_to_sector_t(buf, &sectors);
- 	if (err < 0)
- 		return err;
- 	if (mddev->pers) {
-@@ -3874,11 +3895,12 @@ sync_force_parallel_show(mddev_t *mddev, char *page)
- static ssize_t
- sync_force_parallel_store(mddev_t *mddev, const char *buf, size_t len)
- {
--	long n;
--
--	if (strict_strtol(buf, 10, &n))
--		return -EINVAL;
-+	int n;
-+	int rv;
- 
-+	rv = kstrtoint(buf, 10, &n);
-+	if (rv < 0)
-+		return rv;
- 	if (n != 0 && n != 1)
- 		return -EINVAL;
- 
-@@ -3938,8 +3960,10 @@ min_sync_show(mddev_t *mddev, char *page)
- static ssize_t
- min_sync_store(mddev_t *mddev, const char *buf, size_t len)
- {
--	unsigned long long min;
--	if (strict_strtoull(buf, 10, &min))
-+	sector_t min;
-+	int rv;
-+
-+	rv = kstrto_sector_t(buf, 10, &min);
- 		return -EINVAL;
- 	if (min > mddev->resync_max)
- 		return -EINVAL;
-@@ -3975,9 +3999,12 @@ max_sync_store(mddev_t *mddev, const char *buf, size_t len)
- 	if (strncmp(buf, "max", 3) == 0)
- 		mddev->resync_max = MaxSector;
- 	else {
--		unsigned long long max;
--		if (strict_strtoull(buf, 10, &max))
--			return -EINVAL;
-+		sector_t max;
-+		int rv;
-+
-+		rv = kstrto_sector_t(buf, 10, &max);
-+		if (rv < 0)
-+			return rv;
- 		if (max < mddev->resync_min)
- 			return -EINVAL;
- 		if (max < mddev->resync_max &&
-@@ -4112,8 +4139,11 @@ array_size_store(mddev_t *mddev, const char *buf, size_t len)
- 
- 		mddev->external_size = 0;
- 	} else {
--		if (strict_blocks_to_sectors(buf, &sectors) < 0)
--			return -EINVAL;
-+		int rv;
-+
-+		rv = kstr_blocks_to_sector_t(buf, &sectors);
-+		if (rv < 0)
-+			return rv;
- 		if (mddev->pers && mddev->pers->size(mddev, 0, 0) < sectors)
- 			return -E2BIG;
- 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index dc574f3..61d63fb 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -4615,7 +4615,7 @@ static ssize_t
- raid5_store_stripe_cache_size(mddev_t *mddev, const char *page, size_t len)
- {
- 	raid5_conf_t *conf = mddev->private;
--	unsigned long new;
-+	unsigned int new;
+@@ -881,7 +881,7 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_bank;
++	u8 user_bank;
  	int err;
  
- 	if (len >= PAGE_SIZE)
-@@ -4623,8 +4623,9 @@ raid5_store_stripe_cache_size(mddev_t *mddev, const char *page, size_t len)
- 	if (!conf)
- 		return -ENODEV;
+ 	/* Get userspace string and assure termination */
+@@ -890,7 +890,7 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
  
--	if (strict_strtoul(page, 10, &new))
+-	err = strict_strtoul(buf, 0, &user_bank);
++	err = kstrtou8(buf, 0, &user_bank);
+ 	if (err)
+ 		return -EINVAL;
+ 
+@@ -925,7 +925,6 @@ static ssize_t ab3550_address_write(struct file *file,
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_address;
+ 	int err;
+ 
+ 	/* Get userspace string and assure termination */
+@@ -934,15 +933,9 @@ static ssize_t ab3550_address_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_address);
+-	if (err)
 -		return -EINVAL;
-+	err = kstrtouint(page, 10, &new);
+-	if (user_address > 0xff) {
+-		dev_err(&ab->i2c_client[0]->dev,
+-			"debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
+-	ab->debug_address = user_address;
++	err = kstrtou8(buf, 0, &ab->debug_address);
 +	if (err < 0)
 +		return err;
- 	err = raid5_set_cache_size(mddev, new);
- 	if (err)
- 		return err;
-@@ -4650,14 +4651,17 @@ static ssize_t
- raid5_store_preread_threshold(mddev_t *mddev, const char *page, size_t len)
- {
- 	raid5_conf_t *conf = mddev->private;
--	unsigned long new;
-+	unsigned int new;
-+	int rv;
-+
- 	if (len >= PAGE_SIZE)
- 		return -EINVAL;
- 	if (!conf)
- 		return -ENODEV;
+ 	return buf_size;
+ }
  
--	if (strict_strtoul(page, 10, &new))
--		return -EINVAL;
-+	rv = kstrtouint(page, 10, &new);
-+	if (rv < 0)
-+		return rv;
- 	if (new > conf->max_nr_stripes)
+@@ -952,8 +945,8 @@ static int ab3550_val_print(struct seq_file *s, void *p)
+ 	int err;
+ 	u8 regvalue;
+ 
+-	err = get_register_interruptible(ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, &regvalue);
++	err = get_register_interruptible(ab, ab->debug_bank,
++		ab->debug_address, &regvalue);
+ 	if (err)
  		return -EINVAL;
- 	conf->bypass_threshold = new;
+ 	seq_printf(s, "0x%02X\n", regvalue);
+@@ -973,7 +966,7 @@ static ssize_t ab3550_val_write(struct file *file,
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_val;
++	u8 user_val;
+ 	int err;
+ 	u8 regvalue;
+ 
+@@ -983,22 +976,17 @@ static ssize_t ab3550_val_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_val);
+-	if (err)
+-		return -EINVAL;
+-	if (user_val > 0xff) {
+-		dev_err(&ab->i2c_client[0]->dev,
+-			"debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
++	err = kstrtou8(buf, 0, &user_val);
++	if (err < 0)
++		return err;
+ 	err = mask_and_set_register_interruptible(
+-		ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, 0xFF, (u8)user_val);
++		ab, ab->debug_bank,
++		ab->debug_address, 0xFF, user_val);
+ 	if (err)
+ 		return -EINVAL;
+ 
+-	get_register_interruptible(ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, &regvalue);
++	get_register_interruptible(ab, ab->debug_bank,
++		ab->debug_address, &regvalue);
+ 	if (err)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
+index 8d1e05a..2a4c317 100644
+--- a/drivers/mfd/ab8500-debugfs.c
++++ b/drivers/mfd/ab8500-debugfs.c
+@@ -14,8 +14,8 @@
+ #include <linux/mfd/abx500.h>
+ #include <linux/mfd/ab8500.h>
+ 
+-static u32 debug_bank;
+-static u32 debug_address;
++static u8 debug_bank;
++static u8 debug_address;
+ 
+ /**
+  * struct ab8500_reg_range
+@@ -357,7 +357,7 @@ static int ab8500_registers_print(struct seq_file *s, void *p)
+ {
+        struct device *dev = s->private;
+        unsigned int i;
+-       u32 bank = debug_bank;
++       u8 bank = debug_bank;
+ 
+        seq_printf(s, AB8500_NAME_STRING " register values:\n");
+ 
+@@ -372,7 +372,7 @@ static int ab8500_registers_print(struct seq_file *s, void *p)
+                        int err;
+ 
+                        err = abx500_get_register_interruptible(dev,
+-                               (u8)bank, (u8)reg, &value);
++                               bank, (u8)reg, &value);
+                        if (err < 0) {
+                                dev_err(dev, "ab->read fail %d\n", err);
+                                return err;
+@@ -406,7 +406,7 @@ static const struct file_operations ab8500_registers_fops = {
+ 
+ static int ab8500_bank_print(struct seq_file *s, void *p)
+ {
+-       return seq_printf(s, "%d\n", debug_bank);
++       return seq_printf(s, "%u\n", debug_bank);
+ }
+ 
+ static int ab8500_bank_open(struct inode *inode, struct file *file)
+@@ -421,7 +421,7 @@ static ssize_t ab8500_bank_write(struct file *file,
+        struct device *dev = ((struct seq_file *)(file->private_data))->private;
+        char buf[32];
+        int buf_size;
+-       unsigned long user_bank;
++       u8 user_bank;
+        int err;
+ 
+        /* Get userspace string and assure termination */
+@@ -430,9 +430,9 @@ static ssize_t ab8500_bank_write(struct file *file,
+                return -EFAULT;
+        buf[buf_size] = 0;
+ 
+-       err = strict_strtoul(buf, 0, &user_bank);
++       err = kstrtou8(buf, 0, &user_bank);
+        if (err)
+-               return -EINVAL;
++               return err;
+ 
+        if (user_bank >= AB8500_NUM_BANKS) {
+                dev_err(dev, "debugfs error input > number of banks\n");
+@@ -458,10 +458,8 @@ static ssize_t ab8500_address_write(struct file *file,
+        const char __user *user_buf,
+        size_t count, loff_t *ppos)
+ {
+-       struct device *dev = ((struct seq_file *)(file->private_data))->private;
+        char buf[32];
+        int buf_size;
+-       unsigned long user_address;
+        int err;
+ 
+        /* Get userspace string and assure termination */
+@@ -470,14 +468,9 @@ static ssize_t ab8500_address_write(struct file *file,
+                return -EFAULT;
+        buf[buf_size] = 0;
+ 
+-       err = strict_strtoul(buf, 0, &user_address);
++       err = kstrtou8(buf, 0, &debug_address);
+        if (err)
+-               return -EINVAL;
+-       if (user_address > 0xff) {
+-               dev_err(dev, "debugfs error input > 0xff\n");
+-               return -EINVAL;
+-       }
+-       debug_address = user_address;
++               return err;
+        return buf_size;
+ }
+ 
+@@ -488,7 +481,7 @@ static int ab8500_val_print(struct seq_file *s, void *p)
+        u8 regvalue;
+ 
+        ret = abx500_get_register_interruptible(dev,
+-               (u8)debug_bank, (u8)debug_address, &regvalue);
++               debug_bank, debug_address, &regvalue);
+        if (ret < 0) {
+                dev_err(dev, "abx500_get_reg fail %d, %d\n",
+                        ret, __LINE__);
+@@ -511,7 +504,7 @@ static ssize_t ab8500_val_write(struct file *file,
+        struct device *dev = ((struct seq_file *)(file->private_data))->private;
+        char buf[32];
+        int buf_size;
+-       unsigned long user_val;
++       u8 user_val;
+        int err;
+ 
+        /* Get userspace string and assure termination */
+@@ -520,15 +513,11 @@ static ssize_t ab8500_val_write(struct file *file,
+                return -EFAULT;
+        buf[buf_size] = 0;
+ 
+-       err = strict_strtoul(buf, 0, &user_val);
++       err = kstrtou8(buf, 0, &user_val);
+        if (err)
+-               return -EINVAL;
+-       if (user_val > 0xff) {
+-               dev_err(dev, "debugfs error input > 0xff\n");
+-               return -EINVAL;
+-       }
++               return err;
+        err = abx500_set_register_interruptible(dev,
+-               (u8)debug_bank, debug_address, (u8)user_val);
++               debug_bank, debug_address, user_val);
+        if (err < 0) {
+                printk(KERN_ERR "abx500_set_reg failed %d, %d", err, __LINE__);
+                return -EINVAL;
 -- 
 1.7.2.2
 
