@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab0LEXKT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:10:19 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37709 "EHLO
+	id S1756276Ab0LEXKg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:10:36 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37779 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab0LEXKQ (ORCPT
+	with ESMTP id S1756207Ab0LEXKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:10:16 -0500
+	Sun, 5 Dec 2010 18:10:25 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/21] ARM: tegra: irq: Add set_wake and set_type support for suspend
-Date: Sun,  5 Dec 2010 15:09:00 -0800
-Message-Id: <1291590548-7341-14-git-send-email-ccross@android.com>
+Subject: [PATCH 05/21] ARM: tegra: Add api to control internal powergating
+Date: Sun,  5 Dec 2010 15:08:52 -0800
+Message-Id: <1291590548-7341-6-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1291590548-7341-1-git-send-email-ccross@android.com>
 References: <1291590548-7341-1-git-send-email-ccross@android.com>
@@ -25,185 +25,288 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/include/mach/legacy_irq.h |    3 +-
- arch/arm/mach-tegra/irq.c                     |  106 +++++++++++++++++++++++++
- arch/arm/mach-tegra/legacy_irq.c              |    4 +-
- 3 files changed, 110 insertions(+), 3 deletions(-)
+ arch/arm/mach-tegra/Makefile                 |    1 +
+ arch/arm/mach-tegra/include/mach/powergate.h |   40 +++++
+ arch/arm/mach-tegra/powergate.c              |  211 ++++++++++++++++++++++++++
+ 3 files changed, 252 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/include/mach/powergate.h
+ create mode 100644 arch/arm/mach-tegra/powergate.c
 
-diff --git a/arch/arm/mach-tegra/include/mach/legacy_irq.h b/arch/arm/mach-tegra/include/mach/legacy_irq.h
-index d898c0e..3a2bfab 100644
---- a/arch/arm/mach-tegra/include/mach/legacy_irq.h
-+++ b/arch/arm/mach-tegra/include/mach/legacy_irq.h
-@@ -31,5 +31,6 @@ int tegra_legacy_irq_set_wake(int irq, int enable);
- void tegra_legacy_irq_set_lp1_wake_mask(void);
- void tegra_legacy_irq_restore_mask(void);
- void tegra_init_legacy_irq(void);
--
-+void tegra_legacy_irq_suspend(void);
-+void tegra_legacy_irq_resume(void);
- #endif
-diff --git a/arch/arm/mach-tegra/irq.c b/arch/arm/mach-tegra/irq.c
-index 8f47a9c..ced7007 100644
---- a/arch/arm/mach-tegra/irq.c
-+++ b/arch/arm/mach-tegra/irq.c
-@@ -54,6 +54,51 @@ static void pmc_32kwritel(u32 val, unsigned long offs)
- 	udelay(130);
- }
- 
-+int tegra_set_lp0_wake(int irq, int enable)
-+{
-+	int wake = tegra_irq_to_wake(irq);
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index cdbc68e..00a6ba3 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -5,6 +5,7 @@ obj-y                                   += clock.o
+ obj-y                                   += timer.o
+ obj-y                                   += gpio.o
+ obj-y                                   += pinmux.o
++obj-y                                   += powergate.o
+ obj-y					+= fuse.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clock.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_clocks.o
+diff --git a/arch/arm/mach-tegra/include/mach/powergate.h b/arch/arm/mach-tegra/include/mach/powergate.h
+new file mode 100644
+index 0000000..401d1b7
+--- /dev/null
++++ b/arch/arm/mach-tegra/include/mach/powergate.h
+@@ -0,0 +1,40 @@
++/*
++ * drivers/regulator/tegra-regulator.c
++ *
++ * Copyright (c) 2010 Google, Inc
++ *
++ * Author:
++ *	Colin Cross <ccross@google.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
 +
-+	if (wake < 0)
++#ifndef _MACH_TEGRA_POWERGATE_H_
++#define _MACH_TEGRA_POWERGATE_H_
++
++#define TEGRA_POWERGATE_CPU	0
++#define TEGRA_POWERGATE_3D	1
++#define TEGRA_POWERGATE_VENC	2
++#define TEGRA_POWERGATE_PCIE	3
++#define TEGRA_POWERGATE_VDEC	4
++#define TEGRA_POWERGATE_L2	5
++#define TEGRA_POWERGATE_MPE	6
++#define TEGRA_NUM_POWERGATE	7
++
++int tegra_powergate_power_on(int id);
++int tegra_powergate_power_off(int id);
++bool tegra_powergate_is_powered(int id);
++int tegra_powergate_remove_clamping(int id);
++
++/* Must be called with clk disabled, and returns with clk enabled */
++int tegra_powergate_sequence_power_up(int id, struct clk *clk);
++
++#endif /* _MACH_TEGRA_POWERGATE_H_ */
+diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
+new file mode 100644
+index 0000000..9fbe727
+--- /dev/null
++++ b/arch/arm/mach-tegra/powergate.c
+@@ -0,0 +1,211 @@
++/*
++ * drivers/powergate/tegra-powergate.c
++ *
++ * Copyright (c) 2010 Google, Inc
++ *
++ * Author:
++ *	Colin Cross <ccross@google.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/clk.h>
++#include <linux/debugfs.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/seq_file.h>
++#include <linux/spinlock.h>
++
++#include <mach/clk.h>
++#include <mach/iomap.h>
++#include <mach/powergate.h>
++
++#define PWRGATE_TOGGLE		0x30
++#define  PWRGATE_TOGGLE_START	(1 << 8)
++
++#define REMOVE_CLAMPING		0x34
++
++#define PWRGATE_STATUS		0x38
++
++static DEFINE_SPINLOCK(tegra_powergate_lock);
++
++static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
++
++static u32 pmc_read(unsigned long reg)
++{
++	return readl(pmc + reg);
++}
++
++static void pmc_write(u32 val, unsigned long reg)
++{
++	writel(val, pmc + reg);
++}
++
++static int tegra_powergate_set(int id, bool new_state)
++{
++	bool status;
++	unsigned long flags;
++
++	spin_lock_irqsave(&tegra_powergate_lock, flags);
++
++	status = pmc_read(PWRGATE_STATUS) & (1 << id);
++
++	if (status == new_state) {
++		spin_unlock_irqrestore(&tegra_powergate_lock, flags);
++		return -EINVAL;
++	}
++
++	pmc_write(PWRGATE_TOGGLE_START | id, PWRGATE_TOGGLE);
++
++	spin_unlock_irqrestore(&tegra_powergate_lock, flags);
++
++	return 0;
++}
++
++int tegra_powergate_power_on(int id)
++{
++	if (id < 0 || id >= TEGRA_NUM_POWERGATE)
 +		return -EINVAL;
 +
-+	if (enable)
-+		tegra_lp0_wake_enb |= 1 << wake;
++	return tegra_powergate_set(id, true);
++}
++
++int tegra_powergate_power_off(int id)
++{
++	if (id < 0 || id >= TEGRA_NUM_POWERGATE)
++		return -EINVAL;
++
++	return tegra_powergate_set(id, false);
++}
++
++bool tegra_powergate_is_powered(int id)
++{
++	u32 status;
++
++	if (id < 0 || id >= TEGRA_NUM_POWERGATE)
++		return -EINVAL;
++
++	status = pmc_read(PWRGATE_STATUS) & (1 << id);
++	return !!status;
++}
++
++int tegra_powergate_remove_clamping(int id)
++{
++	u32 mask;
++
++	if (id < 0 || id >= TEGRA_NUM_POWERGATE)
++		return -EINVAL;
++
++	/*
++	 * Tegra 2 has a bug where PCIE and VDE clamping masks are
++	 * swapped relatively to the partition ids
++	 */
++	if (id ==  TEGRA_POWERGATE_VDEC)
++		mask = (1 << TEGRA_POWERGATE_PCIE);
++	else if	(id == TEGRA_POWERGATE_PCIE)
++		mask = (1 << TEGRA_POWERGATE_VDEC);
 +	else
-+		tegra_lp0_wake_enb &= ~(1 << wake);
++		mask = (1 << id);
++
++	pmc_write(mask, REMOVE_CLAMPING);
 +
 +	return 0;
 +}
 +
-+int tegra_set_lp0_wake_type(int irq, int flow_type)
-+{
-+	int wake = tegra_irq_to_wake(irq);
-+
-+	if (wake < 0)
-+		return 0;
-+
-+	switch (flow_type) {
-+	case IRQF_TRIGGER_FALLING:
-+	case IRQF_TRIGGER_LOW:
-+		tegra_lp0_wake_level &= ~(1 << wake);
-+		tegra_lp0_wake_level_any &= ~(1 << wake);
-+		break;
-+	case IRQF_TRIGGER_HIGH:
-+	case IRQF_TRIGGER_RISING:
-+		tegra_lp0_wake_level |= 1 << wake;
-+		tegra_lp0_wake_level_any &= ~(1 << wake);
-+		break;
-+
-+	case IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING:
-+		tegra_lp0_wake_level_any |= 1 << wake;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+
- int tegra_set_lp1_wake(int irq, int enable)
- {
- 	return tegra_legacy_irq_set_wake(irq, enable);
-@@ -97,6 +142,33 @@ void tegra_set_lp0_wake_pads(u32 wake_enb, u32 wake_level, u32 wake_any)
- 	writel(wake_enb, pmc + PMC_WAKE_MASK);
- }
- 
-+static void tegra_irq_handle_wake(void)
-+{
-+	int wake;
-+	int irq;
-+	struct irq_desc *desc;
-+
-+	unsigned long wake_status = readl(pmc + PMC_WAKE_STATUS);
-+	for_each_set_bit(wake, &wake_status, sizeof(wake_status) * 8) {
-+		irq = tegra_wake_to_irq(wake);
-+		if (!irq) {
-+			pr_info("Resume caused by WAKE%d\n", wake);
-+			continue;
-+		}
-+
-+		desc = irq_to_desc(irq);
-+		if (!desc || !desc->action || !desc->action->name) {
-+			pr_info("Resume caused by WAKE%d, irq %d\n", wake, irq);
-+			continue;
-+		}
-+
-+		pr_info("Resume caused by WAKE%d, %s\n", wake,
-+			desc->action->name);
-+
-+		generic_handle_irq(irq);
-+	}
-+}
-+
- static void tegra_mask(unsigned int irq)
- {
- 	gic_mask_irq(irq);
-@@ -109,11 +181,34 @@ static void tegra_unmask(unsigned int irq)
- 	tegra_legacy_unmask_irq(irq);
- }
- 
-+static int tegra_set_wake(unsigned int irq, unsigned int enable)
++/* Must be called with clk disabled, and returns with clk enabled */
++int tegra_powergate_sequence_power_up(int id, struct clk *clk)
 +{
 +	int ret;
-+	ret = tegra_set_lp1_wake(irq, enable);
++
++	tegra_periph_reset_assert(clk);
++
++	ret = tegra_powergate_power_on(id);
 +	if (ret)
-+		return ret;
++		goto err_power;
 +
-+	if (tegra_get_suspend_mode() == TEGRA_SUSPEND_LP0)
-+		return tegra_set_lp0_wake(irq, enable);
++	ret = clk_enable(clk);
++	if (ret)
++		goto err_clk;
 +
++	udelay(10);
++
++	ret = tegra_powergate_remove_clamping(id);
++	if (ret)
++		goto err_clamp;
++
++	tegra_periph_reset_deassert(clk);
++
++	return 0;
++
++err_clamp:
++	clk_disable(clk);
++err_clk:
++	tegra_powergate_power_off(id);
++err_power:
++	return ret;
++}
++
++#ifdef CONFIG_DEBUG_FS
++
++static const char *powergate_name[] = {
++	[TEGRA_POWERGATE_CPU]	= "cpu",
++	[TEGRA_POWERGATE_3D]	= "3d",
++	[TEGRA_POWERGATE_VENC]	= "venc",
++	[TEGRA_POWERGATE_VDEC]	= "vdec",
++	[TEGRA_POWERGATE_PCIE]	= "pcie",
++	[TEGRA_POWERGATE_L2]	= "l2",
++	[TEGRA_POWERGATE_MPE]	= "mpe",
++};
++
++static int powergate_show(struct seq_file *s, void *data)
++{
++	int i;
++
++	seq_printf(s, " powergate powered\n");
++	seq_printf(s, "------------------\n");
++
++	for (i = 0; i < TEGRA_NUM_POWERGATE; i++)
++		seq_printf(s, " %9s %7s\n", powergate_name[i],
++			tegra_powergate_is_powered(i) ? "yes" : "no");
 +	return 0;
 +}
 +
-+static int tegra_set_type(unsigned int irq, unsigned int flow_type)
++static int powergate_open(struct inode *inode, struct file *file)
 +{
-+	if (tegra_get_suspend_mode() == TEGRA_SUSPEND_LP0)
-+		return tegra_set_lp0_wake_type(irq, flow_type);
-+
-+	return 0;
++	return single_open(file, powergate_show, inode->i_private);
 +}
 +
- static struct irq_chip tegra_irq = {
- 	.name		= "PPI",
- 	.ack		= gic_ack_irq,
- 	.mask		= tegra_mask,
- 	.unmask		= tegra_unmask,
-+	.set_wake	= tegra_set_wake,
-+	.set_type	= tegra_set_type,
- #ifdef CONFIG_SMP
- 	.set_affinity	= gic_set_cpu,
- #endif
-@@ -136,3 +231,14 @@ void __init tegra_init_irq(void)
- 		set_irq_flags(irq, IRQF_VALID);
- 	}
- }
++static const struct file_operations powergate_fops = {
++	.open		= powergate_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
 +
-+void tegra_irq_suspend(void)
++static int __init powergate_debugfs_init(void)
 +{
-+	tegra_legacy_irq_suspend();
++	struct dentry *d;
++	int err = -ENOMEM;
++
++	d = debugfs_create_file("powergate", S_IRUGO, NULL, NULL,
++		&powergate_fops);
++	if (!d)
++		return -ENOMEM;
++
++	return err;
 +}
 +
-+void tegra_irq_resume(void)
-+{
-+	tegra_legacy_irq_resume();
-+	tegra_irq_handle_wake();
-+}
-diff --git a/arch/arm/mach-tegra/legacy_irq.c b/arch/arm/mach-tegra/legacy_irq.c
-index 38eb719..5a6197b 100644
---- a/arch/arm/mach-tegra/legacy_irq.c
-+++ b/arch/arm/mach-tegra/legacy_irq.c
-@@ -179,7 +179,7 @@ static u32 cop_ier[NUM_ICTLRS];
- static u32 cpu_ier[NUM_ICTLRS];
- static u32 cpu_iep[NUM_ICTLRS];
- 
--void tegra_irq_suspend(void)
-+void tegra_legacy_irq_suspend(void)
- {
- 	unsigned long flags;
- 	int i;
-@@ -195,7 +195,7 @@ void tegra_irq_suspend(void)
- 	local_irq_restore(flags);
- }
- 
--void tegra_irq_resume(void)
-+void tegra_legacy_irq_resume(void)
- {
- 	unsigned long flags;
- 	int i;
++late_initcall(powergate_debugfs_init);
++
++#endif
 -- 
 1.7.3.1
 
