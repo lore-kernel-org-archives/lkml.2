@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab0LERPu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:15:50 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:55872 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756039Ab0LERPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:15:49 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18xq7JmCZExA/UWypiiEvcWqU/QfCda/P+Kk+/Xed
-	NJ9+IWCdc+MrVY
-Subject: Re: [PATCH v4] Regression: sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Nikos Chantziaras <realnc@arcor.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1291568977.7521.75.camel@marge.simson.net>
-References: <1289783580.495.58.camel@maggy.simson.net>
-	 <1289811438.2109.474.camel@laptop>
-	 <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116130413.GA29368@redhat.com>
-	 <1289917109.5169.131.camel@maggy.simson.net>
-	 <20101116150319.GA3475@redhat.com>
-	 <1289922108.5169.185.camel@maggy.simson.net>
-	 <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net>
-	 <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com>
-	 <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com>
-	 <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
-	 <idfrvp$l4o$1@dough.gmane.org>  <20101205151220.0c532c94@pyx>
-	 <1291568388.7521.67.camel@marge.simson.net>
-	 <1291568977.7521.75.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Sun, 05 Dec 2010 18:15:40 +0100
-Message-Id: <1291569340.8219.3.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1756340Ab0LER0o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:26:44 -0500
+Received: from smtprelay01.ispgateway.de ([80.67.31.28]:36599 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab0LER0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 12:26:43 -0500
+X-Greylist: delayed 1137 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Dec 2010 12:26:42 EST
+From: Bernhard Walle <bernhard@bwalle.de>
+To: sfrench@samba.org
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cifs: Add information about noserverino
+Date: Sun,  5 Dec 2010 18:07:35 +0100
+Message-Id: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
+X-Mailer: git-send-email 1.7.3.2
+X-Df-Sender: 1227806
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-05 at 18:09 +0100, Mike Galbraith wrote:
-> On Sun, 2010-12-05 at 17:59 +0100, Mike Galbraith wrote:
-> > On Sun, 2010-12-05 at 15:12 +0000, Alan Cox wrote:
-> > > > > As soon as you do that from the same terminal that you're going to
-> > > > > launch the "make" from, you're back to total lossage.  Are you going
-> > > > > to explain to a student that "oh, you need to create a new
-> > > > > gnome-terminal tab and launch firefox from that"?
-> > > > 
-> > > > Btw, most people don't do that anymore.  They don't use terminals.  They 
-> > > 
-> > > Its a regression for those who do - and often have good reason to do.
-> > > This is of course why you don't put policy in the kernel and the original
-> > > patch was bogus anyway.
-> > 
-> > What is a very clear regression is a threaded app (say firefox) vs a
-> > single threaded app, particularly on UP.  The per thread scheduling
-> > model wins hands down there, because the scheduler very heavily favors
-> > the threaded application.  Take that unfairness away, and you have an
-> > undeniable regression.  Yes, it's not black and white, never is.
-> 
-> P.S.  You also have an obvious _progression_ from the perspective of the
-> single threaded application, which may just as well be interactive.
+In my case I had the problem that 32 bit userspace applications in an
+amd64 environment was not able to list the directories of a CIFS-mounted
+share. The simple userspace code
 
-P.P.S :)
+    int main(int argc, char *argv[])
+    {
+        DIR *dir;
+        struct dirent *dirent;
 
-systemd will have the same regressions/progressions.  It doesn't matter
-one whit whether it's kernel/userland making policy.  If distro-X
-includes either one, or neither, they are guaranteed to be wrong :)
+        if (!argv[1]) {
+            fprintf(stderr, "Usage: %s <directory>\n", argv[0]);
+            return -1;
+        }
+
+        dir = opendir(argv[1]);
+        if (!dir) {
+            perror("Unable to open directory");
+            return -1;
+        }
+
+        while ((dirent = readdir(dir)) != NULL)
+            puts(dirent->d_name);
+
+        closedir(dir);
+
+        return 0;
+    }
+
+was sufficient to trigger the problem.
+
+I discovered that the problem was that the inodes were too large to fit
+in a 32 bit (unsigned long) integer, so the compat_filldir() function
+returned -EOVERFLOW.
+
+While that is okay it would have saved me a some hours of debugging if
+the message below would have appeared in my kernel log.
+
+The target was a Samba server (I guess) of a Buffalo LinkStation Duo
+with the unmodified vendor firmware 1.34.
+
+Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+---
+ fs/cifs/readdir.c |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
+index d5e591f..d979826 100644
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -773,6 +773,7 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+ 	char *tmp_buf = NULL;
+ 	char *end_of_smb;
+ 	unsigned int max_len;
++	int err;
+ 
+ 	xid = GetXid();
+ 
+@@ -783,17 +784,31 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+ 
+ 	switch ((int) file->f_pos) {
+ 	case 0:
+-		if (filldir(direntry, ".", 1, file->f_pos,
+-		     file->f_path.dentry->d_inode->i_ino, DT_DIR) < 0) {
++		err = filldir(direntry, ".", 1, file->f_pos,
++		     file->f_path.dentry->d_inode->i_ino, DT_DIR);
++		if (err < 0) {
+ 			cERROR(1, "Filldir for current dir failed");
++			if (err == -EOVERFLOW) {
++				cERROR(1, "Server inodes are too large for 32 "
++						"bit userspace. You might "
++						"consider using 'noserverino' "
++						"mount option for this mount.");
++			}
+ 			rc = -ENOMEM;
+ 			break;
+ 		}
+ 		file->f_pos++;
+ 	case 1:
+-		if (filldir(direntry, "..", 2, file->f_pos,
+-		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR) < 0) {
++		err = filldir(direntry, "..", 2, file->f_pos,
++		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR);
++		if (err < 0) {
+ 			cERROR(1, "Filldir for parent dir failed");
++			if (err == -EOVERFLOW) {
++				cERROR(1, "Server inodes are too large for 32 "
++						"bit userspace. You might "
++						"consider using 'noserverino' "
++						"mount option for this mount.");
++			}
+ 			rc = -ENOMEM;
+ 			break;
+ 		}
+-- 
+1.7.3.2
 
