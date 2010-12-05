@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab0LERuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:50:25 -0500
+	id S1756604Ab0LERuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:50:20 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab0LERuV (ORCPT
+	with ESMTP id S1756496Ab0LERuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:21 -0500
+	Sun, 5 Dec 2010 12:50:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ueh5VPBxKiW9VHpkdK7rOOYV9p1jbtN36EieS1Prv26gSEzDTa/tND+vBzf1hICFpn
-         UDJMwvopHIMKnvDr1D1pxqKSvxaPNJAgrXIJxlqWiCqHBDtSjOtiw1wLq1uG0FJHU2sK
-         DihdnniTEPu1eIunJrUDFC7FQAgnLne60DwH4=
+        b=UqwaR4eDMHW1eHfc3ag4EXq57pkCsmRxgxBNxJ1WxC64wqngzIIe7KRaBWhoj9Ey35
+         GyHAlW97RqgVP3CQ6ZFjRKORbySZZRmhPRq9jFffxoXB4I7fzzIAcy/asinimNYVIuQa
+         x+jjePyl7WU8wQUMTnDbxIkHBmu1BGYIGnCzM=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 06/45] kstrtox: convert mm/
-Date: Sun,  5 Dec 2010 19:49:03 +0200
-Message-Id: <1291571382-2719-6-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 03/45] kstrtox: convert arch/arm/
+Date: Sun,  5 Dec 2010 19:49:00 +0200
+Message-Id: <1291571382-2719-3-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -26,243 +26,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In mm/vmscan.c:
-make "scan_unevictable_pages" write-only.
+In arch/arm/mach-omap2/board-omap3touchbook.c:
+remove "tbr" parameter, it's unused.
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- include/linux/slub_def.h |    2 +-
- mm/hugetlb.c             |   12 ++++++------
- mm/kmemleak.c            |    4 ++--
- mm/ksm.c                 |   28 ++++++++++------------------
- mm/slub.c                |   19 ++++++++++---------
- mm/vmscan.c              |   25 ++++++++++---------------
- 6 files changed, 39 insertions(+), 51 deletions(-)
+ arch/arm/mach-omap2/board-omap3touchbook.c |   11 -----------
+ arch/arm/mach-omap2/mux.c                  |   15 ++++++---------
+ arch/arm/mach-pxa/balloon3.c               |    2 +-
+ arch/arm/mach-pxa/viper.c                  |    3 +--
+ arch/arm/mach-s3c2412/mach-jive.c          |    2 +-
+ arch/arm/mach-ux500/mbox.c                 |   27 ++++++++-------------------
+ arch/arm/mach-w90x900/cpu.c                |    5 +++--
+ arch/arm/plat-omap/mcbsp.c                 |    4 ++--
+ 8 files changed, 22 insertions(+), 47 deletions(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index e4f5ed1..37f439d 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -95,7 +95,7 @@ struct kmem_cache {
- 	/*
- 	 * Defragmentation by allocating from a remote node.
- 	 */
--	int remote_node_defrag_ratio;
-+	unsigned int remote_node_defrag_ratio;
- #endif
- 	struct kmem_cache_node *node[MAX_NUMNODES];
- };
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8585524..a9a5460 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1438,9 +1438,9 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
- 	struct hstate *h;
- 	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index 41104bb..6e57bda 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -62,8 +62,6 @@
+ #define TB_BL_PWM_TIMER		9
+ #define TB_KILL_POWER_GPIO	168
  
--	err = strict_strtoul(buf, 10, &count);
--	if (err)
--		return 0;
-+	err = kstrtoul(buf, 10, &count);
-+	if (err < 0)
-+		return err;
- 
- 	h = kobj_to_hstate(kobj, &nid);
- 	if (nid == NUMA_NO_NODE) {
-@@ -1517,9 +1517,9 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
- 	unsigned long input;
- 	struct hstate *h = kobj_to_hstate(kobj, NULL);
- 
--	err = strict_strtoul(buf, 10, &input);
--	if (err)
--		return 0;
-+	err = kstrtoul(buf, 10, &input);
-+	if (err < 0)
-+		return err;
- 
- 	spin_lock(&hugetlb_lock);
- 	h->nr_overcommit_huge_pages = input;
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index bd9bc21..b3fb3f5 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -1557,9 +1557,9 @@ static ssize_t kmemleak_write(struct file *file, const char __user *user_buf,
- 	else if (strncmp(buf, "scan=off", 8) == 0)
- 		stop_scan_thread();
- 	else if (strncmp(buf, "scan=", 5) == 0) {
--		unsigned long secs;
-+		unsigned int secs;
- 
--		ret = strict_strtoul(buf + 5, 0, &secs);
-+		ret = kstrtouint(buf + 5, 0, &secs);
- 		if (ret < 0)
- 			goto out;
- 		stop_scan_thread();
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 43bc893..c03345b 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1773,15 +1773,11 @@ static ssize_t sleep_millisecs_store(struct kobject *kobj,
- 				     struct kobj_attribute *attr,
- 				     const char *buf, size_t count)
- {
--	unsigned long msecs;
- 	int err;
- 
--	err = strict_strtoul(buf, 10, &msecs);
--	if (err || msecs > UINT_MAX)
--		return -EINVAL;
+-static unsigned long touchbook_revision;
 -
--	ksm_thread_sleep_millisecs = msecs;
--
-+	err = kstrtouint(buf, 10, &ksm_thread_sleep_millisecs);
-+	if (err < 0)
-+		return err;
- 	return count;
- }
- KSM_ATTR(sleep_millisecs);
-@@ -1797,14 +1793,10 @@ static ssize_t pages_to_scan_store(struct kobject *kobj,
- 				   const char *buf, size_t count)
- {
- 	int err;
--	unsigned long nr_pages;
--
--	err = strict_strtoul(buf, 10, &nr_pages);
--	if (err || nr_pages > UINT_MAX)
--		return -EINVAL;
--
--	ksm_thread_pages_to_scan = nr_pages;
- 
-+	err = kstrtouint(buf, 10, &ksm_thread_pages_to_scan);
-+	if (err < 0)
-+		return err;
- 	return count;
- }
- KSM_ATTR(pages_to_scan);
-@@ -1819,11 +1811,11 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			 const char *buf, size_t count)
- {
- 	int err;
--	unsigned long flags;
-+	unsigned int flags;
- 
--	err = strict_strtoul(buf, 10, &flags);
--	if (err || flags > UINT_MAX)
--		return -EINVAL;
-+	err = kstrtouint(buf, 10, &flags);
-+	if (err < 0)
-+		return err;
- 	if (flags > KSM_RUN_UNMERGE)
- 		return -EINVAL;
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index 981fb73..3170e52 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3928,11 +3928,11 @@ SLAB_ATTR_RO(objs_per_slab);
- static ssize_t order_store(struct kmem_cache *s,
- 				const char *buf, size_t length)
- {
--	unsigned long order;
-+	int order;
- 	int err;
- 
--	err = strict_strtoul(buf, 10, &order);
--	if (err)
-+	err = kstrtoint(buf, 10, &order);
-+	if (err < 0)
- 		return err;
- 
- 	if (order > slub_max_order || order < slub_min_order)
-@@ -3959,7 +3959,7 @@ static ssize_t min_partial_store(struct kmem_cache *s, const char *buf,
- 	unsigned long min;
- 	int err;
- 
--	err = strict_strtoul(buf, 10, &min);
-+	err = kstrtoul(buf, 10, &min);
- 	if (err)
- 		return err;
- 
-@@ -4219,21 +4219,22 @@ SLAB_ATTR(shrink);
- #ifdef CONFIG_NUMA
- static ssize_t remote_node_defrag_ratio_show(struct kmem_cache *s, char *buf)
- {
--	return sprintf(buf, "%d\n", s->remote_node_defrag_ratio / 10);
-+	return sprintf(buf, "%u\n", s->remote_node_defrag_ratio / 10);
+ static struct mtd_partition omap3touchbook_nand_partitions[] = {
+ 	/* All the partition sizes are listed in terms of NAND block size */
+ 	{
+@@ -495,15 +493,6 @@ static void omap3_touchbook_poweroff(void)
+ 	gpio_direction_output(TB_KILL_POWER_GPIO, 0);
  }
  
- static ssize_t remote_node_defrag_ratio_store(struct kmem_cache *s,
- 				const char *buf, size_t length)
- {
--	unsigned long ratio;
-+	unsigned int ratio;
- 	int err;
- 
--	err = strict_strtoul(buf, 10, &ratio);
-+	err = kstrtouint(buf, 10, &ratio);
- 	if (err)
- 		return err;
-+	if (ratio > 100)
-+		return -EINVAL;
- 
--	if (ratio <= 100)
--		s->remote_node_defrag_ratio = ratio * 10;
-+	s->remote_node_defrag_ratio = ratio * 10;
- 
- 	return length;
- }
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d31d7ce..61acce3 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3055,37 +3055,32 @@ int scan_unevictable_handler(struct ctl_table *table, int write,
-  * per node 'scan_unevictable_pages' attribute.  On demand re-scan of
-  * a specified node's per zone unevictable lists for evictable pages.
-  */
--
--static ssize_t read_scan_unevictable_node(struct sys_device *dev,
--					  struct sysdev_attribute *attr,
--					  char *buf)
+-static int __init early_touchbook_revision(char *p)
 -{
--	return sprintf(buf, "0\n");	/* always zero; should fit... */
--}
+-	if (!p)
+-		return 0;
 -
- static ssize_t write_scan_unevictable_node(struct sys_device *dev,
- 					   struct sysdev_attribute *attr,
- 					const char *buf, size_t count)
- {
- 	struct zone *node_zones = NODE_DATA(dev->id)->node_zones;
- 	struct zone *zone;
--	unsigned long res;
--	unsigned long req = strict_strtoul(buf, 10, &res);
-+	unsigned long val;
-+	int rv;
+-	return strict_strtoul(p, 10, &touchbook_revision);
+-}
+-early_param("tbr", early_touchbook_revision);
+-
+ static struct omap_musb_board_data musb_board_data = {
+ 	.interface_type		= MUSB_INTERFACE_ULPI,
+ 	.mode			= MUSB_OTG,
+diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+index 074536a..5e2886d 100644
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -336,7 +336,7 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
+ 	char buf[OMAP_MUX_MAX_ARG_CHAR];
+ 	struct seq_file *seqf;
+ 	struct omap_mux *m;
+-	unsigned long val;
++	u16 val;
+ 	int buf_size, ret;
  
--	if (!req)
--		return 1;	/* zero is no-op */
-+	rv = kstrtoul(buf, 10, &val);
-+	if (rv < 0)
-+		return rv;
-+	if (val == 0)
-+		return count;
+ 	if (count > OMAP_MUX_MAX_ARG_CHAR)
+@@ -348,17 +348,14 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
+ 	if (copy_from_user(buf, user_buf, buf_size))
+ 		return -EFAULT;
  
- 	for (zone = node_zones; zone - node_zones < MAX_NR_ZONES; ++zone) {
- 		if (!populated_zone(zone))
- 			continue;
- 		scan_zone_unevictable_pages(zone);
+-	ret = strict_strtoul(buf, 0x10, &val);
++	ret = kstrtou16(buf, 0x10, &val);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (val > 0xffff)
+-		return -EINVAL;
+-
+ 	seqf = file->private_data;
+ 	m = seqf->private;
+ 
+-	omap_mux_write((u16)val, m->reg_offset);
++	omap_mux_write(val, m->reg_offset);
+ 	*ppos += count;
+ 
+ 	return count;
+@@ -535,18 +532,18 @@ static void __init omap_mux_set_cmdline_signals(void)
+ 
+ 	while ((token = strsep(&next_opt, ",")) != NULL) {
+ 		char *keyval, *name;
+-		unsigned long val;
+ 
+ 		keyval = token;
+ 		name = strsep(&keyval, "=");
+ 		if (name) {
++			u16 val;
+ 			int res;
+ 
+-			res = strict_strtoul(keyval, 0x10, &val);
++			res = kstrtou16(keyval, 0x10, &val);
+ 			if (res < 0)
+ 				continue;
+ 
+-			omap_mux_init_signal(name, (u16)val);
++			omap_mux_init_signal(name, val);
+ 		}
  	}
+ 
+diff --git a/arch/arm/mach-pxa/balloon3.c b/arch/arm/mach-pxa/balloon3.c
+index 21e1889..3748d65 100644
+--- a/arch/arm/mach-pxa/balloon3.c
++++ b/arch/arm/mach-pxa/balloon3.c
+@@ -91,7 +91,7 @@ int __init parse_balloon3_features(char *arg)
+ 	if (!arg)
+ 		return 0;
+ 
+-	return strict_strtoul(arg, 0, &balloon3_features_present);
++	return kstrtoul(arg, 0, &balloon3_features_present);
+ }
+ early_param("balloon3_features", parse_balloon3_features);
+ 
+diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
+index 438fc9a..d99ee1b 100644
+--- a/arch/arm/mach-pxa/viper.c
++++ b/arch/arm/mach-pxa/viper.c
+@@ -767,8 +767,7 @@ static unsigned long viper_tpm;
+ 
+ static int __init viper_tpm_setup(char *str)
+ {
+-	strict_strtoul(str, 10, &viper_tpm);
 -	return 1;
-+	return count;
++	return !kstrtoul(str, 10, &viper_tpm);
  }
  
+ __setup("tpm=", viper_tpm_setup);
+diff --git a/arch/arm/mach-s3c2412/mach-jive.c b/arch/arm/mach-s3c2412/mach-jive.c
+index 923e01b..a21b119 100644
+--- a/arch/arm/mach-s3c2412/mach-jive.c
++++ b/arch/arm/mach-s3c2412/mach-jive.c
+@@ -240,7 +240,7 @@ static int __init jive_mtdset(char *options)
+ 	if (options == NULL || options[0] == '\0')
+ 		return 0;
  
--static SYSDEV_ATTR(scan_unevictable_pages, S_IRUGO | S_IWUSR,
--			read_scan_unevictable_node,
-+static SYSDEV_ATTR(scan_unevictable_pages, S_IWUSR,
-+			NULL,
- 			write_scan_unevictable_node);
+-	if (strict_strtoul(options, 10, &set)) {
++	if (kstrtoul(options, 10, &set)) {
+ 		printk(KERN_ERR "failed to parse mtdset=%s\n", options);
+ 		return 0;
+ 	}
+diff --git a/arch/arm/mach-ux500/mbox.c b/arch/arm/mach-ux500/mbox.c
+index 6343538..946a6f5 100644
+--- a/arch/arm/mach-ux500/mbox.c
++++ b/arch/arm/mach-ux500/mbox.c
+@@ -122,29 +122,18 @@ static ssize_t mbox_write_fifo(struct device *dev,
+ 			       const char *buf,
+ 			       size_t count)
+ {
+-	unsigned long mbox_mess;
+-	unsigned long nbr_sends;
+-	unsigned long i;
+-	char int_buf[16];
+-	char *token;
+-	char *val;
+-
+ 	struct mbox *mbox = (struct mbox *) dev->platform_data;
++	unsigned int mbox_mess, nbr_sends;
++	unsigned int i;
  
- int scan_unevictable_register_node(struct node *node)
+-	strncpy((char *) &int_buf, buf, sizeof(int_buf));
+-	token = (char *) &int_buf;
+-
+-	/* Parse message */
+-	val = strsep(&token, " ");
+-	if ((val == NULL) || (strict_strtoul(val, 16, &mbox_mess) != 0))
+-		mbox_mess = 0xDEADBEEF;
+-
+-	val = strsep(&token, " ");
+-	if ((val == NULL) || (strict_strtoul(val, 10, &nbr_sends) != 0))
++	if (sscanf(buf, "%u %u", &mbox_mess, &nbr_sends) != 2) {
+ 		nbr_sends = 1;
++		if (sscanf(buf, "%u", &mbox_mess) != 1)
++			return -EINVAL;
++	}
+ 
+-	dev_dbg(dev, "Will write 0x%lX %ld times using data struct at 0x%X\n",
+-		mbox_mess, nbr_sends, (u32) mbox);
++	dev_dbg(dev, "Will write 0x%X %u times using data struct at %p\n",
++		mbox_mess, nbr_sends, mbox);
+ 
+ 	for (i = 0; i < nbr_sends; i++)
+ 		mbox_send(mbox, mbox_mess, true);
+diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
+index 83c5632..67f015c 100644
+--- a/arch/arm/mach-w90x900/cpu.c
++++ b/arch/arm/mach-w90x900/cpu.c
+@@ -170,12 +170,13 @@ static int __init nuc900_set_clkval(unsigned int cpufreq)
+ }
+ static int __init nuc900_set_cpufreq(char *str)
+ {
+-	unsigned long cpufreq, val;
++	unsigned int cpufreq, val;
+ 
+ 	if (!*str)
+ 		return 0;
+ 
+-	strict_strtoul(str, 0, &cpufreq);
++	if (kstrtouint(str, 0, &cpufreq) < 0)
++		return 0;
+ 
+ 	nuc900_clock_source(NULL, "ext");
+ 
+diff --git a/arch/arm/plat-omap/mcbsp.c b/arch/arm/plat-omap/mcbsp.c
+index eac4b97..e049ad3 100644
+--- a/arch/arm/plat-omap/mcbsp.c
++++ b/arch/arm/plat-omap/mcbsp.c
+@@ -1483,10 +1483,10 @@ static ssize_t prop##_store(struct device *dev,				\
+ 				const char *buf, size_t size)		\
+ {									\
+ 	struct omap_mcbsp *mcbsp = dev_get_drvdata(dev);		\
+-	unsigned long val;						\
++	u16 val;							\
+ 	int status;							\
+ 									\
+-	status = strict_strtoul(buf, 0, &val);				\
++	status = kstrtou16(buf, 0, &val);				\
+ 	if (status)							\
+ 		return status;						\
+ 									\
 -- 
 1.7.2.2
 
