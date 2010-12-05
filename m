@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab0LEXwV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:52:21 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:57675 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab0LEXwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:52:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=cb0bKTuRNfQ/4trPc2CchcpOXXKgFViFtT4xd37VcMDynBNMtRigaTDt5vXid+hObt
-         3DY3VoOUmg1hh4lpbWwQ==
-MIME-Version: 1.0
-In-Reply-To: <20101205233021.GA22824@n2100.arm.linux.org.uk>
-References: <1291590548-7341-1-git-send-email-ccross@android.com>
-	<1291590548-7341-3-git-send-email-ccross@android.com>
-	<20101205233021.GA22824@n2100.arm.linux.org.uk>
-Date: Sun, 5 Dec 2010 15:52:18 -0800
-X-Google-Sender-Auth: qgo9ludSPwTAS-99s7LYKB9IoUw
-Message-ID: <AANLkTikY2R8KfdR2EU9TNhPi57PPfQ4ibXnzb=_hp9Fg@mail.gmail.com>
-Subject: Re: [PATCH 02/21] ARM: gic: Add functions to save and restore gic state
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Gary King <gking@nvidia.com>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1752439Ab0LEX6M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:58:12 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:45511 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751756Ab0LEX6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 18:58:10 -0500
+Date: Mon, 6 Dec 2010 10:58:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: linux-next: manual merge of the arm tree with the arm-current tree
+Message-Id: <20101206105804.fbfea108.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 5, 2010 at 3:30 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Dec 05, 2010 at 03:08:49PM -0800, Colin Cross wrote:
->> on systems with idle states which power-gate the logic including
->> the gic, such as tegra, the gic distributor needs to be shut down
->> and restored on entry and exit from the architecture idle code
->
-> This clashes with the GIC cleanups I've previously posted.
+Hi Russell,
 
-Yes, I mentioned that in the patch set overview.  I wanted to get the
-concept out there for review, I'll fix it up and repost it once your
-patches are final before submitting anything to the patch system.
+Today's linux-next merge of the arm tree got a conflict in
+arch/arm/common/gic.c between commit
+e6afec9b6808eff6dc392ac07c1552e87aebcdf7 ("ARM: 6496/1: GIC: Do not try
+to register more then NR_IRQS interrupts") from the arm-current tree and
+commit d9522a4675b30f128d4410a6d453ab63edd18e64 ("ARM: GIC: move gic_data
+[] initialization into gic_init()") from the arm tree.
+
+I fixed it up (see below) can can carry the fix for a while.
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/common/gic.c
+index fea1bd7,b6a1d09..0000000
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@@ -207,15 -210,13 +210,13 @@@ void __init gic_cascade_irq(unsigned in
+  	set_irq_chained_handler(irq, gic_handle_cascade_irq);
+  }
+  
+- void __init gic_dist_init(unsigned int gic_nr, void __iomem *base,
+- 			  unsigned int irq_start)
++ static void __init gic_dist_init(struct gic_chip_data *gic,
++ 	unsigned int irq_start)
+  {
+ -	unsigned int max_irq, i;
+ +	unsigned int gic_irqs, irq_limit, i;
++ 	void __iomem *base = gic->dist_base;
+  	u32 cpumask = 1 << smp_processor_id();
+  
+- 	if (gic_nr >= MAX_GIC_NR)
+- 		BUG();
+- 
+  	cpumask |= cpumask << 8;
+  	cpumask |= cpumask << 16;
+  
+@@@ -259,18 -262,11 +257,18 @@@
+  		writel(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
+  
+  	/*
+ +	 * Limit number of interrupts registered to the platform maximum
+ +	 */
+- 	irq_limit = gic_data[gic_nr].irq_offset + gic_irqs;
+++	irq_limit = gic->irq_offset + gic_irqs;
+ +	if (WARN_ON(irq_limit > NR_IRQS))
+ +		irq_limit = NR_IRQS;
+ +
+ +	/*
+  	 * Setup the Linux IRQ subsystem.
+  	 */
+ -	for (i = irq_start; i < gic->irq_offset + max_irq; i++) {
+ +	for (i = irq_start; i < irq_limit; i++) {
+  		set_irq_chip(i, &gic_chip);
+- 		set_irq_chip_data(i, &gic_data[gic_nr]);
++ 		set_irq_chip_data(i, gic);
+  		set_irq_handler(i, handle_level_irq);
+  		set_irq_flags(i, IRQF_VALID | IRQF_PROBE);
+  	}
