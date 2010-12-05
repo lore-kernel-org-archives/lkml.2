@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab0LERJp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:09:45 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:43340 "HELO mail.gmx.net"
+	id S1756301Ab0LERPu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:15:50 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:55872 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755719Ab0LERJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:09:42 -0500
+	id S1756039Ab0LERPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 12:15:49 -0500
 X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19tx3BOQ8ZtT8sAzzdinFgAePtYCJAS8E7JUvFnk4
-	jok/wQQKsHfKtE
+X-Provags-ID: V01U2FsdGVkX18xq7JmCZExA/UWypiiEvcWqU/QfCda/P+Kk+/Xed
+	NJ9+IWCdc+MrVY
 Subject: Re: [PATCH v4] Regression: sched: automated per session task groups
 From: Mike Galbraith <efault@gmx.de>
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Cc: Nikos Chantziaras <realnc@arcor.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1291568388.7521.67.camel@marge.simson.net>
+In-Reply-To: <1291568977.7521.75.camel@marge.simson.net>
 References: <1289783580.495.58.camel@maggy.simson.net>
 	 <1289811438.2109.474.camel@laptop>
 	 <1289820766.16406.45.camel@maggy.simson.net>
@@ -30,9 +30,10 @@ References: <1289783580.495.58.camel@maggy.simson.net>
 	 <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
 	 <idfrvp$l4o$1@dough.gmane.org>  <20101205151220.0c532c94@pyx>
 	 <1291568388.7521.67.camel@marge.simson.net>
+	 <1291568977.7521.75.camel@marge.simson.net>
 Content-Type: text/plain
-Date: Sun, 05 Dec 2010 18:09:37 +0100
-Message-Id: <1291568977.7521.75.camel@marge.simson.net>
+Date: Sun, 05 Dec 2010 18:15:40 +0100
+Message-Id: <1291569340.8219.3.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.24.1.1 
 Content-Transfer-Encoding: 7bit
@@ -41,25 +42,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-05 at 17:59 +0100, Mike Galbraith wrote:
-> On Sun, 2010-12-05 at 15:12 +0000, Alan Cox wrote:
-> > > > As soon as you do that from the same terminal that you're going to
-> > > > launch the "make" from, you're back to total lossage.  Are you going
-> > > > to explain to a student that "oh, you need to create a new
-> > > > gnome-terminal tab and launch firefox from that"?
+On Sun, 2010-12-05 at 18:09 +0100, Mike Galbraith wrote:
+> On Sun, 2010-12-05 at 17:59 +0100, Mike Galbraith wrote:
+> > On Sun, 2010-12-05 at 15:12 +0000, Alan Cox wrote:
+> > > > > As soon as you do that from the same terminal that you're going to
+> > > > > launch the "make" from, you're back to total lossage.  Are you going
+> > > > > to explain to a student that "oh, you need to create a new
+> > > > > gnome-terminal tab and launch firefox from that"?
+> > > > 
+> > > > Btw, most people don't do that anymore.  They don't use terminals.  They 
 > > > 
-> > > Btw, most people don't do that anymore.  They don't use terminals.  They 
+> > > Its a regression for those who do - and often have good reason to do.
+> > > This is of course why you don't put policy in the kernel and the original
+> > > patch was bogus anyway.
 > > 
-> > Its a regression for those who do - and often have good reason to do.
-> > This is of course why you don't put policy in the kernel and the original
-> > patch was bogus anyway.
+> > What is a very clear regression is a threaded app (say firefox) vs a
+> > single threaded app, particularly on UP.  The per thread scheduling
+> > model wins hands down there, because the scheduler very heavily favors
+> > the threaded application.  Take that unfairness away, and you have an
+> > undeniable regression.  Yes, it's not black and white, never is.
 > 
-> What is a very clear regression is a threaded app (say firefox) vs a
-> single threaded app, particularly on UP.  The per thread scheduling
-> model wins hands down there, because the scheduler very heavily favors
-> the threaded application.  Take that unfairness away, and you have an
-> undeniable regression.  Yes, it's not black and white, never is.
+> P.S.  You also have an obvious _progression_ from the perspective of the
+> single threaded application, which may just as well be interactive.
 
-P.S.  You also have an obvious _progression_ from the perspective of the
-single threaded application, which may just as well be interactive.
+P.P.S :)
+
+systemd will have the same regressions/progressions.  It doesn't matter
+one whit whether it's kernel/userland making policy.  If distro-X
+includes either one, or neither, they are guaranteed to be wrong :)
 
