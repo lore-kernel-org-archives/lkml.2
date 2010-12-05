@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab0LEWk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 17:40:56 -0500
-Received: from tundra.namei.org ([65.99.196.166]:38649 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166Ab0LEWkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 17:40:55 -0500
-Date: Mon, 6 Dec 2010 09:40:46 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Eric Paris <eparis@parisplace.org>
-cc: ext-jarkko.2.sakkinen@nokia.com, casey@schaufler-ca.com,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: VS: [PATCH] Smack: label for task objects (retry 2)
-In-Reply-To: <AANLkTikjQuwvD4A0do0RAYheDKFeeXndjtDQvQC2WXEw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1012060937210.14997@tundra.namei.org>
-References: <4CEE4D6E.4030204@nokia.com> <4CF7D16D.4060009@schaufler-ca.com> <alpine.LRH.2.00.1012030823150.25347@tundra.namei.org> <alpine.LRH.2.00.1012030923560.26002@tundra.namei.org> <E3D0B314C5E55043AC59C5FBDB298310EE11A5@008-AM1MPN1-005.mgdnok.nokia.com>
- <AANLkTikjQuwvD4A0do0RAYheDKFeeXndjtDQvQC2WXEw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754167Ab0LEWmD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 17:42:03 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:42023 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752166Ab0LEWmB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 17:42:01 -0500
+Subject: [PATCH for 2.6.37 REGRESSION] cx25840: Prevent device probe
+ failure due to volume control ERANGE error
+From: Andy Walls <awalls@md.metrocast.net>
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 05 Dec 2010 17:42:30 -0500
+Message-ID: <1291588950.2046.51.camel@morgan.silverblock.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-12-05_07:2010-12-04,2010-12-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1012050122
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Dec 2010, Eric Paris wrote:
+This patch was created and tested against linux-next
+( git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git ),
+tag next-20101203, and fixes a regression that crept into 2.6.36.
 
-> 2) If #1 is true and you want to get Sign-off's in your parent tree
-> you can set up the child trees as a remote.  Then you can use:
-> 
-> git format-patch -k --stdout HEAD..remotes/[child]/[branch] | git am
-> -3 -k --whitespace=fix -s
+The volume control scale in the cx25840 driver has an unusual mapping
+from register values to v4l2 volume control values.  Enforce the mapping
+limits, so that the default volume control setting does not fall out of
+bounds to prevent the cx25840 module device probe from failing.
 
-I don't think this is the right approach.  If you're pulling from a repo, 
-then your signoff does not go on each patch because you trust the repo.
+Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/media/video/cx25840/cx25840-core.c |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
 
-Otherwise, you should actually be reviewing each patch, which the above is 
-not doing.
-
-> Our tree is so simple I don't really understand why we need all this,
-> but if we need it, lets figure out what works best for everyone!
-
-Each LSM maintainer should probably be doing per-patch review of the 
-patches going into their tree, and adding their signoff, while I will try 
-and always just do pulls from those trees.
-
-
+diff --git a/drivers/media/video/cx25840/cx25840-core.c b/drivers/media/video/cx25840/cx25840-core.c
+index dfb198d..f164618 100644
+--- a/drivers/media/video/cx25840/cx25840-core.c
++++ b/drivers/media/video/cx25840/cx25840-core.c
+@@ -1989,8 +1989,23 @@ static int cx25840_probe(struct i2c_client *client,
+ 	v4l2_ctrl_new_std(&state->hdl, &cx25840_ctrl_ops,
+ 			V4L2_CID_HUE, -128, 127, 1, 0);
+ 	if (!is_cx2583x(state)) {
+-		default_volume = 228 - cx25840_read(client, 0x8d4);
+-		default_volume = ((default_volume / 2) + 23) << 9;
++		default_volume = cx25840_read(client, 0x8d4);
++		/*
++		 * Enforce the legacy PVR-350/MSP3400 to PVR-150/CX25843 volume
++		 * scale mapping limits to avoid -ERANGE errors when
++		 * initializing the volume control
++		 */
++		if (default_volume > 228) {
++			/* Bottom out at -96 dB, v4l2 vol range 0x2e00-0x2fff */
++			default_volume = 228;
++			cx25840_write(client, 0x8d4, 228);
++		}
++		else if (default_volume < 20) {
++			/* Top out at + 8 dB, v4l2 vol range 0xfe00-0xffff */
++			default_volume = 20;
++			cx25840_write(client, 0x8d4, 20);
++		}
++		default_volume = (((228 - default_volume) >> 1) + 23) << 9;
+ 
+ 		state->volume = v4l2_ctrl_new_std(&state->hdl,
+ 			&cx25840_audio_ctrl_ops, V4L2_CID_AUDIO_VOLUME,
 -- 
-James Morris
-<jmorris@namei.org>
+1.7.2.3
+
+
+
