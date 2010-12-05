@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab0LERuj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:50:39 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
+	id S1757118Ab0LER5b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:57:31 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab0LERui (ORCPT
+	with ESMTP id S1756695Ab0LERuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:50:38 -0500
+	Sun, 5 Dec 2010 12:50:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wtzQVDJET0u1Up86vbkQZ8aTGrKOdQJozvXqaqDIGZHP6WLwNhaQZbKgP7uDGY26LA
-         ovaXNi2/hF20RHleES1MUe4F48nNIsLquHhv//uLc0ID5QfJleeyJJXLGhNw4FRndj75
-         8Um6kFrRnYGlnFzdkj37a6wX/pb/vD5thvJYU=
+        b=f+nEhpj5Oyeby6nZqymJg0BEkqrzF1MV0WLN0VIEEMCc49/ApVEZnQFSQ3L6WcH/Wh
+         lW7jKSU0vf5Giu6ZceYLd6RQJwsVzBFuphfEUXYaoyQII/VWaC8jaP4il3L9H4oAn6bR
+         MUsfEg9GlvqwT/S3aYxiLueCAutxJyUKjsI+c=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 12/45] kstrtox: convert drivers/acpi/
-Date: Sun,  5 Dec 2010 19:49:09 +0200
-Message-Id: <1291571382-2719-12-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 11/45] kstrtox: convert block/
+Date: Sun,  5 Dec 2010 19:49:08 +0200
+Message-Id: <1291571382-2719-11-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,109 +29,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/acpi/acpi_pad.c    |   27 ++++++++++++++++++---------
- drivers/acpi/power_meter.c |   16 +++++++---------
- 2 files changed, 25 insertions(+), 18 deletions(-)
+ block/blk-cgroup.c |   47 ++++++++++++++++++++++++-----------------------
+ 1 files changed, 24 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-index 6afceb3..20d1c2d 100644
---- a/drivers/acpi/acpi_pad.c
-+++ b/drivers/acpi/acpi_pad.c
-@@ -284,9 +284,12 @@ static uint32_t acpi_pad_idle_cpus_num(void)
- static ssize_t acpi_pad_rrtime_store(struct device *dev,
- 	struct device_attribute *attr, const char *buf, size_t count)
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index b1febd0..a18532a 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -656,10 +656,9 @@ static int blkio_policy_parse_and_set(char *buf,
  {
--	unsigned long num;
--	if (strict_strtoul(buf, 0, &num))
--		return -EINVAL;
-+	unsigned int num;
-+	int rv;
-+
-+	rv = kstrtouint(buf, 0, &num);
-+	if (rv < 0)
-+		return rv;
- 	if (num < 1 || num >= 100)
+ 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
+ 	int ret;
+-	unsigned long major, minor, temp;
++	unsigned int major, minor;
+ 	int i = 0;
+ 	dev_t dev;
+-	u64 bps, iops;
+ 
+ 	memset(s, 0, sizeof(s));
+ 
+@@ -687,15 +686,15 @@ static int blkio_policy_parse_and_set(char *buf,
+ 	if (!minor_s)
  		return -EINVAL;
- 	mutex_lock(&isolated_cpus_lock);
-@@ -307,9 +310,12 @@ static DEVICE_ATTR(rrtime, S_IRUGO|S_IWUSR,
- static ssize_t acpi_pad_idlepct_store(struct device *dev,
- 	struct device_attribute *attr, const char *buf, size_t count)
- {
--	unsigned long num;
--	if (strict_strtoul(buf, 0, &num))
+ 
+-	ret = strict_strtoul(major_s, 10, &major);
+-	if (ret)
 -		return -EINVAL;
-+	unsigned int num;
-+	int rv;
-+
-+	rv = kstrtouint(buf, 0, &num);
-+	if (rv < 0)
-+		return rv;
- 	if (num < 1 || num >= 100)
+-
+-	ret = strict_strtoul(minor_s, 10, &minor);
++	ret = kstrtouint(major_s, 10, &major);
++	if (ret < 0)
++		return ret;
++	ret = kstrtouint(minor_s, 10, &minor);
+ 	if (ret)
+-		return -EINVAL;
+-
++		return ret;
+ 	dev = MKDEV(major, minor);
++	if (MAJOR(dev) != major || MINOR(dev) != minor)
++		return -EINVAL;
+ 
+ 	ret = blkio_check_dev_num(dev);
+ 	if (ret)
+@@ -707,40 +706,42 @@ static int blkio_policy_parse_and_set(char *buf,
  		return -EINVAL;
- 	mutex_lock(&isolated_cpus_lock);
-@@ -330,9 +336,12 @@ static DEVICE_ATTR(idlepct, S_IRUGO|S_IWUSR,
- static ssize_t acpi_pad_idlecpus_store(struct device *dev,
- 	struct device_attribute *attr, const char *buf, size_t count)
- {
--	unsigned long num;
--	if (strict_strtoul(buf, 0, &num))
--		return -EINVAL;
-+	unsigned int num;
-+	int rv;
+ 
+ 	switch (plid) {
++		unsigned int weigth;
 +
-+	rv = kstrtouint(buf, 0, &num);
-+	if (rv < 0)
-+		return rv;
- 	mutex_lock(&isolated_cpus_lock);
- 	acpi_pad_idle_cpus(num);
- 	mutex_unlock(&isolated_cpus_lock);
-diff --git a/drivers/acpi/power_meter.c b/drivers/acpi/power_meter.c
-index 66f6729..a468c33 100644
---- a/drivers/acpi/power_meter.c
-+++ b/drivers/acpi/power_meter.c
-@@ -166,12 +166,12 @@ static ssize_t set_avg_interval(struct device *dev,
- 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
- 	struct acpi_object_list args = { 1, &arg0 };
- 	int res;
--	unsigned long temp;
-+	u64 temp;
- 	unsigned long long data;
- 	acpi_status status;
+ 	case BLKIO_POLICY_PROP:
+-		ret = strict_strtoul(s[1], 10, &temp);
+-		if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
+-			temp > BLKIO_WEIGHT_MAX)
++		ret = kstrtouint(s[1], 10, &weigth);
++		if (ret < 0)
++			return ret;
++		if (weigth < BLKIO_WEIGHT_MIN || weigth > BLKIO_WEIGHT_MAX)
+ 			return -EINVAL;
  
--	res = strict_strtoul(buf, 10, &temp);
--	if (res)
-+	res = kstrtou64(buf, 10, &temp);
-+	if (res < 0)
- 		return res;
+ 		newpn->plid = plid;
+ 		newpn->fileid = fileid;
+-		newpn->val.weight = temp;
++		newpn->val.weight = weigth;
+ 		break;
+ 	case BLKIO_POLICY_THROTL:
+ 		switch(fileid) {
++			unsigned int iops;
++
+ 		case BLKIO_THROTL_read_bps_device:
+ 		case BLKIO_THROTL_write_bps_device:
+-			ret = strict_strtoull(s[1], 10, &bps);
+-			if (ret)
+-				return -EINVAL;
+-
+ 			newpn->plid = plid;
+ 			newpn->fileid = fileid;
+-			newpn->val.bps = bps;
++			ret = kstrtou64(s[1], 10, &newpn->val.bps);
++			if (ret < 0)
++				return ret;
+ 			break;
+ 		case BLKIO_THROTL_read_iops_device:
+ 		case BLKIO_THROTL_write_iops_device:
+-			ret = strict_strtoull(s[1], 10, &iops);
+-			if (ret)
+-				return -EINVAL;
+-
++			ret = kstrtouint(s[1], 10, &iops);
++			if (ret < 0)
++				return ret;
+ 			if (iops > THROTL_IOPS_MAX)
+ 				return -EINVAL;
  
- 	if (temp > resource->caps.max_avg_interval ||
-@@ -241,8 +241,8 @@ static ssize_t set_cap(struct device *dev, struct device_attribute *devattr,
- 	unsigned long long data;
- 	acpi_status status;
- 
--	res = strict_strtoul(buf, 10, &temp);
--	if (res)
-+	res = kstrtoul(buf, 10, &temp);
-+	if (res < 0)
- 		return res;
- 
- 	temp /= 1000;
-@@ -311,13 +311,11 @@ static ssize_t set_trip(struct device *dev, struct device_attribute *devattr,
- 	int res;
- 	unsigned long temp;
- 
--	res = strict_strtoul(buf, 10, &temp);
--	if (res)
-+	res = kstrtoul(buf, 10, &temp);
-+	if (res < 0)
- 		return res;
- 
- 	temp /= 1000;
--	if (temp < 0)
--		return -EINVAL;
- 
- 	mutex_lock(&resource->lock);
- 	resource->trip[attr->index - 7] = temp;
+ 			newpn->plid = plid;
+ 			newpn->fileid = fileid;
+-			newpn->val.iops = (unsigned int)iops;
++			newpn->val.iops = iops;
+ 			break;
+ 		}
+ 		break;
 -- 
 1.7.2.2
 
