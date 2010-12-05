@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab0LEUg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:36:57 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55429 "EHLO ogre.sisk.pl"
+	id S1756326Ab0LEUhR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:37:17 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55458 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755238Ab0LEUge convert rfc822-to-8bit (ORCPT
+	id S1756283Ab0LEUhO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 15:36:34 -0500
+	Sun, 5 Dec 2010 15:37:14 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "xudong" <xudong.hao@intel.com>
+        Florian Mickler <florian@mickler.org>,
+        "Ian Kumlien" <pomac@demius.net>
 References: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
 In-Reply-To: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <z3LGq_ncuOB.A.qaE.iA_-MB@chimera>
-Subject: [Bug #21402] [KVM] Noacpi Windows guest can not boot up on 32bit KVM host
+Message-ID: <z3LGq_ncuOB.A.NEE.QA_-MB@chimera>
+Subject: [Bug #22272] High [extra timer interrupt] count in powertop since 2.6.36
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  5 Dec 2010 21:34:30 +0100 (CET)
+Date: Sun,  5 Dec 2010 21:34:32 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +34,11 @@ introduced between 2.6.35 and 2.6.36.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21402
-Subject		: [KVM] Noacpi Windows guest can not boot up on 32bit KVM host
-Submitter	: xudong <xudong.hao@intel.com>
-Date		: 2010-10-29 03:01 (38 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22272
+Subject		: High [extra timer interrupt] count in powertop since 2.6.36
+Submitter	: Ian Kumlien <pomac@demius.net>
+Date		: 2010-10-30 23:52 (37 days old)
+Message-ID	: <alpine.LNX.2.00.1010310148450.24290@twilight.pomac.com>
+References	: http://marc.info/?l=linux-kernel&m=128848330304431&w=2
 
 
