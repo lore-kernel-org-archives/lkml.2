@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab0LEURR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:17:17 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60582 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab0LEURN (ORCPT
+	id S1754885Ab0LEUTw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:19:52 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:40224 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754250Ab0LEUTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 15:17:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=BysbpzR6lkaqHeeNnw4EDlx8MKr7tHdRjLHy8+5YuYVmmctPeVZUtDVLM9g0Vd+YjV
-         rdv7Z+aI53X6UELptyAhTjrBC4sYYJZ1TK38ZJquWWzLVYFPYu3ocvjIA5ZnmDJkpEoy
-         RinZ7Tk2dfYmcTU49n6fOVGBXJBruU0qc7c7U=
-MIME-Version: 1.0
-In-Reply-To: <20101205143316.GA9559@fritha.org>
-References: <4CF692D1.1010906@redhat.com>
-	<AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
-	<4CF6B3E8.2000406@redhat.com>
-	<20101201212310.GA15648@redhat.com>
-	<AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
-	<20101204193828.GB13871@redhat.com>
-	<AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>
-	<20101205100954.GA6564@fritha.org>
-	<4CFB679D.5030900@redhat.com>
-	<1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu>
-	<20101205143316.GA9559@fritha.org>
-Date: Sun, 5 Dec 2010 20:17:12 +0000
-Message-ID: <AANLkTim_FgS0qWFhsHjeNKc9b_B0mcj_Aez-3sU2t0Yi@mail.gmail.com>
-Subject: Re: [dm-devel] hunt for 2.6.37 dm-crypt+ext4 corruption?
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Heinz Diehl <htd@fritha.org>
-Cc: Theodore Tso <tytso@mit.edu>,
-        device-mapper development <dm-devel@redhat.com>,
-        Jon Nelson <jnelson@jamponi.net>, htejun@gmail.com,
-        Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Chris Mason <chris.mason@oracle.com>,
-        htd <htd@fancy-poultry.org>, linux-ext4@vger.kernel.org,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 5 Dec 2010 15:19:50 -0500
+Subject: [PATCH for stable 2.6.36 REGRESSION] cx25840: Prevent device probe
+ failure due to volume control ERANGE error
+From: Andy Walls <awalls@md.metrocast.net>
+To: stable@kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Cc: gregkh@suse.de, hverkuil@xs4all.nl, mchehab@redhat.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 05 Dec 2010 15:17:42 -0500
+Message-ID: <1291580262.2046.11.camel@morgan.silverblock.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-12-05_07:2010-12-04,2010-12-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=8
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1012050106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heinz,
 
-On 5 December 2010 14:33, Heinz Diehl <htd@fritha.org> wrote:
-> On 05.12.2010, Theodore Tso wrote:
->
->> As another thought, what version of GCC are people using who
->> are having difficulty? Could this perhaps be a compiler-related issue?
->
-> htd@liesel:~> gcc -v
-> Using built-in specs.
-> Target: x86_64-suse-linux
-> Configured with: ../configure --prefix=/usr --infodir=/usr/share/info
-> --mandir=/usr/share/man --libdir=/usr/lib64 --libexecdir=/usr/lib64
-> --enable-languages=c,c++,objc,fortran,obj-c++,java,ada
-> --enable-checking=release --with-gxx-include-dir=/usr/include/c++/4.3
-> --enable-ssp --disable-libssp --with-bugurl=http://bugs.opensuse.org/
-> --with-pkgversion='SUSE Linux' --disable-libgcj --disable-libmudflap
-> --with-slibdir=/lib64 --with-system-zlib --enable-__cxa_atexit
-> --enable-libstdcxx-allocator=new --disable-libstdcxx-pch
-> --enable-version-specific-runtime-libs --program-suffix=-4.3
-> --enable-linux-futex --without-system-libunwind --with-cpu=generic
-> --build=x86_64-suse-linux
-> Thread model: posix
-> gcc version 4.3.2 [gcc-4_3-branch revision 141291] (SUSE Linux)
+The volume control scale in the cx25840 driver has an unusual mapping
+from register values to v4l2 volume control values.  Enforce the mapping
+limits, so that the default volume control setting does not fall out of
+bounds to prevent the cx25840 module device probe from failing.
 
-A bit late to the party, but does memtest86 pass over multiple iterations?
+Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: stable@kernel.org
+---
+ drivers/media/video/cx25840/cx25840-core.c |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
 
-Also, can you send an 'sudo lspci -vv', so we can check for
-known-buggy controllers and bridges?
-
-Thanks,
-  Daniel
+diff --git a/drivers/media/video/cx25840/cx25840-core.c b/drivers/media/video/cx25840/cx25840-core.c
+index f5a3e74..b9a2f18 100644
+--- a/drivers/media/video/cx25840/cx25840-core.c
++++ b/drivers/media/video/cx25840/cx25840-core.c
+@@ -1991,8 +1991,23 @@ static int cx25840_probe(struct i2c_client *client,
+ 	v4l2_ctrl_new_std(&state->hdl, &cx25840_ctrl_ops,
+ 			V4L2_CID_HUE, -128, 127, 1, 0);
+ 	if (!is_cx2583x(state)) {
+-		default_volume = 228 - cx25840_read(client, 0x8d4);
+-		default_volume = ((default_volume / 2) + 23) << 9;
++		default_volume = cx25840_read(client, 0x8d4);
++		/*
++		 * Enforce the legacy PVR-350/MSP3400 to PVR-150/CX25843 volume
++		 * scale mapping limits to avoid -ERANGE errors when
++		 * initializing the volume control
++		 */
++		if (default_volume > 228) {
++			/* Bottom out at -96 dB, v4l2 vol range 0x2e00-0x2fff */
++			default_volume = 228;
++			cx25840_write(client, 0x8d4, 228);
++		}
++		else if (default_volume < 20) {
++			/* Top out at + 8 dB, v4l2 vol range 0xfe00-0xffff */
++			default_volume = 20;
++			cx25840_write(client, 0x8d4, 20);
++		}
++		default_volume = (((228 - default_volume) >> 1) + 23) << 9;
+ 
+ 		state->volume = v4l2_ctrl_new_std(&state->hdl,
+ 			&cx25840_audio_ctrl_ops, V4L2_CID_AUDIO_VOLUME,
 -- 
-Daniel J Blueman
+1.7.2.3
+
+
+
