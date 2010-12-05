@@ -1,108 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab0LELPQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 06:15:16 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51920 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab0LELPN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 06:15:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=uXrAM9yBrx1Bt2S4hY9JMLJi1gW5Or2o8Pt6kj4TQoJhV2sRfSz5OZccqpRqfzwBGq
-         RAaqz9CXwJ+kNIcGJzwYL5eIAMIoK2R4QQXiJAiUNxKEVBtvUx8rSbn1J4/ZyMFz+6nD
-         eyI3HcKCY13Xbm6OdMI446q5B4B+btDG2//1U=
+	id S1755065Ab0LELTn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 06:19:43 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37459 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753882Ab0LELTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 06:19:42 -0500
+Date: Sun, 5 Dec 2010 11:18:53 GMT
+From: tip-bot for John Stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        andi@firstfloor.org, williams@redhat.com, johnstul@us.ibm.com,
+        schwidefsky@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, johnstul@us.ibm.com, williams@redhat.com,
+        schwidefsky@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/tsc] x86: Improve TSC calibration using a delayed workqueue
+Message-ID: <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org>
+Git-Commit-ID: 08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Date: Sun, 5 Dec 2010 12:15:10 +0100
-X-Google-Sender-Auth: yNhE74N7YkucgXrseCElFRC-HDg
-Message-ID: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
-Subject: Signal patchset (was: Re: aranym bug, manifests as "ida_remove called
- for id=13" on recent kernels)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Dec 2010 11:18:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 2, 2010 at 16:30, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Mon, Oct 11, 2010 at 16:24, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> BTW, any comments on signal patchset?  Seems to work here, including the
->> stack expansion fixes, but that's on aranym.  I'll try to resurrect the
->> real hardware, but that may take a while.  If somebody could give it a beating
->> in the meanwhile...
->
-> I tried it on my Amiga 4000/040.
-> Without your patches, gdb gets stuck in state D+ when reaching a breakpoint:
->
-> | cassandra:~# gdb /tmp/hello
-> | GNU gdb 6.4.90-debian
-> | Copyright (C) 2006 Free Software Foundation, Inc.
-> | GDB is free software, covered by the GNU General Public License, and you are
-> | welcome to change it and/or distribute copies of it under certain conditions.
-> | Type "show copying" to see the conditions.
-> | There is absolutely no warranty for GDB.  Type "show warranty" for details.
-> | This GDB was configured as "m68k-linux-gnu"...Using host
-> libthread_db library "/lib/libthread_db.so.1".
-> |
-> | (gdb) break main
-> | Breakpoint 1 at 0x800003fc: file /home/geert/hello.c, line 6.
-> | (gdb) run
-> | Starting program: /tmp/hello
-> |
-> | Breakpoint 1, main (argc=1, argv=0xefbeedb4) at /home/geert/hello.c:6
->
-> With your patches, it works a bit better:
->
-> | cassandra:~# gdb /tmp/hello
-> | GNU gdb 6.4.90-debian
-> | Copyright (C) 2006 Free Software Foundation, Inc.
-> | GDB is free software, covered by the GNU General Public License, and you are
-> | welcome to change it and/or distribute copies of it under certain conditions.
-> | Type "show copying" to see the conditions.
-> | There is absolutely no warranty for GDB.  Type "show warranty" for details.
-> | This GDB was configured as "m68k-linux-gnu"...Using host
-> libthread_db library "/lib/libthread_db.so.1".
-> |
-> | (gdb) break main
-> | Breakpoint 1 at 0x800003fc: file /home/geert/hello.c, line 6.
-> | (gdb) run
-> | Starting program: /tmp/hello
-> |
-> | Breakpoint 1, main (argc=1, argv=0xefcc5db4) at /home/geert/hello.c:6
-> | 6         printf("Hello, world! [C]\n");
-> | (gdb) cont
-> | Continuing.
-> | Hello, world! [C]
-> |
-> | Program exited normally.
-> | (gdb) run
-> | Starting program: /tmp/hello
-> |
-> | Breakpoint 1, main (argc=1, argv=0xef85bdb4) at /home/geert/hello.c:6
-> | 6         printf("Hello, world! [C]\n");
-> | (gdb) next
-> | Hello, world! [C]
->
-> After which gdb is stuck in S+, and /tmp/hello in t.
+Commit-ID:  08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+Gitweb:     http://git.kernel.org/tip/08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+Author:     John Stultz <johnstul@us.ibm.com>
+AuthorDate: Tue, 27 Jul 2010 17:00:00 -0700
+Committer:  John Stultz <john.stultz@linaro.org>
+CommitDate: Thu, 2 Dec 2010 16:48:37 -0800
 
-Unless someone objects, I'm inclined to apply Al's patchset, as it improves the
-situation anyway.
+x86: Improve TSC calibration using a delayed workqueue
 
-OK?
+Boot to boot the TSC calibration may vary by quite a large amount.
 
-Gr{oetje,eeting}s,
+While normal variance of 50-100ppm can easily be seen, the quick
+calibration code only requires 500ppm accuracy, which is the limit
+of what NTP can correct for.
 
-                        Geert
+This can cause problems for systems being used as NTP servers, as
+every time they reboot it can take hours for them to calculate the
+new drift error caused by the calibration.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+The classic trade-off here is calibration accuracy vs slow boot times,
+as during the calibration nothing else can run.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+This patch uses a delayed workqueue  to calibrate the TSC over the
+period of a second. This allows very accurate calibration (in my
+tests only varying by 1khz or 0.4ppm boot to boot). Additionally this
+refined calibration step does not block the boot process, and only
+delays the TSC clocksoure registration by a few seconds in early boot.
+If the refined calibration strays 1% from the early boot calibration
+value, the system will fall back to already calculated early boot
+calibration.
+
+Credit to Andi Kleen who suggested using a timer quite awhile back,
+but I dismissed it thinking the timer calibration would be done after
+the clocksource was registered (which would break things). Forgive
+me for my short-sightedness.
+
+This patch has worked very well in my testing, but TSC hardware is
+quite varied so it would probably be good to get some extended
+testing, possibly pushing inclusion out to 2.6.39.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+LKML-Reference: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Clark Williams <williams@redhat.com>
+CC: Andi Kleen <andi@firstfloor.org>
+---
+ arch/x86/kernel/tsc.c |   86 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 83 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index bb64beb..dc1393e 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -888,7 +888,82 @@ __cpuinit int unsynchronized_tsc(void)
+ 	return 0;
+ }
+ 
+-static void __init init_tsc_clocksource(void)
++
++static void tsc_refine_calibration_work(struct work_struct *work);
++static DECLARE_DELAYED_WORK(tsc_irqwork, tsc_refine_calibration_work);
++/**
++ * tsc_refine_calibration_work - Further refine tsc freq calibration
++ * @work - ignored.
++ *
++ * This functions uses delayed work over a period of a
++ * second to further refine the TSC freq value. Since this is
++ * timer based, instead of loop based, we don't block the boot
++ * process while this longer calibration is done.
++ *
++ * If there are any calibration anomolies (too many SMIs, etc),
++ * or the refined calibration is off by 1% of the fast early
++ * calibration, we throw out the new calibration and use the
++ * early calibration.
++ */
++static void tsc_refine_calibration_work(struct work_struct *work)
++{
++	static u64 tsc_start = -1, ref_start;
++	static int hpet;
++	u64 tsc_stop, ref_stop, delta;
++	unsigned long freq;
++
++	/* Don't bother refining TSC on unstable systems */
++	if (check_tsc_unstable())
++		goto out;
++
++	/*
++	 * Since the work is started early in boot, we may be
++	 * delayed the first time we expire. So set the workqueue
++	 * again once we know timers are working.
++	 */
++	if (tsc_start == -1) {
++		/*
++		 * Only set hpet once, to avoid mixing hardware
++		 * if the hpet becomes enabled later.
++		 */
++		hpet = is_hpet_enabled();
++		schedule_delayed_work(&tsc_irqwork, HZ);
++		tsc_start = tsc_read_refs(&ref_start, hpet);
++		return;
++	}
++
++	tsc_stop = tsc_read_refs(&ref_stop, hpet);
++
++	/* hpet or pmtimer available ? */
++	if (!hpet && !ref_start && !ref_stop)
++		goto out;
++
++	/* Check, whether the sampling was disturbed by an SMI */
++	if (tsc_start == ULLONG_MAX || tsc_stop == ULLONG_MAX)
++		goto out;
++
++	delta = tsc_stop - tsc_start;
++	delta *= 1000000LL;
++	if (hpet)
++		freq = calc_hpet_ref(delta, ref_start, ref_stop);
++	else
++		freq = calc_pmtimer_ref(delta, ref_start, ref_stop);
++
++	/* Make sure we're within 1% */
++	if (abs(tsc_khz - freq) > tsc_khz/100)
++		goto out;
++
++	tsc_khz = freq;
++	printk(KERN_INFO "Refined TSC clocksource calibration: "
++		"%lu.%03lu MHz.\n", (unsigned long)tsc_khz / 1000,
++					(unsigned long)tsc_khz % 1000);
++
++out:
++	clocksource_register_khz(&clocksource_tsc, tsc_khz);
++}
++
++
++static int __init init_tsc_clocksource(void)
+ {
+ 	if (tsc_clocksource_reliable)
+ 		clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
+@@ -897,8 +972,14 @@ static void __init init_tsc_clocksource(void)
+ 		clocksource_tsc.rating = 0;
+ 		clocksource_tsc.flags &= ~CLOCK_SOURCE_IS_CONTINUOUS;
+ 	}
+-	clocksource_register_khz(&clocksource_tsc, tsc_khz);
++	schedule_delayed_work(&tsc_irqwork, 0);
++	return 0;
+ }
++/*
++ * We use device_initcall here, to ensure we run after the hpet
++ * is fully initialized, which may occur at fs_initcall time.
++ */
++device_initcall(init_tsc_clocksource);
+ 
+ void __init tsc_init(void)
+ {
+@@ -952,6 +1033,5 @@ void __init tsc_init(void)
+ 		mark_tsc_unstable("TSCs unsynchronized");
+ 
+ 	check_system_tsc_reliable();
+-	init_tsc_clocksource();
+ }
+ 
