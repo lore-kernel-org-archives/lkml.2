@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab0LEQKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 11:10:25 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57336 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab0LEQKY (ORCPT
+	id S1756306Ab0LEQMg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 11:12:36 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41824 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab0LEQMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 11:10:24 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 5 Dec 2010 17:09:47 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: [Regression] firewire_ohci causes system resume to fail
-Message-ID: <20101205170947.6b4e2d09@stein>
-In-Reply-To: <20101205161758.2d75c65d@stein>
-References: <201012051542.31826.rjw@sisk.pl>
-	<20101205161758.2d75c65d@stein>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Sun, 5 Dec 2010 11:12:35 -0500
+Date: Sun, 5 Dec 2010 08:11:08 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: trapdoor6@gmail.com
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        brueckner@linux.vnet.ibm.com, lacombar@gmail.com, mchehab@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5
+Message-Id: <20101205081108.9bdb7504.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTimeyo==XJWUaUs8EzJvA8azkk3sw9FXQhMjuo6M@mail.gmail.com>
+References: <20101204135732.GA12774@sepie.suse.cz>
+	<AANLkTimeyo==XJWUaUs8EzJvA8azkk3sw9FXQhMjuo6M@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,27 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 05 Stefan Richter wrote:
-> On Dec 05 Rafael J. Wysocki wrote:
-> > There is a regression I can reproduce 100% of the time on a AMD-based desktop
-> > box that resume from hibernation (or suspend) fails because of the firewire_ohci
-> > module.  The box just hangs when firewire_ohci resume runs, apparently, and it
-> > is sufficient to do:
-> > 
-> > # echo devices > /sys/power/pm_test
-> > # echo disk > /sys/power/state
-> > 
-> > to reproduce the issue.
-> 
-> Do you have anything attached to the FireWire bus?  What controller do
-> you have?
+On Sun, 5 Dec 2010 15:42:46 +0000 trapDoor wrote:
 
-I just now tested the above on an Intel Mac mini, running
-unmodified 2.6.37-rc4 x86-32, without and with a camera on the FireWire
-port, and could not reproduce the problem.  I also got an AMD based PC
-here with an array of different FireWire controllers which I shall make
-available to the same test...
--- 
-Stefan Richter
--=====-==-=- ==-- --=-=
-http://arcgraph.de/sr/
+> Hello,
+> I couldn't wait and I merged the changes into my copy of mainline
+> tree. The merge was successful, no conflicts and the merge-diffstat
+> was exactly the same as above. However, when  running oldconfig on the
+> patched kernel I still get lots of warnings:
+> 
+> warning: (GPIO_RDC321X && PCI && GPIOLIB) selects MFD_RDC321X which
+> has unmet direct dependencies (MFD_SUPPORT && PCI)
+> warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI ||
+> GPIO_VX855 && GPIOLIB || GPIO_RDC321X && PCI && GPIOLIB ||
+> MFD_88PM860X && MFD_SUPPORT && I2C=y && GENERIC_HARDIRQS || MFD_ASIC3
+> && MFD_SUPPORT && GENERIC_HARDIRQS && GPIOLIB && ARM ||
+> MFD_SH_MOBILE_SDHI && MFD_SUPPORT && (SUPERH || ARCH_SHMOBILE) ||
+> MFD_DAVINCI_VOICECODEC && MFD_SUPPORT || HTC_PASIC3 && MFD_SUPPORT ||
+> TPS6507X && MFD_SUPPORT && I2C || TWL4030_CODEC && MFD_SUPPORT &&
+> TWL4030_CORE || MFD_STMPE && MFD_SUPPORT && I2C=y && GENERIC_HARDIRQS
+> || MFD_TC35892 && MFD_SUPPORT && I2C=y && GENERIC_HARDIRQS ||
+> MFD_T7L66XB && MFD_SUPPORT && ARM && HAVE_CLK || MFD_TC6387XB &&
+> MFD_SUPPORT && ARM && HAVE_CLK || MFD_TC6393XB && MFD_SUPPORT &&
+> GPIOLIB && ARM || MFD_MAX8925 && MFD_SUPPORT && I2C=y &&
+> GENERIC_HARDIRQS || MFD_MAX8998 && MFD_SUPPORT && I2C=y &&
+> GENERIC_HARDIRQS || MFD_WM8400 && MFD_SUPPORT && I2C || MFD_WM831X_I2C
+> && MFD_SUPPORT && I2C=y && GENERIC_HARDIRQS || MFD_WM831X_SPI &&
+> MFD_SUPPORT && SPI_MASTER && GENERIC_HARDIRQS || MFD_WM8994 &&
+> MFD_SUPPORT && I2C=y && GENERIC_HARDIRQS || MFD_MC13XXX && MFD_SUPPORT
+> && SPI_MASTER || AB3100_CORE && MFD_SUPPORT && I2C=y && ABX500_CORE ||
+> AB8500_CORE && MFD_SUPPORT && GENERIC_HARDIRQS && ABX500_CORE &&
+> SPI_MASTER && ARCH_U8500 || AB3550_CORE && MFD_SUPPORT && I2C=y &&
+> GENERIC_HARDIRQS && ABX500_CORE || MFD_TIMBERDALE && MFD_SUPPORT &&
+> PCI && GPIOLIB || LPC_SCH && MFD_SUPPORT && PCI || MFD_RDC321X &&
+> MFD_SUPPORT && PCI || MFD_JANZ_CMODIO && MFD_SUPPORT && PCI ||
+> MFD_JZ4740_ADC && MFD_SUPPORT && MACH_JZ4740 || MFD_TPS6586X &&
+> MFD_SUPPORT && I2C=y && GPIOLIB && GENERIC_HARDIRQS || MFD_VX855 &&
+> MFD_SUPPORT && PCI) selects MFD_CORE which has unmet direct
+> dependencies (MFD_SUPPORT)
+> 
+
+That's 2 warnings.  I have sent a patch for the first one.
+Looks like I need to resend it.
+
+
+> 
+> Were these warnings supposed to be fixed by this patch set as well? Or
+> is it something in my config (attached)?
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
