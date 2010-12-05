@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab0LEMcl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 07:32:41 -0500
-Received: from fanny.its.uu.se ([130.238.4.241]:10912 "EHLO fanny.its.uu.se"
+	id S1755501Ab0LEMlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 07:41:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755178Ab0LEMck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 07:32:40 -0500
+	id S1755256Ab0LEMlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 07:41:10 -0500
+Message-ID: <4CFB8842.4010003@redhat.com>
+Date: Sun, 05 Dec 2010 14:40:34 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Rik van Riel <riel@redhat.com>
+CC: Chris Wright <chrisw@sous-sol.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 1/3] kvm: keep track of which task is running a KVM
+ vcpu
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144324.4a79263b@annuminas.surriel.com> <20101203011810.GV10050@sequoia.sous-sol.org> <4CF903A6.5050209@redhat.com>
+In-Reply-To: <4CF903A6.5050209@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <19707.34405.791777.298955@pilspetsen.it.uu.se>
-Date: Sun, 5 Dec 2010 13:32:37 +0100
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-In-Reply-To: <19697.8378.717761.236202@pilspetsen.it.uu.se>
-References: <19697.8378.717761.236202@pilspetsen.it.uu.se>
-X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikael Pettersson writes:
- > The scenario is that I do a remote login to an ARM build server,
- > use screen to start a sub-shell, in that shell start a largish
- > compile job, detach from that screen, and from the original login
- > shell I occasionally monitor the compile job with top or ps or
- > by attaching to the screen.
- > 
- > With kernels 2.6.37-rc2 and -rc3 this causes the machine to become
- > very sluggish: top takes forever to start, once started it shows no
- > activity from the compile job (it's as if it's sleeping on a lock),
- > and ps also takes forever and shows no activity from the compile job.
- > 
- > Rebooting into 2.6.36 eliminates these issues.
- > 
- > I do pretty much the same thing (remote login -> screen -> compile job)
- > on other archs, but so far I've only seen the 2.6.37-rc misbehaviour
- > on ARM EABI, specifically on an IOP n2100. (I have access to other ARM
- > sub-archs, but haven't had time to test 2.6.37-rc on them yet.)
- > 
- > Has anyone else seen this? Any ideas about the cause?
+On 12/03/2010 04:50 PM, Rik van Riel wrote:
+> On 12/02/2010 08:18 PM, Chris Wright wrote:
+>> * Rik van Riel (riel@redhat.com) wrote:
+>>> Keep track of which task is running a KVM vcpu.  This helps us
+>>> figure out later what task to wake up if we want to boost a
+>>> vcpu that got preempted.
+>>>
+>>> Unfortunately there are no guarantees that the same task
+>>> always keeps the same vcpu, so we can only track the task
+>>> across a single "run" of the vcpu.
+>>
+>> So shouldn't it confine to KVM_RUN?  The other vcpu_load callers aren't
+>> always a vcpu in a useful runnable state.
+>
+> Yeah, probably.  If you want I can move the setting of
+> vcpu->task to kvm_vcpu_ioctl.
+>
 
-(Re-followup since I just realised my previous followups were to Rafael's
-regressions mailbot rather than the original thread.)
+No need, it's not like something bad will happen.
 
-> The bug is still present in 2.6.37-rc4.  I'm currently trying to bisect it.
+What I'd really like to see is a soft binding between a vcpu and its 
+thread, so directed yield works even if we're in qemu while we were 
+scheduled out.  In fact it's not an unlikely pattern:
 
-git bisect identified
+   spin_lock(&lock)
+   ...
+   writel(some_port_handled_by_qemu)
+   ...
+   spin_unlock(&lock)
 
-[305e6835e05513406fa12820e40e4a8ecb63743c] sched: Do not account irq time to current task
+but that can wait.
 
-as the cause of this regression.  Reverting it from 2.6.37-rc4 (requires some
-hackery due to subsequent changes in the same area) restores sane behaviour.
+-- 
+error compiling committee.c: too many arguments to function
 
-The original patch submission talks about irq-heavy scenarios.  My case is the
-exact opposite: UP, !PREEMPT, NO_HZ, very low irq rate, essentially 100% CPU
-bound in userspace but expected to schedule quickly when needed (e.g. running
-top or ps or just hitting CR in one shell while another runs a compile job).
-
-I've reproduced the misbehaviour with 2.6.37-rc4 on ARM/mach-iop32x and
-ARM/mach-ixp4xx, but ARM/mach-kirkwood does not misbehave, and other archs
-(x86 SMP, SPARC64 UP and SMP, PowerPC32 UP, Alpha UP) also do not misbehave.
-
-So it looks like an ARM-only issue, possibly depending on platform specifics.
-
-One difference I noticed between my Kirkwood machine and my ixp4xx and iop32x
-machines is that even though all have CONFIG_NO_HZ=y, the timer irq rate is
-much higher on Kirkwood, even when the machine is idle.
-
-/Mikael
