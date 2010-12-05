@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab0LECLg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 21:11:36 -0500
-Received: from serv04.lahn.de ([213.239.197.57]:55139 "EHLO serv04.lahn.de"
+	id S1756207Ab0LECwF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 21:52:05 -0500
+Received: from void.printf.net ([89.145.121.20]:49610 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756117Ab0LECLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 21:11:35 -0500
-Date: Sun, 5 Dec 2010 03:07:12 +0100
-From: Michael Leun <lkml20101129@newton.leun.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Ben Greear <greearb@candelatech.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Gross <jesse@nicira.com>, stable@kernel.org
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-Message-ID: <20101205030712.36149bc2@xenia.leun.net>
-In-Reply-To: <1291200914.2856.546.camel@edumazet-laptop>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	<4CF442FA.4070701@candelatech.com>
-	<20101130095944.41b5f7b6@xenia.leun.net>
-	<1291108809.2904.3.camel@edumazet-laptop>
-	<20101201111716.424fb771@xenia.leun.net>
-	<1291200914.2856.546.camel@edumazet-laptop>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	id S1752861Ab0LECwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Dec 2010 21:52:03 -0500
+Date: Sun, 5 Dec 2010 02:51:51 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 4/4] [ARM] mxcmmc: remove a unnecessary
+	release_resource() call
+Message-ID: <20101205025150.GA24000@void.printf.net>
+References: <1290415359.5471.4.camel@mola> <1290415467.5471.7.camel@mola> <1290415534.5471.8.camel@mola> <1290415596.5471.10.camel@mola> <1290415671.5471.13.camel@mola> <20101125090311.GP6017@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101125090311.GP6017@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Dec 2010 11:55:14 +0100
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Hi,
 
-> Le mercredi 01 décembre 2010 à 11:17 +0100, Michael Leun a écrit :
+On Thu, Nov 25, 2010 at 10:03:11AM +0100, Sascha Hauer wrote:
+> On Mon, Nov 22, 2010 at 04:47:51PM +0800, Axel Lin wrote:
+> > Remove release_resource() after release_mem_region().
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > 
-> > Yup, from what I've tested this works (and tcpdump sees broadcast
-> > packets even for vlans not configured at the moment including vlan
-> > tag
-> > - yipee!).
-> >
+> Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+> 
+> > ---
+> >  drivers/mmc/host/mxcmmc.c |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+> > index 2b9f7c8..4428594 100644
+> > --- a/drivers/mmc/host/mxcmmc.c
+> > +++ b/drivers/mmc/host/mxcmmc.c
+> > @@ -967,7 +967,6 @@ static int mxcmci_remove(struct platform_device *pdev)
+> >  	clk_put(host->clk);
+> >  
+> >  	release_mem_region(host->res->start, resource_size(host->res));
+> > -	release_resource(host->res);
+> >  
+> >  	mmc_free_host(mmc);
+> >  
 
-This was tested on machine with
-root@tp_z61m:~/src/tcpdump-4.1.1# lspci|grep Eth
-02:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752M Gigabit Ethernet PCI Express (rev 02)
-
-There it works as I said.
-
-But on
-
-hpdl320g5:/home/ml # lspci | grep Eth
-03:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev a3)
-03:04.1 Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev a3)
-
-the good message is that it also does not crash, but with tcpdump I see
-vlan tags when no vlan devices configured on the respective eth, if so
-I do not see tags anymore vlan tags on the trunk interface.
-
-hpdl320g5:/home/ml # ifconfig -a
-[...]
-eth1      Link encap:Ethernet  Hardware Adresse xx:xx:xx:xx:xx:xx  
-          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 Sendewarteschlangenlänge:1000 
-          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
-          Interrupt:17 
-[...]
-
-hpdl320g5:/home/ml # tcpdump -i eth1 -n -e
-tcpdump: WARNING: eth1: no IPv4 address assigned
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
-[...]
-02:45:57.597640 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-02:45:57.622654 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-[...]
-
-hpdl320g5:/home/ml # vconfig add eth1 2
-WARNING:  Could not open /proc/net/vlan/config.  Maybe you need to load the 8021q module, or maybe you are not using PROCFS??
-Added VLAN with VID == 2 to IF -:eth1:-
-hpdl320g5:/home/ml # cat /proc/net/vlan/config 
-VLAN Dev name    | VLAN ID
-Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
-eth1.2         | 2  | eth1
-hpdl320g5:/home/ml # tcpdump -i eth1 -n -e
-tcpdump: WARNING: eth1: no IPv4 address assigned
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
-[...]
-02:50:18.095959 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 60: vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-02:50:18.120989 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 60: vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-[...]
-
-The same packages we saw double vlan tagged a few minutes ago now appear single vlan tagged (and of course, other packets that were shown single vlan tagged before are now shown without vlan tag / eth type 0x0800).
-
-
-On the other machine:
-
-root@tp_z61m:~# cat /proc/net/vlan/config 
-VLAN Dev name    | VLAN ID
-Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
-eth0.741       | 741  | eth0
-eth0.2         | 2  | eth0
-root@tp_z61m:~/src/tcpdump-4.1.1# ./tcpdump -i eth0 -n -e not port 22
-tcpdump: WARNING: eth0: no IPv4 address assigned
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
-03:06:51.859016 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, Request who-has 10.0.0.1 tell 10.0.0.2, length 42
-03:06:51.883956 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, Request who-has 10.0.0.1 tell 10.0.0.2, length 42
-
-
-
-[...]
-> Here is the revised patch again then for stable team, via David Miller
-> agreement.
-[...]
+Pushed to mmc-next for .38, thanks.
 
 -- 
-MfG,
-
-Michael Leun
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
