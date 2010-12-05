@@ -1,35 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab0LEVAc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 16:00:32 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:40316 "EHLO smtp2.it.da.ut.ee"
+	id S1754988Ab0LEVIX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 16:08:23 -0500
+Received: from home.keithp.com ([63.227.221.253]:43121 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901Ab0LEVAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 16:00:31 -0500
-Date: Sun, 5 Dec 2010 23:00:29 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing
- readq and writeq
-In-Reply-To: <z3LGq_ncuOB.A.aSG.eD_-MB@chimera>
-Message-ID: <alpine.SOC.1.00.1012052300100.18105@math.ut.ee>
-References: <jyQ21do2hOF.A.qwD.m_--MB@chimera> <z3LGq_ncuOB.A.aSG.eD_-MB@chimera>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1754157Ab0LEVIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 16:08:22 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 2/2] drm: record monitor status in output_poll_execute
+In-Reply-To: <20101205132743.3b3458ab@schatten.dmk.lab>
+References: <1290797159-3977-1-git-send-email-keithp@keithp.com> <1290797159-3977-2-git-send-email-keithp@keithp.com> <20101205132743.3b3458ab@schatten.dmk.lab>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
+Date: Sun, 05 Dec 2010 13:08:18 -0800
+Message-ID: <yunpqtgexml.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Yes, still present in yesterdays git.
+On Sun, 5 Dec 2010 13:27:43 +0100, Florian Mickler <florian@mickler.org> wr=
+ote:
+> On Fri, 26 Nov 2010 10:45:59 -0800
+> Keith Packard <keithp@keithp.com> wrote:
+>=20
+> > In order to correctly report monitor connected status changes, the
+> > previous monitor status must be recorded in the connector->status
+> > value instead of being discarded.
+> >=20
+> > Signed-off-by: Keith Packard <keithp@keithp.com>
+>=20
+> Keith, am I right to assume that these address=20
+> https://bugzilla.kernel.org/show_bug.cgi?id=3D22672
+> and probably:
+> https://bugzilla.kernel.org/show_bug.cgi?id=3D23472
 
--- 
-Meelis Roos (mroos@ut.ee)      http://www.cs.ut.ee/~mroos/
+Yes, this is part of the patch for that. The other piece is in the 2D
+driver which has a matching bug. That patch is already on master.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iD8DBQFM+/9CQp8BWwlsTdMRApdvAKDj0FZ6fQxBPt4TLDq9IRdUeZiObQCgxKxX
+i1cZ5FtuV5f4V5gQEbiIcsw=
+=Lh8E
+-----END PGP SIGNATURE-----
+--=-=-=--
