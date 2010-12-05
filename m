@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab0LELLS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 06:11:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64018 "EHLO
+	id S1755017Ab0LELPQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 06:15:16 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51920 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab0LELLQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754353Ab0LELPN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 06:11:16 -0500
+	Sun, 5 Dec 2010 06:15:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=V3l5Q2rrGImR/wi1LFae3xqFulelh/8K9gMHBoFyTWpPYVK2KvY7gXAb706bAGwVwT
-         BeiRlT/xq1eKDMZrucu/NcxGQTCLwRf/mdkyKSzylusFxDHpRE06u25+JtDEk79n9g7T
-         LuvGEv2lO7zUVpKeBodlNPLWRGwuNtpzwOPXk=
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=uXrAM9yBrx1Bt2S4hY9JMLJi1gW5Or2o8Pt6kj4TQoJhV2sRfSz5OZccqpRqfzwBGq
+         RAaqz9CXwJ+kNIcGJzwYL5eIAMIoK2R4QQXiJAiUNxKEVBtvUx8rSbn1J4/ZyMFz+6nD
+         eyI3HcKCY13Xbm6OdMI446q5B4B+btDG2//1U=
 MIME-Version: 1.0
-In-Reply-To: <m2wroynj4t.fsf@igel.home>
-References: <alpine.DEB.2.00.1010312135110.22279@ayla.of.borg>
-	<m2wroynj4t.fsf@igel.home>
-Date: Sun, 5 Dec 2010 12:11:14 +0100
-X-Google-Sender-Auth: GeWyxXSt1ZG_SWVaQursQqVGVUU
-Message-ID: <AANLkTimfSh8QYLr1bvxcKUwtRLRLLM1J3CCn8uYmKY7v@mail.gmail.com>
-Subject: Re: [PATCH/RFC] m68k/sun3: Kill pte_unmap() warnings
+Date: Sun, 5 Dec 2010 12:15:10 +0100
+X-Google-Sender-Auth: yNhE74N7YkucgXrseCElFRC-HDg
+Message-ID: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
+Subject: Signal patchset (was: Re: aranym bug, manifests as "ida_remove called
+ for id=13" on recent kernels)
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Sam Creasey <sammy@sammy.net>, Andrew Morton <akpm@linux-foundation.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andreas Schwab <schwab@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 22:32, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On Tue, Nov 2, 2010 at 16:30, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Mon, Oct 11, 2010 at 16:24, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> BTW, any comments on signal patchset?  Seems to work here, including the
+>> stack expansion fixes, but that's on aranym.  I'll try to resurrect the
+>> real hardware, but that may take a while.  If somebody could give it a beating
+>> in the meanwhile...
 >
->> Which one is preferable?
->>
->> -------------------------------------------------------------------------------
->> Since commit 31c911329e048b715a1dfeaaf617be9430fd7f4e ("mm: check the argument
->> of kunmap on architectures without highmem"), we get lots of warnings like
->>
->> arch/m68k/kernel/sys_m68k.c:508: warning: passing argument 1 of ‘kunmap’ from incompatible pointer type
->>
->> As m68k doesn't support highmem anyway, open code the calls to kmap() and
->> kunmap() (the latter is a no-op) to kill the warnings.
+> I tried it on my Amiga 4000/040.
+> Without your patches, gdb gets stuck in state D+ when reaching a breakpoint:
 >
-> I prefer this one, it matches all architectures without CONFIG_HIGHPTE.
+> | cassandra:~# gdb /tmp/hello
+> | GNU gdb 6.4.90-debian
+> | Copyright (C) 2006 Free Software Foundation, Inc.
+> | GDB is free software, covered by the GNU General Public License, and you are
+> | welcome to change it and/or distribute copies of it under certain conditions.
+> | Type "show copying" to see the conditions.
+> | There is absolutely no warranty for GDB.  Type "show warranty" for details.
+> | This GDB was configured as "m68k-linux-gnu"...Using host
+> libthread_db library "/lib/libthread_db.so.1".
+> |
+> | (gdb) break main
+> | Breakpoint 1 at 0x800003fc: file /home/geert/hello.c, line 6.
+> | (gdb) run
+> | Starting program: /tmp/hello
+> |
+> | Breakpoint 1, main (argc=1, argv=0xefbeedb4) at /home/geert/hello.c:6
+>
+> With your patches, it works a bit better:
+>
+> | cassandra:~# gdb /tmp/hello
+> | GNU gdb 6.4.90-debian
+> | Copyright (C) 2006 Free Software Foundation, Inc.
+> | GDB is free software, covered by the GNU General Public License, and you are
+> | welcome to change it and/or distribute copies of it under certain conditions.
+> | Type "show copying" to see the conditions.
+> | There is absolutely no warranty for GDB.  Type "show warranty" for details.
+> | This GDB was configured as "m68k-linux-gnu"...Using host
+> libthread_db library "/lib/libthread_db.so.1".
+> |
+> | (gdb) break main
+> | Breakpoint 1 at 0x800003fc: file /home/geert/hello.c, line 6.
+> | (gdb) run
+> | Starting program: /tmp/hello
+> |
+> | Breakpoint 1, main (argc=1, argv=0xefcc5db4) at /home/geert/hello.c:6
+> | 6         printf("Hello, world! [C]\n");
+> | (gdb) cont
+> | Continuing.
+> | Hello, world! [C]
+> |
+> | Program exited normally.
+> | (gdb) run
+> | Starting program: /tmp/hello
+> |
+> | Breakpoint 1, main (argc=1, argv=0xef85bdb4) at /home/geert/hello.c:6
+> | 6         printf("Hello, world! [C]\n");
+> | (gdb) next
+> | Hello, world! [C]
+>
+> After which gdb is stuck in S+, and /tmp/hello in t.
 
-Thx, applied for 2.6.38, with updated commit message.
+Unless someone objects, I'm inclined to apply Al's patchset, as it improves the
+situation anyway.
+
+OK?
 
 Gr{oetje,eeting}s,
 
