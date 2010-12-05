@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab0LEMuM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 07:50:12 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58382 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab0LEMuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 07:50:10 -0500
-Date: Sun, 5 Dec 2010 13:49:49 +0100
-From: Heinz Diehl <htd@fritha.org>
-To: Milan Broz <mbroz@redhat.com>
-Cc: Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>,
-        htejun@gmail.com, linux-ext4@vger.kernel.org,
-        Jon Nelson <jnelson@jamponi.net>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption?
-Message-ID: <20101205124949.GA8266@fritha.org>
-References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com>
- <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com>
- <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com>
- <AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>
- <20101205100954.GA6564@fritha.org>
- <4CFB679D.5030900@redhat.com>
+	id S1755634Ab0LEM4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 07:56:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62493 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754895Ab0LEM4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 07:56:46 -0500
+Message-ID: <4CFB8BFA.4040100@redhat.com>
+Date: Sun, 05 Dec 2010 14:56:26 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CFB679D.5030900@redhat.com>
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+20101028 (GNU/Linux)
-X-Provags-ID: V02:K0:V0+VhUNMgTIQdBDU1N98MlwsLoI2fQ4Q6gOiWEIUJHb
- ZUoTVHtcJlvRC89i3i/1sa5OkgxBbjTWVMjdq16ogklAHtobZV
- xGBGwE4i2hyY7Gwn7Izgb8tE5AHuy09q6zAPwU6xWhu8Dgy7an
- Nfd6ITWQSZFZIBlunvRE23A3pPEDGficd6cFgMmWnDft5ZA9Oy
- yXIvIo6WPORP7NL0n7e5A==
+To: Rik van Riel <riel@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144516.45a0385d@annuminas.surriel.com>
+In-Reply-To: <20101202144516.45a0385d@annuminas.surriel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2010, Milan Broz wrote: 
+On 12/02/2010 09:45 PM, Rik van Riel wrote:
+> Instead of sleeping in kvm_vcpu_on_spin, which can cause gigantic
+> slowdowns of certain workloads, we instead use yield_to to hand
+> the rest of our timeslice to another vcpu in the same KVM guest.
+>
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 80f17db..a6eeafc 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1880,18 +1880,53 @@ void kvm_resched(struct kvm_vcpu *vcpu)
+>   }
+>   EXPORT_SYMBOL_GPL(kvm_resched);
+>
+> -void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu)
+> +void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>   {
+> -	ktime_t expires;
+> -	DEFINE_WAIT(wait);
+> +	struct kvm *kvm = me->kvm;
+> +	struct kvm_vcpu *vcpu;
+> +	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
+> +	int first_round = 1;
+> +	int i;
+>
+> -	prepare_to_wait(&vcpu->wq,&wait, TASK_INTERRUPTIBLE);
+> +	me->spinning = 1;
+> +
+> +	/*
+> +	 * We boost the priority of a VCPU that is runnable but not
+> +	 * currently running, because it got preempted by something
+> +	 * else and called schedule in __vcpu_run.  Hopefully that
+> +	 * VCPU is holding the lock that we need and will release it.
+> +	 * We approximate round-robin by starting at the last boosted VCPU.
+> +	 */
+> + again:
+> +	kvm_for_each_vcpu(i, vcpu, kvm) {
+> +		struct task_struct *task = vcpu->task;
+> +		if (first_round&&  i<  last_boosted_vcpu) {
+> +			i = last_boosted_vcpu;
+> +			continue;
+> +		} else if (!first_round&&  i>  last_boosted_vcpu)
+> +			break;
+> +		if (vcpu == me)
+> +			continue;
+> +		if (vcpu->spinning)
+> +			continue;
 
-> Which kernel? 2.6.37-rc?
+You may well want to wake up a spinner.  Suppose
 
-2.6.37-rc4 on one and 2.6.37-rc3-git2 on the other machine.
+   A takes a lock
+   B preempts A
+   B grabs a ticket, starts spinning, yields to A
+   A releases lock
+   A grabs ticket, starts spinning
 
-> Anyone seen this with 2.6.36 and the same dmcrypt patch?
-> (All info I had is that is is stable with here.)
+at this point, we want A to yield to B, but it won't because of this check.
 
-Both 2.6.36 and 2.6.36.1 with your patch have been running flawlessly.
-Not a single problem at all, over several weeks. 24/7.
+> +		if (!task)
+> +			continue;
+> +		if (waitqueue_active(&vcpu->wq))
+> +			continue;
+> +		if (task->flags&  PF_VCPU)
+> +			continue;
+> +		kvm->last_boosted_vcpu = i;
+> +		yield_to(task);
+> +		break;
+> +	}
 
-> It still seems to like dmcrypt with its parallel processing is just
-> trigger to another bug in 37-rc.
+I think a random selection algorithm will be a better fit against 
+special guest behaviour.
 
-That's the impression I got, too.
+>
+> -	/* Sleep for 100 us, and hope lock-holder got scheduled */
+> -	expires = ktime_add_ns(ktime_get(), 100000UL);
+> -	schedule_hrtimeout(&expires, HRTIMER_MODE_ABS);
+> +	if (first_round&&  last_boosted_vcpu == kvm->last_boosted_vcpu) {
+> +		/* We have not found anyone yet. */
+> +		first_round = 0;
+> +		goto again;
+
+Need to guarantee termination.
+
+
+-- 
+error compiling committee.c: too many arguments to function
 
