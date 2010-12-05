@@ -1,91 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab0LEXFd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 18:05:33 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17201 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab0LEXFc (ORCPT
+	id S1755280Ab0LEXJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 18:09:59 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37588 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab0LEXJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 18:05:32 -0500
-Date: Sun, 5 Dec 2010 23:58:35 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Colin Walters <walters@verbum.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ray Lee <ray-lk@madrabbit.org>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-In-Reply-To: <AANLkTi=jN83+w8AC8bOMtmqmgp3SLpTvtfoAYE9nR=H0@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1012052348400.16078@swampdragon.chaosbits.net>
-References: <1289783580.495.58.camel@maggy.simson.net> <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net> <20101116130413.GA29368@redhat.com> <1289917109.5169.131.camel@maggy.simson.net> <20101116150319.GA3475@redhat.com>
- <1289922108.5169.185.camel@maggy.simson.net> <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net> <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com> <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com>
- <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com> <AANLkTikFXv042qg4uzXF--9_co6-b_UgJF7Jeo2bVA=f@mail.gmail.com> <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com> <AANLkTiniEUdADMHUE1a9Fs1bGsWn6F6yeJX_NO4L94JK@mail.gmail.com>
- <AANLkTi=7FRCK9R2PVCTdtSqKo9FZemD5cXQTFoOKLEFB@mail.gmail.com> <AANLkTinOQ5sWigfW844dSBc2PvVwFj5c7yu+scNXxMcv@mail.gmail.com> <AANLkTi=jN83+w8AC8bOMtmqmgp3SLpTvtfoAYE9nR=H0@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 5 Dec 2010 18:09:57 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-tegra@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/21] ARM: tegra: timer: Add idle and suspend support to timers
+Date: Sun,  5 Dec 2010 15:08:57 -0800
+Message-Id: <1291590548-7341-11-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1291590548-7341-1-git-send-email-ccross@android.com>
+References: <1291590548-7341-1-git-send-email-ccross@android.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Dec 2010, Colin Walters wrote:
+The Tegra processor cannot be woken from idle by the internal
+ARM timers.  Reserve timer 4 to be used as a wake source
+during idle.
 
-> On Sun, Dec 5, 2010 at 3:47 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > The semantics of "nice" are not - and have never been - to put things
-> > into process scheduling groups of their own.
-> 
-> Again, I obviously understand that - the point is to explore the space
-> of changes here and consider what would (and wouldn't) break.  And
-> actually, what would improve.
-> 
-> > This is very much documented. People rely on it.
-> 
-> Well, we established my Fedora 14 system doesn't.  You said "no one"
-> uses "nice" interactively.  So...that leaves - who?  If you were
-> saying to me something like "I know Yahoo has some code in their data
-> centers which uses a range of nice values; if we made this change, all
-> of a sudden they'd get more CPU contention..."  Or like, "I'm pretty
-> sure Maemo uses very low nice values for some UI code".  But you so
-> far haven't really done that, it's just been (mostly)
-> assertions/handwaving.  Now you obviously have a lot more experience
-> that gives those assertions and handwaving a lot of credibility - but
-> all we need is one concrete example to shut me up =)
-> 
-[...]
+Implement read_persistent_clock by reading the Tegra RTC
+registers that stay running during suspend.
 
-I'll give you two re-world examples from two (closed source, but 
-still) apps we develop at my current employer.
+Save and restore the timer configuration register and the
+sched_clock value in LP0.
 
-The first one is a server/network monitoring app where there are lots of 
-child processes devoted to performing checks, storing data, displaying 
-results etc. Most of these processes just run at the default nice level. 
-One of the processes sometimes has a need for a cryptographic key pair and 
-it can generate this when it needs it, but it's better if one is reaily 
-available, so we have a seperate child process running that maintains a 
-small pool of new key pairs - this process runs at a high nice level since 
-it should not take CPU time away from the rest of the processes (it's not 
-important, it's just a small optimization), the need for key pairs comes 
-at large intervals, so the pool will almost never be depleted even if 
-this process doesn't get very much CPU time for a long time and besides, 
-if the pool ever gets depleted its no disaster since the consumer will 
-then just generate a key pair when needed and burn the required CPU.
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/mach-tegra/timer.c |  113 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 110 insertions(+), 3 deletions(-)
 
-The second is a backup aplication where one child process is in charge of 
-doing background disk scanning, compression and encryption. This process 
-is not interactive, it must result in minimal interference with whatever 
-the user is currently using the machine for as his primary task and 
-time-to-completion is not really that important. So, this process runs at 
-a rather high nice level to avoid stealing CPU from the users primary 
-task(s).
-
-
+diff --git a/arch/arm/mach-tegra/timer.c b/arch/arm/mach-tegra/timer.c
+index ef2fc29..b46650b 100644
+--- a/arch/arm/mach-tegra/timer.c
++++ b/arch/arm/mach-tegra/timer.c
+@@ -28,6 +28,7 @@
+ #include <linux/cnt32_to_63.h>
+ 
+ #include <asm/mach/time.h>
++#include <asm/mach/time.h>
+ #include <asm/localtimer.h>
+ 
+ #include <mach/iomap.h>
+@@ -37,6 +38,10 @@
+ #include "board.h"
+ #include "clock.h"
+ 
++#define RTC_SECONDS		0x08
++#define RTC_SHADOW_SECONDS	0x0c
++#define RTC_MILLISECONDS	0x10
++
+ #define TIMERUS_CNTR_1US 0x10
+ #define TIMERUS_USEC_CFG 0x14
+ #define TIMERUS_CNTR_FREEZE 0x4c
+@@ -49,15 +54,17 @@
+ #define TIMER_PTV 0x0
+ #define TIMER_PCR 0x4
+ 
+-struct tegra_timer;
+-
+ static void __iomem *timer_reg_base = IO_ADDRESS(TEGRA_TMR1_BASE);
++static void __iomem *rtc_base = IO_ADDRESS(TEGRA_RTC_BASE);
+ 
+ #define timer_writel(value, reg) \
+ 	__raw_writel(value, (u32)timer_reg_base + (reg))
+ #define timer_readl(reg) \
+ 	__raw_readl((u32)timer_reg_base + (reg))
+ 
++static u64 tegra_sched_clock_offset;
++static u64 tegra_sched_clock_resume_offset;
++
+ static int tegra_timer_set_next_event(unsigned long cycles,
+ 					 struct clock_event_device *evt)
+ {
+@@ -111,9 +118,61 @@ static struct clocksource tegra_clocksource = {
+ 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+ 
++/*
++ * tegra_rtc_read - Reads the Tegra RTC registers
++ * Care must be taken that this funciton is not called while the
++ * tegra_rtc driver could be executing to avoid race conditions
++ * on the RTC shadow register
++ */
++u64 tegra_rtc_read_ms(void)
++{
++	u32 ms = readl(rtc_base + RTC_MILLISECONDS);
++	u32 s = readl(rtc_base + RTC_SHADOW_SECONDS);
++	return (u64)s * 1000 + ms;
++}
++
++/*
++ * read_persistent_clock -  Return time from a persistent clock.
++ *
++ * Reads the time from a source which isn't disabled during PM, the
++ * 32k sync timer.  Convert the cycles elapsed since last read into
++ * nsecs and adds to a monotonically increasing timespec.
++ * Care must be taken that this funciton is not called while the
++ * tegra_rtc driver could be executing to avoid race conditions
++ * on the RTC shadow register
++ */
++static struct timespec persistent_ts;
++static u64 persistent_ms, last_persistent_ms;
++void read_persistent_clock(struct timespec *ts)
++{
++	u64 delta;
++	struct timespec *tsp = &persistent_ts;
++
++	last_persistent_ms = persistent_ms;
++	persistent_ms = tegra_rtc_read_ms();
++	delta = persistent_ms - last_persistent_ms;
++
++	timespec_add_ns(tsp, delta * 1000000);
++	*ts = *tsp;
++}
++
+ unsigned long long sched_clock(void)
+ {
+-	return cnt32_to_63(timer_readl(TIMERUS_CNTR_1US)) * 1000;
++	return tegra_sched_clock_offset +
++		cnt32_to_63(timer_readl(TIMERUS_CNTR_1US)) * 1000;
++}
++
++static void tegra_sched_clock_suspend(void)
++{
++	tegra_sched_clock_resume_offset = sched_clock() -
++		tegra_rtc_read_ms() * 1000000;
++}
++
++static void tegra_sched_clock_resume(void)
++{
++	tegra_sched_clock_offset += tegra_sched_clock_resume_offset +
++		tegra_rtc_read_ms() * 1000000 -
++		sched_clock();
+ }
+ 
+ static irqreturn_t tegra_timer_interrupt(int irq, void *dev_id)
+@@ -132,6 +191,20 @@ static struct irqaction tegra_timer_irq = {
+ 	.irq		= INT_TMR3,
+ };
+ 
++static irqreturn_t tegra_lp2wake_interrupt(int irq, void *dev_id)
++{
++	timer_writel(1<<30, TIMER4_BASE + TIMER_PCR);
++	return IRQ_HANDLED;
++}
++
++static struct irqaction tegra_lp2wake_irq = {
++	.name		= "timer_lp2wake",
++	.flags		= IRQF_DISABLED,
++	.handler	= tegra_lp2wake_interrupt,
++	.dev_id		= NULL,
++	.irq		= INT_TMR4,
++};
++
+ static void __init tegra_init_timer(void)
+ {
+ 	unsigned long rate = clk_measure_input_freq();
+@@ -169,6 +242,12 @@ static void __init tegra_init_timer(void)
+ 		BUG();
+ 	}
+ 
++	ret = setup_irq(tegra_lp2wake_irq.irq, &tegra_lp2wake_irq);
++	if (ret) {
++		printk(KERN_ERR "Failed to register LP2 timer IRQ: %d\n", ret);
++		BUG();
++	}
++
+ 	clockevents_calc_mult_shift(&tegra_clockevent, 1000000, 5);
+ 	tegra_clockevent.max_delta_ns =
+ 		clockevent_delta2ns(0x1fffffff, &tegra_clockevent);
+@@ -184,3 +263,31 @@ static void __init tegra_init_timer(void)
+ struct sys_timer tegra_timer = {
+ 	.init = tegra_init_timer,
+ };
++
++void tegra_lp2_set_trigger(unsigned long cycles)
++{
++	timer_writel(0, TIMER4_BASE + TIMER_PTV);
++	if (cycles) {
++		u32 reg = 0x80000000ul | min(0x1ffffffful, cycles);
++		timer_writel(reg, TIMER4_BASE + TIMER_PTV);
++	}
++}
++EXPORT_SYMBOL(tegra_lp2_set_trigger);
++
++unsigned long tegra_lp2_timer_remain(void)
++{
++	return timer_readl(TIMER4_BASE + TIMER_PCR) & 0x1ffffffful;
++}
++
++static u32 usec_config;
++void tegra_timer_suspend(void)
++{
++	tegra_sched_clock_suspend();
++	usec_config = timer_readl(TIMERUS_USEC_CFG);
++}
++
++void tegra_timer_resume(void)
++{
++	timer_writel(usec_config, TIMERUS_USEC_CFG);
++	tegra_sched_clock_resume();
++}
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.3.1
 
