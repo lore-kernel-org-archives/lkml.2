@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab0LEUTw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 15:19:52 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:40224 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754250Ab0LEUTu (ORCPT
+	id S1754891Ab0LEU3C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 15:29:02 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:48338 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab0LEU3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 15:19:50 -0500
-Subject: [PATCH for stable 2.6.36 REGRESSION] cx25840: Prevent device probe
- failure due to volume control ERANGE error
-From: Andy Walls <awalls@md.metrocast.net>
-To: stable@kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Cc: gregkh@suse.de, hverkuil@xs4all.nl, mchehab@redhat.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 05 Dec 2010 15:17:42 -0500
-Message-ID: <1291580262.2046.11.camel@morgan.silverblock.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-12-05_07:2010-12-04,2010-12-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=8
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1010190000 definitions=main-1012050106
+	Sun, 5 Dec 2010 15:29:00 -0500
+Date: Sun, 5 Dec 2010 21:28:55 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Heinz Diehl <htd@fritha.org>, Jon Nelson <jnelson@jamponi.net>,
+        htejun@gmail.com, Matt <jackdachef@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Chris Mason <chris.mason@oracle.com>,
+        htd <htd@fancy-poultry.org>, linux-ext4@vger.kernel.org,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: [dm-devel] hunt for 2.6.37 dm-crypt+ext4 corruption?
+Message-ID: <20101205202855.GA7668@basil.fritz.box>
+References: <4CF692D1.1010906@redhat.com>
+ <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com>
+ <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com>
+ <AANLkTinX_av7A-xT6hD-Df=tHxOOWhi7QkVezAUO3pW5@mail.gmail.com>
+ <20101205100954.GA6564@fritha.org>
+ <4CFB679D.5030900@redhat.com>
+ <1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1B43E57B-8DA5-4B34-A8D4-18A710CC8BA7@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> I've been using a kernel which is between 2.6.37-rc2 and -rc3 with a LUKS / dm-crypt / LVM / ext4 setup for my primary file systems, and I haven't observed any corruption for the last two weeks or so.   It's on my todo list to upgrade to top of Linus's tree, but perhaps this is a useful data point.
 
-The volume control scale in the cx25840 driver has an unusual mapping
-from register values to v4l2 volume control values.  Enforce the mapping
-limits, so that the default volume control setting does not fall out of
-bounds to prevent the cx25840 module device probe from failing.
+The reported corruptions are with a .37 forward port someone did of my parallel 
+kcryptd patch.  The 2.6.36 (and earlier) versions are rock solid with many users.
 
-Signed-off-by: Andy Walls <awalls@md.metrocast.net>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: stable@kernel.org
----
- drivers/media/video/cx25840/cx25840-core.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+The classic dmcrypt is single threaded and very slow.
 
-diff --git a/drivers/media/video/cx25840/cx25840-core.c b/drivers/media/video/cx25840/cx25840-core.c
-index f5a3e74..b9a2f18 100644
---- a/drivers/media/video/cx25840/cx25840-core.c
-+++ b/drivers/media/video/cx25840/cx25840-core.c
-@@ -1991,8 +1991,23 @@ static int cx25840_probe(struct i2c_client *client,
- 	v4l2_ctrl_new_std(&state->hdl, &cx25840_ctrl_ops,
- 			V4L2_CID_HUE, -128, 127, 1, 0);
- 	if (!is_cx2583x(state)) {
--		default_volume = 228 - cx25840_read(client, 0x8d4);
--		default_volume = ((default_volume / 2) + 23) << 9;
-+		default_volume = cx25840_read(client, 0x8d4);
-+		/*
-+		 * Enforce the legacy PVR-350/MSP3400 to PVR-150/CX25843 volume
-+		 * scale mapping limits to avoid -ERANGE errors when
-+		 * initializing the volume control
-+		 */
-+		if (default_volume > 228) {
-+			/* Bottom out at -96 dB, v4l2 vol range 0x2e00-0x2fff */
-+			default_volume = 228;
-+			cx25840_write(client, 0x8d4, 228);
-+		}
-+		else if (default_volume < 20) {
-+			/* Top out at + 8 dB, v4l2 vol range 0xfe00-0xffff */
-+			default_volume = 20;
-+			cx25840_write(client, 0x8d4, 20);
-+		}
-+		default_volume = (((228 - default_volume) >> 1) + 23) << 9;
- 
- 		state->volume = v4l2_ctrl_new_std(&state->hdl,
- 			&cx25840_audio_ctrl_ops, V4L2_CID_AUDIO_VOLUME,
+> As another thought, what version of GCC are people using who are having difficulty?   Could this perhaps be a compiler-related issue?
+
+A compiler problem seems very unlikely here.
+
+What may be an useful experiment would be to test 2.6.37-rc + ext4 over
+device mapper, but not dmcrypt. If that fails too then it's likely
+some generic device mapper problem.
+
+-Andi
+
 -- 
-1.7.2.3
-
-
-
+ak@linux.intel.com -- Speaking for myself only.
