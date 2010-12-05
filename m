@@ -1,29 +1,34 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab1AAE5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 23:57:43 -0500
-Received: from [205.237.195.111] ([205.237.195.111]:4691 "EHLO
-	esteban.colo.ethernext.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751392Ab1AAE5m (ORCPT
+	id S1752580Ab0LETyN (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sun, 5 Dec 2010 14:54:13 -0500
+Received: from webmail.cotelcam.com.ar ([200.59.14.6]:1906 "EHLO
+	webmail.cotelcam.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab0LETyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 23:57:42 -0500
-X-Greylist: delayed 2172 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Dec 2010 23:57:42 EST
-Date: Fri, 31 Dec 2010 23:21:58 -0500 (EST)
-Message-Id: <201101010421.p014LwcU025879@esteban.colo.ethernext.com>
-To: linux-kernel@vger.kernel.org
-Subject: Important mail from Mr David
-From: David Blake <dblake2211@yahoo.com>
-Reply-To: dblake2211@yahoo.com
+	Sun, 5 Dec 2010 14:54:11 -0500
+X-Greylist: delayed 9137 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Dec 2010 14:54:11 EST
+Message-ID: <31146.212.183.140.21.1291567939.squirrel@212.183.140.21>
+Date: Sun, 5 Dec 2010 13:52:19 -0300 (ART)
+Subject: HI
+From: "shung9898@yahoo.com.hk" <Hui@cotelnet.com.ar>
+Reply-To: shung899@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My name is David Blake From Scotland, I am at the hospital waiting to die. I have a  Charity project that i want you to do and it will benefit you and it is risk free and it is also Legal. Please get back to me so that i can give you more details.
- 
-David
 
 
+
+Good Day,
+
+I am Shung Hin Hui, I have a business of $15.5 million for you contact me
+for details.
 
