@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab0LERyS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:54:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64682 "EHLO
+	id S1757053Ab0LERye (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:54:34 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55965 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab0LERvh (ORCPT
+	with ESMTP id S932218Ab0LERvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:51:37 -0500
+	Sun, 5 Dec 2010 12:51:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YFgmpD6pGw5WFCUs3it/UAX0XiiA4solva5fskzk6WQQ7rRdMwToWJSELTedybC7H8
-         eKlE7j7foaWjJjqXOTQmAVD7HmR6C2X2N9Xy+euSCeD9+AA7zZLnDB3HCFe1yBGebEbm
-         VcasemkmgKWRwx46hp4RUdYhXjiVIcbBPsx54=
+        b=BgPbkpKsfMy7JCppmbO85Xn7Ua+PO7nR0SCdmWIuIeWUF3fXnPsLOSlzlCdD9QVwsL
+         wwMg5MVdHg1jJO7zIOIZxhg08w7NfiuQVLc9/2AcXouX9Od8DeZxMs0M0fF8i4Q+tnhy
+         J5CQE5GllsPcTU7UPjyubmj17rCAfQhAtC7Oc=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 32/45] kstrtox: convert drivers/net/
-Date: Sun,  5 Dec 2010 19:49:29 +0200
-Message-Id: <1291571382-2719-32-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 19/45] kstrtox: convert drivers/gpio/
+Date: Sun,  5 Dec 2010 19:49:16 +0200
+Message-Id: <1291571382-2719-19-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
 References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
@@ -29,124 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/net/can/janz-ican3.c         |    5 +++--
- drivers/net/netxen/netxen_nic_main.c |    4 ++--
- drivers/net/qlcnic/qlcnic_main.c     |    4 ++--
- drivers/net/stmmac/stmmac_main.c     |   29 ++++++++++++++++-------------
- 4 files changed, 23 insertions(+), 19 deletions(-)
+ drivers/gpio/gpiolib.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/can/janz-ican3.c b/drivers/net/can/janz-ican3.c
-index 6e533dc..51fd497 100644
---- a/drivers/net/can/janz-ican3.c
-+++ b/drivers/net/can/janz-ican3.c
-@@ -1617,8 +1617,9 @@ static ssize_t ican3_sysfs_set_term(struct device *dev,
- 	unsigned long enable;
- 	int ret;
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 21da9c1..0eb79d9 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -302,7 +302,7 @@ static ssize_t gpio_value_store(struct device *dev,
+ 	else {
+ 		long		value;
  
--	if (strict_strtoul(buf, 0, &enable))
--		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &enable);
-+	if (ret < 0)
-+		return ret;
+-		status = strict_strtol(buf, 0, &value);
++		status = kstrtol(buf, 0, &value);
+ 		if (status == 0) {
+ 			if (test_bit(FLAG_ACTIVE_LOW, &desc->flags))
+ 				value = !value;
+@@ -528,7 +528,7 @@ static ssize_t gpio_active_low_store(struct device *dev,
+ 	} else {
+ 		long		value;
  
- 	ret = ican3_set_termination(mod, enable);
- 	if (ret)
-diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
-index e1d30d7..b2c79e7 100644
---- a/drivers/net/netxen/netxen_nic_main.c
-+++ b/drivers/net/netxen/netxen_nic_main.c
-@@ -2503,7 +2503,7 @@ netxen_store_bridged_mode(struct device *dev,
- 	if (adapter->is_up != NETXEN_ADAPTER_UP_MAGIC)
- 		goto err_out;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		goto err_out;
- 
- 	if (!netxen_config_bridged_mode(adapter, !!new))
-@@ -2542,7 +2542,7 @@ netxen_store_diag_mode(struct device *dev,
- 	struct netxen_adapter *adapter = dev_get_drvdata(dev);
- 	unsigned long new;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		return -EINVAL;
- 
- 	if (!!new != !!(adapter->flags & NETXEN_NIC_DIAG_ENABLED))
-diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
-index a3dcd04..5c4e2db 100644
---- a/drivers/net/qlcnic/qlcnic_main.c
-+++ b/drivers/net/qlcnic/qlcnic_main.c
-@@ -3262,7 +3262,7 @@ qlcnic_store_bridged_mode(struct device *dev,
- 	if (!test_bit(__QLCNIC_DEV_UP, &adapter->state))
- 		goto err_out;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		goto err_out;
- 
- 	if (!adapter->nic_ops->config_bridged_mode(adapter, !!new))
-@@ -3298,7 +3298,7 @@ qlcnic_store_diag_mode(struct device *dev,
- 	struct qlcnic_adapter *adapter = dev_get_drvdata(dev);
- 	unsigned long new;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		return -EINVAL;
- 
- 	if (!!new != !!(adapter->flags & QLCNIC_DIAG_ENABLED))
-diff --git a/drivers/net/stmmac/stmmac_main.c b/drivers/net/stmmac/stmmac_main.c
-index 06bc603..8190289 100644
---- a/drivers/net/stmmac/stmmac_main.c
-+++ b/drivers/net/stmmac/stmmac_main.c
-@@ -1934,31 +1934,34 @@ static int __init stmmac_cmdline_opt(char *str)
- 	if (!str || !*str)
- 		return -EINVAL;
- 	while ((opt = strsep(&str, ",")) != NULL) {
-+		int rv;
-+
- 		if (!strncmp(opt, "debug:", 6))
--			strict_strtoul(opt + 6, 0, (unsigned long *)&debug);
-+			rv = kstrtoint(opt + 6, 0, &debug);
- 		else if (!strncmp(opt, "phyaddr:", 8))
--			strict_strtoul(opt + 8, 0, (unsigned long *)&phyaddr);
-+			rv = kstrtoint(opt + 8, 0, &phyaddr);
- 		else if (!strncmp(opt, "dma_txsize:", 11))
--			strict_strtoul(opt + 11, 0,
--				       (unsigned long *)&dma_txsize);
-+			rv = kstrtoint(opt + 11, 0, &dma_txsize);
- 		else if (!strncmp(opt, "dma_rxsize:", 11))
--			strict_strtoul(opt + 11, 0,
--				       (unsigned long *)&dma_rxsize);
-+			rv = kstrtoint(opt + 11, 0, &dma_rxsize);
- 		else if (!strncmp(opt, "buf_sz:", 7))
--			strict_strtoul(opt + 7, 0, (unsigned long *)&buf_sz);
-+			rv = kstrtoint(opt + 7, 0, &buf_sz);
- 		else if (!strncmp(opt, "tc:", 3))
--			strict_strtoul(opt + 3, 0, (unsigned long *)&tc);
-+			rv = kstrtoint(opt + 3, 0, &tc);
- 		else if (!strncmp(opt, "watchdog:", 9))
--			strict_strtoul(opt + 9, 0, (unsigned long *)&watchdog);
-+			rv = kstrtoint(opt + 9, 0, &watchdog);
- 		else if (!strncmp(opt, "flow_ctrl:", 10))
--			strict_strtoul(opt + 10, 0,
--				       (unsigned long *)&flow_ctrl);
-+			rv = kstrtoint(opt + 10, 0, &flow_ctrl);
- 		else if (!strncmp(opt, "pause:", 6))
--			strict_strtoul(opt + 6, 0, (unsigned long *)&pause);
-+			rv = kstrtoint(opt + 6, 0, &pause);
- #ifdef CONFIG_STMMAC_TIMER
- 		else if (!strncmp(opt, "tmrate:", 7))
--			strict_strtoul(opt + 7, 0, (unsigned long *)&tmrate);
-+			rv = kstrtoint(opt + 7, 0, &tmrate);
- #endif
-+		else
-+			rv = -EINVAL;
-+		if (rv < 0)
-+			return rv;
+-		status = strict_strtol(buf, 0, &value);
++		status = kstrtol(buf, 0, &value);
+ 		if (status == 0)
+ 			status = sysfs_set_active_low(desc, dev, value != 0);
  	}
- 	return 0;
- }
+@@ -606,10 +606,10 @@ static ssize_t export_store(struct class *class,
+ 				struct class_attribute *attr,
+ 				const char *buf, size_t len)
+ {
+-	long	gpio;
++	unsigned int	gpio;
+ 	int	status;
+ 
+-	status = strict_strtol(buf, 0, &gpio);
++	status = kstrtouint(buf, 0, &gpio);
+ 	if (status < 0)
+ 		goto done;
+ 
+@@ -638,10 +638,10 @@ static ssize_t unexport_store(struct class *class,
+ 				struct class_attribute *attr,
+ 				const char *buf, size_t len)
+ {
+-	long	gpio;
++	unsigned int	gpio;
+ 	int	status;
+ 
+-	status = strict_strtol(buf, 0, &gpio);
++	status = kstrtouint(buf, 0, &gpio);
+ 	if (status < 0)
+ 		goto done;
+ 
 -- 
 1.7.2.2
 
