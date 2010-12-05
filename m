@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab0LEECe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 23:02:34 -0500
-Received: from void.printf.net ([89.145.121.20]:32928 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab0LEECd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 23:02:33 -0500
-Date: Sun, 5 Dec 2010 04:02:24 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Takashi Iwai <tiwai@suse.de>, Philip Rakity <prakity@marvell.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aries Lee <arieslee@jmicron.com>
-Subject: Re: [PATCH 2/2] mmc: Test bus-width for old MMC devices
-Message-ID: <20101205040221.GA24547@void.printf.net>
-References: <1290579674-4616-1-git-send-email-tiwai@suse.de> <1290579674-4616-3-git-send-email-tiwai@suse.de>
+	id S1751267Ab0LEFMG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 00:12:06 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:38986 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab0LEFME convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 00:12:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=KKl/HRxLXCh7H0K0rMiKBqeiiJno44qaYSdT3og9ITgoQPbhN/6CIna1T9ZW0BYiTv
+         21+u1MSzladLReS085AA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290579674-4616-3-git-send-email-tiwai@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimmZE0QROje3vLKJOa+uVFfNqiGNF_MJ9vt9xHW@mail.gmail.com>
+References: <20101121133744.GA10765@elte.hu> <1290700829.4759.16.camel@maggy.simson.net>
+ <1290954299.30515.15.camel@marge.simson.net> <4CF5C379.8030204@google.com>
+ <1291184173.7466.147.camel@marge.simson.net> <4CF87C14.8000708@google.com> <AANLkTimmZE0QROje3vLKJOa+uVFfNqiGNF_MJ9vt9xHW@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Sat, 4 Dec 2010 21:11:29 -0800
+Message-ID: <AANLkTikPwXjNixYg+Wc=hrfPzpy7uygQ+zmYUKYAcrkd@mail.gmail.com>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+To: James Courtier-Dutton <james.dutton@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi, Philip,
+On Sat, Dec 4, 2010 at 3:55 PM, James Courtier-Dutton
+<james.dutton@gmail.com> wrote:
+> On 3 December 2010 05:11, Paul Turner <pjt@google.com> wrote:
+>>
+>> I actually don't have a desktop setup handy to test "interactivity" (sad but
+>> true -- working on grabbing one).  But it looks better on under synthetic
+>> load.
+>>
+>
+> What tools are actually used to test "interactivity" ?
+> I posted a tool to the list some time ago, but I don't think anyone noticed.
+> My tool is very simple.
+> When you hold a key down, it should repeat. It should repeat at a
+> constant predictable interval.
+> So, my tool just waits for key presses and times when each one occurred.
+> The tester simply presses a key and holds it down.
+> If the time between each key press is constant, it indicates good
+> "interactivity". If the time between each key press varies a lot, it
+> indicates bad "interactivity".
+> You can reliably test if one kernel is better than the next using
+> actual measurable figures.
+>
+> Kind Regards
+>
+> James
+>
 
-On Wed, Nov 24, 2010 at 07:21:14AM +0100, Takashi Iwai wrote:
-> From: Aries Lee <arieslee@jmicron.com>
-> 
-> Some old MMC devices fail with the 4/8 bits the driver tries to use
-> exclusively.  This patch adds a test for the given bus setup and falls
-> back to the lower bit mode (until 1-bit mode) when the test fails.
-> 
-> [Major rework and refactoring by tiwai]
-> 
-> Signed-off-by: Aries Lee <arieslee@jmicron.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Could you drop me a pointer?  I can certainly give it a try.  It would
+be extra useful if it included any histogram functionality.
 
-We have two independent patches for performing MMC bus-width testing now:
+I've been using a combination of various synthetic wakeup and load
+scripts and measuring the received bandwidth / wakeup latency.
 
-  https://patchwork.kernel.org/patch/351781/
-  https://patchwork.kernel.org/patch/361702/
-
-I'm planning on taking Takashi's since it looks a little cleaner; Philip,
-please could you take a look at Takashi's patch and add anything you
-think should be present from your own patch as a new incremental patch?
-
-Thanks very much,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+They have not succeeded in reproducing the starvation or poor latency
+observed by Mike above however.  (Although I've pulled a box to try
+reproducing his exact conditions [ e.g. user environment ] on Monday).
