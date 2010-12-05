@@ -1,63 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab0LEBQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Dec 2010 20:16:57 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35948 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab0LEBQ4 (ORCPT
+	id S1756045Ab0LEB3u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Dec 2010 20:29:50 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44428 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab0LEB3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Dec 2010 20:16:56 -0500
-Date: Sat, 4 Dec 2010 20:16:44 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org,
-        jason.wessel@windriver.com, Andi Kleen <andi@firstfloor.org>,
-        lwn@lwn.net
-Subject: Re: Announcement: Plans for v2.6.34-longterm
-Message-ID: <20101205011644.GB314@windriver.com>
-References: <20101203210719.GB21223@windriver.com>
- <20101204172840.GC10282@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101204172840.GC10282@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 05 Dec 2010 01:16:45.0527 (UTC) FILETIME=[15292670:01CB941A]
+	Sat, 4 Dec 2010 20:29:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=VQgCkRjq1T3ALLdRoI5SjWQG3v8ceHRgPDDpHXY52IJgcbtCG+T4j2v/psahLpJyZk
+         BrriUzdYa54SRX0gZVuzX9/nQVEdsN21Nz4VScWRwCHx1reBWrXSJUi4VBIaRYdSUyS3
+         YCeWSLI3w8MShaJB8AgFubQURS4dImUpdUOtY=
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Sripathi Kodi <sripathik@in.ibm.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org
+Subject: [PATCH] net/9p/protocol.c: Remove duplicated macros.
+Date: Sat,  4 Dec 2010 23:22:46 -0200
+Message-Id: <3300e3823b702d35658175ff6379a4f77fa9a5b0.1291512089.git.tfransosi@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.343.g7d43d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: Announcement: Plans for v2.6.34-longterm] On 04/12/2010 (Sat 09:28) Greg KH wrote:
+Use the macros already provided by kernel.h file.
 
-> On Fri, Dec 03, 2010 at 04:07:19PM -0500, Paul Gortmaker wrote:
-> > With that in mind, it is our intention to also maintain a 2.6.34
-> > longterm tree.  Jason and I work at Wind River, which already has
-> > released products based on v2.6.34, and as such it only makes sense
-> > to have a public long-term tree that others who are also based on
-> > 2.6.34 can make use of.
-> 
-> Other than Wind River, what other distros/userbases are using .34 as a
-> platform for their products?
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+---
+ net/9p/protocol.c |   33 +++++++++------------------------
+ 1 files changed, 9 insertions(+), 24 deletions(-)
 
-Well, since we create more of a distro builder, than a distro itself,
-anyone who uses WR to in turn create a distro for their own hardware or
-product will of course be using 2.6.34.  The Yocto project is currently
-using the 2.6.34 kernel and I'm sure there are others I'm not
-immediately aware of.
+diff --git a/net/9p/protocol.c b/net/9p/protocol.c
+index 45c15f4..798beac 100644
+--- a/net/9p/protocol.c
++++ b/net/9p/protocol.c
+@@ -27,31 +27,16 @@
+ 
+ #include <linux/module.h>
+ #include <linux/errno.h>
++#include <linux/kernel.h>
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
++#include <linux/stddef.h>
+ #include <linux/types.h>
+ #include <net/9p/9p.h>
+ #include <net/9p/client.h>
+ #include "protocol.h"
+ 
+-#ifndef MIN
+-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+-#endif
+-
+-#ifndef MAX
+-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+-#endif
+-
+-#ifndef offset_of
+-#define offset_of(type, memb) \
+-	((unsigned long)(&((type *)0)->memb))
+-#endif
+-#ifndef container_of
+-#define container_of(obj, type, memb) \
+-	((type *)(((char *)obj) - offset_of(type, memb)))
+-#endif
+-
+ static int
+ p9pdu_writef(struct p9_fcall *pdu, int proto_version, const char *fmt, ...);
+ 
+@@ -104,7 +89,7 @@ EXPORT_SYMBOL(p9stat_free);
+ 
+ static size_t pdu_read(struct p9_fcall *pdu, void *data, size_t size)
+ {
+-	size_t len = MIN(pdu->size - pdu->offset, size);
++	size_t len = min(pdu->size - pdu->offset, size);
+ 	memcpy(data, &pdu->sdata[pdu->offset], len);
+ 	pdu->offset += len;
+ 	return size - len;
+@@ -112,7 +97,7 @@ static size_t pdu_read(struct p9_fcall *pdu, void *data, size_t size)
+ 
+ static size_t pdu_write(struct p9_fcall *pdu, const void *data, size_t size)
+ {
+-	size_t len = MIN(pdu->capacity - pdu->size, size);
++	size_t len = min(pdu->capacity - pdu->size, size);
+ 	memcpy(&pdu->sdata[pdu->size], data, len);
+ 	pdu->size += len;
+ 	return size - len;
+@@ -121,7 +106,7 @@ static size_t pdu_write(struct p9_fcall *pdu, const void *data, size_t size)
+ static size_t
+ pdu_write_u(struct p9_fcall *pdu, const char __user *udata, size_t size)
+ {
+-	size_t len = MIN(pdu->capacity - pdu->size, size);
++	size_t len = min(pdu->capacity - pdu->size, size);
+ 	if (copy_from_user(&pdu->sdata[pdu->size], udata, len))
+ 		len = 0;
+ 
+@@ -201,7 +186,7 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version, const char *fmt,
+ 				if (errcode)
+ 					break;
+ 
+-				size = MAX(len, 0);
++				size = max_t(int16_t, len, 0);
+ 
+ 				*sptr = kmalloc(size + 1, GFP_KERNEL);
+ 				if (*sptr == NULL) {
+@@ -256,8 +241,8 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version, const char *fmt,
+ 				    p9pdu_readf(pdu, proto_version, "d", count);
+ 				if (!errcode) {
+ 					*count =
+-					    MIN(*count,
+-						pdu->size - pdu->offset);
++					    min_t(int32_t, *count,
++						  pdu->size - pdu->offset);
+ 					*data = &pdu->sdata[pdu->offset];
+ 				}
+ 			}
+@@ -421,7 +406,7 @@ p9pdu_vwritef(struct p9_fcall *pdu, int proto_version, const char *fmt,
+ 				const char *sptr = va_arg(ap, const char *);
+ 				int16_t len = 0;
+ 				if (sptr)
+-					len = MIN(strlen(sptr), USHRT_MAX);
++					len = min_t(int16_t, strlen(sptr), USHRT_MAX);
+ 
+ 				errcode = p9pdu_writef(pdu, proto_version,
+ 								"w", len);
+-- 
+1.7.3.2.343.g7d43d
 
-> And how long do you expect to be maintaining this .34 branch for?
-
-The expectation is that maintenance will be ongoing for years, since
-we'll largely be needing to do that work anyway.  I plan to follow your
-lead on how you handled .27 -- i.e. the "early" releases will possibly
-be rich with content, but as it gets to be closer to EOL (i.e. on the
-order of 10 releases removed from current), then it will only be the key
-CVE-like fixes and similar which will be added.
-
-Paul.
-
-> 
-> curious,
-> 
-> greg k-h
