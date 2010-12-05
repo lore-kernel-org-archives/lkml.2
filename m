@@ -1,136 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab0LEIEF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 03:04:05 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:56997 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab0LEIEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 03:04:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=jSKraeKQ2IVcaW5/RiZGdcDWFKyfATbuCeM9A47cvkHDPsYHy8aiHIZFLirmHt/r3x
-         CP5z2L8wxXWoch4FniciI+8eAUGlyAC/wHKVgzTwBiZC0flLZhHigw2jz4dXOH2OpRCq
-         w0C7ZuvPOatrvgrxRQtrEPwQBtgBuqSm/OvfY=
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Michael Leun <lkml20101129@newton.leun.net>
-Cc: David Miller <davem@davemloft.net>, Ben Greear <greearb@candelatech.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Gross <jesse@nicira.com>, stable@kernel.org
-In-Reply-To: <20101205030712.36149bc2@xenia.leun.net>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	 <4CF442FA.4070701@candelatech.com> <20101130095944.41b5f7b6@xenia.leun.net>
-	 <1291108809.2904.3.camel@edumazet-laptop>
-	 <20101201111716.424fb771@xenia.leun.net>
-	 <1291200914.2856.546.camel@edumazet-laptop>
-	 <20101205030712.36149bc2@xenia.leun.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 05 Dec 2010 09:03:53 +0100
-Message-ID: <1291536233.2806.102.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754726Ab0LEIEj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 03:04:39 -0500
+Received: from web53305.mail.re2.yahoo.com ([206.190.49.95]:21067 "HELO
+	web53305.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753961Ab0LEIEi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 03:04:38 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=gbuExJu8aCO7HbL3/mLW2sLV/aKjmsnJ5d1sdmmfNxwqY8xQ8UPCf+Fu/VRywZ4sgQEZQefQoLz2dpKWXsOIzJ2hE1zX/H836OMOerimBmg6e1f/AincgFmRmvpRXy1OvSM5My9Up2UxLx21G/AzDJ3vfUt09A6z/TSSMt6Vw/k=;
+Message-ID: <270554.37369.qm@web53305.mail.re2.yahoo.com>
+X-YMail-OSG: gaKuUSkVM1krF9tDXQS7DCQVlLUElJXQoQ7uZlyOfGC6Qgx
+ DhtEoKMtMc9Gen2DKzvfS5xjV3_8pTLNo1rfuTXjFg0s8jrn0l.y4iIMdJ6T
+ 5WFts9wZJOsqwHvkTVvgJKa6lLrtiuS3MBU4Jqn5dx5Q8euFzByO7TWoYyU3
+ ViA4k28k9Xw1fDbmAitpptQdd9dBOfq0.fCELvglXpgfqSgGkacKioqHhWNi
+ 9t9ac.vojDmWFOvGT2Rb07FNfUet9i_qFT979gzfaEl3yz20Ye5reb9ZDPq0
+ TJK0g2wVp1.oFy2X2d1Nz4cnieqaRMZAs8LJsoIRZNMMsOUnANsawvTuCGl7
+ N9pZBIg--
+X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
+Date: Sun, 5 Dec 2010 00:04:37 -0800 (PST)
+From: Tal Lubko <tallubko@yahoo.com>
+Subject: kgdb issues in 2.6.26.5-rt9
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 05 décembre 2010 à 03:07 +0100, Michael Leun a écrit :
-> On Wed, 01 Dec 2010 11:55:14 +0100
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> 
-> > Le mercredi 01 décembre 2010 à 11:17 +0100, Michael Leun a écrit :
-> > 
-> > > Yup, from what I've tested this works (and tcpdump sees broadcast
-> > > packets even for vlans not configured at the moment including vlan
-> > > tag
-> > > - yipee!).
-> > >
-> 
-> This was tested on machine with
-> root@tp_z61m:~/src/tcpdump-4.1.1# lspci|grep Eth
-> 02:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752M Gigabit Ethernet PCI Express (rev 02)
-> 
-> There it works as I said.
-> 
-> But on
-> 
-> hpdl320g5:/home/ml # lspci | grep Eth
-> 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev a3)
-> 03:04.1 Ethernet controller: Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev a3)
-> 
-> the good message is that it also does not crash, but with tcpdump I see
-> vlan tags when no vlan devices configured on the respective eth, if so
-> I do not see tags anymore vlan tags on the trunk interface.
-> 
+Hello all,
 
-For all these very specific needs, you'll have to try 2.6.37 I am
-afraid. Jesse did huge changes to exactly make this working, we wont
-backport this to 2.6.36, but only avoid crashes.
+I am running a custom 2.6.26.5-rt9 kernel which is the 2.6.26.5 vanilla kernel 
+with version 9 of the real time patch for that specific version. I am trying to 
+debug a "hard" problem which means not a problem which is easily reproducibe, 
+appears only on boot, only under certain conditions etc. In order to debug the 
+problem I am using kgdb.
 
+Before anyone flames me, I am aware that kgdb is not the highway as far as 
+kernel debugging is concerned, but due to certain external factors I am 
+interested in making that approach work.
 
-> hpdl320g5:/home/ml # ifconfig -a
-> [...]
-> eth1      Link encap:Ethernet  Hardware Adresse xx:xx:xx:xx:xx:xx  
->           UP BROADCAST MULTICAST  MTU:1500  Metric:1
->           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
->           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
->           collisions:0 Sendewarteschlangenlänge:1000 
->           RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
->           Interrupt:17 
-> [...]
-> 
-> hpdl320g5:/home/ml # tcpdump -i eth1 -n -e
-> tcpdump: WARNING: eth1: no IPv4 address assigned
-> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-> listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
-> [...]
-> 02:45:57.597640 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-> 02:45:57.622654 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-> [...]
-> 
-> hpdl320g5:/home/ml # vconfig add eth1 2
-> WARNING:  Could not open /proc/net/vlan/config.  Maybe you need to load the 8021q module, or maybe you are not using PROCFS??
-> Added VLAN with VID == 2 to IF -:eth1:-
-> hpdl320g5:/home/ml # cat /proc/net/vlan/config 
-> VLAN Dev name    | VLAN ID
-> Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
-> eth1.2         | 2  | eth1
-> hpdl320g5:/home/ml # tcpdump -i eth1 -n -e
-> tcpdump: WARNING: eth1: no IPv4 address assigned
-> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-> listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
-> [...]
-> 02:50:18.095959 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 60: vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-> 02:50:18.120989 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 60: vlan 99, p 3, ethertype ARP, arp who-has 10.0.0.1 tell 10.0.0.2
-> [...]
-> 
-> The same packages we saw double vlan tagged a few minutes ago now appear single vlan tagged (and of course, other packets that were shown single vlan tagged before are now shown without vlan tag / eth type 0x0800).
-> 
-> 
-> On the other machine:
-> 
-> root@tp_z61m:~# cat /proc/net/vlan/config 
-> VLAN Dev name    | VLAN ID
-> Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
-> eth0.741       | 741  | eth0
-> eth0.2         | 2  | eth0
-> root@tp_z61m:~/src/tcpdump-4.1.1# ./tcpdump -i eth0 -n -e not port 22
-> tcpdump: WARNING: eth0: no IPv4 address assigned
-> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-> listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
-> 03:06:51.859016 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, Request who-has 10.0.0.1 tell 10.0.0.2, length 42
-> 03:06:51.883956 xx:xx:xx:xx:xx:xx > ff:ff:ff:ff:ff:ff, ethertype 802.1Q (0x8100), length 64: vlan 1505, p 0, ethertype 802.1Q, vlan 99, p 3, ethertype ARP, Request who-has 10.0.0.1 tell 10.0.0.2, length 42
-> 
-> 
-> 
-> [...]
-> > Here is the revised patch again then for stable team, via David Miller
-> > agreement.
-> [...]
-> 
+My understanding of the kgdb status (please correct me if I am wrong on any of 
+the following...):
+- kgdb is supported in 2.6.26.5 vanilla and the important stuff works.
+- the version of kgdb in 2.6.26.5 is the "light" version by Ingo,�Thomas�and 
+Jason which means that some features are missing.
+- I am not aware of any limitations of the host side gdb that I am supposed to 
+use in order to debug the target (I tried using 6.6 and 6.8)
+
+The problems I have with kgdb:
+- info threads shows most of the threads on the system but then hangs for a 
+short time with various data errors. As a first stab this seems like a protocol 
+issue between host and target.
+- thread [tid] does not work. It claims that the thread ids that I use do not 
+exist although the info that I do manage to get out of "info threads" admits 
+that they do. ps(1) on the target also confirms the thread id numbers.
+- I haven't managed to set breakpoints. For instance: breaking on printk using 
+"break printk" results in a segv of the debugger (huh?!?). This looks like a gdb 
+
+protocol issue between the host and target which brings me back to the issue of 
+whether there are limitations on the version of gdb to be used.
+
+Please CC me on any replies since I am not subscribed.
+
+Thanks in advance,
+Tal
 
 
+
+      
