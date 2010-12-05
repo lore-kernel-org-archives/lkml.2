@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab0LERaQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 12:30:16 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54975 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab0LERaG (ORCPT
+	id S1756647Ab0LERa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 12:30:26 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:60513 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab0LERaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 12:30:06 -0500
+	Sun, 5 Dec 2010 12:30:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ss0NA9Nse+PjDOblbHeBD1dpAx2ppLzIosyN5W6jcNwNoKdRVvJ+vNbjClzg6TBObF
-         UPjB1/UK5HiOxdOv80tJ89XgnFsLhIONjYqCrvS8q4UEBdyXqOb8xo1HLnTS1fuO/7c5
-         MnFKecooHQ4bWrpVWsL1HwzAtdqo7+Rgc5uFw=
+        b=UU2QKEZMw1bPf7XYJIYhGQqqcSHNp6HpC9Cl9qdZxuXlJE2hefJoP2Rcu/tI4PYePz
+         +uZzU3VB4BTlimwxPIsuh+91OcUrf0ePvi9RrBsX081qpn+xPzEt88xtzDUyx9L3xdbd
+         Njo3+bZ0r4B6e1pwpnUGKDhtlswxcP7CpELU0=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v4 3/7] move memcg reclaimable page into tail of inactive list
-Date: Mon,  6 Dec 2010 02:29:11 +0900
-Message-Id: <a11d438e09af9808ac0cb0aba3e74c8a8deb4076.1291568905.git.minchan.kim@gmail.com>
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH v4 5/7] add profile information for invalidated page reclaim
+Date: Mon,  6 Dec 2010 02:29:13 +0900
+Message-Id: <dff7a42e5877b23a3cc3355743da4b7ef37299f8.1291568905.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1291568905.git.minchan.kim@gmail.com>
 References: <cover.1291568905.git.minchan.kim@gmail.com>
@@ -33,98 +34,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Golbal page reclaim moves reclaimalbe pages into inactive list
-to reclaim asap. This patch apply the rule in memcg.
-It can help to prevent unnecessary working page eviction of memcg.
+This patch adds profile information about invalidated page reclaim.
+It's just for profiling for test so it would be discard when the series
+are merged.
 
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Mel Gorman <mel@csn.ul.ie>
 ---
- include/linux/memcontrol.h |    6 ++++++
- mm/memcontrol.c            |   27 +++++++++++++++++++++++++++
- mm/swap.c                  |    3 ++-
- 3 files changed, 35 insertions(+), 1 deletions(-)
+ include/linux/vmstat.h |    4 ++--
+ mm/swap.c              |    3 +++
+ mm/vmstat.c            |    3 +++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 067115c..8317f5c 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -62,6 +62,7 @@ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 					gfp_t gfp_mask);
- extern void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru);
- extern void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru);
-+extern void mem_cgroup_rotate_reclaimable_page(struct page *page);
- extern void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru);
- extern void mem_cgroup_del_lru(struct page *page);
- extern void mem_cgroup_move_lists(struct page *page,
-@@ -207,6 +208,11 @@ static inline void mem_cgroup_del_lru_list(struct page *page, int lru)
- 	return ;
- }
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 833e676..c38ad95 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -30,8 +30,8 @@
  
-+static inline inline void mem_cgroup_rotate_reclaimable_page(struct page *page)
-+{
-+	return ;
-+}
-+
- static inline void mem_cgroup_rotate_lru_list(struct page *page, int lru)
- {
- 	return ;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 729beb7..f9435be 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -829,6 +829,33 @@ void mem_cgroup_del_lru(struct page *page)
- 	mem_cgroup_del_lru_list(page, page_lru(page));
- }
- 
-+/*
-+ * Writeback is about to end against a page which has been marked for immediate
-+ * reclaim.  If it still appears to be reclaimable, move it to the tail of the
-+ * inactive list.
-+ */
-+void mem_cgroup_rotate_reclaimable_page(struct page *page)
-+{
-+	struct mem_cgroup_per_zone *mz;
-+	struct page_cgroup *pc;
-+	enum lru_list lru = page_lru_base_type(page);
-+
-+	if (mem_cgroup_disabled())
-+		return;
-+
-+	pc = lookup_page_cgroup(page);
-+	/*
-+	 * Used bit is set without atomic ops but after smp_wmb().
-+	 * For making pc->mem_cgroup visible, insert smp_rmb() here.
-+	 */
-+	smp_rmb();
-+	/* unused or root page is not rotated. */
-+	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
-+		return;
-+	mz = page_cgroup_zoneinfo(pc);
-+	list_move_tail(&pc->lru, &mz->lists[lru]);
-+}
-+
- void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
- {
- 	struct mem_cgroup_per_zone *mz;
+ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGALLOC),
+-		PGFREE, PGACTIVATE, PGDEACTIVATE,
+-		PGFAULT, PGMAJFAULT,
++		PGFREE, PGACTIVATE, PGDEACTIVATE, PGINVALIDATE,
++		PGRECLAIM, PGFAULT, PGMAJFAULT,
+ 		FOR_ALL_ZONES(PGREFILL),
+ 		FOR_ALL_ZONES(PGSTEAL),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
 diff --git a/mm/swap.c b/mm/swap.c
-index 1f36f6f..0fe98e7 100644
+index 0f23998..2f21e6e 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -122,8 +122,9 @@ static void pagevec_move_tail(struct pagevec *pvec)
- 		}
- 		if (PageLRU(page) && !PageActive(page) &&
- 					!PageUnevictable(page)) {
--			int lru = page_lru_base_type(page);
-+			enum lru_list lru = page_lru_base_type(page);
- 			list_move_tail(&page->lru, &zone->lru[lru].list);
-+			mem_cgroup_rotate_reclaimable_page(page);
- 			pgmoved++;
- 		}
- 	}
+@@ -317,6 +317,7 @@ static void lru_deactivate(struct page *page, struct zone *zone)
+ 		 * is _really_ small and  it's non-critical problem.
+ 		 */
+ 		SetPageReclaim(page);
++		__count_vm_event(PGRECLAIM);
+ 	} else {
+ 		/*
+ 		 * The page's writeback ends up during pagevec
+@@ -328,6 +329,8 @@ static void lru_deactivate(struct page *page, struct zone *zone)
+ 
+ 	if (active)
+ 		__count_vm_event(PGDEACTIVATE);
++
++	__count_vm_event(PGINVALIDATE);
+ 	update_page_reclaim_stat(zone, page, file, 0);
+ }
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 3555636..ef6102d 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -818,6 +818,9 @@ static const char * const vmstat_text[] = {
+ 	"pgactivate",
+ 	"pgdeactivate",
+ 
++	"pginvalidate",
++	"pgreclaim",
++
+ 	"pgfault",
+ 	"pgmajfault",
+ 
 -- 
 1.7.0.4
 
