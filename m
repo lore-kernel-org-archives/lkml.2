@@ -1,121 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab0LFMVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 07:21:13 -0500
-Received: from mx2.isti.cnr.it ([194.119.192.4]:4316 "EHLO mx2.isti.cnr.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab0LFMVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 07:21:12 -0500
-Date: Mon, 06 Dec 2010 13:20:02 +0100
-From: Spelic <spelic@shiftmail.org>
-Subject: NFS corruption on ENOSPC (was: Re: Bugs in mkfs.xfs, device mapper,
- xfs, and /dev/ram)
-In-reply-to: <20101206040940.GA16103@dastard>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com, linux-lvm@redhat.com, linux-nfs@vger.kernel.org
-Message-id: <4CFCD4F2.10300@shiftmail.org>
-MIME-version: 1.0
-Content-type: text/plain; format=flowed; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
- Gecko/20100713 Thunderbird/3.0.6
-X-INSM-ip-source: 84.220.171.138 Auth Done
-References: <4CF7A539.1050206@shiftmail.org> <4CF7A9CF.2020904@shiftmail.org>
- <20101202230743.GZ16922@dastard> <4CF8F9BE.6000604@shiftmail.org>
- <20101206040940.GA16103@dastard>
+	id S1751918Ab0LFMZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 07:25:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50518 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab0LFMZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 07:25:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+Subject: Re: [PATCH v2 0/4]enable Background operations and HPI feature for eMMC4.41 card
+Date: Mon, 6 Dec 2010 13:24:42 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "kmpark@infradead.org" <kmpark@infradead.org>,
+        "Mai, Leonard" <leonard.mai@intel.com>
+References: <20101203121315.GA18655@intel.com> <5D8008F58939784290FAB48F54975198320B3E49EC@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <5D8008F58939784290FAB48F54975198320B3E49EC@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012061324.42702.arnd@arndb.de>
+X-Provags-ID: V02:K0:kDxnQQSTVlEkVG0xXlbal2zy7RjV5OG4Cqlrwk6hI0H
+ wGIS82VDbGlathjDObDjPZFr997MSgA2O4IxLzYkTOsttE09lO
+ ZurhJ1oBWvHlV66JPVgi7qiWbGOOFxl/OH4Vy+cCKf1RRwQTYL
+ YKJDkHNBBUWmqHZnrDLpCkVuMninfDfs+qLYMKGIvCM569+sjc
+ mTkhndKCa6gopFnZxgi1w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 05:09 AM, Dave Chinner wrote:
->> [Files become sparse at nfs-server-side upon hitting ENOSPC if NFS client uses local writeback caching]
->>
->>
->> It's nice that the NFS server does local writeback caching but it
->> should also cache the filesystem's free space (and check it
->> periodically, since nfs-server is presumably not the only process
->> writing in that filesystem) so that it doesn't accept more data than
->> it can really write. Alternatively, when free space drops below 1GB
->> (or a reasonable size based on network speed), nfs-server should
->> turn off filesystem writeback caching.
->>      
-> This isn't a NFS server problem, or one that canbe worked around at
-> the server. it's a NFS _client_ problem in that it does not get
-> synchronous ENOSPC errors when using writeback caching. There is no
-> way for the NFS client to know the server is near ENOSPC conditions
-> prior to writing the data to the server as clients operate
-> independently.
->
-> If you really want your NFS clients to behave correctly when the
-> server goes ENOSPC, turn off writeback caching at the client side,
-> not the server (i.e. use sync mounts on the client side).
-> Write performance will suck, but if you want sane ENOSPC behaviour...
->
->    
+On Monday 06 December 2010, Dong, Chuanxiao wrote:
+> I have updated the HW reset feature patch to be version4, but no one has given me any comment....
+> Does any want to review these patches?
 
-[adding NFS ML in cc]
+Give folks a chance to catch up with their email ;-)
 
-Thank you for your very clear explanation.
+A lot of people do not work during weekends, so if you send patches on a
+friday, you often don't get replies before the end of Monday, plus any
+time zone differences.
 
-Going without writeback cache is a problem (write performance sucks as 
-you say), but guaranteeing to never reach ENOSPC also is hardly 
-feasible, especially if humans are logged at client side and they are 
-doing "whatever they want".
-
-I would suggest that either be the NFS client to do polling to see if 
-it's near an ENOSPC and if yes disable writeback caching, or be the 
-server to do the polling and if it finds out it's near-ENOSPC condition 
-it sends a specific message to clients to warn them so that they can 
-disable caching.
-
-Performed at client side wouldn't change the NFS protocol and can be 
-good enough if one can specify how often freespace should be polled and 
-what is the freespace threshold. Or with just one value: specify what is 
-the max speed at which server disk can fill (next polling period can be 
-inferred from current free space), and maybe also specify a minimum 
-polling period (just in case).
-
-Regarding the last part of the email, perhaps I was not clear:
-
-
-> .....
->    
->> Holes in a random file!
->> This is data corruption, and nobody is notified of this data
->> corruption: no error at client side or server side!
->> Is it good semantics? How could client get notified of this? Some
->> kind of fsync maybe?
->>      
-> Use wireshark to determine if the server sends an ENOSPC to the
-> client when the first background write fails. I bet it does and that
-> your dd write failed with ENOSPC, too. Something stopped it writing
-> at 1.9GB....
->    
-
-No, in that case I had written 15x100MB which was more than the 
-available space but less than available+writeback_cache.
-So "cat" ended by itself and never got an ENOSPC error but data never 
-reached the disk at the other side.
-
-However today I found that by using fsync, the problem is fortunately 
-detected:
-
-# time cat randfile{001..015} | pv -b | dd conv=fsync 
-of=/mnt/nfsram/randfile
-1.46GB
-dd: fsync failed for `/mnt/nfsram/randfile': Input/output error
-3072000+0 records in
-3072000+0 records out
-1572864000 bytes (1.6 GB) copied, 20.9101 s, 75.2 MB/s
-
-real    0m21.364s
-user    0m0.470s
-sys     0m11.440s
-
-
-so ok I understand that processes needing guarantees on written data 
-should use fsync/fdatasync (which is good practice also for a local 
-filesystem actually...)
-
-Thank you
+	Arnd
