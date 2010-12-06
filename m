@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab0LFRf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:35:28 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:27568 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752162Ab0LFRf1 (ORCPT
+	id S1754007Ab0LFRgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:36:25 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63830 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab0LFRgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 12:35:27 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Drk3zoIVM1me5opdZ3y7xoyPLTEluFmSLVVXN8H5UmTlEfk
- OvgB.6S0mU7ZoHSF2XrLjzn5M5KhxxHQXmlIfbMjXAHlOVu6vtjHD1Qyqsbn
- Hufm9moIkX4KtXLZOGzf6oX7d73Pc2HLytVM2JlRPAya0uRauqGdO7_2GPCh
- JB7UlSESu.bcVQbzbqciiqMMkbuNRTebO69Ji5sIA8dYo47zb0jcwDEt.NxN
- EQchm4OvBC1I-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 6 Dec 2010 11:35:23 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Avi Kivity <avi@redhat.com>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [rfc: cpuops adv V1 3/8] x86: this_cpu_cmpxchg and
- this_cpu_cmpxchg_double operations
-In-Reply-To: <4CFD1A05.3020900@redhat.com>
-Message-ID: <alpine.DEB.2.00.1012061134170.2866@router.home>
-References: <20101202215340.562309713@linux.com> <20101202215400.609058574@linux.com> <4CFD1A05.3020900@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 6 Dec 2010 12:36:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=JWQkJVouX9yQ4cZZfg4nTlBM6nb12PwnROKvAPW89QomJUpjKjtezRae1vBsJxKNOJ
+         pNA06rowR4JVt6wixMk6v9Rk0DYvgM15nqOijq9hPaZn/bj77ux3hQkCQ4LvCKRvPMBv
+         +LZW4wUStOvGyarXNerUzK6TL2aqs0bCrbXwI=
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-arch@vger.kernel.org, mmarek@suse.cz,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 3/4] of/powerpc: Use generic rule to build dtb's
+Date: Mon,  6 Dec 2010 09:36:01 -0800
+Message-Id: <e1e467f66711f8052abf1e7ff823a5ad6778e0e2.1291656753.git.dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <cover.1291656753.git.dirk.brandewie@gmail.com>
+References: <cover.1291656753.git.dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010, Avi Kivity wrote:
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-> On 12/02/2010 11:53 PM, Christoph Lameter wrote:
-> > Provide support as far as the hardware capabilities of the x86 cpus
-> > allow.
-> >
-> >
-> >
-> > +/*
-> > + * Beware: xchg on x86 has an implied lock prefix. There will be the cost
-> > of
-> > + * full lock semantics even though they are not needed.
-> > + */
->
-> Perhaps we can use cmpxchg instead of xchg to avoid this? costs one more
-> instruction but may be worth it.
+Modify arch/powerpc/boot/Makefile to use dtc command in
+scripts/Makefile.lib
 
-Hmmm... Maybe good since I also need a xchg_double. And xchg_double can
-only be realized with cmpxchg16b. Using cmpxchg would make it consistent.
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+---
+ arch/powerpc/boot/Makefile |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
+diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
+index fae8192..3afb33a 100644
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -35,7 +35,7 @@ endif
+ 
+ BOOTCFLAGS	+= -I$(obj) -I$(srctree)/$(obj)
+ 
+-DTS_FLAGS	?= -p 1024
++DTC_FLAGS	?= -p 1024
+ 
+ $(obj)/4xx.o: BOOTCFLAGS += -mcpu=405
+ $(obj)/ebony.o: BOOTCFLAGS += -mcpu=405
+@@ -332,10 +332,8 @@ $(obj)/treeImage.%: vmlinux $(obj)/%.dtb $(wrapperbits)
+ 	$(call if_changed,wrap,treeboot-$*,,$(obj)/$*.dtb)
+ 
+ # Rule to build device tree blobs
+-DTC = $(objtree)/scripts/dtc/dtc
+-
+-$(obj)/%.dtb: $(dtstree)/%.dts
+-	$(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(dtstree)/$*.dts
++$(obj)/%.dtb: $(src)/dts/%.dts
++	$(call if_changed,dtc)
+ 
+ # If there isn't a platform selected then just strip the vmlinux.
+ ifeq (,$(image-y))
+-- 
+1.7.2.3
 
