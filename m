@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab0LFM6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 07:58:45 -0500
-Received: from mga11.intel.com ([192.55.52.93]:22913 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752839Ab0LFM6o convert rfc822-to-8bit (ORCPT
+	id S1752599Ab0LFNC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:02:59 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40880 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab0LFNC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 07:58:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,305,1288594800"; 
-   d="scan'208";a="864957934"
-From: "Wang, Yong Y" <yong.y.wang@intel.com>
-To: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Clark, Joel" <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>
-Date: Mon, 6 Dec 2010 20:58:28 +0800
-Subject: RE: [PATCH] dma : EG20T PCH: Fix miss-setting DMA descriptor
-Thread-Topic: [PATCH] dma : EG20T PCH: Fix miss-setting DMA descriptor
-Thread-Index: AcuTU1Ky46Dq5H8+RZutrajrJ1ICBwB8VAMg
-Message-ID: <FC2FB65B4D919844ADE4BE3C2BB739AD331B2807@shsmsx501.ccr.corp.intel.com>
-References: <4CF6284C.1010802@dsn.okisemi.com>
- <AANLkTi=BOYUwEAxWBhYVhco-Eo2n1isbb_kbJkao11XP@mail.gmail.com>
-In-Reply-To: <AANLkTi=BOYUwEAxWBhYVhco-Eo2n1isbb_kbJkao11XP@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 6 Dec 2010 08:02:58 -0500
+Date: Mon, 6 Dec 2010 21:00:59 +0800
+From: Joe Jin <joe.jin@oracle.com>
+To: sathyap@serverengines.com, subbus@serverengines.com,
+        sarveshwarb@serverengines.com, ajitk@serverengines.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        greg.marsden@oracle.com, guru.anbalagane@oracle.com,
+        joe.jin@oracle.com
+Subject: [patch 1/1] driver/net/benet: fix be_cmd_multicast_set() memcpy bug
+Message-ID: <20101206130059.GA19448@joejin-pc.cn.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-> > index 92b6790..a3d54c0 100644
-> > --- a/drivers/dma/pch_dma.c
-> > +++ b/drivers/dma/pch_dma.c
-> [..]
-> > @@ -273,10 +268,16 @@ static void pdc_dostart(struct pch_dma_chan
-> *pd_chan, struct pch_dma_desc* desc)
-> >        dev_dbg(chan2dev(&pd_chan->chan), "chan %d -> next: %x\n",
-> >                pd_chan->chan.chan_id, desc->regs.next);
-> >
-> > -       if (list_empty(&desc->tx_list))
-> > +       if (list_empty(&desc->tx_list)) {
-> > +               channel_writel(pd_chan, DEV_ADDR,
-> desc->regs.dev_addr);
-> > +               channel_writel(pd_chan, MEM_ADDR,
-> desc->regs.mem_addr);
-> > +               channel_writel(pd_chan, SIZE, desc->regs.size);
-> > +               channel_writel(pd_chan, NEXT, desc->regs.next);
-> >                pdc_set_mode(&pd_chan->chan,
-> DMA_CTL0_ONESHOT);
-> > -       else
-> > +       } else {
-> > +               channel_writel(pd_chan, NEXT,
-> virt_to_phys(&desc->regs));
-> 
-> There is a reason for the following comment for virt_to_phys():
-> 
-> /*      This function does not give bus mappings for DMA transfers. In
->  *      almost all conceivable cases a device driver should not be using
->  *      this function
->  */
-> 
-> ...in this case this wants to be:
-> 
->      channel_write(pd_chan, NEXT, desc->txd.phys);
-> 
-> I'll let Yong comment on the correctness of the rest.
-> 
+Hi, 
 
-Hi Dan,
+Regarding  benet be_cmd_multicast_set() function, now using
+netdev_for_each_mc_addr() helper for mac address copy, but
+when copying to req->mac[] did not increase of the index.
 
-Apart from the issue you pointed out, the patch looks good to me. If it is convenient for you, please help make the change and merge this patch. Otherwise, please let Tomoya know that you want him to send an updated patch. Thanks!
+Cc: Sathya Perla <sathyap@serverengines.com>
+Cc: Subbu Seetharaman <subbus@serverengines.com>
+Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
+Cc: Ajit Khaparde <ajitk@serverengines.com>
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
 
-Acked-by: Yong Wang <youg.y.wang@intel.com>
+---
+ be_cmds.c |    2 +-
 
--Yong
+diff --git a/drivers/net/benet/be_cmds.c b/drivers/net/benet/be_cmds.c
+index 36eca1c..e4465d2 100644
+--- a/drivers/net/benet/be_cmds.c
++++ b/drivers/net/benet/be_cmds.c
+@@ -1235,7 +1235,7 @@ int be_cmd_multicast_set(struct be_adapter *adapter, u32 if_id,
+ 
+ 		i = 0;
+ 		netdev_for_each_mc_addr(ha, netdev)
+-			memcpy(req->mac[i].byte, ha->addr, ETH_ALEN);
++			memcpy(req->mac[i++].byte, ha->addr, ETH_ALEN);
+ 	} else {
+ 		req->promiscuous = 1;
+ 	}
+
+
+-- 
+Oracle <http://www.oracle.com>
+Joe Jin | Team Leader, Software Development | +8610.8278.6295
+ORACLE | Linux and Virtualization
+Incubator Building 2-A ZPark | Beijing China, 100094
+
 
