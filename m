@@ -1,63 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab0LFXzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:55:05 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49010 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab0LFXzC (ORCPT
+	id S1753784Ab0LFX5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:57:13 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59380 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab0LFX5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:55:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pM6EZWnqOqzQQlUY3L5oHKTJ1rQw6/K88Mlk6RHS3nYxgSnsdR4gY5t0OqJiqB2uTz
-         xj7JtUOHPBPyGB76kWIxNviQdbfhIadESZJXXhPAKxSRgZQ/g2+7TzJbT69ZPSukM8dg
-         Tj7ULw7Vs2x2DZYopn1LV128mQKqOlw2ICgRY=
-Subject: Re: acpi_button: random oops on boot
-From: Tobias Karnat <tobias.karnat@googlemail.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        richard.coe@med.ge.com, jslaby@novell.com
-In-Reply-To: <201012061626.45962.bjorn.helgaas@hp.com>
-References: <1291477752.5096.27.camel@Tobias-Karnat>
-	 <201012060928.11307.bjorn.helgaas@hp.com>
-	 <1291676503.24968.25.camel@Tobias-Karnat>
-	 <201012061626.45962.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Dec 2010 00:54:59 +0100
-Message-ID: <1291679699.6246.11.camel@Tobias-Karnat>
+	Mon, 6 Dec 2010 18:57:12 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 7 Dec 2010 08:51:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] mm: kswapd: Stop high-order balancing when any
+ suitable zone is balanced
+Message-Id: <20101207085110.64d92ca1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101206113209.GB21406@csn.ul.ie>
+References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
+	<1291376734-30202-2-git-send-email-mel@csn.ul.ie>
+	<20101206113541.dda0a794.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101206113209.GB21406@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 06.12.2010, 16:26 -0700 schrieb Bjorn Helgaas:
-> On Monday, December 06, 2010 04:01:43 pm Tobias Karnat wrote:
-> > No, it only crashes on boot (without the printk patch).
-> > If it happens the machine is completely dead, SysRq does not work.
+On Mon, 6 Dec 2010 11:32:09 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
+
+> On Mon, Dec 06, 2010 at 11:35:41AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Fri,  3 Dec 2010 11:45:30 +0000
+> > Mel Gorman <mel@csn.ul.ie> wrote:
 > > 
-> > However it is definitely the acpi_button module, because removing it
-> > also fixes this.
+> > > When the allocator enters its slow path, kswapd is woken up to balance the
+> > > node. It continues working until all zones within the node are balanced. For
+> > > order-0 allocations, this makes perfect sense but for higher orders it can
+> > > have unintended side-effects. If the zone sizes are imbalanced, kswapd may
+> > > reclaim heavily within a smaller zone discarding an excessive number of
+> > > pages. The user-visible behaviour is that kswapd is awake and reclaiming
+> > > even though plenty of pages are free from a suitable zone.
+> > > 
+> > > This patch alters the "balance" logic for high-order reclaim allowing kswapd
+> > > to stop if any suitable zone becomes balanced to reduce the number of pages
+> > > it reclaims from other zones. kswapd still tries to ensure that order-0
+> > > watermarks for all zones are met before sleeping.
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > a nitpick.
+> > 
+> > > ---
+> > >  include/linux/mmzone.h |    3 +-
+> > >  mm/page_alloc.c        |    8 ++++--
+> > >  mm/vmscan.c            |   55 +++++++++++++++++++++++++++++++++++++++++-------
+> > >  3 files changed, 54 insertions(+), 12 deletions(-)
+> > > 
+> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > > index 39c24eb..7177f51 100644
+> > > --- a/include/linux/mmzone.h
+> > > +++ b/include/linux/mmzone.h
+> > > @@ -645,6 +645,7 @@ typedef struct pglist_data {
+> > >  	wait_queue_head_t kswapd_wait;
+> > >  	struct task_struct *kswapd;
+> > >  	int kswapd_max_order;
+> > > +	enum zone_type classzone_idx;
+> > >  } pg_data_t;
+> > >  
+> > >  #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
+> > > @@ -660,7 +661,7 @@ typedef struct pglist_data {
+> > >  
+> > >  extern struct mutex zonelists_mutex;
+> > >  void build_all_zonelists(void *data);
+> > > -void wakeup_kswapd(struct zone *zone, int order);
+> > > +void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
+> > >  int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+> > >  		int classzone_idx, int alloc_flags);
+> > >  enum memmap_context {
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index e409270..82e3499 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1915,13 +1915,14 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+> > >  
+> > >  static inline
+> > >  void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
+> > > -						enum zone_type high_zoneidx)
+> > > +						enum zone_type high_zoneidx,
+> > > +						enum zone_type classzone_idx)
+> > >  {
+> > >  	struct zoneref *z;
+> > >  	struct zone *zone;
+> > >  
+> > >  	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
+> > > -		wakeup_kswapd(zone, order);
+> > > +		wakeup_kswapd(zone, order, classzone_idx);
+> > >  }
+> > >  
+> > >  static inline int
+> > > @@ -1998,7 +1999,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+> > >  		goto nopage;
+> > >  
+> > >  restart:
+> > > -	wake_all_kswapd(order, zonelist, high_zoneidx);
+> > > +	wake_all_kswapd(order, zonelist, high_zoneidx,
+> > > +						zone_idx(preferred_zone));
+> > >  
+> > >  	/*
+> > >  	 * OK, we're below the kswapd watermark and have kicked background
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index d31d7ce..d070d19 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -2165,11 +2165,14 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+> > >   * interoperates with the page allocator fallback scheme to ensure that aging
+> > >   * of pages is balanced across the zones.
+> > >   */
+> > > -static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
+> > > +static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+> > > +							int classzone_idx)
+> > >  {
+> > >  	int all_zones_ok;
+> > > +	int any_zone_ok;
+> > >  	int priority;
+> > >  	int i;
+> > > +	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+> > >  	unsigned long total_scanned;
+> > >  	struct reclaim_state *reclaim_state = current->reclaim_state;
+> > >  	struct scan_control sc = {
+> > > @@ -2192,7 +2195,6 @@ loop_again:
+> > >  	count_vm_event(PAGEOUTRUN);
+> > >  
+> > >  	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+> > > -		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+> > >  		unsigned long lru_pages = 0;
+> > >  		int has_under_min_watermark_zone = 0;
+> > >  
+> > > @@ -2201,6 +2203,7 @@ loop_again:
+> > >  			disable_swap_token();
+> > >  
+> > >  		all_zones_ok = 1;
+> > > +		any_zone_ok = 0;
+> > >  
+> > >  		/*
+> > >  		 * Scan in the highmem->dma direction for the highest
+> > > @@ -2310,10 +2313,12 @@ loop_again:
+> > >  				 * spectulatively avoid congestion waits
+> > >  				 */
+> > >  				zone_clear_flag(zone, ZONE_CONGESTED);
+> > > +				if (i <= classzone_idx)
+> > > +					any_zone_ok = 1;
+> > >  			}
+> > >  
+> > >  		}
+> > > -		if (all_zones_ok)
+> > > +		if (all_zones_ok || (order && any_zone_ok))
+> > >  			break;		/* kswapd: all done */
+> > >  		/*
+> > >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
+> > > @@ -2336,7 +2341,7 @@ loop_again:
+> > >  			break;
+> > >  	}
+> > >  out:
+> > > -	if (!all_zones_ok) {
+> > > +	if (!(all_zones_ok || (order && any_zone_ok))) {
+> > 
+> > Could you add a comment ?
+> > 
+> > And this means...
+> > 
+> > 	all_zones_ok .... all_zone_balanced
+> > 	any_zones_ok .... fallback_allocation_ok
+> > ?
+> > 
 > 
-> If it crashes on boot (not when loading an acpi_button module),
-> you must be building acpi_button into the static kernel.
+> +
+> +       /*
+> +        * order-0: All zones must meet high watermark for a balanced node
+> +        * high-order: Any zone below pgdats classzone_idx must meet the high
+> +        *      watermark for a balanced node
+> +        */
+> 
+> ?
+> 
+!
 
-It does crash on boot either if built-in to the kernel or as a module,
-However it does not crash if the module is loaded/unloaded after the
-machine has booted.
-
-> The acpi_button driver has a fairly complicated add() method.
-> In the absence of a better idea, I might just comment out blocks
-> of it and try to isolate the problem.  For example, take out
-> all the input stuff, take out the wakeup GPE stuff, take out
-> the type/name setup, etc.
-
-Couldn't this be a compiler issue?
-Adding some printk's to fix it seems to be insane.
-
--Tobias
+seems good. thanks.
+-kame
 
