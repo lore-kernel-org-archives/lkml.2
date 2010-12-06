@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab0LFNo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:44:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35420 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab0LFNo0 (ORCPT
+	id S1752959Ab0LFNo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:44:28 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27763 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab0LFNo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Dec 2010 08:44:26 -0500
-Date: Mon, 6 Dec 2010 14:44:20 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "kmpark@infradead.org" <kmpark@infradead.org>
-Subject: Re: [PATCH v2 1/4]enable background operations for supported eMMC
- card
-Message-ID: <20101206134420.GC7320@pengutronix.de>
-References: <20101203121338.GB18655@intel.com>
- <201012061328.49738.arnd@arndb.de>
- <5D8008F58939784290FAB48F54975198320B3E49F6@shsmsx502.ccr.corp.intel.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6188"; a="65452452"
+Message-ID: <4CFCE8B7.8080305@codeaurora.org>
+Date: Mon, 06 Dec 2010 19:14:23 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uh9ZiVrAOUUm9fzH"
-Content-Disposition: inline
-In-Reply-To: <5D8008F58939784290FAB48F54975198320B3E49F6@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
+References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-4-git-send-email-tsoni@codeaurora.org> <4CDB0451.3090303@metafoo.de> <4CDBDE5D.4040801@codeaurora.org>
+In-Reply-To: <4CDBDE5D.4040801@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
 
---uh9ZiVrAOUUm9fzH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> 
+>>> +
+>>> +/**
+>>> + * struct pmic8058_led - per led data
+>>> + * @name - name of the led
+>>> + * @default_trigger - default trigger which needs to e attached
+>>> + * @max_brightness - maximum brightness level supported by the led
+>>> + * @id - supported led id
+>>> + */
+>>> +struct pmic8058_led {
+>>> +	const char	*name;
+>>> +	const char	*default_trigger;
+>>> +	unsigned	max_brightness;
+>> Should max_brightness not rather be hardcoded in the driver? As far as I can tell it
+>> depend on the hardware and is 4 bits wide for flash and bl leds and 5 bits for the
+>> others.
+>>> +	int		id;
+>>
+>> enum pmic8058_leds instead of int
+> 
+> Ack.
+> 
+>>> +struct pmic8058_leds_platform_data {
+>>> +	int			num_leds;
+>> size_t
+> 
+> Ack.
+> 
+>>> +	struct pmic8058_led	*leds;
+>>> +};
+>>
+>>
+>> If max_brightness is hardcoded in the driver you can reuse "struct led_info" and
+>> "struct struct led_platform_data" instead of adding your own structs.
+> 
 
+I couldn't remove these pmic8058_led structure due to the "enum pmic8058_led id" member
+info which I need from every led. This can be removed completely only if I abuse
+the "flags" parameter in struct led_info to pass the led id. Let me know what you think.
 
-> > These headers don't belong into a submission. If you use git-send-email,
-> > they get cut off automatically, otherwise just remove them as you paste
-> > the patch into your mail client.
-> >
-> OK. I will remove them when the next submission.
+---Trilok Soni
 
-'git send-email' takes care of a lot of other things, too (e.g. chaining
-all following messages to the first one) - strong recommendation :)
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---uh9ZiVrAOUUm9fzH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkz86LQACgkQD27XaX1/VRt0zgCeM76IzwAq40/++nl75euxP/TN
-MWEAn2Rj3VduImZt0SwWUUb8nPhEzAOm
-=hiYb
------END PGP SIGNATURE-----
-
---uh9ZiVrAOUUm9fzH--
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
