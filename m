@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab0LFWmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 17:42:17 -0500
-Received: from passoire.arboi.fr.eu.org ([81.57.108.63]:38591 "EHLO
-	passoire.arboi.fr.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab0LFWmQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 17:42:16 -0500
-Date: Mon, 6 Dec 2010 23:42:13 +0100
-From: Michel Arboi <michel@arboi.fr.eu.org>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Hans de Goede <hdegoede@redhat.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Patch for Fintek F71869 watchdoh
-Message-ID: <20101206234213.4e3c6ae6@marmite>
-In-Reply-To: <20101206202155.GB3188@salidar.me.mortis.eu>
-References: <4CFCB76D.2060405@redhat.com>
-	<20101206191930.GA3188@salidar.me.mortis.eu>
-	<20101206205345.639f31bb@marmite>
-	<20101206202155.GB3188@salidar.me.mortis.eu>
-Organization: Compilo ergo sum
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	id S1753874Ab0LFWxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 17:53:13 -0500
+Received: from kroah.org ([198.145.64.141]:52365 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752389Ab0LFWxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 17:53:12 -0500
+Date: Mon, 6 Dec 2010 14:46:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: stable@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [stable] [BUGFIX] memcg: avoid deadlock between move charge
+ and try_charge()
+Message-ID: <20101206224622.GN9265@kroah.com>
+References: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
+ <20101116124117.64608b66.akpm@linux-foundation.org>
+ <20101117092401.61c2117a.nishimura@mxp.nes.nec.co.jp>
+ <20101126164825.24e684ca.nishimura@mxp.nes.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101126164825.24e684ca.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010 21:21:55 +0100
-Giel van Schijndel <me@mortis.eu> wrote:
+On Fri, Nov 26, 2010 at 04:48:25PM +0900, Daisuke Nishimura wrote:
+> > > > Cc: <stable@kernel.org>
+> > > 
+> > > The patch doesn't apply well to 2.6.36 so if we do want it backported
+> > > then please prepare a tested backport for the -stable guys?
+> > > 
+> > O.K.
+> > I'll test a backported patch for 2.6.36.y and send it after this is merged into mainline.
+> > 
+> Done.
+> 
+> I've tested this backported patch on 2.6.36 and it works properly.
+> There is no change in mm/memcontrol.c from v2.6.36 to v2.6.36.1, so
+> this can be applied to 2.6.36.1 too.
 
-> That's intended behaviour and probably sufficient for testing.  Most
-> of the behaviour isn't chip-specific, only the initialisation and
-> configuration of the chip is specific to that chip AFAIK.
+Thanks for the patch, I've now queued it up for .36-stable.
 
-OK. Hans, if you need some tests for the sensors part, you can send me a
-patch and I'll try to help.
-[I suspect that the current Linux code works, sensors reports 62 °C /
-59 °C for the CPU]
-
-> PS You might want to include patches inline (i.e. as part of the
-> message text) as that's standard procedure for Linux MLs.  That
-> allows easy reviewing and commenting on patches.
-
-OK. In fact I did not know how to submit a kernel patch. 
+greg k-h
