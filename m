@@ -1,67 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab0LFOhK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:37:10 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47251 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab0LFOhI (ORCPT
+	id S1753178Ab0LFOjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:39:46 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35497 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752771Ab0LFOjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:37:08 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	Mon, 6 Dec 2010 09:39:45 -0500
+Date: Mon, 6 Dec 2010 14:38:07 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Uwe =?ISO-8859-14?B?S2xlaW5lLUv2bmln?= 
 	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] staging/comedi: remove German in-file changelog
-Date: Mon,  6 Dec 2010 15:37:02 +0100
-Message-Id: <1291646222-16322-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] drivers/char/applicom.c: remove cvs ID and French
+ in-file changelog
+Message-ID: <20101206143807.3f065493@lxorguk.ukuu.org.uk>
+In-Reply-To: <1291645622-10430-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1291645622-10430-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My script that finds typos always wants to do s/Funktion/Function/.
-Instead of adding some whilelist logic to my script just delete the
-changelog that is useless in general and still more in this case as most
-kernel developers don't understand it.
+> claims that "addresse" is wrong.  While at it remove obsolete cvs id and
+> outdated reference to kernel version.
 
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- .../comedi/drivers/addi-data/APCI1710_Ssi.c        |   14 --------------
- 1 files changed, 0 insertions(+), 14 deletions(-)
+And removes a pair of authorship credits, which isn't allowed
+(especially I'd note in France !)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c b/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c
-index 0c890a9..2b19823 100644
---- a/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c
-+++ b/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c
-@@ -38,20 +38,6 @@ You should also find the complete GPL in the COPYING file accompanying this sour
-   |                                                                       |
-   |                                                                       |
-   +-----------------------------------------------------------------------+
--  |                             UPDATES                                   |
--  +-----------------------------------------------------------------------+
--  |   Date   |   Author  |          Description of updates                |
--  +----------+-----------+------------------------------------------------+
--  | 13/05/98 | S. Weber  | SSI digital input / output implementation      |
--  |----------|-----------|------------------------------------------------|
--  | 22/03/00 | C.Guinot  | 0100/0226 -> 0200/0227                         |
--  |          |           | Änderung in InitSSI Funktion                   |
--  |          |           | b_SSIProfile >= 2 anstatt b_SSIProfile > 2     |
--  |          |           |                                                |
--  +-----------------------------------------------------------------------+
--  | 08/05/00 | Guinot C  | - 0400/0228 All Function in RING 0             |
--  |          |           |   available                                    |
--  +-----------------------------------------------------------------------+
- */
- 
- /*
--- 
-1.7.2.3
+I have no problem with moving the change data into the git log but I think
+you should at least retain the names of the people who did the other work
+in the header.
 
+Alan
