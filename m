@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab0LFPQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 10:16:39 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57702 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0LFPQi convert rfc822-to-8bit (ORCPT
+	id S1753477Ab0LFPS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 10:18:27 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:58684 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab0LFPSZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 10:16:38 -0500
+	Mon, 6 Dec 2010 10:18:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=KgIhMKMXjzc7rYEZ8T9DeXhv/tc7TsJS48TKFIR7D083hLfZn08ba56gMiU+Ztvr0B
-         rqHNcJrh18o7mXwMOCwKh3r9eKYSGzalzg+AYkWkts7lDXvo7/bgIAyib6LUK1QBqoe7
-         amxZrkkAwJteCTFjUiz6ZHOaLII6jF/+TBNCQ=
+        b=k49/CDSj4f+SCaNDAUYtv7TqGkuOF0psE08NFKugz/9XC8ueV3iXMHT83IgwZuyJro
+         ExyzjRB+OlesK+0L5kK7vvi+5Nt85R8Y8JT2Mh0tkUZG/WADVEpkpJBoQT4cvTqu3Rld
+         /hm4pj9DILsK33GNHvhovWSVzY+kpXCMSTGKc=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1012060120590.16078@swampdragon.chaosbits.net>
-References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
-	<alpine.LNX.2.00.1012060120590.16078@swampdragon.chaosbits.net>
-Date: Mon, 6 Dec 2010 17:16:36 +0200
-Message-ID: <AANLkTinbq+NPHBQ=zqVNjUDL+G3fKdC6S9gYB5e4isNR@mail.gmail.com>
-Subject: Re: [PATCH 01/45] kstrtox: converting strings to integers done
- (hopefully) right
+In-Reply-To: <1dda71ee1b12baa2366520b894d83d7b0abefc5c.1291433779.git.tfransosi@gmail.com>
+References: <1dda71ee1b12baa2366520b894d83d7b0abefc5c.1291433779.git.tfransosi@gmail.com>
+Date: Mon, 6 Dec 2010 17:18:23 +0200
+Message-ID: <AANLkTinJNzjkWFpSW2BRmHjC-KLPwnxbM=rLr+juaS+i@mail.gmail.com>
+Subject: Re: [PATCH] drivers/video/via/viafbdev.c: Check return value of strict_strtoul().
 From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Joseph Chan <JosephChan@via.com.tw>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 6, 2010 at 2:25 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Sun, 5 Dec 2010, Alexey Dobriyan wrote:
->> Note: sizeof and __alignof__ trick is done to save function call
->>       where types aren't distinguishable.
->>
->> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
->> ---
-> <snip>
->> +/* Internal, do not use. */
->> +int _kstrtol(const char *s, unsigned int base, long *res)
->> +{
->> +     long long tmp;
->> +     int rv;
->> +
->> +     rv = kstrtoll(s, base, &tmp);
->> +     if (rv < 0)
->> +             return rv;
->> +     if (tmp != (long long)(long)tmp)
->> +             return -EINVAL;
->> +     *res = tmp;
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL(_kstrtol);
+On Sat, Dec 4, 2010 at 5:38 AM, Thiago Farina <tfransosi@gmail.com> wrote:
+> This fix the following warnings:
 >
-> Ok, probably I'm just being dense, but the "_" prefix tells me I probably
-> shouldn't use this function. The comment clearly tells me I shouldn't use
-> this function.
-> So, why is this exported? And if it is not/should not be exported, then
-> why is it not static?
-> (goes for other functions in this patch as well).
+> drivers/video/via/viafbdev.c:1144: warning: ignoring return value of ‘strict_strtoul’, declared with attribute warn_unused_result
 
-It is used by kstrtol() if "long" and "long long" aren't the same type.
-I can't ifdef it because gcc doesn't allow "#if sizeof(long long) == ".
-"Do not use" hints "use kstrtol()".
+I send patches to convert this code to kstrto*() interfaces,
+so this patch would be redundant.
