@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab0LFRgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:36:17 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:61754 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab0LFRgP (ORCPT
+	id S1754094Ab0LFRkW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:40:22 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:31672 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753894Ab0LFRkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 12:36:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=diCUAf3mvMPJWnxEVAbsfKY/gOzSIXn13D2TCwYy1D3bdVO4gsN86pXf8KdAEc2wfI
-         12WThwoaeZXsef6QnCjQva3w9buIw1KNGkyJIfDaybigfygb513Z8H+ycMMBAyUBzNZd
-         EegRx5RVZvLii7Ij3SFnv4ETKIPWhNDJKEAeI=
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
-        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-arch@vger.kernel.org, mmarek@suse.cz,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 0/4]  V2 Add ability to link device blob(s) into vmlinux
-Date: Mon,  6 Dec 2010 09:35:58 -0800
-Message-Id: <cover.1291656753.git.dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Mon, 6 Dec 2010 12:40:18 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Cy.U5KEVM1mN5RKX101HhK.qUo1W.aMLlug6_eXSdk4x3wG
+ JQnXLjuOcrHmbu9pW1rwnPQhlTD5udlp7fzn1zjbB15.NH5BlmEFbG_leEf4
+ N7uq9T4mmLW8nKyx0jsPmjybZSz2xGQvncZLaW6meheKkKVGVMxb_sBHkC_Q
+ Y.s0k_ltKdM_xHseZu1nnDahaHFoUfSLERp9Lm_oeq2rokzYVXOxkyAIQnx5
+ LcVaplrHXScw8MEUJH3suOgARS8UpJNmhupNPyfXqS3TlhfKSHw0N
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20101206174015.961454797@linux.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 06 Dec 2010 11:40:03 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-kernel@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [cpuops inc_return V1 5/9] highmem: Use this_cpu_xx_return() operations
+References: <20101206173958.685460926@linux.com>
+Content-Disposition: inline; filename=cpuops_inc_return_highmem
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+Use this_cpu operations to optimize access primitives for highmem.
 
-This patch set adds the ability to link device tree blobs into
-vmlinux. 
+The main effect is the avoidance of address calculations through the
+use of a segment prefix.
 
-Patch 1 implements the changes to include/asm-generic/vmlinux.lds.h and
-adds a generic rule for generating DTB objects to be linked vmlinux.
+V3->V4
+	- kmap_atomic_idx: Do not return a value.
+	- Use __this_cpu_dec without HIGHMEM_DEBUG
 
-Patch 2 implements linking a DTB into an x86 image.
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Patch 3-4 move {powerpc,microblaze}/boot/Makefile to use the dtc rule
-in patch 1.
+---
+ include/linux/highmem.h |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-This patch set has been tested on x86.
-
-Powerpc and Microblaze have been compile tested with and without patch
-3 and 4 applied.
-
-Changes from V1:
-
-Documentation added for dtc command in Makefile.lib to
-Documentation/kbuild/makefiles.txt
-Separate DTB_ALIGNMENT define removed.
-FORCE removed from dtc rule.
-Removed hardcoded path to dts files from dtc command.  
-Moved %.dtb: %.dts rule to arch specific makefiles. 
+Index: linux-2.6/include/linux/highmem.h
+===================================================================
+--- linux-2.6.orig/include/linux/highmem.h	2010-12-01 09:47:58.000000000 -0600
++++ linux-2.6/include/linux/highmem.h	2010-12-01 09:48:16.000000000 -0600
+@@ -81,7 +81,8 @@ DECLARE_PER_CPU(int, __kmap_atomic_idx);
  
-Patch for adding kernel command line option to pass in dtb_compat
-string dropped from this set will be submitted seperately.
-
-Dirk Brandewie (4):
-  of: Add support for linking device tree blobs into vmlinux
-  x86/of: Add building device tree blob(s) into image.
-  of/powerpc: Use generic rule to build dtb's
-  microblaze/of: Use generic rule to build dtb's
-
- Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
- arch/microblaze/boot/Makefile      |   10 ++--------
- arch/powerpc/boot/Makefile         |    8 +++-----
- arch/x86/platform/ce4100/Makefile  |   10 ++++++++++
- include/asm-generic/vmlinux.lds.h  |   15 ++++++++++++---
- scripts/Makefile.lib               |   21 ++++++++++++++++++++-
- 6 files changed, 62 insertions(+), 17 deletions(-)
-
--- 
-1.7.2.3
+ static inline int kmap_atomic_idx_push(void)
+ {
+-	int idx = __get_cpu_var(__kmap_atomic_idx)++;
++	int idx = __this_cpu_inc_return(__kmap_atomic_idx) - 1;
++
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	WARN_ON_ONCE(in_irq() && !irqs_disabled());
+ 	BUG_ON(idx > KM_TYPE_NR);
+@@ -91,16 +92,18 @@ static inline int kmap_atomic_idx_push(v
+ 
+ static inline int kmap_atomic_idx(void)
+ {
+-	return __get_cpu_var(__kmap_atomic_idx) - 1;
++	return __this_cpu_read(__kmap_atomic_idx) - 1;
+ }
+ 
+-static inline int kmap_atomic_idx_pop(void)
++static inline void kmap_atomic_idx_pop(void)
+ {
+-	int idx = --__get_cpu_var(__kmap_atomic_idx);
+ #ifdef CONFIG_DEBUG_HIGHMEM
++	int idx = __this_cpu_dec_return(__kmap_atomic_idx);
++
+ 	BUG_ON(idx < 0);
++#else
++	__this_cpu_dec(__kmap_atomic_idx);
+ #endif
+-	return idx;
+ }
+ 
+ #endif
 
