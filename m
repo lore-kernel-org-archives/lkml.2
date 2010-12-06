@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab0LFQk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:40:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab0LFQk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:40:56 -0500
-Message-ID: <4CFD1208.4070600@redhat.com>
-Date: Mon, 06 Dec 2010 18:40:40 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 5/5] KVM: Allow host IRQ sharing for passed-through PCI
- 2.3 devices
-References: <cover.1291419444.git.jan.kiszka@web.de> <10b9265d513950f2574edf4e79be3b808e741a78.1291419444.git.jan.kiszka@web.de> <4CFD0D91.3050303@redhat.com> <4CFD108F.5000200@siemens.com>
-In-Reply-To: <4CFD108F.5000200@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753717Ab0LFQlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:41:16 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:48292 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577Ab0LFQlP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Mon, 6 Dec 2010 11:41:15 -0500
+Message-Id: <4CFD20370200007800026269@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 06 Dec 2010 16:41:11 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <akpm@linux-foundation.org>
+Subject: [PATCH] use total_highpages when calculating lowmem-only
+	 allocation sizes (core)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 06:34 PM, Jan Kiszka wrote:
-> >
-> >  What's the protocol for doing this?  I suppose userspace has to disable
-> >  interrupts, ioctl(SET_INTX_MASK, masked), ..., ioctl(SET_INTX_MASK,
-> >  unmasked), enable interrupts?
->
-> Userspace just has to synchronize against itself - what it already does:
-> qemu_mutex, and masking/unmasking is synchronous /wrt the the executing
-> VCPU. Otherwise, masking/unmasking is naturally racy, also in Real Life.
-> The guest resolves the remaining races.
+For those (large) table allocations that come only from lowmem, the
+total amount of memory shouldn't really matter.
 
-I meant when qemu sets INTX_MASK and the kernel clears it immediately 
-afterwards because the two are not synchronized.  I guess that won't 
-happen in practice because playing with INTX_MASK is very rare.
+For vfs_caches_init(), in the same spirit also replace the use of
+nr_free_pages() by nr_free_buffer_pages().
+
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+
+---
+ fs/dcache.c                       |    4 ++--
+ init/main.c                       |    5 +++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+--- linux-2.6.37-rc4/fs/dcache.c
++++ 2.6.37-rc4-use-totalhigh_pages/fs/dcache.c
+@@ -2474,10 +2474,10 @@ void __init vfs_caches_init(unsigned lon
+ {
+ 	unsigned long reserve;
+ 
+-	/* Base hash sizes on available memory, with a reserve equal to
++	/* Base hash sizes on available lowmem memory, with a reserve equal to
+            150% of current kernel size */
+ 
+-	reserve = min((mempages - nr_free_pages()) * 3/2, mempages - 1);
++	reserve = min((mempages - nr_free_buffer_pages()) * 3/2, mempages - 1);
+ 	mempages -= reserve;
+ 
+ 	names_cachep = kmem_cache_create("names_cache", PATH_MAX, 0,
+--- linux-2.6.37-rc4/init/main.c
++++ 2.6.37-rc4-use-totalhigh_pages/init/main.c
+@@ -22,6 +22,7 @@
+ #include <linux/init.h>
+ #include <linux/initrd.h>
+ #include <linux/bootmem.h>
++#include <linux/highmem.h>
+ #include <linux/acpi.h>
+ #include <linux/tty.h>
+ #include <linux/percpu.h>
+@@ -673,13 +674,13 @@ asmlinkage void __init start_kernel(void
+ #endif
+ 	thread_info_cache_init();
+ 	cred_init();
+-	fork_init(totalram_pages);
++	fork_init(totalram_pages - totalhigh_pages);
+ 	proc_caches_init();
+ 	buffer_init();
+ 	key_init();
+ 	security_init();
+ 	dbg_late_init();
+-	vfs_caches_init(totalram_pages);
++	vfs_caches_init(totalram_pages - totalhigh_pages);
+ 	signals_init();
+ 	/* rootfs populating might need page-writeback */
+ 	page_writeback_init();
 
 
-> >
-> >  Isn't there a race window between the two operations?
-> >
-> >  Maybe we should give the kernel full ownership of that bit.
->
-> I think this is what VFIO does and is surely cleaner than this approach.
-> But it's not possible with the existing interface (sysfs + KVM ioctls) -
-> or can you restrict the sysfs access to the config space in such details?
-
-I'm sure you can, not sure it's worth it.  Can the situation be 
-exploited?  what if userspace lies?
-
--- 
-error compiling committee.c: too many arguments to function
 
