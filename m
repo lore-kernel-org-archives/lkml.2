@@ -1,253 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0LFBPd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 20:15:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:2835 "EHLO mga11.intel.com"
+	id S1753161Ab0LFBXE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 20:23:04 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39231 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab0LFBPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 20:15:32 -0500
+	id S1751849Ab0LFBXC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 20:23:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,303,1288594800"; 
-   d="scan'208";a="864790946"
-Date: Mon, 6 Dec 2010 07:50:57 +0800
-From: Shaohui Zheng <shaohui.zheng@linux.intel.com>
+   d="scan'208";a="580818771"
+From: "Zheng, Shaohui" <shaohui.zheng@intel.com>
 To: David Rientjes <rientjes@google.com>
-Cc: Shaohui Zheng <shaohui.zheng@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, dave@linux.vnet.ibm.com,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [patch 7/7, v7] NUMA Hotplug Emulator: Implement
- mem_hotplug/add_memory debugfs interface
-Message-ID: <20101205235057.GA27820@shaohui>
-References: <20101202050518.819599911@intel.com>
- <20101202050737.651398415@intel.com>
- <alpine.DEB.2.00.1012021534140.6878@chino.kir.corp.google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Greg KH <gregkh@suse.de>, "Li, Haicheng" <haicheng.li@intel.com>,
+        "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>
+Date: Mon, 6 Dec 2010 09:22:54 +0800
+Subject: RE: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+Thread-Topic: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface
+ for memory probe
+Thread-Index: AcuSeXLMeHAqi1WZQjqaSOhs+PmyNQCafYPw
+Message-ID: <A24AE1FFE7AEC5489F83450EE98351BF28B3BB8C31@shsmsx502.ccr.corp.intel.com>
+References: <A24AE1FFE7AEC5489F83450EE98351BF288D88D224@shsmsx502.ccr.corp.intel.com>
+ <20101202002716.GA13693@shaohui>
+ <alpine.DEB.2.00.1012011807190.13942@chino.kir.corp.google.com>
+ <A24AE1FFE7AEC5489F83450EE98351BF288D88D2B8@shsmsx502.ccr.corp.intel.com>
+ <alpine.DEB.2.00.1012021528170.6878@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1012021528170.6878@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1012021534140.6878@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 03:37:03PM -0800, David Rientjes wrote:
-> On Thu, 2 Dec 2010, shaohui.zheng@intel.com wrote:
-> 
-> > From:  Shaohui Zheng <shaohui.zheng@intel.com>
-> > 
-> > Add mem_hotplug/add_memory interface to support to memory hotplug emulation.
-> > the reserved memory can be added into desired node with this interface.
-> > 
-> > Add a memory section(128M) to node 3(boots with mem=1024m)
-> > 
-> > 	echo 0x40000000,3 > mem_hotplug/add_memory
-> > 
-> > And more we make it friendly, it is possible to add memory to do
-> > 
-> > 	echo 3g > mem_hotplug/add_memory
-> > 	echo 1024m,3 > mem_hotplug/add_memory
-> > 
-> > Another format suggested by Dave Hansen:
-> > 
-> > 	echo physical_address=0x40000000 numa_node=3 > mem_hotplug/add_memory
-> > 
-> > it is more explicit to show meaning of the parameters.
-> > 
-> 
-> NACK, we don't need such convoluted definitions if debugfs were extended 
-> with per-node triggers to add_memory as I suggested in v6 of your 
-> proposal:
-> 
-> 	/sys/kernel/debug/mem_hotplug/add_node (already exists)
-> 	/sys/kernel/debug/mem_hotplug/node0/add_memory
-> 	/sys/kernel/debug/mem_hotplug/node1/add_memory
-> 	...
-> 
-> You can then write a physical starting address to the add_memory files to 
-> hotadd memory to a node other than the one to which it has physical 
-> affinity.  This is much more extendable if we add additional per-node 
-> triggers later.
-> 
-> It would also be helpful if you were to reach consensus on the matters 
-> under discussion before posting a new version of your patchset everyday.
+After introduce the per-node interface, the following directive can be avoided.
 
-After consider your proposal again, the new add_memory interface under each 
-nodes follow the rule "one file one parameter" better. it make the parser
-much simpler.
+	echo '0x80000000,3' > /sys/kernel/debug/mem_hotplug/add_memory
+	echo 'physical_addr=0x80000000 node_id=3' > /sys/kernel/debug/mem_hotplug/add_memory
 
-I work out a patch for this proposal, and it works on my side.
-Any more comments?
+I already implemented a draft in another thread, and waiting for comments, thanks for the proposal.
 
-Subject: NUMA Hotplug Emulator: Implement add_memory debugfs interface
-
-From:  Shaohui Zheng <shaohui.zheng@intel.com>
-
-Add add_memory interface to support to memory hotplug emulation for each online
-node under debugfs. The reserved memory can be added into desired node with
-this interface.
-
-The layout on debufs:
-	mem_hotplug/node0/add_memory
-	mem_hotplug/node1/add_memory
-	mem_hotplug/node2/add_memory
-	...
-
-Add a memory section(128M) to node 3(boots with mem=1024m)
-
-	echo 0x40000000 > mem_hotplug/node3/add_memory
-
-And more we make it friendly, it is possible to add memory to do
-
-	echo 1024m > mem_hotplug/node3/add_memory
-
-CC: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
----
-Index: linux-hpe4/mm/memory_hotplug.c
-===================================================================
---- linux-hpe4.orig/mm/memory_hotplug.c	2010-12-02 12:35:31.557622002 +0800
-+++ linux-hpe4/mm/memory_hotplug.c	2010-12-06 07:30:36.067622001 +0800
-@@ -930,6 +930,80 @@
- 
- static struct dentry *memhp_debug_root;
- 
-+#ifdef CONFIG_ARCH_MEMORY_PROBE
-+
-+static ssize_t add_memory_store(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	u64 phys_addr = 0;
-+	int nid = file->private_data - NULL;
-+	int ret;
-+
-+	phys_addr = simple_strtoull(buf, NULL, 0);
-+	printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-+	phys_addr = memparse(buf, NULL);
-+	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+
-+	if (ret)
-+		count = ret;
-+
-+	return count;
-+}
-+
-+static int add_memory_open(struct inode *inode, struct file *file)
-+{
-+	file->private_data = inode->i_private;
-+	return 0;
-+}
-+
-+static const struct file_operations add_memory_file_ops = {
-+	.open		= add_memory_open,
-+	.write		= add_memory_store,
-+	.llseek		= generic_file_llseek,
-+};
-+
-+/*
-+ * Create add_memory debugfs entry under specified node
-+ */
-+static int debugfs_create_add_memory_entry(int nid)
-+{
-+	char buf[32];
-+	static struct dentry *node_debug_root;
-+
-+	snprintf(buf, sizeof(buf), "node%d", nid);
-+	node_debug_root = debugfs_create_dir(buf, memhp_debug_root);
-+
-+	/* the nid information was represented by the offset of pointer(NULL+nid) */
-+	if (!debugfs_create_file("add_memory", S_IWUSR, node_debug_root,
-+			NULL + nid, &add_memory_file_ops))
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int __init memory_debug_init(void)
-+{
-+	int nid;
-+
-+	if (!memhp_debug_root)
-+		memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
-+	if (!memhp_debug_root)
-+		return -ENOMEM;
-+
-+	for_each_online_node(nid)
-+		 debugfs_create_add_memory_entry(nid);
-+
-+	return 0;
-+}
-+
-+module_init(memory_debug_init);
-+#else
-+static debugfs_create_add_memory_entry(int nid)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_ARCH_MEMORY_PROBE */
-+
- static ssize_t add_node_store(struct file *file, const char __user *buf,
- 				size_t count, loff_t *ppos)
- {
-@@ -960,6 +1034,8 @@
- 		return -ENOMEM;
- 
- 	ret = add_memory(nid, start, size);
-+
-+	debugfs_create_add_memory_entry(nid);
- 	return ret ? ret : count;
- }
- 
-Index: linux-hpe4/Documentation/memory-hotplug.txt
-===================================================================
---- linux-hpe4.orig/Documentation/memory-hotplug.txt	2010-12-02 12:35:31.557622002 +0800
-+++ linux-hpe4/Documentation/memory-hotplug.txt	2010-12-06 07:39:36.007622000 +0800
-@@ -19,6 +19,7 @@
-   4.1 Hardware(Firmware) Support
-   4.2 Notify memory hot-add event by hand
-   4.3 Node hotplug emulation
-+  4.4 Memory hotplug emulation
- 5. Logical Memory hot-add phase
-   5.1. State of memory
-   5.2. How to online memory
-@@ -239,6 +240,29 @@
- Once the new node has been added, it is possible to online the memory by
- toggling the "state" of its memory section(s) as described in section 5.1.
- 
-+4.4 Memory hotplug emulation
-+------------
-+With debugfs, it is possible to test memory hotplug with software method, we
-+can add memory section to desired node with add_memory interface. It is a much
-+more powerful interface than "probe" described in section 4.2.
-+
-+There is an add_memory interface for each online node at the debugfs mount
-+point.
-+	mem_hotplug/node0/add_memory
-+	mem_hotplug/node1/add_memory
-+	mem_hotplug/node2/add_memory
-+	...
-+
-+Add a memory section(128M) to node 3(boots with mem=1024m)
-+
-+	echo 0x40000000 > mem_hotplug/node3/add_memory
-+
-+And more we make it friendly, it is possible to add memory to do
-+
-+	echo 1024m > mem_hotplug/node3/add_memory
-+
-+Once the new memory section has been added, it is possible to online the memory
-+by toggling the "state" described in section 5.1.
- 
- ------------------------------
- 5. Logical Memory hot-add phase
-
-
--- 
 Thanks & Regards,
 Shaohui
 
+
+-----Original Message-----
+From: David Rientjes [mailto:rientjes@google.com] 
+Sent: Friday, December 03, 2010 7:34 AM
+To: Zheng, Shaohui
+Cc: Andrew Morton; linux-mm@kvack.org; linux-kernel@vger.kernel.org; lethal@linux-sh.org; Andi Kleen; Dave Hansen; Greg KH; Li, Haicheng
+Subject: RE: [8/8, v6] NUMA Hotplug Emulator: implement debugfs interface for memory probe
+
+On Thu, 2 Dec 2010, Zheng, Shaohui wrote:
+
+> Why should we add so many interfaces for memory hotplug emulation?
+
+Because they are functionally different from real memory hotplug and we 
+want to support different configurations such as mapping memory to a 
+different node id or onlining physical nodes that don't exist.
+
+They are in debugfs because the emulation, unlike real memory hotplug, is 
+used only for testing and debugging.
+
+> If so, we should create both sysfs and debugfs 
+> entries for an online node, we are trying to add redundant code logic.
+> 
+
+We do not need sysfs triggers for onlining a node, that already happens 
+automatically if the memory that is being onlined has a hotpluggable node 
+entry in the SRAT that has an offline node id.
+
+> We need not make a simple thing such complicated, Simple is beautiful, I'd prefer to rename the mem_hotplug/probe 
+> interface as mem_hotplug/add_memory.
+> 
+> 	/sys/kernel/debug/mem_hotplug/add_node (already exists)
+> 	/sys/kernel/debug/mem_hotplug/add_memory (rename probe as add_memory)
+> 
+
+No, add_memory would then require these bizarre lines that you've been 
+parsing like
+
+	echo 'physical_addr=0x80000000 node_id=3' > /sys/kernel/debug/mem_hotplug/add_memory
+
+which is unnecessary if you introduce my proposal for per-node debugfs 
+directories similar to that under /sys/devices/system/node that is 
+extendable later if we add additional per-node triggers under 
+CONFIG_DEBUG_FS.
+
+Adding /sys/kernel/debug/mem_hotplug/node2/add_memory that you write a 
+physical address to is a much more robust, simple, and extendable 
+interface.
