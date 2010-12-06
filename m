@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab0LFBdq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 20:33:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29473 "EHLO mga11.intel.com"
+	id S1753197Ab0LFBr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 20:47:28 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:44207 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab0LFBdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 20:33:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,303,1288594800"; 
-   d="scan'208";a="864794499"
-Subject: Re: [Regression] 2.6.37-rc1: Lenovo T61 mute button does not work
-From: Lin Ming <ming.m.lin@intel.com>
-To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Calvin Walton <calvin.walton@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101203141358.GA6936@ics.muni.cz>
-References: <20101130185303.GI10354@ics.muni.cz>
-	 <1291172324.14274.33.camel@nayuki>  <20101203141358.GA6936@ics.muni.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Dec 2010 09:37:04 +0800
-Message-ID: <1291599424.3688.0.camel@minggr.sh.intel.com>
+	id S1751732Ab0LFBrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 20:47:25 -0500
+Date: Mon, 6 Dec 2010 12:47:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the usb tree with the sh tree
+Message-Id: <20101206124723.72a8cd7f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 22:13 +0800, Lukas Hejtmanek wrote:
-> Hi,
-> 
-> On Tue, Nov 30, 2010 at 09:58:44PM -0500, Calvin Walton wrote:
-> > > in 2.6.36, mute button worked as expected on my ThinkPad T61 - it toggled
-> > > mute with mixer applet notification. In 2.6.37-rc1, it only mutes without any
-> > > event to any mixer applet.
-> 
-> [...]
-> 
-> > By default on this series of laptops, Linux runs with the ACPI
-> > _OSI(Linux) exported - when the bios of this laptop model sees that it's
-> > running on Linux, it disables the hardware mute functionality and the
-> > mute button acts as a standard keyboard key.
-> > 
-> > Search your dmesg for lines containing '_OSI(Linux)' - it should say
-> > that a BIOS query was honoured. Make sure you do not have 'acpi_osi="!
-> > Linux"' on your kernel command line.
-> 
-> The breaking commit is this one: b0ed7a915abac309fcb5a51bccd3782e3daa7417
-> 
-> This changes 
-> [    0.200241] ACPI: BIOS _OSI(Linux) query honored via DMI
-> to
-> [    0.200241] ACPI: BIOS _OSI(Linux) query honored via cmdline
-> 
-> which apparently does not work with Lenovo T61.
+Hi Greg,
 
-I'm looking at this regression.
+Today's linux-next merge of the usb tree got a conflict in
+arch/sh/Kconfig between commit f020c92de48246510623162fb22d60d91810cc56
+("sh: Enable optional gpiolib for all CPUs with pinmux tables") from the
+sh tree and commit e3e9887ee9de36d8e2bef972ad74a42abd7a44c4 ("sh: Convert
+to USB_ARCH_HAS_OHCI/EHCI selects") from the usb tree.
 
-Thanks,
-Lin Ming
+Just context changes.  I fixed ti up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
+diff --cc arch/sh/Kconfig
+index 90cd621,e0e2234..0000000
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@@ -347,7 -344,7 +347,8 @@@ config CPU_SUBTYPE_SH772
+  	select CPU_SH3
+  	select CPU_HAS_DSP
+  	select SYS_SUPPORTS_CMT
+ +	select ARCH_WANT_OPTIONAL_GPIOLIB
++ 	select USB_ARCH_HAS_OHCI
+  	help
+  	  Select SH7720 if you have a SH3-DSP SH7720 CPU.
+  
+@@@ -461,7 -456,8 +464,9 @@@ config CPU_SUBTYPE_SH778
+  	select CPU_SHX3
+  	select CPU_HAS_PTEAEX
+  	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
+ +	select ARCH_WANT_OPTIONAL_GPIOLIB
++ 	select USB_ARCH_HAS_OHCI
++ 	select USB_ARCH_HAS_EHCI
+  
+  config CPU_SUBTYPE_SHX3
+  	bool "Support SH-X3 processor"
