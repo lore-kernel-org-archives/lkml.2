@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab0LFJHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 04:07:06 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54723 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab0LFJHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 04:07:01 -0500
-Date: Mon, 6 Dec 2010 14:36:54 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1752296Ab0LFJUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 04:20:34 -0500
+Received: from www.tglx.de ([62.245.132.106]:41797 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab0LFJUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 04:20:32 -0500
+Date: Mon, 6 Dec 2010 10:20:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ian Munsie <imunsie@au1.ibm.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
- taskstats
-Message-ID: <20101206090654.GC3158@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101129164237.522034198@linux.vnet.ibm.com>
- <20101129164435.903722027@linux.vnet.ibm.com>
- <20101201185128.GA7656@redhat.com>
- <1291307641.1928.125.camel@holzheu-laptop>
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/3] perf record/report: Process events in order
+In-Reply-To: <1291603026-11785-4-git-send-email-imunsie@au1.ibm.com>
+Message-ID: <alpine.LFD.2.00.1012061014180.2653@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1012051220450.2653@localhost6.localdomain6> <1291603026-11785-4-git-send-email-imunsie@au1.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1291307641.1928.125.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-12-02 17:34:01]:
+On Mon, 6 Dec 2010, Ian Munsie wrote:
 
-> On Wed, 2010-12-01 at 19:51 +0100, Oleg Nesterov wrote:
-> > But in fact I don't really understand this anyway. This is called
-> > before we reparent our children. This means that ac_cutime/ac_cstime
-> > can be changed after that (multithreading, or full_cdata_enabled).
-> > 
-> > Say, taskstats_exit()->fill_stats()->bacct_add_tsk(). Every thread
-> > does this, including the group_leader. But, it is possible that
-> > group_leader exits first, before other threads. IOW, what
-> > stats->ac_cXtime actually mean?
+> From: Ian Munsie <imunsie@au1.ibm.com>
 > 
-> Because I worked mostly with the ptop tool, I was not so much focused on
-> the taskstats exit events, but instead more on the taskstats commands to
-> query data for running tasks.
-> 
-> For the query scenario stats->ac_cXtime means:
-> 
-> 1) full_cdata=0: "Sum of CPU time of exited child processes where
->    sys_wait() have been done (up to this time)"
-> 2) full_cdata=1: "Sum of CPU time of exited child processes where
->    sys_wait() have been done plus exited child processes where
->    the parents ignored SIGCHLD or have set SA_NOCLDWAIT (up to
->    this time)"
-> 
-> Regarding taskstats_exit(): Do you have something like the following
-> scenario in mind?
-> 
-> 1) You have a thread group with several threads
-> 2) Thread group leader dies and reports cdata_wait in taskstats_exit()
-> 3) Thread group leader stays around as zombie until the thread
->    group dies
-> 4) Other forked processes of this thread group die
-> 5) cdata_wait of thread group is increased
-> 6) The new cdata is not reported by any exit event of the thread group
-> 
-> So maybe we should remove the thread_group_leader() check and report
-> cdata_wait for all threads and not only for the thread group leader? We
-> also should add ac_tgid to taskstats so that userspace can find the
-> corresponding thread group for each thread.
-> 
-> When the last thread exits and the process/thread group dies,
-> taskstats_exit() sends an additional taskstats struct to userspace that
-> aggregates the thread accounting data. Currently only the delay
-> accounting data is aggregated (see
-> taskstats_exit->fill_tgid_exit->delayacct_add_tsk). Not sure, why the
-> other information is not aggregated. We perhaps also should include
-> ac_cXtime in the aggregated taskstats.
+> This patch changes perf report to ask for the ID info on all events be
+> default if recording from multiple CPUs.
 >
+> Perf report will now process the events in order if the kernel is able
+> to provide timestamps on all events. This ensures that events such as
+> COMM and MMAP which are necessary to correctly interpret samples are
+> processed prior to those samples so that they are attributed correctly.
 
-The delay accounting data is aggregated, the other part tsacct do not
-care much about aggregation (IIRC). tsacct was added to export pid
-data and never tgid data again IIRC. This subsystem is the one that
-owns ac_*, perhaps if tsacct supported tgid's then what you say makes
-sense.
+See https://lkml.org/lkml/2010/12/5/45
 
--- 
-	Three Cheers,
-	Balbir
+Slightly different, but the same idea :)
+ 
+>  
+> +static int perf_session__dispatch_event(event_t *event,
+> +					struct sample_data *sample,
+> +					struct perf_session *s,
+> +					struct perf_event_ops *ops)
+> +{
+> +	switch (event->header.type) {
+> +	case PERF_RECORD_SAMPLE:
+> +		return ops->sample(event, sample, s);
+> +	case PERF_RECORD_MMAP:
+> +		return ops->mmap(event, sample, s);
+> +	case PERF_RECORD_COMM:
+> +		return ops->comm(event, sample, s);
+> +	case PERF_RECORD_FORK:
+> +		return ops->fork(event, sample, s);
+> +	case PERF_RECORD_EXIT:
+> +		return ops->exit(event, sample, s);
+> +	case PERF_RECORD_LOST:
+> +		return ops->lost(event, sample, s);
+> +	case PERF_RECORD_READ:
+> +		return ops->read(event, sample, s);
+> +	case PERF_RECORD_THROTTLE:
+> +		return ops->throttle(event, sample, s);
+> +	case PERF_RECORD_UNTHROTTLE:
+> +		return ops->unthrottle(event, sample, s);
+
+
+> +	case PERF_RECORD_HEADER_ATTR:
+> +		return ops->attr(event, s);
+> +	case PERF_RECORD_HEADER_EVENT_TYPE:
+> +		return ops->event_type(event, s);
+> +	case PERF_RECORD_HEADER_TRACING_DATA:
+> +		return ops->tracing_data(event, s);
+> +	case PERF_RECORD_HEADER_BUILD_ID:
+> +		return ops->build_id(event, s);
+
+These can be processed unordered.
+
+> +	case PERF_RECORD_FINISHED_ROUND:
+> +		return ops->finished_round(event, s, ops);
+
+You don't want to delay this unless you have unlimited memory. See my
+patch.
+
+>  {
+> +	if (ops->ordered_samples && sample->time == -1ULL) {
+> +		dump_printf("Event missing timestamp, switching to unordered processing\n");
+> +		flush_sample_queue(s, ops);
+> +		ops->ordered_samples = false;
+
+Why ? The events injected by perf record itself have no timestamps and
+do not need them. So why disabling ordered_samples ?
+
+Thanks,
+
+	tglx
