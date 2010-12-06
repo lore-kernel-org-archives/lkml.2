@@ -1,358 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab0LFRwG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:52:06 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51673 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab0LFRwE (ORCPT
+	id S1753567Ab0LFRyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:54:37 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62567 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab0LFRyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 12:52:04 -0500
-From: Dave Martin <dave.martin@linaro.org>
+	Mon, 6 Dec 2010 12:54:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=U/HFMcXf+WF3UN+G0oU4TsgMg41Sa5t2LmQ4TLQPVK73s/HUlN57n8DRonfxUCmJwA
+         t28BBoHmqsJOue1jCqintVlZOnuOFWkv0dbm/fXvR2cUXNOjCTjnkW5nySaz06FBaqj2
+         CE5dzA9DvyLGpSWJRswJ7LmvKpJ4pDmoJj+K8=
+From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
-Cc: Dave Martin <dave.martin@linaro.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Will Deacon <Will.Deacon@arm.com>
-Subject: [PATCH v4] perf symbols: fix symbol offset breakage with separated debug
-Date: Mon,  6 Dec 2010 17:51:52 +0000
-Message-Id: <1291657912-25562-1-git-send-email-dave.martin@linaro.org>
-X-Mailer: git-send-email 1.7.1
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] of/fdt: add kernel command line option for dtb_compat string
+Date: Mon,  6 Dec 2010 09:54:19 -0800
+Message-Id: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v4: remove assert() calls
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-  * Simply removed the assert() to validate section indices
-    returned by libelf: libelf should validate the ELF file
-    anyway.
+Adds a kernel command line option "dtb_compat=<string>".  This string
+will be used to select the first compatible device tree blob linked
+into the kernel if a device tree blob is was *not* passed in by the
+bootloader.
 
-  * Replaced the assert() on arguments to dso__load_sym
-    with a run-time check.
-
-Applies to 2.6.37-rc3
-
-v3: Fixed a minor error in v2 where a check was erronueously
-done twice.
-
-Original description follows:
-
-The new patch loads the ELF section headers from a separate
-file if necessary, to avoid getting confused by the different
-section file offsets seen in debug images.  Invalid section
-headers are detected by checking for the presence of non-
-writable SHT_NOBITS sections, which don't make sense under
-normal circumstances.
-
-In particular, this allows symbols in ET_EXEC images to get
-fixed up correctly in the presence of separated debug images.
-
-The image search loop is also tidied up to fix a minor bug
-which would perform the same image load attempt more than
-once in some situations.
-
-For non-separated images, the headers should get loaded from
-the same image as the symbols, in the usual way.
-
-Signed-off-by: Dave Martin <dave.martin@linaro.org>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
-KernelVersion: 2.6.37-rc3
+ Documentation/kernel-parameters.txt |    8 ++++++
+ drivers/of/fdt.c                    |   48 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 0 deletions(-)
 
- tools/perf/util/symbol.c |  188 +++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 176 insertions(+), 12 deletions(-)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b39f499..7d8fd34 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -992,8 +992,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
- }
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 92e83e5..64093e5 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -655,6 +655,14 @@ and is between 256 and 4096 characters. It is defined in the file
  
-+/**
-+ * Read all section headers, copying them into a separate array so they survive
-+ * elf_end.
-+ *
-+ * @elf: the libelf instance to operate on.
-+ * @ehdr: the elf header: this must already have been read with gelf_getehdr().
-+ * @count: the number of headers read is assigned to *count on successful
-+ *	return.  count must not be NULL.
-+ *
-+ * Returns a pointer to the allocated headers, which should be deallocated with
-+ * free() when no longer needed.
-+ */
-+static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
-+				    unsigned *count)
+ 	dscc4.setup=	[NET]
+ 
++	dtb_compat=	[KNL]
++			Specify the "compatible" string for the device
++			tree blob present in the vmlinux image.  This
++			string will be used to select the first device
++			tree blob whose compatible property matches
++			the string if a dtb was NOT passed in by the
++			bootloader.
++
+ 	dynamic_printk	Enables pr_debug()/dev_dbg() calls if
+ 			CONFIG_DYNAMIC_PRINTK_DEBUG has been enabled.
+ 			These can also be switched on/off via
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index c1360e0..ca1318c 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -15,6 +15,8 @@
+ #include <linux/of_fdt.h>
+ #include <linux/string.h>
+ #include <linux/errno.h>
++#include <asm-generic/vmlinux.lds.h>
++
+ 
+ #ifdef CONFIG_PPC
+ #include <asm/machdep.h>
+@@ -604,3 +606,49 @@ void __init unflatten_device_tree(void)
+ 
+ 	pr_debug(" <- unflatten_device_tree()\n");
+ }
++
++extern uint8_t __dtb_start[];
++extern uint8_t __dtb_end[];
++static void __init *of_flat_dt_find_compatible_dtb(char *name)
 +{
-+	GElf_Shdr *shdrs;
-+	Elf_Scn *scn;
-+	unsigned max_index = 0;
-+	unsigned i;
++	void *rc = NULL;
++	unsigned long root, size;
++	struct boot_param_header  *orig_initial_boot_params;
++	uint8_t *blob;
 +
-+	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
-+	if (!shdrs)
-+		return NULL;
++	orig_initial_boot_params = initial_boot_params;
++	blob = __dtb_start;
++	initial_boot_params = (struct boot_param_header *)blob;
 +
-+	for (i = 0; i < ehdr->e_shnum; i++)
-+		shdrs[i].sh_type = SHT_NULL;
++	while (blob < __dtb_end) {
++		if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
++			WARN(1, "Invalid device tree blob in vmlinux\n");
++			break;
++		}
 +
-+	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
-+		size_t j;
++		root = of_get_flat_dt_root();
++		if (of_flat_dt_is_compatible(root, name) > 0) {
++			rc = blob;
++			break;
++		}
 +
-+		/*
-+		 * Just assuming we get section 0, 1, ... in sequence may lead
-+		 * to wrong section indices.  Check the index explicitly:
-+		 */
-+		j = elf_ndxscn(scn);
-+
-+		if (j > max_index)
-+			max_index = j;
-+
-+		if (!gelf_getshdr(scn, &shdrs[j]))
-+			goto error;
++		size =  be32_to_cpu(initial_boot_params->totalsize);
++		blob =  PTR_ALIGN(blob + size, STRUCT_ALIGNMENT);
++		initial_boot_params = (struct boot_param_header *)blob;
 +	}
 +
-+	*count = max_index + 1;
-+	return shdrs;
-+
-+error:
-+	free(shdrs);
-+	return NULL;
++	if (rc == NULL)
++		initial_boot_params = orig_initial_boot_params;
++	return rc;
 +}
 +
-+/**
-+ * Check that the section headers @shdrs reflect accurately the file data
-+ * layout of the image that was loaded during perf record.  This is generally
-+ * not true for separated debug images generated with e.g.,
-+ * objcopy --only-keep-debug.
-+ *
-+ * We identify invalid files by checking for non-empty sections which are
-+ * declared as having no file data (SHT_NOBITS) but are not writable.
-+ *
-+ * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
-+ * @count: the number of headers present in @shdrs.
-+ *
-+ * Returns 1 for valid headers, 0 otherwise.
-+ */
-+static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
++
++static int __init of_flat_dtb_compat_setup(char *line)
 +{
-+	unsigned i;
-+
-+	for (i = 0; i < count; i++) {
-+		if (shdrs[i].sh_type == SHT_NOBITS &&
-+		    !(shdrs[i].sh_flags & SHF_WRITE) &&
-+		    shdrs[i].sh_size != 0)
-+			return 0;
-+	}
-+
++	if (!initial_boot_params)
++		initial_boot_params = of_flat_dt_find_compatible_dtb(line);
 +	return 1;
 +}
 +
-+/*
-+ * Notes:
-+ *
-+ * If saved_shdrs is non-NULL, the section headers will be read if found, and
-+ * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
-+ * this case.  This may be needed for separated debug images, since the section
-+ * headers and symbols may need to come from separate images in that case.
-+ *
-+ * Note: irrespective of whether this function returns successfully,
-+ * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
-+ * caller's responsibility to free() it when non longer needed.
-+ *
-+ * If want_symtab == 1, this function will only load symbols from .symtab
-+ * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
-+ * loaded.  This feature is used by dso__load() to search for the best image
-+ * to load.
-+ */
- static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule,
-+			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
- 			 int want_symtab)
- {
- 	struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
-@@ -1012,6 +1109,17 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 	int nr = 0;
- 	size_t opdidx = 0;
- 
-+	if(saved_shdrs != NULL && saved_shdrs_count == NULL) {
-+		/*
-+		 * If you trigger this check, you're calling this function
-+		 * incorrectly.  Refer to the notes above for details.
-+		 */
-+		pr_debug("%s: warning: saved_shdrs_count == NULL: "
-+			 "ignoring the saved section headers.\n",
-+			 __func__);
-+		saved_shdrs = NULL;
-+	}
++early_param("dtb_compat", of_flat_dtb_compat_setup);
 +
- 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
- 	if (elf == NULL) {
- 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-@@ -1035,6 +1143,34 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 			goto out_elf_end;
- 	}
- 
-+	/*
-+	 * Copy all section headers from the image if requested and if not
-+	 * already loaded.
-+	 */
-+	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
-+		GElf_Shdr *shdrs;
-+		unsigned count;
-+
-+		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
-+		if (shdrs == NULL)
-+			goto out_elf_end;
-+
-+		/*
-+		 * Only keep the headers if they reflect the actual run-time
-+		 * image's file layout:
-+		 */
-+		if (elf_check_shdrs_valid(shdrs, count)) {
-+			*saved_shdrs = shdrs;
-+			*saved_shdrs_count = count;
-+		} else
-+			free(shdrs);
-+	}
-+
-+	/* If no genuine ELF headers are available yet, give up: we can't
-+	 * adjust symbols correctly in that case: */
-+	if (saved_shdrs != NULL && *saved_shdrs == NULL)
-+		goto out_elf_end;
-+
- 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
- 	if (sec == NULL) {
- 		if (want_symtab)
-@@ -1167,12 +1303,25 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 			goto new_symbol;
- 		}
- 
-+		/*
-+		 * Currently, symbols for shared objects and PIE executables
-+		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
-+		 * to change if file offset == virtual address is not actually
-+		 * guaranteed for these images.  ELF doesn't provide this
-+		 * guarantee natively.
-+		 */
- 		if (curr_dso->adjust_symbols) {
- 			pr_debug4("%s: adjusting symbol: st_value: %#Lx "
- 				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
- 				  (u64)sym.st_value, (u64)shdr.sh_addr,
- 				  (u64)shdr.sh_offset);
--			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
-+			if (saved_shdrs && *saved_shdrs &&
-+			    sym.st_shndx < *saved_shdrs_count)
-+				sym.st_value -=
-+					(*saved_shdrs)[sym.st_shndx].sh_addr -
-+					(*saved_shdrs)[sym.st_shndx].sh_offset;
-+			else
-+				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
- 		}
- 		/*
- 		 * We need to figure out if the object was created from C++ sources
-@@ -1409,6 +1558,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 	struct machine *machine;
- 	const char *root_dir;
- 	int want_symtab;
-+	GElf_Shdr *saved_shdrs = NULL;
-+	unsigned saved_shdrs_count;
- 
- 	dso__set_loaded(self, map->type);
- 
-@@ -1439,13 +1590,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 	 * On the first pass, only load images if they have a full symtab.
- 	 * Failing that, do a second pass where we accept .dynsym also
- 	 */
--	for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
--	     self->origin != DSO__ORIG_NOT_FOUND;
--	     self->origin++) {
-+	self->origin = DSO__ORIG_BUILD_ID_CACHE;
-+	want_symtab = 1;
-+	while (1) {
- 		switch (self->origin) {
- 		case DSO__ORIG_BUILD_ID_CACHE:
- 			if (dso__build_id_filename(self, name, size) == NULL)
--				continue;
-+				goto continue_next;
- 			break;
- 		case DSO__ORIG_FEDORA:
- 			snprintf(name, size, "/usr/lib/debug%s.debug",
-@@ -1459,7 +1610,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
- 
- 			if (!self->has_build_id)
--				continue;
-+				goto continue_next;
- 
- 			build_id__sprintf(self->build_id,
- 					  sizeof(self->build_id),
-@@ -1483,21 +1634,24 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 		default:
- 			/*
- 			 * If we wanted a full symtab but no image had one,
--			 * relax our requirements and repeat the search.
-+			 * relax our requirements and repeat the search,
-+			 * providing we saw some valid section headers:
- 			 */
--			if (want_symtab) {
-+			if (want_symtab && saved_shdrs != NULL) {
- 				want_symtab = 0;
- 				self->origin = DSO__ORIG_BUILD_ID_CACHE;
--			} else
- 				continue;
-+			} else
-+				goto done;
- 		}
- 
- 		/* Name is now the name of the next image to try */
- 		fd = open(name, O_RDONLY);
- 		if (fd < 0)
--			continue;
-+			goto continue_next;
- 
- 		ret = dso__load_sym(self, map, name, fd, filter, 0,
-+				    &saved_shdrs, &saved_shdrs_count,
- 				    want_symtab);
- 		close(fd);
- 
-@@ -1506,7 +1660,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 		 * info!?!?
- 		 */
- 		if (!ret)
--			continue;
-+			goto continue_next;
- 
- 		if (ret > 0) {
- 			int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
-@@ -1514,9 +1668,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 				ret += nr_plt;
- 			break;
- 		}
-+
-+continue_next:
-+		self->origin++;
-+		continue;
- 	}
- 
-+done:
- 	free(name);
-+
-+	if (saved_shdrs)
-+		free(saved_shdrs);
-+
- 	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
- 		return 0;
- 	return ret;
-@@ -1782,7 +1945,8 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
- 		return -1;
- 
- 	dso__set_loaded(self, map->type);
--	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
-+	err = dso__load_sym(self, map, vmlinux, fd, filter, 0,
-+			    NULL, NULL, 0);
- 	close(fd);
- 
- 	if (err > 0)
 -- 
-1.7.1
+1.7.2.3
 
