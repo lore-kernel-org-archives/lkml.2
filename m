@@ -1,102 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab0LFTsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 14:48:22 -0500
-Received: from serv04.lahn.de ([213.239.197.57]:40928 "EHLO serv04.lahn.de"
+	id S1754291Ab0LFTsv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 14:48:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20365 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab0LFTsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 14:48:20 -0500
-Date: Mon, 6 Dec 2010 20:34:37 +0100
-From: Michael Leun <lkml20101129@newton.leun.net>
-To: Jesse Gross <jesse@nicira.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-Message-ID: <20101206203437.54b550e0@xenia.leun.net>
-In-Reply-To: <AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	<4CF442FA.4070701@candelatech.com>
-	<20101130095944.41b5f7b6@xenia.leun.net>
-	<1291108809.2904.3.camel@edumazet-laptop>
-	<20101201111716.424fb771@xenia.leun.net>
-	<1291200914.2856.546.camel@edumazet-laptop>
-	<20101205030712.36149bc2@xenia.leun.net>
-	<1291536233.2806.102.camel@edumazet-laptop>
-	<20101205105528.49fa9a9f@xenia.leun.net>
-	<20101205114404.7c0cddc2@xenia.leun.net>
-	<AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753786Ab0LFTst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 14:48:49 -0500
+Date: Mon, 6 Dec 2010 17:29:24 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/12] KVM: SVM: Add clean-bit for interrupt state
+Message-ID: <20101206192924.GB13545@amt.cnet>
+References: <1291373159-4822-1-git-send-email-joerg.roedel@amd.com>
+ <1291373159-4822-6-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291373159-4822-6-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010 10:14:55 -0800
-Jesse Gross <jesse@nicira.com> wrote:
-
-> On Sun, Dec 5, 2010 at 2:44 AM, Michael Leun
-> <lkml20101129@newton.leun.net> wrote:
-> > Hi Jesse,
-> >
-> > On Sun, 5 Dec 2010 10:55:28 +0100
-> > Michael Leun <lkml20101129@newton.leun.net> wrote:
-> >
-> >> On Sun, 05 Dec 2010 09:03:53 +0100
-> >> Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >>
-> >> > > But on
-> >> > >
-> >> > > hpdl320g5:/home/ml # lspci | grep Eth
-> >> > > 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme
-> >> > > BCM5714 Gigabit Ethernet (rev a3) 03:04.1 Ethernet controller:
-> >> > > Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev
-> >> > > a3)
-> >> > >
-> >> > > the good message is that it also does not crash, but with
-> >> > > tcpdump I see vlan tags when no vlan devices configured on the
-> >> > > respective eth, if so I do not see tags anymore vlan tags on
-> >> > > the trunk interface.
-> >> > >
-> >> >
-> >> > For all these very specific needs, you'll have to try 2.6.37 I am
-> >> > afraid. Jesse did huge changes to exactly make this working, we
-> >> > wont backport this to 2.6.36, but only avoid crashes.
-> >>
-> >> OK, I'm perfectly fine with that, of course, actually nice to hear
-> >> that the issue already is addressed.
-> >>
-> >> Likely I'll give some rc an shot on this machine (maybe over
-> >> christmas), but it is an production machine (acutally testing other
-> >> devices is the "product" produced on this machine), so
-> >> unfortunately I'm not that free in when and what I can do (but the
-> >> possibility to, for example, bridge the trunk interface would make
-> >> testing easier, that justifies something...).
-> >>
-> >> Thank you all very much for your work.
-> >
-> > Are these changes already in 2.6.37-rc4? Or, if not are they
-> > somewhere publically available already?
-> >
-> > I looked into various changelogs but have some difficulties to
-> > identify them...
-> >
-> > Maybe I have some time next days to give them an try...
+On Fri, Dec 03, 2010 at 11:45:52AM +0100, Joerg Roedel wrote:
+> This patch implements the clean-bit for all interrupt
+> related state in the vmcb. This corresponds to vmcb offset
+> 0x60-0x67.
 > 
-> Yes, all of the existing vlan changes are in 2.6.37-rc4.  There were a
-> number of patches but the main one was
-> 3701e51382a026cba10c60b03efabe534fba4ca4
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 
-Then, I'm afraid, this (seeing vlan tags even if vlan interfaces are
-configured) does not work on HP DL320G5 (for exact description and
-examples please see my mail a few days ago).
-
--- 
-MfG,
-
-Michael Leun
+Don't you have to mark dirty on sync_lapic_to_cr8? 
 
